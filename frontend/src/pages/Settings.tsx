@@ -144,9 +144,10 @@ export function Settings() {
                 <Label htmlFor="theme">Theme</Label>
                 <Select
                   value={config.theme}
-                  onValueChange={(value: ThemeMode) =>
-                    updateConfig({ theme: value })
-                  }
+                  onValueChange={(value: ThemeMode) => {
+                    updateConfig({ theme: value });
+                    setTheme(value);
+                  }}
                 >
                   <SelectTrigger id="theme">
                     <SelectValue placeholder="Select theme" />
