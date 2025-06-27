@@ -6,7 +6,7 @@ export type ApiResponse<T> = { success: boolean, data: T | null, message: string
 
 export type Config = { theme: ThemeMode, executor: ExecutorConfig, disclaimer_acknowledged: boolean, onboarding_acknowledged: boolean, sound_alerts: boolean, sound_file: SoundFile, push_notifications: boolean, editor: EditorConfig, };
 
-export type ThemeMode = "light" | "dark" | "system";
+export type ThemeMode = "light" | "dark" | "system" | "purple" | "green" | "blue" | "orange" | "red";
 
 export type EditorConfig = { editor_type: EditorType, custom_command: string | null, };
 
