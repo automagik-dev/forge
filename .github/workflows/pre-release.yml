@@ -194,6 +194,11 @@ jobs:
           name: backend-binary-${{ matrix.name }}
           path: dist/
 
+      - name: List downloaded artifacts
+        run: |
+          echo "Downloaded backend binary:"
+          find dist/
+
       - name: Create platform package
         run: |
           mkdir -p npx-cli/dist/${{ matrix.name }}
@@ -206,7 +211,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: npx-platform-${{ matrix.name }}
-          path: npx-cli/dist/${{ matrix.name }}/
+          path: npx-cli/dist/
           retention-days: 1
 
   create-prerelease:
@@ -231,6 +236,13 @@ jobs:
           pattern: npx-platform-*
           path: npx-cli/dist/
           merge-multiple: true
+
+      - name: List downloaded artifacts
+        run: |
+          echo "Backend dist:"
+          find npx-cli/dist
+          echo "Frontend dist:"
+          find frontend/dist
 
       - name: Zip frontend
         run: |
