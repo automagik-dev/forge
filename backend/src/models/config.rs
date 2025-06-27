@@ -25,6 +25,11 @@ pub enum ThemeMode {
     Light,
     Dark,
     System,
+    Purple,
+    Green,
+    Blue,
+    Orange,
+    Red,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

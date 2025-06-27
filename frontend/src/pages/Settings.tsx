@@ -144,9 +144,10 @@ export function Settings() {
                 <Label htmlFor="theme">Theme</Label>
                 <Select
                   value={config.theme}
-                  onValueChange={(value: ThemeMode) =>
-                    updateConfig({ theme: value })
-                  }
+                  onValueChange={(value: ThemeMode) => {
+                    updateConfig({ theme: value });
+                    setTheme(value);
+                  }}
                 >
                   <SelectTrigger id="theme">
                     <SelectValue placeholder="Select theme" />
@@ -155,6 +156,11 @@ export function Settings() {
                     <SelectItem value="light">Light</SelectItem>
                     <SelectItem value="dark">Dark</SelectItem>
                     <SelectItem value="system">System</SelectItem>
+                    <SelectItem value="purple">Purple</SelectItem>
+                    <SelectItem value="green">Green</SelectItem>
+                    <SelectItem value="blue">Blue</SelectItem>
+                    <SelectItem value="orange">Orange</SelectItem>
+                    <SelectItem value="red">Red</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
