@@ -7,13 +7,14 @@ export function Logo({ className = '' }: { className?: string }) {
 
   useEffect(() => {
     const updateTheme = () => {
-      if (theme === 'dark') {
-        setIsDark(true);
-      } else if (theme === 'light') {
+      if (theme === 'light') {
         setIsDark(false);
-      } else {
+      } else if (theme === 'system') {
         // System theme
         setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
+      } else {
+        // All other themes (dark, purple, green, blue, orange, red) have dark backgrounds
+        setIsDark(true);
       }
     };
 
