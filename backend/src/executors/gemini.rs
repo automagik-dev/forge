@@ -1,10 +1,12 @@
 use async_trait::async_trait;
-use tokio::process::{Child, Command};
+use command_group::{AsyncCommandGroup, AsyncGroupChild};
+use tokio::process::Command;
 use uuid::Uuid;
 
 use crate::{
     executor::{Executor, ExecutorError},
     models::task::Task,
+    utils::shell::get_shell_command,
 };
 
 /// An executor that uses Gemini CLI to process tasks
@@ -23,7 +25,7 @@ impl Executor for GeminiExecutor {
         pool: &sqlx::SqlitePool,
         task_id: Uuid,
         worktree_path: &str,
-    ) -> Result<Child, ExecutorError> {
+    ) -> Result<AsyncGroupChild, ExecutorError> {
         // Get the task to fetch its description
         let task = Task::find_by_id(pool, task_id)
             .await?
@@ -38,19 +40,31 @@ impl Executor for GeminiExecutor {
                 .unwrap_or("No description provided")
         );
 
-        // Use Gemini CLI to process the task
-        let child = Command::new("npx")
+        // Use shell command for cross-platform compatibility
+        let (shell_cmd, shell_arg) = get_shell_command();
+        let gemini_command = format!(
+            "npx @bloopai/gemini-cli-interactive -p \"{}\"",
+            prompt.replace("\"", "\\\"")
+        );
+
+        let mut command = Command::new(shell_cmd);
+        command
             .kill_on_drop(true)
             .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .current_dir(worktree_path)
-            .arg("@bloopai/gemini-cli-interactive")
-            .arg("-p")
-            .arg(&prompt)
-            .process_group(0) // Create new process group so we can kill entire tree
-            .spawn()
-            .map_err(ExecutorError::SpawnFailed)?;
+            .arg(shell_arg)
+            .arg(&gemini_command);
+
+        let child = command
+            .group_spawn() // Create new process group so we can kill entire tree
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, "Gemini")
+                    .with_task(task_id, Some(task.title.clone()))
+                    .with_context("Gemini CLI execution for new task")
+                    .spawn_error(e)
+            })?;
 
         Ok(child)
     }
@@ -63,21 +77,35 @@ impl Executor for GeminiFollowupExecutor {
         _pool: &sqlx::SqlitePool,
         _task_id: Uuid,
         worktree_path: &str,
-    ) -> Result<Child, ExecutorError> {
-        // Use Gemini CLI with session resumption (if supported)
-        let child = Command::new("npx")
+    ) -> Result<AsyncGroupChild, ExecutorError> {
+        // Use shell command for cross-platform compatibility
+        let (shell_cmd, shell_arg) = get_shell_command();
+        let gemini_command = format!(
+            "npx https://github.com/google-gemini/gemini-cli -p \"{}\" --resume={}",
+            self.prompt.replace("\"", "\\\""),
+            self.session_id
+        );
+
+        let mut command = Command::new(shell_cmd);
+        command
             .kill_on_drop(true)
             .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .current_dir(worktree_path)
-            .arg("https://github.com/google-gemini/gemini-cli")
-            .arg("-p")
-            .arg(&self.prompt)
-            .arg(format!("--resume={}", self.session_id))
-            .process_group(0) // Create new process group so we can kill entire tree
-            .spawn()
-            .map_err(ExecutorError::SpawnFailed)?;
+            .arg(shell_arg)
+            .arg(&gemini_command);
+
+        let child = command
+            .group_spawn() // Create new process group so we can kill entire tree
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, "Gemini")
+                    .with_context(format!(
+                        "Gemini CLI followup execution for session {}",
+                        self.session_id
+                    ))
+                    .spawn_error(e)
+            })?;
 
         Ok(child)
     }

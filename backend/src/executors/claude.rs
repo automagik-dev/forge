@@ -1,10 +1,12 @@
 use async_trait::async_trait;
-use tokio::process::{Child, Command};
+use command_group::{AsyncCommandGroup, AsyncGroupChild};
+use tokio::process::Command;
 use uuid::Uuid;
 
 use crate::{
     executor::{Executor, ExecutorError},
     models::task::Task,
+    utils::shell::get_shell_command,
 };
 
 /// An executor that uses Claude CLI to process tasks
@@ -23,7 +25,7 @@ impl Executor for ClaudeExecutor {
         pool: &sqlx::SqlitePool,
         task_id: Uuid,
         worktree_path: &str,
-    ) -> Result<Child, ExecutorError> {
+    ) -> Result<AsyncGroupChild, ExecutorError> {
         // Get the task to fetch its description
         let task = Task::find_by_id(pool, task_id)
             .await?
@@ -38,21 +40,31 @@ impl Executor for ClaudeExecutor {
                 .unwrap_or("No description provided")
         );
 
-        // Use Claude CLI to process the task
-        let child = Command::new("claude")
+        // Use shell command for cross-platform compatibility
+        let (shell_cmd, shell_arg) = get_shell_command();
+        let claude_command = format!(
+            "claude \"{}\" -p --dangerously-skip-permissions --verbose --output-format=stream-json",
+            prompt.replace("\"", "\\\"")
+        );
+
+        let mut command = Command::new(shell_cmd);
+        command
             .kill_on_drop(true)
             .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .current_dir(worktree_path)
-            .arg(&prompt)
-            .arg("-p")
-            .arg("--dangerously-skip-permissions")
-            .arg("--verbose")
-            .arg("--output-format=stream-json")
-            .process_group(0) // Create new process group so we can kill entire tree
-            .spawn()
-            .map_err(ExecutorError::SpawnFailed)?;
+            .arg(shell_arg)
+            .arg(&claude_command);
+
+        let child = command
+            .group_spawn() // Create new process group so we can kill entire tree
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, "Claude")
+                    .with_task(task_id, Some(task.title.clone()))
+                    .with_context("Claude CLI execution for new task")
+                    .spawn_error(e)
+            })?;
 
         Ok(child)
     }
@@ -65,23 +77,35 @@ impl Executor for ClaudeFollowupExecutor {
         _pool: &sqlx::SqlitePool,
         _task_id: Uuid,
         worktree_path: &str,
-    ) -> Result<Child, ExecutorError> {
-        // Use Claude CLI with --resume flag to continue the session
-        let child = Command::new("claude")
+    ) -> Result<AsyncGroupChild, ExecutorError> {
+        // Use shell command for cross-platform compatibility
+        let (shell_cmd, shell_arg) = get_shell_command();
+        let claude_command = format!(
+            "claude \"{}\" -p --dangerously-skip-permissions --verbose --output-format=stream-json --resume={}",
+            self.prompt.replace("\"", "\\\""),
+            self.session_id
+        );
+
+        let mut command = Command::new(shell_cmd);
+        command
             .kill_on_drop(true)
             .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .current_dir(worktree_path)
-            .arg(&self.prompt)
-            .arg("-p")
-            .arg("--dangerously-skip-permissions")
-            .arg("--verbose")
-            .arg("--output-format=stream-json")
-            .arg(format!("--resume={}", self.session_id))
-            .process_group(0) // Create new process group so we can kill entire tree
-            .spawn()
-            .map_err(ExecutorError::SpawnFailed)?;
+            .arg(shell_arg)
+            .arg(&claude_command);
+
+        let child = command
+            .group_spawn() // Create new process group so we can kill entire tree
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, "Claude")
+                    .with_context(format!(
+                        "Claude CLI followup execution for session {}",
+                        self.session_id
+                    ))
+                    .spawn_error(e)
+            })?;
 
         Ok(child)
     }

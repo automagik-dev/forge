@@ -1,10 +1,11 @@
 use async_trait::async_trait;
-use tokio::process::Child;
+use command_group::{AsyncCommandGroup, AsyncGroupChild};
 use uuid::Uuid;
 
 use crate::{
     executor::{Executor, ExecutorError},
     models::task::Task,
+    utils::shell::get_shell_command,
 };
 
 /// An executor that uses Amp to process tasks
@@ -23,7 +24,7 @@ impl Executor for AmpExecutor {
         pool: &sqlx::SqlitePool,
         task_id: Uuid,
         worktree_path: &str,
-    ) -> Result<Child, ExecutorError> {
+    ) -> Result<AsyncGroupChild, ExecutorError> {
         // Get the task to fetch its description
         let task = Task::find_by_id(pool, task_id)
             .await?
@@ -41,20 +42,31 @@ impl Executor for AmpExecutor {
                 .unwrap_or("No description provided")
         );
 
-        let mut child = Command::new("npx")
+        // Use shell command for cross-platform compatibility
+        let (shell_cmd, shell_arg) = get_shell_command();
+        let amp_command = "npx @sourcegraph/amp --format=jsonl";
+
+        let mut command = Command::new(shell_cmd);
+        command
             .kill_on_drop(true)
             .stdin(Stdio::piped()) // <-- open a pipe
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .current_dir(worktree_path)
-            .arg("@sourcegraph/amp")
-            .arg("--format=jsonl")
-            .process_group(0) // Create new process group so we can kill entire tree
-            .spawn()
-            .map_err(ExecutorError::SpawnFailed)?;
+            .arg(shell_arg)
+            .arg(amp_command);
+
+        let mut child = command
+            .group_spawn() // Create new process group so we can kill entire tree
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, "Amp")
+                    .with_task(task_id, Some(task.title.clone()))
+                    .with_context("Amp CLI execution for new task")
+                    .spawn_error(e)
+            })?;
 
         // feed the prompt in, then close the pipe so `amp` sees EOF
-        if let Some(mut stdin) = child.stdin.take() {
+        if let Some(mut stdin) = child.inner().stdin.take() {
             stdin.write_all(prompt.as_bytes()).await.unwrap();
             stdin.shutdown().await.unwrap(); // or `drop(stdin);`
         }
@@ -70,28 +82,41 @@ impl Executor for AmpFollowupExecutor {
         _pool: &sqlx::SqlitePool,
         _task_id: Uuid,
         worktree_path: &str,
-    ) -> Result<Child, ExecutorError> {
+    ) -> Result<AsyncGroupChild, ExecutorError> {
         use std::process::Stdio;
 
         use tokio::{io::AsyncWriteExt, process::Command};
 
-        let mut child = Command::new("npx")
+        // Use shell command for cross-platform compatibility
+        let (shell_cmd, shell_arg) = get_shell_command();
+        let amp_command = format!(
+            "npx @sourcegraph/amp threads continue {} --format=jsonl",
+            self.thread_id
+        );
+
+        let mut command = Command::new(shell_cmd);
+        command
             .kill_on_drop(true)
             .stdin(Stdio::piped()) // <-- open a pipe
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .current_dir(worktree_path)
-            .arg("@sourcegraph/amp")
-            .arg("threads")
-            .arg("continue")
-            .arg(&self.thread_id)
-            .arg("--format=jsonl")
-            .process_group(0) // Create new process group so we can kill entire tree
-            .spawn()
-            .map_err(ExecutorError::SpawnFailed)?;
+            .arg(shell_arg)
+            .arg(&amp_command);
+
+        let mut child = command
+            .group_spawn() // Create new process group so we can kill entire tree
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, "Amp")
+                    .with_context(format!(
+                        "Amp CLI followup execution for thread {}",
+                        self.thread_id
+                    ))
+                    .spawn_error(e)
+            })?;
 
         // feed the prompt in, then close the pipe so `amp` sees EOF
-        if let Some(mut stdin) = child.stdin.take() {
+        if let Some(mut stdin) = child.inner().stdin.take() {
             stdin.write_all(self.prompt.as_bytes()).await.unwrap();
             stdin.shutdown().await.unwrap(); // or `drop(stdin);`
         }
