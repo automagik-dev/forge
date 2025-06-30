@@ -194,11 +194,11 @@ jobs:
           sign_args: "--code-signature-flags=runtime"
 
       - name: Package main binary (macOS)
-        if: runner.od == 'macOS'
+        if: runner.os == 'macOS'
         run: zip vibe-kanban.zip vibe-kanban-signed
 
       - name: Notarize signed binary (macOS)
-        if: matrix.os == 'macOS'
+        if: runner.os == 'macOS'
         uses: indygreg/apple-code-sign-action@v1
         continue-on-error: true
         with:
@@ -219,11 +219,11 @@ jobs:
           sign_args: "--code-signature-flags=runtime"
 
       - name: Package main binary (macOS)
-        if: runner.od == 'macOS'
+        if: runner.os == 'macOS'
         run: zip vibe-kanban-mcp.zip mcp-server-signed
 
       - name: Notarize signed MCP binary (macOS)
-        if: matrix.os == 'macOS'
+        if: runner.os == 'macOS'
         uses: indygreg/apple-code-sign-action@v1
         continue-on-error: true
         with:
@@ -240,7 +240,7 @@ jobs:
           cp vibe-kanban-mcp.zip dist/mcp-server-${{ matrix.name }}
 
       - name: Clean up certificates (macOS)
-        if: runner.os == 'macOS' && always()
+        if: runner.os == 'macOS'
         run: |
           rm -f certificate.p12
           rm -rf private_keys/
