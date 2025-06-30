@@ -12,8 +12,12 @@ const arch = process.arch;
 function getPlatformDir() {
   if (platform === "linux" && arch === "x64") {
     return "linux-x64";
+  } else if (platform === "linux" && arch === "arm64") {
+    return "linux-arm64";
   } else if (platform === "win32" && arch === "x64") {
     return "windows-x64";
+  } else if (platform === "win32" && arch === "arm64") {
+    return "windows-arm64";
   } else if (platform === "darwin" && arch === "x64") {
     return "macos-x64";
   } else if (platform === "darwin" && arch === "arm64") {
@@ -22,7 +26,9 @@ function getPlatformDir() {
     console.error(`❌ Unsupported platform: ${platform}-${arch}`);
     console.error("Supported platforms:");
     console.error("  - Linux x64");
+    console.error("  - Linux ARM64");
     console.error("  - Windows x64");
+    console.error("  - Windows ARM64");
     console.error("  - macOS x64 (Intel)");
     console.error("  - macOS ARM64 (Apple Silicon)");
     process.exit(1);

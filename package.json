@@ -1,6 +1,6 @@
 {
   "name": "vibe-kanban",
-  "version": "0.0.1",
+  "version": "0.0.24",
   "private": true,
   "scripts": {
     "dev": "concurrently \"cargo watch -w backend -x 'run --manifest-path backend/Cargo.toml'\" \"npm run frontend:dev\"",
