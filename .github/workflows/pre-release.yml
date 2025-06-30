@@ -305,7 +305,7 @@ jobs:
           find dist/
 
       - name: Create platform package
-        if: runner.os != 'macOS'
+        if: matrix.name != 'macos-arm64' && matrix.name != 'macos-x64'
         run: |
           mkdir -p npx-cli/dist/${{ matrix.name }}
           mkdir vibe-kanban-${{ matrix.name }}
@@ -317,7 +317,7 @@ jobs:
 
       # MacOS notarization step already produced .zip files
       - name: Create platform package
-        if: runner.os == 'macOS'
+        if: matrix.name == 'macos-arm64' || matrix.name == 'macos-x64'
         run: |
           mkdir -p npx-cli/dist/${{ matrix.name }}
           mkdir vibe-kanban-${{ matrix.name }}
