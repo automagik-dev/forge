@@ -187,6 +187,11 @@ jobs:
           -----END PRIVATE KEY-----
           EOF
 
+      - name: Write API Key to file
+        env:
+          API_KEY: ${{ secrets.APP_STORE_API_KEY }}
+        run: echo $API_KEY > app_store_key.json
+
       - name: Sign and Notarize main binary (macOS)
         if: runner.os == 'macOS'
         uses: indygreg/apple-code-sign-action@v1
@@ -196,8 +201,7 @@ jobs:
           p12_file: certificate.p12
           p12_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           notarize: true
-          app_store_connect_api_issuer: ${{ secrets.APPLE_API_ISSUER }}
-          app_store_connect_api_key: ${{ secrets.APPLE_API_KEY_ID }}
+          app_store_connect_api_key_json_file: app_store_key.json
 
       - name: Sign and Notarize MCP binary (macOS)
         if: runner.os == 'macOS'
@@ -208,8 +212,7 @@ jobs:
           p12_file: certificate.p12
           p12_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           notarize: true
-          app_store_connect_api_issuer: ${{ secrets.APPLE_API_ISSUER }}
-          app_store_connect_api_key: ${{ secrets.APPLE_API_KEY_ID }}
+          app_store_connect_api_key_json_file: app_store_key.json
 
       - name: Prepare signed binaries (macOS)
         if: runner.os == 'macOS'
