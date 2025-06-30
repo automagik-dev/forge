@@ -177,22 +177,12 @@ jobs:
         run: |
           echo "${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}" | base64 --decode > certificate.p12
 
-      - name: Create App Store Connect API Key (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          mkdir -p private_keys/
-          cat > private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8 << EOF
-          -----BEGIN PRIVATE KEY-----
-          ${{ secrets.APPLE_API_PRIVATE_KEY }}
-          -----END PRIVATE KEY-----
-          EOF
-
       - name: Write API Key to file
         env:
           API_KEY: ${{ secrets.APP_STORE_API_KEY }}
         run: echo $API_KEY > app_store_key.json
 
-      - name: Sign and Notarize main binary (macOS)
+      - name: Sign main binary (macOS)
         if: runner.os == 'macOS'
         uses: indygreg/apple-code-sign-action@v1
         with:
@@ -200,10 +190,24 @@ jobs:
           output_path: vibe-kanban-signed
           p12_file: certificate.p12
           p12_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          sign: true
+          sign_args: "--code-signature-flags=runtime"
+
+      - name: Package main binary (macOS)
+        if: runner.od == 'macOS'
+        run: zip vibe-kanban.zip vibe-kanban-signed
+
+      - name: Notarize signed binary (macOS)
+        if: matrix.os == 'macOS'
+        uses: indygreg/apple-code-sign-action@v1
+        continue-on-error: true
+        with:
+          input_path: vibe-kanban.zip
+          sign: false
           notarize: true
           app_store_connect_api_key_json_file: app_store_key.json
 
-      - name: Sign and Notarize MCP binary (macOS)
+      - name: Sign MCP binary (macOS)
         if: runner.os == 'macOS'
         uses: indygreg/apple-code-sign-action@v1
         with:
@@ -211,6 +215,20 @@ jobs:
           output_path: mcp-server-signed
           p12_file: certificate.p12
           p12_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          sign: true
+          sign_args: "--code-signature-flags=runtime"
+
+      - name: Package main binary (macOS)
+        if: runner.od == 'macOS'
+        run: zip vibe-kanban-mcp.zip mcp-server-signed
+
+      - name: Notarize signed MCP binary (macOS)
+        if: matrix.os == 'macOS'
+        uses: indygreg/apple-code-sign-action@v1
+        continue-on-error: true
+        with:
+          input_path: vibe-kanban-mcp.zip
+          sign: false
           notarize: true
           app_store_connect_api_key_json_file: app_store_key.json
 
@@ -218,8 +236,8 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           mkdir -p dist
-          cp vibe-kanban-signed dist/vibe-kanban-${{ matrix.name }}
-          cp mcp-server-signed dist/mcp-server-${{ matrix.name }}
+          cp vibe-kanban.zip dist/vibe-kanban-${{ matrix.name }}
+          cp vibe-kanban-mcp.zip dist/mcp-server-${{ matrix.name }}
 
       - name: Clean up certificates (macOS)
         if: runner.os == 'macOS' && always()
