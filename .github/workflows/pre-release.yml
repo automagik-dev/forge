@@ -187,7 +187,7 @@ jobs:
         uses: indygreg/apple-code-sign-action@v1
         with:
           input_path: target/${{ matrix.target }}/release/vibe-kanban
-          output_path: vibe-kanban-signed
+          output_path: vibe-kanban
           p12_file: certificate.p12
           p12_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           sign: true
@@ -195,7 +195,7 @@ jobs:
 
       - name: Package main binary (macOS)
         if: runner.os == 'macOS'
-        run: zip vibe-kanban.zip vibe-kanban-signed
+        run: zip vibe-kanban.zip vibe-kanban
 
       - name: Notarize signed binary (macOS)
         if: runner.os == 'macOS'
@@ -212,7 +212,7 @@ jobs:
         uses: indygreg/apple-code-sign-action@v1
         with:
           input_path: target/${{ matrix.target }}/release/mcp_task_server
-          output_path: mcp-server-signed
+          output_path: mcp_task_server
           p12_file: certificate.p12
           p12_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           sign: true
@@ -220,7 +220,7 @@ jobs:
 
       - name: Package main binary (macOS)
         if: runner.os == 'macOS'
-        run: zip vibe-kanban-mcp.zip mcp-server-signed
+        run: zip vibe-kanban-mcp.zip mcp_task_server
 
       - name: Notarize signed MCP binary (macOS)
         if: runner.os == 'macOS'
@@ -310,9 +310,9 @@ jobs:
           mkdir -p npx-cli/dist/${{ matrix.name }}
           mkdir vibe-kanban-${{ matrix.name }}
           mkdir vibe-kanban-mcp-${{ matrix.name }}
-          cp dist/vibe-kanban-${{ matrix.name }}* vibe-kanban-${{ matrix.name }}/${{ matrix.binary }}
+          cp dist/vibe-kanban-${{ matrix.name }}/vibe-kanban vibe-kanban-${{ matrix.name }}/${{ matrix.binary }}
           zip -r npx-cli/dist/${{ matrix.name }}/vibe-kanban.zip vibe-kanban-${{ matrix.name }}/${{ matrix.binary }}
-          cp dist/mcp-server-${{ matrix.name }}* vibe-kanban-mcp-${{ matrix.name }}/${{ matrix.mcp_binary }}
+          cp dist/mcp-server-${{ matrix.name }}/mcp_task_server vibe-kanban-mcp-${{ matrix.name }}/${{ matrix.mcp_binary }}
           zip -r npx-cli/dist/${{ matrix.name }}/vibe-kanban-mcp.zip vibe-kanban-mcp-${{ matrix.name }}/${{ matrix.mcp_binary }}
 
       # MacOS notarization step already produced .zip files
@@ -321,8 +321,8 @@ jobs:
         run: |
           mkdir -p npx-cli/dist/${{ matrix.name }}
           mkdir vibe-kanban-${{ matrix.name }}
-          cp dist/vibe-kanban-${{ matrix.name }}* npx-cli/dist/${{ matrix.name }}/
-          cp dist/mcp-server-${{ matrix.name }}* npx-cli/dist/${{ matrix.name }}/
+          cp dist/vibe-kanban-${{ matrix.name }}* npx-cli/dist/${{ matrix.name }}/vibe-kanban.zip
+          cp dist/mcp-server-${{ matrix.name }}* npx-cli/dist/${{ matrix.name }}/vibe-kanban-mcp.zip
 
       - name: Upload platform package artifact
         uses: actions/upload-artifact@v4
