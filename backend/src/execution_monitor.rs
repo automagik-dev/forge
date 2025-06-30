@@ -73,6 +73,7 @@ async fn commit_execution_changes(
 /// Play a system sound notification
 async fn play_sound_notification(sound_file: &crate::models::config::SoundFile) {
     // Use platform-specific sound notification
+    // Note: spawn() calls are intentionally not awaited - sound notifications should be fire-and-forget
     if cfg!(target_os = "macos") {
         let sound_path = sound_file.to_path();
         let _ = tokio::process::Command::new("afplay")
@@ -102,18 +103,17 @@ async fn play_sound_notification(sound_file: &crate::models::config::SoundFile) 
         }
     } else if cfg!(target_os = "windows") {
         let sound_path = sound_file.to_path();
-        let absolute_path = std::env::current_dir()
-            .unwrap_or_else(|_| std::path::PathBuf::from("."))
-            .join(&sound_path);
+        let current_dir = std::env::current_dir().unwrap_or_else(|e| {
+            tracing::error!("Failed to get current directory: {}", e);
+            std::path::PathBuf::from(".")
+        });
+        let absolute_path = current_dir.join(&sound_path);
 
         if absolute_path.exists() {
-            let path_str = absolute_path.to_string_lossy().to_string();
             let _ = tokio::process::Command::new("powershell")
-                .arg("-c")
-                .arg(format!(
-                    r#"(New-Object Media.SoundPlayer "{}").PlaySync()"#,
-                    path_str
-                ))
+                .arg("-Command")
+                .arg("(New-Object Media.SoundPlayer $args[0]).PlaySync()")
+                .arg(absolute_path.to_string_lossy().as_ref())
                 .spawn();
         } else {
             // Fallback to system beep if sound file doesn't exist
