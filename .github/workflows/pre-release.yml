@@ -311,9 +311,9 @@ jobs:
           mkdir vibe-kanban-${{ matrix.name }}
           mkdir vibe-kanban-mcp-${{ matrix.name }}
           cp dist/vibe-kanban-${{ matrix.name }}* vibe-kanban-${{ matrix.name }}/${{ matrix.binary }}
-          zip -r npx-cli/dist/${{ matrix.name }}/vibe-kanban.zip vibe-kanban-${{ matrix.name }}
+          zip -r npx-cli/dist/${{ matrix.name }}/vibe-kanban.zip vibe-kanban-${{ matrix.name }}/${{ matrix.binary }}
           cp dist/mcp-server-${{ matrix.name }}* vibe-kanban-mcp-${{ matrix.name }}/${{ matrix.mcp_binary }}
-          zip -r npx-cli/dist/${{ matrix.name }}/vibe-kanban-mcp.zip vibe-kanban-mcp-${{ matrix.name }}
+          zip -r npx-cli/dist/${{ matrix.name }}/vibe-kanban-mcp.zip vibe-kanban-mcp-${{ matrix.name }}/${{ matrix.mcp_binary }}
 
       # MacOS notarization step already produced .zip files
       - name: Create platform package
