@@ -72,32 +72,8 @@ async fn commit_execution_changes(
     Ok(())
 }
 
-/// Cache for WSL2 detection result
-static WSL2_CACHE: OnceLock<bool> = OnceLock::new();
 /// Cache for WSL root path from PowerShell
 static WSL_ROOT_PATH_CACHE: OnceLock<Option<String>> = OnceLock::new();
-
-/// Check if running in WSL2 (cached)
-fn is_wsl2() -> bool {
-    *WSL2_CACHE.get_or_init(|| {
-        // Check for WSL environment variables
-        if std::env::var("WSL_DISTRO_NAME").is_ok() || std::env::var("WSLENV").is_ok() {
-            tracing::debug!("WSL2 detected via environment variables");
-            return true;
-        }
-
-        // Check /proc/version for WSL2 signature
-        if let Ok(version) = std::fs::read_to_string("/proc/version") {
-            if version.contains("WSL2") || version.contains("microsoft") {
-                tracing::debug!("WSL2 detected via /proc/version");
-                return true;
-            }
-        }
-
-        tracing::debug!("WSL2 not detected");
-        false
-    })
-}
 
 /// Get WSL root path via PowerShell (cached)
 async fn get_wsl_root_path() -> Option<String> {
@@ -164,90 +140,65 @@ async fn wsl_to_windows_path(wsl_path: &std::path::Path) -> Option<String> {
 
 /// Play a system sound notification
 async fn play_sound_notification(sound_file: &crate::models::config::SoundFile) {
-    let sound_path = sound_file.to_path();
-    let current_dir = std::env::current_dir().unwrap_or_else(|e| {
-        tracing::error!("Failed to get current directory: {}", e);
-        std::path::PathBuf::from(".")
-    });
-    let absolute_path = current_dir.join(&sound_path);
-
-    if !absolute_path.exists() {
-        tracing::error!(
-            "Sound file not found: {} (resolved from {})",
-            absolute_path.display(),
-            sound_path.display()
-        );
-    }
+    let file_path = match sound_file.get_path().await {
+        Ok(path) => path,
+        Err(e) => {
+            tracing::error!("Failed to create cached sound file: {}", e);
+            return;
+        }
+    };
 
     // Use platform-specific sound notification
     // Note: spawn() calls are intentionally not awaited - sound notifications should be fire-and-forget
     if cfg!(target_os = "macos") {
-        if absolute_path.exists() {
-            let _ = tokio::process::Command::new("afplay")
-                .arg(&absolute_path)
-                .spawn();
-        }
-    } else if cfg!(target_os = "linux") && !is_wsl2() {
-        // Try different Linux notification sounds
-        if absolute_path.exists() {
-            if tokio::process::Command::new("paplay")
-                .arg(&absolute_path)
-                .spawn()
-                .is_ok()
-            {
-                // Success with paplay
-            } else if tokio::process::Command::new("aplay")
-                .arg(&absolute_path)
-                .spawn()
-                .is_ok()
-            {
-                // Success with aplay
-            } else {
-                // Try system bell as fallback
-                let _ = tokio::process::Command::new("echo")
-                    .arg("-e")
-                    .arg("\\a")
-                    .spawn();
-            }
+        let _ = tokio::process::Command::new("afplay")
+            .arg(&file_path)
+            .spawn();
+    } else if cfg!(target_os = "linux") && !crate::utils::is_wsl2() {
+        // Try different Linux audio players
+        if tokio::process::Command::new("paplay")
+            .arg(&file_path)
+            .spawn()
+            .is_ok()
+        {
+            // Success with paplay
+        } else if tokio::process::Command::new("aplay")
+            .arg(&file_path)
+            .spawn()
+            .is_ok()
+        {
+            // Success with aplay
         } else {
-            // Try system bell as fallback if sound file doesn't exist
+            // Try system bell as fallback
             let _ = tokio::process::Command::new("echo")
                 .arg("-e")
                 .arg("\\a")
                 .spawn();
         }
-    } else if cfg!(target_os = "windows") || (cfg!(target_os = "linux") && is_wsl2()) {
-        if absolute_path.exists() {
-            // Convert WSL path to Windows path if in WSL2
-            let file_path = if is_wsl2() {
-                if let Some(windows_path) = wsl_to_windows_path(&absolute_path).await {
-                    windows_path
-                } else {
-                    // Fallback to original path if conversion fails
-                    absolute_path.to_string_lossy().to_string()
-                }
+    } else if cfg!(target_os = "windows") || (cfg!(target_os = "linux") && crate::utils::is_wsl2())
+    {
+        // Convert WSL path to Windows path if in WSL2
+        let file_path = if crate::utils::is_wsl2() {
+            if let Some(windows_path) = wsl_to_windows_path(&file_path).await {
+                windows_path
             } else {
-                absolute_path.to_string_lossy().to_string()
-            };
-
-            let _ = tokio::process::Command::new("powershell.exe")
-                .arg("-c")
-                .arg(format!(
-                    r#"(New-Object Media.SoundPlayer "{}").PlaySync()"#,
-                    file_path
-                ))
-                .spawn();
+                file_path.to_string_lossy().to_string()
+            }
         } else {
-            // Fallback to system beep if sound file doesn't exist
-            let _ = tokio::process::Command::new("powershell.exe")
-                .arg("-c")
-                .arg("[System.Media.SystemSounds]::Beep.Play()")
-                .spawn();
-        }
+            file_path.to_string_lossy().to_string()
+        };
+
+        let _ = tokio::process::Command::new("powershell.exe")
+            .arg("-c")
+            .arg(format!(
+                r#"(New-Object Media.SoundPlayer "{}").PlaySync()"#,
+                file_path
+            ))
+            .spawn();
     }
 }
 
-/// Send a macOS push notification
+/// Send a cross-platform push notification
 async fn send_push_notification(title: &str, message: &str) {
     if cfg!(target_os = "macos") {
         let script = format!(
@@ -259,6 +210,57 @@ async fn send_push_notification(title: &str, message: &str) {
         let _ = tokio::process::Command::new("osascript")
             .arg("-e")
             .arg(script)
+            .spawn();
+    } else if cfg!(target_os = "linux") && !crate::utils::is_wsl2() {
+        // Linux: Use notify-rust crate - fire and forget
+        use notify_rust::Notification;
+
+        let title = title.to_string();
+        let message = message.to_string();
+
+        let _handle = tokio::task::spawn_blocking(move || {
+            if let Err(e) = Notification::new()
+                .summary(&title)
+                .body(&message)
+                .timeout(10000)
+                .show()
+            {
+                tracing::error!("Failed to send Linux notification: {}", e);
+            }
+        });
+        drop(_handle); // Don't await, fire-and-forget
+    } else if cfg!(target_os = "windows") || (cfg!(target_os = "linux") && crate::utils::is_wsl2())
+    {
+        // Windows and WSL2: Use PowerShell toast notification script
+        let script_path = match crate::utils::get_powershell_script().await {
+            Ok(path) => path,
+            Err(e) => {
+                tracing::error!("Failed to get PowerShell script: {}", e);
+                return;
+            }
+        };
+
+        // Convert WSL path to Windows path if in WSL2
+        let script_path_str = if crate::utils::is_wsl2() {
+            if let Some(windows_path) = wsl_to_windows_path(&script_path).await {
+                windows_path
+            } else {
+                script_path.to_string_lossy().to_string()
+            }
+        } else {
+            script_path.to_string_lossy().to_string()
+        };
+
+        let _ = tokio::process::Command::new("powershell.exe")
+            .arg("-NoProfile")
+            .arg("-ExecutionPolicy")
+            .arg("Bypass")
+            .arg("-File")
+            .arg(script_path_str)
+            .arg("-Title")
+            .arg(title)
+            .arg("-Message")
+            .arg(message)
             .spawn();
     }
 }
