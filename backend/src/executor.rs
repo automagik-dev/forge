@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -247,6 +249,21 @@ pub struct ExecutorConstants {
     pub executor_labels: Vec<String>,
 }
 
+impl FromStr for ExecutorConfig {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "echo" => Ok(ExecutorConfig::Echo),
+            "claude" => Ok(ExecutorConfig::Claude),
+            "amp" => Ok(ExecutorConfig::Amp),
+            "gemini" => Ok(ExecutorConfig::Gemini),
+            "opencode" => Ok(ExecutorConfig::Opencode),
+            _ => Err(format!("Unknown executor type: {}", s)),
+        }
+    }
+}
+
 impl ExecutorConfig {
     pub fn create_executor(&self) -> Box<dyn Executor> {
         match self {
@@ -255,6 +272,47 @@ impl ExecutorConfig {
             ExecutorConfig::Amp => Box::new(AmpExecutor),
             ExecutorConfig::Gemini => Box::new(GeminiExecutor),
             ExecutorConfig::Opencode => Box::new(OpencodeExecutor),
+        }
+    }
+
+    pub fn config_path(&self) -> Option<std::path::PathBuf> {
+        match self {
+            ExecutorConfig::Echo => None,
+            ExecutorConfig::Opencode => dirs::home_dir().map(|home| home.join(".opencode.json")),
+            ExecutorConfig::Claude => dirs::home_dir().map(|home| home.join(".claude.json")),
+            ExecutorConfig::Amp => {
+                dirs::config_dir().map(|config| config.join("amp").join("settings.json"))
+            }
+            ExecutorConfig::Gemini => {
+                dirs::home_dir().map(|home| home.join(".gemini").join("settings.json"))
+            }
+        }
+    }
+
+    /// Get the JSON attribute path for MCP servers in the config file
+    pub fn mcp_attribute_path(&self) -> Option<Vec<&'static str>> {
+        match self {
+            ExecutorConfig::Echo => None, // Echo doesn't support MCP
+            ExecutorConfig::Opencode => Some(vec!["mcpServers"]),
+            ExecutorConfig::Claude => Some(vec!["mcpServers"]),
+            ExecutorConfig::Amp => Some(vec!["amp", "mcpServers"]), // Nested path for Amp
+            ExecutorConfig::Gemini => Some(vec!["mcpServers"]),
+        }
+    }
+
+    /// Check if this executor supports MCP configuration
+    pub fn supports_mcp(&self) -> bool {
+        !matches!(self, ExecutorConfig::Echo)
+    }
+
+    /// Get the display name for this executor
+    pub fn display_name(&self) -> &'static str {
+        match self {
+            ExecutorConfig::Echo => "Echo (Test Mode)",
+            ExecutorConfig::Opencode => "Opencode",
+            ExecutorConfig::Claude => "Claude",
+            ExecutorConfig::Amp => "Amp",
+            ExecutorConfig::Gemini => "Gemini",
         }
     }
 }

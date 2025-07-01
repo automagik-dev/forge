@@ -55,6 +55,7 @@ export function Settings() {
     setSuccess(false);
 
     try {
+      // Save the main configuration
       const success = await saveConfig();
 
       if (success) {
