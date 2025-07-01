@@ -185,13 +185,13 @@ impl EditorConfig {
 impl SoundFile {
     pub fn to_filename(&self) -> &'static str {
         match self {
-            SoundFile::AbstractSound1 => "abstract-sound1.mp3",
-            SoundFile::AbstractSound2 => "abstract-sound2.mp3",
-            SoundFile::AbstractSound3 => "abstract-sound3.mp3",
-            SoundFile::AbstractSound4 => "abstract-sound4.mp3",
-            SoundFile::CowMooing => "cow-mooing.mp3",
-            SoundFile::PhoneVibration => "phone-vibration.mp3",
-            SoundFile::Rooster => "rooster.mp3",
+            SoundFile::AbstractSound1 => "abstract-sound1.wav",
+            SoundFile::AbstractSound2 => "abstract-sound2.wav",
+            SoundFile::AbstractSound3 => "abstract-sound3.wav",
+            SoundFile::AbstractSound4 => "abstract-sound4.wav",
+            SoundFile::CowMooing => "cow-mooing.wav",
+            SoundFile::PhoneVibration => "phone-vibration.wav",
+            SoundFile::Rooster => "rooster.wav",
         }
     }
 

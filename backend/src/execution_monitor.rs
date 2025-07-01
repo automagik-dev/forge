@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use git2::Repository;
 use uuid::Uuid;
 
@@ -70,54 +72,174 @@ async fn commit_execution_changes(
     Ok(())
 }
 
+/// Cache for WSL2 detection result
+static WSL2_CACHE: OnceLock<bool> = OnceLock::new();
+/// Cache for WSL root path from PowerShell
+static WSL_ROOT_PATH_CACHE: OnceLock<Option<String>> = OnceLock::new();
+
+/// Check if running in WSL2 (cached)
+fn is_wsl2() -> bool {
+    *WSL2_CACHE.get_or_init(|| {
+        // Check for WSL environment variables
+        if std::env::var("WSL_DISTRO_NAME").is_ok() || std::env::var("WSLENV").is_ok() {
+            tracing::debug!("WSL2 detected via environment variables");
+            return true;
+        }
+
+        // Check /proc/version for WSL2 signature
+        if let Ok(version) = std::fs::read_to_string("/proc/version") {
+            if version.contains("WSL2") || version.contains("microsoft") {
+                tracing::debug!("WSL2 detected via /proc/version");
+                return true;
+            }
+        }
+
+        tracing::debug!("WSL2 not detected");
+        false
+    })
+}
+
+/// Get WSL root path via PowerShell (cached)
+async fn get_wsl_root_path() -> Option<String> {
+    if let Some(cached) = WSL_ROOT_PATH_CACHE.get() {
+        return cached.clone();
+    }
+
+    match tokio::process::Command::new("powershell.exe")
+        .arg("-c")
+        .arg("(Get-Location).Path -replace '^.*::', ''")
+        .current_dir("/")
+        .output()
+        .await
+    {
+        Ok(output) => {
+            match String::from_utf8(output.stdout) {
+                Ok(pwd_str) => {
+                    let pwd = pwd_str.trim();
+                    tracing::info!("WSL root path detected: {}", pwd);
+
+                    // Cache the result
+                    let _ = WSL_ROOT_PATH_CACHE.set(Some(pwd.to_string()));
+                    return Some(pwd.to_string());
+                }
+                Err(e) => {
+                    tracing::error!("Failed to parse PowerShell pwd output as UTF-8: {}", e);
+                }
+            }
+        }
+        Err(e) => {
+            tracing::error!("Failed to execute PowerShell pwd command: {}", e);
+        }
+    }
+
+    // Cache the failure result
+    let _ = WSL_ROOT_PATH_CACHE.set(None);
+    None
+}
+
+/// Convert WSL path to Windows UNC path for PowerShell
+async fn wsl_to_windows_path(wsl_path: &std::path::Path) -> Option<String> {
+    let path_str = wsl_path.to_string_lossy();
+
+    // Relative paths work fine as-is in PowerShell
+    if !path_str.starts_with('/') {
+        tracing::debug!("Using relative path as-is: {}", path_str);
+        return Some(path_str.to_string());
+    }
+
+    // Get cached WSL root path from PowerShell
+    if let Some(wsl_root) = get_wsl_root_path().await {
+        // Simply concatenate WSL root with the absolute path - PowerShell doesn't mind /
+        let windows_path = format!("{}{}", wsl_root, path_str);
+        tracing::debug!("WSL path converted: {} -> {}", path_str, windows_path);
+        Some(windows_path)
+    } else {
+        tracing::error!(
+            "Failed to determine WSL root path for conversion: {}",
+            path_str
+        );
+        None
+    }
+}
+
 /// Play a system sound notification
 async fn play_sound_notification(sound_file: &crate::models::config::SoundFile) {
+    let sound_path = sound_file.to_path();
+    let current_dir = std::env::current_dir().unwrap_or_else(|e| {
+        tracing::error!("Failed to get current directory: {}", e);
+        std::path::PathBuf::from(".")
+    });
+    let absolute_path = current_dir.join(&sound_path);
+
+    if !absolute_path.exists() {
+        tracing::error!(
+            "Sound file not found: {} (resolved from {})",
+            absolute_path.display(),
+            sound_path.display()
+        );
+    }
+
     // Use platform-specific sound notification
     // Note: spawn() calls are intentionally not awaited - sound notifications should be fire-and-forget
     if cfg!(target_os = "macos") {
-        let sound_path = sound_file.to_path();
-        let _ = tokio::process::Command::new("afplay")
-            .arg(sound_path)
-            .spawn();
-    } else if cfg!(target_os = "linux") {
+        if absolute_path.exists() {
+            let _ = tokio::process::Command::new("afplay")
+                .arg(&absolute_path)
+                .spawn();
+        }
+    } else if cfg!(target_os = "linux") && !is_wsl2() {
         // Try different Linux notification sounds
-        let sound_path = sound_file.to_path();
-        if tokio::process::Command::new("paplay")
-            .arg(&sound_path)
-            .spawn()
-            .is_ok()
-        {
-            // Success with paplay
-        } else if tokio::process::Command::new("aplay")
-            .arg(&sound_path)
-            .spawn()
-            .is_ok()
-        {
-            // Success with aplay
+        if absolute_path.exists() {
+            if tokio::process::Command::new("paplay")
+                .arg(&absolute_path)
+                .spawn()
+                .is_ok()
+            {
+                // Success with paplay
+            } else if tokio::process::Command::new("aplay")
+                .arg(&absolute_path)
+                .spawn()
+                .is_ok()
+            {
+                // Success with aplay
+            } else {
+                // Try system bell as fallback
+                let _ = tokio::process::Command::new("echo")
+                    .arg("-e")
+                    .arg("\\a")
+                    .spawn();
+            }
         } else {
-            // Try system bell as fallback
+            // Try system bell as fallback if sound file doesn't exist
             let _ = tokio::process::Command::new("echo")
                 .arg("-e")
                 .arg("\\a")
                 .spawn();
         }
-    } else if cfg!(target_os = "windows") {
-        let sound_path = sound_file.to_path();
-        let current_dir = std::env::current_dir().unwrap_or_else(|e| {
-            tracing::error!("Failed to get current directory: {}", e);
-            std::path::PathBuf::from(".")
-        });
-        let absolute_path = current_dir.join(&sound_path);
-
+    } else if cfg!(target_os = "windows") || (cfg!(target_os = "linux") && is_wsl2()) {
         if absolute_path.exists() {
-            let _ = tokio::process::Command::new("powershell")
-                .arg("-Command")
-                .arg("(New-Object Media.SoundPlayer $args[0]).PlaySync()")
-                .arg(absolute_path.to_string_lossy().as_ref())
+            // Convert WSL path to Windows path if in WSL2
+            let file_path = if is_wsl2() {
+                if let Some(windows_path) = wsl_to_windows_path(&absolute_path).await {
+                    windows_path
+                } else {
+                    // Fallback to original path if conversion fails
+                    absolute_path.to_string_lossy().to_string()
+                }
+            } else {
+                absolute_path.to_string_lossy().to_string()
+            };
+
+            let _ = tokio::process::Command::new("powershell.exe")
+                .arg("-c")
+                .arg(format!(
+                    r#"(New-Object Media.SoundPlayer "{}").PlaySync()"#,
+                    file_path
+                ))
                 .spawn();
         } else {
             // Fallback to system beep if sound file doesn't exist
-            let _ = tokio::process::Command::new("powershell")
+            let _ = tokio::process::Command::new("powershell.exe")
                 .arg("-c")
                 .arg("[System.Media.SystemSounds]::Beep.Play()")
                 .spawn();
