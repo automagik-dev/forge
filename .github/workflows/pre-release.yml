@@ -139,6 +139,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: "."
+          prefix-key: "clean-cache-01"
           key: ${{ matrix.target }}-${{ matrix.os }}
           cache-on-failure: true
           shared-key: "shared"
