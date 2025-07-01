@@ -165,10 +165,10 @@ jobs:
           mkdir -p dist
           if [[ "${{ matrix.os }}" == "windows-latest-l" ]]; then
             cp target/${{ matrix.target }}/release/vibe-kanban.exe dist/vibe-kanban-${{ matrix.name }}.exe
-            cp target/${{ matrix.target }}/release/mcp_task_server.exe dist/mcp-server-${{ matrix.name }}.exe
+            cp target/${{ matrix.target }}/release/mcp_task_server.exe dist/vibe-kanban-mcp-${{ matrix.name }}.exe
           else
             cp target/${{ matrix.target }}/release/vibe-kanban dist/vibe-kanban-${{ matrix.name }}
-            cp target/${{ matrix.target }}/release/mcp_task_server dist/mcp-server-${{ matrix.name }}
+            cp target/${{ matrix.target }}/release/mcp_task_server dist/vibe-kanban-mcp-${{ matrix.name }}
           fi
 
       # Code signing for macOS only
@@ -218,7 +218,7 @@ jobs:
           sign: true
           sign_args: "--code-signature-flags=runtime"
 
-      - name: Package main binary (macOS)
+      - name: Package MCP binary (macOS)
         if: runner.os == 'macOS'
         run: zip vibe-kanban-mcp.zip vibe-kanban-mcp
 
@@ -237,7 +237,7 @@ jobs:
         run: |
           mkdir -p dist
           cp vibe-kanban.zip dist/vibe-kanban-${{ matrix.name }}.zip
-          cp vibe-kanban-mcp.zip dist/mcp-server-${{ matrix.name }}.zip
+          cp vibe-kanban-mcp.zip dist/vibe-kanban-mcp-${{ matrix.name }}.zip
 
       - name: Clean up certificates (macOS)
         if: runner.os == 'macOS'
@@ -312,7 +312,7 @@ jobs:
           mkdir vibe-kanban-mcp-${{ matrix.name }}
 
           cp dist/vibe-kanban-${{ matrix.name }}* vibe-kanban-${{ matrix.name }}/${{ matrix.binary }}
-          cp dist/mcp-server-${{ matrix.name }}* vibe-kanban-mcp-${{ matrix.name }}/${{ matrix.mcp_binary }}
+          cp dist/vibe-kanban-mcp-${{ matrix.name }}* vibe-kanban-mcp-${{ matrix.name }}/${{ matrix.mcp_binary }}
 
           zip -j npx-cli/dist/${{ matrix.name }}/vibe-kanban.zip vibe-kanban-${{ matrix.name }}/${{ matrix.binary }}
           zip -j npx-cli/dist/${{ matrix.name }}/vibe-kanban-mcp.zip vibe-kanban-mcp-${{ matrix.name }}/${{ matrix.mcp_binary }}
@@ -324,7 +324,7 @@ jobs:
           mkdir -p npx-cli/dist/${{ matrix.name }}
           mkdir vibe-kanban-${{ matrix.name }}
           cp dist/vibe-kanban-${{ matrix.name }}* npx-cli/dist/${{ matrix.name }}/vibe-kanban.zip
-          cp dist/mcp-server-${{ matrix.name }}* npx-cli/dist/${{ matrix.name }}/vibe-kanban-mcp.zip
+          cp dist/vibe-kanban-mcp-${{ matrix.name }}* npx-cli/dist/${{ matrix.name }}/vibe-kanban-mcp.zip
 
       - name: Upload platform package artifact
         uses: actions/upload-artifact@v4
