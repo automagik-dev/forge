@@ -32,8 +32,8 @@ jobs:
   bump-version:
     runs-on: ubuntu-latest
     outputs:
-      new_tag: ${{ steps.tag_version.outputs.new_tag }}
-      new_version: ${{ steps.tag_version.outputs.new_version }}
+      new_tag: ${{ steps.version.outputs.new_tag }}
+      new_version: ${{ steps.version.outputs.new_version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,35 +42,50 @@ jobs:
       - name: Setup Node
         uses: ./.github/actions/setup-node
 
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Bump version and push tag
-        id: tag_version
-        uses: mathieudutour/github-tag-action@v6.1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          default_bump: ${{ github.event.inputs.version_type }}
-          tag_prefix: v
-          create_annotated_tag: true
-
-      - name: Update package.json versions
+      - name: Determine new version
+        id: version
         run: |
-          # Update main package.json
-          npm version ${{ steps.tag_version.outputs.new_version }} --no-git-tag-version
+          current_version=$(node -p "require('./package.json').version")
+          echo "Current version: $current_version"
+          
+          case "${{ github.event.inputs.version_type }}" in
+            major)
+              new_version=$(node -p "require('semver').inc('$current_version', 'major')")
+              ;;
+            minor)
+              new_version=$(node -p "require('semver').inc('$current_version', 'minor')")
+              ;;
+            prerelease)
+              new_version=$(node -p "require('semver').inc('$current_version', 'prerelease')")
+              ;;
+            *)
+              new_version=$(node -p "require('semver').inc('$current_version', 'patch')")
+              ;;
+          esac
+          
+          echo "New version: $new_version"
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          echo "new_tag=v$new_version" >> $GITHUB_OUTPUT
+
+      - name: Update package.json files
+        run: |
+          # Update root package.json
+          npm version ${{ steps.version.outputs.new_version }} --no-git-tag-version
           
           # Update npx-cli package.json
           cd npx-cli
-          npm version ${{ steps.tag_version.outputs.new_version }} --no-git-tag-version
+          npm version ${{ steps.version.outputs.new_version }} --no-git-tag-version
           cd ..
 
-      - name: Commit version updates
+      - name: Commit changes and create tag
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add package.json npx-cli/package.json
-          git commit -m "chore: bump version to ${{ steps.tag_version.outputs.new_version }}" || exit 0
+          git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}"
+          git tag -a ${{ steps.version.outputs.new_tag }} -m "Release ${{ steps.version.outputs.new_tag }}"
           git push
+          git push --tags
 
   build-frontend:
     needs: bump-version
@@ -334,8 +349,7 @@ jobs:
           zip -j npx-cli/dist/${{ matrix.name }}/vibe-kanban.zip vibe-kanban-${{ matrix.name }}/${{ matrix.binary }}
           zip -j npx-cli/dist/${{ matrix.name }}/vibe-kanban-mcp.zip vibe-kanban-mcp-${{ matrix.name }}/${{ matrix.mcp_binary }}
 
-      # MacOS notarization step already produced .zip files
-      - name: Create platform package (MacOS)
+      - name: Create platform package (macOS)
         if: matrix.name == 'macos-arm64' || matrix.name == 'macos-x64'
         run: |
           mkdir -p npx-cli/dist/${{ matrix.name }}
