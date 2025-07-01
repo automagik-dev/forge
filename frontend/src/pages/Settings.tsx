@@ -39,7 +39,7 @@ export function Settings() {
   const { setTheme } = useTheme();
 
   const playSound = async (soundFile: SoundFile) => {
-    const audio = new Audio(`/api/sounds/${soundFile}.mp3`);
+    const audio = new Audio(`/api/sounds/${soundFile}.wav`);
     try {
       await audio.play();
     } catch (err) {

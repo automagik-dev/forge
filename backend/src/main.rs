@@ -93,13 +93,13 @@ async fn serve_sound_file(
 
     // Validate filename contains only expected sound files
     let valid_sounds = [
-        "abstract-sound1.mp3",
-        "abstract-sound2.mp3",
-        "abstract-sound3.mp3",
-        "abstract-sound4.mp3",
-        "cow-mooing.mp3",
-        "phone-vibration.mp3",
-        "rooster.mp3",
+        "abstract-sound1.wav",
+        "abstract-sound2.wav",
+        "abstract-sound3.wav",
+        "abstract-sound4.wav",
+        "cow-mooing.wav",
+        "phone-vibration.wav",
+        "rooster.wav",
     ];
 
     if !valid_sounds.contains(&filename.as_str()) {
