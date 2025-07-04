@@ -30,7 +30,13 @@ function getOAuthErrorMessage(code: string | null): string | null {
   }
 }
 
-export function GitHubLoginDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export function GitHubLoginDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const { config, loading } = useConfig();
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,14 +47,14 @@ export function GitHubLoginDialog({ open, onOpenChange }: { open: boolean; onOpe
     if (oauthError) {
       setError(getOAuthErrorMessage(oauthError));
       params.delete('oauth_error');
-      const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+      const newUrl =
+        window.location.pathname +
+        (params.toString() ? '?' + params.toString() : '');
       window.history.replaceState({}, '', newUrl);
     }
   }, []);
 
-  const isAuthenticated = !!(
-    config?.github?.username && config?.github?.token
-  );
+  const isAuthenticated = !!(config?.github?.username && config?.github?.token);
 
   const handleLogin = async () => {
     setFetching(true);
@@ -82,7 +88,9 @@ export function GitHubLoginDialog({ open, onOpenChange }: { open: boolean; onOpe
           <div className="py-8 text-center">Loading…</div>
         ) : isAuthenticated ? (
           <div className="py-8 text-center">
-            <div className="mb-2">You are signed in as <b>{config?.github?.username ?? ''}</b>.</div>
+            <div className="mb-2">
+              You are signed in as <b>{config?.github?.username ?? ''}</b>.
+            </div>
             <Button onClick={() => onOpenChange(false)}>Close</Button>
           </div>
         ) : (
@@ -98,4 +106,4 @@ export function GitHubLoginDialog({ open, onOpenChange }: { open: boolean; onOpe
       </DialogContent>
     </Dialog>
   );
-} 
+}

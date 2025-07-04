@@ -1,17 +1,16 @@
+use std::{env, sync::Arc};
+
 use axum::{
-    extract::{Extension, Query, Host},
+    extract::{Extension, Host, Query},
     response::{Json as ResponseJson, Redirect},
     routing::get,
     Router,
 };
 use serde::Deserialize;
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use std::env;
 use serde_json::Value;
+use tokio::sync::RwLock;
 
-use crate::models::Config;
-use crate::models::ApiResponse;
+use crate::models::{ApiResponse, Config};
 
 pub fn auth_router() -> Router {
     Router::new()
@@ -25,7 +24,10 @@ struct GitHubLoginQuery {
 }
 
 /// Redirects user to GitHub OAuth login
-async fn github_login(Host(host): Host, Query(query): Query<GitHubLoginQuery>) -> ResponseJson<ApiResponse<String>> {
+async fn github_login(
+    Host(host): Host,
+    Query(query): Query<GitHubLoginQuery>,
+) -> ResponseJson<ApiResponse<String>> {
     let client_id = env::var("GITHUB_APP_CLIENT_ID").unwrap_or_default();
     let port = host.split(':').nth(1).unwrap_or("80");
     let redirect_uri = format!("http://127.0.0.1:{}/api/auth/github/callback", port);
@@ -53,12 +55,19 @@ struct GitHubCallbackQuery {
 
 fn build_error_redirect(state: &Option<String>, code: &str) -> Redirect {
     let redirect_target = state.as_deref().unwrap_or("/");
-    let sep = if redirect_target.contains('?') { "&" } else { "?" };
+    let sep = if redirect_target.contains('?') {
+        "&"
+    } else {
+        "?"
+    };
     let url = if redirect_target.starts_with("http://") || redirect_target.starts_with("https://") {
         format!("{}{}oauth_error={}", redirect_target, sep, code)
     } else {
         let frontend_port = std::env::var("FRONTEND_PORT").unwrap_or_else(|_| "5173".to_string());
-        format!("http://127.0.0.1:{}{}{}oauth_error={}", frontend_port, redirect_target, sep, code)
+        format!(
+            "http://127.0.0.1:{}{}{}oauth_error={}",
+            frontend_port, redirect_target, sep, code
+        )
     };
     Redirect::to(&url)
 }
@@ -88,7 +97,8 @@ async fn github_callback(
     ];
 
     let client = reqwest::Client::new();
-    let token_res = client.post(token_url)
+    let token_res = client
+        .post(token_url)
         .header("Accept", "application/json")
         .form(&params)
         .send()
@@ -102,15 +112,22 @@ async fn github_callback(
         Ok(json) => json,
         Err(_) => return build_error_redirect(&query.state, "exchange_failed"),
     };
-    let access_token = token_json.get("access_token").and_then(|v| v.as_str()).map(|s| s.to_string());
-    let refresh_token = token_json.get("refresh_token").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let access_token = token_json
+        .get("access_token")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+    let refresh_token = token_json
+        .get("refresh_token")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
     if access_token.is_none() {
         return build_error_redirect(&query.state, "no_access_token");
     }
     let access_token = access_token.unwrap();
 
     // Fetch user info
-    let user_res = client.get("https://api.github.com/user")
+    let user_res = client
+        .get("https://api.github.com/user")
         .bearer_auth(&access_token)
         .header("User-Agent", "vibe-kanban-app")
         .send()
@@ -122,10 +139,14 @@ async fn github_callback(
         },
         Err(_) => return build_error_redirect(&query.state, "user_fetch_failed"),
     };
-    let username = user_json.get("login").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let username = user_json
+        .get("login")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
 
     // Fetch user emails
-    let emails_res = client.get("https://api.github.com/user/emails")
+    let emails_res = client
+        .get("https://api.github.com/user/emails")
         .bearer_auth(&access_token)
         .header("User-Agent", "vibe-kanban-app")
         .send()
@@ -137,10 +158,19 @@ async fn github_callback(
         },
         Err(_) => return build_error_redirect(&query.state, "email_fetch_failed"),
     };
-    let primary_email = emails_json.as_array().and_then(|arr| {
-        arr.iter().find(|email| email.get("primary").and_then(|v| v.as_bool()).unwrap_or(false))
-            .and_then(|email| email.get("email").and_then(|v| v.as_str()))
-    }).map(|s| s.to_string());
+    let primary_email = emails_json
+        .as_array()
+        .and_then(|arr| {
+            arr.iter()
+                .find(|email| {
+                    email
+                        .get("primary")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(false)
+                })
+                .and_then(|email| email.get("email").and_then(|v| v.as_str()))
+        })
+        .map(|s| s.to_string());
 
     // Save to config
     {
@@ -150,18 +180,19 @@ async fn github_callback(
         config.github.token = Some(access_token);
         config.github.refresh_token = refresh_token;
         let config_path = crate::utils::config_path();
-        if let Err(_) = config.save(&config_path) {
+        if config.save(&config_path).is_err() {
             return build_error_redirect(&query.state, "config_save_failed");
         }
     }
 
     // Redirect to the original page (state) or home
     let redirect_target = query.state.as_deref().unwrap_or("/");
-    let final_url = if redirect_target.starts_with("http://") || redirect_target.starts_with("https://") {
-        redirect_target.to_string()
-    } else {
-        let frontend_port = env::var("FRONTEND_PORT").unwrap_or_else(|_| "5173".to_string());
-        format!("http://127.0.0.1:{}{}", frontend_port, redirect_target)
-    };
+    let final_url =
+        if redirect_target.starts_with("http://") || redirect_target.starts_with("https://") {
+            redirect_target.to_string()
+        } else {
+            let frontend_port = env::var("FRONTEND_PORT").unwrap_or_else(|_| "5173".to_string());
+            format!("http://127.0.0.1:{}{}", frontend_port, redirect_target)
+        };
     Redirect::to(&final_url)
-} 
+}
