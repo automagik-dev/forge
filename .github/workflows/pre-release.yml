@@ -91,6 +91,19 @@ jobs:
 
       - name: Build frontend
         run: npm run frontend:build
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+      - name: Create Sentry release
+        uses: getsentry/action-release@v3
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        with:
+          release:  ${{ needs.bump-version.outputs.new_version }}
+          environment: production
+          sourcemaps: "./frontend/dist"
 
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v4
@@ -169,6 +182,17 @@ jobs:
           cargo build --release --target ${{ matrix.target }} --bin mcp_task_server
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: ${{ matrix.target == 'aarch64-unknown-linux-gnu' && 'aarch64-linux-gnu-gcc' || '' }}
+
+      - name: Setup Sentry CLI
+        uses: matbour/setup-sentry-cli@v2
+        with:
+          token: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          organization: ${{ secrets.SENTRY_ORG }}
+          project: ${{ secrets.SENTRY_PROJECT }}
+          version: 2.21.2
+
+      - name: Upload source maps to Sentry
+        run: sentry-cli debug-files upload --include-sources target/${{ matrix.target }}/release
 
       - name: Prepare binaries (non-macOS)
         if: runner.os != 'macOS'
