@@ -423,6 +423,36 @@ export function Settings() {
 
           <Card>
             <CardHeader>
+              <CardTitle>Privacy</CardTitle>
+              <CardDescription>
+                Help improve Vibe-Kanban by sharing anonymous usage data.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="analytics-enabled"
+                  checked={config.analytics_enabled ?? false}
+                  onCheckedChange={(checked: boolean) =>
+                    updateConfig({ analytics_enabled: checked })
+                  }
+                />
+                <div className="space-y-0.5">
+                  <Label htmlFor="analytics-enabled" className="cursor-pointer">
+                    Enable Telemetry
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enables anonymous usage events tracking to help improve the
+                    application. No prompts or project information are
+                    collected.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Safety & Disclaimers</CardTitle>
               <CardDescription>
                 Manage safety warnings and acknowledgments.

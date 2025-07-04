@@ -58,6 +58,7 @@ pub async fn get_task(
 pub async fn create_task(
     Path(project_id): Path<Uuid>,
     Extension(pool): Extension<SqlitePool>,
+    Extension(app_state): Extension<crate::app_state::AppState>,
     Json(mut payload): Json<CreateTask>,
 ) -> Result<ResponseJson<ApiResponse<Task>>, StatusCode> {
     let id = Uuid::new_v4();
@@ -82,11 +83,25 @@ pub async fn create_task(
     );
 
     match Task::create(&pool, &payload, id).await {
-        Ok(task) => Ok(ResponseJson(ApiResponse {
-            success: true,
-            data: Some(task),
-            message: Some("Task created successfully".to_string()),
-        })),
+        Ok(task) => {
+            // Track task creation event
+            app_state
+                .track_analytics_event(
+                    "task_created",
+                    Some(serde_json::json!({
+                        "task_id": task.id.to_string(),
+                        "project_id": project_id.to_string(),
+                        "has_description": task.description.is_some(),
+                    })),
+                )
+                .await;
+
+            Ok(ResponseJson(ApiResponse {
+                success: true,
+                data: Some(task),
+                message: Some("Task created successfully".to_string()),
+            }))
+        }
         Err(e) => {
             tracing::error!("Failed to create task: {}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
@@ -136,20 +151,36 @@ pub async fn create_task_and_start(
     };
 
     // Create task attempt
-    let executor_string = payload.executor.as_ref().map(|exec| match exec {
-        crate::executor::ExecutorConfig::Echo => "echo".to_string(),
-        crate::executor::ExecutorConfig::Claude => "claude".to_string(),
-        crate::executor::ExecutorConfig::Amp => "amp".to_string(),
-        crate::executor::ExecutorConfig::Gemini => "gemini".to_string(),
-        crate::executor::ExecutorConfig::Opencode => "opencode".to_string(),
-    });
+    let executor_string = payload.executor.as_ref().map(|exec| exec.to_string());
     let attempt_payload = CreateTaskAttempt {
-        executor: executor_string,
+        executor: executor_string.clone(),
         base_branch: None, // Not supported in task creation endpoint, only in task attempts
     };
 
     match TaskAttempt::create(&pool, &attempt_payload, task_id).await {
         Ok(attempt) => {
+            app_state
+                .track_analytics_event(
+                    "task_created",
+                    Some(serde_json::json!({
+                        "task_id": task.id.to_string(),
+                        "project_id": project_id.to_string(),
+                        "has_description": task.description.is_some(),
+                    })),
+                )
+                .await;
+
+            app_state
+                .track_analytics_event(
+                    "task_attempt_started",
+                    Some(serde_json::json!({
+                        "task_id": task.id.to_string(),
+                        "executor_type": executor_string.as_deref().unwrap_or("default"),
+                        "attempt_id": attempt.id.to_string(),
+                    })),
+                )
+                .await;
+
             // Start execution asynchronously (don't block the response)
             let pool_clone = pool.clone();
             let app_state_clone = app_state.clone();
