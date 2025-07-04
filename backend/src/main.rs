@@ -28,7 +28,7 @@ mod utils;
 use app_state::AppState;
 use execution_monitor::execution_monitor;
 use models::{ApiResponse, Config};
-use routes::{config, filesystem, health, projects, task_attempts, tasks};
+use routes::{config, filesystem, health, projects, task_attempts, tasks, auth};
 use services::PrMonitorService;
 
 async fn echo_handler(
@@ -197,6 +197,7 @@ fn main() -> anyhow::Result<()> {
                         .merge(task_attempts::task_attempts_router())
                         .merge(filesystem::filesystem_router())
                         .merge(config::config_router())
+                        .merge(auth::auth_router())
                         .route("/sounds/:filename", get(serve_sound_file)),
                 )
                 .layer(Extension(pool.clone()))
@@ -222,7 +223,7 @@ fn main() -> anyhow::Result<()> {
             let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
             let actual_port = listener.local_addr()?.port(); // get → 53427 (example)
 
-            tracing::info!("Server running on http://0.0.0.0:{actual_port}");
+            tracing::info!("Server running on http://127.0.0.1:{actual_port}");
 
             if !cfg!(debug_assertions) {
                 tracing::info!("Opening browser...");

@@ -4,3 +4,4 @@ pub mod health;
 pub mod projects;
 pub mod task_attempts;
 pub mod tasks;
+pub mod auth;
