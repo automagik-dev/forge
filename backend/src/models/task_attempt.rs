@@ -241,7 +241,43 @@ impl TaskAttempt {
                 let branch = repo.find_branch(base_branch.as_str(), BranchType::Local)?;
                 branch.into_reference()
             } else {
-                repo.head()?
+                // Handle new repositories without any commits
+                match repo.head() {
+                    Ok(head_ref) => head_ref,
+                    Err(e)
+                        if e.class() == git2::ErrorClass::Reference
+                            && e.code() == git2::ErrorCode::UnbornBranch =>
+                    {
+                        // Repository has no commits yet, create an initial commit
+                        let signature = repo.signature().unwrap_or_else(|_| {
+                            // Fallback if no Git config is set
+                            git2::Signature::now("Vibe Kanban", "noreply@vibekanban.com")
+                                .expect("Failed to create fallback signature")
+                        });
+                        let tree_id = {
+                            let tree_builder = repo.treebuilder(None)?;
+                            tree_builder.write()?
+                        };
+                        let tree = repo.find_tree(tree_id)?;
+
+                        // Create initial commit on main branch
+                        let _commit_id = repo.commit(
+                            Some("refs/heads/main"),
+                            &signature,
+                            &signature,
+                            "Initial commit",
+                            &tree,
+                            &[],
+                        )?;
+
+                        // Set HEAD to point to main branch
+                        repo.set_head("refs/heads/main")?;
+
+                        // Return reference to main branch
+                        repo.find_reference("refs/heads/main")?
+                    }
+                    Err(e) => return Err(e.into()),
+                }
             };
 
             // Create branch
