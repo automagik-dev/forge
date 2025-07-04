@@ -48,8 +48,8 @@ jobs:
         id: branch
         run: |
           branch_name="${{ github.ref_name }}"
-          # Get last 6 characters of branch name, replace special chars with dashes
-          suffix=$(echo "$branch_name" | tail -c 7 | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
+          # Get last 6 characters of branch name, remove all special chars (including dashes)
+          suffix=$(echo "$branch_name" | tail -c 7 | sed 's/[^a-zA-Z0-9]//g' | tr '[:upper:]' '[:lower:]')
           echo "Branch: $branch_name"
           echo "Suffix: $suffix"
           echo "suffix=$suffix" >> $GITHUB_OUTPUT
