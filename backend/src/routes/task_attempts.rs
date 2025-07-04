@@ -327,7 +327,9 @@ pub async fn create_github_pr(
             return Ok(ResponseJson(ApiResponse {
                 success: false,
                 data: None,
-                message: Some("GitHub authentication not configured. Please sign in with GitHub.".to_string()),
+                message: Some(
+                    "GitHub authentication not configured. Please sign in with GitHub.".to_string(),
+                ),
             }));
         }
     };
