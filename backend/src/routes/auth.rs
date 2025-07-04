@@ -28,7 +28,7 @@ async fn github_login(
     Host(host): Host,
     Query(query): Query<GitHubLoginQuery>,
 ) -> ResponseJson<ApiResponse<String>> {
-    let client_id = env::var("GITHUB_APP_CLIENT_ID").unwrap_or_default();
+    let client_id = option_env!("GITHUB_APP_CLIENT_ID").unwrap_or_default();
     let port = host.split(':').nth(1).unwrap_or("80");
     let redirect_uri = format!("http://127.0.0.1:{}/api/auth/github/callback", port);
     let scope = "user:email";
@@ -78,9 +78,9 @@ async fn github_callback(
     Extension(config): Extension<Arc<RwLock<Config>>>,
     Query(query): Query<GitHubCallbackQuery>,
 ) -> Redirect {
-    let client_id = env::var("GITHUB_APP_CLIENT_ID").unwrap_or_default();
-    let client_secret = env::var("GITHUB_APP_CLIENT_SECRET").unwrap_or_default();
-    let app_id = env::var("GITHUB_APP_ID").unwrap_or_default();
+    let client_id = option_env!("GITHUB_APP_CLIENT_ID").unwrap_or_default();
+    let client_secret = option_env!("GITHUB_APP_CLIENT_SECRET").unwrap_or_default();
+    let app_id = option_env!("GITHUB_APP_ID").unwrap_or_default();
     let port = host.split(':').nth(1).unwrap_or("80");
     let redirect_uri = format!("http://127.0.0.1:{}/api/auth/github/callback", port);
     if client_id.is_empty() || client_secret.is_empty() || app_id.is_empty() {
@@ -90,8 +90,8 @@ async fn github_callback(
     // Exchange code for access token
     let token_url = "https://github.com/login/oauth/access_token";
     let params = [
-        ("client_id", client_id.as_str()),
-        ("client_secret", client_secret.as_str()),
+        ("client_id", client_id),
+        ("client_secret", client_secret),
         ("code", query.code.as_str()),
         ("redirect_uri", redirect_uri.as_str()),
     ];
