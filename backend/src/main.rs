@@ -27,7 +27,7 @@ mod utils;
 use app_state::AppState;
 use execution_monitor::execution_monitor;
 use models::{ApiResponse, Config};
-use routes::{config, filesystem, health, projects, task_attempts, tasks, auth};
+use routes::{auth, config, filesystem, health, projects, task_attempts, tasks};
 use services::PrMonitorService;
 
 async fn echo_handler(
