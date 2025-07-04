@@ -34,7 +34,8 @@ function AppContent() {
       if (config.disclaimer_acknowledged) {
         setShowOnboarding(!config.onboarding_acknowledged);
       }
-      const notAuthenticated = !config.github?.username || !config.github?.token;
+      const notAuthenticated =
+        !config.github?.username || !config.github?.token;
       setShowGitHubLogin(notAuthenticated);
     }
   }, [config]);
@@ -112,7 +113,10 @@ function AppContent() {
   return (
     <ThemeProvider initialTheme={config?.theme || 'system'}>
       <div className="h-screen flex flex-col bg-background">
-        <GitHubLoginDialog open={showGitHubLogin} onOpenChange={setShowGitHubLogin} />
+        <GitHubLoginDialog
+          open={showGitHubLogin}
+          onOpenChange={setShowGitHubLogin}
+        />
         <DisclaimerDialog
           open={showDisclaimer}
           onAccept={handleDisclaimerAccept}
