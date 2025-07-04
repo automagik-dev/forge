@@ -15,7 +15,7 @@ on:
           - prerelease
 
 concurrency:
-  group: release
+  group: release-${{ github.ref_name }} # allow concurrent prerelease from different branches
   cancel-in-progress: true
 
 permissions:
@@ -34,6 +34,7 @@ jobs:
     outputs:
       new_tag: ${{ steps.version.outputs.new_tag }}
       new_version: ${{ steps.version.outputs.new_version }}
+      branch_suffix: ${{ steps.branch.outputs.suffix }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,11 +44,27 @@ jobs:
       - name: Setup Node
         uses: ./.github/actions/setup-node
 
+      - name: Generate branch suffix
+        id: branch
+        run: |
+          branch_name="${{ github.ref_name }}"
+          # Get last 6 characters of branch name, replace special chars with dashes
+          suffix=$(echo "$branch_name" | tail -c 7 | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
+          echo "Branch: $branch_name"
+          echo "Suffix: $suffix"
+          echo "suffix=$suffix" >> $GITHUB_OUTPUT
+
       - name: Determine and update versions
         id: version
         run: |
           # Update root package.json and get new version
-          npm version ${{ github.event.inputs.version_type }} --no-git-tag-version
+          if [[ "${{ github.event.inputs.version_type }}" == "prerelease" ]]; then
+            # For prerelease, add branch suffix to make it unique
+            npm version prerelease --preid="${{ steps.branch.outputs.suffix }}" --no-git-tag-version
+          else
+            npm version ${{ github.event.inputs.version_type }} --no-git-tag-version
+          fi
+          
           new_version=$(node -p "require('./package.json').version")
           
           # Update npx-cli package.json to match
