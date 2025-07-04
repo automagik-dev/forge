@@ -1,6 +1,18 @@
 use std::{fs, path::Path};
 
 fn main() {
+    dotenv::dotenv().ok();
+
+    if let Ok(api_key) = std::env::var("GITHUB_APP_ID") {
+        println!("cargo:rustc-env=GITHUB_APP_ID={}", api_key);
+    }
+    if let Ok(api_endpoint) = std::env::var("GITHUB_APP_CLIENT_ID") {
+        println!("cargo:rustc-env=GITHUB_APP_CLIENT_ID={}", api_endpoint);
+    }
+    if let Ok(api_endpoint) = std::env::var("GITHUB_APP_CLIENT_SECRET") {
+        println!("cargo:rustc-env=GITHUB_APP_CLIENT_SECRET={}", api_endpoint);
+    }
+
     // Create frontend/dist directory if it doesn't exist
     let dist_path = Path::new("../frontend/dist");
     if !dist_path.exists() {

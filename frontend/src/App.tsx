@@ -17,6 +17,7 @@ import type {
   EditorType,
 } from 'shared/types';
 import * as Sentry from '@sentry/react';
+import { GitHubLoginDialog } from '@/components/GitHubLoginDialog';
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
@@ -24,6 +25,7 @@ function AppContent() {
   const { config, updateConfig, loading } = useConfig();
   const [showDisclaimer, setShowDisclaimer] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showGitHubLogin, setShowGitHubLogin] = useState(false);
   const showNavbar = true;
 
   useEffect(() => {
@@ -32,6 +34,8 @@ function AppContent() {
       if (config.disclaimer_acknowledged) {
         setShowOnboarding(!config.onboarding_acknowledged);
       }
+      const notAuthenticated = !config.github?.username || !config.github?.token;
+      setShowGitHubLogin(notAuthenticated);
     }
   }, [config]);
 
@@ -108,6 +112,7 @@ function AppContent() {
   return (
     <ThemeProvider initialTheme={config?.theme || 'system'}>
       <div className="h-screen flex flex-col bg-background">
+        <GitHubLoginDialog open={showGitHubLogin} onOpenChange={setShowGitHubLogin} />
         <DisclaimerDialog
           open={showDisclaimer}
           onAccept={handleDisclaimerAccept}
