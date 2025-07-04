@@ -199,6 +199,9 @@ jobs:
           cargo build --release --target ${{ matrix.target }} --bin mcp_task_server
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: ${{ matrix.target == 'aarch64-unknown-linux-gnu' && 'aarch64-linux-gnu-gcc' || '' }}
+          GITHUB_APP_ID: ${{ secrets.GH_APP_ID }}
+          GITHUB_APP_CLIENT_ID: ${{ secrets.GH_APP_CLIENT_ID }}
+          GITHUB_APP_CLIENT_SECRET: ${{ secrets.GH_APP_CLIENT_SECRET }}
 
       - name: Setup Sentry CLI
         uses: matbour/setup-sentry-cli@v2
