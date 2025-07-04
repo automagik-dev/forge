@@ -164,8 +164,10 @@ fn main() -> anyhow::Result<()> {
             let config_arc = Arc::new(RwLock::new(config));
 
             // Create app state
-            let app_state = AppState::new(pool.clone(), config_arc.clone());
+            let app_state = AppState::new(pool.clone(), config_arc.clone()).await;
 
+            // Track session start event
+            app_state.track_analytics_event("session_start", None).await;
             // Start background task to check for init status and spawn processes
             let state_clone = app_state.clone();
             tokio::spawn(async move {

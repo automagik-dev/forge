@@ -17,6 +17,7 @@ pub struct Config {
     pub push_notifications: bool,
     pub editor: EditorConfig,
     pub github: GitHubConfig,
+    pub analytics_enabled: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -159,6 +160,7 @@ impl Default for Config {
             push_notifications: true,
             editor: EditorConfig::default(),
             github: GitHubConfig::default(),
+            analytics_enabled: Some(true),
         }
     }
 }
@@ -259,7 +261,15 @@ impl Config {
 
             // Try to deserialize as is first
             match serde_json::from_str::<Config>(&content) {
-                Ok(config) => Ok(config),
+                Ok(mut config) => {
+                    if config.analytics_enabled.is_none() {
+                        config.analytics_enabled = Some(true);
+                    }
+
+                    // Always save back to ensure new fields are written to disk
+                    config.save(config_path)?;
+                    Ok(config)
+                }
                 Err(_) => {
                     // If full deserialization fails, merge with defaults
                     let config = Self::load_with_defaults(&content, config_path)?;

@@ -13,6 +13,7 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use crate::{
+    app_state::AppState,
     executor::{ExecutorConfig, NormalizedConversation},
     models::{
         config::Config,
@@ -117,8 +118,21 @@ pub async fn create_task_attempt(
         Ok(true) => {}
     }
 
+    let executor_string = payload.executor.as_ref().map(|exec| exec.to_string());
+
     match TaskAttempt::create(&pool, &payload, task_id).await {
         Ok(attempt) => {
+            app_state
+                .track_analytics_event(
+                    "task_attempt_started",
+                    Some(serde_json::json!({
+                        "task_id": task_id.to_string(),
+                        "executor_type": executor_string.as_deref().unwrap_or("default"),
+                        "attempt_id": attempt.id.to_string(),
+                    })),
+                )
+                .await;
+
             // Start execution asynchronously (don't block the response)
             let pool_clone = pool.clone();
             let app_state_clone = app_state.clone();
@@ -230,6 +244,7 @@ pub async fn get_task_attempt_diff(
 pub async fn merge_task_attempt(
     Path((project_id, task_id, attempt_id)): Path<(Uuid, Uuid, Uuid)>,
     Extension(pool): Extension<SqlitePool>,
+    Extension(app_state): Extension<Arc<AppState>>,
 ) -> Result<ResponseJson<ApiResponse<()>>, StatusCode> {
     // Verify task attempt exists and belongs to the correct task
     match TaskAttempt::exists_for_task(&pool, attempt_id, task_id, project_id).await {
@@ -242,7 +257,7 @@ pub async fn merge_task_attempt(
     }
 
     match TaskAttempt::merge_changes(&pool, attempt_id, task_id, project_id).await {
-        Ok(_merge_commit_id) => {
+        Ok(_) => {
             // Update task status to Done
             if let Err(e) = Task::update_status(
                 &pool,
@@ -255,6 +270,18 @@ pub async fn merge_task_attempt(
                 tracing::error!("Failed to update task status to Done after merge: {}", e);
                 return Err(StatusCode::INTERNAL_SERVER_ERROR);
             }
+
+            // Track task attempt merged event
+            app_state
+                .track_analytics_event(
+                    "task_attempt_merged",
+                    Some(serde_json::json!({
+                        "task_id": task_id.to_string(),
+                        "project_id": project_id.to_string(),
+                        "attempt_id": attempt_id.to_string(),
+                    })),
+                )
+                .await;
 
             Ok(ResponseJson(ApiResponse {
                 success: true,
@@ -272,6 +299,7 @@ pub async fn merge_task_attempt(
 pub async fn create_github_pr(
     Path((project_id, task_id, attempt_id)): Path<(Uuid, Uuid, Uuid)>,
     Extension(pool): Extension<SqlitePool>,
+    Extension(app_state): Extension<Arc<AppState>>,
     Json(request): Json<CreateGitHubPRRequest>,
 ) -> Result<ResponseJson<ApiResponse<String>>, StatusCode> {
     // Verify task attempt exists and belongs to the correct task
@@ -326,11 +354,24 @@ pub async fn create_github_pr(
     )
     .await
     {
-        Ok(pr_url) => Ok(ResponseJson(ApiResponse {
-            success: true,
-            data: Some(pr_url),
-            message: Some("GitHub PR created successfully".to_string()),
-        })),
+        Ok(pr_url) => {
+            app_state
+                .track_analytics_event(
+                    "github_pr_created",
+                    Some(serde_json::json!({
+                        "task_id": task_id.to_string(),
+                        "project_id": project_id.to_string(),
+                        "attempt_id": attempt_id.to_string(),
+                    })),
+                )
+                .await;
+
+            Ok(ResponseJson(ApiResponse {
+                success: true,
+                data: Some(pr_url),
+                message: Some("GitHub PR created successfully".to_string()),
+            }))
+        }
         Err(e) => {
             tracing::error!(
                 "Failed to create GitHub PR for attempt {}: {}",

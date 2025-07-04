@@ -151,6 +151,7 @@ pub async fn create_project_branch(
 
 pub async fn create_project(
     Extension(pool): Extension<SqlitePool>,
+    Extension(app_state): Extension<crate::app_state::AppState>,
     Json(payload): Json<CreateProject>,
 ) -> Result<ResponseJson<ApiResponse<Project>>, StatusCode> {
     let id = Uuid::new_v4();
@@ -249,11 +250,26 @@ pub async fn create_project(
     }
 
     match Project::create(&pool, &payload, id).await {
-        Ok(project) => Ok(ResponseJson(ApiResponse {
-            success: true,
-            data: Some(project),
-            message: Some("Project created successfully".to_string()),
-        })),
+        Ok(project) => {
+            // Track project creation event
+            app_state
+                .track_analytics_event(
+                    "project_created",
+                    Some(serde_json::json!({
+                        "project_id": project.id.to_string(),
+                        "use_existing_repo": payload.use_existing_repo,
+                        "has_setup_script": payload.setup_script.is_some(),
+                        "has_dev_script": payload.dev_script.is_some(),
+                    })),
+                )
+                .await;
+
+            Ok(ResponseJson(ApiResponse {
+                success: true,
+                data: Some(project),
+                message: Some("Project created successfully".to_string()),
+            }))
+        }
         Err(e) => {
             tracing::error!("Failed to create project: {}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
