@@ -21,16 +21,13 @@ export function GitHubLoginDialog({
   const { config, loading } = useConfig();
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [deviceState, setDeviceState] = useState<
-    | null
-    | {
-        device_code: string;
-        user_code: string;
-        verification_uri: string;
-        expires_in: number;
-        interval: number;
-      }
-  >(null);
+  const [deviceState, setDeviceState] = useState<null | {
+    device_code: string;
+    user_code: string;
+    verification_uri: string;
+    expires_in: number;
+    interval: number;
+  }>(null);
   const [polling, setPolling] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -41,7 +38,9 @@ export function GitHubLoginDialog({
     setError(null);
     setDeviceState(null);
     try {
-      const res = await fetch('/api/auth/github/device/start', { method: 'POST' });
+      const res = await fetch('/api/auth/github/device/start', {
+        method: 'POST',
+      });
       const data = await res.json();
       if (data.success && data.data) {
         setDeviceState(data.data);
@@ -130,9 +129,21 @@ export function GitHubLoginDialog({
           </div>
         ) : deviceState ? (
           <div className="py-4 text-center">
-            <div className="mb-2">1. Go to <a href={deviceState.verification_uri} target="_blank" rel="noopener noreferrer" className="underline text-blue-600">{deviceState.verification_uri}</a></div>
+            <div className="mb-2">
+              1. Go to{' '}
+              <a
+                href={deviceState.verification_uri}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-blue-600"
+              >
+                {deviceState.verification_uri}
+              </a>
+            </div>
             <div className="mb-2">2. Enter this code:</div>
-            <div className="mb-4 text-2xl font-mono font-bold tracking-widest bg-gray-100 rounded p-2 inline-block select-all">{deviceState.user_code}</div>
+            <div className="mb-4 text-2xl font-mono font-bold tracking-widest bg-gray-100 rounded p-2 inline-block select-all">
+              {deviceState.user_code}
+            </div>
             <div className="mb-4 flex items-center justify-center gap-2">
               <Button
                 variant="secondary"
@@ -143,17 +154,27 @@ export function GitHubLoginDialog({
                 }}
                 disabled={copied}
               >
-                {copied ? <span className="flex items-center"><Check className="w-4 h-4 mr-1" /> Copied</span> : 'Copy Code'}
+                {copied ? (
+                  <span className="flex items-center">
+                    <Check className="w-4 h-4 mr-1" /> Copied
+                  </span>
+                ) : (
+                  'Copy Code'
+                )}
               </Button>
               <Button
                 className="ml-2"
-                onClick={() => window.open(deviceState.verification_uri, '_blank')}
+                onClick={() =>
+                  window.open(deviceState.verification_uri, '_blank')
+                }
               >
                 Open GitHub
               </Button>
             </div>
             <div className="mb-2 text-muted-foreground text-sm">
-              {copied ? 'Code copied to clipboard!' : 'Waiting for you to authorize…'}
+              {copied
+                ? 'Code copied to clipboard!'
+                : 'Waiting for you to authorize…'}
             </div>
             {error && <div className="text-red-500 mt-2">{error}</div>}
           </div>
