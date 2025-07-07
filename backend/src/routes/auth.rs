@@ -1,10 +1,12 @@
-use std::{sync::Arc};
+use std::sync::Arc;
 
-use axum::{extract::{Extension, Query}, response::{Json as ResponseJson, Redirect}, routing::{get, post}, Json, Router};
+use axum::{extract::Extension, response::Json as ResponseJson, routing::post, Json, Router};
 use tokio::sync::RwLock;
 
-use crate::models::{ApiResponse, Config};
-use crate::app_state::AppState;
+use crate::{
+    app_state::AppState,
+    models::{ApiResponse, Config},
+};
 
 pub fn auth_router() -> Router {
     Router::new()
@@ -39,10 +41,7 @@ async fn device_start() -> ResponseJson<ApiResponse<DeviceStartResponse>> {
             message: Some("GitHub App client ID not set on server".to_string()),
         });
     }
-    let params = [
-        ("client_id", client_id),
-        ("scope", "user:email"),
-    ];
+    let params = [("client_id", client_id), ("scope", "user:email")];
     let client = reqwest::Client::new();
     let res = client
         .post("https://github.com/login/device/code")
@@ -70,7 +69,13 @@ async fn device_start() -> ResponseJson<ApiResponse<DeviceStartResponse>> {
             });
         }
     };
-    if let (Some(device_code), Some(user_code), Some(verification_uri), Some(expires_in), Some(interval)) = (
+    if let (
+        Some(device_code),
+        Some(user_code),
+        Some(verification_uri),
+        Some(expires_in),
+        Some(interval),
+    ) = (
         json.get("device_code").and_then(|v| v.as_str()),
         json.get("user_code").and_then(|v| v.as_str()),
         json.get("verification_uri").and_then(|v| v.as_str()),
@@ -179,7 +184,10 @@ async fn device_poll(
                 });
             }
         };
-        let username = user_json.get("login").and_then(|v| v.as_str()).map(|s| s.to_string());
+        let username = user_json
+            .get("login")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
         // Fetch user emails
         let emails_res = client
             .get("https://api.github.com/user/emails")
@@ -206,17 +214,25 @@ async fn device_poll(
                 });
             }
         };
-        let primary_email = emails_json.as_array().and_then(|arr| {
-            arr.iter().find(|email| email.get("primary").and_then(|v| v.as_bool()).unwrap_or(false))
-                .and_then(|email| email.get("email").and_then(|v| v.as_str()))
-        }).map(|s| s.to_string());
+        let primary_email = emails_json
+            .as_array()
+            .and_then(|arr| {
+                arr.iter()
+                    .find(|email| {
+                        email
+                            .get("primary")
+                            .and_then(|v| v.as_bool())
+                            .unwrap_or(false)
+                    })
+                    .and_then(|email| email.get("email").and_then(|v| v.as_str()))
+            })
+            .map(|s| s.to_string());
         // Save to config
         {
             let mut config = config.write().await;
             config.github.username = username.clone();
             config.github.primary_email = primary_email.clone();
             config.github.token = Some(access_token.to_string());
-            config.github.refresh_token = None;
             let config_path = crate::utils::config_path();
             if config.save(&config_path).is_err() {
                 return ResponseJson(ApiResponse {
@@ -229,13 +245,21 @@ async fn device_poll(
         // Identify user in PostHog
         let mut props = serde_json::Map::new();
         if let Some(ref username) = username {
-            props.insert("username".to_string(), serde_json::Value::String(username.clone()));
+            props.insert(
+                "username".to_string(),
+                serde_json::Value::String(username.clone()),
+            );
         }
         if let Some(ref email) = primary_email {
-            props.insert("email".to_string(), serde_json::Value::String(email.clone()));
+            props.insert(
+                "email".to_string(),
+                serde_json::Value::String(email.clone()),
+            );
         }
         let props = serde_json::Value::Object(props);
-        app_state.track_analytics_event("$identify", Some(props)).await;
+        app_state
+            .track_analytics_event("$identify", Some(props))
+            .await;
 
         ResponseJson(ApiResponse {
             success: true,
