@@ -6,6 +6,7 @@ use axum::{
     response::{IntoResponse, Json as ResponseJson, Response},
     routing::{get, post},
     Json, Router,
+    middleware::from_fn,
 };
 use sentry_tower::NewSentryLayer;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
@@ -197,7 +198,8 @@ fn main() -> anyhow::Result<()> {
                         .merge(filesystem::filesystem_router())
                         .merge(config::config_router())
                         .merge(auth::auth_router())
-                        .route("/sounds/:filename", get(serve_sound_file)),
+                        .route("/sounds/:filename", get(serve_sound_file))
+                        .layer(from_fn(auth::sentry_user_context_middleware)),
                 );
 
             let app = Router::new()
