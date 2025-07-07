@@ -1,198 +1,252 @@
-use std::{env, sync::Arc};
+use std::{sync::Arc};
 
-use axum::{
-    extract::{Extension, Host, Query},
-    response::{Json as ResponseJson, Redirect},
-    routing::get,
-    Router,
-};
-use serde::Deserialize;
-use serde_json::Value;
+use axum::{extract::{Extension, Query}, response::{Json as ResponseJson, Redirect}, routing::{get, post}, Json, Router};
 use tokio::sync::RwLock;
 
 use crate::models::{ApiResponse, Config};
+use crate::app_state::AppState;
 
 pub fn auth_router() -> Router {
     Router::new()
-        .route("/auth/github/login", get(github_login))
-        .route("/auth/github/callback", get(github_callback))
+        .route("/auth/github/device/start", post(device_start))
+        .route("/auth/github/device/poll", post(device_poll))
 }
 
-#[derive(Deserialize)]
-struct GitHubLoginQuery {
-    state: Option<String>,
+#[derive(serde::Deserialize)]
+struct DeviceStartRequest {}
+
+#[derive(serde::Serialize)]
+struct DeviceStartResponse {
+    device_code: String,
+    user_code: String,
+    verification_uri: String,
+    expires_in: u64,
+    interval: u64,
 }
 
-/// Redirects user to GitHub OAuth login
-async fn github_login(
-    Host(host): Host,
-    Query(query): Query<GitHubLoginQuery>,
-) -> ResponseJson<ApiResponse<String>> {
-    let client_id = option_env!("GITHUB_APP_CLIENT_ID").unwrap_or_default();
-    let port = host.split(':').nth(1).unwrap_or("80");
-    let redirect_uri = format!("http://127.0.0.1:{}/api/auth/github/callback", port);
-    let scope = "user:email";
-    let mut url = format!(
-        "https://github.com/login/oauth/authorize?client_id={}&redirect_uri={}&scope={}",
-        client_id, redirect_uri, scope
-    );
-    if let Some(state) = &query.state {
-        url.push_str("&state=");
-        url.push_str(&urlencoding::encode(state));
+#[derive(serde::Deserialize)]
+struct DevicePollRequest {
+    device_code: String,
+}
+
+/// POST /auth/github/device/start
+async fn device_start() -> ResponseJson<ApiResponse<DeviceStartResponse>> {
+    let client_id = option_env!("GITHUB_APP_CLIENT_ID").unwrap_or("");
+    if client_id.is_empty() {
+        return ResponseJson(ApiResponse {
+            success: false,
+            data: None,
+            message: Some("GitHub App client ID not set on server".to_string()),
+        });
     }
-    ResponseJson(ApiResponse {
-        success: true,
-        data: Some(url.clone()),
-        message: Some("Redirect to GitHub OAuth".to_string()),
-    })
-}
-
-#[derive(Deserialize)]
-struct GitHubCallbackQuery {
-    code: String,
-    state: Option<String>,
-}
-
-fn build_error_redirect(state: &Option<String>, code: &str) -> Redirect {
-    let redirect_target = state.as_deref().unwrap_or("/");
-    let sep = if redirect_target.contains('?') {
-        "&"
-    } else {
-        "?"
-    };
-    let url = if redirect_target.starts_with("http://") || redirect_target.starts_with("https://") {
-        format!("{}{}oauth_error={}", redirect_target, sep, code)
-    } else {
-        let frontend_port = std::env::var("FRONTEND_PORT").unwrap_or_else(|_| "5173".to_string());
-        format!(
-            "http://127.0.0.1:{}{}{}oauth_error={}",
-            frontend_port, redirect_target, sep, code
-        )
-    };
-    Redirect::to(&url)
-}
-
-/// Handles GitHub OAuth callback
-async fn github_callback(
-    Host(host): Host,
-    Extension(config): Extension<Arc<RwLock<Config>>>,
-    Query(query): Query<GitHubCallbackQuery>,
-) -> Redirect {
-    let client_id = option_env!("GITHUB_APP_CLIENT_ID").unwrap_or_default();
-    let client_secret = option_env!("GITHUB_APP_CLIENT_SECRET").unwrap_or_default();
-    let app_id = option_env!("GITHUB_APP_ID").unwrap_or_default();
-    let port = host.split(':').nth(1).unwrap_or("80");
-    let redirect_uri = format!("http://127.0.0.1:{}/api/auth/github/callback", port);
-    if client_id.is_empty() || client_secret.is_empty() || app_id.is_empty() {
-        return build_error_redirect(&query.state, "missing_credentials");
-    }
-
-    // Exchange code for access token
-    let token_url = "https://github.com/login/oauth/access_token";
     let params = [
         ("client_id", client_id),
-        ("client_secret", client_secret),
-        ("code", query.code.as_str()),
-        ("redirect_uri", redirect_uri.as_str()),
+        ("scope", "user:email"),
     ];
-
     let client = reqwest::Client::new();
-    let token_res = client
-        .post(token_url)
+    let res = client
+        .post("https://github.com/login/device/code")
         .header("Accept", "application/json")
         .form(&params)
         .send()
         .await;
-
-    let token_res = match token_res {
-        Ok(res) => res,
-        Err(_) => return build_error_redirect(&query.state, "exchange_failed"),
-    };
-    let token_json: Value = match token_res.json().await {
-        Ok(json) => json,
-        Err(_) => return build_error_redirect(&query.state, "exchange_failed"),
-    };
-    let access_token = token_json
-        .get("access_token")
-        .and_then(|v| v.as_str())
-        .map(|s| s.to_string());
-    let refresh_token = token_json
-        .get("refresh_token")
-        .and_then(|v| v.as_str())
-        .map(|s| s.to_string());
-    if access_token.is_none() {
-        return build_error_redirect(&query.state, "no_access_token");
-    }
-    let access_token = access_token.unwrap();
-
-    // Fetch user info
-    let user_res = client
-        .get("https://api.github.com/user")
-        .bearer_auth(&access_token)
-        .header("User-Agent", "vibe-kanban-app")
-        .send()
-        .await;
-    let user_json: Value = match user_res {
-        Ok(res) => match res.json().await {
-            Ok(json) => json,
-            Err(_) => return build_error_redirect(&query.state, "user_fetch_failed"),
-        },
-        Err(_) => return build_error_redirect(&query.state, "user_fetch_failed"),
-    };
-    let username = user_json
-        .get("login")
-        .and_then(|v| v.as_str())
-        .map(|s| s.to_string());
-
-    // Fetch user emails
-    let emails_res = client
-        .get("https://api.github.com/user/emails")
-        .bearer_auth(&access_token)
-        .header("User-Agent", "vibe-kanban-app")
-        .send()
-        .await;
-    let emails_json: Value = match emails_res {
-        Ok(res) => match res.json().await {
-            Ok(json) => json,
-            Err(_) => return build_error_redirect(&query.state, "email_fetch_failed"),
-        },
-        Err(_) => return build_error_redirect(&query.state, "email_fetch_failed"),
-    };
-    let primary_email = emails_json
-        .as_array()
-        .and_then(|arr| {
-            arr.iter()
-                .find(|email| {
-                    email
-                        .get("primary")
-                        .and_then(|v| v.as_bool())
-                        .unwrap_or(false)
-                })
-                .and_then(|email| email.get("email").and_then(|v| v.as_str()))
-        })
-        .map(|s| s.to_string());
-
-    // Save to config
-    {
-        let mut config = config.write().await;
-        config.github.username = username;
-        config.github.primary_email = primary_email;
-        config.github.token = Some(access_token);
-        config.github.refresh_token = refresh_token;
-        let config_path = crate::utils::config_path();
-        if config.save(&config_path).is_err() {
-            return build_error_redirect(&query.state, "config_save_failed");
+    let res = match res {
+        Ok(r) => r,
+        Err(e) => {
+            return ResponseJson(ApiResponse {
+                success: false,
+                data: None,
+                message: Some(format!("Failed to contact GitHub: {e}")),
+            });
         }
+    };
+    let json: serde_json::Value = match res.json().await {
+        Ok(j) => j,
+        Err(e) => {
+            return ResponseJson(ApiResponse {
+                success: false,
+                data: None,
+                message: Some(format!("Failed to parse GitHub response: {e}")),
+            });
+        }
+    };
+    if let (Some(device_code), Some(user_code), Some(verification_uri), Some(expires_in), Some(interval)) = (
+        json.get("device_code").and_then(|v| v.as_str()),
+        json.get("user_code").and_then(|v| v.as_str()),
+        json.get("verification_uri").and_then(|v| v.as_str()),
+        json.get("expires_in").and_then(|v| v.as_u64()),
+        json.get("interval").and_then(|v| v.as_u64()),
+    ) {
+        ResponseJson(ApiResponse {
+            success: true,
+            data: Some(DeviceStartResponse {
+                device_code: device_code.to_string(),
+                user_code: user_code.to_string(),
+                verification_uri: verification_uri.to_string(),
+                expires_in,
+                interval,
+            }),
+            message: None,
+        })
+    } else {
+        ResponseJson(ApiResponse {
+            success: false,
+            data: None,
+            message: Some(format!("GitHub error: {}", json)),
+        })
     }
+}
 
-    // Redirect to the original page (state) or home
-    let redirect_target = query.state.as_deref().unwrap_or("/");
-    let final_url =
-        if redirect_target.starts_with("http://") || redirect_target.starts_with("https://") {
-            redirect_target.to_string()
-        } else {
-            let frontend_port = env::var("FRONTEND_PORT").unwrap_or_else(|_| "5173".to_string());
-            format!("http://127.0.0.1:{}{}", frontend_port, redirect_target)
+/// POST /auth/github/device/poll
+async fn device_poll(
+    Extension(config): Extension<Arc<RwLock<Config>>>,
+    Extension(app_state): Extension<AppState>,
+    Json(payload): Json<DevicePollRequest>,
+) -> ResponseJson<ApiResponse<String>> {
+    let client_id = option_env!("GITHUB_APP_CLIENT_ID").unwrap_or("");
+    if client_id.is_empty() {
+        return ResponseJson(ApiResponse {
+            success: false,
+            data: None,
+            message: Some("GitHub App client ID not set on server".to_string()),
+        });
+    }
+    let params = [
+        ("client_id", client_id),
+        ("device_code", payload.device_code.as_str()),
+        ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
+    ];
+    let client = reqwest::Client::new();
+    let res = client
+        .post("https://github.com/login/oauth/access_token")
+        .header("Accept", "application/json")
+        .form(&params)
+        .send()
+        .await;
+    let res = match res {
+        Ok(r) => r,
+        Err(e) => {
+            return ResponseJson(ApiResponse {
+                success: false,
+                data: None,
+                message: Some(format!("Failed to contact GitHub: {e}")),
+            });
+        }
+    };
+    let json: serde_json::Value = match res.json().await {
+        Ok(j) => j,
+        Err(e) => {
+            return ResponseJson(ApiResponse {
+                success: false,
+                data: None,
+                message: Some(format!("Failed to parse GitHub response: {e}")),
+            });
+        }
+    };
+    if let Some(error) = json.get("error").and_then(|v| v.as_str()) {
+        // Not authorized yet, or other error
+        return ResponseJson(ApiResponse {
+            success: false,
+            data: None,
+            message: Some(error.to_string()),
+        });
+    }
+    let access_token = json.get("access_token").and_then(|v| v.as_str());
+    if let Some(access_token) = access_token {
+        // Fetch user info
+        let user_res = client
+            .get("https://api.github.com/user")
+            .bearer_auth(access_token)
+            .header("User-Agent", "vibe-kanban-app")
+            .send()
+            .await;
+        let user_json: serde_json::Value = match user_res {
+            Ok(res) => match res.json().await {
+                Ok(json) => json,
+                Err(e) => {
+                    return ResponseJson(ApiResponse {
+                        success: false,
+                        data: None,
+                        message: Some(format!("Failed to parse GitHub user response: {e}")),
+                    });
+                }
+            },
+            Err(e) => {
+                return ResponseJson(ApiResponse {
+                    success: false,
+                    data: None,
+                    message: Some(format!("Failed to fetch user info: {e}")),
+                });
+            }
         };
-    Redirect::to(&final_url)
+        let username = user_json.get("login").and_then(|v| v.as_str()).map(|s| s.to_string());
+        // Fetch user emails
+        let emails_res = client
+            .get("https://api.github.com/user/emails")
+            .bearer_auth(access_token)
+            .header("User-Agent", "vibe-kanban-app")
+            .send()
+            .await;
+        let emails_json: serde_json::Value = match emails_res {
+            Ok(res) => match res.json().await {
+                Ok(json) => json,
+                Err(e) => {
+                    return ResponseJson(ApiResponse {
+                        success: false,
+                        data: None,
+                        message: Some(format!("Failed to parse GitHub emails response: {e}")),
+                    });
+                }
+            },
+            Err(e) => {
+                return ResponseJson(ApiResponse {
+                    success: false,
+                    data: None,
+                    message: Some(format!("Failed to fetch user emails: {e}")),
+                });
+            }
+        };
+        let primary_email = emails_json.as_array().and_then(|arr| {
+            arr.iter().find(|email| email.get("primary").and_then(|v| v.as_bool()).unwrap_or(false))
+                .and_then(|email| email.get("email").and_then(|v| v.as_str()))
+        }).map(|s| s.to_string());
+        // Save to config
+        {
+            let mut config = config.write().await;
+            config.github.username = username.clone();
+            config.github.primary_email = primary_email.clone();
+            config.github.token = Some(access_token.to_string());
+            config.github.refresh_token = None;
+            let config_path = crate::utils::config_path();
+            if config.save(&config_path).is_err() {
+                return ResponseJson(ApiResponse {
+                    success: false,
+                    data: None,
+                    message: Some("Failed to save config".to_string()),
+                });
+            }
+        }
+        // Identify user in PostHog
+        let mut props = serde_json::Map::new();
+        if let Some(ref username) = username {
+            props.insert("username".to_string(), serde_json::Value::String(username.clone()));
+        }
+        if let Some(ref email) = primary_email {
+            props.insert("email".to_string(), serde_json::Value::String(email.clone()));
+        }
+        let props = serde_json::Value::Object(props);
+        app_state.track_analytics_event("$identify", Some(props)).await;
+
+        ResponseJson(ApiResponse {
+            success: true,
+            data: Some("GitHub login successful".to_string()),
+            message: None,
+        })
+    } else {
+        ResponseJson(ApiResponse {
+            success: false,
+            data: None,
+            message: Some("No access token yet".to_string()),
+        })
+    }
 }

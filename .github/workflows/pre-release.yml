@@ -214,7 +214,6 @@ jobs:
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
           GITHUB_APP_ID: ${{ secrets.GH_APP_ID }}
           GITHUB_APP_CLIENT_ID: ${{ secrets.GH_APP_CLIENT_ID }}
-          GITHUB_APP_CLIENT_SECRET: ${{ secrets.GH_APP_CLIENT_SECRET }}
 
       - name: Setup Sentry CLI
         uses: matbour/setup-sentry-cli@v2
