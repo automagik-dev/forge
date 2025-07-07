@@ -10,7 +10,7 @@ export type ThemeMode = "light" | "dark" | "system" | "purple" | "green" | "blue
 
 export type EditorConfig = { editor_type: EditorType, custom_command: string | null, };
 
-export type GitHubConfig = { token?: string | null, default_pr_base: string | null, username?: string | null, primary_email?: string | null, refresh_token?: string | null };
+export type GitHubConfig = { token?: string | null, default_pr_base: string | null, username?: string | null, primary_email?: string | null };
 
 export type EditorType = "vscode" | "cursor" | "windsurf" | "intellij" | "zed" | "custom";
 

@@ -47,7 +47,6 @@ pub struct GitHubConfig {
     pub token: Option<String>,
     pub username: Option<String>,
     pub primary_email: Option<String>,
-    pub refresh_token: Option<String>,
     pub default_pr_base: Option<String>,
 }
 
@@ -183,7 +182,6 @@ impl Default for GitHubConfig {
             token: None,
             username: None,
             primary_email: None,
-            refresh_token: None,
             default_pr_base: Some("main".to_string()),
         }
     }

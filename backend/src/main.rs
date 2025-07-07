@@ -223,7 +223,7 @@ fn main() -> anyhow::Result<()> {
             let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await?;
             let actual_port = listener.local_addr()?.port(); // get → 53427 (example)
 
-            tracing::info!("Server running on http://127.0.0.1:{actual_port}");
+            tracing::info!("Server running on http://0.0.0.0:{actual_port}");
 
             if !cfg!(debug_assertions) {
                 tracing::info!("Opening browser...");
