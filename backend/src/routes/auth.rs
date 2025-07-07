@@ -1,14 +1,14 @@
-use std::sync::Arc;
-
-use axum::{extract::Extension, response::Json as ResponseJson, routing::post, Json, Router, middleware::Next, extract::Request, response::Response};
-use tokio::sync::RwLock;
-
-use crate::{
-    app_state::AppState,
-    models::{ApiResponse, Config},
+use axum::{
+    extract::{Request, State},
+    middleware::Next,
+    response::{Json as ResponseJson, Response},
+    routing::post,
+    Json, Router,
 };
 
-pub fn auth_router() -> Router {
+use crate::{app_state::AppState, models::ApiResponse};
+
+pub fn auth_router() -> Router<AppState> {
     Router::new()
         .route("/auth/github/device/start", post(device_start))
         .route("/auth/github/device/poll", post(device_poll))
@@ -104,8 +104,7 @@ async fn device_start() -> ResponseJson<ApiResponse<DeviceStartResponse>> {
 
 /// POST /auth/github/device/poll
 async fn device_poll(
-    Extension(config): Extension<Arc<RwLock<Config>>>,
-    Extension(app_state): Extension<AppState>,
+    State(app_state): State<AppState>,
     Json(payload): Json<DevicePollRequest>,
 ) -> ResponseJson<ApiResponse<String>> {
     let client_id = option_env!("GITHUB_APP_CLIENT_ID").unwrap_or("");
@@ -229,7 +228,7 @@ async fn device_poll(
             .map(|s| s.to_string());
         // Save to config
         {
-            let mut config = config.write().await;
+            let mut config = app_state.get_config().write().await;
             config.github.username = username.clone();
             config.github.primary_email = primary_email.clone();
             config.github.token = Some(access_token.to_string());
@@ -256,10 +255,12 @@ async fn device_poll(
                 serde_json::Value::String(email.clone()),
             );
         }
-        let props = serde_json::Value::Object(props);
-        app_state
-            .track_analytics_event("$identify", Some(props))
-            .await;
+        {
+            let props = serde_json::Value::Object(props);
+            app_state
+                .track_analytics_event("$identify", Some(props))
+                .await;
+        }
 
         ResponseJson(ApiResponse {
             success: true,
@@ -277,13 +278,14 @@ async fn device_poll(
 
 /// Middleware to set Sentry user context for every request
 pub async fn sentry_user_context_middleware(
-    Extension(config): Extension<Arc<RwLock<Config>>>,
+    State(app_state): State<AppState>,
     req: Request,
     next: Next,
 ) -> Response {
-    let config = config.read().await;
+    let config = app_state.get_config().read().await;
     let username = config.github.username.clone();
     let email = config.github.primary_email.clone();
+    drop(config);
     if username.is_some() || email.is_some() {
         sentry::configure_scope(|scope| {
             scope.set_user(Some(sentry::User {
