@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::{extract::Extension, response::Json as ResponseJson, routing::post, Json, Router};
+use axum::{extract::Extension, response::Json as ResponseJson, routing::post, Json, Router, middleware::Next, extract::Request, response::Response};
 use tokio::sync::RwLock;
 
 use crate::{
@@ -273,4 +273,25 @@ async fn device_poll(
             message: Some("No access token yet".to_string()),
         })
     }
+}
+
+/// Middleware to set Sentry user context for every request
+pub async fn sentry_user_context_middleware(
+    Extension(config): Extension<Arc<RwLock<Config>>>,
+    req: Request,
+    next: Next,
+) -> Response {
+    let config = config.read().await;
+    let username = config.github.username.clone();
+    let email = config.github.primary_email.clone();
+    if username.is_some() || email.is_some() {
+        sentry::configure_scope(|scope| {
+            scope.set_user(Some(sentry::User {
+                username,
+                email,
+                ..Default::default()
+            }));
+        });
+    }
+    next.run(req).await
 }
