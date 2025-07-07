@@ -56,21 +56,28 @@ impl AnalyticsService {
             self.config.posthog_api_endpoint.trim_end_matches('/')
         );
 
-        let mut event_properties = properties.unwrap_or_else(|| json!({}));
-        if let Some(props) = event_properties.as_object_mut() {
-            props.insert(
-                "timestamp".to_string(),
-                json!(chrono::Utc::now().to_rfc3339()),
-            );
-            props.insert("version".to_string(), json!(env!("CARGO_PKG_VERSION")));
-        }
-
-        let payload = json!({
+        let mut payload = json!({
             "api_key": self.config.posthog_api_key,
             "event": event_name,
             "distinct_id": user_id,
-            "properties": event_properties
         });
+        if event_name == "$identify" {
+            // For $identify, set person properties in $set
+            if let Some(props) = properties {
+                payload["$set"] = props;
+            }
+        } else {
+            // For other events, use properties as before
+            let mut event_properties = properties.unwrap_or_else(|| json!({}));
+            if let Some(props) = event_properties.as_object_mut() {
+                props.insert(
+                    "timestamp".to_string(),
+                    json!(chrono::Utc::now().to_rfc3339()),
+                );
+                props.insert("version".to_string(), json!(env!("CARGO_PKG_VERSION")));
+            }
+            payload["properties"] = event_properties;
+        }
 
         let client = self.client.clone();
         let event_name = event_name.to_string();
