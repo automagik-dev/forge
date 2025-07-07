@@ -3,10 +3,10 @@ use std::{str::FromStr, sync::Arc};
 use axum::{
     body::Body,
     http::{header, HeaderValue, StatusCode},
+    middleware::from_fn_with_state,
     response::{IntoResponse, Json as ResponseJson, Response},
     routing::{get, post},
     Json, Router,
-    middleware::from_fn,
 };
 use sentry_tower::NewSentryLayer;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
@@ -199,7 +199,7 @@ fn main() -> anyhow::Result<()> {
                         .merge(config::config_router())
                         .merge(auth::auth_router())
                         .route("/sounds/:filename", get(serve_sound_file))
-                        .layer(from_fn(auth::sentry_user_context_middleware)),
+                        .layer(from_fn_with_state(app_state.clone(), auth::sentry_user_context_middleware)),
                 );
 
             let app = Router::new()
