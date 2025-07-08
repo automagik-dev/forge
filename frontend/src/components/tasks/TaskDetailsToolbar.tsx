@@ -1,17 +1,17 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  History,
-  Settings2,
-  StopCircle,
-  Play,
+  ArrowDown,
   ExternalLink,
   GitBranch as GitBranchIcon,
-  Search,
-  X,
-  ArrowDown,
+  GitPullRequest,
+  History,
+  Play,
   Plus,
   RefreshCw,
-  GitPullRequest,
+  Search,
+  Settings2,
+  StopCircle,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,8 +28,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
   Dialog,
@@ -48,14 +48,15 @@ import {
 import { useConfig } from '@/components/config-provider';
 import { makeRequest } from '@/lib/api';
 import type {
+  BranchStatus,
+  ExecutionProcess,
+  ExecutionProcessSummary,
+  GitBranch,
+  Project,
   TaskAttempt,
   TaskWithAttemptStatus,
-  ExecutionProcessSummary,
-  ExecutionProcess,
-  Project,
-  GitBranch,
-  BranchStatus,
 } from 'shared/types';
+import { ProvidePatDialog } from '@/components/ProvidePatDialog';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -142,6 +143,8 @@ export function TaskDetailsToolbar({
     selectedAttempt?.base_branch || 'main'
   );
   const [error, setError] = useState<string | null>(null);
+  const [showPatDialog, setShowPatDialog] = useState(false);
+  const [patDialogError, setPatDialogError] = useState<string | null>(null);
 
   // Set create attempt mode when there are no attempts
   useEffect(() => {
@@ -330,9 +333,29 @@ export function TaskDetailsToolbar({
           setPrTitle('');
           setPrBody('');
           setPrBaseBranch(selectedAttempt?.base_branch || 'main');
+        } else if (result.message === 'insufficient_github_permissions') {
+          setShowCreatePRDialog(false);
+          setPatDialogError(null);
+          setShowPatDialog(true);
+        } else if (result.message === 'github_repo_not_found_or_no_access') {
+          setShowCreatePRDialog(false);
+          setPatDialogError(
+            'Your token does not have access to this repository, or the repository does not exist. Please check the repository URL and/or provide a Personal Access Token with access.'
+          );
+          setShowPatDialog(true);
         } else {
           setError(result.message || 'Failed to create GitHub PR');
         }
+      } else if (response.status === 403) {
+        setShowCreatePRDialog(false);
+        setPatDialogError(null);
+        setShowPatDialog(true);
+      } else if (response.status === 404) {
+        setShowCreatePRDialog(false);
+        setPatDialogError(
+          'Your token does not have access to this repository, or the repository does not exist. Please check the repository URL and/or provide a Personal Access Token with access.'
+        );
+        setShowPatDialog(true);
       } else {
         setError('Failed to create GitHub PR');
       }
@@ -590,6 +613,14 @@ export function TaskDetailsToolbar({
 
   return (
     <>
+      <ProvidePatDialog
+        open={showPatDialog}
+        onOpenChange={(open) => {
+          setShowPatDialog(open);
+          if (!open) setPatDialogError(null);
+        }}
+        errorMessage={patDialogError || undefined}
+      />
       <div className="px-6 pb-4 border-b">
         {/* Error Display */}
         {error && (

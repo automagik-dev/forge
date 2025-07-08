@@ -44,7 +44,10 @@ pub struct EditorConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct GitHubConfig {
+    pub pat: Option<String>,
     pub token: Option<String>,
+    pub username: Option<String>,
+    pub primary_email: Option<String>,
     pub default_pr_base: Option<String>,
 }
 
@@ -177,7 +180,10 @@ impl Default for EditorConfig {
 impl Default for GitHubConfig {
     fn default() -> Self {
         Self {
+            pat: None,
             token: None,
+            username: None,
+            primary_email: None,
             default_pr_base: Some("main".to_string()),
         }
     }

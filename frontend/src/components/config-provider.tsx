@@ -1,15 +1,17 @@
 import {
   createContext,
-  useContext,
-  useState,
-  useEffect,
   ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from 'react';
-import type { Config, ApiResponse } from 'shared/types';
+import type { ApiResponse, Config } from 'shared/types';
 
 interface ConfigContextType {
   config: Config | null;
   updateConfig: (updates: Partial<Config>) => void;
+  updateAndSaveConfig: (updates: Partial<Config>) => void;
   saveConfig: () => Promise<boolean>;
   loading: boolean;
 }
@@ -43,11 +45,11 @@ export function ConfigProvider({ children }: ConfigProviderProps) {
     loadConfig();
   }, []);
 
-  const updateConfig = (updates: Partial<Config>) => {
+  const updateConfig = useCallback((updates: Partial<Config>) => {
     setConfig((prev) => (prev ? { ...prev, ...updates } : null));
-  };
+  }, []);
 
-  const saveConfig = async (): Promise<boolean> => {
+  const saveConfig = useCallback(async (): Promise<boolean> => {
     if (!config) return false;
 
     try {
@@ -65,11 +67,40 @@ export function ConfigProvider({ children }: ConfigProviderProps) {
       console.error('Error saving config:', err);
       return false;
     }
-  };
+  }, [config]);
+
+  const updateAndSaveConfig = useCallback(
+    async (updates: Partial<Config>) => {
+      setLoading(true);
+      const newConfig: Config | null = config
+        ? { ...config, ...updates }
+        : null;
+
+      try {
+        const response = await fetch('/api/config', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newConfig),
+        });
+
+        const data: ApiResponse<Config> = await response.json();
+        setConfig(data.data);
+        return data.success;
+      } catch (err) {
+        console.error('Error saving config:', err);
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [config]
+  );
 
   return (
     <ConfigContext.Provider
-      value={{ config, updateConfig, saveConfig, loading }}
+      value={{ config, updateConfig, saveConfig, loading, updateAndSaveConfig }}
     >
       {children}
     </ConfigContext.Provider>

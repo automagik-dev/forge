@@ -3,6 +3,7 @@ use std::{str::FromStr, sync::Arc};
 use axum::{
     body::Body,
     http::{header, HeaderValue, StatusCode},
+    middleware::from_fn_with_state,
     response::{IntoResponse, Json as ResponseJson, Response},
     routing::{get, post},
     Json, Router,
@@ -28,7 +29,7 @@ mod utils;
 use app_state::AppState;
 use execution_monitor::execution_monitor;
 use models::{ApiResponse, Config};
-use routes::{config, filesystem, health, projects, task_attempts, tasks};
+use routes::{auth, config, filesystem, health, projects, task_attempts, tasks};
 use services::PrMonitorService;
 
 async fn echo_handler(
@@ -197,7 +198,9 @@ fn main() -> anyhow::Result<()> {
                         .merge(task_attempts::task_attempts_router())
                         .merge(filesystem::filesystem_router())
                         .merge(config::config_router())
-                        .route("/sounds/:filename", get(serve_sound_file)),
+                        .merge(auth::auth_router())
+                        .route("/sounds/:filename", get(serve_sound_file))
+                        .layer(from_fn_with_state(app_state.clone(), auth::sentry_user_context_middleware)),
                 );
 
             let app = Router::new()
