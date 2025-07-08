@@ -322,8 +322,7 @@ pub async fn create_github_pr(
                 success: false,
                 data: None,
                 message: Some(
-                    "GitHub token not configured. Please set your GitHub token in settings."
-                        .to_string(),
+                    "GitHub authentication not configured. Please sign in with GitHub.".to_string(),
                 ),
             }));
         }
@@ -358,7 +357,7 @@ pub async fn create_github_pr(
             attempt_id,
             task_id,
             project_id,
-            github_token: &github_token,
+            github_token: &config.github.pat.unwrap_or(github_token),
             title: &request.title,
             body: request.body.as_deref(),
             base_branch: Some(&base_branch),
@@ -390,10 +389,23 @@ pub async fn create_github_pr(
                 attempt_id,
                 e
             );
+            let message = match &e {
+                crate::models::task_attempt::TaskAttemptError::Git(err)
+                    if err.message().contains("status code: 403") =>
+                {
+                    Some("insufficient_github_permissions".to_string())
+                }
+                crate::models::task_attempt::TaskAttemptError::Git(err)
+                    if err.message().contains("status code: 404") =>
+                {
+                    Some("github_repo_not_found_or_no_access".to_string())
+                }
+                _ => Some(format!("Failed to create PR: {}", e)),
+            };
             Ok(ResponseJson(ApiResponse {
                 success: false,
                 data: None,
-                message: Some(format!("Failed to create PR: {}", e)),
+                message,
             }))
         }
     }

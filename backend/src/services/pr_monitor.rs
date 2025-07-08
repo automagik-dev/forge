@@ -53,7 +53,11 @@ impl PrMonitorService {
             // Get GitHub token from config
             let github_token = {
                 let config_read = config.read().await;
-                config_read.github.token.clone()
+                if config_read.github.pat.is_some() {
+                    config_read.github.pat.clone()
+                } else {
+                    config_read.github.token.clone()
+                }
             };
 
             match github_token {

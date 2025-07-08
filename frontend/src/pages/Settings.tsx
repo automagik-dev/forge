@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -18,25 +18,28 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Loader2, Volume2, Key } from 'lucide-react';
-import type { ThemeMode, EditorType, SoundFile } from 'shared/types';
+import { Key, Loader2, Volume2 } from 'lucide-react';
+import type { EditorType, SoundFile, ThemeMode } from 'shared/types';
 import {
-  EXECUTOR_TYPES,
+  EDITOR_LABELS,
   EDITOR_TYPES,
   EXECUTOR_LABELS,
-  EDITOR_LABELS,
+  EXECUTOR_TYPES,
   SOUND_FILES,
   SOUND_LABELS,
 } from 'shared/types';
 import { useTheme } from '@/components/theme-provider';
 import { useConfig } from '@/components/config-provider';
+import { GitHubLoginDialog } from '@/components/GitHubLoginDialog';
 
 export function Settings() {
-  const { config, updateConfig, saveConfig, loading } = useConfig();
+  const { config, updateConfig, saveConfig, loading, updateAndSaveConfig } =
+    useConfig();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const { setTheme } = useTheme();
+  const [showGitHubLogin, setShowGitHubLogin] = useState(false);
 
   const playSound = async (soundFile: SoundFile) => {
     const audio = new Audio(`/api/sounds/${soundFile}.wav`);
@@ -86,6 +89,20 @@ export function Settings() {
 
     updateConfig({ onboarding_acknowledged: false });
   };
+
+  const isAuthenticated = !!(config?.github?.username && config?.github?.token);
+
+  const handleLogout = useCallback(async () => {
+    if (!config) return;
+    updateAndSaveConfig({
+      github: {
+        ...config.github,
+        token: null,
+        username: null,
+        primary_email: null,
+      },
+    });
+  }, [config, updateAndSaveConfig]);
 
   if (loading) {
     return (
@@ -289,12 +306,12 @@ export function Settings() {
                   id="github-token"
                   type="password"
                   placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                  value={config.github.token || ''}
+                  value={config.github.pat || ''}
                   onChange={(e) =>
                     updateConfig({
                       github: {
                         ...config.github,
-                        token: e.target.value || null,
+                        pat: e.target.value || null,
                       },
                     })
                   }
@@ -312,8 +329,28 @@ export function Settings() {
                   </a>
                 </p>
               </div>
-
-              <div className="space-y-2">
+              {config && isAuthenticated ? (
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <Label>Signed in as</Label>
+                    <div className="text-lg font-mono">
+                      {config.github.username}
+                    </div>
+                  </div>
+                  <Button variant="outline" onClick={handleLogout}>
+                    Log out
+                  </Button>
+                </div>
+              ) : (
+                <Button onClick={() => setShowGitHubLogin(true)}>
+                  Sign in with GitHub
+                </Button>
+              )}
+              <GitHubLoginDialog
+                open={showGitHubLogin}
+                onOpenChange={setShowGitHubLogin}
+              />
+              <div className="space-y-2 pt-4">
                 <Label htmlFor="default-pr-base">Default PR Base Branch</Label>
                 <Input
                   id="default-pr-base"
