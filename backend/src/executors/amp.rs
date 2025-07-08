@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use async_trait::async_trait;
 use command_group::{AsyncCommandGroup, AsyncGroupChild};
 use uuid::Uuid;
@@ -37,18 +39,15 @@ impl Executor for AmpExecutor {
 
         use tokio::{io::AsyncWriteExt, process::Command};
 
-        let prompt = format!(
-            r#"project_id: {}
-            
-            Task title: {}
-            Task description: {}
-            "#,
-            task.project_id,
-            task.title,
-            task.description
-                .as_deref()
-                .unwrap_or("No description provided")
-        );
+        let prompt = if let Some(task_description) = task.description {
+            format!(
+                r#"Task title: {}
+Task description: {}"#,
+                task.title, task_description
+            )
+        } else {
+            task.title.clone()
+        };
 
         // Use shell command for cross-platform compatibility
         let (shell_cmd, shell_arg) = get_shell_command();
@@ -82,7 +81,11 @@ impl Executor for AmpExecutor {
         Ok(child)
     }
 
-    fn normalize_logs(&self, logs: &str) -> Result<NormalizedConversation, String> {
+    fn normalize_logs(
+        &self,
+        logs: &str,
+        _worktree_path: &str,
+    ) -> Result<NormalizedConversation, String> {
         use serde_json::Value;
 
         let mut entries = Vec::new();
@@ -95,8 +98,19 @@ impl Executor for AmpExecutor {
             }
 
             // Try to parse as JSON
-            let json: Value = serde_json::from_str(trimmed)
-                .map_err(|e| format!("Failed to parse JSON: {}", e))?;
+            let json: Value = match serde_json::from_str(trimmed) {
+                Ok(json) => json,
+                Err(_) => {
+                    // If line isn't valid JSON, add it as raw text
+                    entries.push(NormalizedEntry {
+                        timestamp: None,
+                        entry_type: NormalizedEntryType::SystemMessage,
+                        content: format!("Raw output: {}", trimmed),
+                        metadata: None,
+                    });
+                    continue;
+                }
+            };
 
             // Extract session ID (threadID in AMP)
             if session_id.is_none() {
@@ -106,99 +120,104 @@ impl Executor for AmpExecutor {
             }
 
             // Process different message types
-            if let Some(msg_type) = json.get("type").and_then(|t| t.as_str()) {
-                if msg_type == "messages" {
-                    if let Some(messages) = json.get("messages").and_then(|m| m.as_array()) {
-                        for message_entry in messages {
-                            if let Some(message_data) =
-                                message_entry.as_array().and_then(|arr| arr.get(1))
-                            {
-                                if let Some(role) =
-                                    message_data.get("role").and_then(|r| r.as_str())
+            let processed = if let Some(msg_type) = json.get("type").and_then(|t| t.as_str()) {
+                match msg_type {
+                    "messages" => {
+                        if let Some(messages) = json.get("messages").and_then(|m| m.as_array()) {
+                            for message_entry in messages {
+                                if let Some(message_data) =
+                                    message_entry.as_array().and_then(|arr| arr.get(1))
                                 {
-                                    if let Some(content) =
-                                        message_data.get("content").and_then(|c| c.as_array())
+                                    if let Some(role) =
+                                        message_data.get("role").and_then(|r| r.as_str())
                                     {
-                                        for content_item in content {
-                                            if let Some(content_type) =
-                                                content_item.get("type").and_then(|t| t.as_str())
-                                            {
-                                                match content_type {
-                                                    "text" => {
-                                                        if let Some(text) = content_item
-                                                            .get("text")
-                                                            .and_then(|t| t.as_str())
-                                                        {
-                                                            let entry_type = match role {
-                                                                "user" => NormalizedEntryType::UserMessage,
-                                                                "assistant" => NormalizedEntryType::AssistantMessage,
-                                                                _ => continue,
-                                                            };
-                                                            entries.push(NormalizedEntry {
-                                                                timestamp: message_data
-                                                                    .get("meta")
-                                                                    .and_then(|m| m.get("sentAt"))
-                                                                    .and_then(|s| s.as_u64())
-                                                                    .map(|ts| ts.to_string()),
-                                                                entry_type,
-                                                                content: text.to_string(),
-                                                                metadata: Some(
-                                                                    content_item.clone(),
-                                                                ),
-                                                            });
+                                        if let Some(content) =
+                                            message_data.get("content").and_then(|c| c.as_array())
+                                        {
+                                            for content_item in content {
+                                                if let Some(content_type) = content_item
+                                                    .get("type")
+                                                    .and_then(|t| t.as_str())
+                                                {
+                                                    match content_type {
+                                                        "text" => {
+                                                            if let Some(text) = content_item
+                                                                .get("text")
+                                                                .and_then(|t| t.as_str())
+                                                            {
+                                                                let entry_type = match role {
+                                                                    "user" => NormalizedEntryType::UserMessage,
+                                                                    "assistant" => NormalizedEntryType::AssistantMessage,
+                                                                    _ => continue,
+                                                                };
+                                                                entries.push(NormalizedEntry {
+                                                                    timestamp: message_data
+                                                                        .get("meta")
+                                                                        .and_then(|m| {
+                                                                            m.get("sentAt")
+                                                                        })
+                                                                        .and_then(|s| s.as_u64())
+                                                                        .map(|ts| ts.to_string()),
+                                                                    entry_type,
+                                                                    content: text.to_string(),
+                                                                    metadata: Some(
+                                                                        content_item.clone(),
+                                                                    ),
+                                                                });
+                                                            }
                                                         }
-                                                    }
-                                                    "thinking" => {
-                                                        if let Some(thinking) = content_item
-                                                            .get("thinking")
-                                                            .and_then(|t| t.as_str())
-                                                        {
-                                                            entries.push(NormalizedEntry {
-                                                                timestamp: None,
-                                                                entry_type:
-                                                                    NormalizedEntryType::Thinking,
-                                                                content: thinking.to_string(),
-                                                                metadata: Some(
-                                                                    content_item.clone(),
-                                                                ),
-                                                            });
+                                                        "thinking" => {
+                                                            if let Some(thinking) = content_item
+                                                                .get("thinking")
+                                                                .and_then(|t| t.as_str())
+                                                            {
+                                                                entries.push(NormalizedEntry {
+                                                                    timestamp: None,
+                                                                    entry_type:
+                                                                        NormalizedEntryType::Thinking,
+                                                                    content: thinking.to_string(),
+                                                                    metadata: Some(
+                                                                        content_item.clone(),
+                                                                    ),
+                                                                });
+                                                            }
                                                         }
-                                                    }
-                                                    "tool_use" => {
-                                                        if let Some(tool_name) = content_item
-                                                            .get("name")
-                                                            .and_then(|n| n.as_str())
-                                                        {
-                                                            let input = content_item
-                                                                .get("input")
-                                                                .unwrap_or(&Value::Null);
-                                                            let action_type = self
-                                                                .extract_action_type(
-                                                                    tool_name, input,
-                                                                );
-                                                            let content = self
-                                                                .generate_concise_content(
-                                                                    tool_name,
-                                                                    input,
-                                                                    &action_type,
-                                                                );
+                                                        "tool_use" => {
+                                                            if let Some(tool_name) = content_item
+                                                                .get("name")
+                                                                .and_then(|n| n.as_str())
+                                                            {
+                                                                let input = content_item
+                                                                    .get("input")
+                                                                    .unwrap_or(&Value::Null);
+                                                                let action_type = self
+                                                                    .extract_action_type(
+                                                                        tool_name, input,
+                                                                    );
+                                                                let content = self
+                                                                    .generate_concise_content(
+                                                                        tool_name,
+                                                                        input,
+                                                                        &action_type,
+                                                                    );
 
-                                                            entries.push(NormalizedEntry {
-                                                                timestamp: None,
-                                                                entry_type:
-                                                                    NormalizedEntryType::ToolUse {
-                                                                        tool_name: tool_name
-                                                                            .to_string(),
-                                                                        action_type,
-                                                                    },
-                                                                content,
-                                                                metadata: Some(
-                                                                    content_item.clone(),
-                                                                ),
-                                                            });
+                                                                entries.push(NormalizedEntry {
+                                                                    timestamp: None,
+                                                                    entry_type:
+                                                                        NormalizedEntryType::ToolUse {
+                                                                            tool_name: tool_name
+                                                                                .to_string(),
+                                                                            action_type,
+                                                                        },
+                                                                    content,
+                                                                    metadata: Some(
+                                                                        content_item.clone(),
+                                                                    ),
+                                                                });
+                                                            }
                                                         }
+                                                        _ => {}
                                                     }
-                                                    _ => {}
                                                 }
                                             }
                                         }
@@ -206,8 +225,31 @@ impl Executor for AmpExecutor {
                                 }
                             }
                         }
+                        true
+                    }
+                    // Ignore these JSON types - they're not relevant for task execution logs
+                    "initial" | "token-usage" | "state" => true,
+                    _ => false,
+                }
+            } else {
+                false
+            };
+
+            // If JSON didn't match expected patterns, add it as unrecognized JSON
+            // Skip JSON with type "result" as requested
+            if !processed {
+                if let Some(msg_type) = json.get("type").and_then(|t| t.as_str()) {
+                    if msg_type == "result" {
+                        // Skip result entries
+                        continue;
                     }
                 }
+                entries.push(NormalizedEntry {
+                    timestamp: None,
+                    entry_type: NormalizedEntryType::SystemMessage,
+                    content: format!("Unrecognized JSON: {}", trimmed),
+                    metadata: Some(json),
+                });
             }
         }
 
@@ -222,6 +264,26 @@ impl Executor for AmpExecutor {
 }
 
 impl AmpExecutor {
+    /// Convert absolute paths to relative paths based on current working directory
+    fn make_path_relative(&self, path: &str) -> String {
+        let path_obj = Path::new(path);
+
+        // If path is already relative, return as is
+        if path_obj.is_relative() {
+            return path.to_string();
+        }
+
+        // Try to get current working directory and make path relative to it
+        if let Ok(current_dir) = std::env::current_dir() {
+            if let Ok(relative_path) = path_obj.strip_prefix(&current_dir) {
+                return relative_path.to_string_lossy().to_string();
+            }
+        }
+
+        // If we can't make it relative, return the original path
+        path.to_string()
+    }
+
     fn generate_concise_content(
         &self,
         tool_name: &str,
@@ -241,7 +303,7 @@ impl AmpExecutor {
                     "todo_write" | "todo_read" => "Managing TODO list".to_string(),
                     "list_directory" | "ls" => {
                         if let Some(path) = input.get("path").and_then(|p| p.as_str()) {
-                            format!("List directory: {}", path)
+                            format!("List directory: {}", self.make_path_relative(path))
                         } else {
                             "List directory".to_string()
                         }
@@ -271,11 +333,11 @@ impl AmpExecutor {
             "read_file" | "read" => {
                 if let Some(path) = input.get("path").and_then(|p| p.as_str()) {
                     ActionType::FileRead {
-                        path: path.to_string(),
+                        path: self.make_path_relative(path),
                     }
                 } else if let Some(file_path) = input.get("file_path").and_then(|p| p.as_str()) {
                     ActionType::FileRead {
-                        path: file_path.to_string(),
+                        path: self.make_path_relative(file_path),
                     }
                 } else {
                     ActionType::Other {
@@ -286,11 +348,11 @@ impl AmpExecutor {
             "edit_file" | "write" | "create_file" => {
                 if let Some(path) = input.get("path").and_then(|p| p.as_str()) {
                     ActionType::FileWrite {
-                        path: path.to_string(),
+                        path: self.make_path_relative(path),
                     }
                 } else if let Some(file_path) = input.get("file_path").and_then(|p| p.as_str()) {
                     ActionType::FileWrite {
-                        path: file_path.to_string(),
+                        path: self.make_path_relative(file_path),
                     }
                 } else {
                     ActionType::Other {
@@ -410,9 +472,13 @@ impl Executor for AmpFollowupExecutor {
         Ok(child)
     }
 
-    fn normalize_logs(&self, logs: &str) -> Result<NormalizedConversation, String> {
+    fn normalize_logs(
+        &self,
+        logs: &str,
+        worktree_path: &str,
+    ) -> Result<NormalizedConversation, String> {
         // Reuse the same logic as the main AmpExecutor
         let main_executor = AmpExecutor;
-        main_executor.normalize_logs(logs)
+        main_executor.normalize_logs(logs, worktree_path)
     }
 }
