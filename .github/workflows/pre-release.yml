@@ -99,7 +99,7 @@ jobs:
 
           echo "New version: $new_version"
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
-          echo "new_tag=v$new_tag" >> $GITHUB_OUTPUT
+          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
 
       - name: Commit changes and create tag
         run: |
