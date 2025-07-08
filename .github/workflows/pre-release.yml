@@ -79,16 +79,16 @@ jobs:
             # For prerelease, use current package.json version and add branch suffix
             npm version prerelease --preid="${{ steps.branch.outputs.suffix }}" --no-git-tag-version
 
+            new_version=$(node -p "require('./package.json').version")
             new_tag="v${new_version}.${timestamp}"
           else
             # For regular releases, use npm version and bump it
             npm version $latest_npm_version --no-git-tag-version --allow-same-version
             npm version ${{ github.event.inputs.version_type }} --no-git-tag-version
 
+            new_version=$(node -p "require('./package.json').version")
             new_tag="v${new_version}-${timestamp}"
           fi
-
-          new_version=$(node -p "require('./package.json').version")
 
           # Update npx-cli package.json to match
           cd npx-cli
