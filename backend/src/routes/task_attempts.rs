@@ -1152,8 +1152,11 @@ pub async fn get_execution_process_normalized_logs(
 
             let executor = executor_config.create_executor();
 
+            // Path can be a symlink, so resolve it to the real path
+            let real_path = std::fs::canonicalize(process.working_directory).unwrap();
+
             // Normalize stdout logs with error handling
-            match executor.normalize_logs(stdout) {
+            match executor.normalize_logs(stdout, &real_path.to_string_lossy()) {
                 Ok(normalized) => {
                     stdout_entries = normalized.entries;
                     tracing::debug!(
