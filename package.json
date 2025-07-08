@@ -1,6 +1,6 @@
 {
   "name": "vibe-kanban",
-  "version": "0.0.37",
+  "version": "0.0.38",
   "private": true,
   "scripts": {
     "dev": "export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend) && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && concurrently \"npm run backend:dev:watch\" \"npm run frontend:dev\"",
@@ -15,8 +15,8 @@
     "backend:dev:watch": "npm run cargo -- watch -w backend -x 'run --manifest-path backend/Cargo.toml'",
     "backend:build": "npm run cargo -- build --release --manifest-path backend/Cargo.toml && npm run cargo -- build --release --bin mcp_task_server --manifest-path backend/Cargo.toml",
     "backend:build:single": "npm run cargo -- build --release --manifest-path backend/Cargo.toml",
-    "backend:run"  : "npm run cargo -- run --manifest-path backend/Cargo.toml",
-    "backend:test" : "npm run cargo -- test --lib",
+    "backend:run": "npm run cargo -- run --manifest-path backend/Cargo.toml",
+    "backend:test": "npm run cargo -- test --lib",
     "generate-types": "cd backend && cargo run --bin generate_types",
     "prepare-db": "node scripts/prepare-db.js",
     "dev:clear-ports": "node scripts/setup-dev-environment.js clear"
