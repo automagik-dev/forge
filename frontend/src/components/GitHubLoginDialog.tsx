@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogContent,
-  DialogFooter,
 } from './ui/dialog';
 import { Button } from './ui/button';
 import { useConfig } from './config-provider';
-import { Check } from 'lucide-react';
+import { Check, Clipboard } from 'lucide-react';
 
 export function GitHubLoginDialog({
   open,
@@ -110,7 +110,7 @@ export function GitHubLoginDialog({
   }, [deviceState?.user_code]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} uncloseable>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Sign in with GitHub</DialogTitle>
@@ -135,40 +135,33 @@ export function GitHubLoginDialog({
                 href={deviceState.verification_uri}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline text-blue-600"
+                className="text-blue-700 font-medium hover:text-blue-600 transition-colors"
+                style={{ textDecoration: 'none' }}
               >
                 {deviceState.verification_uri}
               </a>
             </div>
             <div className="mb-2">2. Enter this code:</div>
-            <div className="mb-4 text-2xl font-mono font-bold tracking-widest bg-gray-100 rounded p-2 inline-block select-all">
-              {deviceState.user_code}
-            </div>
             <div className="mb-4 flex items-center justify-center gap-2">
+              <span className="text-2xl font-mono font-bold tracking-widest bg-gray-100 rounded p-2">
+                {deviceState.user_code}
+              </span>
               <Button
-                variant="secondary"
+                variant="ghost"
                 onClick={() => {
                   navigator.clipboard.writeText(deviceState.user_code);
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
                 }}
+                className="w-28"
                 disabled={copied}
               >
+                {copied ? 'Copied' : 'Copy'}
                 {copied ? (
-                  <span className="flex items-center">
-                    <Check className="w-4 h-4 mr-1" /> Copied
-                  </span>
+                  <Check className="ml-1.5 w-5 h-5" />
                 ) : (
-                  'Copy Code'
+                  <Clipboard className="ml-1.5 w-5 h-5" />
                 )}
-              </Button>
-              <Button
-                className="ml-2"
-                onClick={() =>
-                  window.open(deviceState.verification_uri, '_blank')
-                }
-              >
-                Open GitHub
               </Button>
             </div>
             <div className="mb-2 text-muted-foreground text-sm">
