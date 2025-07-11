@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { TaskDetailsHeader } from './TaskDetailsHeader';
+import TaskDetailsHeader from './TaskDetailsHeader';
 import { TaskFollowUpSection } from './TaskFollowUpSection';
 import { EditorSelectionDialog } from './EditorSelectionDialog';
 import {
@@ -76,6 +76,7 @@ export function TaskDetailsPanel({
           setActiveTab={setActiveTab}
           isOpen={isOpen}
           userSelectedTab={userSelectedTab}
+          projectHasDevScript={projectHasDevScript}
         >
           {/* Backdrop - only on smaller screens (overlay mode) */}
           <div className={getBackdropClasses()} onClick={onClose} />
@@ -89,7 +90,7 @@ export function TaskDetailsPanel({
                 onDeleteTask={onDeleteTask}
               />
 
-              <CollapsibleToolbar projectHasDevScript={projectHasDevScript} />
+              <CollapsibleToolbar />
 
               <TabNavigation
                 activeTab={activeTab}
