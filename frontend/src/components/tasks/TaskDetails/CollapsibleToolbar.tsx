@@ -1,13 +1,9 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { TaskDetailsToolbar } from '@/components/tasks/TaskDetailsToolbar.tsx';
+import TaskDetailsToolbar from '@/components/tasks/TaskDetailsToolbar.tsx';
 
-type Props = {
-  projectHasDevScript?: boolean;
-};
-
-function CollapsibleToolbar({ projectHasDevScript }: Props) {
+function CollapsibleToolbar() {
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
 
   return (
@@ -29,11 +25,9 @@ function CollapsibleToolbar({ projectHasDevScript }: Props) {
           )}
         </Button>
       </div>
-      {!isHeaderCollapsed && (
-        <TaskDetailsToolbar projectHasDevScript={projectHasDevScript} />
-      )}
+      {!isHeaderCollapsed && <TaskDetailsToolbar />}
     </div>
   );
 }
 
-export default CollapsibleToolbar;
+export default memo(CollapsibleToolbar);
