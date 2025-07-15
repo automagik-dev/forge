@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,9 +12,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { FolderPicker } from '@/components/ui/folder-picker';
-import { Project, CreateProject, UpdateProject } from 'shared/types';
+import { CreateProject, Project, UpdateProject } from 'shared/types';
 import { AlertCircle, Folder } from 'lucide-react';
-import { makeRequest } from '@/lib/api';
+import { projectsApi } from '@/lib/api';
 
 interface ProjectFormProps {
   open: boolean;
@@ -95,18 +95,12 @@ export function ProjectForm({
           setup_script: setupScript.trim() || null,
           dev_script: devScript.trim() || null,
         };
-        const response = await makeRequest(`/api/projects/${project.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(updateData),
-        });
 
-        if (!response.ok) {
-          throw new Error('Failed to update project');
-        }
-
-        const data = await response.json();
-        if (!data.success) {
-          throw new Error(data.message || 'Failed to update project');
+        try {
+          await projectsApi.update(project.id, updateData);
+        } catch (error) {
+          setError('Failed to update project');
+          return;
         }
       } else {
         const createData: CreateProject = {
@@ -116,18 +110,12 @@ export function ProjectForm({
           setup_script: setupScript.trim() || null,
           dev_script: devScript.trim() || null,
         };
-        const response = await makeRequest('/api/projects', {
-          method: 'POST',
-          body: JSON.stringify(createData),
-        });
 
-        if (!response.ok) {
-          throw new Error('Failed to create project');
-        }
-
-        const data = await response.json();
-        if (!data.success) {
-          throw new Error(data.message || 'Failed to create project');
+        try {
+          await projectsApi.create(createData);
+        } catch (error) {
+          setError('Failed to create project');
+          return;
         }
       }
 

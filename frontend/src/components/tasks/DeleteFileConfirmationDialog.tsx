@@ -7,9 +7,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { makeRequest } from '@/lib/api.ts';
+import { attemptsApi } from '@/lib/api.ts';
 import { useContext } from 'react';
-import { ApiResponse } from 'shared/types.ts';
 import {
   TaskDeletingFilesContext,
   TaskDetailsContext,
@@ -28,29 +27,19 @@ function DeleteFileConfirmationDialog() {
     if (!fileToDelete || !projectId || !task?.id || !selectedAttempt?.id)
       return;
 
-    try {
-      setDeletingFiles((prev) => new Set(prev).add(fileToDelete));
-      const response = await makeRequest(
-        `/api/projects/${projectId}/tasks/${selectedAttempt.task_id}/attempts/${selectedAttempt.id}/delete-file?file_path=${encodeURIComponent(
-          fileToDelete
-        )}`,
-        {
-          method: 'POST',
-        }
-      );
+    setDeletingFiles((prev) => new Set(prev).add(fileToDelete));
 
-      if (response.ok) {
-        const result: ApiResponse<null> = await response.json();
-        if (result.success) {
-          fetchDiff();
-        } else {
-          setDiffError(result.message || 'Failed to delete file');
-        }
-      } else {
-        setDiffError('Failed to delete file');
-      }
-    } catch (err) {
-      setDiffError('Failed to delete file');
+    try {
+      await attemptsApi.deleteFile(
+        projectId!,
+        selectedAttempt.task_id,
+        selectedAttempt.id,
+        fileToDelete
+      );
+      await fetchDiff();
+    } catch (error: unknown) {
+      // @ts-expect-error it is type ApiError
+      setDiffError(error.message || 'Failed to delete file');
     } finally {
       setDeletingFiles((prev) => {
         const newSet = new Set(prev);

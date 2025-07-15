@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Navbar } from '@/components/layout/navbar';
 import { Projects } from '@/pages/projects';
 import { ProjectTasks } from '@/pages/project-tasks';
@@ -11,13 +11,10 @@ import { OnboardingDialog } from '@/components/OnboardingDialog';
 import { PrivacyOptInDialog } from '@/components/PrivacyOptInDialog';
 import { ConfigProvider, useConfig } from '@/components/config-provider';
 import { ThemeProvider } from '@/components/theme-provider';
-import type {
-  Config,
-  ApiResponse,
-  ExecutorConfig,
-  EditorType,
-} from 'shared/types';
+import type { EditorType, ExecutorConfig } from 'shared/types';
+import { configApi } from '@/lib/api';
 import * as Sentry from '@sentry/react';
+import { Loader } from '@/components/ui/loader';
 import { GitHubLoginDialog } from '@/components/GitHubLoginDialog';
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
@@ -44,7 +41,7 @@ function AppContent() {
       if (config.telemetry_acknowledged) {
         const notAuthenticated =
           !config.github?.username || !config.github?.token;
-        setShowGitHubLogin(notAuthenticated || githubTokenInvalid);
+        setShowGitHubLogin(notAuthenticated);
       } else {
         setShowGitHubLogin(false);
       }
@@ -60,20 +57,9 @@ function AppContent() {
     updateConfig({ disclaimer_acknowledged: true });
 
     try {
-      const response = await fetch('/api/config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ...config, disclaimer_acknowledged: true }),
-      });
-
-      const data: ApiResponse<Config> = await response.json();
-
-      if (data.success) {
-        setShowDisclaimer(false);
-        setShowOnboarding(!config.onboarding_acknowledged);
-      }
+      await configApi.saveConfig({ ...config, disclaimer_acknowledged: true });
+      setShowDisclaimer(false);
+      setShowOnboarding(!config.onboarding_acknowledged);
     } catch (err) {
       console.error('Error saving config:', err);
     }
@@ -95,19 +81,8 @@ function AppContent() {
     updateConfig(updatedConfig);
 
     try {
-      const response = await fetch('/api/config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedConfig),
-      });
-
-      const data: ApiResponse<Config> = await response.json();
-
-      if (data.success) {
-        setShowOnboarding(false);
-      }
+      await configApi.saveConfig(updatedConfig);
+      setShowOnboarding(false);
     } catch (err) {
       console.error('Error saving config:', err);
     }
@@ -125,23 +100,12 @@ function AppContent() {
     updateConfig(updatedConfig);
 
     try {
-      const response = await fetch('/api/config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedConfig),
-      });
-
-      const data: ApiResponse<Config> = await response.json();
-
-      if (data.success) {
-        setShowPrivacyOptIn(false);
-        // Now show GitHub login after privacy choice is made
-        const notAuthenticated =
-          !updatedConfig.github?.username || !updatedConfig.github?.token;
-        setShowGitHubLogin(notAuthenticated);
-      }
+      await configApi.saveConfig(updatedConfig);
+      setShowPrivacyOptIn(false);
+      // Now show GitHub login after privacy choice is made
+      const notAuthenticated =
+        !updatedConfig.github?.username || !updatedConfig.github?.token;
+      setShowGitHubLogin(notAuthenticated);
     } catch (err) {
       console.error('Error saving config:', err);
     }
@@ -150,10 +114,7 @@ function AppContent() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">Loading...</p>
-        </div>
+        <Loader message="Loading..." size={32} />
       </div>
     );
   }

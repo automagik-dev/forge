@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,19 +10,19 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Project, ApiResponse } from 'shared/types';
+import { Project } from 'shared/types';
 import { ProjectForm } from './project-form';
-import { makeRequest } from '@/lib/api';
+import { projectsApi } from '@/lib/api';
 import {
-  Plus,
-  Edit,
-  Trash2,
-  Calendar,
   AlertCircle,
-  Loader2,
-  MoreHorizontal,
+  Calendar,
+  Edit,
   ExternalLink,
   FolderOpen,
+  Loader2,
+  MoreHorizontal,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -42,17 +42,13 @@ export function ProjectList() {
   const fetchProjects = async () => {
     setLoading(true);
     setError('');
+
     try {
-      const response = await makeRequest('/api/projects');
-      const data: ApiResponse<Project[]> = await response.json();
-      if (data.success && data.data) {
-        setProjects(data.data);
-      } else {
-        setError('Failed to load projects');
-      }
+      const result = await projectsApi.getAll();
+      setProjects(result);
     } catch (error) {
       console.error('Failed to fetch projects:', error);
-      setError('Failed to connect to server');
+      setError('Failed to fetch projects');
     } finally {
       setLoading(false);
     }
@@ -67,12 +63,8 @@ export function ProjectList() {
       return;
 
     try {
-      const response = await makeRequest(`/api/projects/${id}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        fetchProjects();
-      }
+      await projectsApi.delete(id);
+      fetchProjects();
     } catch (error) {
       console.error('Failed to delete project:', error);
       setError('Failed to delete project');
@@ -86,20 +78,7 @@ export function ProjectList() {
 
   const handleOpenInIDE = async (projectId: string) => {
     try {
-      const response = await makeRequest(
-        `/api/projects/${projectId}/open-editor`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(null),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to open project in IDE');
-      }
+      await projectsApi.openEditor(projectId);
     } catch (error) {
       console.error('Failed to open project in IDE:', error);
       setError('Failed to open project in IDE');

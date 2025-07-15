@@ -1,9 +1,9 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Bot, Hammer, ToggleLeft, ToggleRight } from 'lucide-react';
-import { makeRequest } from '@/lib/api.ts';
+import { Loader } from '@/components/ui/loader.tsx';
+import { executionProcessesApi } from '@/lib/api.ts';
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer.tsx';
 import type {
-  ApiResponse,
   ExecutionProcess,
   NormalizedConversation,
   NormalizedEntry,
@@ -132,37 +132,22 @@ export function NormalizedConversationViewer({
           setLoading(true);
           setError(null);
         }
-
-        const response = await makeRequest(
-          `/api/projects/${projectId}/execution-processes/${executionProcess.id}/normalized-logs`
+        const result = await executionProcessesApi.getNormalizedLogs(
+          projectId,
+          executionProcess.id
         );
-
-        if (response.ok) {
-          const result: ApiResponse<NormalizedConversation> =
-            await response.json();
-          if (result.success && result.data) {
-            setConversation((prev) => {
-              // Only update if content actually changed
-              if (
-                !prev ||
-                JSON.stringify(prev) !== JSON.stringify(result.data)
-              ) {
-                // Notify parent component of conversation update
-                if (onConversationUpdate) {
-                  // Use setTimeout to ensure state update happens first
-                  setTimeout(onConversationUpdate, 0);
-                }
-                return result.data;
-              }
-              return prev;
-            });
-          } else if (!isPolling) {
-            setError(result.message || 'Failed to fetch normalized logs');
+        setConversation((prev) => {
+          // Only update if content actually changed
+          if (!prev || JSON.stringify(prev) !== JSON.stringify(result)) {
+            // Notify parent component of conversation update
+            if (onConversationUpdate) {
+              // Use setTimeout to ensure state update happens first
+              setTimeout(onConversationUpdate, 0);
+            }
+            return result;
           }
-        } else if (!isPolling) {
-          const errorText = await response.text();
-          setError(`Failed to fetch logs: ${errorText || response.statusText}`);
-        }
+          return prev;
+        });
       } catch (err) {
         if (!isPolling) {
           setError(
@@ -216,9 +201,7 @@ export function NormalizedConversationViewer({
 
   if (loading) {
     return (
-      <div className="text-xs text-muted-foreground italic text-center">
-        Loading conversation...
-      </div>
+      <Loader message="Loading conversation..." size={24} className="py-4" />
     );
   }
 
@@ -299,7 +282,7 @@ export function NormalizedConversationViewer({
       <div className="space-y-2">
         {displayEntries.map((entry, index) => (
           <DisplayConversationEntry
-            key={index}
+            key={entry.timestamp || index}
             entry={entry}
             index={index}
             diffDeletable={diffDeletable}
