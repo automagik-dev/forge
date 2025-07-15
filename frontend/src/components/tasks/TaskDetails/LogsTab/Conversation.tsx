@@ -1,4 +1,4 @@
-import { NormalizedConversationViewer } from '@/components/tasks/TaskDetails/NormalizedConversationViewer.tsx';
+import { NormalizedConversationViewer } from '@/components/tasks/TaskDetails/LogsTab/NormalizedConversationViewer.tsx';
 import {
   useCallback,
   useContext,
@@ -8,20 +8,19 @@ import {
   useState,
 } from 'react';
 import { TaskAttemptDataContext } from '@/components/context/taskDetailsContext.ts';
+import { Loader } from '@/components/ui/loader.tsx';
 
-type Props = {
-  conversationUpdateTrigger: number;
-  handleConversationUpdate: () => void;
-};
-
-function Conversation({
-  conversationUpdateTrigger,
-  handleConversationUpdate,
-}: Props) {
+function Conversation() {
   const { attemptData } = useContext(TaskAttemptDataContext);
   const [shouldAutoScrollLogs, setShouldAutoScrollLogs] = useState(true);
+  const [conversationUpdateTrigger, setConversationUpdateTrigger] = useState(0);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Callback to trigger auto-scroll when conversation updates
+  const handleConversationUpdate = useCallback(() => {
+    setConversationUpdateTrigger((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
     if (shouldAutoScrollLogs && scrollContainerRef.current) {
@@ -130,11 +129,17 @@ function Conversation({
           ))}
         </div>
       ) : (
-        <div className="text-center py-8 text-muted-foreground">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-lg font-semibold mb-2">Coding Agent Starting</p>
-          <p>Initializing conversation...</p>
-        </div>
+        <Loader
+          message={
+            <>
+              Coding Agent Starting
+              <br />
+              Initializing conversation...
+            </>
+          }
+          size={48}
+          className="py-8"
+        />
       )}
     </div>
   );

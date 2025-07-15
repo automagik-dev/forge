@@ -3,12 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileSearchTextarea } from '@/components/ui/file-search-textarea';
 import { useContext, useMemo, useState } from 'react';
-import { makeRequest } from '@/lib/api.ts';
+import { attemptsApi } from '@/lib/api.ts';
 import {
   TaskAttemptDataContext,
   TaskDetailsContext,
   TaskSelectedAttemptContext,
 } from '@/components/context/taskDetailsContext.ts';
+import { Loader } from '@/components/ui/loader';
 
 export function TaskFollowUpSection() {
   const { task, projectId } = useContext(TaskDetailsContext);
@@ -49,36 +50,19 @@ export function TaskFollowUpSection() {
     try {
       setIsSendingFollowUp(true);
       setFollowUpError(null);
-      const response = await makeRequest(
-        `/api/projects/${projectId}/tasks/${selectedAttempt.task_id}/attempts/${selectedAttempt.id}/follow-up`,
+      await attemptsApi.followUp(
+        projectId!,
+        selectedAttempt.task_id,
+        selectedAttempt.id,
         {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            prompt: followUpMessage.trim(),
-          }),
+          prompt: followUpMessage.trim(),
         }
       );
-
-      if (response.ok) {
-        setFollowUpMessage('');
-        fetchAttemptData(selectedAttempt.id, selectedAttempt.task_id);
-      } else {
-        const errorText = await response.text();
-        setFollowUpError(
-          `Failed to start follow-up execution: ${
-            errorText || response.statusText
-          }`
-        );
-      }
-    } catch (err) {
-      setFollowUpError(
-        `Failed to send follow-up: ${
-          err instanceof Error ? err.message : 'Unknown error'
-        }`
-      );
+      setFollowUpMessage('');
+      fetchAttemptData(selectedAttempt.id, selectedAttempt.task_id);
+    } catch (error: unknown) {
+      // @ts-expect-error it is type ApiError
+      setFollowUpError(`Failed to start follow-up execution: ${error.message}`);
     } finally {
       setIsSendingFollowUp(false);
     }
@@ -127,7 +111,7 @@ export function TaskFollowUpSection() {
               size="sm"
             >
               {isSendingFollowUp ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                <Loader size={16} className="mr-2" />
               ) : (
                 <>
                   <Send className="h-4 w-4 mr-2" />

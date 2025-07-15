@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { FolderOpen, Plus, Settings } from 'lucide-react';
-import { makeRequest } from '@/lib/api';
+import { Loader } from '@/components/ui/loader';
+import { projectsApi, tasksApi } from '@/lib/api';
 import { TaskFormDialog } from '@/components/tasks/TaskFormDialog';
 import { ProjectForm } from '@/components/projects/project-form';
 import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts';
@@ -16,7 +17,6 @@ import {
 import { TaskKanbanBoard } from '@/components/tasks/TaskKanbanBoard';
 import { TaskDetailsPanel } from '@/components/tasks/TaskDetailsPanel';
 import type {
-  ApiResponse,
   CreateTaskAndStart,
   ExecutorConfig,
   ProjectWithBranch,
@@ -56,20 +56,7 @@ export function ProjectTasks() {
     if (!projectId) return;
 
     try {
-      const response = await makeRequest(
-        `/api/projects/${projectId}/open-editor`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(null),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to open project in IDE');
-      }
+      await projectsApi.openEditor(projectId);
     } catch (error) {
       console.error('Failed to open project in IDE:', error);
       setError('Failed to open project in IDE');
@@ -116,19 +103,8 @@ export function ProjectTasks() {
 
   const fetchProject = useCallback(async () => {
     try {
-      const response = await makeRequest(
-        `/api/projects/${projectId}/with-branch`
-      );
-
-      if (response.ok) {
-        const result: ApiResponse<ProjectWithBranch> = await response.json();
-        if (result.success && result.data) {
-          setProject(result.data);
-        }
-      } else if (response.status === 404) {
-        setError('Project not found');
-        navigate('/projects');
-      }
+      const result = await projectsApi.getWithBranch(projectId!);
+      setProject(result);
     } catch (err) {
       setError('Failed to load project');
     }
@@ -140,38 +116,28 @@ export function ProjectTasks() {
         if (!skipLoading) {
           setLoading(true);
         }
-        const response = await makeRequest(`/api/projects/${projectId}/tasks`);
-
-        if (response.ok) {
-          const result: ApiResponse<Task[]> = await response.json();
-          if (result.success && result.data) {
-            // Only update if data has actually changed
-            setTasks((prevTasks) => {
-              const newTasks = result.data!;
-              if (JSON.stringify(prevTasks) === JSON.stringify(newTasks)) {
-                return prevTasks; // Return same reference to prevent re-render
-              }
-
-              setSelectedTask((prev) => {
-                if (!prev) return prev;
-
-                const updatedSelectedTask = newTasks.find(
-                  (task) => task.id === prev.id
-                );
-
-                if (
-                  JSON.stringify(prev) === JSON.stringify(updatedSelectedTask)
-                )
-                  return prev;
-                return updatedSelectedTask || prev;
-              });
-
-              return newTasks;
-            });
+        const result = await tasksApi.getAll(projectId!);
+        // Only update if data has actually changed
+        setTasks((prevTasks) => {
+          const newTasks = result;
+          if (JSON.stringify(prevTasks) === JSON.stringify(newTasks)) {
+            return prevTasks; // Return same reference to prevent re-render
           }
-        } else {
-          setError('Failed to load tasks');
-        }
+
+          setSelectedTask((prev) => {
+            if (!prev) return prev;
+
+            const updatedSelectedTask = newTasks.find(
+              (task) => task.id === prev.id
+            );
+
+            if (JSON.stringify(prev) === JSON.stringify(updatedSelectedTask))
+              return prev;
+            return updatedSelectedTask || prev;
+          });
+
+          return newTasks;
+        });
       } catch (err) {
         setError('Failed to load tasks');
       } finally {
@@ -186,20 +152,12 @@ export function ProjectTasks() {
   const handleCreateTask = useCallback(
     async (title: string, description: string) => {
       try {
-        const response = await makeRequest(`/api/projects/${projectId}/tasks`, {
-          method: 'POST',
-          body: JSON.stringify({
-            project_id: projectId,
-            title,
-            description: description || null,
-          }),
+        await tasksApi.create(projectId!, {
+          project_id: projectId!,
+          title,
+          description: description || null,
         });
-
-        if (response.ok) {
-          await fetchTasks();
-        } else {
-          setError('Failed to create task');
-        }
+        await fetchTasks();
       } catch (err) {
         setError('Failed to create task');
       }
@@ -216,25 +174,10 @@ export function ProjectTasks() {
           description: description || null,
           executor: executor || null,
         };
-
-        const response = await makeRequest(
-          `/api/projects/${projectId}/tasks/create-and-start`,
-          {
-            method: 'POST',
-            body: JSON.stringify(payload),
-          }
-        );
-
-        if (response.ok) {
-          const result: ApiResponse<Task> = await response.json();
-          if (result.success && result.data) {
-            await fetchTasks();
-            // Open the newly created task in the details panel
-            handleViewTaskDetails(result.data);
-          }
-        } else {
-          setError('Failed to create and start task');
-        }
+        const result = await tasksApi.createAndStart(projectId!, payload);
+        await fetchTasks();
+        // Open the newly created task in the details panel
+        handleViewTaskDetails(result);
       } catch (err) {
         setError('Failed to create and start task');
       }
@@ -247,24 +190,13 @@ export function ProjectTasks() {
       if (!editingTask) return;
 
       try {
-        const response = await makeRequest(
-          `/api/projects/${projectId}/tasks/${editingTask.id}`,
-          {
-            method: 'PUT',
-            body: JSON.stringify({
-              title,
-              description: description || null,
-              status,
-            }),
-          }
-        );
-
-        if (response.ok) {
-          await fetchTasks();
-          setEditingTask(null);
-        } else {
-          setError('Failed to update task');
-        }
+        await tasksApi.update(projectId!, editingTask.id, {
+          title,
+          description: description || null,
+          status,
+        });
+        await fetchTasks();
+        setEditingTask(null);
       } catch (err) {
         setError('Failed to update task');
       }
@@ -277,19 +209,9 @@ export function ProjectTasks() {
       if (!confirm('Are you sure you want to delete this task?')) return;
 
       try {
-        const response = await makeRequest(
-          `/api/projects/${projectId}/tasks/${taskId}`,
-          {
-            method: 'DELETE',
-          }
-        );
-
-        if (response.ok) {
-          await fetchTasks();
-        } else {
-          setError('Failed to delete task');
-        }
-      } catch (err) {
+        await tasksApi.delete(projectId!, taskId);
+        await fetchTasks();
+      } catch (error) {
         setError('Failed to delete task');
       }
     },
@@ -303,8 +225,8 @@ export function ProjectTasks() {
 
   const handleViewTaskDetails = useCallback(
     (task: Task) => {
-      setSelectedTask(task);
-      setIsPanelOpen(true);
+      // setSelectedTask(task);
+      // setIsPanelOpen(true);
       // Update URL to include task ID
       navigate(`/projects/${projectId}/tasks/${task.id}`, { replace: true });
     },
@@ -312,8 +234,8 @@ export function ProjectTasks() {
   );
 
   const handleClosePanel = useCallback(() => {
-    setIsPanelOpen(false);
-    setSelectedTask(null);
+    // setIsPanelOpen(false);
+    // setSelectedTask(null);
     // Remove task ID from URL when closing panel
     navigate(`/projects/${projectId}/tasks`, { replace: true });
   }, [projectId, navigate]);
@@ -342,27 +264,11 @@ export function ProjectTasks() {
       );
 
       try {
-        const response = await makeRequest(
-          `/api/projects/${projectId}/tasks/${taskId}`,
-          {
-            method: 'PUT',
-            body: JSON.stringify({
-              title: task.title,
-              description: task.description,
-              status: newStatus,
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          // Revert the optimistic update if the API call failed
-          setTasks((prev) =>
-            prev.map((t) =>
-              t.id === taskId ? { ...t, status: previousStatus } : t
-            )
-          );
-          setError('Failed to update task status');
-        }
+        await tasksApi.update(projectId!, taskId, {
+          title: task.title,
+          description: task.description,
+          status: newStatus,
+        });
       } catch (err) {
         // Revert the optimistic update if the API call failed
         setTasks((prev) =>
@@ -377,13 +283,12 @@ export function ProjectTasks() {
   );
 
   if (loading) {
-    return <div className="text-center py-8">Loading tasks...</div>;
+    return <Loader message="Loading tasks..." size={32} className="py-8" />;
   }
 
   if (error) {
     return <div className="text-center py-8 text-destructive">{error}</div>;
   }
-  console.log('selectedTask', selectedTask);
 
   return (
     <div className={getMainContainerClasses(isPanelOpen)}>
@@ -470,7 +375,6 @@ export function ProjectTasks() {
           task={selectedTask}
           projectHasDevScript={!!project?.dev_script}
           projectId={projectId!}
-          isOpen={isPanelOpen}
           onClose={handleClosePanel}
           onEditTask={handleEditTask}
           onDeleteTask={handleDeleteTask}

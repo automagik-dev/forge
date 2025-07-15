@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,18 +10,18 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ProjectWithBranch, ApiResponse } from 'shared/types';
+import { ProjectWithBranch } from 'shared/types';
 import { ProjectForm } from './project-form';
-import { makeRequest } from '@/lib/api';
+import { projectsApi } from '@/lib/api';
 import {
-  ArrowLeft,
-  Edit,
-  Trash2,
-  Calendar,
-  Clock,
   AlertCircle,
-  Loader2,
+  ArrowLeft,
+  Calendar,
   CheckSquare,
+  Clock,
+  Edit,
+  Loader2,
+  Trash2,
 } from 'lucide-react';
 
 interface ProjectDetailProps {
@@ -39,22 +39,17 @@ export function ProjectDetail({ projectId, onBack }: ProjectDetailProps) {
   const fetchProject = useCallback(async () => {
     setLoading(true);
     setError('');
+
     try {
-      const response = await makeRequest(
-        `/api/projects/${projectId}/with-branch`
-      );
-      const data: ApiResponse<ProjectWithBranch> = await response.json();
-      if (data.success && data.data) {
-        setProject(data.data);
-      } else {
-        setError('Project not found');
-      }
+      const result = await projectsApi.getWithBranch(projectId);
+      setProject(result);
     } catch (error) {
       console.error('Failed to fetch project:', error);
-      setError('Failed to load project');
-    } finally {
-      setLoading(false);
+      // @ts-expect-error it is type ApiError
+      setError(error.message || 'Failed to load project');
     }
+
+    setLoading(false);
   }, [projectId]);
 
   const handleDelete = async () => {
@@ -67,15 +62,12 @@ export function ProjectDetail({ projectId, onBack }: ProjectDetailProps) {
       return;
 
     try {
-      const response = await makeRequest(`/api/projects/${projectId}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        onBack();
-      }
+      await projectsApi.delete(projectId);
+      onBack();
     } catch (error) {
       console.error('Failed to delete project:', error);
-      setError('Failed to delete project');
+      // @ts-expect-error it is type ApiError
+      setError(error.message || 'Failed to delete project');
     }
   };
 

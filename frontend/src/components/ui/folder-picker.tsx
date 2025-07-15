@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,15 +11,15 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
+  AlertCircle,
+  ChevronUp,
+  File,
   Folder,
   FolderOpen,
-  File,
-  AlertCircle,
   Home,
-  ChevronUp,
   Search,
 } from 'lucide-react';
-import { makeRequest } from '@/lib/api';
+import { fileSystemApi } from '@/lib/api';
 import { DirectoryEntry } from 'shared/types';
 
 interface FolderPickerProps {
@@ -65,25 +65,13 @@ export function FolderPicker({
     setError('');
 
     try {
-      const queryParam = path ? `?path=${encodeURIComponent(path)}` : '';
-      const response = await makeRequest(`/api/filesystem/list${queryParam}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to load directory');
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        setEntries(data.data || []);
-        const newPath = path || data.message || '';
-        setCurrentPath(newPath);
-        // Update manual path if we have a specific path (not for initial home directory load)
-        if (path) {
-          setManualPath(newPath);
-        }
-      } else {
-        setError(data.message || 'Failed to load directory');
+      const result = await fileSystemApi.list(path);
+      setEntries(result.entries || []);
+      const newPath = result.current_path || '';
+      setCurrentPath(newPath);
+      // Update manual path if we have a specific path (not for initial home directory load)
+      if (path) {
+        setManualPath(newPath);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load directory');
