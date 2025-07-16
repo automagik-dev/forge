@@ -524,13 +524,31 @@ impl TaskAttempt {
         worktree_path: &str,
         main_repo_path: &str,
         branch_name: &str,
+        base_branch: &str,
         task_title: &str,
+        task_description: &Option<String>,
+        task_id: Uuid,
     ) -> Result<String, TaskAttemptError> {
         let git_service = GitService::new(main_repo_path)?;
         let worktree_path = Path::new(worktree_path);
 
+        // Extract first section of UUID (before first hyphen)
+        let task_uuid_str = task_id.to_string();
+        let first_uuid_section = task_uuid_str.split('-').next().unwrap_or(&task_uuid_str);
+
+        // Create commit message with task title and description
+        let mut commit_message = format!("{} (vibe-kanban {})", task_title, first_uuid_section);
+
+        // Add description on next line if it exists
+        if let Some(description) = task_description {
+            if !description.trim().is_empty() {
+                commit_message.push_str("\n\n");
+                commit_message.push_str(description);
+            }
+        }
+
         git_service
-            .merge_changes(worktree_path, branch_name, task_title)
+            .merge_changes(worktree_path, branch_name, base_branch, &commit_message)
             .map_err(TaskAttemptError::from)
     }
 
@@ -567,7 +585,10 @@ impl TaskAttempt {
             &worktree_path,
             &ctx.project.git_repo_path,
             &ctx.task_attempt.branch,
+            &ctx.task_attempt.base_branch,
             &ctx.task.title,
+            &ctx.task.description,
+            ctx.task.id,
         )?;
 
         // Update the task attempt with the merge commit
