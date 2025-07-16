@@ -21,6 +21,7 @@ pub enum GitServiceError {
 
     MergeConflicts(String),
     InvalidPath(String),
+    WorktreeDirty(String),
 }
 
 impl std::fmt::Display for GitServiceError {
@@ -33,6 +34,9 @@ impl std::fmt::Display for GitServiceError {
 
             GitServiceError::MergeConflicts(e) => write!(f, "Merge conflicts: {}", e),
             GitServiceError::InvalidPath(e) => write!(f, "Invalid path: {}", e),
+            GitServiceError::WorktreeDirty(e) => {
+                write!(f, "Worktree has uncommitted changes: {}", e)
+            }
         }
     }
 }
@@ -177,57 +181,110 @@ impl GitService {
         &self,
         worktree_path: &Path,
         branch_name: &str,
-        task_title: &str,
+        base_branch_name: &str,
+        commit_message: &str,
     ) -> Result<String, GitServiceError> {
-        let main_repo = self.open_repo()?;
+        // Open the worktree repository
+        let worktree_repo = Repository::open(worktree_path)?;
 
-        // Open the worktree repository to get the latest commit
-        let _worktree_repo = Repository::open(worktree_path)?;
+        // Check if worktree is dirty before proceeding
+        self.check_worktree_clean(&worktree_repo)?;
 
-        // Verify the branch exists in the main repo
-        let branch = main_repo
+        // Verify the task branch exists in the worktree
+        let task_branch = worktree_repo
             .find_branch(branch_name, BranchType::Local)
             .map_err(|_| GitServiceError::BranchNotFound(branch_name.to_string()))?;
 
-        // Get the current HEAD of the main repo (usually main/master)
-        let main_head = main_repo.head()?;
-        let main_commit = main_head.peel_to_commit()?;
+        // Get the base branch from the worktree
+        let base_branch = worktree_repo
+            .find_branch(base_branch_name, BranchType::Local)
+            .map_err(|_| GitServiceError::BranchNotFound(base_branch_name.to_string()))?;
+
+        // Get commits
+        let base_commit = base_branch.get().peel_to_commit()?;
+        let task_commit = task_branch.get().peel_to_commit()?;
 
         // Get the signature for the merge commit
-        let signature = main_repo.signature()?;
+        let signature = worktree_repo.signature()?;
 
-        // Get the branch commit (this should be the same as the worktree commit)
-        let branch_commit = branch.get().peel_to_commit()?;
+        // Perform a squash merge - create a single commit with all changes
+        let squash_commit_id = self.perform_squash_merge(
+            &worktree_repo,
+            &base_commit,
+            &task_commit,
+            &signature,
+            commit_message,
+            base_branch_name,
+        )?;
 
-        // Perform a merge operation using git2's merge facilities
-        let annotated_commit = main_repo.find_annotated_commit(branch_commit.id())?;
-        let analysis = main_repo.merge_analysis(&[&annotated_commit])?;
+        info!("Created squash merge commit: {}", squash_commit_id);
+        Ok(squash_commit_id.to_string())
+    }
 
-        if analysis.0.is_fast_forward() {
-            // Fast-forward merge - just update HEAD
-            let refname = format!("refs/heads/{}", main_head.shorthand().unwrap_or("main"));
-            main_repo.reference(&refname, branch_commit.id(), true, "Fast-forward merge")?;
-            main_repo.reset(branch_commit.as_object(), git2::ResetType::Hard, None)?;
-            info!("Fast-forward merge completed");
-            Ok(branch_commit.id().to_string())
-        } else {
-            // Create a proper merge commit
-            let merge_commit_id = main_repo.commit(
-                Some("HEAD"),                                    // Update HEAD
-                &signature,                                      // Author
-                &signature,                                      // Committer
-                &format!("Merge: {} (vibe-kanban)", task_title), // Message using task title
-                &branch_commit.tree()?,                          // Use the tree from branch
-                &[&main_commit, &branch_commit], // Parents: main HEAD and branch commit
-            )?;
+    /// Check if the worktree is clean (no uncommitted changes to tracked files)
+    fn check_worktree_clean(&self, repo: &Repository) -> Result<(), GitServiceError> {
+        let mut status_options = git2::StatusOptions::new();
+        status_options
+            .include_untracked(false) // Don't include untracked files
+            .include_ignored(false); // Don't include ignored files
 
-            // Reset the working directory to match the new HEAD
-            let merge_commit = main_repo.find_commit(merge_commit_id)?;
-            main_repo.reset(merge_commit.as_object(), git2::ResetType::Hard, None)?;
+        let statuses = repo.statuses(Some(&mut status_options))?;
 
-            info!("Created merge commit: {}", merge_commit_id);
-            Ok(merge_commit_id.to_string())
+        if !statuses.is_empty() {
+            let mut dirty_files = Vec::new();
+            for entry in statuses.iter() {
+                let status = entry.status();
+                // Only consider files that are actually tracked and modified
+                if status.intersects(
+                    git2::Status::INDEX_MODIFIED
+                        | git2::Status::INDEX_NEW
+                        | git2::Status::INDEX_DELETED
+                        | git2::Status::INDEX_RENAMED
+                        | git2::Status::INDEX_TYPECHANGE
+                        | git2::Status::WT_MODIFIED
+                        | git2::Status::WT_DELETED
+                        | git2::Status::WT_RENAMED
+                        | git2::Status::WT_TYPECHANGE,
+                ) {
+                    if let Some(path) = entry.path() {
+                        dirty_files.push(path.to_string());
+                    }
+                }
+            }
+
+            if !dirty_files.is_empty() {
+                return Err(GitServiceError::WorktreeDirty(dirty_files.join(", ")));
+            }
         }
+
+        Ok(())
+    }
+
+    /// Perform a squash merge of task branch into base branch
+    fn perform_squash_merge(
+        &self,
+        repo: &Repository,
+        base_commit: &git2::Commit,
+        task_commit: &git2::Commit,
+        signature: &git2::Signature,
+        commit_message: &str,
+        base_branch_name: &str,
+    ) -> Result<git2::Oid, GitServiceError> {
+        // Create a single commit that squashes all changes from task branch
+        let squash_commit_id = repo.commit(
+            None,                 // Don't update any reference yet
+            signature,            // Author
+            signature,            // Committer
+            commit_message,       // Custom message
+            &task_commit.tree()?, // Use the tree from task branch (all changes)
+            &[base_commit],       // Single parent: base branch commit
+        )?;
+
+        // Update the base branch reference to point to the new commit
+        let refname = format!("refs/heads/{}", base_branch_name);
+        repo.reference(&refname, squash_commit_id, true, "Squash merge")?;
+
+        Ok(squash_commit_id)
     }
 
     /// Rebase a worktree branch onto a new base
