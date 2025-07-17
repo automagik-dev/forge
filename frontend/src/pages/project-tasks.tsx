@@ -343,6 +343,11 @@ export function ProjectTasks() {
           return task;
         });
         setIsPanelOpen(true);
+      } else {
+        // Close panel when no task is found in array (after delete)
+        setIsPanelOpen(false);
+        setSelectedTask(null);
+        navigate(`/projects/${projectId}/tasks`, { replace: true });
       }
     } else {
       // Close panel when no taskId in URL
