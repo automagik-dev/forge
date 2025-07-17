@@ -2,7 +2,7 @@ use std::path::Path;
 
 use async_trait::async_trait;
 use command_group::{AsyncCommandGroup, AsyncGroupChild};
-use tokio::process::Command;
+use tokio::{fs, process::Command};
 use uuid::Uuid;
 
 use crate::{
@@ -13,6 +13,49 @@ use crate::{
     models::task::Task,
     utils::shell::get_shell_command,
 };
+
+/// Create Claude settings file with PostToolUse hook for exit_plan_mode
+async fn create_claude_settings_file(worktree_path: &str) -> Result<(), ExecutorError> {
+    let claude_dir = Path::new(worktree_path).join(".claude");
+    let settings_file = claude_dir.join("settings.local.json");
+
+    // Create .claude directory if it doesn't exist
+    fs::create_dir_all(&claude_dir).await.map_err(|e| {
+        tracing::warn!("Failed to create .claude directory: {}", e);
+        ExecutorError::GitError(format!("Failed to create .claude directory: {}", e))
+    })?;
+
+    // Create settings content with PreToolUse hook to auto-approve exit_plan_mode
+    let settings_content = r#"{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "exit_plan_mode",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"decision\": \"approve\", \"reason\": \"Auto-approving exit_plan_mode tool\", \"continue\": false, \"stopReason\": \"Plan presented - waiting for user approval before continuing\"}'"
+          }
+        ]
+      }
+    ]
+  }
+}"#;
+
+    // Write settings file
+    fs::write(&settings_file, settings_content)
+        .await
+        .map_err(|e| {
+            tracing::warn!("Failed to write Claude settings file: {}", e);
+            ExecutorError::GitError(format!("Failed to write Claude settings file: {}", e))
+        })?;
+
+    tracing::info!(
+        "Created Claude settings file at: {}",
+        settings_file.display()
+    );
+    Ok(())
+}
 
 /// An executor that uses Claude CLI to process tasks
 pub struct ClaudeExecutor {
@@ -32,6 +75,13 @@ impl ClaudeExecutor {
         Self {
             executor_type: "Claude".to_string(),
             command: "npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions --verbose --output-format=stream-json".to_string(),
+        }
+    }
+
+    pub fn new_plan_mode() -> Self {
+        Self {
+            executor_type: "ClaudePlan".to_string(),
+            command: "npx -y @anthropic-ai/claude-code@latest -p --permission-mode=plan --verbose --output-format=stream-json".to_string()
         }
     }
 
@@ -63,6 +113,15 @@ impl ClaudeFollowupExecutor {
         }
     }
 
+    pub fn new_plan_mode(session_id: String, prompt: String) -> Self {
+        Self {
+            session_id,
+            prompt,
+            executor_type: "ClaudePlan".to_string(),
+            command_base: "npx -y @anthropic-ai/claude-code@latest -p --permission-mode=plan --verbose --output-format=stream-json".to_string()
+        }
+    }
+
     /// Create a new ClaudeFollowupExecutor with custom settings
     pub fn with_command(
         session_id: String,
@@ -91,6 +150,11 @@ impl Executor for ClaudeExecutor {
         let task = Task::find_by_id(pool, task_id)
             .await?
             .ok_or(ExecutorError::TaskNotFound)?;
+
+        // Create Claude settings file with PostToolUse hook for plan mode
+        if self.executor_type == "ClaudePlan" {
+            create_claude_settings_file(worktree_path).await?;
+        }
 
         let prompt = if let Some(task_description) = task.description {
             format!(
@@ -338,7 +402,7 @@ Task title: {}"#,
         Ok(NormalizedConversation {
             entries,
             session_id,
-            executor_type: "claude".to_string(),
+            executor_type: self.executor_type.clone(),
             prompt: None,
             summary: None,
         })
@@ -428,6 +492,7 @@ impl ClaudeExecutor {
             ActionType::Search { query } => format!("`{}`", query),
             ActionType::WebFetch { url } => format!("`{}`", url),
             ActionType::TaskCreate { description } => description.clone(),
+            ActionType::PlanPresentation { plan } => plan.clone(),
             ActionType::Other { description: _ } => {
                 // For other tools, try to extract key information or fall back to tool name
                 match tool_name.to_lowercase().as_str() {
@@ -598,6 +663,17 @@ impl ClaudeExecutor {
                     }
                 }
             }
+            "exit_plan_mode" => {
+                if let Some(plan) = input.get("plan").and_then(|p| p.as_str()) {
+                    ActionType::PlanPresentation {
+                        plan: plan.to_string(),
+                    }
+                } else {
+                    ActionType::Other {
+                        description: "Plan presentation".to_string(),
+                    }
+                }
+            }
             _ => ActionType::Other {
                 description: format!("Tool: {}", tool_name),
             },
@@ -613,6 +689,11 @@ impl Executor for ClaudeFollowupExecutor {
         _task_id: Uuid,
         worktree_path: &str,
     ) -> Result<AsyncGroupChild, ExecutorError> {
+        // Create Claude settings file with PostToolUse hook for plan mode
+        if self.executor_type == "ClaudePlan" {
+            create_claude_settings_file(worktree_path).await?;
+        }
+
         // Use shell command for cross-platform compatibility
         let (shell_cmd, shell_arg) = get_shell_command();
         // Pass prompt via stdin instead of command line to avoid shell escaping issues
