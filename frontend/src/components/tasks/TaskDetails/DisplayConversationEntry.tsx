@@ -78,6 +78,9 @@ const getEntryIcon = (entryType: NormalizedEntryType) => {
     if (action_type.action === 'task_create') {
       return <Plus className="h-4 w-4 text-teal-600" />;
     }
+    if (action_type.action === 'plan_presentation') {
+      return <CheckSquare className="h-4 w-4 text-blue-600" />;
+    }
     return <Settings className="h-4 w-4 text-gray-600" />;
   }
   return <Settings className="h-4 w-4 text-gray-400" />;
@@ -107,6 +110,14 @@ const getContentClassName = (entryType: NormalizedEntryType) => {
       entryType.tool_name.toLowerCase() === 'todo_read')
   ) {
     return `${baseClasses} font-mono text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/20 px-2 py-1 rounded`;
+  }
+
+  // Special styling for plan presentations
+  if (
+    entryType.type === 'tool_use' &&
+    entryType.action_type.action === 'plan_presentation'
+  ) {
+    return `${baseClasses} text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20 px-3 py-2 rounded-md border-l-4 border-blue-400`;
   }
 
   return baseClasses;
@@ -224,9 +235,11 @@ const createIncrementalDiff = (
 
 // Helper function to determine if content should be rendered as markdown
 const shouldRenderMarkdown = (entryType: NormalizedEntryType) => {
-  // Render markdown for assistant messages and tool outputs that contain backticks
+  // Render markdown for assistant messages, plan presentations, and tool outputs that contain backticks
   return (
     entryType.type === 'assistant_message' ||
+    (entryType.type === 'tool_use' &&
+      entryType.action_type.action === 'plan_presentation') ||
     (entryType.type === 'tool_use' &&
       entryType.tool_name &&
       (entryType.tool_name.toLowerCase() === 'todowrite' ||
