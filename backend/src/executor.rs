@@ -428,7 +428,14 @@ impl ExecutorConfig {
                 dirs::home_dir().map(|home| home.join(".gemini").join("settings.json"))
             }
             ExecutorConfig::SstOpencode => {
-                xdg::BaseDirectories::with_prefix("opencode").get_config_file("opencode.json")
+                #[cfg(unix)]
+                {
+                    xdg::BaseDirectories::with_prefix("opencode").get_config_file("opencode.json")
+                }
+                #[cfg(not(unix))]
+                {
+                    dirs::config_dir().map(|config| config.join("opencode").join("opencode.json"))
+                }
             }
             ExecutorConfig::SetupScript { .. } => None,
         }
