@@ -1,8 +1,5 @@
 use axum::{
-    extract::{Path, State},
-    http::StatusCode,
-    response::Json as ResponseJson,
-    routing::get,
+    extract::State, http::StatusCode, response::Json as ResponseJson, routing::get, Extension,
     Json, Router,
 };
 use uuid::Uuid;
@@ -19,69 +16,38 @@ use crate::{
 };
 
 pub async fn get_project_tasks(
-    Path(project_id): Path<Uuid>,
+    Extension(project): Extension<Project>,
     State(app_state): State<AppState>,
 ) -> Result<ResponseJson<ApiResponse<Vec<TaskWithAttemptStatus>>>, StatusCode> {
-    match Task::find_by_project_id_with_attempt_status(&app_state.db_pool, project_id).await {
-        Ok(tasks) => Ok(ResponseJson(ApiResponse {
-            success: true,
-            data: Some(tasks),
-            message: None,
-        })),
+    match Task::find_by_project_id_with_attempt_status(&app_state.db_pool, project.id).await {
+        Ok(tasks) => Ok(ResponseJson(ApiResponse::success(tasks))),
         Err(e) => {
-            tracing::error!("Failed to fetch tasks for project {}: {}", project_id, e);
+            tracing::error!("Failed to fetch tasks for project {}: {}", project.id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
 }
 
 pub async fn get_task(
-    Path((project_id, task_id)): Path<(Uuid, Uuid)>,
-    State(app_state): State<AppState>,
+    Extension(task): Extension<Task>,
 ) -> Result<ResponseJson<ApiResponse<Task>>, StatusCode> {
-    match Task::find_by_id_and_project_id(&app_state.db_pool, task_id, project_id).await {
-        Ok(Some(task)) => Ok(ResponseJson(ApiResponse {
-            success: true,
-            data: Some(task),
-            message: None,
-        })),
-        Ok(None) => Err(StatusCode::NOT_FOUND),
-        Err(e) => {
-            tracing::error!(
-                "Failed to fetch task {} in project {}: {}",
-                task_id,
-                project_id,
-                e
-            );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+    Ok(ResponseJson(ApiResponse::success(task)))
 }
 
 pub async fn create_task(
-    Path(project_id): Path<Uuid>,
+    Extension(project): Extension<Project>,
     State(app_state): State<AppState>,
     Json(mut payload): Json<CreateTask>,
 ) -> Result<ResponseJson<ApiResponse<Task>>, StatusCode> {
     let id = Uuid::new_v4();
 
-    // Ensure the project_id in the payload matches the path parameter
-    payload.project_id = project_id;
-
-    // Verify project exists first
-    match Project::exists(&app_state.db_pool, project_id).await {
-        Ok(false) => return Err(StatusCode::NOT_FOUND),
-        Err(e) => {
-            tracing::error!("Failed to check project existence: {}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-        Ok(true) => {}
-    }
+    // Ensure the project_id in the payload matches the project from middleware
+    payload.project_id = project.id;
 
     tracing::debug!(
         "Creating task '{}' in project {}",
         payload.title,
-        project_id
+        project.id
     );
 
     match Task::create(&app_state.db_pool, &payload, id).await {
@@ -91,18 +57,14 @@ pub async fn create_task(
                 .track_analytics_event(
                     "task_created",
                     Some(serde_json::json!({
-                        "task_id": task.id.to_string(),
-                        "project_id": project_id.to_string(),
-                        "has_description": task.description.is_some(),
+                    "task_id": task.id.to_string(),
+                    "project_id": project.id.to_string(),
+                    "has_description": task.description.is_some(),
                     })),
                 )
                 .await;
 
-            Ok(ResponseJson(ApiResponse {
-                success: true,
-                data: Some(task),
-                message: Some("Task created successfully".to_string()),
-            }))
+            Ok(ResponseJson(ApiResponse::success(task)))
         }
         Err(e) => {
             tracing::error!("Failed to create task: {}", e);
@@ -112,29 +74,19 @@ pub async fn create_task(
 }
 
 pub async fn create_task_and_start(
-    Path(project_id): Path<Uuid>,
+    Extension(project): Extension<Project>,
     State(app_state): State<AppState>,
     Json(mut payload): Json<CreateTaskAndStart>,
 ) -> Result<ResponseJson<ApiResponse<Task>>, StatusCode> {
     let task_id = Uuid::new_v4();
 
-    // Ensure the project_id in the payload matches the path parameter
-    payload.project_id = project_id;
-
-    // Verify project exists first
-    match Project::exists(&app_state.db_pool, project_id).await {
-        Ok(false) => return Err(StatusCode::NOT_FOUND),
-        Err(e) => {
-            tracing::error!("Failed to check project existence: {}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-        Ok(true) => {}
-    }
+    // Ensure the project_id in the payload matches the project from middleware
+    payload.project_id = project.id;
 
     tracing::debug!(
         "Creating and starting task '{}' in project {}",
         payload.title,
-        project_id
+        project.id
     );
 
     // Create the task first
@@ -166,7 +118,7 @@ pub async fn create_task_and_start(
                     "task_created",
                     Some(serde_json::json!({
                         "task_id": task.id.to_string(),
-                        "project_id": project_id.to_string(),
+                        "project_id": project.id.to_string(),
                         "has_description": task.description.is_some(),
                     })),
                 )
@@ -192,7 +144,7 @@ pub async fn create_task_and_start(
                     &app_state_clone,
                     attempt_id,
                     task_id,
-                    project_id,
+                    project.id,
                 )
                 .await
                 {
@@ -204,11 +156,7 @@ pub async fn create_task_and_start(
                 }
             });
 
-            Ok(ResponseJson(ApiResponse {
-                success: true,
-                data: Some(task),
-                message: Some("Task created and started successfully".to_string()),
-            }))
+            Ok(ResponseJson(ApiResponse::success(task)))
         }
         Err(e) => {
             tracing::error!("Failed to create task attempt: {}", e);
@@ -218,21 +166,11 @@ pub async fn create_task_and_start(
 }
 
 pub async fn update_task(
-    Path((project_id, task_id)): Path<(Uuid, Uuid)>,
+    Extension(project): Extension<Project>,
+    Extension(existing_task): Extension<Task>,
     State(app_state): State<AppState>,
     Json(payload): Json<UpdateTask>,
 ) -> Result<ResponseJson<ApiResponse<Task>>, StatusCode> {
-    // Check if task exists in the specified project
-    let existing_task =
-        match Task::find_by_id_and_project_id(&app_state.db_pool, task_id, project_id).await {
-            Ok(Some(task)) => task,
-            Ok(None) => return Err(StatusCode::NOT_FOUND),
-            Err(e) => {
-                tracing::error!("Failed to check task existence: {}", e);
-                return Err(StatusCode::INTERNAL_SERVER_ERROR);
-            }
-        };
-
     // Use existing values if not provided in update
     let title = payload.title.unwrap_or(existing_task.title);
     let description = payload.description.or(existing_task.description);
@@ -243,8 +181,8 @@ pub async fn update_task(
 
     match Task::update(
         &app_state.db_pool,
-        task_id,
-        project_id,
+        existing_task.id,
+        project.id,
         title,
         description,
         status,
@@ -252,11 +190,7 @@ pub async fn update_task(
     )
     .await
     {
-        Ok(task) => Ok(ResponseJson(ApiResponse {
-            success: true,
-            data: Some(task),
-            message: Some("Task updated successfully".to_string()),
-        })),
+        Ok(task) => Ok(ResponseJson(ApiResponse::success(task))),
         Err(e) => {
             tracing::error!("Failed to update task: {}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
@@ -265,27 +199,18 @@ pub async fn update_task(
 }
 
 pub async fn delete_task(
-    Path((project_id, task_id)): Path<(Uuid, Uuid)>,
+    Extension(project): Extension<Project>,
+    Extension(task): Extension<Task>,
     State(app_state): State<AppState>,
 ) -> Result<ResponseJson<ApiResponse<()>>, StatusCode> {
-    // Verify task exists in the specified project
-    match Task::find_by_id_and_project_id(&app_state.db_pool, task_id, project_id).await {
-        Ok(Some(_)) => {} // Task exists, proceed
-        Ok(None) => return Err(StatusCode::NOT_FOUND),
-        Err(e) => {
-            tracing::error!("Failed to check task existence: {}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    }
-
     // Clean up all worktrees for this task before deletion
-    if let Err(e) = execution_monitor::cleanup_task_worktrees(&app_state.db_pool, task_id).await {
-        tracing::error!("Failed to cleanup worktrees for task {}: {}", task_id, e);
+    if let Err(e) = execution_monitor::cleanup_task_worktrees(&app_state.db_pool, task.id).await {
+        tracing::error!("Failed to cleanup worktrees for task {}: {}", task.id, e);
         // Continue with deletion even if cleanup fails
     }
 
     // Clean up all executor sessions for this task before deletion
-    match TaskAttempt::find_by_task_id(&app_state.db_pool, task_id).await {
+    match TaskAttempt::find_by_task_id(&app_state.db_pool, task.id).await {
         Ok(task_attempts) => {
             for attempt in task_attempts {
                 if let Err(e) =
@@ -315,16 +240,12 @@ pub async fn delete_task(
         }
     }
 
-    match Task::delete(&app_state.db_pool, task_id, project_id).await {
+    match Task::delete(&app_state.db_pool, task.id, project.id).await {
         Ok(rows_affected) => {
             if rows_affected == 0 {
                 Err(StatusCode::NOT_FOUND)
             } else {
-                Ok(ResponseJson(ApiResponse {
-                    success: true,
-                    data: None,
-                    message: Some("Task deleted successfully".to_string()),
-                }))
+                Ok(ResponseJson(ApiResponse::success(())))
             }
         }
         Err(e) => {
@@ -334,7 +255,7 @@ pub async fn delete_task(
     }
 }
 
-pub fn tasks_router() -> Router<AppState> {
+pub fn tasks_project_router() -> Router<AppState> {
     use axum::routing::post;
 
     Router::new()
@@ -346,8 +267,11 @@ pub fn tasks_router() -> Router<AppState> {
             "/projects/:project_id/tasks/create-and-start",
             post(create_task_and_start),
         )
-        .route(
-            "/projects/:project_id/tasks/:task_id",
-            get(get_task).put(update_task).delete(delete_task),
-        )
+}
+
+pub fn tasks_with_id_router() -> Router<AppState> {
+    Router::new().route(
+        "/projects/:project_id/tasks/:task_id",
+        get(get_task).put(update_task).delete(delete_task),
+    )
 }
