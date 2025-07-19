@@ -5,13 +5,12 @@ import { Button } from '@/components/ui/button';
 import { useConfig } from '@/components/config-provider';
 import { attemptsApi, projectsApi } from '@/lib/api';
 import type { GitBranch, TaskAttempt } from 'shared/types';
-import { EXECUTOR_TYPES, EXECUTOR_LABELS } from 'shared/types';
+import { EXECUTOR_LABELS, EXECUTOR_TYPES } from 'shared/types';
 import {
   TaskAttemptDataContext,
   TaskAttemptLoadingContext,
   TaskAttemptStoppingContext,
   TaskDetailsContext,
-  TaskExecutionStateContext,
   TaskSelectedAttemptContext,
 } from '@/components/context/taskDetailsContext.ts';
 import CreatePRDialog from '@/components/tasks/Toolbar/CreatePRDialog.tsx';
@@ -31,10 +30,9 @@ function TaskDetailsToolbar() {
   );
 
   const { isStopping } = useContext(TaskAttemptStoppingContext);
-  const { fetchAttemptData, setAttemptData, isAttemptRunning } = useContext(
+  const { setAttemptData, isAttemptRunning } = useContext(
     TaskAttemptDataContext
   );
-  const { fetchExecutionState } = useContext(TaskExecutionStateContext);
 
   const [taskAttempts, setTaskAttempts] = useState<TaskAttempt[]>([]);
   const location = useLocation();
@@ -67,10 +65,10 @@ function TaskDetailsToolbar() {
     setBranches(result);
     // Set current branch as default
     const currentBranch = result.find((b) => b.is_current);
-    if (currentBranch && !selectedBranch) {
-      setSelectedBranch(currentBranch.name);
+    if (currentBranch) {
+      setSelectedBranch((prev) => (!prev ? currentBranch.name : prev));
     }
-  }, [projectId, selectedBranch]);
+  }, [projectId]);
 
   useEffect(() => {
     fetchProjectBranches();
@@ -163,11 +161,6 @@ function TaskDetailsToolbar() {
             return prev;
           return selectedAttemptToUse;
         });
-        fetchAttemptData(selectedAttemptToUse.id, selectedAttemptToUse.task_id);
-        fetchExecutionState(
-          selectedAttemptToUse.id,
-          selectedAttemptToUse.task_id
-        );
       } else {
         setSelectedAttempt(null);
         setAttemptData({
@@ -181,7 +174,7 @@ function TaskDetailsToolbar() {
     } finally {
       setLoading(false);
     }
-  }, [task, projectId, fetchAttemptData, fetchExecutionState, location.search]);
+  }, [task, projectId, location.search]);
 
   useEffect(() => {
     fetchTaskAttempts();
