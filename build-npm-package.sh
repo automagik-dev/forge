@@ -7,7 +7,7 @@ rm -rf npx-cli/dist
 mkdir -p npx-cli/dist/macos-arm64
 
 echo "🔨 Building frontend..."
-npm run frontend:build
+(cd frontend && npm run build)
 
 echo "🔨 Building Rust binaries..."
 cargo build --release --manifest-path backend/Cargo.toml
