@@ -32,6 +32,9 @@ export function ProjectForm({
   const [gitRepoPath, setGitRepoPath] = useState(project?.git_repo_path || '');
   const [setupScript, setSetupScript] = useState(project?.setup_script ?? '');
   const [devScript, setDevScript] = useState(project?.dev_script ?? '');
+  const [cleanupScript, setCleanupScript] = useState(
+    project?.cleanup_script ?? ''
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showFolderPicker, setShowFolderPicker] = useState(false);
@@ -48,11 +51,13 @@ export function ProjectForm({
       setGitRepoPath(project.git_repo_path || '');
       setSetupScript(project.setup_script ?? '');
       setDevScript(project.dev_script ?? '');
+      setCleanupScript(project.cleanup_script ?? '');
     } else {
       setName('');
       setGitRepoPath('');
       setSetupScript('');
       setDevScript('');
+      setCleanupScript('');
     }
   }, [project]);
 
@@ -93,6 +98,7 @@ export function ProjectForm({
           git_repo_path: finalGitRepoPath,
           setup_script: setupScript.trim() || null,
           dev_script: devScript.trim() || null,
+          cleanup_script: cleanupScript.trim() || null,
         };
 
         try {
@@ -108,6 +114,7 @@ export function ProjectForm({
           use_existing_repo: repoMode === 'existing',
           setup_script: setupScript.trim() || null,
           dev_script: devScript.trim() || null,
+          cleanup_script: cleanupScript.trim() || null,
         };
 
         try {
@@ -122,6 +129,7 @@ export function ProjectForm({
       setName('');
       setGitRepoPath('');
       setSetupScript('');
+      setCleanupScript('');
       setParentPath('');
       setFolderName('');
     } catch (error) {
@@ -190,6 +198,8 @@ export function ProjectForm({
                   setSetupScript={setSetupScript}
                   devScript={devScript}
                   setDevScript={setDevScript}
+                  cleanupScript={cleanupScript}
+                  setCleanupScript={setCleanupScript}
                   error={error}
                 />
                 <DialogFooter>
@@ -233,6 +243,8 @@ export function ProjectForm({
               setSetupScript={setSetupScript}
               devScript={devScript}
               setDevScript={setDevScript}
+              cleanupScript={cleanupScript}
+              setCleanupScript={setCleanupScript}
               error={error}
             />
             <DialogFooter>
