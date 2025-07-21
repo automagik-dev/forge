@@ -1,4 +1,5 @@
 import {
+  Check,
   ExternalLink,
   GitBranch as GitBranchIcon,
   GitPullRequest,
@@ -138,6 +139,7 @@ function CurrentAttempt({
   const [selectedRebaseBranch, setSelectedRebaseBranch] = useState<string>('');
   const [showStopConfirmation, setShowStopConfirmation] = useState(false);
   const [isApprovingPlan, setIsApprovingPlan] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const processedDevServerLogs = useMemo(() => {
     if (!devServerDetails) return 'No output yet...';
@@ -456,6 +458,16 @@ function CurrentAttempt({
     return getEditorDisplayName(config.editor.editor_type);
   }, [config?.editor?.editor_type]);
 
+  const handleCopyWorktreePath = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(selectedAttempt.worktree_path);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy worktree path:', err);
+    }
+  }, [selectedAttempt.worktree_path]);
+
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-4 gap-3 items-start">
@@ -579,8 +591,22 @@ function CurrentAttempt({
             Open in {editorDisplayName}
           </Button>
         </div>
-        <div className="text-xs font-mono text-muted-foreground bg-muted px-2 py-1 rounded break-all">
-          {selectedAttempt.worktree_path}
+        <div
+          className={`text-xs font-mono px-2 py-1 rounded break-all cursor-pointer transition-all duration-300 flex items-center gap-2 ${
+            copied
+              ? 'bg-green-100 text-green-800 border border-green-300'
+              : 'text-muted-foreground bg-muted hover:bg-muted/80'
+          }`}
+          onClick={handleCopyWorktreePath}
+          title={copied ? 'Copied!' : 'Click to copy worktree path'}
+        >
+          {copied && <Check className="h-3 w-3 text-green-600" />}
+          <span className={copied ? 'text-green-800' : ''}>
+            {selectedAttempt.worktree_path}
+          </span>
+          {copied && (
+            <span className="text-green-700 font-medium">Copied!</span>
+          )}
         </div>
       </div>
 
