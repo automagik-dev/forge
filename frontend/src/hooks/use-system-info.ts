@@ -15,14 +15,14 @@ export function useSystemInfo() {
   useEffect(() => {
     const fetchSystemInfo = async () => {
       try {
-        const response = await fetch('/api/health');
+        const response = await fetch('/api/config');
         if (!response.ok) {
           throw new Error('Failed to fetch system info');
         }
         const data = await response.json();
 
-        if (data.success && data.data?.system) {
-          setSystemInfo(data.data.system);
+        if (data.success && data.data?.environment) {
+          setSystemInfo(data.data.environment);
         } else {
           throw new Error('Invalid response format');
         }
