@@ -170,11 +170,6 @@ fn main() -> anyhow::Result<()> {
             let config = Config::load(&config_path)?;
             let config_arc = Arc::new(RwLock::new(config));
 
-            let env = std::env::var("ENVIRONMENT")
-                .unwrap_or_else(|_| "local".to_string());
-            let mode = env.parse().unwrap_or(Environment::Local);
-            tracing::info!("Running in {mode} mode" );
-
             // Create app state
             let app_state = AppState::new(pool.clone(), config_arc.clone(), mode).await;
 
