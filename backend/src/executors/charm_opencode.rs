@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_runner::CommandProcess,
+    command_runner::{CommandExecutor, CommandProcess, CommandRunner},
     deployment::Deployment,
     executor::{Executor, ExecutorError},
     models::task::Task,
@@ -50,19 +50,24 @@ Task title: {}"#,
             prompt.replace('"', "\\\"")
         );
 
-        let mut command = app_state.deployment.command_runner();
+        let mut command = CommandRunner::new();
         command
             .command(shell_cmd)
             .arg(shell_arg)
             .arg(&opencode_command)
             .working_dir(worktree_path);
 
-        let proc = command.start().await.map_err(|e| {
-            crate::executor::SpawnContext::from_command(&command, "CharmOpenCode")
-                .with_task(task_id, Some(task.title.clone()))
-                .with_context("CharmOpenCode CLI execution for new task")
-                .spawn_error(e)
-        })?;
+        let proc = app_state
+            .deployment
+            .command_executor()
+            .runner_start(&command)
+            .await
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, "CharmOpenCode")
+                    .with_task(task_id, Some(task.title.clone()))
+                    .with_context("CharmOpenCode CLI execution for new task")
+                    .spawn_error(e)
+            })?;
 
         Ok(proc)
     }
@@ -83,18 +88,23 @@ Task title: {}"#,
             prompt.replace('"', "\\\"")
         );
 
-        let mut command = app_state.deployment.command_runner();
+        let mut command = CommandRunner::new();
         command
             .command(shell_cmd)
             .arg(shell_arg)
             .arg(&opencode_command)
             .working_dir(worktree_path);
 
-        let proc = command.start().await.map_err(|e| {
-            crate::executor::SpawnContext::from_command(&command, "CharmOpenCode")
-                .with_context("CharmOpenCode CLI followup execution")
-                .spawn_error(e)
-        })?;
+        let proc = app_state
+            .deployment
+            .command_executor()
+            .runner_start(&command)
+            .await
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, "CharmOpenCode")
+                    .with_context("CharmOpenCode CLI followup execution")
+                    .spawn_error(e)
+            })?;
 
         Ok(proc)
     }

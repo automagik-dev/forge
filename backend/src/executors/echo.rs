@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_runner::CommandProcess,
+    command_runner::{CommandExecutor, CommandProcess, CommandRunner},
     deployment::Deployment,
     executor::{Executor, ExecutorError, SpawnContext},
     models::task::Task,
@@ -58,18 +58,23 @@ echo "Task completed: {}""#,
             )
         };
 
-        let mut command_runner = app_state.deployment.command_runner();
-        command_runner
+        let mut command = CommandRunner::new();
+        command
             .command(shell_cmd)
             .arg(shell_arg)
             .arg(&script);
 
-        let child = command_runner.start().await.map_err(|e| {
-            SpawnContext::from_command(&command_runner, "Echo")
-                .with_task(task_id, Some(task.title.clone()))
-                .with_context("Shell script execution for echo demo")
-                .spawn_error(e)
-        })?;
+        let child = app_state
+            .deployment
+            .command_executor()
+            .runner_start(&command)
+            .await
+            .map_err(|e| {
+                SpawnContext::from_command(&command, "Echo")
+                    .with_task(task_id, Some(task.title.clone()))
+                    .with_context("Shell script execution for echo demo")
+                    .spawn_error(e)
+            })?;
 
         Ok(child)
     }

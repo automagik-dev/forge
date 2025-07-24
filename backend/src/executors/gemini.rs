@@ -19,7 +19,7 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_runner::{CommandProcess, CommandRunner},
+    command_runner::{CommandExecutor, CommandProcess, CommandRunner},
     deployment::Deployment,
     executor::{
         Executor, ExecutorError, NormalizedConversation, NormalizedEntry, NormalizedEntryType,
@@ -64,12 +64,17 @@ Task title: {}"#,
         let mut command = Self::create_gemini_command(app_state, worktree_path);
         command.stdin(&prompt);
 
-        let proc = command.start().await.map_err(|e| {
-            crate::executor::SpawnContext::from_command(&command, "Gemini")
-                .with_task(task_id, Some(task.title.clone()))
-                .with_context("Gemini CLI execution for new task")
-                .spawn_error(e)
-        })?;
+        let proc = app_state
+            .deployment
+            .command_executor()
+            .runner_start(&command)
+            .await
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, "Gemini")
+                    .with_task(task_id, Some(task.title.clone()))
+                    .with_context("Gemini CLI execution for new task")
+                    .spawn_error(e)
+            })?;
 
         tracing::info!("Successfully started Gemini process for task {}", task_id);
 
@@ -255,11 +260,11 @@ Task title: {}"#,
 
 impl GeminiExecutor {
     /// Create a standardized Gemini CLI command
-    fn create_gemini_command(app_state: &AppState, worktree_path: &str) -> CommandRunner {
+    fn create_gemini_command(_app_state: &AppState, worktree_path: &str) -> CommandRunner {
         let (shell_cmd, shell_arg) = get_shell_command();
         let gemini_command = "npx @google/gemini-cli@latest --yolo";
 
-        let mut command = app_state.deployment.command_runner();
+        let mut command = CommandRunner::new();
         command
             .command(shell_cmd)
             .arg(shell_arg)
@@ -525,7 +530,7 @@ You are continuing work on the above task. The execution history shows what has 
         let mut command = GeminiExecutor::create_gemini_command(app_state, worktree_path);
         command.stdin(comprehensive_prompt);
 
-        let proc = command.start().await.map_err(|e| {
+        let proc = app_state.deployment.command_executor().runner_start(&command).await.map_err(|e| {
             crate::executor::SpawnContext::from_command(&command, "Gemini")
                 .with_context(format!(
                     "Gemini CLI followup execution with context for attempt {}",

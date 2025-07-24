@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_runner::CommandProcess,
+    command_runner::{CommandExecutor, CommandProcess, CommandRunner},
     deployment::Deployment,
     executor::{Executor, ExecutorError},
     models::{project::Project, task::Task},
@@ -33,14 +33,14 @@ impl Executor for CleanupScriptExecutor {
             .ok_or(ExecutorError::TaskNotFound)?; // Reuse TaskNotFound for simplicity
 
         let (shell_cmd, shell_arg) = get_shell_command();
-        let mut command = app_state.deployment.command_runner();
+        let mut command = CommandRunner::new();
         command
             .command(shell_cmd)
             .arg(shell_arg)
             .arg(&self.script)
             .working_dir(worktree_path);
 
-        let proc = command.start().await.map_err(|e| {
+        let proc = app_state.deployment.command_executor().runner_start(&command).await.map_err(|e| {
             crate::executor::SpawnContext::from_command(&command, "CleanupScript")
                 .with_task(task_id, Some(task.title.clone()))
                 .with_context("Cleanup script execution")

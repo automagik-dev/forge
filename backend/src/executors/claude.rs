@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_runner::CommandProcess,
+    command_runner::{CommandExecutor, CommandProcess, CommandRunner},
     deployment::Deployment,
     executor::{
         ActionType, Executor, ExecutorError, NormalizedConversation, NormalizedEntry,
@@ -113,7 +113,7 @@ Task title: {}"#,
         // Pass prompt via stdin instead of command line to avoid shell escaping issues
         let claude_command = &self.command;
 
-        let mut command = app_state.deployment.command_runner();
+        let mut command = CommandRunner::new();
         command
             .command(shell_cmd)
             .arg(shell_arg)
@@ -122,7 +122,7 @@ Task title: {}"#,
             .working_dir(worktree_path)
             .env("NODE_NO_WARNINGS", "1");
 
-        let proc = command.start().await.map_err(|e| {
+        let proc = app_state.deployment.command_executor().runner_start(&command).await.map_err(|e| {
             crate::executor::SpawnContext::from_command(&command, &self.executor_type)
                 .with_task(task_id, Some(task.title.clone()))
                 .with_context(format!("{} CLI execution for new task", self.executor_type))
@@ -153,7 +153,7 @@ Task title: {}"#,
             format!("{} --resume={}", self.command, session_id)
         };
 
-        let mut command = app_state.deployment.command_runner();
+        let mut command = CommandRunner::new();
         command
             .command(shell_cmd)
             .arg(shell_arg)
@@ -162,7 +162,7 @@ Task title: {}"#,
             .working_dir(worktree_path)
             .env("NODE_NO_WARNINGS", "1");
 
-        let proc = command.start().await.map_err(|e| {
+        let proc = app_state.deployment.command_executor().runner_start(&command).await.map_err(|e| {
             crate::executor::SpawnContext::from_command(&command, &self.executor_type)
                 .with_context(format!(
                     "{} CLI followup execution for session {}",

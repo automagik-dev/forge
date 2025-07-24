@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_runner::CommandProcess,
+    command_runner::{CommandExecutor, CommandProcess, CommandRunner},
     deployment::Deployment,
     executor::{
         ActionType, Executor, ExecutorError, NormalizedConversation, NormalizedEntry,
@@ -216,7 +216,7 @@ Task description: {}"#,
         // Use shell command for cross-platform compatibility
         let (shell_cmd, shell_arg) = get_shell_command();
 
-        let mut command = app_state.deployment.command_runner();
+        let mut command = CommandRunner::new();
         command
             .command(shell_cmd)
             .arg(shell_arg)
@@ -226,7 +226,7 @@ Task description: {}"#,
             .env("NODE_NO_WARNINGS", "1")
             .env("RUST_LOG", "info"); // Enable rust logging to capture session info
 
-        let child = command.start().await.map_err(|e| {
+        let child = app_state.deployment.command_executor().runner_start(&command).await.map_err(|e| {
             crate::executor::SpawnContext::from_command(&command, &self.executor_type)
                 .with_task(task_id, Some(task.title.clone()))
                 .with_context(format!("{} CLI execution for new task", self.executor_type))
@@ -257,7 +257,7 @@ Task description: {}"#,
             rollout_file_path.display()
         );
 
-        let mut command = app_state.deployment.command_runner();
+        let mut command = CommandRunner::new();
         command
             .command(shell_cmd)
             .arg(shell_arg)
@@ -267,7 +267,7 @@ Task description: {}"#,
             .env("NODE_NO_WARNINGS", "1")
             .env("RUST_LOG", "info");
 
-        let child = command.start().await.map_err(|e| {
+        let child = app_state.deployment.command_executor().runner_start(&command).await.map_err(|e| {
             crate::executor::SpawnContext::from_command(&command, &self.executor_type)
                 .with_context(format!(
                     "{} CLI followup execution for session {}",

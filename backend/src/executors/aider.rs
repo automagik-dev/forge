@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_runner::CommandProcess,
+    command_runner::{CommandExecutor, CommandProcess, CommandRunner},
     deployment::Deployment,
     executor::{
         ActionType, Executor, ExecutorError, NormalizedConversation, NormalizedEntry,
@@ -538,7 +538,7 @@ impl Executor for AiderExecutor {
 
         tracing::debug!("Spawning Aider command: {}", &aider_command);
 
-        let mut command = app_state.deployment.command_runner();
+        let mut command = CommandRunner::new();
         command
             .command(shell_cmd)
             .arg(shell_arg)
@@ -546,12 +546,17 @@ impl Executor for AiderExecutor {
             .working_dir(worktree_path)
             .env("COLUMNS", "1000"); // Prevent line wrapping in aider output
 
-        let child = command.start().await.map_err(|e| {
-            crate::executor::SpawnContext::from_command(&command, &self.executor_type)
-                .with_task(task_id, Some(task.title.clone()))
-                .with_context(format!("{} CLI execution for new task", self.executor_type))
-                .spawn_error(e)
-        })?;
+        let child = app_state
+            .deployment
+            .command_executor()
+            .runner_start(&command)
+            .await
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, &self.executor_type)
+                    .with_task(task_id, Some(task.title.clone()))
+                    .with_context(format!("{} CLI execution for new task", self.executor_type))
+                    .spawn_error(e)
+            })?;
 
         tracing::debug!(
             "Started Aider with message file {} for task {}: {:?}",
@@ -767,7 +772,7 @@ impl Executor for AiderExecutor {
 
         tracing::debug!("Spawning Aider command: {}", &aider_command);
 
-        let mut command = app_state.deployment.command_runner();
+        let mut command = CommandRunner::new();
         command
             .command(shell_cmd)
             .arg(shell_arg)
@@ -775,14 +780,19 @@ impl Executor for AiderExecutor {
             .working_dir(worktree_path)
             .env("COLUMNS", "1000"); // Prevent line wrapping in aider output
 
-        let child = command.start().await.map_err(|e| {
-            crate::executor::SpawnContext::from_command(&command, &self.executor_type)
-                .with_context(format!(
-                    "{} CLI followup execution for session {}",
-                    self.executor_type, session_id
-                ))
-                .spawn_error(e)
-        })?;
+        let child = app_state
+            .deployment
+            .command_executor()
+            .runner_start(&command)
+            .await
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, &self.executor_type)
+                    .with_context(format!(
+                        "{} CLI followup execution for session {}",
+                        self.executor_type, session_id
+                    ))
+                    .spawn_error(e)
+            })?;
 
         tracing::debug!(
             "Started Aider followup with message file {} and chat history {} for session {}: {:?}",
