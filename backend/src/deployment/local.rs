@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    command_runner::CommandRunner,
+    command_runner::{CommandRunner, LocalCommandExecutor},
     deployment::Deployment,
 };
 
@@ -19,6 +19,6 @@ impl Deployment for LocalDeployment {
     }
 
     fn command_runner(&self) -> CommandRunner {
-        CommandRunner::new()
+        CommandRunner::new_local()
     }
 }
