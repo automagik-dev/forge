@@ -8,6 +8,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use deployment::Deployment;
 use sentry_tower::NewSentryLayer;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use strip_ansi_escapes::strip;
@@ -249,17 +250,16 @@ fn main() -> anyhow::Result<()> {
                     .layer(from_fn_with_state(app_state.clone(), load_task_attempt_middleware)));
 
             // Conditionally add GitHub routes for cloud mode
-            let api_routes = Router::new()
+            let mut api_routes = Router::new()
                 .merge(base_routes)
                 .merge(template_routes)
                 .merge(project_routes)
                 .merge(task_routes)
                 .merge(task_attempt_routes);
 
-            // if mode.is_cloud() {
-            //     api_routes = api_routes.merge(github::github_router());
-            //     tracing::info!("GitHub repository routes enabled (cloud mode)");
-            // }
+            if let Some(deployment_routes) = app_state.deployment.routes() {
+                api_routes = api_routes.merge(deployment_routes);
+            }
 
             // All routes (no auth required)
             let app_routes = Router::new()

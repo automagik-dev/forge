@@ -1,6 +1,7 @@
 use async_trait::async_trait;
+use axum::Router;
 
-use crate::command_executor::CommandExecutor;
+use crate::{app_state::AppState, command_executor::CommandExecutor};
 
 #[cfg(feature = "cloud")]
 pub mod cloud;
@@ -14,4 +15,8 @@ pub trait Deployment {
     fn name(&self) -> &str;
 
     fn command_executor(&self) -> impl CommandExecutor;
+
+    fn routes(&self) -> Option<Router<AppState>> {
+        None
+    }
 }
