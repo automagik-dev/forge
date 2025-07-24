@@ -5,7 +5,6 @@ use uuid::Uuid;
 
 use crate::{
     command_executor::CommandProcess,
-    command_runner,
     deployment::Deployment,
     services::{generate_user_id, AnalyticsConfig, AnalyticsService},
 };

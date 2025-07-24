@@ -1,6 +1,4 @@
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use tokio::io::AsyncRead;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CommandRunnerArgs {
@@ -67,6 +65,12 @@ pub struct CommandRunner {
     working_dir: Option<String>,
     env_vars: Vec<(String, String)>,
     stdin: Option<String>,
+}
+
+impl Default for CommandRunner {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CommandRunner {
