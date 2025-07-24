@@ -14,7 +14,7 @@ cargo check --workspace --message-format=json --features cloud "$@"
 #     // rust-analyzer will still do its usual code‑lens, inlay, etc. based
 #     // on whatever "cargo.features" you pick here (can be [] for no-features,
 #     // or ["foo"] for a specific feature).
-#     "rust-analyzer.cargo.features": [],
+#     "rust-analyzer.cargo.features": "all",
 #     // overrideCommand must emit JSON diagnostics. We're just calling our
 #     // script which in turn calls cargo twice.
 #     "rust-analyzer.check.overrideCommand": [
