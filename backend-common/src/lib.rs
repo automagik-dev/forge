@@ -6,10 +6,10 @@ pub mod app_state;
 pub mod deployment;
 // pub mod executor;
 // pub mod executors;
+pub mod db;
 pub mod models;
 pub mod services;
 pub mod utils;
-
 // TODO: FIX
 #[derive(RustEmbed)]
 #[folder = "sounds"]

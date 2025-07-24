@@ -1,16 +1,14 @@
 use std::str::FromStr;
 
-use sqlx::{sqlite::SqliteConnectOptions, Error, Pool, Sqlite, SqlitePool};
+use sqlx::{Error, Pool, Sqlite, SqlitePool, sqlite::SqliteConnectOptions};
 
-use crate::utils;
+use crate::utils::assets::asset_dir;
 
 pub async fn start_db() -> Result<Pool<Sqlite>, Error> {
     // Database connection
     let database_url = format!(
         "sqlite://{}",
-        utils::assets::asset_dir()
-            .join("db.sqlite")
-            .to_string_lossy()
+        asset_dir().join("db.sqlite").to_string_lossy()
     );
 
     let options = SqliteConnectOptions::from_str(&database_url)?.create_if_missing(true);

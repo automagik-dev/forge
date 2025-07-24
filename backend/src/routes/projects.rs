@@ -1,29 +1,32 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 use axum::{
     extract::{Query, State},
     http::StatusCode,
     response::Json as ResponseJson,
-    routing::get,
+    routing::{get, post},
     Extension, Json, Router,
 };
-use uuid::Uuid;
-
-use crate::{
-    app_state::AppState,
+use backend_common::{
+    deployment::Deployment,
     models::{
+        api_response::ApiResponse,
+        config::{EditorConfig, EditorType},
         project::{
             CreateBranch, CreateProject, GitBranch, Project, ProjectWithBranch, SearchMatchType,
             SearchResult, UpdateProject,
         },
-        ApiResponse,
     },
 };
+use ignore::WalkBuilder;
+use uuid::Uuid;
+
+use crate::deployment::DeploymentImpl;
 
 pub async fn get_projects(
-    State(app_state): State<AppState>,
+    State(deployment): State<DeploymentImpl>,
 ) -> Result<ResponseJson<ApiResponse<Vec<Project>>>, StatusCode> {
-    match Project::find_all(&app_state.db_pool).await {
+    match Project::find_all(&deployment.app_state().db_pool).await {
         Ok(projects) => Ok(ResponseJson(ApiResponse::success(projects))),
         Err(e) => {
             tracing::error!("Failed to fetch projects: {}", e);
@@ -94,7 +97,7 @@ pub async fn create_project_branch(
 }
 
 pub async fn create_project(
-    State(app_state): State<AppState>,
+    State(deployment): State<DeploymentImpl>,
     Json(payload): Json<CreateProject>,
 ) -> Result<ResponseJson<ApiResponse<Project>>, StatusCode> {
     let id = Uuid::new_v4();
@@ -102,7 +105,9 @@ pub async fn create_project(
     tracing::debug!("Creating project '{}'", payload.name);
 
     // Check if git repo path is already used by another project
-    match Project::find_by_git_repo_path(&app_state.db_pool, &payload.git_repo_path).await {
+    match Project::find_by_git_repo_path(&deployment.app_state().db_pool, &payload.git_repo_path)
+        .await
+    {
         Ok(Some(_)) => {
             return Ok(ResponseJson(ApiResponse::error(
                 "A project with this git repository path already exists",
@@ -181,10 +186,11 @@ pub async fn create_project(
         }
     }
 
-    match Project::create(&app_state.db_pool, &payload, id).await {
+    match Project::create(&deployment.app_state().db_pool, &payload, id).await {
         Ok(project) => {
             // Track project creation event
-            app_state
+            deployment
+                .app_state()
                 .track_analytics_event(
                     "project_created",
                     Some(serde_json::json!({
@@ -207,14 +213,14 @@ pub async fn create_project(
 
 pub async fn update_project(
     Extension(existing_project): Extension<Project>,
-    State(app_state): State<AppState>,
+    State(deployment): State<DeploymentImpl>,
     Json(payload): Json<UpdateProject>,
 ) -> Result<ResponseJson<ApiResponse<Project>>, StatusCode> {
     // If git_repo_path is being changed, check if the new path is already used by another project
     if let Some(new_git_repo_path) = &payload.git_repo_path {
         if new_git_repo_path != &existing_project.git_repo_path {
             match Project::find_by_git_repo_path_excluding_id(
-                &app_state.db_pool,
+                &deployment.app_state().db_pool,
                 new_git_repo_path,
                 existing_project.id,
             )
@@ -251,7 +257,7 @@ pub async fn update_project(
     let git_repo_path = git_repo_path.unwrap_or(existing_project.git_repo_path);
 
     match Project::update(
-        &app_state.db_pool,
+        &deployment.app_state().db_pool,
         existing_project.id,
         name,
         git_repo_path,
@@ -271,9 +277,9 @@ pub async fn update_project(
 
 pub async fn delete_project(
     Extension(project): Extension<Project>,
-    State(app_state): State<AppState>,
+    State(deployment): State<DeploymentImpl>,
 ) -> Result<ResponseJson<ApiResponse<()>>, StatusCode> {
-    match Project::delete(&app_state.db_pool, project.id).await {
+    match Project::delete(&deployment.app_state().db_pool, project.id).await {
         Ok(rows_affected) => {
             if rows_affected == 0 {
                 Err(StatusCode::NOT_FOUND)
@@ -295,16 +301,15 @@ pub struct OpenEditorRequest {
 
 pub async fn open_project_in_editor(
     Extension(project): Extension<Project>,
-    State(app_state): State<AppState>,
+    State(deployment): State<DeploymentImpl>,
     Json(payload): Json<Option<OpenEditorRequest>>,
 ) -> Result<ResponseJson<ApiResponse<()>>, StatusCode> {
     // Get editor command from config or override
     let editor_command = {
-        let config_guard = app_state.get_config().read().await;
+        let config_guard = deployment.app_state().get_config().read().await;
         if let Some(ref request) = payload {
             if let Some(ref editor_type) = request.editor_type {
                 // Create a temporary editor config with the override
-                use crate::models::config::{EditorConfig, EditorType};
                 let override_editor_type = match editor_type.as_str() {
                     "vscode" => EditorType::VSCode,
                     "cursor" => EditorType::Cursor,
@@ -383,10 +388,6 @@ async fn search_files_in_repo(
     repo_path: &str,
     query: &str,
 ) -> Result<Vec<SearchResult>, Box<dyn std::error::Error + Send + Sync>> {
-    use std::path::Path;
-
-    use ignore::WalkBuilder;
-
     let repo_path = Path::new(repo_path);
 
     if !repo_path.exists() {
@@ -460,11 +461,10 @@ async fn search_files_in_repo(
 
     // Sort results by priority: FileName > DirectoryName > FullPath
     results.sort_by(|a, b| {
-        use SearchMatchType::*;
         let priority = |match_type: &SearchMatchType| match match_type {
-            FileName => 0,
-            DirectoryName => 1,
-            FullPath => 2,
+            SearchMatchType::FileName => 0,
+            SearchMatchType::DirectoryName => 1,
+            SearchMatchType::FullPath => 2,
         };
 
         priority(&a.match_type)
@@ -478,23 +478,26 @@ async fn search_files_in_repo(
     Ok(results)
 }
 
-pub fn projects_base_router() -> Router<AppState> {
-    Router::new().route("/projects", get(get_projects).post(create_project))
-}
-
-pub fn projects_with_id_router() -> Router<AppState> {
-    use axum::routing::post;
-
-    Router::new()
+pub fn router() -> Router<DeploymentImpl> {
+    // All routes under `/projects/:id`
+    let project_id_router = Router::new()
         .route(
-            "/projects/:id",
+            "/",
             get(get_project).put(update_project).delete(delete_project),
         )
-        .route("/projects/:id/with-branch", get(get_project_with_branch))
+        .route("/with-branch", get(get_project_with_branch))
         .route(
-            "/projects/:id/branches",
+            "/branches",
             get(get_project_branches).post(create_project_branch),
         )
-        .route("/projects/:id/search", get(search_project_files))
-        .route("/projects/:id/open-editor", post(open_project_in_editor))
+        .route("/search", get(search_project_files))
+        .route("/open-editor", post(open_project_in_editor));
+
+    // Top‐level `/projects` router
+    let projects_router = Router::new()
+        .route("/", get(get_projects).post(create_project))
+        .nest("/{id}", project_id_router);
+
+    // Mount under root
+    Router::new().nest("/projects", projects_router)
 }

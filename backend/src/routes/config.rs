@@ -13,15 +13,16 @@ use backend_common::{
         api_response::ApiResponse,
         config::{Config, EditorConstants, SoundConstants},
     },
+    utils::assets::config_path,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::fs;
 use ts_rs::TS;
 
-use crate::{deployment::DeploymentImpl, utils::assets::config_path};
+use crate::deployment::DeploymentImpl;
 
-pub fn config_router(deployment: DeploymentImpl) -> Router<DeploymentImpl> {
+pub fn router(deployment: DeploymentImpl) -> Router<DeploymentImpl> {
     Router::new()
         .route("/config", get(get_config))
         .route("/config", post(update_config))

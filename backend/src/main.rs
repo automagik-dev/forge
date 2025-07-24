@@ -314,7 +314,6 @@
 // }
 
 // mod command_executor;
-mod db;
 mod deployment;
 mod router;
 mod routes;
@@ -323,14 +322,16 @@ use std::{str::FromStr, sync::Arc};
 
 use anyhow;
 use axum::Router;
-use backend_common::{app_state::AppState, deployment::Deployment, models::config::Config};
+use backend_common::{
+    app_state::AppState, db::start_db, deployment::Deployment, models::config::Config,
+    utils::assets::config_path,
+};
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use strip_ansi_escapes::strip;
 use tokio::sync::RwLock;
 use tracing_subscriber::{filter::LevelFilter, prelude::*};
 
 use crate::{
-    db::start_db,
     deployment::DeploymentImpl,
     utils::{browser::open_browser, sentry::sentry_layer},
 };
@@ -350,7 +351,7 @@ fn main() -> anyhow::Result<()> {
             let pool = start_db().await?;
 
             // Load configuration
-            let config_path = utils::assets::config_path();
+            let config_path = config_path();
             let config = Config::load(&config_path)?;
             let config_arc = Arc::new(RwLock::new(config));
 
