@@ -4,6 +4,7 @@ use tokio::sync::{Mutex, RwLock as TokioRwLock};
 use uuid::Uuid;
 
 use crate::{
+    command_executor::CommandProcess,
     command_runner,
     deployment::Deployment,
     services::{generate_user_id, AnalyticsConfig, AnalyticsService},
@@ -21,7 +22,7 @@ pub enum ExecutionType {
 pub struct RunningExecution {
     pub task_attempt_id: Uuid,
     pub _execution_type: ExecutionType,
-    pub child: command_runner::CommandProcess,
+    pub child: CommandProcess,
 }
 
 #[cfg(feature = "cloud")]

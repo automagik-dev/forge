@@ -9,9 +9,9 @@ use futures_util::Stream;
 use reqwest_eventsource::{Event, EventSource};
 use tokio::io::AsyncRead;
 
-use crate::command_runner::{
-    CommandError, CommandExecutor, CommandExitStatus, CommandRunnerArgs, CommandStream,
-    ProcessHandle,
+use crate::{
+    command_executor::{CommandExecutor, CommandExitStatus, CommandStream, ProcessHandle},
+    command_runner::{CommandError, CommandRunnerArgs},
 };
 
 pub struct RemoteCommandExecutor {

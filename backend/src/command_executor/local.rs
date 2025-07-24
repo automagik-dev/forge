@@ -9,9 +9,9 @@ use nix::{
 };
 use tokio::process::Command;
 
-use crate::command_runner::{
-    CommandError, CommandExecutor, CommandExitStatus, CommandRunnerArgs, CommandStream,
-    ProcessHandle,
+use crate::{
+    command_executor::{CommandExecutor, CommandExitStatus, CommandStream, ProcessHandle},
+    command_runner::{CommandError, CommandRunnerArgs},
 };
 
 pub struct LocalCommandExecutor;

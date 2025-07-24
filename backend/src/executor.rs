@@ -8,7 +8,8 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_runner::{CommandError, CommandProcess, CommandRunner},
+    command_executor::CommandProcess,
+    command_runner::{CommandError, CommandRunner},
     executors::{
         AiderExecutor, AmpExecutor, CCRExecutor, CharmOpencodeExecutor, ClaudeExecutor,
         CodexExecutor, EchoExecutor, GeminiExecutor, SetupScriptExecutor, SstOpencodeExecutor,

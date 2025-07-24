@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    command_runner::{CommandExecutor, CommandRunner, RemoteCommandExecutor},
+    command_executor::{remote::RemoteCommandExecutor, CommandExecutor},
     deployment::Deployment,
 };
 

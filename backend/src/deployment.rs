@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::command_runner::CommandExecutor;
+use crate::command_executor::CommandExecutor;
 
 #[cfg(feature = "cloud")]
 pub mod cloud;

@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
+    command_executor::CommandProcess,
     command_runner,
     executor::Executor,
     models::{
@@ -797,7 +798,7 @@ impl ProcessService {
         attempt_id: Uuid,
         process_id: Uuid,
         worktree_path: &str,
-    ) -> Result<command_runner::CommandProcess, TaskAttemptError> {
+    ) -> Result<CommandProcess, TaskAttemptError> {
         use crate::executors::{CleanupScriptExecutor, DevServerExecutor, SetupScriptExecutor};
 
         let result = match executor_type {
@@ -863,7 +864,7 @@ impl ProcessService {
         process_id: Uuid,
         attempt_id: Uuid,
         process_type: &ExecutionProcessType,
-        child: command_runner::CommandProcess,
+        child: CommandProcess,
     ) {
         let execution_type = match process_type {
             ExecutionProcessType::SetupScript => crate::app_state::ExecutionType::SetupScript,
@@ -925,7 +926,7 @@ impl ProcessService {
         attempt_id: Uuid,
         process_id: Uuid,
         worktree_path: &str,
-    ) -> Result<command_runner::CommandProcess, TaskAttemptError> {
+    ) -> Result<CommandProcess, TaskAttemptError> {
         use crate::executors::SetupScriptExecutor;
 
         let executor = SetupScriptExecutor {
