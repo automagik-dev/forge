@@ -833,7 +833,8 @@ impl ProcessService {
             crate::executor::ExecutorType::CodingAgent { config, follow_up } => {
                 let executor = config.create_executor();
 
-                if let Some(ref follow_up_info) = follow_up {
+                // if let Some(ref follow_up_info) = follow_up {
+                if let Some(follow_up_info) = follow_up {
                     executor
                         .execute_followup_streaming(
                             app_state,

@@ -4,14 +4,12 @@ use axum::{
     middleware::Next,
     response::Response,
 };
+use backend_common::app_state::AppState;
 use uuid::Uuid;
 
-use crate::{
-    app_state::AppState,
-    models::{
-        execution_process::ExecutionProcess, project::Project, task::Task,
-        task_attempt::TaskAttempt, task_template::TaskTemplate,
-    },
+use crate::models::{
+    execution_process::ExecutionProcess, project::Project, task::Task, task_attempt::TaskAttempt,
+    task_template::TaskTemplate,
 };
 
 /// Middleware that loads and injects a Project based on the project_id path parameter

@@ -3,7 +3,9 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::executor::ExecutorConfig;
+use crate::SoundAssets;
+
+// use crate::{SoundAssets, executor::ExecutorConfig};
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
@@ -18,7 +20,8 @@ pub struct EnvironmentInfo {
 #[ts(export)]
 pub struct Config {
     pub theme: ThemeMode,
-    pub executor: ExecutorConfig,
+    // TODO: fix
+    // pub executor: ExecutorConfig,
     pub disclaimer_acknowledged: bool,
     pub onboarding_acknowledged: bool,
     pub github_login_acknowledged: bool,
@@ -170,7 +173,8 @@ impl Default for Config {
 
         Self {
             theme: ThemeMode::System,
-            executor: ExecutorConfig::Claude,
+            // TODO: fix
+            // executor: ExecutorConfig::Claude,
             disclaimer_acknowledged: false,
             onboarding_acknowledged: false,
             github_login_acknowledged: false,
@@ -264,7 +268,7 @@ impl SoundFile {
         }
 
         // File doesn't exist or is invalid, create it
-        let sound_data = crate::SoundAssets::get(filename)
+        let sound_data = SoundAssets::get(filename)
             .ok_or_else(|| format!("Embedded sound file not found: {}", filename))?
             .data;
 

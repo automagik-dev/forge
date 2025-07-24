@@ -5,10 +5,7 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{Mutex, RwLock as TokioRwLock};
 use uuid::Uuid;
 
-use crate::{
-    command_executor::CommandProcess,
-    services::analytics::{AnalyticsConfig, AnalyticsService, generate_user_id},
-};
+use crate::services::analytics::{AnalyticsConfig, AnalyticsService, generate_user_id};
 
 #[derive(Debug)]
 pub enum ExecutionType {
@@ -22,7 +19,8 @@ pub enum ExecutionType {
 pub struct RunningExecution {
     pub task_attempt_id: Uuid,
     pub _execution_type: ExecutionType,
-    pub child: CommandProcess,
+    // pub child: CommandProcess,
+    pub child: String,
 }
 
 // #[cfg(feature = "cloud")]
@@ -88,44 +86,45 @@ impl AppState {
             .any(|exec| exec.task_attempt_id == attempt_id)
     }
 
-    pub async fn get_running_executions_for_monitor(&self) -> Vec<(Uuid, Uuid, bool, Option<i64>)> {
-        let mut executions = self.running_executions.lock().await;
-        let mut completed_executions = Vec::new();
+    // TODO: fix
+    // pub async fn get_running_executions_for_monitor(&self) -> Vec<(Uuid, Uuid, bool, Option<i64>)> {
+    //     let mut executions = self.running_executions.lock().await;
+    //     let mut completed_executions = Vec::new();
 
-        for (execution_id, running_exec) in executions.iter_mut() {
-            match running_exec.child.try_wait().await {
-                Ok(Some(status)) => {
-                    let success = status.success();
-                    let exit_code = status.code().map(|c| c as i64);
-                    completed_executions.push((
-                        *execution_id,
-                        running_exec.task_attempt_id,
-                        success,
-                        exit_code,
-                    ));
-                }
-                Ok(None) => {
-                    // Still running
-                }
-                Err(e) => {
-                    tracing::error!("Error checking process status: {}", e);
-                    completed_executions.push((
-                        *execution_id,
-                        running_exec.task_attempt_id,
-                        false,
-                        None,
-                    ));
-                }
-            }
-        }
+    //     for (execution_id, running_exec) in executions.iter_mut() {
+    //         match running_exec.child.try_wait().await {
+    //             Ok(Some(status)) => {
+    //                 let success = status.success();
+    //                 let exit_code = status.code().map(|c| c as i64);
+    //                 completed_executions.push((
+    //                     *execution_id,
+    //                     running_exec.task_attempt_id,
+    //                     success,
+    //                     exit_code,
+    //                 ));
+    //             }
+    //             Ok(None) => {
+    //                 // Still running
+    //             }
+    //             Err(e) => {
+    //                 tracing::error!("Error checking process status: {}", e);
+    //                 completed_executions.push((
+    //                     *execution_id,
+    //                     running_exec.task_attempt_id,
+    //                     false,
+    //                     None,
+    //                 ));
+    //             }
+    //         }
+    //     }
 
-        // Remove completed executions from the map
-        for (execution_id, _, _, _) in &completed_executions {
-            executions.remove(execution_id);
-        }
+    //     // Remove completed executions from the map
+    //     for (execution_id, _, _, _) in &completed_executions {
+    //         executions.remove(execution_id);
+    //     }
 
-        completed_executions
-    }
+    //     completed_executions
+    // }
 
     // Running executions setters
     pub async fn add_running_execution(&self, execution_id: Uuid, execution: RunningExecution) {
@@ -133,25 +132,26 @@ impl AppState {
         executions.insert(execution_id, execution);
     }
 
-    pub async fn stop_running_execution_by_id(
-        &self,
-        execution_id: Uuid,
-    ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
-        let mut executions = self.running_executions.lock().await;
-        let Some(exec) = executions.get_mut(&execution_id) else {
-            return Ok(false);
-        };
+    // TODO: fix
+    // pub async fn stop_running_execution_by_id(
+    //     &self,
+    //     execution_id: Uuid,
+    // ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+    //     let mut executions = self.running_executions.lock().await;
+    //     let Some(exec) = executions.get_mut(&execution_id) else {
+    //         return Ok(false);
+    //     };
 
-        // Kill the process using CommandRunner's kill method
-        exec.child
-            .kill()
-            .await
-            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+    //     // Kill the process using CommandRunner's kill method
+    //     exec.child
+    //         .kill()
+    //         .await
+    //         .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
 
-        // only NOW remove it
-        executions.remove(&execution_id);
-        Ok(true)
-    }
+    //     // only NOW remove it
+    //     executions.remove(&execution_id);
+    //     Ok(true)
+    // }
 
     // Config getters
     pub async fn get_sound_alerts_enabled(&self) -> bool {

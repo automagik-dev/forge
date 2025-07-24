@@ -2,7 +2,6 @@ use git2::Repository;
 use uuid::Uuid;
 
 use crate::{
-    app_state::AppState,
     models::{
         execution_process::{ExecutionProcess, ExecutionProcessStatus, ExecutionProcessType},
         task::{Task, TaskStatus},
