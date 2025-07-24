@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_runner::CommandProcess,
+    command_executor::CommandProcess,
     executor::{Executor, ExecutorError, NormalizedConversation},
     executors::ClaudeExecutor,
 };
