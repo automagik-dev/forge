@@ -35,9 +35,9 @@ use middleware::{
     load_execution_process_simple_middleware, load_project_middleware,
     load_task_attempt_middleware, load_task_middleware, load_task_template_middleware,
 };
-use models::{ApiResponse, Config, Environment};
+use models::{ApiResponse, Config};
 use routes::{
-    auth, config, filesystem, github, health, projects, stream, task_attempts, task_templates,
+    auth, config, filesystem, health, projects, stream, task_attempts, task_templates,
     tasks,
 };
 use services::PrMonitorService;
@@ -249,7 +249,7 @@ fn main() -> anyhow::Result<()> {
                     .layer(from_fn_with_state(app_state.clone(), load_task_attempt_middleware)));
 
             // Conditionally add GitHub routes for cloud mode
-            let mut api_routes = Router::new()
+            let api_routes = Router::new()
                 .merge(base_routes)
                 .merge(template_routes)
                 .merge(project_routes)

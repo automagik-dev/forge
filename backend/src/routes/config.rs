@@ -16,7 +16,7 @@ use crate::{
     executor::ExecutorConfig,
     models::{
         config::{Config, EditorConstants, SoundConstants},
-        ApiResponse, Environment,
+        ApiResponse,
     },
     utils,
 };

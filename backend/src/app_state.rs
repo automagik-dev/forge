@@ -6,7 +6,6 @@ use uuid::Uuid;
 use crate::{
     command_runner,
     deployment::{local::LocalDeployment, Deployment},
-    models::Environment,
     services::{generate_user_id, AnalyticsConfig, AnalyticsService},
 };
 

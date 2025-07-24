@@ -2,7 +2,6 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use tokio::io::AsyncRead;
 
-use crate::models::Environment;
 
 mod local;
 mod remote;
