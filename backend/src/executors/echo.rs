@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use uuid::Uuid;
 
 use crate::{
+    app_state::AppState,
     command_runner::{CommandProcess, CommandRunner},
     executor::{Executor, ExecutorError, SpawnContext},
     models::task::Task,
@@ -15,12 +16,12 @@ pub struct EchoExecutor;
 impl Executor for EchoExecutor {
     async fn spawn(
         &self,
-        pool: &sqlx::SqlitePool,
+        app_state: &AppState,
         task_id: Uuid,
         _worktree_path: &str,
     ) -> Result<CommandProcess, ExecutorError> {
         // Get the task to fetch its description
-        let task = Task::find_by_id(pool, task_id)
+        let task = Task::find_by_id(&app_state.db_pool, task_id)
             .await?
             .ok_or(ExecutorError::TaskNotFound)?;
 

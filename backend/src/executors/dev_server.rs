@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use uuid::Uuid;
 
 use crate::{
+    app_state::AppState,
     command_runner::{CommandProcess, CommandRunner},
     executor::{Executor, ExecutorError},
     models::{project::Project, task::Task},
@@ -17,16 +18,16 @@ pub struct DevServerExecutor {
 impl Executor for DevServerExecutor {
     async fn spawn(
         &self,
-        pool: &sqlx::SqlitePool,
+        app_state: &AppState,
         task_id: Uuid,
         worktree_path: &str,
     ) -> Result<CommandProcess, ExecutorError> {
         // Validate the task and project exist
-        let task = Task::find_by_id(pool, task_id)
+        let task = Task::find_by_id(&app_state.db_pool, task_id)
             .await?
             .ok_or(ExecutorError::TaskNotFound)?;
 
-        let _project = Project::find_by_id(pool, task.project_id)
+        let _project = Project::find_by_id(&app_state.db_pool, task.project_id)
             .await?
             .ok_or(ExecutorError::TaskNotFound)?; // Reuse TaskNotFound for simplicity
 

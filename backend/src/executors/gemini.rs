@@ -18,6 +18,7 @@ use streaming::GeminiStreaming;
 use uuid::Uuid;
 
 use crate::{
+    app_state::AppState,
     command_runner::{CommandProcess, CommandRunner},
     executor::{
         Executor, ExecutorError, NormalizedConversation, NormalizedEntry, NormalizedEntryType,
@@ -33,12 +34,12 @@ pub struct GeminiExecutor;
 impl Executor for GeminiExecutor {
     async fn spawn(
         &self,
-        pool: &sqlx::SqlitePool,
+        app_state: &AppState,
         task_id: Uuid,
         worktree_path: &str,
     ) -> Result<CommandProcess, ExecutorError> {
         // Get the task to fetch its description
-        let task = Task::find_by_id(pool, task_id)
+        let task = Task::find_by_id(&app_state.db_pool, task_id)
             .await?
             .ok_or(ExecutorError::TaskNotFound)?;
 
@@ -76,7 +77,7 @@ Task title: {}"#,
 
     async fn execute_streaming(
         &self,
-        pool: &sqlx::SqlitePool,
+        app_state: &AppState,
         task_id: Uuid,
         attempt_id: Uuid,
         execution_process_id: Uuid,
@@ -88,23 +89,34 @@ Task title: {}"#,
             attempt_id
         );
 
-        Self::update_session_id(pool, execution_process_id, &attempt_id.to_string()).await;
+        Self::update_session_id(
+            &app_state.db_pool,
+            execution_process_id,
+            &attempt_id.to_string(),
+        )
+        .await;
 
-        let mut proc = self.spawn(pool, task_id, worktree_path).await?;
+        let mut proc = self.spawn(app_state, task_id, worktree_path).await?;
 
         tracing::info!(
             "Gemini process spawned successfully for attempt {}",
             attempt_id
         );
 
-        Self::setup_streaming(pool, &mut proc, attempt_id, execution_process_id).await;
+        Self::setup_streaming(
+            &app_state.db_pool,
+            &mut proc,
+            attempt_id,
+            execution_process_id,
+        )
+        .await;
 
         Ok(proc)
     }
 
     async fn spawn_followup(
         &self,
-        pool: &sqlx::SqlitePool,
+        app_state: &AppState,
         task_id: Uuid,
         session_id: &str,
         prompt: &str,
@@ -114,8 +126,10 @@ Task title: {}"#,
         let attempt_id = Uuid::parse_str(session_id)
             .map_err(|_| ExecutorError::InvalidSessionId(session_id.to_string()))?;
 
-        let task = self.load_task(pool, task_id).await?;
-        let resume_context = self.collect_resume_context(pool, &task, attempt_id).await?;
+        let task = self.load_task(&app_state.db_pool, task_id).await?;
+        let resume_context = self
+            .collect_resume_context(&app_state.db_pool, &task, attempt_id)
+            .await?;
         let comprehensive_prompt = self.build_comprehensive_prompt(&task, &resume_context, prompt);
         self.spawn_process(worktree_path, &comprehensive_prompt, attempt_id)
             .await
@@ -123,7 +137,7 @@ Task title: {}"#,
 
     async fn execute_followup_streaming(
         &self,
-        pool: &sqlx::SqlitePool,
+        app_state: &AppState,
         task_id: Uuid,
         attempt_id: Uuid,
         execution_process_id: Uuid,
@@ -138,10 +152,10 @@ Task title: {}"#,
         );
 
         // For Gemini, session_id is the attempt_id - update it in the database
-        Self::update_session_id(pool, execution_process_id, session_id).await;
+        Self::update_session_id(&app_state.db_pool, execution_process_id, session_id).await;
 
         let mut proc = self
-            .spawn_followup(pool, task_id, session_id, prompt, worktree_path)
+            .spawn_followup(app_state, task_id, session_id, prompt, worktree_path)
             .await?;
 
         tracing::info!(
@@ -149,7 +163,13 @@ Task title: {}"#,
             attempt_id
         );
 
-        Self::setup_streaming(pool, &mut proc, attempt_id, execution_process_id).await;
+        Self::setup_streaming(
+            &app_state.db_pool,
+            &mut proc,
+            attempt_id,
+            execution_process_id,
+        )
+        .await;
 
         Ok(proc)
     }

@@ -7,6 +7,7 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use uuid::Uuid;
 
 use crate::{
+    app_state::AppState,
     command_runner::{CommandProcess, CommandRunner},
     executor::{
         ActionType, Executor, ExecutorError, NormalizedConversation, NormalizedEntry,
@@ -190,12 +191,12 @@ impl CodexExecutor {
 impl Executor for CodexExecutor {
     async fn spawn(
         &self,
-        pool: &sqlx::SqlitePool,
+        app_state: &AppState,
         task_id: Uuid,
         worktree_path: &str,
     ) -> Result<CommandProcess, ExecutorError> {
         // Get the task to fetch its description
-        let task = Task::find_by_id(pool, task_id)
+        let task = Task::find_by_id(&app_state.db_pool, task_id)
             .await?
             .ok_or(ExecutorError::TaskNotFound)?;
 
@@ -236,7 +237,7 @@ Task description: {}"#,
 
     async fn spawn_followup(
         &self,
-        _pool: &sqlx::SqlitePool,
+        _app_state: &AppState,
         _task_id: Uuid,
         session_id: &str,
         prompt: &str,
@@ -280,13 +281,13 @@ Task description: {}"#,
     /// Custom streaming setup to handle stderr for session extraction
     async fn execute_streaming(
         &self,
-        pool: &sqlx::SqlitePool,
+        app_state: &AppState,
         task_id: Uuid,
         attempt_id: Uuid,
         execution_process_id: Uuid,
         worktree_path: &str,
     ) -> Result<CommandProcess, ExecutorError> {
-        let mut child = self.spawn(pool, task_id, worktree_path).await?;
+        let mut child = self.spawn(app_state, task_id, worktree_path).await?;
 
         // Get streams from the child process
         let streams = child
@@ -304,8 +305,8 @@ Task description: {}"#,
             .stderr
             .expect("Failed to take stderr from child process");
 
-        let pool_clone1 = pool.clone();
-        let pool_clone2 = pool.clone();
+        let pool_clone1 = app_state.db_pool.clone();
+        let pool_clone2 = app_state.db_pool.clone();
 
         // Stream stdout to database (true = is_stdout)
         tokio::spawn(crate::executor::stream_output_to_db(
@@ -329,7 +330,7 @@ Task description: {}"#,
     /// Custom followup streaming with same stderr handling
     async fn execute_followup_streaming(
         &self,
-        pool: &sqlx::SqlitePool,
+        app_state: &AppState,
         task_id: Uuid,
         attempt_id: Uuid,
         execution_process_id: Uuid,
@@ -338,7 +339,7 @@ Task description: {}"#,
         worktree_path: &str,
     ) -> Result<CommandProcess, ExecutorError> {
         let mut child = self
-            .spawn_followup(pool, task_id, session_id, prompt, worktree_path)
+            .spawn_followup(app_state, task_id, session_id, prompt, worktree_path)
             .await?;
 
         // Get streams from the child process
@@ -357,8 +358,8 @@ Task description: {}"#,
             .stderr
             .expect("Failed to take stderr from child process");
 
-        let pool_clone1 = pool.clone();
-        let pool_clone2 = pool.clone();
+        let pool_clone1 = app_state.db_pool.clone();
+        let pool_clone2 = app_state.db_pool.clone();
 
         // Stream stdout to database (true = is_stdout)
         tokio::spawn(crate::executor::stream_output_to_db(
