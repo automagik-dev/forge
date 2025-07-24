@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_runner::CommandProcess,
+    command_runner::{CommandExecutor, CommandProcess, CommandRunner},
     deployment::Deployment,
     executor::{
         self, ActionType, Executor, ExecutorError, NormalizedConversation, NormalizedEntry,
@@ -223,7 +223,7 @@ Task title: {}"#,
         // --format=jsonl is deprecated in latest versions of Amp CLI
         let amp_command = "npx @sourcegraph/amp@0.0.1752148945-gd8844f --format=jsonl";
 
-        let mut command = app_state.deployment.command_runner();
+        let mut command = CommandRunner::new();
         command
             .command(shell_cmd)
             .arg(shell_arg)
@@ -231,12 +231,17 @@ Task title: {}"#,
             .stdin(&prompt)
             .working_dir(worktree_path);
 
-        let proc = command.start().await.map_err(|e| {
-            executor::SpawnContext::from_command(&command, "Amp")
-                .with_task(task_id, Some(task.title.clone()))
-                .with_context("Amp CLI execution for new task")
-                .spawn_error(e)
-        })?;
+        let proc = app_state
+            .deployment
+            .command_executor()
+            .runner_start(&command)
+            .await
+            .map_err(|e| {
+                executor::SpawnContext::from_command(&command, "Amp")
+                    .with_task(task_id, Some(task.title.clone()))
+                    .with_context("Amp CLI execution for new task")
+                    .spawn_error(e)
+            })?;
 
         Ok(proc)
     }
@@ -256,7 +261,7 @@ Task title: {}"#,
             session_id
         );
 
-        let mut command = app_state.deployment.command_runner();
+        let mut command = CommandRunner::new();
         command
             .command(shell_cmd)
             .arg(shell_arg)
@@ -264,14 +269,19 @@ Task title: {}"#,
             .stdin(prompt)
             .working_dir(worktree_path);
 
-        let proc = command.start().await.map_err(|e| {
-            crate::executor::SpawnContext::from_command(&command, "Amp")
-                .with_context(format!(
-                    "Amp CLI followup execution for thread {}",
-                    session_id
-                ))
-                .spawn_error(e)
-        })?;
+        let proc = app_state
+            .deployment
+            .command_executor()
+            .runner_start(&command)
+            .await
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, "Amp")
+                    .with_context(format!(
+                        "Amp CLI followup execution for thread {}",
+                        session_id
+                    ))
+                    .spawn_error(e)
+            })?;
 
         Ok(proc)
     }

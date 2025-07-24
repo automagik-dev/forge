@@ -1,6 +1,9 @@
 use async_trait::async_trait;
 
-use crate::{command_runner::CommandRunner, deployment::Deployment};
+use crate::{
+    command_runner::{CommandExecutor, CommandRunner, RemoteCommandExecutor},
+    deployment::Deployment,
+};
 
 #[derive(Clone)]
 pub struct CloudDeployment {}
@@ -15,7 +18,7 @@ impl Deployment for CloudDeployment {
         "cloud"
     }
 
-    fn command_runner(&self) -> CommandRunner {
-        CommandRunner::new_cloud()
+    fn command_executor(&self) -> impl CommandExecutor {
+        RemoteCommandExecutor::new()
     }
 }

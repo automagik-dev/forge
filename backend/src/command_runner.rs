@@ -16,6 +16,16 @@ pub trait CommandExecutor: Send + Sync {
         &self,
         request: &CommandRunnerArgs,
     ) -> Result<Box<dyn ProcessHandle>, CommandError>;
+
+    async fn runner_start(
+        &self,
+        command_runner: &CommandRunner,
+    ) -> Result<CommandProcess, CommandError> {
+        let request = command_runner.to_args().ok_or(CommandError::NoCommandSet)?;
+        let handle = self.start(&request).await?;
+
+        Ok(CommandProcess { handle })
+    }
 }
 
 // Trait for managing running processes
@@ -49,15 +59,6 @@ pub struct CommandRunnerArgs {
     pub working_dir: Option<String>,
     pub env_vars: Vec<(String, String)>,
     pub stdin: Option<String>,
-}
-
-pub struct CommandRunner {
-    executor: Box<dyn CommandExecutor>,
-    command: Option<String>,
-    args: Vec<String>,
-    working_dir: Option<String>,
-    env_vars: Vec<(String, String)>,
-    stdin: Option<String>,
 }
 
 pub struct CommandProcess {
@@ -154,21 +155,17 @@ pub struct CommandStream {
     pub stderr: Option<Box<dyn AsyncRead + Unpin + Send>>,
 }
 
-impl CommandRunner {
-    pub fn new_local() -> Self {
-        CommandRunner {
-            executor: Box::new(LocalCommandExecutor::new()),
-            command: None,
-            args: Vec::new(),
-            working_dir: None,
-            env_vars: Vec::new(),
-            stdin: None,
-        }
-    }
+pub struct CommandRunner {
+    command: Option<String>,
+    args: Vec<String>,
+    working_dir: Option<String>,
+    env_vars: Vec<(String, String)>,
+    stdin: Option<String>,
+}
 
-    pub fn new_cloud() -> Self {
+impl CommandRunner {
+    pub fn new() -> Self {
         CommandRunner {
-            executor: Box::new(RemoteCommandExecutor::new()),
             command: None,
             args: Vec::new(),
             working_dir: None,
@@ -225,36 +222,29 @@ impl CommandRunner {
         })
     }
 
-    pub async fn start(&self) -> Result<CommandProcess, CommandError> {
-        let request = self.to_args().ok_or(CommandError::NoCommandSet)?;
-        let handle = self.executor.start(&request).await?;
+    // #[allow(dead_code)]
+    // pub fn from_args(request: CommandRunnerArgs) -> Self {
+    //     let mut runner = Self::new_local();
+    //     runner.command(&request.command);
 
-        Ok(CommandProcess { handle })
-    }
+    //     for arg in &request.args {
+    //         runner.arg(arg);
+    //     }
 
-    #[allow(dead_code)]
-    pub fn from_args(request: CommandRunnerArgs) -> Self {
-        let mut runner = Self::new_local();
-        runner.command(&request.command);
+    //     if let Some(dir) = &request.working_dir {
+    //         runner.working_dir(dir);
+    //     }
 
-        for arg in &request.args {
-            runner.arg(arg);
-        }
+    //     for (key, value) in &request.env_vars {
+    //         runner.env(key, value);
+    //     }
 
-        if let Some(dir) = &request.working_dir {
-            runner.working_dir(dir);
-        }
+    //     if let Some(stdin) = &request.stdin {
+    //         runner.stdin(stdin);
+    //     }
 
-        for (key, value) in &request.env_vars {
-            runner.env(key, value);
-        }
-
-        if let Some(stdin) = &request.stdin {
-            runner.stdin(stdin);
-        }
-
-        runner
-    }
+    //     runner
+    // }
 }
 
 impl CommandProcess {

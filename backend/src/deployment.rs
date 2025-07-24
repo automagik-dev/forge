@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::command_runner::CommandRunner;
+use crate::command_runner::CommandExecutor;
 
 #[cfg(feature = "cloud")]
 pub mod cloud;
@@ -13,5 +13,5 @@ pub trait Deployment {
 
     fn name(&self) -> &str;
 
-    fn command_runner(&self) -> CommandRunner;
+    fn command_executor(&self) -> impl CommandExecutor;
 }

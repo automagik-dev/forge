@@ -1,6 +1,9 @@
 use async_trait::async_trait;
 
-use crate::{command_runner::CommandRunner, deployment::Deployment};
+use crate::{
+    command_runner::{CommandExecutor, LocalCommandExecutor},
+    deployment::Deployment,
+};
 
 #[derive(Clone)]
 pub struct LocalDeployment {}
@@ -15,7 +18,7 @@ impl Deployment for LocalDeployment {
         "local"
     }
 
-    fn command_runner(&self) -> CommandRunner {
-        CommandRunner::new_local()
+    fn command_executor(&self) -> impl CommandExecutor {
+        LocalCommandExecutor::new()
     }
 }
