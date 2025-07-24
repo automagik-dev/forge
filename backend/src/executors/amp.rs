@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_runner::{CommandProcess, CommandRunner},
+    command_runner::CommandProcess,
     deployment::Deployment,
     executor::{
         self, ActionType, Executor, ExecutorError, NormalizedConversation, NormalizedEntry,

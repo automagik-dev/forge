@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::command_runner::{CommandExecutor, CommandRunner};
+use crate::command_runner::CommandRunner;
 
 pub mod local;
 

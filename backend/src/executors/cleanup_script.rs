@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_runner::{CommandProcess, CommandRunner},
+    command_runner::CommandProcess,
     deployment::Deployment,
     executor::{Executor, ExecutorError},
     models::{project::Project, task::Task},
