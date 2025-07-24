@@ -1,3 +1,5 @@
+#![cfg(feature = "cloud")]
+
 use axum::{
     extract::{Query, State},
     http::StatusCode,
@@ -5,12 +7,14 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use serde::Deserialize;
+use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
     models::{
-        project::{CreateProject, CreateProjectFromGitHub, Project},
+        project::{CreateProject, Project},
         ApiResponse,
     },
     services::{
@@ -19,6 +23,17 @@ use crate::{
         GitHubServiceError,
     },
 };
+
+#[derive(Debug, Deserialize, TS)]
+#[ts(export)]
+pub struct CreateProjectFromGitHub {
+    pub repository_id: i64,
+    pub name: String,
+    pub clone_url: String,
+    pub setup_script: Option<String>,
+    pub dev_script: Option<String>,
+    pub cleanup_script: Option<String>,
+}
 
 #[derive(serde::Deserialize)]
 pub struct RepositoryQuery {

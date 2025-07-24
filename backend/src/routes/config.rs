@@ -73,7 +73,7 @@ pub struct ConfigConstants {
 }
 
 async fn get_config_constants(
-    State(app_state): State<AppState>,
+    State(_app_state): State<AppState>,
 ) -> ResponseJson<ApiResponse<ConfigConstants>> {
     let constants = ConfigConstants {
         editor: EditorConstants::new(),

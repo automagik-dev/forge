@@ -14,11 +14,11 @@ impl Deployment for LocalDeployment {
         Self {}
     }
 
-    fn name(&self) -> &str {
-        "local"
-    }
-
     fn command_executor(&self) -> impl CommandExecutor {
         LocalCommandExecutor::new()
+    }
+
+    fn shared_types() -> Vec<String> {
+        vec![]
     }
 }

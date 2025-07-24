@@ -9,14 +9,15 @@ pub mod cloud;
 pub mod local;
 
 #[async_trait]
+#[allow(dead_code)]
 pub trait Deployment {
     fn new() -> Self;
-
-    fn name(&self) -> &str;
 
     fn command_executor(&self) -> impl CommandExecutor;
 
     fn routes(&self) -> Option<Router<AppState>> {
         None
     }
+
+    fn shared_types() -> Vec<String>;
 }

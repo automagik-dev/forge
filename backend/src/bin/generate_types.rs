@@ -1,6 +1,7 @@
 use std::{env, fs, path::Path};
 
 use ts_rs::TS;
+use vibe_kanban::deployment::Deployment;
 // in [build-dependencies]
 
 fn generate_constants() -> String {
@@ -80,6 +81,11 @@ export const SOUND_LABELS: Record<string, string> = {
     .to_string()
 }
 
+#[cfg(feature = "cloud")]
+type DeploymentImpl = vibe_kanban::deployment::cloud::CloudDeployment;
+#[cfg(not(feature = "cloud"))]
+type DeploymentImpl = vibe_kanban::deployment::local::LocalDeployment;
+
 fn generate_types_content() -> String {
     // 4. Friendly banner
     const HEADER: &str =
@@ -88,7 +94,7 @@ fn generate_types_content() -> String {
          // Auto-generated from Rust backend types using ts-rs\n\n";
 
     // 5. Add `export` if it's missing, then join
-    let decls = [
+    let mut decls: Vec<String> = vec![
         vibe_kanban::models::ApiResponse::<()>::decl(),
         vibe_kanban::models::config::Config::decl(),
         vibe_kanban::models::config::EnvironmentInfo::decl(),
@@ -103,7 +109,6 @@ fn generate_types_content() -> String {
         vibe_kanban::executor::ExecutorConfig::decl(),
         vibe_kanban::executor::ExecutorConstants::decl(),
         vibe_kanban::models::project::CreateProject::decl(),
-        vibe_kanban::models::project::CreateProjectFromGitHub::decl(),
         vibe_kanban::models::project::Project::decl(),
         vibe_kanban::models::project::ProjectWithBranch::decl(),
         vibe_kanban::models::project::UpdateProject::decl(),
@@ -151,6 +156,9 @@ fn generate_types_content() -> String {
         vibe_kanban::executor::NormalizedEntryType::decl(),
         vibe_kanban::executor::ActionType::decl(),
     ];
+
+    let deployment_specific_types = DeploymentImpl::shared_types();
+    decls.extend(deployment_specific_types);
 
     let body = decls
         .into_iter()

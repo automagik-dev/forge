@@ -1,11 +1,12 @@
 use async_trait::async_trait;
 use axum::Router;
+use ts_rs::TS;
 
 use crate::{
     app_state::AppState,
     command_executor::{cloud::CloudCommandExecutor, CommandExecutor},
     deployment::Deployment,
-    routes::github,
+    routes::github::{self, CreateProjectFromGitHub},
 };
 
 #[derive(Clone)]
@@ -17,10 +18,6 @@ impl Deployment for CloudDeployment {
         Self {}
     }
 
-    fn name(&self) -> &str {
-        "cloud"
-    }
-
     fn command_executor(&self) -> impl CommandExecutor {
         CloudCommandExecutor::new()
     }
@@ -28,4 +25,10 @@ impl Deployment for CloudDeployment {
     fn routes(&self) -> Option<Router<AppState>> {
         Some(github::github_router())
     }
+
+    fn shared_types() -> Vec<String> {
+        vec![CreateProjectFromGitHub::decl()]
+    }
 }
+
+// CreateProjectFromGitHub

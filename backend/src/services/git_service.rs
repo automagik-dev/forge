@@ -1281,6 +1281,7 @@ impl GitService {
     }
 
     /// Clone a repository to the specified directory
+    #[cfg(feature = "cloud")]
     pub fn clone_repository(
         clone_url: &str,
         target_path: &Path,

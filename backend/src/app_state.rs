@@ -1,4 +1,6 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+#[cfg(feature = "cloud")]
+use std::path::PathBuf;
+use std::{collections::HashMap, sync::Arc};
 
 use tokio::sync::{Mutex, RwLock as TokioRwLock};
 use uuid::Uuid;
@@ -213,10 +215,13 @@ impl AppState {
     }
 
     /// Get the workspace directory path, creating it if it doesn't exist in cloud mode
+    #[cfg(feature = "cloud")]
     pub async fn get_workspace_path(
         &self,
     ) -> Result<PathBuf, Box<dyn std::error::Error + Send + Sync>> {
         let workspace_path = {
+            use std::path::PathBuf;
+
             let config = self.config.read().await;
             match &config.workspace_dir {
                 Some(dir) => PathBuf::from(dir),

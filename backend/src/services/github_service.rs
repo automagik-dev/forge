@@ -293,6 +293,7 @@ impl GitHubService {
     }
 
     /// List repositories for the authenticated user with pagination
+    #[cfg(feature = "cloud")]
     pub async fn list_repositories(
         &self,
         page: u8,
@@ -316,6 +317,7 @@ impl GitHubService {
             .await
     }
 
+    #[cfg(feature = "cloud")]
     async fn list_repositories_internal(
         &self,
         page: u8,
