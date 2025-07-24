@@ -135,11 +135,11 @@
 //     sentry::configure_scope(|scope| {
 //         scope.set_tag("source", "server");
 //     });
-//     tokio::runtime::Builder::new_multi_thread()
-//         .enable_all()
-//         .build()
-//         .unwrap()
-//         .block_on(async {
+// tokio::runtime::Builder::new_multi_thread()
+//     .enable_all()
+//     .build()
+//     .unwrap()
+//     .block_on(async {
 //             tracing_subscriber::registry()
 //                 .with(tracing_subscriber::fmt::layer().with_filter(LevelFilter::INFO))
 //                 .with(sentry_layer())
@@ -314,14 +314,58 @@
 // }
 
 // mod command_executor;
-pub mod deployment;
+mod deployment;
+mod utils;
+use std::{str::FromStr, sync::Arc};
+
+use anyhow;
+use backend_common::{app_state::AppState, models::config::Config};
+use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
+use tokio::sync::RwLock;
+use tracing_subscriber::{filter::LevelFilter, prelude::*};
 
 #[cfg(not(feature = "cloud"))]
 use crate::deployment::local::LocalDeployment;
+use crate::utils::sentry::sentry_layer;
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     // #[cfg(feature = "cloud")]
     // type DeploymentImpl = vibe_kanban_cloud::deployment::CloudDeployment;
     #[cfg(not(feature = "cloud"))]
     type DeploymentImpl = LocalDeployment;
+
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            tracing_subscriber::registry()
+                .with(tracing_subscriber::fmt::layer().with_filter(LevelFilter::INFO))
+                .with(sentry_layer())
+                .init();
+
+            // Database connection
+            let database_url = format!(
+                "sqlite://{}",
+                utils::assets::asset_dir()
+                    .join("db.sqlite")
+                    .to_string_lossy()
+            );
+
+            let options = SqliteConnectOptions::from_str(&database_url)?.create_if_missing(true);
+            let pool = SqlitePool::connect_with(options).await?;
+            sqlx::migrate!("./migrations").run(&pool).await?;
+
+            // Load configuration
+            let config_path = utils::assets::config_path();
+            let config = Config::load(&config_path)?;
+            let config_arc = Arc::new(RwLock::new(config));
+
+            // Create app state
+            let app_state = AppState::new(pool.clone(), config_arc.clone()).await;
+
+            app_state.update_sentry_scope().await;
+
+            Ok(())
+        })
 }
