@@ -31,6 +31,7 @@ type DeploymentImpl = LocalDeployment;
 #[cfg(not(feature = "local"))]
 type DeploymentImpl = LocalDeployment;
 
+#[derive(Clone)]
 pub struct AppState {
     running_executions: Arc<Mutex<HashMap<Uuid, RunningExecution>>>,
     pub db_pool: sqlx::SqlitePool,

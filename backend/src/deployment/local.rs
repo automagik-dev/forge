@@ -5,6 +5,7 @@ use crate::{
     deployment::Deployment,
 };
 
+#[derive(Clone)]
 pub struct LocalDeployment {}
 
 #[async_trait]
