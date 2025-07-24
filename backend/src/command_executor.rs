@@ -3,8 +3,8 @@ use tokio::io::AsyncRead;
 
 use crate::command_runner::{CommandError, CommandRunner, CommandRunnerArgs};
 
+pub mod cloud;
 pub mod local;
-pub mod remote;
 
 // Core trait that defines the interface for command execution
 #[async_trait]

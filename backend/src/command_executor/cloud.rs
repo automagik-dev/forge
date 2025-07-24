@@ -14,17 +14,17 @@ use crate::{
     command_runner::{CommandError, CommandRunnerArgs},
 };
 
-pub struct RemoteCommandExecutor {
+pub struct CloudCommandExecutor {
     cloud_server_url: String,
 }
 
-impl Default for RemoteCommandExecutor {
+impl Default for CloudCommandExecutor {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RemoteCommandExecutor {
+impl CloudCommandExecutor {
     pub fn new() -> Self {
         let cloud_server_url = std::env::var("CLOUD_SERVER_URL")
             .unwrap_or_else(|_| "http://localhost:8000".to_string());
@@ -33,7 +33,7 @@ impl RemoteCommandExecutor {
 }
 
 #[async_trait]
-impl CommandExecutor for RemoteCommandExecutor {
+impl CommandExecutor for CloudCommandExecutor {
     async fn start(
         &self,
         request: &CommandRunnerArgs,

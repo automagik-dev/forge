@@ -14,7 +14,10 @@ use serde::Serialize;
 use tokio::{io::AsyncReadExt, sync::Mutex};
 use tracing_subscriber::prelude::*;
 use uuid::Uuid;
-use vibe_kanban::command_runner::{CommandProcess, CommandRunner, CommandRunnerArgs};
+use vibe_kanban::{
+    command_executor::{local::LocalCommandExecutor, CommandExecutor, CommandProcess},
+    command_runner::{CommandRunner, CommandRunnerArgs},
+};
 
 // Structure to hold process and its streams
 struct ProcessEntry {
@@ -243,10 +246,12 @@ async fn create_command(
     tracing::info!("Creating command: {} {:?}", request.command, request.args);
 
     // Create a local command runner from the request
-    let runner = CommandRunner::from_args(request);
+    let command = CommandRunner::from_args(request);
+
+    let local_command_executor = LocalCommandExecutor::new();
 
     // Start the process
-    let mut process = match runner.start().await {
+    let mut process = match local_command_executor.runner_start(&command).await {
         Ok(process) => process,
         Err(e) => {
             tracing::error!("Failed to start command: {}", e);
