@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    command_executor::{remote::RemoteCommandExecutor, CommandExecutor},
+    command_executor::{cloud::CloudCommandExecutor, CommandExecutor},
     deployment::Deployment,
 };
 
@@ -19,6 +19,6 @@ impl Deployment for CloudDeployment {
     }
 
     fn command_executor(&self) -> impl CommandExecutor {
-        RemoteCommandExecutor::new()
+        CloudCommandExecutor::new()
     }
 }
