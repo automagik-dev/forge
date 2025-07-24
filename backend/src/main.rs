@@ -171,7 +171,7 @@ fn main() -> anyhow::Result<()> {
             let config_arc = Arc::new(RwLock::new(config));
 
             // Create app state
-            let app_state = AppState::new(pool.clone(), config_arc.clone(), mode).await;
+            let app_state = AppState::new(pool.clone(), config_arc.clone()).await;
 
             app_state.update_sentry_scope().await;
 
@@ -256,10 +256,10 @@ fn main() -> anyhow::Result<()> {
                 .merge(task_routes)
                 .merge(task_attempt_routes);
 
-            if mode.is_cloud() {
-                api_routes = api_routes.merge(github::github_router());
-                tracing::info!("GitHub repository routes enabled (cloud mode)");
-            }
+            // if mode.is_cloud() {
+            //     api_routes = api_routes.merge(github::github_router());
+            //     tracing::info!("GitHub repository routes enabled (cloud mode)");
+            // }
 
             // All routes (no auth required)
             let app_routes = Router::new()

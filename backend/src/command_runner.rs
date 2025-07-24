@@ -233,6 +233,30 @@ impl CommandRunner {
 
         Ok(CommandProcess { handle })
     }
+
+    #[allow(dead_code)]
+    pub fn from_args(request: CommandRunnerArgs) -> Self {
+        let mut runner = Self::new_local();
+        runner.command(&request.command);
+
+        for arg in &request.args {
+            runner.arg(arg);
+        }
+
+        if let Some(dir) = &request.working_dir {
+            runner.working_dir(dir);
+        }
+
+        for (key, value) in &request.env_vars {
+            runner.env(key, value);
+        }
+
+        if let Some(stdin) = &request.stdin {
+            runner.stdin(stdin);
+        }
+
+        runner
+    }
 }
 
 impl CommandProcess {
