@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::{
     command_runner,
-    deployment::{local::LocalDeployment, Deployment},
+    deployment::Deployment,
     services::{generate_user_id, AnalyticsConfig, AnalyticsService},
 };
 
@@ -24,11 +24,10 @@ pub struct RunningExecution {
     pub child: command_runner::CommandProcess,
 }
 
-// TODO remote deployment
-#[cfg(feature = "local")]
-type DeploymentImpl = LocalDeployment;
-#[cfg(not(feature = "local"))]
-type DeploymentImpl = LocalDeployment;
+#[cfg(feature = "cloud")]
+type DeploymentImpl = crate::deployment::cloud::CloudDeployment;
+#[cfg(not(feature = "cloud"))]
+type DeploymentImpl = crate::deployment::local::LocalDeployment;
 
 #[derive(Clone)]
 pub struct AppState {

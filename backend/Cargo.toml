@@ -5,6 +5,9 @@ edition = "2021"
 default-run = "vibe-kanban"
 build = "build.rs"
 
+[features]
+cloud = []
+
 [lib]
 name = "vibe_kanban"
 path = "src/lib.rs"
