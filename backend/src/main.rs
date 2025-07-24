@@ -37,8 +37,7 @@ use middleware::{
 };
 use models::{ApiResponse, Config};
 use routes::{
-    auth, config, filesystem, health, projects, stream, task_attempts, task_templates,
-    tasks,
+    auth, config, filesystem, health, projects, stream, task_attempts, task_templates, tasks,
 };
 use services::PrMonitorService;
 
