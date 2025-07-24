@@ -22,7 +22,7 @@ use ts_rs::TS;
 
 use crate::deployment::DeploymentImpl;
 
-pub fn router(deployment: DeploymentImpl) -> Router<DeploymentImpl> {
+pub fn router() -> Router<DeploymentImpl> {
     Router::new()
         .route("/config", get(get_config))
         .route("/config", post(update_config))

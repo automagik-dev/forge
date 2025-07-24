@@ -1,25 +1,27 @@
 use axum::{
-    extract::State, http::StatusCode, response::Json as ResponseJson, routing::get, Extension,
-    Json, Router,
+    extract::State, http::StatusCode, middleware::from_fn_with_state,
+    response::Json as ResponseJson, routing::get, Extension, Json, Router,
+};
+use backend_common::{
+    app_state,
+    deployment::{self, Deployment},
+    models::{
+        api_response::ApiResponse,
+        project::Project,
+        task::{CreateTask, Task, TaskWithAttemptStatus, UpdateTask},
+    },
 };
 use uuid::Uuid;
 
-use crate::{
-    app_state::AppState,
-    execution_monitor,
-    models::{
-        project::Project,
-        task::{CreateTask, CreateTaskAndStart, Task, TaskWithAttemptStatus, UpdateTask},
-        task_attempt::{CreateTaskAttempt, TaskAttempt},
-        ApiResponse,
-    },
-};
+use crate::{deployment::DeploymentImpl, middleware::load_project_middleware};
 
 pub async fn get_project_tasks(
     Extension(project): Extension<Project>,
-    State(app_state): State<AppState>,
+    State(deployment): State<DeploymentImpl>,
 ) -> Result<ResponseJson<ApiResponse<Vec<TaskWithAttemptStatus>>>, StatusCode> {
-    match Task::find_by_project_id_with_attempt_status(&app_state.db_pool, project.id).await {
+    match Task::find_by_project_id_with_attempt_status(&deployment.app_state().db_pool, project.id)
+        .await
+    {
         Ok(tasks) => Ok(ResponseJson(ApiResponse::success(tasks))),
         Err(e) => {
             tracing::error!("Failed to fetch tasks for project {}: {}", project.id, e);
@@ -36,7 +38,7 @@ pub async fn get_task(
 
 pub async fn create_task(
     Extension(project): Extension<Project>,
-    State(app_state): State<AppState>,
+    State(deployment): State<DeploymentImpl>,
     Json(mut payload): Json<CreateTask>,
 ) -> Result<ResponseJson<ApiResponse<Task>>, StatusCode> {
     let id = Uuid::new_v4();
@@ -50,10 +52,11 @@ pub async fn create_task(
         project.id
     );
 
-    match Task::create(&app_state.db_pool, &payload, id).await {
+    match Task::create(&deployment.app_state().db_pool, &payload, id).await {
         Ok(task) => {
             // Track task creation event
-            app_state
+            deployment
+                .app_state()
                 .track_analytics_event(
                     "task_created",
                     Some(serde_json::json!({
@@ -73,102 +76,109 @@ pub async fn create_task(
     }
 }
 
-pub async fn create_task_and_start(
-    Extension(project): Extension<Project>,
-    State(app_state): State<AppState>,
-    Json(mut payload): Json<CreateTaskAndStart>,
-) -> Result<ResponseJson<ApiResponse<Task>>, StatusCode> {
-    let task_id = Uuid::new_v4();
+// TODO: create and start
+// pub async fn create_task_and_start(
+//     Extension(project): Extension<Project>,
+//     State(deployment): State<DeploymentImpl>,
+//     Json(mut payload): Json<CreateTaskAndStart>,
+// ) -> Result<ResponseJson<ApiResponse<Task>>, StatusCode> {
+//     let task_id = Uuid::new_v4();
 
-    // Ensure the project_id in the payload matches the project from middleware
-    payload.project_id = project.id;
+//     // Ensure the project_id in the payload matches the project from middleware
+//     payload.project_id = project.id;
 
-    tracing::debug!(
-        "Creating and starting task '{}' in project {}",
-        payload.title,
-        project.id
-    );
+//     tracing::debug!(
+//         "Creating and starting task '{}' in project {}",
+//         payload.title,
+//         project.id
+//     );
 
-    // Create the task first
-    let create_task_payload = CreateTask {
-        project_id: payload.project_id,
-        title: payload.title.clone(),
-        description: payload.description.clone(),
-        parent_task_attempt: payload.parent_task_attempt,
-    };
-    let task = match Task::create(&app_state.db_pool, &create_task_payload, task_id).await {
-        Ok(task) => task,
-        Err(e) => {
-            tracing::error!("Failed to create task: {}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
+//     // Create the task first
+//     let create_task_payload = CreateTask {
+//         project_id: payload.project_id,
+//         title: payload.title.clone(),
+//         description: payload.description.clone(),
+//         parent_task_attempt: payload.parent_task_attempt,
+//     };
+//     let task = match Task::create(
+//         &deployment.app_state().db_pool,
+//         &create_task_payload,
+//         task_id,
+//     )
+//     .await
+//     {
+//         Ok(task) => task,
+//         Err(e) => {
+//             tracing::error!("Failed to create task: {}", e);
+//             return Err(StatusCode::INTERNAL_SERVER_ERROR);
+//         }
+//     };
 
-    // Create task attempt
-    let executor_string = payload.executor.as_ref().map(|exec| exec.to_string());
-    let attempt_payload = CreateTaskAttempt {
-        executor: executor_string.clone(),
-        base_branch: None, // Not supported in task creation endpoint, only in task attempts
-    };
+//     // Create task attempt
+//     let executor_string = payload.executor.as_ref().map(|exec| exec.to_string());
+//     let attempt_payload = CreateTaskAttempt {
+//         executor: executor_string.clone(),
+//         base_branch: None, // Not supported in task creation endpoint, only in task attempts
+//     };
 
-    match TaskAttempt::create(&app_state.db_pool, &attempt_payload, task_id).await {
-        Ok(attempt) => {
-            app_state
-                .track_analytics_event(
-                    "task_created",
-                    Some(serde_json::json!({
-                        "task_id": task.id.to_string(),
-                        "project_id": project.id.to_string(),
-                        "has_description": task.description.is_some(),
-                    })),
-                )
-                .await;
+//     match TaskAttempt::create(&app_state.db_pool, &attempt_payload, task_id).await {
+//         Ok(attempt) => {
+//             app_state
+//                 .track_analytics_event(
+//                     "task_created",
+//                     Some(serde_json::json!({
+//                         "task_id": task.id.to_string(),
+//                         "project_id": project.id.to_string(),
+//                         "has_description": task.description.is_some(),
+//                     })),
+//                 )
+//                 .await;
 
-            app_state
-                .track_analytics_event(
-                    "task_attempt_started",
-                    Some(serde_json::json!({
-                        "task_id": task.id.to_string(),
-                        "executor_type": executor_string.as_deref().unwrap_or("default"),
-                        "attempt_id": attempt.id.to_string(),
-                    })),
-                )
-                .await;
+//             app_state
+//                 .track_analytics_event(
+//                     "task_attempt_started",
+//                     Some(serde_json::json!({
+//                         "task_id": task.id.to_string(),
+//                         "executor_type": executor_string.as_deref().unwrap_or("default"),
+//                         "attempt_id": attempt.id.to_string(),
+//                     })),
+//                 )
+//                 .await;
 
-            // Start execution asynchronously (don't block the response)
-            let app_state_clone = app_state.clone();
-            let attempt_id = attempt.id;
-            tokio::spawn(async move {
-                if let Err(e) = TaskAttempt::start_execution(
-                    &app_state_clone.db_pool,
-                    &app_state_clone,
-                    attempt_id,
-                    task_id,
-                    project.id,
-                )
-                .await
-                {
-                    tracing::error!(
-                        "Failed to start execution for task attempt {}: {}",
-                        attempt_id,
-                        e
-                    );
-                }
-            });
+//             // Start execution asynchronously (don't block the response)
+//             let app_state_clone = app_state.clone();
+//             let attempt_id = attempt.id;
+//             tokio::spawn(async move {
+//                 if let Err(e) = TaskAttempt::start_execution(
+//                     &app_state_clone.db_pool,
+//                     &app_state_clone,
+//                     attempt_id,
+//                     task_id,
+//                     project.id,
+//                 )
+//                 .await
+//                 {
+//                     tracing::error!(
+//                         "Failed to start execution for task attempt {}: {}",
+//                         attempt_id,
+//                         e
+//                     );
+//                 }
+//             });
 
-            Ok(ResponseJson(ApiResponse::success(task)))
-        }
-        Err(e) => {
-            tracing::error!("Failed to create task attempt: {}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
-}
+//             Ok(ResponseJson(ApiResponse::success(task)))
+//         }
+//         Err(e) => {
+//             tracing::error!("Failed to create task attempt: {}", e);
+//             Err(StatusCode::INTERNAL_SERVER_ERROR)
+//         }
+//     }
+// }
 
 pub async fn update_task(
     Extension(project): Extension<Project>,
     Extension(existing_task): Extension<Task>,
-    State(app_state): State<AppState>,
+    State(deployment): State<DeploymentImpl>,
     Json(payload): Json<UpdateTask>,
 ) -> Result<ResponseJson<ApiResponse<Task>>, StatusCode> {
     // Use existing values if not provided in update
@@ -180,7 +190,7 @@ pub async fn update_task(
         .or(existing_task.parent_task_attempt);
 
     match Task::update(
-        &app_state.db_pool,
+        &deployment.app_state().db_pool,
         existing_task.id,
         project.id,
         title,
@@ -201,46 +211,49 @@ pub async fn update_task(
 pub async fn delete_task(
     Extension(project): Extension<Project>,
     Extension(task): Extension<Task>,
-    State(app_state): State<AppState>,
+    State(deployment): State<DeploymentImpl>,
 ) -> Result<ResponseJson<ApiResponse<()>>, StatusCode> {
     // Clean up all worktrees for this task before deletion
-    if let Err(e) = execution_monitor::cleanup_task_worktrees(&app_state.db_pool, task.id).await {
-        tracing::error!("Failed to cleanup worktrees for task {}: {}", task.id, e);
-        // Continue with deletion even if cleanup fails
-    }
+    // TODO: readd worktree cleanup
+    // if let Err(e) =
+    //     execution_monitor::cleanup_task_worktrees(&deployment.app_state().db_pool, task.id).await
+    // {
+    //     tracing::error!("Failed to cleanup worktrees for task {}: {}", task.id, e);
+    //     // Continue with deletion even if cleanup fails
+    // }
 
-    // Clean up all executor sessions for this task before deletion
-    match TaskAttempt::find_by_task_id(&app_state.db_pool, task.id).await {
-        Ok(task_attempts) => {
-            for attempt in task_attempts {
-                if let Err(e) =
-                    crate::models::executor_session::ExecutorSession::delete_by_task_attempt_id(
-                        &app_state.db_pool,
-                        attempt.id,
-                    )
-                    .await
-                {
-                    tracing::error!(
-                        "Failed to cleanup executor sessions for task attempt {}: {}",
-                        attempt.id,
-                        e
-                    );
-                    // Continue with deletion even if session cleanup fails
-                } else {
-                    tracing::debug!(
-                        "Cleaned up executor sessions for task attempt {}",
-                        attempt.id
-                    );
-                }
-            }
-        }
-        Err(e) => {
-            tracing::error!("Failed to get task attempts for session cleanup: {}", e);
-            // Continue with deletion even if we can't get task attempts
-        }
-    }
+    // // Clean up all executor sessions for this task before deletion
+    // match TaskAttempt::find_by_task_id(&deployment.app_state().db_pool, task.id).await {
+    //     Ok(task_attempts) => {
+    //         for attempt in task_attempts {
+    //             if let Err(e) =
+    //                 crate::models::executor_session::ExecutorSession::delete_by_task_attempt_id(
+    //                     &app_state.db_pool,
+    //                     attempt.id,
+    //                 )
+    //                 .await
+    //             {
+    //                 tracing::error!(
+    //                     "Failed to cleanup executor sessions for task attempt {}: {}",
+    //                     attempt.id,
+    //                     e
+    //                 );
+    //                 // Continue with deletion even if session cleanup fails
+    //             } else {
+    //                 tracing::debug!(
+    //                     "Cleaned up executor sessions for task attempt {}",
+    //                     attempt.id
+    //                 );
+    //             }
+    //         }
+    //     }
+    //     Err(e) => {
+    //         tracing::error!("Failed to get task attempts for session cleanup: {}", e);
+    //         // Continue with deletion even if we can't get task attempts
+    //     }
+    // }
 
-    match Task::delete(&app_state.db_pool, task.id, project.id).await {
+    match Task::delete(&deployment.app_state().db_pool, task.id, project.id).await {
         Ok(rows_affected) => {
             if rows_affected == 0 {
                 Err(StatusCode::NOT_FOUND)
@@ -255,23 +268,19 @@ pub async fn delete_task(
     }
 }
 
-pub fn tasks_project_router() -> Router<AppState> {
-    use axum::routing::post;
-
-    Router::new()
+pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
+    let inner = Router::new()
+        .route("/", get(get_project_tasks).post(create_task))
+        // .route("/create-and-start", post(create_task_and_start))
         .route(
-            "/projects/:project_id/tasks",
-            get(get_project_tasks).post(create_task),
+            "/{task_id}",
+            get(get_task).put(update_task).delete(delete_task),
         )
-        .route(
-            "/projects/:project_id/tasks/create-and-start",
-            post(create_task_and_start),
-        )
-}
+        .layer(from_fn_with_state(
+            deployment.app_state().clone(),
+            load_project_middleware,
+        ));
 
-pub fn tasks_with_id_router() -> Router<AppState> {
-    Router::new().route(
-        "/projects/:project_id/tasks/:task_id",
-        get(get_task).put(update_task).delete(delete_task),
-    )
+    // mount under /projects/:project_id/tasks
+    Router::new().nest("/projects/{project_id}/tasks", inner)
 }

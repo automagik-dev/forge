@@ -4,13 +4,11 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use backend_common::app_state::AppState;
-use uuid::Uuid;
-
-use crate::models::{
-    execution_process::ExecutionProcess, project::Project, task::Task, task_attempt::TaskAttempt,
-    task_template::TaskTemplate,
+use backend_common::{
+    app_state::AppState,
+    models::{project::Project, task::Task},
 };
+use uuid::Uuid;
 
 /// Middleware that loads and injects a Project based on the project_id path parameter
 pub async fn load_project_middleware(
@@ -88,153 +86,157 @@ pub async fn load_task_middleware(
     Ok(next.run(request).await)
 }
 
-/// Middleware that loads and injects Project, Task, and TaskAttempt based on project_id, task_id, and attempt_id path parameters
-pub async fn load_task_attempt_middleware(
-    State(app_state): State<AppState>,
-    Path((project_id, task_id, attempt_id)): Path<(Uuid, Uuid, Uuid)>,
-    request: axum::extract::Request,
-    next: Next,
-) -> Result<Response, StatusCode> {
-    // Load the full context in one call using the existing method
-    let context = match TaskAttempt::load_context(
-        &app_state.db_pool,
-        attempt_id,
-        task_id,
-        project_id,
-    )
-    .await
-    {
-        Ok(context) => context,
-        Err(e) => {
-            tracing::error!(
-                "Failed to load context for attempt {} in task {} in project {}: {}",
-                attempt_id,
-                task_id,
-                project_id,
-                e
-            );
-            return Err(StatusCode::NOT_FOUND);
-        }
-    };
+// // TODO: fix
+// /// Middleware that loads and injects Project, Task, and TaskAttempt based on project_id, task_id, and attempt_id path parameters
+// pub async fn load_task_attempt_middleware(
+//     State(app_state): State<AppState>,
+//     Path((project_id, task_id, attempt_id)): Path<(Uuid, Uuid, Uuid)>,
+//     request: axum::extract::Request,
+//     next: Next,
+// ) -> Result<Response, StatusCode> {
+//     // Load the full context in one call using the existing method
+//     let context = match TaskAttempt::load_context(
+//         &app_state.db_pool,
+//         attempt_id,
+//         task_id,
+//         project_id,
+//     )
+//     .await
+//     {
+//         Ok(context) => context,
+//         Err(e) => {
+//             tracing::error!(
+//                 "Failed to load context for attempt {} in task {} in project {}: {}",
+//                 attempt_id,
+//                 task_id,
+//                 project_id,
+//                 e
+//             );
+//             return Err(StatusCode::NOT_FOUND);
+//         }
+//     };
 
-    // Insert all models as extensions
-    let mut request = request;
-    request.extensions_mut().insert(context.project);
-    request.extensions_mut().insert(context.task);
-    request.extensions_mut().insert(context.task_attempt);
+//     // Insert all models as extensions
+//     let mut request = request;
+//     request.extensions_mut().insert(context.project);
+//     request.extensions_mut().insert(context.task);
+//     request.extensions_mut().insert(context.task_attempt);
 
-    // Continue with the next middleware/handler
-    Ok(next.run(request).await)
-}
+//     // Continue with the next middleware/handler
+//     Ok(next.run(request).await)
+// }
 
-/// Simple middleware that loads and injects ExecutionProcess based on the process_id path parameter
-/// without any additional validation
-pub async fn load_execution_process_simple_middleware(
-    State(app_state): State<AppState>,
-    Path(process_id): Path<Uuid>,
-    mut request: axum::extract::Request,
-    next: Next,
-) -> Result<Response, StatusCode> {
-    // Load the execution process from the database
-    let execution_process = match ExecutionProcess::find_by_id(&app_state.db_pool, process_id).await
-    {
-        Ok(Some(process)) => process,
-        Ok(None) => {
-            tracing::warn!("ExecutionProcess {} not found", process_id);
-            return Err(StatusCode::NOT_FOUND);
-        }
-        Err(e) => {
-            tracing::error!("Failed to fetch execution process {}: {}", process_id, e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
+// TODO: fix
+// Simple middleware that loads and injects ExecutionProcess based on the process_id path parameter
+// without any additional validation
+// pub async fn load_execution_process_simple_middleware(
+//     State(app_state): State<AppState>,
+//     Path(process_id): Path<Uuid>,
+//     mut request: axum::extract::Request,
+//     next: Next,
+// ) -> Result<Response, StatusCode> {
+//     // Load the execution process from the database
+//     let execution_process = match ExecutionProcess::find_by_id(&app_state.db_pool, process_id).await
+//     {
+//         Ok(Some(process)) => process,
+//         Ok(None) => {
+//             tracing::warn!("ExecutionProcess {} not found", process_id);
+//             return Err(StatusCode::NOT_FOUND);
+//         }
+//         Err(e) => {
+//             tracing::error!("Failed to fetch execution process {}: {}", process_id, e);
+//             return Err(StatusCode::INTERNAL_SERVER_ERROR);
+//         }
+//     };
 
-    // Inject the execution process into the request
-    request.extensions_mut().insert(execution_process);
+//     // Inject the execution process into the request
+//     request.extensions_mut().insert(execution_process);
 
-    // Continue to the next middleware/handler
-    Ok(next.run(request).await)
-}
+//     // Continue to the next middleware/handler
+//     Ok(next.run(request).await)
+// }
 
-/// Middleware that loads and injects Project, Task, TaskAttempt, and ExecutionProcess
-/// based on the path parameters: project_id, task_id, attempt_id, process_id
-pub async fn load_execution_process_with_context_middleware(
-    State(app_state): State<AppState>,
-    Path((project_id, task_id, attempt_id, process_id)): Path<(Uuid, Uuid, Uuid, Uuid)>,
-    request: axum::extract::Request,
-    next: Next,
-) -> Result<Response, StatusCode> {
-    // Load the task attempt context first
-    let context = match TaskAttempt::load_context(
-        &app_state.db_pool,
-        attempt_id,
-        task_id,
-        project_id,
-    )
-    .await
-    {
-        Ok(context) => context,
-        Err(e) => {
-            tracing::error!(
-                "Failed to load context for attempt {} in task {} in project {}: {}",
-                attempt_id,
-                task_id,
-                project_id,
-                e
-            );
-            return Err(StatusCode::NOT_FOUND);
-        }
-    };
+// TODO: fix
+// Middleware that loads and injects Project, Task, TaskAttempt, and ExecutionProcess
+// based on the path parameters: project_id, task_id, attempt_id, process_id
+// pub async fn load_execution_process_with_context_middleware(
+//     State(app_state): State<AppState>,
+//     Path((project_id, task_id, attempt_id, process_id)): Path<(Uuid, Uuid, Uuid, Uuid)>,
+//     request: axum::extract::Request,
+//     next: Next,
+// ) -> Result<Response, StatusCode> {
+//     // Load the task attempt context first
+//     let context = match TaskAttempt::load_context(
+//         &app_state.db_pool,
+//         attempt_id,
+//         task_id,
+//         project_id,
+//     )
+//     .await
+//     {
+//         Ok(context) => context,
+//         Err(e) => {
+//             tracing::error!(
+//                 "Failed to load context for attempt {} in task {} in project {}: {}",
+//                 attempt_id,
+//                 task_id,
+//                 project_id,
+//                 e
+//             );
+//             return Err(StatusCode::NOT_FOUND);
+//         }
+//     };
 
-    // Load the execution process
-    let execution_process = match ExecutionProcess::find_by_id(&app_state.db_pool, process_id).await
-    {
-        Ok(Some(process)) => process,
-        Ok(None) => {
-            tracing::warn!("ExecutionProcess {} not found", process_id);
-            return Err(StatusCode::NOT_FOUND);
-        }
-        Err(e) => {
-            tracing::error!("Failed to fetch execution process {}: {}", process_id, e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
+//     // Load the execution process
+//     let execution_process = match ExecutionProcess::find_by_id(&app_state.db_pool, process_id).await
+//     {
+//         Ok(Some(process)) => process,
+//         Ok(None) => {
+//             tracing::warn!("ExecutionProcess {} not found", process_id);
+//             return Err(StatusCode::NOT_FOUND);
+//         }
+//         Err(e) => {
+//             tracing::error!("Failed to fetch execution process {}: {}", process_id, e);
+//             return Err(StatusCode::INTERNAL_SERVER_ERROR);
+//         }
+//     };
 
-    // Insert all models as extensions
-    let mut request = request;
-    request.extensions_mut().insert(context.project);
-    request.extensions_mut().insert(context.task);
-    request.extensions_mut().insert(context.task_attempt);
-    request.extensions_mut().insert(execution_process);
+//     // Insert all models as extensions
+//     let mut request = request;
+//     request.extensions_mut().insert(context.project);
+//     request.extensions_mut().insert(context.task);
+//     request.extensions_mut().insert(context.task_attempt);
+//     request.extensions_mut().insert(execution_process);
 
-    // Continue with the next middleware/handler
-    Ok(next.run(request).await)
-}
+//     // Continue with the next middleware/handler
+//     Ok(next.run(request).await)
+// }
 
-/// Middleware that loads and injects TaskTemplate based on the template_id path parameter
-pub async fn load_task_template_middleware(
-    State(app_state): State<AppState>,
-    Path(template_id): Path<Uuid>,
-    request: axum::extract::Request,
-    next: Next,
-) -> Result<Response, StatusCode> {
-    // Load the task template from the database
-    let task_template = match TaskTemplate::find_by_id(&app_state.db_pool, template_id).await {
-        Ok(Some(template)) => template,
-        Ok(None) => {
-            tracing::warn!("TaskTemplate {} not found", template_id);
-            return Err(StatusCode::NOT_FOUND);
-        }
-        Err(e) => {
-            tracing::error!("Failed to fetch task template {}: {}", template_id, e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
+// TODO: fix
+// Middleware that loads and injects TaskTemplate based on the template_id path parameter
+// pub async fn load_task_template_middleware(
+//     State(app_state): State<AppState>,
+//     Path(template_id): Path<Uuid>,
+//     request: axum::extract::Request,
+//     next: Next,
+// ) -> Result<Response, StatusCode> {
+//     // Load the task template from the database
+//     let task_template = match TaskTemplate::find_by_id(&app_state.db_pool, template_id).await {
+//         Ok(Some(template)) => template,
+//         Ok(None) => {
+//             tracing::warn!("TaskTemplate {} not found", template_id);
+//             return Err(StatusCode::NOT_FOUND);
+//         }
+//         Err(e) => {
+//             tracing::error!("Failed to fetch task template {}: {}", template_id, e);
+//             return Err(StatusCode::INTERNAL_SERVER_ERROR);
+//         }
+//     };
 
-    // Insert the task template as an extension
-    let mut request = request;
-    request.extensions_mut().insert(task_template);
+//     // Insert the task template as an extension
+//     let mut request = request;
+//     request.extensions_mut().insert(task_template);
 
-    // Continue with the next middleware/handler
-    Ok(next.run(request).await)
-}
+//     // Continue with the next middleware/handler
+//     Ok(next.run(request).await)
+// }
