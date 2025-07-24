@@ -230,7 +230,9 @@ impl WorktreeManager {
                 // Repository doesn't exist (likely deleted project), fall back to simple cleanup
                 debug!(
                     "Failed to open repository at {}: {}. Falling back to simple cleanup for worktree at {}",
-                    git_repo_path_owned, e, worktree_path_owned.display()
+                    git_repo_path_owned,
+                    e,
+                    worktree_path_owned.display()
                 );
                 Self::simple_worktree_cleanup(&worktree_path_owned).await?;
                 Ok(())

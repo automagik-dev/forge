@@ -314,19 +314,27 @@
 // }
 
 // mod command_executor;
+mod db;
 mod deployment;
+mod router;
+mod routes;
 mod utils;
 use std::{str::FromStr, sync::Arc};
 
 use anyhow;
-use backend_common::{app_state::AppState, models::config::Config};
+use axum::Router;
+use backend_common::{app_state::AppState, deployment::Deployment, models::config::Config};
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
+use strip_ansi_escapes::strip;
 use tokio::sync::RwLock;
 use tracing_subscriber::{filter::LevelFilter, prelude::*};
 
 #[cfg(not(feature = "cloud"))]
 use crate::deployment::local::LocalDeployment;
-use crate::utils::sentry::sentry_layer;
+use crate::{
+    db::start_db,
+    utils::{browser::open_browser, sentry::sentry_layer},
+};
 
 fn main() -> anyhow::Result<()> {
     // #[cfg(feature = "cloud")]
@@ -344,17 +352,8 @@ fn main() -> anyhow::Result<()> {
                 .with(sentry_layer())
                 .init();
 
-            // Database connection
-            let database_url = format!(
-                "sqlite://{}",
-                utils::assets::asset_dir()
-                    .join("db.sqlite")
-                    .to_string_lossy()
-            );
-
-            let options = SqliteConnectOptions::from_str(&database_url)?.create_if_missing(true);
-            let pool = SqlitePool::connect_with(options).await?;
-            sqlx::migrate!("./migrations").run(&pool).await?;
+            // Start the DB
+            let pool = start_db().await?;
 
             // Load configuration
             let config_path = utils::assets::config_path();
@@ -365,6 +364,41 @@ fn main() -> anyhow::Result<()> {
             let app_state = AppState::new(pool.clone(), config_arc.clone()).await;
 
             app_state.update_sentry_scope().await;
+
+            let deployment = DeploymentImpl::new(app_state);
+
+            let app_router = router::router(deployment);
+
+            let port = std::env::var("BACKEND_PORT")
+                .or_else(|_| std::env::var("PORT"))
+                .ok()
+                .and_then(|s| {
+                    // remove any ANSI codes, then turn into String
+                    let cleaned =
+                        String::from_utf8(strip(s.as_bytes())).expect("UTF-8 after stripping ANSI");
+                    cleaned.trim().parse::<u16>().ok()
+                })
+                .unwrap_or_else(|| {
+                    tracing::info!(
+                        "No PORT environment variable set, using port 0 for auto-assignment"
+                    );
+                    0
+                }); // Use 0 to find free port if no specific port provided
+
+            let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+            let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;
+            let actual_port = listener.local_addr()?.port(); // get → 53427 (example)
+
+                        tracing::info!("Server running on http://{host}:{actual_port}");
+
+                        if !cfg!(debug_assertions) {
+                            tracing::info!("Opening browser...");
+                            if let Err(e) = open_browser(&format!("http://127.0.0.1:{actual_port}")).await {
+                                tracing::warn!("Failed to open browser automatically: {}. Please open http://127.0.0.1:{} manually.", e, actual_port);
+                            }
+                        }
+
+                        axum::serve(listener, app_router).await?;
 
             Ok(())
         })

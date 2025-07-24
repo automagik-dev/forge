@@ -48,7 +48,7 @@ pub fn cache_dir() -> std::path::PathBuf {
 }
 
 // TODO: fix
-/// Get or create cached PowerShell script file
+// Get or create cached PowerShell script file
 // pub async fn get_powershell_script()
 // -> Result<std::path::PathBuf, Box<dyn std::error::Error + Send + Sync>> {
 //     use std::io::Write;
@@ -85,18 +85,3 @@ pub fn cache_dir() -> std::path::PathBuf {
 
 //     Ok(script_path)
 // }
-
-/// Open URL in browser with WSL2 support
-pub async fn open_browser(url: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    if is_wsl2() {
-        // In WSL2, use PowerShell to open the browser
-        tokio::process::Command::new("powershell.exe")
-            .arg("-Command")
-            .arg(format!("Start-Process '{}'", url))
-            .spawn()?;
-        Ok(())
-    } else {
-        // Use the standard open crate for other platforms
-        open::that(url).map_err(|e| e.into())
-    }
-}
