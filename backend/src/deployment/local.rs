@@ -9,6 +9,10 @@ pub struct LocalDeployment {}
 
 #[async_trait]
 impl Deployment for LocalDeployment {
+    fn new() -> Self {
+        Self {}
+    }
+
     fn name(&self) -> &str {
         "local"
     }

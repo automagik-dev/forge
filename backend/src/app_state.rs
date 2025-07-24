@@ -5,6 +5,7 @@ use uuid::Uuid;
 
 use crate::{
     command_runner,
+    deployment::{local::LocalDeployment, Deployment},
     models::Environment,
     services::{generate_user_id, AnalyticsConfig, AnalyticsService},
 };
@@ -24,7 +25,12 @@ pub struct RunningExecution {
     pub child: command_runner::CommandProcess,
 }
 
-#[derive(Debug, Clone)]
+// TODO remote deployment
+#[cfg(feature = "local")]
+type DeploymentImpl = LocalDeployment;
+#[cfg(not(feature = "local"))]
+type DeploymentImpl = LocalDeployment;
+
 pub struct AppState {
     running_executions: Arc<Mutex<HashMap<Uuid, RunningExecution>>>,
     pub db_pool: sqlx::SqlitePool,
@@ -32,6 +38,7 @@ pub struct AppState {
     pub analytics: Arc<TokioRwLock<AnalyticsService>>,
     user_id: String,
     pub mode: Environment,
+    pub deployment: DeploymentImpl,
 }
 
 impl AppState {
@@ -56,6 +63,7 @@ impl AppState {
             analytics,
             user_id: generate_user_id(),
             mode,
+            deployment: DeploymentImpl::new(),
         }
     }
 
