@@ -5,6 +5,7 @@ use tracing::{debug, info};
 use uuid::Uuid;
 
 use crate::{
+    app_state::AppState,
     command_runner,
     executor::Executor,
     models::{
@@ -173,7 +174,7 @@ impl ProcessService {
         // Execute the setup script
         let child = Self::execute_setup_script_process(
             setup_script,
-            pool,
+            app_state,
             task_id,
             attempt_id,
             process_id,
@@ -545,7 +546,7 @@ impl ProcessService {
     /// Unified function to start any type of process execution
     #[allow(clippy::too_many_arguments)]
     pub async fn start_process_execution(
-        app_state: &crate::app_state::AppState,
+        app_state: &AppState,
         attempt_id: Uuid,
         task_id: Uuid,
         executor_type: crate::executor::ExecutorType,
@@ -593,7 +594,7 @@ impl ProcessService {
         // Execute the process
         let child = Self::execute_process(
             &executor_type,
-            &app_state.db_pool,
+            app_state,
             task_id,
             attempt_id,
             process_id,
@@ -791,7 +792,7 @@ impl ProcessService {
     /// Execute the process based on type
     async fn execute_process(
         executor_type: &crate::executor::ExecutorType,
-        pool: &SqlitePool,
+        app_state: &AppState,
         task_id: Uuid,
         attempt_id: Uuid,
         process_id: Uuid,
@@ -805,7 +806,7 @@ impl ProcessService {
                     script: script.clone(),
                 };
                 executor
-                    .execute_streaming(pool, task_id, attempt_id, process_id, worktree_path)
+                    .execute_streaming(app_state, task_id, attempt_id, process_id, worktree_path)
                     .await
             }
             crate::executor::ExecutorType::CleanupScript(script) => {
@@ -813,7 +814,7 @@ impl ProcessService {
                     script: script.clone(),
                 };
                 executor
-                    .execute_streaming(pool, task_id, attempt_id, process_id, worktree_path)
+                    .execute_streaming(app_state, task_id, attempt_id, process_id, worktree_path)
                     .await
             }
             crate::executor::ExecutorType::DevServer(script) => {
@@ -821,7 +822,7 @@ impl ProcessService {
                     script: script.clone(),
                 };
                 executor
-                    .execute_streaming(pool, task_id, attempt_id, process_id, worktree_path)
+                    .execute_streaming(app_state, task_id, attempt_id, process_id, worktree_path)
                     .await
             }
             crate::executor::ExecutorType::CodingAgent { config, follow_up } => {
@@ -830,7 +831,7 @@ impl ProcessService {
                 if let Some(ref follow_up_info) = follow_up {
                     executor
                         .execute_followup_streaming(
-                            pool,
+                            app_state,
                             task_id,
                             attempt_id,
                             process_id,
@@ -841,7 +842,13 @@ impl ProcessService {
                         .await
                 } else {
                     executor
-                        .execute_streaming(pool, task_id, attempt_id, process_id, worktree_path)
+                        .execute_streaming(
+                            app_state,
+                            task_id,
+                            attempt_id,
+                            process_id,
+                            worktree_path,
+                        )
                         .await
                 }
             }
@@ -913,7 +920,7 @@ impl ProcessService {
     /// Execute setup script process specifically
     async fn execute_setup_script_process(
         setup_script: &str,
-        pool: &SqlitePool,
+        app_state: &AppState,
         task_id: Uuid,
         attempt_id: Uuid,
         process_id: Uuid,
@@ -926,7 +933,7 @@ impl ProcessService {
         };
 
         executor
-            .execute_streaming(pool, task_id, attempt_id, process_id, worktree_path)
+            .execute_streaming(app_state, task_id, attempt_id, process_id, worktree_path)
             .await
             .map_err(|e| TaskAttemptError::Git(git2::Error::from_str(&e.to_string())))
     }
