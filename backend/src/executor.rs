@@ -1,6 +1,10 @@
 use std::str::FromStr;
 
 use async_trait::async_trait;
+use backend_common::{
+    command_executor::CommandProcess,
+    command_runner::{CommandError, CommandRunner},
+};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use ts_rs::TS;
@@ -8,8 +12,6 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_executor::CommandProcess,
-    command_runner::{CommandError, CommandRunner},
     executors::{
         AiderExecutor, AmpExecutor, CCRExecutor, CharmOpencodeExecutor, ClaudeExecutor,
         CodexExecutor, EchoExecutor, GeminiExecutor, SetupScriptExecutor, SstOpencodeExecutor,

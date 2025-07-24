@@ -2,11 +2,11 @@
 use std::path::PathBuf;
 use std::{collections::HashMap, sync::Arc};
 
+use backend_common::command_executor::CommandProcess;
 use tokio::sync::{Mutex, RwLock as TokioRwLock};
 use uuid::Uuid;
 
 use crate::{
-    command_executor::CommandProcess,
     deployment::Deployment,
     services::{generate_user_id, AnalyticsConfig, AnalyticsService},
 };

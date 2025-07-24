@@ -3,8 +3,8 @@ use tokio::io::AsyncRead;
 
 use crate::command_runner::{CommandError, CommandRunner, CommandRunnerArgs};
 
-pub mod cloud;
-pub mod local;
+// pub mod cloud;
+// pub mod local;
 
 // Core trait that defines the interface for command execution
 #[async_trait]
@@ -92,6 +92,57 @@ impl CommandExitStatus {
 pub struct CommandStream {
     pub stdout: Option<Box<dyn AsyncRead + Unpin + Send>>,
     pub stderr: Option<Box<dyn AsyncRead + Unpin + Send>>,
+}
+
+// Local-specific implementations for shared types
+impl CommandExitStatus {
+    /// Create a CommandExitStatus from a std::process::ExitStatus (for local processes)
+    pub fn from_local(status: std::process::ExitStatus) -> Self {
+        Self {
+            code: status.code(),
+            success: status.success(),
+            #[cfg(unix)]
+            signal: {
+                use std::os::unix::process::ExitStatusExt;
+                status.signal()
+            },
+            remote_process_id: None,
+            remote_session_id: None,
+        }
+    }
+}
+
+impl CommandStream {
+    /// Create a CommandStream from local process streams
+    pub fn from_local(
+        stdout: Option<tokio::process::ChildStdout>,
+        stderr: Option<tokio::process::ChildStderr>,
+    ) -> Self {
+        Self {
+            stdout: stdout.map(|s| Box::new(s) as Box<dyn tokio::io::AsyncRead + Unpin + Send>),
+            stderr: stderr.map(|s| Box::new(s) as Box<dyn tokio::io::AsyncRead + Unpin + Send>),
+        }
+    }
+}
+
+// Remote-specific implementations for shared types
+impl CommandExitStatus {
+    /// Create a CommandExitStatus for remote processes
+    pub fn from_remote(
+        code: Option<i32>,
+        success: bool,
+        remote_process_id: Option<String>,
+        remote_session_id: Option<String>,
+    ) -> Self {
+        Self {
+            code,
+            success,
+            #[cfg(unix)]
+            signal: None,
+            remote_process_id,
+            remote_session_id,
+        }
+    }
 }
 
 // Trait for managing running processes

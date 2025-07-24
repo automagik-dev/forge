@@ -1,6 +1,10 @@
 use std::{process::Stdio, time::Duration};
 
 use async_trait::async_trait;
+use backend_common::{
+    command_executor::{CommandExecutor, CommandExitStatus, CommandStream, ProcessHandle},
+    command_runner::{CommandError, CommandRunnerArgs},
+};
 use command_group::{AsyncCommandGroup, AsyncGroupChild};
 #[cfg(unix)]
 use nix::{
@@ -8,11 +12,6 @@ use nix::{
     unistd::{getpgid, Pid},
 };
 use tokio::process::Command;
-
-use crate::{
-    command_executor::{CommandExecutor, CommandExitStatus, CommandStream, ProcessHandle},
-    command_runner::{CommandError, CommandRunnerArgs},
-};
 
 pub struct LocalCommandExecutor;
 
@@ -186,36 +185,36 @@ impl ProcessHandle for LocalProcessHandle {
     }
 }
 
-// Local-specific implementations for shared types
-impl CommandExitStatus {
-    /// Create a CommandExitStatus from a std::process::ExitStatus (for local processes)
-    pub fn from_local(status: std::process::ExitStatus) -> Self {
-        Self {
-            code: status.code(),
-            success: status.success(),
-            #[cfg(unix)]
-            signal: {
-                use std::os::unix::process::ExitStatusExt;
-                status.signal()
-            },
-            remote_process_id: None,
-            remote_session_id: None,
-        }
-    }
-}
+// // Local-specific implementations for shared types
+// impl CommandExitStatus {
+//     /// Create a CommandExitStatus from a std::process::ExitStatus (for local processes)
+//     pub fn from_local(status: std::process::ExitStatus) -> Self {
+//         Self {
+//             code: status.code(),
+//             success: status.success(),
+//             #[cfg(unix)]
+//             signal: {
+//                 use std::os::unix::process::ExitStatusExt;
+//                 status.signal()
+//             },
+//             remote_process_id: None,
+//             remote_session_id: None,
+//         }
+//     }
+// }
 
-impl CommandStream {
-    /// Create a CommandStream from local process streams
-    pub fn from_local(
-        stdout: Option<tokio::process::ChildStdout>,
-        stderr: Option<tokio::process::ChildStderr>,
-    ) -> Self {
-        Self {
-            stdout: stdout.map(|s| Box::new(s) as Box<dyn tokio::io::AsyncRead + Unpin + Send>),
-            stderr: stderr.map(|s| Box::new(s) as Box<dyn tokio::io::AsyncRead + Unpin + Send>),
-        }
-    }
-}
+// impl CommandStream {
+//     /// Create a CommandStream from local process streams
+//     pub fn from_local(
+//         stdout: Option<tokio::process::ChildStdout>,
+//         stderr: Option<tokio::process::ChildStderr>,
+//     ) -> Self {
+//         Self {
+//             stdout: stdout.map(|s| Box::new(s) as Box<dyn tokio::io::AsyncRead + Unpin + Send>),
+//             stderr: stderr.map(|s| Box::new(s) as Box<dyn tokio::io::AsyncRead + Unpin + Send>),
+//         }
+//     }
+// }
 
 #[cfg(test)]
 mod tests {

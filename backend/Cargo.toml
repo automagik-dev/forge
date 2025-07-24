@@ -20,6 +20,7 @@ path = "src/bin/cloud_runner.rs"
 uninlined-format-args = "allow"
 
 [dependencies]
+backend-common = { path = "../backend-common" }
 vibe-kanban-cloud = { version = "0.1", optional = true }
 tokio = { workspace = true }
 tokio-util = { version = "0.7", features = ["io"] }

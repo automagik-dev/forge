@@ -1,9 +1,7 @@
 use async_trait::async_trait;
+use backend_common::command_executor::CommandExecutor;
 
-use crate::{
-    command_executor::{local::LocalCommandExecutor, CommandExecutor},
-    deployment::Deployment,
-};
+use crate::{command_executor::local::LocalCommandExecutor, deployment::Deployment};
 
 #[derive(Clone)]
 pub struct LocalDeployment {}
