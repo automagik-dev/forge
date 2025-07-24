@@ -82,3 +82,5 @@ backend/db.sqlite
 dev_assets
 /frontend/.env.sentry-build-plugin
 .ssh
+
+vibe-kanban-cloud/
