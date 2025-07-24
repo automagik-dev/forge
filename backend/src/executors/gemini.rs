@@ -531,14 +531,19 @@ You are continuing work on the above task. The execution history shows what has 
         let mut command = GeminiExecutor::create_gemini_command(app_state, worktree_path);
         command.stdin(comprehensive_prompt);
 
-        let proc = app_state.deployment.command_executor().runner_start(&command).await.map_err(|e| {
-            crate::executor::SpawnContext::from_command(&command, "Gemini")
-                .with_context(format!(
-                    "Gemini CLI followup execution with context for attempt {}",
-                    attempt_id
-                ))
-                .spawn_error(e)
-        })?;
+        let proc = app_state
+            .deployment
+            .command_executor()
+            .runner_start(&command)
+            .await
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, "Gemini")
+                    .with_context(format!(
+                        "Gemini CLI followup execution with context for attempt {}",
+                        attempt_id
+                    ))
+                    .spawn_error(e)
+            })?;
 
         tracing::info!(
             "Successfully started Gemini followup process for attempt {}",

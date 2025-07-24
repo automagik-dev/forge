@@ -45,7 +45,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Test 3: Command with environment variables
     println!("\n🌍 Test 3: Environment variables");
     let mut command3 = CommandRunner::new();
-    command3.command("printenv")
+    command3
+        .command("printenv")
         .arg("TEST_VAR")
         .env("TEST_VAR", "remote_test_value");
 
@@ -142,8 +143,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test 6a: Stdout streaming
     let mut command6a = CommandRunner::new();
-    command6a.command("echo")
-        .arg("Hello stdout streaming!");
+    command6a.command("echo").arg("Hello stdout streaming!");
 
     let mut process6a = CloudCommandExecutor::new().runner_start(&command6a).await?;
 
@@ -184,7 +184,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test 6b: Stderr streaming
     let mut command6b = CommandRunner::new();
-    command6b.command("bash")
+    command6b
+        .command("bash")
         .arg("-c")
         .arg("echo 'Error message' >&2");
 
@@ -225,7 +226,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test 6c: Streaming from long-running process
     let mut runner6c = CommandRunner::new();
-    runner6c.command("bash")
+    runner6c
+        .command("bash")
         .arg("-c")
         .arg("for i in {1..3}; do echo \"Line $i\"; sleep 0.1; done");
 

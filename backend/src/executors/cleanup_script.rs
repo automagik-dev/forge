@@ -41,12 +41,17 @@ impl Executor for CleanupScriptExecutor {
             .arg(&self.script)
             .working_dir(worktree_path);
 
-        let proc = app_state.deployment.command_executor().runner_start(&command).await.map_err(|e| {
-            crate::executor::SpawnContext::from_command(&command, "CleanupScript")
-                .with_task(task_id, Some(task.title.clone()))
-                .with_context("Cleanup script execution")
-                .spawn_error(e)
-        })?;
+        let proc = app_state
+            .deployment
+            .command_executor()
+            .runner_start(&command)
+            .await
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, "CleanupScript")
+                    .with_task(task_id, Some(task.title.clone()))
+                    .with_context("Cleanup script execution")
+                    .spawn_error(e)
+            })?;
 
         Ok(proc)
     }

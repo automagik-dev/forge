@@ -53,11 +53,11 @@ impl Executor for SetupScriptExecutor {
             .runner_start(&command)
             .await
             .map_err(|e| {
-            crate::executor::SpawnContext::from_command(&command, "SetupScript")
-                .with_task(task_id, Some(task.title.clone()))
-                .with_context("Setup script execution")
-                .spawn_error(e)
-        })?;
+                crate::executor::SpawnContext::from_command(&command, "SetupScript")
+                    .with_task(task_id, Some(task.title.clone()))
+                    .with_context("Setup script execution")
+                    .spawn_error(e)
+            })?;
 
         Ok(proc)
     }

@@ -123,12 +123,17 @@ Task title: {}"#,
             .working_dir(worktree_path)
             .env("NODE_NO_WARNINGS", "1");
 
-        let proc = app_state.deployment.command_executor().runner_start(&command).await.map_err(|e| {
-            crate::executor::SpawnContext::from_command(&command, &self.executor_type)
-                .with_task(task_id, Some(task.title.clone()))
-                .with_context(format!("{} CLI execution for new task", self.executor_type))
-                .spawn_error(e)
-        })?;
+        let proc = app_state
+            .deployment
+            .command_executor()
+            .runner_start(&command)
+            .await
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, &self.executor_type)
+                    .with_task(task_id, Some(task.title.clone()))
+                    .with_context(format!("{} CLI execution for new task", self.executor_type))
+                    .spawn_error(e)
+            })?;
         Ok(proc)
     }
 
@@ -163,14 +168,19 @@ Task title: {}"#,
             .working_dir(worktree_path)
             .env("NODE_NO_WARNINGS", "1");
 
-        let proc = app_state.deployment.command_executor().runner_start(&command).await.map_err(|e| {
-            crate::executor::SpawnContext::from_command(&command, &self.executor_type)
-                .with_context(format!(
-                    "{} CLI followup execution for session {}",
-                    self.executor_type, session_id
-                ))
-                .spawn_error(e)
-        })?;
+        let proc = app_state
+            .deployment
+            .command_executor()
+            .runner_start(&command)
+            .await
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, &self.executor_type)
+                    .with_context(format!(
+                        "{} CLI followup execution for session {}",
+                        self.executor_type, session_id
+                    ))
+                    .spawn_error(e)
+            })?;
 
         Ok(proc)
     }

@@ -227,12 +227,17 @@ Task description: {}"#,
             .env("NODE_NO_WARNINGS", "1")
             .env("RUST_LOG", "info"); // Enable rust logging to capture session info
 
-        let child = app_state.deployment.command_executor().runner_start(&command).await.map_err(|e| {
-            crate::executor::SpawnContext::from_command(&command, &self.executor_type)
-                .with_task(task_id, Some(task.title.clone()))
-                .with_context(format!("{} CLI execution for new task", self.executor_type))
-                .spawn_error(e)
-        })?;
+        let child = app_state
+            .deployment
+            .command_executor()
+            .runner_start(&command)
+            .await
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, &self.executor_type)
+                    .with_task(task_id, Some(task.title.clone()))
+                    .with_context(format!("{} CLI execution for new task", self.executor_type))
+                    .spawn_error(e)
+            })?;
 
         Ok(child)
     }
@@ -268,14 +273,19 @@ Task description: {}"#,
             .env("NODE_NO_WARNINGS", "1")
             .env("RUST_LOG", "info");
 
-        let child = app_state.deployment.command_executor().runner_start(&command).await.map_err(|e| {
-            crate::executor::SpawnContext::from_command(&command, &self.executor_type)
-                .with_context(format!(
-                    "{} CLI followup execution for session {}",
-                    self.executor_type, session_id
-                ))
-                .spawn_error(e)
-        })?;
+        let child = app_state
+            .deployment
+            .command_executor()
+            .runner_start(&command)
+            .await
+            .map_err(|e| {
+                crate::executor::SpawnContext::from_command(&command, &self.executor_type)
+                    .with_context(format!(
+                        "{} CLI followup execution for session {}",
+                        self.executor_type, session_id
+                    ))
+                    .spawn_error(e)
+            })?;
 
         Ok(child)
     }

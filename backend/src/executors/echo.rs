@@ -60,10 +60,7 @@ echo "Task completed: {}""#,
         };
 
         let mut command = CommandRunner::new();
-        command
-            .command(shell_cmd)
-            .arg(shell_arg)
-            .arg(&script);
+        command.command(shell_cmd).arg(shell_arg).arg(&script);
 
         let child = app_state
             .deployment

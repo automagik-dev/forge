@@ -286,11 +286,11 @@ Task title: {}"#,
             .runner_start(&command)
             .await
             .map_err(|e| {
-            crate::executor::SpawnContext::from_command(&command, &self.executor_type)
-                .with_task(task_id, Some(task.title.clone()))
-                .with_context(format!("{} CLI execution for new task", self.executor_type))
-                .spawn_error(e)
-        })?;
+                crate::executor::SpawnContext::from_command(&command, &self.executor_type)
+                    .with_task(task_id, Some(task.title.clone()))
+                    .with_context(format!("{} CLI execution for new task", self.executor_type))
+                    .spawn_error(e)
+            })?;
 
         Ok(proc)
     }
@@ -424,13 +424,13 @@ Task title: {}"#,
             .runner_start(&command)
             .await
             .map_err(|e| {
-            crate::executor::SpawnContext::from_command(&command, &self.executor_type)
-                .with_context(format!(
-                    "{} CLI followup execution for session {}",
-                    self.executor_type, session_id
-                ))
-                .spawn_error(e)
-        })?;
+                crate::executor::SpawnContext::from_command(&command, &self.executor_type)
+                    .with_context(format!(
+                        "{} CLI followup execution for session {}",
+                        self.executor_type, session_id
+                    ))
+                    .spawn_error(e)
+            })?;
 
         Ok(proc)
     }
