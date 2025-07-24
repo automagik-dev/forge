@@ -18,6 +18,7 @@ use vibe_kanban::{sentry_layer, Assets, ScriptAssets, SoundAssets};
 
 mod app_state;
 mod command_runner;
+mod deployment;
 mod execution_monitor;
 mod executor;
 mod executors;
