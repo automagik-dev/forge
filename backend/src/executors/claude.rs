@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::{
     app_state::AppState,
     command_runner::{CommandProcess, CommandRunner},
+    deployment::Deployment,
     executor::{
         ActionType, Executor, ExecutorError, NormalizedConversation, NormalizedEntry,
         NormalizedEntryType,
@@ -112,7 +113,7 @@ Task title: {}"#,
         // Pass prompt via stdin instead of command line to avoid shell escaping issues
         let claude_command = &self.command;
 
-        let mut command = CommandRunner::new();
+        let mut command = app_state.deployment.command_runner();
         command
             .command(shell_cmd)
             .arg(shell_arg)
@@ -132,7 +133,7 @@ Task title: {}"#,
 
     async fn spawn_followup(
         &self,
-        _app_state: &AppState,
+        app_state: &AppState,
         _task_id: Uuid,
         session_id: &str,
         prompt: &str,
@@ -152,7 +153,7 @@ Task title: {}"#,
             format!("{} --resume={}", self.command, session_id)
         };
 
-        let mut command = CommandRunner::new();
+        let mut command = app_state.deployment.command_runner();
         command
             .command(shell_cmd)
             .arg(shell_arg)

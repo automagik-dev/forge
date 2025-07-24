@@ -3,7 +3,8 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_runner::{CommandProcess, CommandRunner},
+    command_runner::CommandProcess,
+    deployment::Deployment,
     executor::{Executor, ExecutorError},
     models::{project::Project, task::Task},
     utils::shell::get_shell_command,
@@ -32,7 +33,7 @@ impl Executor for DevServerExecutor {
             .ok_or(ExecutorError::TaskNotFound)?; // Reuse TaskNotFound for simplicity
 
         let (shell_cmd, shell_arg) = get_shell_command();
-        let mut runner = CommandRunner::new();
+        let mut runner = app_state.deployment.command_runner();
         runner
             .command(shell_cmd)
             .arg(shell_arg)

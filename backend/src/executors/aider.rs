@@ -5,7 +5,8 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_runner::{CommandProcess, CommandRunner},
+    command_runner::CommandProcess,
+    deployment::Deployment,
     executor::{
         ActionType, Executor, ExecutorError, NormalizedConversation, NormalizedEntry,
         NormalizedEntryType,
@@ -537,7 +538,7 @@ impl Executor for AiderExecutor {
 
         tracing::debug!("Spawning Aider command: {}", &aider_command);
 
-        let mut command = CommandRunner::new();
+        let mut command = app_state.deployment.command_runner();
         command
             .command(shell_cmd)
             .arg(shell_arg)
@@ -712,7 +713,7 @@ impl Executor for AiderExecutor {
 
     async fn spawn_followup(
         &self,
-        _app_state: &AppState,
+        app_state: &AppState,
         _task_id: Uuid,
         session_id: &str,
         prompt: &str,
@@ -766,7 +767,7 @@ impl Executor for AiderExecutor {
 
         tracing::debug!("Spawning Aider command: {}", &aider_command);
 
-        let mut command = CommandRunner::new();
+        let mut command = app_state.deployment.command_runner();
         command
             .command(shell_cmd)
             .arg(shell_arg)

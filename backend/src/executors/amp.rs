@@ -7,9 +7,9 @@ use uuid::Uuid;
 use crate::{
     app_state::AppState,
     command_runner::{CommandProcess, CommandRunner},
-    executor,
+    deployment::Deployment,
     executor::{
-        ActionType, Executor, ExecutorError, NormalizedConversation, NormalizedEntry,
+        self, ActionType, Executor, ExecutorError, NormalizedConversation, NormalizedEntry,
         NormalizedEntryType,
     },
     models::task::Task,
@@ -223,7 +223,7 @@ Task title: {}"#,
         // --format=jsonl is deprecated in latest versions of Amp CLI
         let amp_command = "npx @sourcegraph/amp@0.0.1752148945-gd8844f --format=jsonl";
 
-        let mut command = CommandRunner::new();
+        let mut command = app_state.deployment.command_runner();
         command
             .command(shell_cmd)
             .arg(shell_arg)
@@ -243,7 +243,7 @@ Task title: {}"#,
 
     async fn spawn_followup(
         &self,
-        _app_state: &AppState,
+        app_state: &AppState,
         _task_id: Uuid,
         session_id: &str,
         prompt: &str,
@@ -256,7 +256,7 @@ Task title: {}"#,
             session_id
         );
 
-        let mut command = CommandRunner::new();
+        let mut command = app_state.deployment.command_runner();
         command
             .command(shell_cmd)
             .arg(shell_arg)

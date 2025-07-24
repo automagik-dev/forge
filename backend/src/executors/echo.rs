@@ -3,7 +3,8 @@ use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_runner::{CommandProcess, CommandRunner},
+    command_runner::CommandProcess,
+    deployment::Deployment,
     executor::{Executor, ExecutorError, SpawnContext},
     models::task::Task,
     utils::shell::get_shell_command,
@@ -57,7 +58,7 @@ echo "Task completed: {}""#,
             )
         };
 
-        let mut command_runner = CommandRunner::new();
+        let mut command_runner = app_state.deployment.command_runner();
         command_runner
             .command(shell_cmd)
             .arg(shell_arg)

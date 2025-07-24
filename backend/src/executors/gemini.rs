@@ -20,6 +20,7 @@ use uuid::Uuid;
 use crate::{
     app_state::AppState,
     command_runner::{CommandProcess, CommandRunner},
+    deployment::Deployment,
     executor::{
         Executor, ExecutorError, NormalizedConversation, NormalizedEntry, NormalizedEntryType,
     },
@@ -60,7 +61,7 @@ Task title: {}"#,
             )
         };
 
-        let mut command = Self::create_gemini_command(worktree_path);
+        let mut command = Self::create_gemini_command(app_state, worktree_path);
         command.stdin(&prompt);
 
         let proc = command.start().await.map_err(|e| {
@@ -131,7 +132,7 @@ Task title: {}"#,
             .collect_resume_context(&app_state.db_pool, &task, attempt_id)
             .await?;
         let comprehensive_prompt = self.build_comprehensive_prompt(&task, &resume_context, prompt);
-        self.spawn_process(worktree_path, &comprehensive_prompt, attempt_id)
+        self.spawn_process(app_state, worktree_path, &comprehensive_prompt, attempt_id)
             .await
     }
 
@@ -254,11 +255,11 @@ Task title: {}"#,
 
 impl GeminiExecutor {
     /// Create a standardized Gemini CLI command
-    fn create_gemini_command(worktree_path: &str) -> CommandRunner {
+    fn create_gemini_command(app_state: &AppState, worktree_path: &str) -> CommandRunner {
         let (shell_cmd, shell_arg) = get_shell_command();
         let gemini_command = "npx @google/gemini-cli@latest --yolo";
 
-        let mut command = CommandRunner::new();
+        let mut command = app_state.deployment.command_runner();
         command
             .command(shell_cmd)
             .arg(shell_arg)
@@ -510,6 +511,7 @@ You are continuing work on the above task. The execution history shows what has 
 
     async fn spawn_process(
         &self,
+        app_state: &AppState,
         worktree_path: &str,
         comprehensive_prompt: &str,
         attempt_id: Uuid,
@@ -520,7 +522,7 @@ You are continuing work on the above task. The execution history shows what has 
             comprehensive_prompt.len()
         );
 
-        let mut command = GeminiExecutor::create_gemini_command(worktree_path);
+        let mut command = GeminiExecutor::create_gemini_command(app_state, worktree_path);
         command.stdin(comprehensive_prompt);
 
         let proc = command.start().await.map_err(|e| {

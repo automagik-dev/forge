@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::{
     app_state::AppState,
     command_runner::{CommandProcess, CommandRunner},
+    deployment::Deployment,
     executor::{Executor, ExecutorError, NormalizedConversation, NormalizedEntry},
     models::{execution_process::ExecutionProcess, executor_session::ExecutorSession, task::Task},
     utils::shell::get_shell_command,
@@ -269,7 +270,7 @@ Task title: {}"#,
         let (shell_cmd, shell_arg) = get_shell_command();
         let opencode_command = &self.command;
 
-        let mut command = CommandRunner::new();
+        let mut command = app_state.deployment.command_runner();
         command
             .command(shell_cmd)
             .arg(shell_arg)
@@ -392,7 +393,7 @@ Task title: {}"#,
 
     async fn spawn_followup(
         &self,
-        _app_state: &AppState,
+        app_state: &AppState,
         _task_id: Uuid,
         session_id: &str,
         prompt: &str,
@@ -402,7 +403,7 @@ Task title: {}"#,
         let (shell_cmd, shell_arg) = get_shell_command();
         let opencode_command = format!("{} --session {}", self.command, session_id);
 
-        let mut command = CommandRunner::new();
+        let mut command = app_state.deployment.command_runner();
         command
             .command(shell_cmd)
             .arg(shell_arg)

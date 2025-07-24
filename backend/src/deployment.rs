@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::command_runner::CommandExecutor;
+use crate::command_runner::{CommandExecutor, CommandRunner};
 
 pub mod local;
 
@@ -10,5 +10,5 @@ pub trait Deployment {
 
     fn name(&self) -> &str;
 
-    fn command_executor(&self) -> impl CommandExecutor;
+    fn command_runner(&self) -> CommandRunner;
 }
