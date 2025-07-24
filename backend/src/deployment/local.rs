@@ -12,6 +12,10 @@ impl Deployment for LocalDeployment {
         Self { app_state }
     }
 
+    fn app_state(&self) -> &AppState {
+        &self.app_state
+    }
+
     // fn command_executor(&self) -> impl CommandExecutor {
     //     LocalCommandExecutor::new()
     // }

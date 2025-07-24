@@ -18,8 +18,10 @@ use crate::app_state::AppState;
 
 #[async_trait]
 #[allow(dead_code)]
-pub trait Deployment {
+pub trait Deployment: Clone + Send + Sync + 'static {
     fn new(app_state: AppState) -> Self;
+
+    fn app_state(&self) -> &AppState;
 
     // fn command_executor(&self) -> impl CommandExecutor;
 

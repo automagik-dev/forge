@@ -329,19 +329,13 @@ use strip_ansi_escapes::strip;
 use tokio::sync::RwLock;
 use tracing_subscriber::{filter::LevelFilter, prelude::*};
 
-#[cfg(not(feature = "cloud"))]
-use crate::deployment::local::LocalDeployment;
 use crate::{
     db::start_db,
+    deployment::DeploymentImpl,
     utils::{browser::open_browser, sentry::sentry_layer},
 };
 
 fn main() -> anyhow::Result<()> {
-    // #[cfg(feature = "cloud")]
-    // type DeploymentImpl = vibe_kanban_cloud::deployment::CloudDeployment;
-    #[cfg(not(feature = "cloud"))]
-    type DeploymentImpl = LocalDeployment;
-
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -398,8 +392,7 @@ fn main() -> anyhow::Result<()> {
                             }
                         }
 
-                        axum::serve(listener, app_router).await?;
-
+                axum::serve(listener, app_router).await?;
             Ok(())
         })
 }
