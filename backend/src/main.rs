@@ -17,19 +17,15 @@ use tower_http::cors::CorsLayer;
 use tracing_subscriber::{filter::LevelFilter, prelude::*};
 use vibe_kanban::{sentry_layer, Assets, ScriptAssets, SoundAssets};
 
-mod app_state;
 mod command_executor;
 mod command_executor;
-mod deployment;
 mod execution_monitor;
-mod executor;
 mod executors;
 mod mcp;
 mod middleware;
 mod models;
 mod routes;
 mod services;
-mod utils;
 
 use app_state::AppState;
 use execution_monitor::execution_monitor;

@@ -2,13 +2,12 @@
 use std::path::PathBuf;
 use std::{collections::HashMap, sync::Arc};
 
-use backend_common::command_executor::CommandProcess;
 use tokio::sync::{Mutex, RwLock as TokioRwLock};
 use uuid::Uuid;
 
 use crate::{
-    deployment::Deployment,
-    services::{generate_user_id, AnalyticsConfig, AnalyticsService},
+    command_executor::CommandProcess,
+    services::analytics::{AnalyticsConfig, AnalyticsService, generate_user_id},
 };
 
 #[derive(Debug)]
@@ -26,10 +25,10 @@ pub struct RunningExecution {
     pub child: CommandProcess,
 }
 
-#[cfg(feature = "cloud")]
-type DeploymentImpl = crate::deployment::cloud::CloudDeployment;
-#[cfg(not(feature = "cloud"))]
-type DeploymentImpl = crate::deployment::local::LocalDeployment;
+// #[cfg(feature = "cloud")]
+// type DeploymentImpl = crate::deployment::cloud::CloudDeployment;
+// #[cfg(not(feature = "cloud"))]
+// type DeploymentImpl = crate::deployment::local::LocalDeployment;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -38,7 +37,6 @@ pub struct AppState {
     config: Arc<tokio::sync::RwLock<crate::models::config::Config>>,
     pub analytics: Arc<TokioRwLock<AnalyticsService>>,
     user_id: String,
-    pub deployment: DeploymentImpl,
 }
 
 impl AppState {
@@ -61,7 +59,6 @@ impl AppState {
             config,
             analytics,
             user_id: generate_user_id(),
-            deployment: DeploymentImpl::new(),
         }
     }
 

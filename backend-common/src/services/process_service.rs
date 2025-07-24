@@ -1,18 +1,22 @@
 use std::str::FromStr;
 
-use backend_common::command_executor::CommandProcess;
 use sqlx::SqlitePool;
 use tracing::{debug, info};
 use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    executor::Executor,
+    command_executor::CommandProcess,
+    executor::{Executor, ExecutorType},
+    executors::{
+        cleanup_script::CleanupScriptExecutor, dev_server::DevServerExecutor,
+        setup_script::SetupScriptExecutor,
+    },
     models::{
         execution_process::{CreateExecutionProcess, ExecutionProcess, ExecutionProcessType},
         executor_session::{CreateExecutorSession, ExecutorSession},
         project::Project,
-        task::Task,
+        task::{Task, TaskStatus},
         task_attempt::{TaskAttempt, TaskAttemptError},
     },
     utils::shell::get_shell_command,
@@ -208,8 +212,6 @@ impl ProcessService {
         task_id: Uuid,
         project_id: Uuid,
     ) -> Result<(), TaskAttemptError> {
-        use crate::models::task::{Task, TaskStatus};
-
         // Load required entities
         let (task_attempt, project) =
             Self::load_execution_context(pool, attempt_id, project_id).await?;
@@ -250,7 +252,7 @@ impl ProcessService {
             app_state,
             attempt_id,
             task_id,
-            crate::executor::ExecutorType::CodingAgent {
+            ExecutorType::CodingAgent {
                 config: executor_config,
                 follow_up: None,
             },
@@ -456,11 +458,14 @@ impl ProcessService {
             Some(executor_str) => executor_str.parse().unwrap(),
             _ => {
                 tracing::error!(
-                                    "Invalid or missing executor type '{}' for execution process {} (task attempt {})",
-                                    most_recent_coding_agent.executor_type.as_deref().unwrap_or("None"),
-                                    most_recent_coding_agent.id,
-                                    attempt_id
-                                );
+                    "Invalid or missing executor type '{}' for execution process {} (task attempt {})",
+                    most_recent_coding_agent
+                        .executor_type
+                        .as_deref()
+                        .unwrap_or("None"),
+                    most_recent_coding_agent.id,
+                    attempt_id
+                );
                 return Err(TaskAttemptError::ValidationError(format!(
                     "Invalid executor type for follow-up: {}",
                     most_recent_coding_agent
@@ -489,7 +494,8 @@ impl ProcessService {
             // No session ID available, start new session
             tracing::warn!(
                 "SESSION_FOLLOWUP: No session ID available for follow-up execution on attempt {}, starting new session (worktree: {})",
-                attempt_id, worktree_path
+                attempt_id,
+                worktree_path
             );
             crate::executor::ExecutorType::CodingAgent {
                 config: executor_config.clone(),
@@ -572,7 +578,8 @@ impl ProcessService {
             // Extract follow-up prompt if this is a follow-up execution
             let followup_prompt = match &executor_type {
                 crate::executor::ExecutorType::CodingAgent {
-                    follow_up: Some(ref info),
+                    // follow_up: Some(ref info),
+                    follow_up: Some(info),
                     ..
                 } => Some(info.prompt.clone()),
                 _ => None,
@@ -798,8 +805,6 @@ impl ProcessService {
         process_id: Uuid,
         worktree_path: &str,
     ) -> Result<CommandProcess, TaskAttemptError> {
-        use crate::executors::{CleanupScriptExecutor, DevServerExecutor, SetupScriptExecutor};
-
         let result = match executor_type {
             crate::executor::ExecutorType::SetupScript(script) => {
                 let executor = SetupScriptExecutor {
@@ -926,8 +931,6 @@ impl ProcessService {
         process_id: Uuid,
         worktree_path: &str,
     ) -> Result<CommandProcess, TaskAttemptError> {
-        use crate::executors::SetupScriptExecutor;
-
         let executor = SetupScriptExecutor {
             script: setup_script.to_string(),
         };

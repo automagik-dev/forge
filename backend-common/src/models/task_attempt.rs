@@ -10,8 +10,9 @@ use uuid::Uuid;
 
 use super::{project::Project, task::Task};
 use crate::services::{
-    CreatePrRequest, GitHubRepoInfo, GitHubService, GitHubServiceError, GitService,
-    GitServiceError, ProcessService,
+    git_service::{GitService, GitServiceError},
+    github_service::{CreatePrRequest, GitHubRepoInfo, GitHubService, GitHubServiceError},
+    process_service::ProcessService,
 };
 
 // Constants for git diff operations

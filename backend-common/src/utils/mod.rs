@@ -69,8 +69,8 @@ pub fn cache_dir() -> std::path::PathBuf {
 }
 
 /// Get or create cached PowerShell script file
-pub async fn get_powershell_script(
-) -> Result<std::path::PathBuf, Box<dyn std::error::Error + Send + Sync>> {
+pub async fn get_powershell_script()
+-> Result<std::path::PathBuf, Box<dyn std::error::Error + Send + Sync>> {
     use std::io::Write;
 
     let cache_dir = cache_dir();
@@ -87,7 +87,7 @@ pub async fn get_powershell_script(
     }
 
     // File doesn't exist or is invalid, create it
-    let script_content = crate::ScriptAssets::get("toast-notification.ps1")
+    let script_content = ScriptAssets::get("toast-notification.ps1")
         .ok_or("Embedded PowerShell script not found: toast-notification.ps1")?
         .data;
 
