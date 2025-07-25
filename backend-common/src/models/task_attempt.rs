@@ -8,11 +8,12 @@ use tracing::info;
 use ts_rs::TS;
 use uuid::Uuid;
 
-use super::{project::Project, task::Task};
-use crate::services::{
-    git_service::{GitService, GitServiceError},
-    github_service::{CreatePrRequest, GitHubRepoInfo, GitHubService, GitHubServiceError},
-    process_service::ProcessService,
+use crate::{
+    models::{project::Project, task::Task},
+    services::{
+        git_service::{GitService, GitServiceError},
+        github_service::GitHubServiceError,
+    },
 };
 
 // Constants for git diff operations

@@ -1,17 +1,20 @@
-use std::path::Path;
+use std::{
+    path::{Path, PathBuf},
+    process::Stdio,
+};
 
 use async_trait::async_trait;
+use command_group::{AsyncCommandGroup, AsyncGroupChild};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+use tokio::process::Command;
 
 use crate::{
     app_state::AppState,
-    command_executor::{CommandExecutor, CommandProcess},
     command_runner::CommandRunner,
     deployment::Deployment,
     executor::{
-        self, ActionType, Executor, ExecutorError, NormalizedConversation, NormalizedEntry,
-        NormalizedEntryType,
+        self, ActionType, Executor, ExecutorConfig, ExecutorError, NormalizedConversation,
+        NormalizedEntry, NormalizedEntryType, StandardExecutorConfig,
     },
     models::task::Task,
     utils::shell::get_shell_command,
@@ -188,72 +191,43 @@ impl AmpContentItem {
         }
     }
 }
-
+// Result<CommandRunner, ExecutorError>
 #[async_trait]
 impl Executor for AmpExecutor {
-    async fn spawn(
-        &self,
-        app_state: &AppState,
-        task_id: Uuid,
-        worktree_path: &str,
-    ) -> Result<CommandProcess, ExecutorError> {
-        // Get the task to fetch its description
-        let task = Task::find_by_id(&app_state.db_pool, task_id)
-            .await?
-            .ok_or(ExecutorError::TaskNotFound)?;
-
-        let prompt = if let Some(task_description) = task.description {
-            format!(
-                r#"project_id: {}
-            
-Task title: {}
-Task description: {}"#,
-                task.project_id, task.title, task_description
-            )
-        } else {
-            format!(
-                r#"project_id: {}
-            
-Task title: {}"#,
-                task.project_id, task.title
-            )
-        };
-
+    async fn spawn(&self, config: impl ExecutorConfig) -> Result<AsyncGroupChild, ExecutorError> {
         // Use shell command for cross-platform compatibility
         let (shell_cmd, shell_arg) = get_shell_command();
         // --format=jsonl is deprecated in latest versions of Amp CLI
         let amp_command = "npx @sourcegraph/amp@0.0.1752148945-gd8844f --format=jsonl";
 
-        let mut command = CommandRunner::new();
+        let mut command = Command::new(shell_cmd);
         command
-            .command(shell_cmd)
+            .kill_on_drop(true)
+            .stdin(Stdio::piped()) // <-- open a pipe
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .current_dir(config.get_working_dir())
             .arg(shell_arg)
-            .arg(amp_command)
-            .stdin(&prompt)
-            .working_dir(worktree_path);
+            .arg(amp_command);
 
-        let proc = app_state
-            .deployment
-            .command_executor()
-            .runner_start(&command)
-            .await
-            .map_err(|e| {
-                executor::SpawnContext::from_command(&command, "Amp")
-                    .with_task(task_id, Some(task.title.clone()))
-                    .with_context("Amp CLI execution for new task")
-                    .spawn_error(e)
-            })?;
+        let mut child = command.group_spawn()?;
 
-        Ok(proc)
+        // feed the prompt in, then close the pipe so `amp` sees EOF
+        if let Some(mut stdin) = child.inner().stdin.take() {
+            stdin
+                .write_all(config.get_prompt().as_bytes())
+                .await
+                .unwrap();
+            stdin.shutdown().await.unwrap(); // or `drop(stdin);`
+        }
+
+        Ok(child)
     }
 
     async fn spawn_followup(
         &self,
-        app_state: &AppState,
-        _task_id: Uuid,
         session_id: &str,
-        prompt: &str,
-        worktree_path: &str,
+        working_dir: &PathBuf,
     ) -> Result<CommandProcess, ExecutorError> {
         // Use shell command for cross-platform compatibility
         let (shell_cmd, shell_arg) = get_shell_command();
@@ -643,7 +617,10 @@ mod tests {
             .collect();
 
         assert_eq!(assistant_messages.len(), 1);
-        assert_eq!(assistant_messages[0].content, "Created all three files: test1.txt, test2.txt, and test3.txt, each with a line of text.");
+        assert_eq!(
+            assistant_messages[0].content,
+            "Created all three files: test1.txt, test2.txt, and test3.txt, each with a line of text."
+        );
     }
 
     #[test]

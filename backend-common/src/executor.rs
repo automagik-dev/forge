@@ -1,21 +1,21 @@
-use std::str::FromStr;
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use async_trait::async_trait;
+use command_group::AsyncGroupChild;
 use serde::{Deserialize, Serialize};
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::{
+    io::{AsyncBufReadExt, BufReader},
+    process::Child,
+};
 use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
     app_state::AppState,
-    command_executor::CommandProcess,
     command_runner::{CommandError, CommandRunner},
-    executors::{
-        aider::AiderExecutor, amp::AmpExecutor, ccr::CCRExecutor,
-        charm_opencode::CharmOpencodeExecutor, claude::ClaudeExecutor, codex::CodexExecutor,
-        echo::EchoExecutor, gemini::GeminiExecutor, setup_script::SetupScriptExecutor,
-        sst_opencode::SstOpencodeExecutor,
-    },
 };
 
 // Constants for database streaming - fast for near-real-time updates
@@ -252,16 +252,41 @@ impl ExecutorError {
     }
 }
 
+pub trait ExecutorConfig {
+    fn set_prompt(&mut self, prompt: &str);
+    fn get_prompt(&self) -> String;
+    fn set_working_dir(&mut self, working_dir: &PathBuf);
+    fn get_working_dir(&self) -> PathBuf;
+}
+
+pub struct StandardExecutorConfig {
+    prompt: String,
+    working_dir: PathBuf,
+}
+
+impl ExecutorConfig for StandardExecutorConfig {
+    fn set_prompt(&mut self, prompt: &str) {
+        self.prompt = prompt.to_string();
+    }
+
+    fn get_prompt(&self) -> String {
+        self.prompt.to_string()
+    }
+
+    fn set_working_dir(&mut self, working_dir: &PathBuf) {
+        self.working_dir = working_dir.clone()
+    }
+
+    fn get_working_dir(&self) -> PathBuf {
+        self.working_dir.clone()
+    }
+}
+
 /// Trait for coding agents that can execute tasks, normalize logs, and support follow-up sessions
 #[async_trait]
-pub trait Executor: Send + Sync {
+pub trait Executor {
     /// Spawn the command for a given task attempt
-    async fn spawn(
-        &self,
-        app_state: &AppState,
-        task_id: Uuid,
-        worktree_path: &str,
-    ) -> Result<CommandProcess, ExecutorError>;
+    async fn spawn(&self, config: impl ExecutorConfig) -> Result<AsyncGroupChild, ExecutorError>;
 
     /// Spawn a follow-up session for executors that support it
     ///
@@ -270,12 +295,9 @@ pub trait Executor: Send + Sync {
     /// returns an error.
     async fn spawn_followup(
         &self,
-        _app_state: &AppState,
-        _task_id: Uuid,
-        _session_id: &str,
-        _prompt: &str,
-        _worktree_path: &str,
-    ) -> Result<CommandProcess, ExecutorError> {
+        working_dir: &PathBuf,
+        session_id: &str,
+    ) -> Result<AsyncGroupChild, ExecutorError> {
         Err(ExecutorError::FollowUpNotSupported)
     }
     /// Normalize executor logs into a standard format
@@ -294,92 +316,90 @@ pub trait Executor: Send + Sync {
         })
     }
 
-    #[allow(clippy::result_large_err)]
-    async fn setup_streaming(
-        &self,
-        child: &mut CommandProcess,
-        app_state: &AppState,
-        attempt_id: Uuid,
-        execution_process_id: Uuid,
-    ) -> Result<(), ExecutorError> {
-        let streams = child
-            .stream()
-            .await
-            .expect("Failed to get stdio from child process");
-        let stdout = streams
-            .stdout
-            .expect("Failed to take stdout from child process");
-        let stderr = streams
-            .stderr
-            .expect("Failed to take stderr from child process");
+    // async fn setup_streaming(
+    //     &self,
+    //     child: &mut CommandProcess,
+    //     app_state: &AppState,
+    //     attempt_id: Uuid,
+    //     execution_process_id: Uuid,
+    // ) -> Result<(), ExecutorError> {
+    //     let streams = child
+    //         .stream()
+    //         .await
+    //         .expect("Failed to get stdio from child process");
+    //     let stdout = streams
+    //         .stdout
+    //         .expect("Failed to take stdout from child process");
+    //     let stderr = streams
+    //         .stderr
+    //         .expect("Failed to take stderr from child process");
 
-        let pool_clone1 = app_state.db_pool.clone();
-        let pool_clone2 = app_state.db_pool.clone();
+    //     let pool_clone1 = app_state.db_pool.clone();
+    //     let pool_clone2 = app_state.db_pool.clone();
 
-        tokio::spawn(stream_output_to_db(
-            stdout,
-            pool_clone1,
-            attempt_id,
-            execution_process_id,
-            true,
-        ));
-        tokio::spawn(stream_output_to_db(
-            stderr,
-            pool_clone2,
-            attempt_id,
-            execution_process_id,
-            false,
-        ));
+    //     tokio::spawn(stream_output_to_db(
+    //         stdout,
+    //         pool_clone1,
+    //         attempt_id,
+    //         execution_process_id,
+    //         true,
+    //     ));
+    //     tokio::spawn(stream_output_to_db(
+    //         stderr,
+    //         pool_clone2,
+    //         attempt_id,
+    //         execution_process_id,
+    //         false,
+    //     ));
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
-    /// Execute the command and stream output to database in real-time
-    async fn execute_streaming(
-        &self,
-        app_state: &AppState,
-        task_id: Uuid,
-        attempt_id: Uuid,
-        execution_process_id: Uuid,
-        worktree_path: &str,
-    ) -> Result<CommandProcess, ExecutorError> {
-        let mut child = self.spawn(app_state, task_id, worktree_path).await?;
-        Self::setup_streaming(
-            self,
-            &mut child,
-            app_state,
-            attempt_id,
-            execution_process_id,
-        )
-        .await?;
-        Ok(child)
-    }
+    // /// Execute the command and stream output to database in real-time
+    // async fn execute_streaming(
+    //     &self,
+    //     app_state: &AppState,
+    //     task_id: Uuid,
+    //     attempt_id: Uuid,
+    //     execution_process_id: Uuid,
+    //     worktree_path: &str,
+    // ) -> Result<CommandProcess, ExecutorError> {
+    //     let mut child = self.spawn(app_state, task_id, worktree_path).await?;
+    //     Self::setup_streaming(
+    //         self,
+    //         &mut child,
+    //         app_state,
+    //         attempt_id,
+    //         execution_process_id,
+    //     )
+    //     .await?;
+    //     Ok(child)
+    // }
 
-    /// Execute a follow-up command and stream output to database in real-time
-    #[allow(clippy::too_many_arguments)]
-    async fn execute_followup_streaming(
-        &self,
-        app_state: &AppState,
-        task_id: Uuid,
-        attempt_id: Uuid,
-        execution_process_id: Uuid,
-        session_id: &str,
-        prompt: &str,
-        worktree_path: &str,
-    ) -> Result<CommandProcess, ExecutorError> {
-        let mut child = self
-            .spawn_followup(app_state, task_id, session_id, prompt, worktree_path)
-            .await?;
-        Self::setup_streaming(
-            self,
-            &mut child,
-            app_state,
-            attempt_id,
-            execution_process_id,
-        )
-        .await?;
-        Ok(child)
-    }
+    // /// Execute a follow-up command and stream output to database in real-time
+    // async fn execute_followup_streaming(
+    //     &self,
+    //     app_state: &AppState,
+    //     task_id: Uuid,
+    //     attempt_id: Uuid,
+    //     execution_process_id: Uuid,
+    //     session_id: &str,
+    //     prompt: &str,
+    //     worktree_path: &str,
+    // ) -> Result<CommandProcess, ExecutorError> {
+    //     let mut child = self
+    //         .spawn_followup(app_state, task_id, session_id, prompt, worktree_path)
+    //         .await?;
+    //     Self::setup_streaming(
+    //         self,
+    //         &mut child,
+    //         app_state,
+    //         attempt_id,
+    //         execution_process_id,
+    //     )
+    //     .await?;
+    //     Ok(child)
+    // }
 }
 
 /// Runtime executor types for internal use

@@ -117,7 +117,9 @@ impl ExecutorSession {
 
         tracing::debug!(
             "Creating executor session: id={}, task_attempt_id={}, execution_process_id={}, external_session_id=None (will be set later)",
-            session_id, data.task_attempt_id, data.execution_process_id
+            session_id,
+            data.task_attempt_id,
+            data.execution_process_id
         );
 
         sqlx::query_as!(

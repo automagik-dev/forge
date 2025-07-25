@@ -321,7 +321,7 @@ impl ProcessService {
             app_state,
             attempt_id,
             task_id,
-            crate::executor::ExecutorType::DevServer(dev_script),
+            ExecutorType::DevServer(dev_script),
             "Starting dev server".to_string(),
             ExecutionProcessType::DevServer,
             &worktree_path,

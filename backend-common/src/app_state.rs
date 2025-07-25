@@ -5,7 +5,10 @@ use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{Mutex, RwLock as TokioRwLock};
 use uuid::Uuid;
 
-use crate::services::analytics::{AnalyticsConfig, AnalyticsService, generate_user_id};
+use crate::{
+    command_executor::CommandProcess,
+    services::analytics::{AnalyticsConfig, AnalyticsService, generate_user_id},
+};
 
 #[derive(Debug)]
 pub enum ExecutionType {
@@ -19,14 +22,8 @@ pub enum ExecutionType {
 pub struct RunningExecution {
     pub task_attempt_id: Uuid,
     pub _execution_type: ExecutionType,
-    // pub child: CommandProcess,
-    pub child: String,
+    pub child: CommandProcess,
 }
-
-// #[cfg(feature = "cloud")]
-// type DeploymentImpl = crate::deployment::cloud::CloudDeployment;
-// #[cfg(not(feature = "cloud"))]
-// type DeploymentImpl = crate::deployment::local::LocalDeployment;
 
 #[derive(Clone)]
 pub struct AppState {

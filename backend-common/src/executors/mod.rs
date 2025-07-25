@@ -1,12 +1,2 @@
-pub mod aider;
 pub mod amp;
-pub mod ccr;
-pub mod charm_opencode;
-pub mod claude;
-pub mod cleanup_script;
-pub mod codex;
-pub mod dev_server;
 pub mod echo;
-pub mod gemini;
-pub mod setup_script;
-pub mod sst_opencode;
