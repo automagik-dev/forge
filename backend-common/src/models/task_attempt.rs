@@ -12,7 +12,7 @@ use crate::{
     models::{project::Project, task::Task},
     services::{
         git_service::{GitService, GitServiceError},
-        github_service::GitHubServiceError,
+        github_service::{CreatePrRequest, GitHubRepoInfo, GitHubService, GitHubServiceError},
     },
 };
 
@@ -589,43 +589,43 @@ impl TaskAttempt {
         Ok(merge_commit_id)
     }
 
-    /// Start the execution flow for a task attempt (setup script + executor)
-    pub async fn start_execution(
-        pool: &SqlitePool,
-        app_state: &crate::app_state::AppState,
-        attempt_id: Uuid,
-        task_id: Uuid,
-        project_id: Uuid,
-    ) -> Result<(), TaskAttemptError> {
-        ProcessService::start_execution(pool, app_state, attempt_id, task_id, project_id).await
-    }
+    // /// Start the execution flow for a task attempt (setup script + executor)
+    // pub async fn start_execution(
+    //     pool: &SqlitePool,
+    //     app_state: &crate::app_state::AppState,
+    //     attempt_id: Uuid,
+    //     task_id: Uuid,
+    //     project_id: Uuid,
+    // ) -> Result<(), TaskAttemptError> {
+    //     ProcessService::start_execution(pool, app_state, attempt_id, task_id, project_id).await
+    // }
 
-    /// Start a dev server for this task attempt
-    pub async fn start_dev_server(
-        pool: &SqlitePool,
-        app_state: &crate::app_state::AppState,
-        attempt_id: Uuid,
-        task_id: Uuid,
-        project_id: Uuid,
-    ) -> Result<(), TaskAttemptError> {
-        ProcessService::start_dev_server(pool, app_state, attempt_id, task_id, project_id).await
-    }
+    // /// Start a dev server for this task attempt
+    // pub async fn start_dev_server(
+    //     pool: &SqlitePool,
+    //     app_state: &crate::app_state::AppState,
+    //     attempt_id: Uuid,
+    //     task_id: Uuid,
+    //     project_id: Uuid,
+    // ) -> Result<(), TaskAttemptError> {
+    //     ProcessService::start_dev_server(pool, app_state, attempt_id, task_id, project_id).await
+    // }
 
-    /// Start a follow-up execution using the same executor type as the first process
-    /// Returns the attempt_id that was actually used (always the original attempt_id for session continuity)
-    pub async fn start_followup_execution(
-        pool: &SqlitePool,
-        app_state: &crate::app_state::AppState,
-        attempt_id: Uuid,
-        task_id: Uuid,
-        project_id: Uuid,
-        prompt: &str,
-    ) -> Result<Uuid, TaskAttemptError> {
-        ProcessService::start_followup_execution(
-            pool, app_state, attempt_id, task_id, project_id, prompt,
-        )
-        .await
-    }
+    // /// Start a follow-up execution using the same executor type as the first process
+    // /// Returns the attempt_id that was actually used (always the original attempt_id for session continuity)
+    // pub async fn start_followup_execution(
+    //     pool: &SqlitePool,
+    //     app_state: &crate::app_state::AppState,
+    //     attempt_id: Uuid,
+    //     task_id: Uuid,
+    //     project_id: Uuid,
+    //     prompt: &str,
+    // ) -> Result<Uuid, TaskAttemptError> {
+    //     ProcessService::start_followup_execution(
+    //         pool, app_state, attempt_id, task_id, project_id, prompt,
+    //     )
+    //     .await
+    // }
 
     /// Ensure worktree exists, recreating from branch if needed (cold task support)
     pub async fn ensure_worktree_exists(

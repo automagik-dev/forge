@@ -262,46 +262,7 @@ impl ExecutorError {
     }
 }
 
-pub trait ExecutorConfig: Send + Sync {
-    fn set_prompt(&mut self, prompt: &str);
-    fn get_prompt(&self) -> &str;
-    fn set_working_dir(&mut self, working_dir: &PathBuf);
-    fn get_working_dir(&self) -> &PathBuf;
-    fn set_session_id(&mut self, session_id: &str);
-    fn get_session_id(&self) -> &Option<String>;
-}
-
-pub struct StandardExecutorConfig {
-    prompt: String,
-    working_dir: PathBuf,
-    session_id: Option<String>,
-}
-
-impl ExecutorConfig for StandardExecutorConfig {
-    fn set_prompt(&mut self, prompt: &str) {
-        self.prompt = prompt.to_string();
-    }
-
-    fn get_prompt(&self) -> &str {
-        &self.prompt
-    }
-
-    fn set_working_dir(&mut self, working_dir: &PathBuf) {
-        self.working_dir = working_dir.clone()
-    }
-
-    fn get_working_dir(&self) -> &PathBuf {
-        &self.working_dir
-    }
-
-    fn set_session_id(&mut self, session_id: &str) {
-        self.session_id = Some(session_id.to_string());
-    }
-
-    fn get_session_id(&self) -> &Option<String> {
-        &self.session_id
-    }
-}
+// impl
 
 /// Trait for coding agents that can execute tasks, normalize logs, and support follow-up sessions
 #[async_trait]
