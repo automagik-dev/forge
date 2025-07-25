@@ -6,7 +6,7 @@ use std::{
 use async_trait::async_trait;
 use command_group::{AsyncCommandGroup, AsyncGroupChild};
 use serde::{Deserialize, Serialize};
-use tokio::process::Command;
+use tokio::{io::AsyncWriteExt, process::Command};
 
 use crate::{
     app_state::AppState,
@@ -191,10 +191,13 @@ impl AmpContentItem {
         }
     }
 }
-// Result<CommandRunner, ExecutorError>
+
 #[async_trait]
 impl Executor for AmpExecutor {
-    async fn spawn(&self, config: impl ExecutorConfig) -> Result<AsyncGroupChild, ExecutorError> {
+    async fn spawn(
+        &self,
+        executor_config: impl ExecutorConfig,
+    ) -> Result<AsyncGroupChild, ExecutorError> {
         // Use shell command for cross-platform compatibility
         let (shell_cmd, shell_arg) = get_shell_command();
         // --format=jsonl is deprecated in latest versions of Amp CLI
@@ -206,7 +209,7 @@ impl Executor for AmpExecutor {
             .stdin(Stdio::piped()) // <-- open a pipe
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .current_dir(config.get_working_dir())
+            .current_dir(executor_config.get_working_dir())
             .arg(shell_arg)
             .arg(amp_command);
 
@@ -215,7 +218,7 @@ impl Executor for AmpExecutor {
         // feed the prompt in, then close the pipe so `amp` sees EOF
         if let Some(mut stdin) = child.inner().stdin.take() {
             stdin
-                .write_all(config.get_prompt().as_bytes())
+                .write_all(executor_config.get_prompt().as_bytes())
                 .await
                 .unwrap();
             stdin.shutdown().await.unwrap(); // or `drop(stdin);`
@@ -226,9 +229,13 @@ impl Executor for AmpExecutor {
 
     async fn spawn_followup(
         &self,
-        session_id: &str,
-        working_dir: &PathBuf,
-    ) -> Result<CommandProcess, ExecutorError> {
+        executor_config: impl ExecutorConfig,
+    ) -> Result<AsyncGroupChild, ExecutorError> {
+        let session_id = executor_config
+            .get_session_id()
+            .ok_or(ExecutorError::SessionIdNotFound)?
+            .clone();
+
         // Use shell command for cross-platform compatibility
         let (shell_cmd, shell_arg) = get_shell_command();
         let amp_command = format!(
@@ -236,29 +243,27 @@ impl Executor for AmpExecutor {
             session_id
         );
 
-        let mut command = CommandRunner::new();
+        let mut command = Command::new(shell_cmd);
         command
-            .command(shell_cmd)
+            .kill_on_drop(true)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .current_dir(executor_config.get_working_dir())
             .arg(shell_arg)
-            .arg(&amp_command)
-            .stdin(prompt)
-            .working_dir(worktree_path);
+            .arg(&amp_command);
 
-        let proc = app_state
-            .deployment
-            .command_executor()
-            .runner_start(&command)
-            .await
-            .map_err(|e| {
-                crate::executor::SpawnContext::from_command(&command, "Amp")
-                    .with_context(format!(
-                        "Amp CLI followup execution for thread {}",
-                        session_id
-                    ))
-                    .spawn_error(e)
-            })?;
+        let mut child = command.group_spawn()?;
 
-        Ok(proc)
+        // Feed the prompt in, then close the pipe so amp sees EOF
+        if let Some(mut stdin) = child.inner().stdin.take() {
+            stdin
+                .write_all(executor_config.get_prompt().as_bytes())
+                .await?;
+            stdin.shutdown().await?;
+        }
+
+        Ok(child)
     }
 
     fn normalize_logs(

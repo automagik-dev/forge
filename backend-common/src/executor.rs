@@ -160,6 +160,8 @@ pub enum ExecutorError {
     GitError(String),
     InvalidSessionId(String),
     FollowUpNotSupported,
+    Io(std::io::Error),
+    SessionIdNotFound,
 }
 
 impl std::fmt::Display for ExecutorError {
@@ -202,6 +204,8 @@ impl std::fmt::Display for ExecutorError {
             ExecutorError::FollowUpNotSupported => {
                 write!(f, "This executor does not support follow-up sessions")
             }
+            ExecutorError::Io(msg) => write!(f, "IO error: {}", msg),
+            ExecutorError::SessionIdNotFound => write!(f, "Session ID not found"),
         }
     }
 }
@@ -211,6 +215,12 @@ impl std::error::Error for ExecutorError {}
 impl From<sqlx::Error> for ExecutorError {
     fn from(err: sqlx::Error) -> Self {
         ExecutorError::DatabaseError(err)
+    }
+}
+
+impl From<std::io::Error> for ExecutorError {
+    fn from(err: std::io::Error) -> Self {
+        ExecutorError::Io(err)
     }
 }
 
@@ -252,16 +262,19 @@ impl ExecutorError {
     }
 }
 
-pub trait ExecutorConfig {
+pub trait ExecutorConfig: Send + Sync {
     fn set_prompt(&mut self, prompt: &str);
-    fn get_prompt(&self) -> String;
+    fn get_prompt(&self) -> &str;
     fn set_working_dir(&mut self, working_dir: &PathBuf);
-    fn get_working_dir(&self) -> PathBuf;
+    fn get_working_dir(&self) -> &PathBuf;
+    fn set_session_id(&mut self, session_id: &str);
+    fn get_session_id(&self) -> &Option<String>;
 }
 
 pub struct StandardExecutorConfig {
     prompt: String,
     working_dir: PathBuf,
+    session_id: Option<String>,
 }
 
 impl ExecutorConfig for StandardExecutorConfig {
@@ -269,24 +282,35 @@ impl ExecutorConfig for StandardExecutorConfig {
         self.prompt = prompt.to_string();
     }
 
-    fn get_prompt(&self) -> String {
-        self.prompt.to_string()
+    fn get_prompt(&self) -> &str {
+        &self.prompt
     }
 
     fn set_working_dir(&mut self, working_dir: &PathBuf) {
         self.working_dir = working_dir.clone()
     }
 
-    fn get_working_dir(&self) -> PathBuf {
-        self.working_dir.clone()
+    fn get_working_dir(&self) -> &PathBuf {
+        &self.working_dir
+    }
+
+    fn set_session_id(&mut self, session_id: &str) {
+        self.session_id = Some(session_id.to_string());
+    }
+
+    fn get_session_id(&self) -> &Option<String> {
+        &self.session_id
     }
 }
 
 /// Trait for coding agents that can execute tasks, normalize logs, and support follow-up sessions
 #[async_trait]
-pub trait Executor {
+pub trait Executor: Send + Sync {
     /// Spawn the command for a given task attempt
-    async fn spawn(&self, config: impl ExecutorConfig) -> Result<AsyncGroupChild, ExecutorError>;
+    async fn spawn(
+        &self,
+        executor_config: impl ExecutorConfig,
+    ) -> Result<AsyncGroupChild, ExecutorError>;
 
     /// Spawn a follow-up session for executors that support it
     ///
@@ -295,8 +319,7 @@ pub trait Executor {
     /// returns an error.
     async fn spawn_followup(
         &self,
-        working_dir: &PathBuf,
-        session_id: &str,
+        executor_config: impl ExecutorConfig,
     ) -> Result<AsyncGroupChild, ExecutorError> {
         Err(ExecutorError::FollowUpNotSupported)
     }
