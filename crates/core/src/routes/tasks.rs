@@ -52,19 +52,15 @@ pub async fn get_task(
 }
 
 pub async fn create_task(
-    Extension(project): Extension<Project>,
     State(deployment): State<DeploymentImpl>,
-    Json(mut payload): Json<CreateTask>,
+    Json(payload): Json<CreateTask>,
 ) -> Result<ResponseJson<ApiResponse<Task>>, StatusCode> {
     let id = Uuid::new_v4();
-
-    // Ensure the project_id in the payload matches the project from middleware
-    payload.project_id = project.id;
 
     tracing::debug!(
         "Creating task '{}' in project {}",
         payload.title,
-        project.id
+        payload.project_id
     );
 
     match Task::create(&deployment.db().pool, &payload, id).await {
@@ -75,7 +71,7 @@ pub async fn create_task(
                     "task_created",
                     serde_json::json!({
                     "task_id": task.id.to_string(),
-                    "project_id": project.id.to_string(),
+                    "project_id": payload.project_id,
                     "has_description": task.description.is_some(),
                     }),
                 )
