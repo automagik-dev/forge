@@ -23,4 +23,16 @@ pub trait Deployment: Clone + Send + Sync + 'static {
     fn config(&self) -> &Arc<RwLock<Config>>;
 
     fn sentry(&self) -> &SentryService;
+
+    async fn update_sentry_scope(&self) -> Result<(), DeploymentError> {
+        let user_id = self.user_id();
+        let username = self.config().read().await.github.username.clone();
+        let email = self.config().read().await.github.primary_email.clone();
+
+        self.sentry()
+            .update_scope(user_id, username.as_deref(), email.as_deref())
+            .await;
+
+        Ok(())
+    }
 }

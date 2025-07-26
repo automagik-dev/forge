@@ -366,25 +366,9 @@ fn main() -> Result<(), VibeKanbanError> {
             );
             let pool = start_db(&database_url).await?;
 
-            // Create app state
-            // let app_state = AppState::new(pool.clone(), config_arc.clone()).await;
-
             let deployment = DeploymentImpl::new()?;
 
-            let user_id = deployment.user_id();
-            let username = deployment.config().read().await.github.username.clone();
-            let email = deployment
-                .config()
-                .read()
-                .await
-                .github
-                .primary_email
-                .clone();
-
-            deployment
-                .sentry()
-                .update_scope(user_id, username.as_deref(), email.as_deref())
-                .await;
+            deployment.update_sentry_scope().await?;
 
             // let app_router = routes::router(deployment);
 
