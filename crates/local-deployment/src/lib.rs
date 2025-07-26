@@ -1,23 +1,29 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use db::DBProvider;
+use db::DBService;
 use deployment::{Deployment, DeploymentError};
 use services::services::{
     analytics::{AnalyticsConfig, AnalyticsService, generate_user_id},
     config::Config,
+    container::ContainerService,
     sentry::SentryService,
 };
 use tokio::sync::RwLock;
 use utils::assets::config_path;
+
+use crate::container::LocalContainerService;
+
+pub mod container;
 
 #[derive(Clone)]
 pub struct LocalDeployment {
     config: Arc<RwLock<Config>>,
     sentry: SentryService,
     user_id: String,
-    db: DBProvider,
+    db: DBService,
     analytics: Option<AnalyticsService>,
+    container: LocalContainerService,
 }
 
 #[async_trait]
@@ -26,8 +32,9 @@ impl Deployment for LocalDeployment {
         let config = Arc::new(RwLock::new(Config::load(&config_path())?));
         let sentry = SentryService::new();
         let user_id = generate_user_id();
-        let db = DBProvider::new().await?;
+        let db = DBService::new().await?;
         let analytics = AnalyticsConfig::new().map(AnalyticsService::new);
+        let container = LocalContainerService::new();
 
         Ok(Self {
             config,
@@ -35,6 +42,7 @@ impl Deployment for LocalDeployment {
             user_id,
             db,
             analytics,
+            container,
         })
     }
 
@@ -54,11 +62,15 @@ impl Deployment for LocalDeployment {
         &self.sentry
     }
 
-    fn db(&self) -> &DBProvider {
+    fn db(&self) -> &DBService {
         &self.db
     }
 
     fn analytics(&self) -> &Option<AnalyticsService> {
         &self.analytics
+    }
+
+    fn container(&self) -> &impl ContainerService {
+        &self.container
     }
 }

@@ -11,6 +11,7 @@ use deployment::Deployment;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use ts_rs::TS;
+use utils::response::ApiResponse;
 use uuid::Uuid;
 
 use crate::{middleware::load_task_attempt_middleware, DeploymentImpl};
@@ -224,58 +225,61 @@ pub async fn get_task_attempts(
     Ok(Json(attempts))
 }
 
-// pub async fn create_task_attempt(
-//     Extension(_project): Extension<Project>,
-//     Extension(task): Extension<Task>,
-//     State(app_state): State<AppState>,
-//     Json(payload): Json<CreateTaskAttempt>,
-// ) -> Result<ResponseJson<ApiResponse<TaskAttempt>>, StatusCode> {
-//     let executor_string = payload.executor.as_ref().map(|exec| exec.to_string());
+pub struct CreateTaskAttempt {
+    pub task_id: Uuid,
+    pub executor: Option<String>,
+    pub base_branch: Option<String>,
+}
 
-//     match TaskAttempt::create(&app_state.db_pool, &payload, task.id).await {
-//         Ok(attempt) => {
-//             app_state
-//                 .track_analytics_event(
-//                     "task_attempt_started",
-//                     Some(serde_json::json!({
-//                         "task_id": task.id.to_string(),
-//                         "executor_type": executor_string.as_deref().unwrap_or("default"),
-//                         "attempt_id": attempt.id.to_string(),
-//                     })),
-//                 )
-//                 .await;
+pub async fn create_task_attempt(
+    State(deployment): State<DeploymentImpl>,
+    Json(payload): Json<CreateTaskAttempt>,
+) -> Result<ResponseJson<ApiResponse<TaskAttempt>>, StatusCode> {
+    // match TaskAttempt::create(&deployment.db().pool, &payload, task.id).await {
+    //     Ok(attempt) => {
+    //         app_state
+    //             .track_analytics_event(
+    //                 "task_attempt_started",
+    //                 Some(serde_json::json!({
+    //                     "task_id": task.id.to_string(),
+    //                     "executor_type": executor_string.as_deref().unwrap_or("default"),
+    //                     "attempt_id": attempt.id.to_string(),
+    //                 })),
+    //             )
+    //             .await;
 
-//             // Start execution asynchronously (don't block the response)
-//             let app_state_clone = app_state.clone();
-//             let attempt_id = attempt.id;
-//             let task_id = task.id;
-//             let project_id = _project.id;
-//             tokio::spawn(async move {
-//                 if let Err(e) = TaskAttempt::start_execution(
-//                     &app_state_clone.db_pool,
-//                     &app_state_clone,
-//                     attempt_id,
-//                     task_id,
-//                     project_id,
-//                 )
-//                 .await
-//                 {
-//                     tracing::error!(
-//                         "Failed to start execution for task attempt {}: {}",
-//                         attempt_id,
-//                         e
-//                     );
-//                 }
-//             });
+    //         // Start execution asynchronously (don't block the response)
+    //         let app_state_clone = app_state.clone();
+    //         let attempt_id = attempt.id;
+    //         let task_id = task.id;
+    //         let project_id = _project.id;
+    //         tokio::spawn(async move {
+    //             if let Err(e) = TaskAttempt::start_execution(
+    //                 &app_state_clone.db_pool,
+    //                 &app_state_clone,
+    //                 attempt_id,
+    //                 task_id,
+    //                 project_id,
+    //             )
+    //             .await
+    //             {
+    //                 tracing::error!(
+    //                     "Failed to start execution for task attempt {}: {}",
+    //                     attempt_id,
+    //                     e
+    //                 );
+    //             }
+    //         });
 
-//             Ok(ResponseJson(ApiResponse::success(attempt)))
-//         }
-//         Err(e) => {
-//             tracing::error!("Failed to create task attempt: {}", e);
-//             Err(StatusCode::INTERNAL_SERVER_ERROR)
-//         }
-//     }
-// }
+    //         Ok(ResponseJson(ApiResponse::success(attempt)))
+    //     }
+    //     Err(e) => {
+    //         tracing::error!("Failed to create task attempt: {}", e);
+    //         Err(StatusCode::INTERNAL_SERVER_ERROR)
+    //     }
+    // }
+    Err(StatusCode::INTERNAL_SERVER_ERROR)
+}
 
 // pub async fn get_task_attempt_diff(
 //     Extension(project): Extension<Project>,

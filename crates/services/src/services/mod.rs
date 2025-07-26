@@ -3,4 +3,5 @@ pub mod analytics;
 pub mod config;
 pub mod github_service;
 // pub mod worktree_manager;
+pub mod container;
 pub mod sentry;

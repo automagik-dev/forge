@@ -479,40 +479,41 @@ impl TaskAttempt {
     //         .await?
     //         .ok_or(TaskAttemptError::TaskNotFound)?;
 
-    //     // Create a unique and helpful branch name
-    //     let task_title_id = crate::utils::text::git_branch_id(&task.title);
-    //     let task_attempt_branch = format!(
-    //         "vk-{}-{}",
-    //         crate::utils::text::short_uuid(&attempt_id),
-    //         task_title_id
-    //     );
+    //     // // Create a unique and helpful branch name
+    //     // let task_title_id = crate::utils::text::git_branch_id(&task.title);
+    //     // let task_attempt_branch = format!(
+    //     //     "vk-{}-{}",
+    //     //     crate::utils::text::short_uuid(&attempt_id),
+    //     //     task_title_id
+    //     // );
 
-    //     // Generate worktree path using vibe-kanban specific directory
-    //     let worktree_path = Self::get_worktree_base_dir().join(&task_attempt_branch);
-    //     let worktree_path_str = worktree_path.to_string_lossy().to_string();
+    //     // // Generate worktree path using vibe-kanban specific directory
+    //     // let worktree_path = Self::get_worktree_base_dir().join(&task_attempt_branch);
+    //     // let worktree_path_str = worktree_path.to_string_lossy().to_string();
 
-    //     // Then get the project using the project_id
-    //     let project = Project::find_by_id(pool, task.project_id)
-    //         .await?
-    //         .ok_or(TaskAttemptError::ProjectNotFound)?;
+    //     // // Then get the project using the project_id
+    //     // let project = Project::find_by_id(pool, task.project_id)
+    //     //     .await?
+    //     //     .ok_or(TaskAttemptError::ProjectNotFound)?;
 
-    //     // Create GitService instance
-    //     let git_service = GitService::new(&project.git_repo_path)?;
+    //     // // Create GitService instance
+    //     // let git_service = GitService::new(&project.git_repo_path)?;
 
-    //     // Determine the resolved base branch name first
-    //     let resolved_base_branch = if let Some(ref base_branch) = data.base_branch {
-    //         base_branch.clone()
-    //     } else {
-    //         // Default to current HEAD branch name or "main"
-    //         git_service.get_default_branch_name()?
-    //     };
+    //     // // Determine the resolved base branch name first
+    //     // let resolved_base_branch = if let Some(ref base_branch) = data.base_branch {
+    //     //     base_branch.clone()
+    //     // } else {
+    //     //     // Default to current HEAD branch name or "main"
+    //     //     git_service.get_default_branch_name()?
+    //     // };
 
-    //     // Create the worktree using GitService
-    //     git_service.create_worktree(
-    //         &task_attempt_branch,
-    //         &worktree_path,
-    //         data.base_branch.as_deref(),
-    //     )?;
+    //     // TODO: fix
+    //     // // Create the worktree using GitService
+    //     // git_service.create_worktree(
+    //     //     &task_attempt_branch,
+    //     //     &worktree_path,
+    //     //     data.base_branch.as_deref(),
+    //     // )?;
 
     //     // Insert the record into the database
     //     Ok(sqlx::query_as!(

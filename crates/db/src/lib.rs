@@ -6,14 +6,14 @@ use utils::assets::asset_dir;
 pub mod models;
 
 #[derive(Clone)]
-pub struct DBProvider {
+pub struct DBService {
     pub pool: Pool<Sqlite>,
 }
 
-impl DBProvider {
-    pub async fn new() -> Result<DBProvider, Error> {
+impl DBService {
+    pub async fn new() -> Result<DBService, Error> {
         let pool = Self::create_pool().await?;
-        Ok(DBProvider { pool })
+        Ok(DBService { pool })
     }
 
     async fn create_pool() -> Result<Pool<Sqlite>, Error> {

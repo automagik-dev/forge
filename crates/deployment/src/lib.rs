@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
+use ::services::services::{analytics::AnalyticsService, config::Config, sentry::SentryService};
 use anyhow::Error as AnyhowError;
 use async_trait::async_trait;
-use db::DBProvider;
+use db::DBService;
 use serde_json::Value;
-use services::services::{analytics::AnalyticsService, config::Config, sentry::SentryService};
+use services::services::container::ContainerService;
 use sqlx::Error as SqlxError;
 use thiserror::Error;
 use tokio::sync::RwLock;
@@ -29,9 +30,11 @@ pub trait Deployment: Clone + Send + Sync + 'static {
 
     fn sentry(&self) -> &SentryService;
 
-    fn db(&self) -> &DBProvider;
+    fn db(&self) -> &DBService;
 
     fn analytics(&self) -> &Option<AnalyticsService>;
+
+    fn container(&self) -> &impl ContainerService;
 
     async fn update_sentry_scope(&self) -> Result<(), DeploymentError> {
         let user_id = self.user_id();
