@@ -6,43 +6,68 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use backend_common::{
-    app_state::AppState,
-    deployment::Deployment,
-    models::{
-        api_response::ApiResponse,
-        config::{Config, EditorConstants, SoundConstants},
-    },
-    utils::assets::config_path,
-};
+use deployment::Deployment;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use services::services::config::{Config, EditorConstants, SoundConstants};
 use tokio::fs;
 use ts_rs::TS;
+use utils::{assets::config_path, response::ApiResponse};
 
-use crate::deployment::DeploymentImpl;
+use crate::DeploymentImpl;
 
 pub fn router() -> Router<DeploymentImpl> {
     Router::new()
-        .route("/config", get(get_config))
+        .route("/info", get(get_user_system_info))
         .route("/config", post(update_config))
-        .route("/config/constants", get(get_config_constants))
     // TODO: fix
     // .route("/mcp-servers", get(get_mcp_servers))
     // .route("/mcp-servers", post(update_mcp_servers))
 }
 
-async fn get_config(State(deployment): State<DeploymentImpl>) -> ResponseJson<ApiResponse<Config>> {
-    let mut config = deployment.app_state().get_config().read().await.clone();
+#[derive(Debug, Serialize, Deserialize, TS)]
+struct Environment {
+    pub os_type: String,
+    pub os_version: String,
+    pub os_architecture: String,
+    pub bitness: String,
+}
 
-    // Update environment info dynamically
-    let info = os_info::get();
-    config.environment.os_type = info.os_type().to_string();
-    config.environment.os_version = info.version().to_string();
-    config.environment.architecture = info.architecture().unwrap_or("unknown").to_string();
-    config.environment.bitness = info.bitness().to_string();
+impl Environment {
+    pub fn new() -> Self {
+        let info = os_info::get();
+        Environment {
+            os_type: info.os_type().to_string(),
+            os_version: info.version().to_string(),
+            os_architecture: info.architecture().unwrap_or("unknown").to_string(),
+            bitness: info.bitness().to_string(),
+        }
+    }
+}
 
-    ResponseJson(ApiResponse::success(config))
+#[derive(Debug, Serialize, Deserialize, TS)]
+pub struct UserSystemInfo {
+    pub config: Config,
+    pub environment: Environment,
+    pub editor_config_options: EditorConstants,
+    pub sound_config_options: SoundConstants,
+}
+
+// TODO: update frontend, BE schema has changed, this replaces GET /config and /config/constants
+#[axum::debug_handler]
+async fn get_user_system_info(
+    State(deployment): State<DeploymentImpl>,
+) -> ResponseJson<ApiResponse<UserSystemInfo>> {
+    let config = deployment.config().read().await;
+
+    let user_system_info = UserSystemInfo {
+        config: config.clone(),
+        environment: Environment::new(),
+        editor_config_options: EditorConstants::new(),
+        sound_config_options: SoundConstants::new(),
+    };
+
+    ResponseJson(ApiResponse::success(user_system_info))
 }
 
 async fn update_config(
@@ -53,37 +78,14 @@ async fn update_config(
 
     match new_config.save(&config_path) {
         Ok(_) => {
-            let mut config = deployment.app_state().get_config().write().await;
+            let mut config = deployment.config().write().await;
             *config = new_config.clone();
             drop(config);
-
-            deployment
-                .app_state()
-                .update_analytics_config(new_config.analytics_enabled.unwrap_or(true))
-                .await;
 
             ResponseJson(ApiResponse::success(new_config))
         }
         Err(e) => ResponseJson(ApiResponse::error(&format!("Failed to save config: {}", e))),
     }
-}
-
-#[derive(Debug, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct ConfigConstants {
-    pub editor: EditorConstants,
-    pub sound: SoundConstants,
-}
-
-async fn get_config_constants(
-    State(_app_state): State<DeploymentImpl>,
-) -> ResponseJson<ApiResponse<ConfigConstants>> {
-    let constants = ConfigConstants {
-        editor: EditorConstants::new(),
-        sound: SoundConstants::new(),
-    };
-
-    ResponseJson(ApiResponse::success(constants))
 }
 
 // #[derive(Debug, Deserialize)]

@@ -15,7 +15,7 @@ pub struct EnvironmentInfo {
     pub bitness: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, TS)]
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct Config {
     pub theme: ThemeMode,
