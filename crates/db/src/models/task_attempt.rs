@@ -85,7 +85,7 @@ pub enum TaskAttemptStatus {
 pub struct TaskAttempt {
     pub id: Uuid,
     pub task_id: Uuid, // Foreign key to Task
-    pub worktree_path: String,
+    pub container_ref: Option<String>,
     pub branch: String,      // Git branch name for this task attempt
     pub base_branch: String, // Base branch this attempt is based on
     pub merge_commit: Option<String>,
@@ -219,7 +219,7 @@ impl TaskAttempt {
             "SELECT \
                 id, \
                 task_id, \
-                worktree_path, \
+                container_ref, \
                 branch, \
                 base_branch, \
                 merge_commit, \
@@ -262,7 +262,7 @@ impl TaskAttempt {
             TaskAttempt,
             r#"SELECT  ta.id                AS "id!: Uuid",
                        ta.task_id           AS "task_id!: Uuid",
-                       ta.worktree_path,
+                       ta.container_ref,
                        ta.branch,
                        ta.base_branch,
                        ta.merge_commit,
@@ -342,7 +342,7 @@ impl TaskAttempt {
             TaskAttempt,
             r#"SELECT  id                AS "id!: Uuid",
                        task_id           AS "task_id!: Uuid",
-                       worktree_path,
+                       container_ref,
                        branch,
                        merge_commit,
                        base_branch,
@@ -464,6 +464,43 @@ impl TaskAttempt {
     //                 .map(|path| (r.attempt_id, path, r.git_repo_path))
     //         })
     //         .collect())
+    // }
+
+    // pub async fn create(
+    //     pool: &SqlitePool,
+    //     data: &CreateTaskAttempt,
+    //     task_id: Uuid,
+    // ) -> Result<Self, TaskAttemptError> {
+    //     let attempt_id = Uuid::new_v4();
+    //     // let prefixed_id = format!("vibe-kanban-{}", attempt_id);
+
+    //     // First, get the task to get the project_id
+    //     let task = Task::find_by_id(pool, task_id)
+    //         .await?
+    //         .ok_or(TaskAttemptError::TaskNotFound)?;
+
+    //     // Insert the record into the database
+    //     Ok(sqlx::query_as!(
+    //         TaskAttempt,
+    //         r#"INSERT INTO task_attempts (id, task_id, container_ref, branch, base_branch, merge_commit, executor, pr_url, pr_number, pr_status, pr_merged_at, worktree_deleted, setup_completed_at)
+    //            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    //            RETURNING id as "id!: Uuid", task_id as "task_id!: Uuid", container_ref, branch, base_branch, merge_commit, executor, pr_url, pr_number, pr_status, pr_merged_at as "pr_merged_at: DateTime<Utc>", worktree_deleted as "worktree_deleted!: bool", setup_completed_at as "setup_completed_at: DateTime<Utc>", created_at as "created_at!: DateTime<Utc>", updated_at as "updated_at!: DateTime<Utc>""#,
+    //         attempt_id,
+    //         task_id,
+    //         Option::<String>::None,
+    //         task_attempt_branch,
+    //         resolved_base_branch,
+    //         Option::<String>::None, // merge_commit is always None during creation
+    //         data.executor,
+    //         Option::<String>::None, // pr_url is None during creation
+    //         Option::<i64>::None, // pr_number is None during creation
+    //         Option::<String>::None, // pr_status is None during creation
+    //         Option::<DateTime<Utc>>::None, // pr_merged_at is None during creation
+    //         false, // worktree_deleted is false during creation
+    //         Option::<DateTime<Utc>>::None // setup_completed_at is None during creation
+    //     )
+    //     .fetch_one(pool)
+    //     .await?)
     // }
 
     // pub async fn create(

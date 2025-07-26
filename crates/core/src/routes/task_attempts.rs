@@ -235,7 +235,7 @@ pub async fn create_task_attempt(
     State(deployment): State<DeploymentImpl>,
     Json(payload): Json<CreateTaskAttempt>,
 ) -> Result<ResponseJson<ApiResponse<TaskAttempt>>, StatusCode> {
-    // match TaskAttempt::create(&deployment.db().pool, &payload, task.id).await {
+    // let task_attempt = TaskAttempt::create(&deployment.db().pool, &payload, task.id).await;
     //     Ok(attempt) => {
     //         app_state
     //             .track_analytics_event(

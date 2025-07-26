@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT  id                AS \"id!: Uuid\",\n                       task_id           AS \"task_id!: Uuid\",\n                       worktree_path,\n                       branch,\n                       merge_commit,\n                       base_branch,\n                       executor,\n                       pr_url,\n                       pr_number,\n                       pr_status,\n                       pr_merged_at      AS \"pr_merged_at: DateTime<Utc>\",\n                       worktree_deleted  AS \"worktree_deleted!: bool\",\n                       setup_completed_at AS \"setup_completed_at: DateTime<Utc>\",\n                       created_at        AS \"created_at!: DateTime<Utc>\",\n                       updated_at        AS \"updated_at!: DateTime<Utc>\"\n               FROM    task_attempts\n               WHERE   id = $1",
+  "query": "SELECT  id                AS \"id!: Uuid\",\n                       task_id           AS \"task_id!: Uuid\",\n                       container_ref,\n                       branch,\n                       merge_commit,\n                       base_branch,\n                       executor,\n                       pr_url,\n                       pr_number,\n                       pr_status,\n                       pr_merged_at      AS \"pr_merged_at: DateTime<Utc>\",\n                       worktree_deleted  AS \"worktree_deleted!: bool\",\n                       setup_completed_at AS \"setup_completed_at: DateTime<Utc>\",\n                       created_at        AS \"created_at!: DateTime<Utc>\",\n                       updated_at        AS \"updated_at!: DateTime<Utc>\"\n               FROM    task_attempts\n               WHERE   id = $1",
   "describe": {
     "columns": [
       {
@@ -14,7 +14,7 @@
         "type_info": "Blob"
       },
       {
-        "name": "worktree_path",
+        "name": "container_ref",
         "ordinal": 2,
         "type_info": "Text"
       },
@@ -85,7 +85,7 @@
     "nullable": [
       true,
       false,
-      false,
+      true,
       false,
       true,
       false,
@@ -100,5 +100,5 @@
       false
     ]
   },
-  "hash": "a6d2961718dbc3b1a925e549f49a159c561bef58c105529275f274b27e2eba5b"
+  "hash": "45eb56394e7306ecc43ca5bd69cb0fe12ddaa0730b2c20cc161a5aa23682804d"
 }
