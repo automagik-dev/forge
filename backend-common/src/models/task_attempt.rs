@@ -3,7 +3,7 @@ use std::path::Path;
 use chrono::{DateTime, Utc};
 use git2::{BranchType, Error as GitError, Repository};
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, SqlitePool, Type};
+use sqlx::{FromRow, QueryBuilder, SqlitePool, Type};
 use tracing::info;
 use ts_rs::TS;
 use uuid::Uuid;
@@ -216,6 +216,46 @@ pub struct TaskAttemptContext {
 }
 
 impl TaskAttempt {
+    /// Fetch all task attempts, optionally filtered by task_id. Newest first.
+    pub async fn fetch_all(
+        pool: &SqlitePool,
+        task_id: Option<Uuid>,
+    ) -> Result<Vec<Self>, TaskAttemptError> {
+        let mut qb = QueryBuilder::new(
+            "SELECT \
+                id, \
+                task_id, \
+                worktree_path, \
+                branch, \
+                base_branch, \
+                merge_commit, \
+                executor, \
+                pr_url, \
+                pr_number, \
+                pr_status, \
+                pr_merged_at, \
+                worktree_deleted, \
+                setup_completed_at, \
+                created_at, \
+                updated_at \
+            FROM task_attempts",
+        );
+
+        if let Some(tid) = task_id {
+            qb.push(" WHERE task_id = ").push_bind(tid);
+        }
+
+        qb.push(" ORDER BY created_at DESC");
+
+        let attempts = qb
+            .build_query_as::<TaskAttempt>() // uses FromRow
+            .fetch_all(pool)
+            .await
+            .map_err(TaskAttemptError::Database)?;
+
+        Ok(attempts)
+    }
+
     /// Load task attempt with full validation - ensures task_attempt belongs to task and task belongs to project
     pub async fn load_context(
         pool: &SqlitePool,
@@ -579,12 +619,12 @@ impl TaskAttempt {
 
         // Update the task attempt with the merge commit
         sqlx::query!(
-            "UPDATE task_attempts SET merge_commit = $1, updated_at = datetime('now') WHERE id = $2",
-            merge_commit_id,
-            attempt_id
-        )
-        .execute(pool)
-        .await?;
+        "UPDATE task_attempts SET merge_commit = $1, updated_at = datetime('now') WHERE id = $2",
+        merge_commit_id,
+        attempt_id
+    )
+    .execute(pool)
+    .await?;
 
         Ok(merge_commit_id)
     }

@@ -6,7 +6,7 @@ use axum::{
 };
 use backend_common::{
     app_state::AppState,
-    models::{project::Project, task::Task},
+    models::{project::Project, task::Task, task_attempt::TaskAttempt},
 };
 use uuid::Uuid;
 
@@ -86,45 +86,44 @@ pub async fn load_task_middleware(
     Ok(next.run(request).await)
 }
 
-// // TODO: fix
-// /// Middleware that loads and injects Project, Task, and TaskAttempt based on project_id, task_id, and attempt_id path parameters
-// pub async fn load_task_attempt_middleware(
-//     State(app_state): State<AppState>,
-//     Path((project_id, task_id, attempt_id)): Path<(Uuid, Uuid, Uuid)>,
-//     request: axum::extract::Request,
-//     next: Next,
-// ) -> Result<Response, StatusCode> {
-//     // Load the full context in one call using the existing method
-//     let context = match TaskAttempt::load_context(
-//         &app_state.db_pool,
-//         attempt_id,
-//         task_id,
-//         project_id,
-//     )
-//     .await
-//     {
-//         Ok(context) => context,
-//         Err(e) => {
-//             tracing::error!(
-//                 "Failed to load context for attempt {} in task {} in project {}: {}",
-//                 attempt_id,
-//                 task_id,
-//                 project_id,
-//                 e
-//             );
-//             return Err(StatusCode::NOT_FOUND);
-//         }
-//     };
+/// Middleware that loads and injects Project, Task, and TaskAttempt based on project_id, task_id, and attempt_id path parameters
+pub async fn load_task_attempt_middleware(
+    State(app_state): State<AppState>,
+    Path((project_id, task_id, attempt_id)): Path<(Uuid, Uuid, Uuid)>,
+    request: axum::extract::Request,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    // Load the full context in one call using the existing method
+    let context = match TaskAttempt::load_context(
+        &app_state.db_pool,
+        attempt_id,
+        task_id,
+        project_id,
+    )
+    .await
+    {
+        Ok(context) => context,
+        Err(e) => {
+            tracing::error!(
+                "Failed to load context for attempt {} in task {} in project {}: {}",
+                attempt_id,
+                task_id,
+                project_id,
+                e
+            );
+            return Err(StatusCode::NOT_FOUND);
+        }
+    };
 
-//     // Insert all models as extensions
-//     let mut request = request;
-//     request.extensions_mut().insert(context.project);
-//     request.extensions_mut().insert(context.task);
-//     request.extensions_mut().insert(context.task_attempt);
+    // Insert all models as extensions
+    let mut request = request;
+    request.extensions_mut().insert(context.project);
+    request.extensions_mut().insert(context.task);
+    request.extensions_mut().insert(context.task_attempt);
 
-//     // Continue with the next middleware/handler
-//     Ok(next.run(request).await)
-// }
+    // Continue with the next middleware/handler
+    Ok(next.run(request).await)
+}
 
 // TODO: fix
 // Simple middleware that loads and injects ExecutionProcess based on the process_id path parameter

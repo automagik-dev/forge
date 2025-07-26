@@ -479,7 +479,6 @@ async fn search_files_in_repo(
 }
 
 pub fn router() -> Router<DeploymentImpl> {
-    // All routes under `/projects/:id`
     let project_id_router = Router::new()
         .route(
             "/",
@@ -493,11 +492,9 @@ pub fn router() -> Router<DeploymentImpl> {
         .route("/search", get(search_project_files))
         .route("/open-editor", post(open_project_in_editor));
 
-    // Top‐level `/projects` router
     let projects_router = Router::new()
         .route("/", get(get_projects).post(create_project))
         .nest("/{id}", project_id_router);
 
-    // Mount under root
     Router::new().nest("/projects", projects_router)
 }

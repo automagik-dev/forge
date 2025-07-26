@@ -316,7 +316,6 @@
 // mod command_executor;
 mod deployment;
 mod middleware;
-mod router;
 mod routes;
 mod utils;
 use std::{str::FromStr, sync::Arc};
@@ -363,7 +362,7 @@ fn main() -> anyhow::Result<()> {
 
             let deployment = DeploymentImpl::new(app_state);
 
-            let app_router = router::router(deployment);
+            let app_router = routes::router(deployment);
 
             let port = std::env::var("BACKEND_PORT")
                 .or_else(|_| std::env::var("PORT"))
