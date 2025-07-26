@@ -3,6 +3,7 @@ use std::{collections::HashMap, path::Path};
 use axum::{
     extract::{Query, State},
     http::StatusCode,
+    middleware::from_fn_with_state,
     response::Json as ResponseJson,
     routing::{get, post},
     Extension, Json, Router,
@@ -17,7 +18,7 @@ use services::services::config::{EditorConfig, EditorType};
 use utils::response::ApiResponse;
 use uuid::Uuid;
 
-use crate::DeploymentImpl;
+use crate::{middleware::load_project_middleware, DeploymentImpl};
 
 pub async fn get_projects(
     State(deployment): State<DeploymentImpl>,
@@ -471,7 +472,7 @@ async fn search_files_in_repo(
     Ok(results)
 }
 
-pub fn router() -> Router<DeploymentImpl> {
+pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
     let project_id_router = Router::new()
         .route(
             "/",
@@ -483,7 +484,11 @@ pub fn router() -> Router<DeploymentImpl> {
             get(get_project_branches).post(create_project_branch),
         )
         .route("/search", get(search_project_files))
-        .route("/open-editor", post(open_project_in_editor));
+        .route("/open-editor", post(open_project_in_editor))
+        .layer(from_fn_with_state(
+            deployment.clone(),
+            load_project_middleware,
+        ));
 
     let projects_router = Router::new()
         .route("/", get(get_projects).post(create_project))

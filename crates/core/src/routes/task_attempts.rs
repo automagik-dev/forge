@@ -6,16 +6,14 @@ use axum::{
     routing::get,
     Extension, Json, Router,
 };
-use backend_common::{
-    deployment::Deployment,
-    models::{api_response::ApiResponse, task_attempt::TaskAttempt},
-};
+use db::models::task_attempt::TaskAttempt;
+use deployment::Deployment;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use ts_rs::TS;
 use uuid::Uuid;
 
-use crate::{deployment::DeploymentImpl, middleware::load_task_attempt_middleware};
+use crate::{middleware::load_task_attempt_middleware, DeploymentImpl};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RebaseTaskAttemptRequest {
@@ -211,7 +209,7 @@ pub async fn get_task_attempts(
     Query(query): Query<TaskAttemptQuery>,
 ) -> Result<Json<Vec<TaskAttempt>>, (StatusCode, String)> {
     // pull out your DB pool
-    let pool = &deployment.app_state().db_pool;
+    let pool = &deployment.db().pool;
 
     // run it!
     let attempts = TaskAttempt::fetch_all(pool, query.task_id)
@@ -1137,7 +1135,7 @@ pub async fn get_task_attempts(
 
 pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
     let task_attempt_id_router = Router::new().layer(from_fn_with_state(
-        deployment.app_state().clone(),
+        deployment.clone(),
         load_task_attempt_middleware,
     ));
 

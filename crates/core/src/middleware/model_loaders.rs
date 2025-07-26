@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Request, State},
     http::StatusCode,
     middleware::Next,
     response::Response,
@@ -10,11 +10,10 @@ use uuid::Uuid;
 
 use crate::DeploymentImpl;
 
-/// Middleware that loads and injects a Project based on the project_id path parameter
 pub async fn load_project_middleware(
     State(deployment): State<DeploymentImpl>,
     Path(project_id): Path<Uuid>,
-    request: axum::extract::Request,
+    request: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
     // Load the project from the database
@@ -38,11 +37,10 @@ pub async fn load_project_middleware(
     Ok(next.run(request).await)
 }
 
-/// Middleware that loads and injects both Project and Task based on project_id and task_id path parameters
 pub async fn load_task_middleware(
     State(deployment): State<DeploymentImpl>,
     Path(task_id): Path<Uuid>,
-    request: axum::extract::Request,
+    request: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
     // Load the task and validate it belongs to the project
@@ -63,6 +61,32 @@ pub async fn load_task_middleware(
     request.extensions_mut().insert(task);
 
     // Continue with the next middleware/handler
+    Ok(next.run(request).await)
+}
+
+pub async fn load_task_attempt_middleware(
+    State(deployment): State<DeploymentImpl>,
+    Path(task_attempt_id): Path<Uuid>,
+    mut request: Request,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    // Load the TaskAttempt from the database
+    let attempt = match TaskAttempt::find_by_id(&deployment.db().pool, task_attempt_id).await {
+        Ok(Some(a)) => a,
+        Ok(None) => {
+            tracing::warn!("TaskAttempt {} not found", task_attempt_id);
+            return Err(StatusCode::NOT_FOUND);
+        }
+        Err(e) => {
+            tracing::error!("Failed to fetch TaskAttempt {}: {}", task_attempt_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    // Insert the attempt into extensions
+    request.extensions_mut().insert(attempt);
+
+    // Continue on
     Ok(next.run(request).await)
 }
 

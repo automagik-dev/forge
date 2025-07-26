@@ -12,7 +12,7 @@ pub mod config;
 pub mod health;
 pub mod projects;
 // pub mod stream;
-// pub mod task_attempts;
+pub mod task_attempts;
 // pub mod task_templates;
 pub mod tasks;
 
@@ -21,9 +21,9 @@ pub fn router(deployment: DeploymentImpl) -> IntoMakeService<Router> {
     let base_routes = Router::new()
         .route("/health", get(health::health_check))
         .merge(config::router())
-        .merge(projects::router())
+        .merge(projects::router(&deployment))
         .merge(tasks::router(&deployment))
-        // .merge(task_attempts::router(&deployment))
+        .merge(task_attempts::router(&deployment))
         .with_state(deployment);
 
     Router::new().nest("/api", base_routes).into_make_service()
