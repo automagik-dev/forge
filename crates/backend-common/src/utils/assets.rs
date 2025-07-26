@@ -4,7 +4,7 @@ const PROJECT_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 
 pub fn asset_dir() -> std::path::PathBuf {
     if cfg!(debug_assertions) {
-        std::path::PathBuf::from(PROJECT_ROOT).join("../dev_assets")
+        std::path::PathBuf::from(PROJECT_ROOT).join("../../dev_assets")
     } else {
         ProjectDirs::from("ai", "bloop", env!("CARGO_PKG_NAME"))
             .expect("OS didn't give us a home directory")
