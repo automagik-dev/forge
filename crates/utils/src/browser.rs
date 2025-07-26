@@ -1,4 +1,4 @@
-use crate::utils::os::is_wsl2;
+use crate::is_wsl2;
 
 /// Open URL in browser with WSL2 support
 pub async fn open_browser(url: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {

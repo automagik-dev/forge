@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+db = { path = "../db" }
 deployment = { path = "../deployment" }
 services = { path = "../services" }
 utils = { path = "../utils" }

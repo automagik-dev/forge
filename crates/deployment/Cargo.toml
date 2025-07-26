@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+db = { path = "../db" }
 services = { path = "../services" }
 async-trait = "0.1"
 thiserror = "2.0.12"
 anyhow.workspace = true
 tokio.workspace = true
+sqlx = "0.8.6"

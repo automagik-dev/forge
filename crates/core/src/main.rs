@@ -311,7 +311,7 @@
 // mod command_executor;
 // mod deployment;
 // mod middleware;
-// mod routes;
+mod routes;
 // mod utils;
 use std::{
     str::FromStr,
@@ -320,17 +320,13 @@ use std::{
 
 use anyhow::{self, Error as AnyhowError};
 use axum::Router;
-use db::db::start_db;
 use deployment::{Deployment, DeploymentError};
 use services::services::config::Config;
 use sqlx::{sqlite::SqliteConnectOptions, Error as SqlxError, SqlitePool};
 use strip_ansi_escapes::strip;
 use thiserror::Error;
 use tracing_subscriber::{filter::LevelFilter, prelude::*};
-use utils::{
-    assets::{asset_dir, config_path},
-    sentry::sentry_layer,
-};
+use utils::{browser::open_browser, sentry::sentry_layer};
 
 // #[cfg(feature = "cloud")]
 // type DeploymentImpl = vibe_kanban_cloud::deployment::CloudDeployment;
@@ -340,11 +336,13 @@ type DeploymentImpl = local_deployment::LocalDeployment;
 #[derive(Debug, Error)]
 pub enum VibeKanbanError {
     #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
     Sqlx(#[from] SqlxError),
     #[error(transparent)]
     Deployment(#[from] DeploymentError),
     #[error(transparent)]
-    Other(#[from] AnyhowError), // Catches any unclassified errors
+    Other(#[from] AnyhowError),
 }
 
 fn main() -> Result<(), VibeKanbanError> {
@@ -358,50 +356,42 @@ fn main() -> Result<(), VibeKanbanError> {
                 .with(sentry_layer())
                 .init();
 
-            // Start the DB
-            // Database connection
-            let database_url = format!(
-                "sqlite://{}",
-                asset_dir().join("db.sqlite").to_string_lossy()
-            );
-            let pool = start_db(&database_url).await?;
-
-            let deployment = DeploymentImpl::new()?;
+            let deployment = DeploymentImpl::new().await?;
 
             deployment.update_sentry_scope().await?;
 
-            // let app_router = routes::router(deployment);
+            let app_router = routes::router(deployment);
 
-            // let port = std::env::var("BACKEND_PORT")
-            //     .or_else(|_| std::env::var("PORT"))
-            //     .ok()
-            //     .and_then(|s| {
-            //         // remove any ANSI codes, then turn into String
-            //         let cleaned =
-            //             String::from_utf8(strip(s.as_bytes())).expect("UTF-8 after stripping ANSI");
-            //         cleaned.trim().parse::<u16>().ok()
-            //     })
-            //     .unwrap_or_else(|| {
-            //         tracing::info!(
-            //             "No PORT environment variable set, using port 0 for auto-assignment"
-            //         );
-            //         0
-            //     }); // Use 0 to find free port if no specific port provided
+            let port = std::env::var("BACKEND_PORT")
+                .or_else(|_| std::env::var("PORT"))
+                .ok()
+                .and_then(|s| {
+                    // remove any ANSI codes, then turn into String
+                    let cleaned =
+                        String::from_utf8(strip(s.as_bytes())).expect("UTF-8 after stripping ANSI");
+                    cleaned.trim().parse::<u16>().ok()
+                })
+                .unwrap_or_else(|| {
+                    tracing::info!(
+                        "No PORT environment variable set, using port 0 for auto-assignment"
+                    );
+                    0
+                }); // Use 0 to find free port if no specific port provided
 
-            // let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-            // let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;
-            // let actual_port = listener.local_addr()?.port(); // get → 53427 (example)
+            let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+            let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;
+            let actual_port = listener.local_addr()?.port(); // get → 53427 (example)
 
-            //             tracing::info!("Server running on http://{host}:{actual_port}");
+                        tracing::info!("Server running on http://{host}:{actual_port}");
 
-            //             if !cfg!(debug_assertions) {
-            //                 tracing::info!("Opening browser...");
-            //                 if let Err(e) = open_browser(&format!("http://127.0.0.1:{actual_port}")).await {
-            //                     tracing::warn!("Failed to open browser automatically: {}. Please open http://127.0.0.1:{} manually.", e, actual_port);
-            //                 }
-            //             }
+                        if !cfg!(debug_assertions) {
+                            tracing::info!("Opening browser...");
+                            if let Err(e) = open_browser(&format!("http://127.0.0.1:{actual_port}")).await {
+                                tracing::warn!("Failed to open browser automatically: {}. Please open http://127.0.0.1:{} manually.", e, actual_port);
+                            }
+                        }
 
-            //     axum::serve(listener, app_router).await?;
+                axum::serve(listener, app_router).await?;
             Ok(())
         })
 }

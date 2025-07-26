@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use db::DBProvider;
 use deployment::{Deployment, DeploymentError};
 use services::services::{analytics::generate_user_id, config::Config, sentry::SentryService};
 use tokio::sync::RwLock;
@@ -11,18 +12,23 @@ pub struct LocalDeployment {
     config: Arc<RwLock<Config>>,
     sentry: SentryService,
     user_id: String,
+    db: DBProvider,
 }
 
 #[async_trait]
 impl Deployment for LocalDeployment {
-    fn new() -> Result<Self, DeploymentError> {
+    async fn new() -> Result<Self, DeploymentError> {
         let config = Arc::new(RwLock::new(Config::load(&config_path())?));
         let sentry = SentryService::new();
         let user_id = generate_user_id();
+
+        let db = DBProvider::new().await?;
+
         Ok(Self {
             config,
             sentry,
             user_id,
+            db,
         })
     }
 
@@ -40,5 +46,9 @@ impl Deployment for LocalDeployment {
 
     fn sentry(&self) -> &SentryService {
         &self.sentry
+    }
+
+    fn db(&self) -> &DBProvider {
+        &self.db
     }
 }

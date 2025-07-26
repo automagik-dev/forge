@@ -31,5 +31,5 @@ mod response {
     }
 }
 
-// Re-export the type, but its fields remain private
+// Re-export the type, but its fields remain private, a hack to prevent direct use of the struct
 pub use response::ApiResponse;

@@ -3,27 +3,27 @@ use axum::{
     Router,
 };
 
-use crate::deployment::DeploymentImpl;
+use crate::DeploymentImpl;
 
 // pub mod auth;
-pub mod config;
+// pub mod config;
 // pub mod filesystem;
 // pub mod github;
 pub mod health;
-pub mod projects;
+// pub mod projects;
 // pub mod stream;
-pub mod task_attempts;
+// pub mod task_attempts;
 // pub mod task_templates;
-pub mod tasks;
+// pub mod tasks;
 
 pub fn router(deployment: DeploymentImpl) -> IntoMakeService<Router> {
     // Create routers with different middleware layers
     let base_routes = Router::new()
         .route("/health", get(health::health_check))
-        .merge(config::router())
-        .merge(projects::router())
-        .merge(tasks::router(&deployment))
-        .merge(task_attempts::router(&deployment))
+        // .merge(config::router())
+        // .merge(projects::router())
+        // .merge(tasks::router(&deployment))
+        // .merge(task_attempts::router(&deployment))
         .with_state(deployment);
 
     Router::new().nest("/api", base_routes).into_make_service()
