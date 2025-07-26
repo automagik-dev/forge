@@ -4,7 +4,7 @@ use sqlx::{FromRow, SqlitePool, Type};
 use ts_rs::TS;
 use uuid::Uuid;
 
-use crate::app_state::ExecutionType;
+// use crate::app_state::ExecutionType;
 
 /// Filter out stderr boundary markers from output
 fn filter_stderr_boundary_markers(stderr: &Option<String>) -> Option<String> {
@@ -44,27 +44,28 @@ pub enum ExecutionProcessType {
     DevServer,
 }
 
-impl From<ExecutionType> for ExecutionProcessType {
-    fn from(exec_type: ExecutionType) -> Self {
-        match exec_type {
-            ExecutionType::SetupScript => ExecutionProcessType::SetupScript,
-            ExecutionType::CleanupScript => ExecutionProcessType::CleanupScript,
-            ExecutionType::CodingAgent => ExecutionProcessType::CodingAgent,
-            ExecutionType::DevServer => ExecutionProcessType::DevServer,
-        }
-    }
-}
+// TODO: fix
+// impl From<ExecutionType> for ExecutionProcessType {
+//     fn from(exec_type: ExecutionType) -> Self {
+//         match exec_type {
+//             ExecutionType::SetupScript => ExecutionProcessType::SetupScript,
+//             ExecutionType::CleanupScript => ExecutionProcessType::CleanupScript,
+//             ExecutionType::CodingAgent => ExecutionProcessType::CodingAgent,
+//             ExecutionType::DevServer => ExecutionProcessType::DevServer,
+//         }
+//     }
+// }
 
-impl From<ExecutionProcessType> for ExecutionType {
-    fn from(exec_type: ExecutionProcessType) -> Self {
-        match exec_type {
-            ExecutionProcessType::SetupScript => ExecutionType::SetupScript,
-            ExecutionProcessType::CleanupScript => ExecutionType::CleanupScript,
-            ExecutionProcessType::CodingAgent => ExecutionType::CodingAgent,
-            ExecutionProcessType::DevServer => ExecutionType::DevServer,
-        }
-    }
-}
+// impl From<ExecutionProcessType> for ExecutionType {
+//     fn from(exec_type: ExecutionProcessType) -> Self {
+//         match exec_type {
+//             ExecutionProcessType::SetupScript => ExecutionType::SetupScript,
+//             ExecutionProcessType::CleanupScript => ExecutionType::CleanupScript,
+//             ExecutionProcessType::CodingAgent => ExecutionType::CodingAgent,
+//             ExecutionProcessType::DevServer => ExecutionType::DevServer,
+//         }
+//     }
+// }
 
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize, TS)]
 #[ts(export)]

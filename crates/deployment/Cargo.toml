@@ -1,0 +1,11 @@
+[package]
+name = "deployment"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+services = { path = "../services" }
+async-trait = "0.1"
+thiserror = "2.0.12"
+anyhow.workspace = true
+tokio.workspace = true

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/backend", "crates/backend-common", "crates/executors"]
+members = ["crates/core", "crates/backend-common", "crates/db", "crates/executors", "crates/services", "crates/utils", "crates/local-deployment", "crates/deployment"]
 
 [workspace.dependencies]
 tokio = { version = "1.0", features = ["full"] }

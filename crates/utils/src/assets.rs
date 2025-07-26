@@ -1,4 +1,5 @@
 use directories::ProjectDirs;
+use rust_embed::RustEmbed;
 
 const PROJECT_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 
@@ -20,3 +21,13 @@ pub fn asset_dir() -> std::path::PathBuf {
 pub fn config_path() -> std::path::PathBuf {
     asset_dir().join("config.json")
 }
+
+// TODO: FIX
+#[derive(RustEmbed)]
+#[folder = "../../sounds"]
+pub struct SoundAssets;
+
+// TODO: FIX
+// #[derive(RustEmbed)]
+// #[folder = "scripts"]
+// pub struct ScriptAssets;

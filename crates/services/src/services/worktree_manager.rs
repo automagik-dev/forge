@@ -442,7 +442,7 @@ impl WorktreeManager {
         let worktree_path_owned = worktree_path.to_path_buf();
 
         tokio::task::spawn_blocking(move || {
-            let (shell_cmd, shell_arg) = crate::utils::shell::get_shell_command();
+            let (shell_cmd, shell_arg) = get_shell_command();
             let git_command = "git rev-parse --git-common-dir";
 
             let output = std::process::Command::new(shell_cmd)
@@ -509,7 +509,7 @@ impl WorktreeManager {
         git_repo_path: &Path,
         worktree_name: &str,
     ) -> Result<(), std::io::Error> {
-        if !cfg!(target_os = "linux") || !crate::utils::is_wsl2() {
+        if !cfg!(target_os = "linux") || !is_wsl2() {
             debug!("Skipping commondir fix for non-WSL2 environment");
             return Ok(());
         }

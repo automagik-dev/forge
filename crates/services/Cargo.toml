@@ -1,11 +1,10 @@
 [package]
-name = "backend-common"
+name = "services"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 utils = { path = "../utils" }
-services = { path = "../services" }
 tokio = { workspace = true }
 tokio-util = { version = "0.7", features = ["io"] }
 bytes = "1.0"

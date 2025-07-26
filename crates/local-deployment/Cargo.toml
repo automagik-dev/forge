@@ -1,16 +1,12 @@
 [package]
-name = "vibe-kanban"
-version = "0.0.56"
-edition = "2021"
-default-run = "vibe-kanban"
-
-[lints.clippy]
-uninlined-format-args = "allow"
+name = "local-deployment"
+version = "0.1.0"
+edition = "2024"
 
 [dependencies]
-backend-common = { path = "../backend-common" }
-vibe-kanban-cloud = { version = "0.1", optional = true }
-tokio = { workspace = true }
+deployment = { path = "../deployment" }
+services = { path = "../services" }
+utils = { path = "../utils" }
 tokio-util = { version = "0.7", features = ["io"] }
 bytes = "1.0"
 axum = { workspace = true }
@@ -57,12 +53,4 @@ json-patch = "2.0"
 backon = "1.5.1"
 reqwest-eventsource = "0.6"
 base64 = "0.22"
-
-[dev-dependencies]
-tempfile = "3.8"
-tower = { version = "0.4", features = ["util"] }
-
-[build-dependencies]
-dotenv = "0.15"
-ts-rs = { version = "9.0", features = ["uuid-impl", "chrono-impl", "no-serde-warnings"] }
-
+tokio.workspace = true

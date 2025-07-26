@@ -2,8 +2,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-
-use crate::SoundAssets;
+use utils::{assets::SoundAssets, cache_dir};
 
 // use crate::{SoundAssets, executor::ExecutorConfig};
 
@@ -16,7 +15,7 @@ pub struct EnvironmentInfo {
     pub bitness: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[derive(Debug, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct Config {
     pub theme: ThemeMode,
@@ -254,7 +253,7 @@ impl SoundFile {
         use std::io::Write;
 
         let filename = self.to_filename();
-        let cache_dir = crate::utils::cache_dir();
+        let cache_dir = cache_dir();
         let cached_path = cache_dir.join(format!("sound-{}", filename));
 
         // Check if cached file already exists and is valid

@@ -1,19 +1,6 @@
 use rust_embed::RustEmbed;
 
-pub mod app_state;
+// pub mod app_state;
 pub mod command_runner;
-pub mod db;
-pub mod deployment;
-// pub mod executor;
-pub mod models;
-pub mod services;
-pub mod utils;
-// TODO: FIX
-#[derive(RustEmbed)]
-#[folder = "sounds"]
-pub struct SoundAssets;
-
-// TODO: FIX
-// #[derive(RustEmbed)]
-// #[folder = "scripts"]
-// pub struct ScriptAssets;
+// pub mod config;
+// pub mod deployment;

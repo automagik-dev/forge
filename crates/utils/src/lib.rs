@@ -4,9 +4,9 @@ use directories::ProjectDirs;
 
 pub mod assets;
 pub mod path;
+pub mod sentry;
 pub mod shell;
 pub mod text;
-pub mod worktree_manager;
 
 /// Cache for WSL2 detection result
 static WSL2_CACHE: OnceLock<bool> = OnceLock::new();
