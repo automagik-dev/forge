@@ -1,24 +1,40 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
-use db::{
-    DBService,
-    models::{task::Task, task_attempt::TaskAttempt},
-};
+use command_group::AsyncGroupChild;
+use db::{DBService, models::task_attempt::TaskAttempt};
 use deployment::{Deployment, DeploymentError};
 use services::services::{
     analytics::{AnalyticsConfig, AnalyticsService, generate_user_id},
     config::Config,
     container::{ContainerRef, ContainerService},
     git::GitService,
+    process_service::ProcessService,
     sentry::SentryService,
 };
 use tokio::sync::RwLock;
 use utils::assets::config_path;
+use uuid::Uuid;
 
 use crate::container::LocalContainerService;
 
 pub mod container;
+
+#[derive(Debug)]
+pub enum ExecutionType {
+    SetupScript,
+    CleanupScript,
+    CodingAgent,
+    DevServer,
+}
+
+#[derive(Debug)]
+pub struct RunningExecution {
+    pub task_attempt_id: Uuid,
+    pub _execution_type: ExecutionType,
+    // TODO: fix
+    pub child: AsyncGroupChild,
+}
 
 #[derive(Clone)]
 pub struct LocalDeployment {
@@ -29,6 +45,8 @@ pub struct LocalDeployment {
     analytics: Option<AnalyticsService>,
     container: LocalContainerService,
     git: GitService,
+    running_executions: Arc<RwLock<HashMap<Uuid, RunningExecution>>>,
+    process: ProcessService,
 }
 
 #[async_trait]
@@ -39,8 +57,10 @@ impl Deployment for LocalDeployment {
         let user_id = generate_user_id();
         let db = DBService::new().await?;
         let analytics = AnalyticsConfig::new().map(AnalyticsService::new);
-        let container = LocalContainerService::new();
         let git = GitService::new();
+        let container = LocalContainerService::new(db.clone(), git.clone());
+        let running_executions = Arc::new(RwLock::new(HashMap::new()));
+        let process = ProcessService::new();
 
         Ok(Self {
             config,
@@ -50,6 +70,8 @@ impl Deployment for LocalDeployment {
             analytics,
             container,
             git,
+            running_executions,
+            process,
         })
     }
 
@@ -83,40 +105,5 @@ impl Deployment for LocalDeployment {
 
     fn git(&self) -> &GitService {
         &self.git
-    }
-
-    async fn launch_attempt(
-        &self,
-        task_attempt: &TaskAttempt,
-    ) -> Result<ContainerRef, DeploymentError> {
-        let task = task_attempt
-            .parent_task(&self.db().pool)
-            .await?
-            .ok_or(sqlx::Error::RowNotFound)?;
-
-        let task_branch_name =
-            LocalContainerService::dir_name_from_task_attempt(&task_attempt.id, &task.title);
-        let worktree_path = LocalContainerService::get_worktree_base_dir().join(&task_branch_name);
-
-        let project = task
-            .parent_project(&self.db().pool)
-            .await?
-            .ok_or(sqlx::Error::RowNotFound)?;
-
-        let _ = &self.git.create_worktree(
-            &project.git_repo_path,
-            &task_branch_name,
-            &worktree_path,
-            Some(&task_attempt.base_branch),
-        )?;
-
-        TaskAttempt::update_container_ref(
-            &self.db().pool,
-            task_attempt.id,
-            &worktree_path.to_string_lossy(),
-        )
-        .await?;
-
-        Ok("Ref".to_string())
     }
 }

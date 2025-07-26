@@ -9,6 +9,7 @@ use axum::{
 use db::models::task_attempt::{CreateTaskAttempt, TaskAttempt};
 use deployment::Deployment;
 use serde::{Deserialize, Serialize};
+use services::services::container::ContainerService;
 use sqlx::SqlitePool;
 use ts_rs::TS;
 use utils::response::ApiResponse;
@@ -252,54 +253,39 @@ pub async fn create_task_attempt(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    // Create container
     let _ = deployment
-        .launch_attempt(&task_attempt)
+        .container()
+        .create(&task_attempt)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    //     Ok(attempt) => {
-    //         app_state
-    //             .track_analytics_event(
-    //                 "task_attempt_started",
-    //                 Some(serde_json::json!({
-    //                     "task_id": task.id.to_string(),
-    //                     "executor_type": executor_string.as_deref().unwrap_or("default"),
-    //                     "attempt_id": attempt.id.to_string(),
-    //                 })),
-    //             )
-    //             .await;
+    // Get parent task
+    let task = task_attempt
+        .parent_task(&deployment.db().pool)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    //         // Start execution asynchronously (don't block the response)
-    //         let app_state_clone = app_state.clone();
-    //         let attempt_id = attempt.id;
-    //         let task_id = task.id;
-    //         let project_id = _project.id;
-    //         tokio::spawn(async move {
-    //             if let Err(e) = TaskAttempt::start_execution(
-    //                 &app_state_clone.db_pool,
-    //                 &app_state_clone,
-    //                 attempt_id,
-    //                 task_id,
-    //                 project_id,
-    //             )
-    //             .await
-    //             {
-    //                 tracing::error!(
-    //                     "Failed to start execution for task attempt {}: {}",
-    //                     attempt_id,
-    //                     e
-    //                 );
-    //             }
-    //         });
+    // Get parent project
+    let project = task
+        .parent_project(&deployment.db().pool)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    //         Ok(ResponseJson(ApiResponse::success(attempt)))
-    //     }
-    //     Err(e) => {
-    //         tracing::error!("Failed to create task attempt: {}", e);
-    //         Err(StatusCode::INTERNAL_SERVER_ERROR)
-    //     }
+    // Choose whether to execute the setup_script or coding agent first
+    // if let Some(setup_script) = project.setup_script {
+    // } else {
     // }
-    Err(StatusCode::INTERNAL_SERVER_ERROR)
+
+    // Get latest version of task attempt
+    let task_attempt = TaskAttempt::find_by_id(&deployment.db().pool, task_attempt.id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(ResponseJson(ApiResponse::success(task_attempt)))
 }
 
 // pub async fn get_task_attempt_diff(

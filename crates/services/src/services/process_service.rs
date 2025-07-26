@@ -5,9 +5,14 @@ use tracing::{debug, info};
 use uuid::Uuid;
 
 /// Service responsible for managing process execution lifecycle
+#[derive(Clone)]
 pub struct ProcessService;
 
 impl ProcessService {
+    pub fn new() -> Self {
+        ProcessService {}
+    }
+
     // /// Run cleanup script if project has one configured
     // pub async fn run_cleanup_script_if_configured(
     //     pool: &SqlitePool,
@@ -188,8 +193,7 @@ impl ProcessService {
 
     // /// Start the execution flow for a task attempt (setup script + executor)
     // pub async fn start_execution(
-    //     pool: &SqlitePool,
-    //     app_state: &crate::app_state::AppState,
+    //     deployment: &DeploymentImpl,
     //     attempt_id: Uuid,
     //     task_id: Uuid,
     //     project_id: Uuid,

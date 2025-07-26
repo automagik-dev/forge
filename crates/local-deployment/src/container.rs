@@ -1,12 +1,23 @@
-use db::models::task_attempt::TaskAttempt;
-use services::services::container::{ContainerError, ContainerRef, ContainerService};
+use async_trait::async_trait;
+use db::{DBService, models::task_attempt::TaskAttempt};
+use services::services::{
+    container::{ContainerError, ContainerRef, ContainerService},
+    git::GitService,
+};
 use utils::text::{git_branch_id, short_uuid};
 use uuid::Uuid;
 
 #[derive(Clone)]
-pub struct LocalContainerService {}
+pub struct LocalContainerService {
+    db: DBService,
+    git: GitService,
+}
 
 impl LocalContainerService {
+    pub fn new(db: DBService, git: GitService) -> Self {
+        LocalContainerService { db, git }
+    }
+
     pub fn dir_name_from_task_attempt(attempt_id: &Uuid, task_title: &str) -> String {
         let task_title_id = git_branch_id(task_title);
         format!("vk-{}-{}", short_uuid(attempt_id), task_title_id)
@@ -33,28 +44,38 @@ impl LocalContainerService {
     }
 }
 
+#[async_trait]
 impl ContainerService for LocalContainerService {
-    fn new() -> Self {
-        LocalContainerService {}
-    }
-
     /// Create a container
-    /// In this case we use label to make a descriptive worktree directory
-    fn create(
-        &self,
-        task_attempt: TaskAttempt,
-        label: String,
-    ) -> Result<ContainerRef, ContainerError> {
-        let worktree_path = Self::get_worktree_base_dir().join(&label);
-        let worktree_path_str = worktree_path.to_string_lossy().to_string();
-        // let parent_task = task_attempt.parent_task(pool)
+    async fn create(&self, task_attempt: &TaskAttempt) -> Result<ContainerRef, ContainerError> {
+        let task = task_attempt
+            .parent_task(&self.db.pool)
+            .await?
+            .ok_or(sqlx::Error::RowNotFound)?;
 
-        // git_service.create_worktree(
-        //     &task_attempt_branch,
-        //     &worktree_path,
-        //     data.base_branch.as_deref(),
-        // )?;
+        let task_branch_name =
+            LocalContainerService::dir_name_from_task_attempt(&task_attempt.id, &task.title);
+        let worktree_path = LocalContainerService::get_worktree_base_dir().join(&task_branch_name);
 
-        Ok("Ref".to_string())
+        let project = task
+            .parent_project(&self.db.pool)
+            .await?
+            .ok_or(sqlx::Error::RowNotFound)?;
+
+        let _ = &self.git.create_worktree(
+            &project.git_repo_path,
+            &task_branch_name,
+            &worktree_path,
+            Some(&task_attempt.base_branch),
+        )?;
+
+        TaskAttempt::update_container_ref(
+            &self.db.pool,
+            task_attempt.id,
+            &worktree_path.to_string_lossy(),
+        )
+        .await?;
+
+        Ok(worktree_path.to_string_lossy().to_string())
     }
 }

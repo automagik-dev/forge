@@ -1,21 +1,23 @@
 use anyhow::Error as AnyhowError;
+use async_trait::async_trait;
 use db::models::task_attempt::TaskAttempt;
+use sqlx::Error as SqlxError;
 use thiserror::Error;
 
+use crate::services::git::GitServiceError;
 pub type ContainerRef = String;
 
 #[derive(Debug, Error)]
 pub enum ContainerError {
     #[error(transparent)]
+    GitServiceError(#[from] GitServiceError),
+    #[error(transparent)]
+    Sqlx(#[from] SqlxError),
+    #[error(transparent)]
     Other(#[from] AnyhowError), // Catches any unclassified errors
 }
 
+#[async_trait]
 pub trait ContainerService {
-    fn new() -> Self;
-
-    fn create(
-        &self,
-        task_attempt: TaskAttempt,
-        label: String,
-    ) -> Result<ContainerRef, ContainerError>;
+    async fn create(&self, task_attempt: &TaskAttempt) -> Result<ContainerRef, ContainerError>;
 }

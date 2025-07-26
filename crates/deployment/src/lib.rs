@@ -43,11 +43,6 @@ pub trait Deployment: Clone + Send + Sync + 'static {
 
     fn git(&self) -> &GitService;
 
-    async fn launch_attempt(
-        &self,
-        task_attempt: &TaskAttempt,
-    ) -> Result<ContainerRef, DeploymentError>;
-
     async fn update_sentry_scope(&self) -> Result<(), DeploymentError> {
         let user_id = self.user_id();
         let config = self.config().read().await;
