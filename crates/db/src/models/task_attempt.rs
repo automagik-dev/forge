@@ -86,8 +86,8 @@ pub struct TaskAttempt {
     pub id: Uuid,
     pub task_id: Uuid, // Foreign key to Task
     pub container_ref: Option<String>,
-    pub branch: String,      // Git branch name for this task attempt
-    pub base_branch: String, // Base branch this attempt is based on
+    pub branch: Option<String>, // Git branch name for this task attempt
+    pub base_branch: String,    // Base branch this attempt is based on
     pub merge_commit: Option<String>,
     pub executor: Option<String>,  // Name of the executor to use
     pub pr_url: Option<String>,    // GitHub PR URL
@@ -178,7 +178,6 @@ pub struct TaskAttemptContext {
 #[ts(export)]
 pub struct CreateTaskAttempt {
     pub executor: String,
-    pub branch: String,
     pub base_branch: String,
 }
 
@@ -482,7 +481,7 @@ impl TaskAttempt {
             attempt_id,
             task_id,
             Option::<String>::None, // Container isn't known yet
-            data.branch,
+            Option::<String>::None, // branch name isn't known yet
             data.base_branch,
             Option::<String>::None, // merge_commit is always None during creation
             data.executor,

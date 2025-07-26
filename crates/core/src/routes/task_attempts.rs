@@ -6,7 +6,7 @@ use axum::{
     routing::get,
     Extension, Json, Router,
 };
-use db::models::task_attempt::TaskAttempt;
+use db::models::task_attempt::{CreateTaskAttempt, TaskAttempt};
 use deployment::Deployment;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
@@ -225,17 +225,38 @@ pub async fn get_task_attempts(
     Ok(Json(attempts))
 }
 
-pub struct CreateTaskAttempt {
+#[derive(Debug, Deserialize)]
+pub struct CreateTaskAttemptBody {
     pub task_id: Uuid,
     pub executor: Option<String>,
-    pub base_branch: Option<String>,
+    pub base_branch: String,
 }
 
+#[axum::debug_handler]
 pub async fn create_task_attempt(
     State(deployment): State<DeploymentImpl>,
-    Json(payload): Json<CreateTaskAttempt>,
+    Json(payload): Json<CreateTaskAttemptBody>,
 ) -> Result<ResponseJson<ApiResponse<TaskAttempt>>, StatusCode> {
-    // let task_attempt = TaskAttempt::create(&deployment.db().pool, &payload, task.id).await;
+    let executor = payload
+        .executor
+        .unwrap_or(deployment.config().read().await.executor.to_string());
+
+    let task_attempt = TaskAttempt::create(
+        &deployment.db().pool,
+        &CreateTaskAttempt {
+            executor: executor,
+            base_branch: payload.base_branch,
+        },
+        payload.task_id,
+    )
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let _ = deployment
+        .launch_attempt(&task_attempt)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
     //     Ok(attempt) => {
     //         app_state
     //             .track_analytics_event(
@@ -1138,14 +1159,14 @@ pub async fn create_task_attempt(
 // }
 
 pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
-    let task_attempt_id_router = Router::new().layer(from_fn_with_state(
-        deployment.clone(),
-        load_task_attempt_middleware,
-    ));
+    // let task_attempt_id_router = Router::new().layer(from_fn_with_state(
+    //     deployment.clone(),
+    //     load_task_attempt_middleware,
+    // ));
 
-    let task_attempts_router = Router::new()
-        .route("/", get(get_task_attempts))
-        .nest("/{id}", task_attempt_id_router);
+    let task_attempts_router =
+        Router::new().route("/", get(get_task_attempts).post(create_task_attempt));
+    // .nest("/{id}", task_attempt_id_router);
 
     Router::new().nest("/task-attempts", task_attempts_router)
 }
