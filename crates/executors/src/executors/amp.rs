@@ -10,7 +10,7 @@
 
 // use crate::utils::shell::get_shell_command;
 
-use crate::executor_actions::executors::standard::StandardCodingAgentExecutor;
+use crate::executors::standard::StandardCodingAgentExecutor;
 
 /// An executor that uses Amp to process tasks
 pub struct AmpExecutor;

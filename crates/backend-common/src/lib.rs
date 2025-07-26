@@ -5,7 +5,6 @@ pub mod command_runner;
 pub mod db;
 pub mod deployment;
 // pub mod executor;
-pub mod executor_actions;
 pub mod models;
 pub mod services;
 pub mod utils;

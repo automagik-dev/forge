@@ -1,4 +1,4 @@
-use crate::executor_actions::executors::amp::AmpExecutor;
+use crate::executors::amp::AmpExecutor;
 
 pub enum StandardCodingAgentExecutor {
     AmpExecutor(AmpExecutor),
