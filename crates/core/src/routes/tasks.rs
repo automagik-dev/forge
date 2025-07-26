@@ -1,30 +1,44 @@
 use axum::{
-    extract::State, http::StatusCode, middleware::from_fn_with_state,
-    response::Json as ResponseJson, routing::get, Extension, Json, Router,
+    extract::{Query, State},
+    http::StatusCode,
+    middleware::from_fn_with_state,
+    response::Json as ResponseJson,
+    routing::get,
+    Extension, Json, Router,
 };
-use backend_common::{
-    app_state,
-    deployment::{self, Deployment},
-    models::{
-        api_response::ApiResponse,
-        project::Project,
-        task::{CreateTask, Task, TaskWithAttemptStatus, UpdateTask},
-    },
+use db::models::{
+    project::Project,
+    task::{CreateTask, Task, TaskWithAttemptStatus, UpdateTask},
 };
+use deployment::Deployment;
+use serde::Deserialize;
+use utils::response::ApiResponse;
 use uuid::Uuid;
 
-use crate::{deployment::DeploymentImpl, middleware::load_project_middleware};
+use crate::{
+    middleware::{load_project_middleware, load_task_middleware},
+    DeploymentImpl,
+};
 
-pub async fn get_project_tasks(
-    Extension(project): Extension<Project>,
+#[derive(Debug, Deserialize)]
+pub struct TaskQuery {
+    pub project_id: Uuid,
+}
+
+pub async fn get_tasks(
     State(deployment): State<DeploymentImpl>,
+    Query(query): Query<TaskQuery>,
 ) -> Result<ResponseJson<ApiResponse<Vec<TaskWithAttemptStatus>>>, StatusCode> {
-    match Task::find_by_project_id_with_attempt_status(&deployment.app_state().db_pool, project.id)
+    match Task::find_by_project_id_with_attempt_status(&deployment.db().pool, query.project_id)
         .await
     {
         Ok(tasks) => Ok(ResponseJson(ApiResponse::success(tasks))),
         Err(e) => {
-            tracing::error!("Failed to fetch tasks for project {}: {}", project.id, e);
+            tracing::error!(
+                "Failed to fetch tasks for project {}: {}",
+                query.project_id,
+                e
+            );
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -32,6 +46,7 @@ pub async fn get_project_tasks(
 
 pub async fn get_task(
     Extension(task): Extension<Task>,
+    State(_deployment): State<DeploymentImpl>,
 ) -> Result<ResponseJson<ApiResponse<Task>>, StatusCode> {
     Ok(ResponseJson(ApiResponse::success(task)))
 }
@@ -52,18 +67,17 @@ pub async fn create_task(
         project.id
     );
 
-    match Task::create(&deployment.app_state().db_pool, &payload, id).await {
+    match Task::create(&deployment.db().pool, &payload, id).await {
         Ok(task) => {
             // Track task creation event
             deployment
-                .app_state()
-                .track_analytics_event(
+                .track_if_analytics_allowed(
                     "task_created",
-                    Some(serde_json::json!({
+                    serde_json::json!({
                     "task_id": task.id.to_string(),
                     "project_id": project.id.to_string(),
                     "has_description": task.description.is_some(),
-                    })),
+                    }),
                 )
                 .await;
 
@@ -101,7 +115,7 @@ pub async fn create_task(
 //         parent_task_attempt: payload.parent_task_attempt,
 //     };
 //     let task = match Task::create(
-//         &deployment.app_state().db_pool,
+//         &deployment.db().pool,
 //         &create_task_payload,
 //         task_id,
 //     )
@@ -176,7 +190,6 @@ pub async fn create_task(
 // }
 
 pub async fn update_task(
-    Extension(project): Extension<Project>,
     Extension(existing_task): Extension<Task>,
     State(deployment): State<DeploymentImpl>,
     Json(payload): Json<UpdateTask>,
@@ -190,9 +203,9 @@ pub async fn update_task(
         .or(existing_task.parent_task_attempt);
 
     match Task::update(
-        &deployment.app_state().db_pool,
+        &deployment.db().pool,
         existing_task.id,
-        project.id,
+        existing_task.project_id,
         title,
         description,
         status,
@@ -209,21 +222,20 @@ pub async fn update_task(
 }
 
 pub async fn delete_task(
-    Extension(project): Extension<Project>,
     Extension(task): Extension<Task>,
     State(deployment): State<DeploymentImpl>,
 ) -> Result<ResponseJson<ApiResponse<()>>, StatusCode> {
     // Clean up all worktrees for this task before deletion
     // TODO: readd worktree cleanup
     // if let Err(e) =
-    //     execution_monitor::cleanup_task_worktrees(&deployment.app_state().db_pool, task.id).await
+    //     execution_monitor::cleanup_task_worktrees(&deployment.db().pool, task.id).await
     // {
     //     tracing::error!("Failed to cleanup worktrees for task {}: {}", task.id, e);
     //     // Continue with deletion even if cleanup fails
     // }
 
     // // Clean up all executor sessions for this task before deletion
-    // match TaskAttempt::find_by_task_id(&deployment.app_state().db_pool, task.id).await {
+    // match TaskAttempt::find_by_task_id(&deployment.db().pool, task.id).await {
     //     Ok(task_attempts) => {
     //         for attempt in task_attempts {
     //             if let Err(e) =
@@ -253,7 +265,7 @@ pub async fn delete_task(
     //     }
     // }
 
-    match Task::delete(&deployment.app_state().db_pool, task.id, project.id).await {
+    match Task::delete(&deployment.db().pool, task.id).await {
         Ok(rows_affected) => {
             if rows_affected == 0 {
                 Err(StatusCode::NOT_FOUND)
@@ -269,18 +281,15 @@ pub async fn delete_task(
 }
 
 pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
+    let task_id_router =
+        Router::new().route("/", get(get_task).put(update_task).delete(delete_task));
+    // .layer(from_fn_with_state(deployment, load_task_middleware));
+
     let inner = Router::new()
-        .route("/", get(get_project_tasks).post(create_task))
+        .route("/", get(get_tasks).post(create_task))
         // .route("/create-and-start", post(create_task_and_start))
-        .route(
-            "/{task_id}",
-            get(get_task).put(update_task).delete(delete_task),
-        )
-        .layer(from_fn_with_state(
-            deployment.app_state().clone(),
-            load_project_middleware,
-        ));
+        .nest("/{task_id}", task_id_router);
 
     // mount under /projects/:project_id/tasks
-    Router::new().nest("/projects/{project_id}/tasks", inner)
+    Router::new().nest("/tasks", inner)
 }

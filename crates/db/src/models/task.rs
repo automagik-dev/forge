@@ -252,14 +252,10 @@ ORDER BY t.created_at DESC"#,
         Ok(())
     }
 
-    pub async fn delete(pool: &SqlitePool, id: Uuid, project_id: Uuid) -> Result<u64, sqlx::Error> {
-        let result = sqlx::query!(
-            "DELETE FROM tasks WHERE id = $1 AND project_id = $2",
-            id,
-            project_id
-        )
-        .execute(pool)
-        .await?;
+    pub async fn delete(pool: &SqlitePool, id: Uuid) -> Result<u64, sqlx::Error> {
+        let result = sqlx::query!("DELETE FROM tasks WHERE id = $1", id)
+            .execute(pool)
+            .await?;
         Ok(result.rows_affected())
     }
 

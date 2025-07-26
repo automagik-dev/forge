@@ -7,7 +7,7 @@ const path = require('path');
 console.log('Preparing database for SQLx...');
 
 // Change to backend directory
-const backendDir = path.join(__dirname, '..', 'backend-common');
+const backendDir = path.join(__dirname, '..', 'crates/db');
 process.chdir(backendDir);
 
 // Create temporary database file

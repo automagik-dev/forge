@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "DELETE FROM projects WHERE id = $1",
+  "query": "DELETE FROM tasks WHERE id = $1",
   "describe": {
     "columns": [],
     "parameters": {
@@ -8,5 +8,5 @@
     },
     "nullable": []
   },
-  "hash": "a5ba908419fb3e456bdd2daca41ba06cc3212ffffb8520fc7dbbcc8b60ada314"
+  "hash": "1e339e959f8d2cdac13b3e2b452d2f718c0fd6cf6202d5c9139fb1afda123d29"
 }

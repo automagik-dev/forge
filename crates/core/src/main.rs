@@ -310,7 +310,7 @@
 
 // mod command_executor;
 // mod deployment;
-// mod middleware;
+mod middleware;
 mod routes;
 // mod utils;
 use std::{
