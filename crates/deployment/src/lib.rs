@@ -5,7 +5,7 @@ use anyhow::Error as AnyhowError;
 use async_trait::async_trait;
 use db::DBService;
 use serde_json::Value;
-use services::services::container::ContainerService;
+use services::services::{container::ContainerService, git::GitService};
 use sqlx::Error as SqlxError;
 use thiserror::Error;
 use tokio::sync::RwLock;
@@ -35,6 +35,8 @@ pub trait Deployment: Clone + Send + Sync + 'static {
     fn analytics(&self) -> &Option<AnalyticsService>;
 
     fn container(&self) -> &impl ContainerService;
+
+    fn git(&self) -> &GitService;
 
     async fn update_sentry_scope(&self) -> Result<(), DeploymentError> {
         let user_id = self.user_id();

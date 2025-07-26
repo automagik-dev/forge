@@ -1,4 +1,5 @@
 use anyhow::Error as AnyhowError;
+use db::models::task_attempt::TaskAttempt;
 use thiserror::Error;
 
 pub type ContainerRef = String;
@@ -12,5 +13,9 @@ pub enum ContainerError {
 pub trait ContainerService {
     fn new() -> Self;
 
-    fn create(&self) -> Result<ContainerRef, ContainerError>;
+    fn create(
+        &self,
+        task_attempt: TaskAttempt,
+        label: String,
+    ) -> Result<ContainerRef, ContainerError>;
 }

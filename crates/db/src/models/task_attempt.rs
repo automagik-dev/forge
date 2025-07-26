@@ -102,13 +102,6 @@ pub struct TaskAttempt {
 
 #[derive(Debug, Deserialize, TS)]
 #[ts(export)]
-pub struct CreateTaskAttempt {
-    pub executor: Option<String>, // Optional executor name (defaults to "echo")
-    pub base_branch: Option<String>, // Optional base branch to checkout (defaults to current HEAD)
-}
-
-#[derive(Debug, Deserialize, TS)]
-#[ts(export)]
 pub struct UpdateTaskAttempt {
     // Currently no updateable fields, but keeping struct for API compatibility
 }
@@ -128,34 +121,6 @@ pub struct CreatePrParams<'a> {
 #[ts(export)]
 pub struct CreateFollowUpAttempt {
     pub prompt: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub enum DiffChunkType {
-    Equal,
-    Insert,
-    Delete,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct DiffChunk {
-    pub chunk_type: DiffChunkType,
-    pub content: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct FileDiff {
-    pub path: String,
-    pub chunks: Vec<DiffChunk>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct WorktreeDiff {
-    pub files: Vec<FileDiff>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -209,7 +174,19 @@ pub struct TaskAttemptContext {
     pub project: Project,
 }
 
+#[derive(Debug, Deserialize, TS)]
+#[ts(export)]
+pub struct CreateTaskAttempt {
+    pub executor: String,
+    pub branch: String,
+    pub base_branch: String,
+}
+
 impl TaskAttempt {
+    pub async fn parent_task(&self, pool: &SqlitePool) -> Result<Option<Task>, sqlx::Error> {
+        Task::find_by_id(pool, self.task_id).await
+    }
+
     /// Fetch all task attempts, optionally filtered by task_id. Newest first.
     pub async fn fetch_all(
         pool: &SqlitePool,
@@ -466,42 +443,42 @@ impl TaskAttempt {
     //         .collect())
     // }
 
-    // pub async fn create(
-    //     pool: &SqlitePool,
-    //     data: &CreateTaskAttempt,
-    //     task_id: Uuid,
-    // ) -> Result<Self, TaskAttemptError> {
-    //     let attempt_id = Uuid::new_v4();
-    //     // let prefixed_id = format!("vibe-kanban-{}", attempt_id);
+    pub async fn create(
+        pool: &SqlitePool,
+        data: &CreateTaskAttempt,
+        task_id: Uuid,
+    ) -> Result<Self, TaskAttemptError> {
+        let attempt_id = Uuid::new_v4();
+        // let prefixed_id = format!("vibe-kanban-{}", attempt_id);
 
-    //     // First, get the task to get the project_id
-    //     let task = Task::find_by_id(pool, task_id)
-    //         .await?
-    //         .ok_or(TaskAttemptError::TaskNotFound)?;
+        // First, get the task to get the project_id
+        let task = Task::find_by_id(pool, task_id)
+            .await?
+            .ok_or(TaskAttemptError::TaskNotFound)?;
 
-    //     // Insert the record into the database
-    //     Ok(sqlx::query_as!(
-    //         TaskAttempt,
-    //         r#"INSERT INTO task_attempts (id, task_id, container_ref, branch, base_branch, merge_commit, executor, pr_url, pr_number, pr_status, pr_merged_at, worktree_deleted, setup_completed_at)
-    //            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-    //            RETURNING id as "id!: Uuid", task_id as "task_id!: Uuid", container_ref, branch, base_branch, merge_commit, executor, pr_url, pr_number, pr_status, pr_merged_at as "pr_merged_at: DateTime<Utc>", worktree_deleted as "worktree_deleted!: bool", setup_completed_at as "setup_completed_at: DateTime<Utc>", created_at as "created_at!: DateTime<Utc>", updated_at as "updated_at!: DateTime<Utc>""#,
-    //         attempt_id,
-    //         task_id,
-    //         Option::<String>::None,
-    //         task_attempt_branch,
-    //         resolved_base_branch,
-    //         Option::<String>::None, // merge_commit is always None during creation
-    //         data.executor,
-    //         Option::<String>::None, // pr_url is None during creation
-    //         Option::<i64>::None, // pr_number is None during creation
-    //         Option::<String>::None, // pr_status is None during creation
-    //         Option::<DateTime<Utc>>::None, // pr_merged_at is None during creation
-    //         false, // worktree_deleted is false during creation
-    //         Option::<DateTime<Utc>>::None // setup_completed_at is None during creation
-    //     )
-    //     .fetch_one(pool)
-    //     .await?)
-    // }
+        // Insert the record into the database
+        Ok(sqlx::query_as!(
+            TaskAttempt,
+            r#"INSERT INTO task_attempts (id, task_id, container_ref, branch, base_branch, merge_commit, executor, pr_url, pr_number, pr_status, pr_merged_at, worktree_deleted, setup_completed_at)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+               RETURNING id as "id!: Uuid", task_id as "task_id!: Uuid", container_ref, branch, base_branch, merge_commit, executor, pr_url, pr_number, pr_status, pr_merged_at as "pr_merged_at: DateTime<Utc>", worktree_deleted as "worktree_deleted!: bool", setup_completed_at as "setup_completed_at: DateTime<Utc>", created_at as "created_at!: DateTime<Utc>", updated_at as "updated_at!: DateTime<Utc>""#,
+            attempt_id,
+            task_id,
+            Option::<String>::None, // Container isn't known yet
+            data.branch,
+            data.base_branch,
+            Option::<String>::None, // merge_commit is always None during creation
+            data.executor,
+            Option::<String>::None, // pr_url is None during creation
+            Option::<i64>::None, // pr_number is None during creation
+            Option::<String>::None, // pr_status is None during creation
+            Option::<DateTime<Utc>>::None, // pr_merged_at is None during creation
+            false, // worktree_deleted is false during creation
+            Option::<DateTime<Utc>>::None // setup_completed_at is None during creation
+        )
+        .fetch_one(pool)
+        .await?)
+    }
 
     // pub async fn create(
     //     pool: &SqlitePool,

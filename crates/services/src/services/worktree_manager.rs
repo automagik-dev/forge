@@ -6,6 +6,7 @@ use std::{
 
 use git2::{Error as GitError, Repository, WorktreeAddOptions};
 use tracing::{debug, info, warn};
+use utils::{is_wsl2, shell::get_shell_command};
 
 // Global synchronization for worktree creation to prevent race conditions
 lazy_static::lazy_static! {

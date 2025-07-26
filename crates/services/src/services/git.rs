@@ -5,7 +5,11 @@ use git2::{
     RemoteCallbacks, Repository, WorktreeAddOptions, build::CheckoutBuilder,
 };
 use regex;
+use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
+use ts_rs::TS;
+
+use crate::services::worktree_manager::WorktreeManager;
 
 // use crate::{
 //     models::task_attempt::{DiffChunk, DiffChunkType, FileDiff, WorktreeDiff},
@@ -56,48 +60,76 @@ impl From<std::io::Error> for GitServiceError {
 }
 
 /// Service for managing Git operations in task execution workflows
-pub struct GitService {
-    repo_path: PathBuf,
+#[derive(Clone)]
+pub struct GitService {}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct WorktreeDiff {
+    pub files: Vec<FileDiff>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct FileDiff {
+    pub path: String,
+    pub chunks: Vec<DiffChunk>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct DiffChunk {
+    pub chunk_type: DiffChunkType,
+    pub content: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub enum DiffChunkType {
+    Equal,
+    Insert,
+    Delete,
 }
 
 impl GitService {
     /// Create a new GitService for the given repository path
-    pub fn new<P: AsRef<Path>>(repo_path: P) -> Result<Self, GitServiceError> {
-        let repo_path = repo_path.as_ref().to_path_buf();
+    pub fn new() -> Self {
+        // let repo_path = repo_path.as_ref().to_path_buf();
 
-        // Validate that the path exists and is a git repository
-        if !repo_path.exists() {
-            return Err(GitServiceError::InvalidPath(format!(
-                "Repository path does not exist: {}",
-                repo_path.display()
-            )));
-        }
+        // // Validate that the path exists and is a git repository
+        // if !repo_path.exists() {
+        //     return Err(GitServiceError::InvalidPath(format!(
+        //         "Repository path does not exist: {}",
+        //         repo_path.display()
+        //     )));
+        // }
 
-        // Try to open the repository to validate it
-        Repository::open(&repo_path).map_err(|e| {
-            GitServiceError::InvalidRepository(format!(
-                "Failed to open repository at {}: {}",
-                repo_path.display(),
-                e
-            ))
-        })?;
+        // // Try to open the repository to validate it
+        // Repository::open(&repo_path).map_err(|e| {
+        //     GitServiceError::InvalidRepository(format!(
+        //         "Failed to open repository at {}: {}",
+        //         repo_path.display(),
+        //         e
+        //     ))
+        // })?;
 
-        Ok(Self { repo_path })
+        Self {}
     }
 
     /// Open the repository
-    fn open_repo(&self) -> Result<Repository, GitServiceError> {
-        Repository::open(&self.repo_path).map_err(GitServiceError::from)
+    fn open_repo(&self, repo_path: &PathBuf) -> Result<Repository, GitServiceError> {
+        Repository::open(repo_path).map_err(GitServiceError::from)
     }
 
     /// Create a worktree with a new branch
     pub fn create_worktree(
         &self,
+        repo_path: &PathBuf,
         branch_name: &str,
         worktree_path: &Path,
         base_branch: Option<&str>,
     ) -> Result<(), GitServiceError> {
-        let repo = self.open_repo()?;
+        let repo = self.open_repo(repo_path)?;
 
         // Ensure parent directory exists
         if let Some(parent) = worktree_path.parent() {
@@ -143,7 +175,7 @@ impl GitService {
             .and_then(|n| n.to_str())
             .unwrap_or(branch_name);
         if let Err(e) =
-            WorktreeManager::fix_worktree_commondir_for_windows_wsl(&self.repo_path, worktree_name)
+            WorktreeManager::fix_worktree_commondir_for_windows_wsl(repo_path, worktree_name)
         {
             tracing::warn!("Failed to fix worktree commondir for Windows/WSL: {}", e);
         }
@@ -190,7 +222,8 @@ impl GitService {
     /// Merge changes from a worktree branch back to the main repository
     pub fn merge_changes(
         &self,
-        worktree_path: &Path,
+        repo_path: &PathBuf,
+        worktree_path: &PathBuf,
         branch_name: &str,
         base_branch_name: &str,
         commit_message: &str,
@@ -229,7 +262,7 @@ impl GitService {
         )?;
 
         // Fix: Update main repo's HEAD if it's pointing to the base branch
-        let main_repo = self.open_repo()?;
+        let main_repo = self.open_repo(repo_path)?;
         let refname = format!("refs/heads/{}", base_branch_name);
 
         if let Ok(main_head) = main_repo.head() {
@@ -332,12 +365,13 @@ impl GitService {
     /// Rebase a worktree branch onto a new base
     pub fn rebase_branch(
         &self,
+        repo_path: &PathBuf,
         worktree_path: &Path,
         new_base_branch: Option<&str>,
         old_base_branch: &str,
     ) -> Result<String, GitServiceError> {
         let worktree_repo = Repository::open(worktree_path)?;
-        let main_repo = self.open_repo()?;
+        let main_repo = self.open_repo(repo_path)?;
 
         // Check if there's an existing rebase in progress and abort it
         let state = worktree_repo.state();
@@ -460,6 +494,7 @@ impl GitService {
     /// Get enhanced diff for task attempts (from merge commit or worktree)
     pub fn get_enhanced_diff(
         &self,
+        repo_path: &PathBuf,
         worktree_path: &Path,
         merge_commit_id: Option<&str>,
         base_branch: &str,
@@ -468,10 +503,10 @@ impl GitService {
 
         if let Some(merge_commit_id) = merge_commit_id {
             // Task attempt has been merged - show the diff from the merge commit
-            self.get_merged_diff(merge_commit_id, &mut files)?;
+            self.get_merged_diff(repo_path, merge_commit_id, &mut files)?;
         } else {
             // Task attempt not yet merged - get worktree diff
-            self.get_worktree_diff(worktree_path, base_branch, &mut files)?;
+            self.get_worktree_diff(repo_path, worktree_path, base_branch, &mut files)?;
         }
 
         Ok(WorktreeDiff { files })
@@ -480,10 +515,11 @@ impl GitService {
     /// Get diff from a merge commit
     fn get_merged_diff(
         &self,
+        repo_path: &PathBuf,
         merge_commit_id: &str,
         files: &mut Vec<FileDiff>,
     ) -> Result<(), GitServiceError> {
-        let main_repo = self.open_repo()?;
+        let main_repo = self.open_repo(repo_path)?;
         let merge_commit = main_repo.find_commit(git2::Oid::from_str(merge_commit_id)?)?;
 
         // A merge commit has multiple parents - first parent is the main branch before merge,
@@ -570,12 +606,13 @@ impl GitService {
     /// Get diff for a worktree (before merge)
     fn get_worktree_diff(
         &self,
+        repo_path: &PathBuf,
         worktree_path: &Path,
         base_branch: &str,
         files: &mut Vec<FileDiff>,
     ) -> Result<(), GitServiceError> {
         let worktree_repo = Repository::open(worktree_path)?;
-        let main_repo = self.open_repo()?;
+        let main_repo = self.open_repo(repo_path)?;
 
         // Get the base branch commit
         let base_branch_ref = main_repo
@@ -971,8 +1008,8 @@ impl GitService {
     }
 
     /// Get the default branch name for the repository
-    pub fn get_default_branch_name(&self) -> Result<String, GitServiceError> {
-        let repo = self.open_repo()?;
+    pub fn get_default_branch_name(&self, repo_path: &PathBuf) -> Result<String, GitServiceError> {
+        let repo = self.open_repo(repo_path)?;
 
         let result = match repo.head() {
             Ok(head_ref) => Ok(head_ref.shorthand().unwrap_or("main").to_string()),
@@ -990,10 +1027,11 @@ impl GitService {
     /// Recreate a worktree from an existing branch (for cold task support)
     pub async fn recreate_worktree_from_branch(
         &self,
+        repo_path: &PathBuf,
         branch_name: &str,
         stored_worktree_path: &Path,
     ) -> Result<PathBuf, GitServiceError> {
-        let repo = self.open_repo()?;
+        let repo = self.open_repo(repo_path)?;
 
         // Verify branch exists before proceeding
         let _branch = repo
@@ -1067,8 +1105,11 @@ impl GitService {
     }
 
     /// Extract GitHub owner and repo name from git repo path
-    pub fn get_github_repo_info(&self) -> Result<(String, String), GitServiceError> {
-        let repo = self.open_repo()?;
+    pub fn get_github_repo_info(
+        &self,
+        repo_path: &PathBuf,
+    ) -> Result<(String, String), GitServiceError> {
+        let repo = self.open_repo(repo_path)?;
         let remote = repo.find_remote("origin").map_err(|_| {
             GitServiceError::InvalidRepository("No 'origin' remote found".to_string())
         })?;

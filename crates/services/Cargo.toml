@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 utils = { path = "../utils" }
+db = { path = "../db" }
 tokio = { workspace = true }
 tokio-util = { version = "0.7", features = ["io"] }
 bytes = "1.0"

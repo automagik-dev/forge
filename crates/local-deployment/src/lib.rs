@@ -7,6 +7,7 @@ use services::services::{
     analytics::{AnalyticsConfig, AnalyticsService, generate_user_id},
     config::Config,
     container::ContainerService,
+    git::GitService,
     sentry::SentryService,
 };
 use tokio::sync::RwLock;
@@ -24,6 +25,7 @@ pub struct LocalDeployment {
     db: DBService,
     analytics: Option<AnalyticsService>,
     container: LocalContainerService,
+    git: GitService,
 }
 
 #[async_trait]
@@ -35,6 +37,7 @@ impl Deployment for LocalDeployment {
         let db = DBService::new().await?;
         let analytics = AnalyticsConfig::new().map(AnalyticsService::new);
         let container = LocalContainerService::new();
+        let git = GitService::new();
 
         Ok(Self {
             config,
@@ -43,6 +46,7 @@ impl Deployment for LocalDeployment {
             db,
             analytics,
             container,
+            git,
         })
     }
 
@@ -72,5 +76,9 @@ impl Deployment for LocalDeployment {
 
     fn container(&self) -> &impl ContainerService {
         &self.container
+    }
+
+    fn git(&self) -> &GitService {
+        &self.git
     }
 }
