@@ -27,7 +27,7 @@ impl Deployment for LocalDeployment {
         let sentry = SentryService::new();
         let user_id = generate_user_id();
         let db = DBProvider::new().await?;
-        let analytics = Some(AnalyticsService::new(AnalyticsConfig::new()));
+        let analytics = AnalyticsConfig::new().map(AnalyticsService::new);
 
         Ok(Self {
             config,
