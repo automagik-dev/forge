@@ -11,3 +11,4 @@ thiserror = "2.0.12"
 anyhow.workspace = true
 tokio.workspace = true
 sqlx = "0.8.6"
+serde_json.workspace = true

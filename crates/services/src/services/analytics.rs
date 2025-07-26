@@ -5,31 +5,29 @@ use std::{
 };
 
 use os_info;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 #[derive(Debug, Clone)]
 pub struct AnalyticsConfig {
     pub posthog_api_key: String,
     pub posthog_api_endpoint: String,
-    pub enabled: bool,
 }
 
 impl AnalyticsConfig {
-    pub fn new(user_enabled: bool) -> Self {
+    pub fn new() -> Self {
         let api_key = option_env!("POSTHOG_API_KEY").unwrap_or_default();
         let api_endpoint = option_env!("POSTHOG_API_ENDPOINT").unwrap_or_default();
 
-        let enabled = user_enabled && !api_key.is_empty() && !api_endpoint.is_empty();
+        // let enabled = user_enabled && !api_key.is_empty() && !api_endpoint.is_empty();
 
         Self {
             posthog_api_key: api_key.to_string(),
             posthog_api_endpoint: api_endpoint.to_string(),
-            enabled,
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct AnalyticsService {
     config: AnalyticsConfig,
     client: reqwest::Client,
@@ -43,12 +41,6 @@ impl AnalyticsService {
             .unwrap();
 
         Self { config, client }
-    }
-
-    pub fn is_enabled(&self) -> bool {
-        self.config.enabled
-            && !self.config.posthog_api_key.is_empty()
-            && !self.config.posthog_api_endpoint.is_empty()
     }
 
     pub fn track_event(&self, user_id: &str, event_name: &str, properties: Option<Value>) {

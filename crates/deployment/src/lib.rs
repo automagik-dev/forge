@@ -3,7 +3,8 @@ use std::sync::Arc;
 use anyhow::Error as AnyhowError;
 use async_trait::async_trait;
 use db::DBProvider;
-use services::services::{config::Config, sentry::SentryService};
+use serde_json::Value;
+use services::services::{analytics::AnalyticsService, config::Config, sentry::SentryService};
 use sqlx::Error as SqlxError;
 use thiserror::Error;
 use tokio::sync::RwLock;
@@ -30,6 +31,8 @@ pub trait Deployment: Clone + Send + Sync + 'static {
 
     fn db(&self) -> &DBProvider;
 
+    fn analytics(&self) -> &Option<AnalyticsService>;
+
     async fn update_sentry_scope(&self) -> Result<(), DeploymentError> {
         let user_id = self.user_id();
         let username = self.config().read().await.github.username.clone();
@@ -40,5 +43,15 @@ pub trait Deployment: Clone + Send + Sync + 'static {
             .await;
 
         Ok(())
+    }
+
+    async fn track_if_analytics_allowed(&self, event_name: &str, properties: Value) {
+        if let Some(true) = self.config().read().await.analytics_enabled {
+            // Does the user allow analytics?
+            if let Some(analytics) = self.analytics() {
+                // Is analytics setup?
+                analytics.track_event(self.user_id(), event_name, Some(properties.clone()));
+            }
+        }
     }
 }

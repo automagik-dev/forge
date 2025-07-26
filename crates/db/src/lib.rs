@@ -7,16 +7,16 @@ pub mod models;
 
 #[derive(Clone)]
 pub struct DBProvider {
-    pool: Pool<Sqlite>,
+    pub pool: Pool<Sqlite>,
 }
 
 impl DBProvider {
     pub async fn new() -> Result<DBProvider, Error> {
-        let pool = Self::get_pool().await?;
+        let pool = Self::create_pool().await?;
         Ok(DBProvider { pool })
     }
 
-    async fn get_pool() -> Result<Pool<Sqlite>, Error> {
+    async fn create_pool() -> Result<Pool<Sqlite>, Error> {
         let database_url = format!(
             "sqlite://{}",
             asset_dir().join("db.sqlite").to_string_lossy()

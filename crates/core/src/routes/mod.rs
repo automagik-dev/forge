@@ -10,7 +10,7 @@ pub mod config;
 // pub mod filesystem;
 // pub mod github;
 pub mod health;
-// pub mod projects;
+pub mod projects;
 // pub mod stream;
 // pub mod task_attempts;
 // pub mod task_templates;
@@ -21,7 +21,7 @@ pub fn router(deployment: DeploymentImpl) -> IntoMakeService<Router> {
     let base_routes = Router::new()
         .route("/health", get(health::health_check))
         .merge(config::router())
-        // .merge(projects::router())
+        .merge(projects::router())
         // .merge(tasks::router(&deployment))
         // .merge(task_attempts::router(&deployment))
         .with_state(deployment);

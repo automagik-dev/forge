@@ -7,26 +7,22 @@ use axum::{
     routing::{get, post},
     Extension, Json, Router,
 };
-use backend_common::{
-    deployment::Deployment,
-    models::{
-        api_response::ApiResponse,
-        config::{EditorConfig, EditorType},
-        project::{
-            CreateBranch, CreateProject, GitBranch, Project, ProjectWithBranch, SearchMatchType,
-            SearchResult, UpdateProject,
-        },
-    },
+use db::models::project::{
+    CreateBranch, CreateProject, GitBranch, Project, ProjectWithBranch, SearchMatchType,
+    SearchResult, UpdateProject,
 };
+use deployment::Deployment;
 use ignore::WalkBuilder;
+use services::services::config::{EditorConfig, EditorType};
+use utils::response::ApiResponse;
 use uuid::Uuid;
 
-use crate::deployment::DeploymentImpl;
+use crate::DeploymentImpl;
 
 pub async fn get_projects(
     State(deployment): State<DeploymentImpl>,
 ) -> Result<ResponseJson<ApiResponse<Vec<Project>>>, StatusCode> {
-    match Project::find_all(&deployment.app_state().db_pool).await {
+    match Project::find_all(&deployment.db().pool).await {
         Ok(projects) => Ok(ResponseJson(ApiResponse::success(projects))),
         Err(e) => {
             tracing::error!("Failed to fetch projects: {}", e);
@@ -105,9 +101,7 @@ pub async fn create_project(
     tracing::debug!("Creating project '{}'", payload.name);
 
     // Check if git repo path is already used by another project
-    match Project::find_by_git_repo_path(&deployment.app_state().db_pool, &payload.git_repo_path)
-        .await
-    {
+    match Project::find_by_git_repo_path(&deployment.db().pool, &payload.git_repo_path).await {
         Ok(Some(_)) => {
             return Ok(ResponseJson(ApiResponse::error(
                 "A project with this git repository path already exists",
@@ -186,19 +180,18 @@ pub async fn create_project(
         }
     }
 
-    match Project::create(&deployment.app_state().db_pool, &payload, id).await {
+    match Project::create(&deployment.db().pool, &payload, id).await {
         Ok(project) => {
             // Track project creation event
             deployment
-                .app_state()
-                .track_analytics_event(
+                .track_if_analytics_allowed(
                     "project_created",
-                    Some(serde_json::json!({
+                    serde_json::json!({
                         "project_id": project.id.to_string(),
                         "use_existing_repo": payload.use_existing_repo,
                         "has_setup_script": payload.setup_script.is_some(),
                         "has_dev_script": payload.dev_script.is_some(),
-                    })),
+                    }),
                 )
                 .await;
 
@@ -220,7 +213,7 @@ pub async fn update_project(
     if let Some(new_git_repo_path) = &payload.git_repo_path {
         if new_git_repo_path != &existing_project.git_repo_path {
             match Project::find_by_git_repo_path_excluding_id(
-                &deployment.app_state().db_pool,
+                &deployment.db().pool,
                 new_git_repo_path,
                 existing_project.id,
             )
@@ -257,7 +250,7 @@ pub async fn update_project(
     let git_repo_path = git_repo_path.unwrap_or(existing_project.git_repo_path);
 
     match Project::update(
-        &deployment.app_state().db_pool,
+        &deployment.db().pool,
         existing_project.id,
         name,
         git_repo_path,
@@ -279,7 +272,7 @@ pub async fn delete_project(
     Extension(project): Extension<Project>,
     State(deployment): State<DeploymentImpl>,
 ) -> Result<ResponseJson<ApiResponse<()>>, StatusCode> {
-    match Project::delete(&deployment.app_state().db_pool, project.id).await {
+    match Project::delete(&deployment.db().pool, project.id).await {
         Ok(rows_affected) => {
             if rows_affected == 0 {
                 Err(StatusCode::NOT_FOUND)
@@ -306,7 +299,7 @@ pub async fn open_project_in_editor(
 ) -> Result<ResponseJson<ApiResponse<()>>, StatusCode> {
     // Get editor command from config or override
     let editor_command = {
-        let config_guard = deployment.app_state().get_config().read().await;
+        let config_guard = deployment.config().read().await;
         if let Some(ref request) = payload {
             if let Some(ref editor_type) = request.editor_type {
                 // Create a temporary editor config with the override
