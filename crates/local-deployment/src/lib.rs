@@ -1,12 +1,15 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use db::DBService;
+use db::{
+    DBService,
+    models::{task::Task, task_attempt::TaskAttempt},
+};
 use deployment::{Deployment, DeploymentError};
 use services::services::{
     analytics::{AnalyticsConfig, AnalyticsService, generate_user_id},
     config::Config,
-    container::ContainerService,
+    container::{ContainerRef, ContainerService},
     git::GitService,
     sentry::SentryService,
 };
@@ -80,5 +83,40 @@ impl Deployment for LocalDeployment {
 
     fn git(&self) -> &GitService {
         &self.git
+    }
+
+    async fn launch_attempt(
+        &self,
+        task_attempt: &TaskAttempt,
+    ) -> Result<ContainerRef, DeploymentError> {
+        let task = task_attempt
+            .parent_task(&self.db().pool)
+            .await?
+            .ok_or(sqlx::Error::RowNotFound)?;
+
+        let task_branch_name =
+            LocalContainerService::dir_name_from_task_attempt(&task_attempt.id, &task.title);
+        let worktree_path = LocalContainerService::get_worktree_base_dir().join(&task_branch_name);
+
+        let project = task
+            .parent_project(&self.db().pool)
+            .await?
+            .ok_or(sqlx::Error::RowNotFound)?;
+
+        let _ = &self.git.create_worktree(
+            &project.git_repo_path,
+            &task_branch_name,
+            &worktree_path,
+            Some(&task_attempt.base_branch),
+        )?;
+
+        TaskAttempt::update_container_ref(
+            &self.db().pool,
+            task_attempt.id,
+            &worktree_path.to_string_lossy(),
+        )
+        .await?;
+
+        Ok("Ref".to_string())
     }
 }

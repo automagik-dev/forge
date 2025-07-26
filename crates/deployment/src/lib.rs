@@ -3,9 +3,12 @@ use std::sync::Arc;
 use ::services::services::{analytics::AnalyticsService, config::Config, sentry::SentryService};
 use anyhow::Error as AnyhowError;
 use async_trait::async_trait;
-use db::DBService;
+use db::{DBService, models::task_attempt::TaskAttempt};
 use serde_json::Value;
-use services::services::{container::ContainerService, git::GitService};
+use services::services::{
+    container::{ContainerRef, ContainerService},
+    git::{GitService, GitServiceError},
+};
 use sqlx::Error as SqlxError;
 use thiserror::Error;
 use tokio::sync::RwLock;
@@ -16,6 +19,8 @@ pub enum DeploymentError {
     Sqlx(#[from] SqlxError),
     #[error(transparent)]
     Other(#[from] AnyhowError), // Catches any unclassified errors
+    #[error(transparent)]
+    GitServiceError(#[from] GitServiceError),
 }
 
 #[async_trait]
@@ -37,6 +42,11 @@ pub trait Deployment: Clone + Send + Sync + 'static {
     fn container(&self) -> &impl ContainerService;
 
     fn git(&self) -> &GitService;
+
+    async fn launch_attempt(
+        &self,
+        task_attempt: &TaskAttempt,
+    ) -> Result<ContainerRef, DeploymentError>;
 
     async fn update_sentry_scope(&self) -> Result<(), DeploymentError> {
         let user_id = self.user_id();

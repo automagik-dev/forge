@@ -280,6 +280,23 @@ impl TaskAttempt {
         })
     }
 
+    /// Update container reference
+    pub async fn update_container_ref(
+        pool: &SqlitePool,
+        attempt_id: Uuid,
+        container_ref: &str,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+        "UPDATE task_attempts SET container_ref = $1, updated_at = datetime('now') WHERE id = $2",
+        container_ref,
+        attempt_id
+    )
+    .execute(pool)
+    .await?;
+
+        Ok(())
+    }
+
     // /// Helper function to mark a worktree as deleted in the database
     // pub async fn mark_worktree_deleted(
     //     pool: &SqlitePool,

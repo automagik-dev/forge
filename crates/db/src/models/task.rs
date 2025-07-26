@@ -4,6 +4,8 @@ use sqlx::{FromRow, SqlitePool, Type};
 use ts_rs::TS;
 use uuid::Uuid;
 
+use crate::models::project::Project;
+
 #[derive(Debug, Clone, Type, Serialize, Deserialize, PartialEq, TS)]
 #[sqlx(type_name = "task_status", rename_all = "lowercase")]
 #[serde(rename_all = "lowercase")]
@@ -75,6 +77,10 @@ pub struct UpdateTask {
 }
 
 impl Task {
+    pub async fn parent_project(&self, pool: &SqlitePool) -> Result<Option<Project>, sqlx::Error> {
+        Project::find_by_id(pool, self.project_id).await
+    }
+
     pub async fn find_by_project_id_with_attempt_status(
         pool: &SqlitePool,
         project_id: Uuid,

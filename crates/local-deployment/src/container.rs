@@ -1,10 +1,17 @@
 use db::models::task_attempt::TaskAttempt;
 use services::services::container::{ContainerError, ContainerRef, ContainerService};
+use utils::text::{git_branch_id, short_uuid};
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct LocalContainerService {}
 
 impl LocalContainerService {
+    pub fn dir_name_from_task_attempt(attempt_id: &Uuid, task_title: &str) -> String {
+        let task_title_id = git_branch_id(task_title);
+        format!("vk-{}-{}", short_uuid(attempt_id), task_title_id)
+    }
+
     /// Get the base directory for vibe-kanban worktrees
     pub fn get_worktree_base_dir() -> std::path::PathBuf {
         let dir_name = if cfg!(debug_assertions) {

@@ -212,7 +212,7 @@ pub async fn update_project(
 ) -> Result<ResponseJson<ApiResponse<Project>>, StatusCode> {
     // If git_repo_path is being changed, check if the new path is already used by another project
     if let Some(new_git_repo_path) = &payload.git_repo_path {
-        if new_git_repo_path != &existing_project.git_repo_path {
+        if new_git_repo_path != &existing_project.git_repo_path.to_string_lossy() {
             match Project::find_by_git_repo_path_excluding_id(
                 &deployment.db().pool,
                 new_git_repo_path,
@@ -248,7 +248,8 @@ pub async fn update_project(
     } = payload;
 
     let name = name.unwrap_or(existing_project.name);
-    let git_repo_path = git_repo_path.unwrap_or(existing_project.git_repo_path);
+    let git_repo_path =
+        git_repo_path.unwrap_or(existing_project.git_repo_path.to_string_lossy().to_string());
 
     match Project::update(
         &deployment.db().pool,
@@ -339,7 +340,7 @@ pub async fn open_project_in_editor(
                 "Opened editor ({}) for project {} at path: {}",
                 editor_command.join(" "),
                 project.id,
-                project.git_repo_path
+                project.git_repo_path.to_string_lossy()
             );
             Ok(ResponseJson(ApiResponse::success(())))
         }
@@ -369,7 +370,7 @@ pub async fn search_project_files(
     };
 
     // Search files in the project repository
-    match search_files_in_repo(&project.git_repo_path, query).await {
+    match search_files_in_repo(&project.git_repo_path.to_string_lossy(), query).await {
         Ok(results) => Ok(ResponseJson(ApiResponse::success(results))),
         Err(e) => {
             tracing::error!("Failed to search files: {}", e);

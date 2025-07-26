@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use chrono::{DateTime, Utc};
 use git2::{BranchType, Repository};
 use serde::{Deserialize, Serialize};
@@ -10,7 +12,7 @@ use uuid::Uuid;
 pub struct Project {
     pub id: Uuid,
     pub name: String,
-    pub git_repo_path: String,
+    pub git_repo_path: PathBuf,
     pub setup_script: Option<String>,
     pub dev_script: Option<String>,
     pub cleanup_script: Option<String>,
@@ -47,7 +49,7 @@ pub struct UpdateProject {
 pub struct ProjectWithBranch {
     pub id: Uuid,
     pub name: String,
-    pub git_repo_path: String,
+    pub git_repo_path: PathBuf,
     pub setup_script: Option<String>,
     pub dev_script: Option<String>,
     pub cleanup_script: Option<String>,
