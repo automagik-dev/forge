@@ -13,7 +13,7 @@
 use async_trait::async_trait;
 use command_group::AsyncGroupChild;
 
-use crate::executors::{Executor, ExecutorError, standard::StandardCodingAgentExecutor};
+use crate::executors::{ExecutorError, standard::StandardCodingAgentExecutor};
 
 /// An executor that uses Amp to process tasks
 pub struct AmpExecutor;

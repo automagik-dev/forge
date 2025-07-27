@@ -1,4 +1,7 @@
-use crate::actions::ExecutorAction;
+use async_trait::async_trait;
+use command_group::AsyncGroupChild;
+
+use crate::{actions::ExecutorAction, executors::ExecutorError};
 
 pub enum ScriptRequestLanguage {
     Bash,
@@ -16,4 +19,9 @@ pub struct ScriptRequest {
     pub context: ScriptContext,
 }
 
-// impl ExecutorAction for ScriptRequest {}
+#[async_trait]
+impl ExecutorAction for ScriptRequest {
+    async fn spawn(&self) -> Result<AsyncGroupChild, ExecutorError> {
+        todo!()
+    }
+}

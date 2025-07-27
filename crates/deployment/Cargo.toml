@@ -12,3 +12,6 @@ anyhow.workspace = true
 tokio.workspace = true
 sqlx = "0.8.6"
 serde_json.workspace = true
+axum.workspace = true
+tracing = { workspace = true }
+

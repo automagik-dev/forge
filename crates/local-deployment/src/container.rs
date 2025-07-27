@@ -9,7 +9,7 @@ use db::{
         task_attempt::TaskAttempt,
     },
 };
-use executors::actions::{ExecutorActions, script::ScriptContext};
+use executors::actions::{ExecutorAction, ExecutorActions, script::ScriptContext};
 use services::services::{
     container::{ContainerError, ContainerRef, ContainerService},
     git::GitService,
@@ -134,7 +134,7 @@ impl ContainerService for LocalContainerService {
             ExecutionProcess::create(&self.db.pool, &create_execution_process, Uuid::new_v4())
                 .await?;
 
-        // executor_action
+        let child = executor_action.spawn().await;
 
         return Err(ContainerError::Other(anyhow!("test")));
     }

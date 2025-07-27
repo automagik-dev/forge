@@ -7,7 +7,7 @@ use axum::{
     Extension, Json, Router,
 };
 use db::models::task_attempt::{CreateTaskAttempt, TaskAttempt};
-use deployment::Deployment;
+use deployment::{Deployment, DeploymentError};
 use executors::{
     actions::{
         script::{ScriptContext, ScriptRequest, ScriptRequestLanguage},
@@ -20,7 +20,7 @@ use executors::{
 };
 use serde::{Deserialize, Serialize};
 use services::services::container::{ContainerRef, ContainerService};
-use sqlx::SqlitePool;
+use sqlx::{sqlite::SqliteError, Error as SqlxError, SqlitePool};
 use ts_rs::TS;
 use utils::response::ApiResponse;
 use uuid::Uuid;
@@ -247,7 +247,7 @@ pub struct CreateTaskAttemptBody {
 pub async fn create_task_attempt(
     State(deployment): State<DeploymentImpl>,
     Json(payload): Json<CreateTaskAttemptBody>,
-) -> Result<ResponseJson<ApiResponse<TaskAttempt>>, StatusCode> {
+) -> Result<ResponseJson<ApiResponse<TaskAttempt>>, DeploymentError> {
     let executor = payload
         .executor
         .unwrap_or(deployment.config().read().await.executor.to_string());
@@ -260,29 +260,22 @@ pub async fn create_task_attempt(
         },
         payload.task_id,
     )
-    .await
-    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    .await?;
 
     // Create container
-    let container_ref: ContainerRef = deployment
-        .container()
-        .create(&task_attempt)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let container_ref: ContainerRef = deployment.container().create(&task_attempt).await?;
 
     // Get parent task
     let task = task_attempt
         .parent_task(&deployment.db().pool)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+        .await?
+        .ok_or(SqlxError::RowNotFound)?;
 
     // Get parent project
     let project = task
         .parent_project(&deployment.db().pool)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+        .await?
+        .ok_or(SqlxError::RowNotFound)?;
 
     // Choose whether to execute the setup_script or coding agent first
     let executor_action = if let Some(setup_script) = project.setup_script {
@@ -300,14 +293,13 @@ pub async fn create_task_attempt(
 
     // Get latest version of task attempt
     let task_attempt = TaskAttempt::find_by_id(&deployment.db().pool, task_attempt.id)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+        .await?
+        .ok_or(SqlxError::RowNotFound)?;
 
     let _ = deployment
         .container()
         .start_execution(&task_attempt, &executor_action)
-        .await;
+        .await?;
 
     Ok(ResponseJson(ApiResponse::success(task_attempt)))
 }

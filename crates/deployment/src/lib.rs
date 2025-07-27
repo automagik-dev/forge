@@ -3,10 +3,17 @@ use std::sync::Arc;
 use ::services::services::{analytics::AnalyticsService, config::Config, sentry::SentryService};
 use anyhow::Error as AnyhowError;
 use async_trait::async_trait;
-use db::{DBService, models::task_attempt::TaskAttempt};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+use db::{
+    DBService,
+    models::task_attempt::{TaskAttempt, TaskAttemptError},
+};
 use serde_json::Value;
 use services::services::{
-    container::{ContainerRef, ContainerService},
+    container::{ContainerError, ContainerRef, ContainerService},
     git::{GitService, GitServiceError},
 };
 use sqlx::Error as SqlxError;
@@ -21,6 +28,22 @@ pub enum DeploymentError {
     Other(#[from] AnyhowError), // Catches any unclassified errors
     #[error(transparent)]
     GitServiceError(#[from] GitServiceError),
+    #[error(transparent)]
+    TaskAttempt(#[from] TaskAttemptError),
+    #[error(transparent)]
+    Container(#[from] ContainerError),
+}
+
+impl IntoResponse for DeploymentError {
+    fn into_response(self) -> Response {
+        // Log it (you can add more fields, spans, etc.)
+        tracing::error!("Internal error occurred: {:?}", self);
+
+        let code = match self {
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+        (code, self.to_string()).into_response()
+    }
 }
 
 #[async_trait]
