@@ -1,12 +1,23 @@
-use std::path::PathBuf;
+use async_trait::async_trait;
+use command_group::AsyncGroupChild;
 
-use super::ActionConfig;
-use crate::executors::standard::StandardCodingAgentExecutor;
+use crate::{
+    actions::ExecutorAction,
+    executors::{
+        ExecutorError,
+        standard::{StandardCodingAgentExecutor, StandardCodingAgentExecutors},
+    },
+};
 
 pub struct StandardFollowUpCodingAgentRequest {
     pub prompt: String,
     pub session_id: String,
-    pub executor: StandardCodingAgentExecutor,
+    pub executor: StandardCodingAgentExecutors,
 }
 
-impl ActionConfig for StandardFollowUpCodingAgentRequest {}
+#[async_trait]
+impl ExecutorAction for StandardFollowUpCodingAgentRequest {
+    async fn spawn(&self) -> Result<AsyncGroupChild, ExecutorError> {
+        self.executor.spawn_follow_up().await
+    }
+}

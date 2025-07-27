@@ -62,7 +62,8 @@ impl LocalContainerService {
                 CreateExecutionProcess {
                     task_attempt_id: task_attempt.id,
                     process_type: ExecutionProcessType::CodingAgent,
-                    executor_type: Some(standard_coding_agent_request.executor.to_string()),
+                    // executor_type: Some(standard_coding_agent_request.executor.to_string()),
+                    executor_type: None,
                 }
             }
             ExecutorActions::StandardFollowUpCodingAgentRequest(
@@ -70,7 +71,8 @@ impl LocalContainerService {
             ) => CreateExecutionProcess {
                 task_attempt_id: task_attempt.id,
                 process_type: ExecutionProcessType::CodingAgent,
-                executor_type: Some(standard_follow_up_coding_agent_request.executor.to_string()),
+                // executor_type: Some(standard_follow_up_coding_agent_request.executor.to_string()),
+                executor_type: None,
             },
             ExecutorActions::ScriptRequest(script_request) => CreateExecutionProcess {
                 task_attempt_id: task_attempt.id,
@@ -128,10 +130,11 @@ impl ContainerService for LocalContainerService {
         // Create execution process record
         let create_execution_process =
             Self::create_execution_process_from_action(&task_attempt, &executor_action);
-
         let execution_process =
             ExecutionProcess::create(&self.db.pool, &create_execution_process, Uuid::new_v4())
                 .await?;
+
+        // executor_action
 
         return Err(ContainerError::Other(anyhow!("test")));
     }

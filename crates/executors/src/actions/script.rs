@@ -1,6 +1,4 @@
-use std::path::PathBuf;
-
-use crate::actions::ActionConfig;
+use crate::actions::ExecutorAction;
 
 pub enum ScriptRequestLanguage {
     Bash,
@@ -18,4 +16,4 @@ pub struct ScriptRequest {
     pub context: ScriptContext,
 }
 
-impl ActionConfig for ScriptRequest {}
+// impl ExecutorAction for ScriptRequest {}

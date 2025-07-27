@@ -14,7 +14,9 @@ use executors::{
         standard::StandardCodingAgentRequest,
         ExecutorActions,
     },
-    executors::{amp::AmpExecutor, standard::StandardCodingAgentExecutor},
+    executors::standard::{
+        amp::AmpExecutor, StandardCodingAgentExecutor, StandardCodingAgentExecutors,
+    },
 };
 use serde::{Deserialize, Serialize};
 use services::services::container::{ContainerRef, ContainerService};
@@ -292,7 +294,7 @@ pub async fn create_task_attempt(
     } else {
         ExecutorActions::StandardCodingAgentRequest(StandardCodingAgentRequest {
             prompt: task.to_prompt(),
-            executor: StandardCodingAgentExecutor::AmpExecutor(AmpExecutor),
+            executor: StandardCodingAgentExecutors::AmpExecutor(AmpExecutor {}),
         })
     };
 
