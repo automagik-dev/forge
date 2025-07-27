@@ -1,10 +1,13 @@
 use axum::{
-    extract::{Query, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     middleware::from_fn_with_state,
-    response::Json as ResponseJson,
+    response::{
+        sse::{Event, KeepAlive},
+        Json as ResponseJson, Sse,
+    },
     routing::get,
-    Extension, Json, Router,
+    BoxError, Extension, Json, Router,
 };
 use db::models::task_attempt::{CreateTaskAttempt, TaskAttempt};
 use deployment::{Deployment, DeploymentError};
@@ -18,6 +21,7 @@ use executors::{
         amp::AmpExecutor, StandardCodingAgentExecutor, StandardCodingAgentExecutors,
     },
 };
+use futures_util::TryStreamExt;
 use serde::{Deserialize, Serialize};
 use services::services::container::{ContainerRef, ContainerService};
 use sqlx::Error as SqlxError;
@@ -289,10 +293,12 @@ pub async fn create_task_attempt(
         .await?
         .ok_or(SqlxError::RowNotFound)?;
 
-    let _ = deployment
+    let execution_process = deployment
         .container()
         .start_execution(&task_attempt, &executor_action)
         .await?;
+
+    tracing::info!("Started execution process {}", execution_process.id);
 
     Ok(ResponseJson(ApiResponse::success(task_attempt)))
 }
@@ -1154,14 +1160,16 @@ pub async fn create_task_attempt(
 // }
 
 pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
-    // let task_attempt_id_router = Router::new().layer(from_fn_with_state(
+    let task_attempt_id_router = Router::new();
+
+    // .layer(from_fn_with_state(
     //     deployment.clone(),
     //     load_task_attempt_middleware,
     // ));
 
-    let task_attempts_router =
-        Router::new().route("/", get(get_task_attempts).post(create_task_attempt));
-    // .nest("/{id}", task_attempt_id_router);
+    let task_attempts_router = Router::new()
+        .route("/", get(get_task_attempts).post(create_task_attempt))
+        .nest("/{id}", task_attempt_id_router);
 
     Router::new().nest("/task-attempts", task_attempts_router)
 }

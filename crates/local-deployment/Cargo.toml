@@ -56,3 +56,4 @@ backon = "1.5.1"
 reqwest-eventsource = "0.6"
 base64 = "0.22"
 tokio.workspace = true
+tokio-stream = { version = "0.1.17", features = ["sync"] }

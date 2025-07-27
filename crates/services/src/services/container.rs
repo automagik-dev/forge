@@ -1,9 +1,11 @@
 use anyhow::Error as AnyhowError;
 use async_trait::async_trait;
+use axum::response::sse::Event;
 use db::models::{execution_process::ExecutionProcess, task_attempt::TaskAttempt};
 use executors::{actions::ExecutorActions, executors::ExecutorError};
 use sqlx::Error as SqlxError;
 use thiserror::Error;
+use uuid::Uuid;
 
 use crate::services::git::GitServiceError;
 pub type ContainerRef = String;
@@ -29,4 +31,9 @@ pub trait ContainerService {
         task_attempt: &TaskAttempt,
         executor_action: &ExecutorActions,
     ) -> Result<ExecutionProcess, ContainerError>;
+
+    async fn history_plus_live_stream(
+        &self,
+        id: &Uuid,
+    ) -> Option<futures_util::stream::BoxStream<'static, Result<Event, std::io::Error>>>;
 }
