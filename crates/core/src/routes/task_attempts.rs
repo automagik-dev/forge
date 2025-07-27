@@ -20,7 +20,7 @@ use executors::{
 };
 use serde::{Deserialize, Serialize};
 use services::services::container::{ContainerRef, ContainerService};
-use sqlx::{sqlite::SqliteError, Error as SqlxError, SqlitePool};
+use sqlx::Error as SqlxError;
 use ts_rs::TS;
 use utils::response::ApiResponse;
 use uuid::Uuid;
@@ -219,19 +219,12 @@ pub struct TaskAttemptQuery {
 pub async fn get_task_attempts(
     State(deployment): State<DeploymentImpl>,
     Query(query): Query<TaskAttemptQuery>,
-) -> Result<Json<Vec<TaskAttempt>>, (StatusCode, String)> {
+) -> Result<Json<Vec<TaskAttempt>>, DeploymentError> {
     // pull out your DB pool
     let pool = &deployment.db().pool;
 
     // run it!
-    let attempts = TaskAttempt::fetch_all(pool, query.task_id)
-        .await
-        .map_err(|e| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("couldn’t load attempts: {}", e),
-            )
-        })?;
+    let attempts = TaskAttempt::fetch_all(pool, query.task_id).await?;
 
     Ok(Json(attempts))
 }

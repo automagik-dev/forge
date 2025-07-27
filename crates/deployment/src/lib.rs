@@ -4,6 +4,7 @@ use ::services::services::{analytics::AnalyticsService, config::Config, sentry::
 use anyhow::Error as AnyhowError;
 use async_trait::async_trait;
 use axum::{
+    Json,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
@@ -11,6 +12,7 @@ use db::{
     DBService,
     models::task_attempt::{TaskAttempt, TaskAttemptError},
 };
+use git2::Error as Git2Error;
 use serde_json::Value;
 use services::services::{
     container::{ContainerError, ContainerRef, ContainerService},
@@ -19,30 +21,30 @@ use services::services::{
 use sqlx::Error as SqlxError;
 use thiserror::Error;
 use tokio::sync::RwLock;
+use utils::response::ApiResponse;
 
 #[derive(Debug, Error)]
 pub enum DeploymentError {
     #[error(transparent)]
     Sqlx(#[from] SqlxError),
     #[error(transparent)]
-    Other(#[from] AnyhowError), // Catches any unclassified errors
+    Git2(#[from] Git2Error),
     #[error(transparent)]
     GitServiceError(#[from] GitServiceError),
     #[error(transparent)]
     TaskAttempt(#[from] TaskAttemptError),
     #[error(transparent)]
     Container(#[from] ContainerError),
+    #[error(transparent)]
+    Other(#[from] AnyhowError),
 }
 
 impl IntoResponse for DeploymentError {
     fn into_response(self) -> Response {
-        // Log it (you can add more fields, spans, etc.)
         tracing::error!("Internal error occurred: {:?}", self);
-
-        let code = match self {
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-        };
-        (code, self.to_string()).into_response()
+        let code = StatusCode::INTERNAL_SERVER_ERROR;
+        let body = Json(ApiResponse::<()>::error(&self.to_string()));
+        (code, body).into_response()
     }
 }
 

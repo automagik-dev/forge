@@ -10,8 +10,9 @@ use db::models::{
     project::Project,
     task::{CreateTask, Task, TaskWithAttemptStatus, UpdateTask},
 };
-use deployment::Deployment;
+use deployment::{Deployment, DeploymentError};
 use serde::Deserialize;
+use sqlx::Error as SqlxError;
 use utils::response::ApiResponse;
 use uuid::Uuid;
 
@@ -28,33 +29,25 @@ pub struct TaskQuery {
 pub async fn get_tasks(
     State(deployment): State<DeploymentImpl>,
     Query(query): Query<TaskQuery>,
-) -> Result<ResponseJson<ApiResponse<Vec<TaskWithAttemptStatus>>>, StatusCode> {
-    match Task::find_by_project_id_with_attempt_status(&deployment.db().pool, query.project_id)
-        .await
-    {
-        Ok(tasks) => Ok(ResponseJson(ApiResponse::success(tasks))),
-        Err(e) => {
-            tracing::error!(
-                "Failed to fetch tasks for project {}: {}",
-                query.project_id,
-                e
-            );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+) -> Result<ResponseJson<ApiResponse<Vec<TaskWithAttemptStatus>>>, DeploymentError> {
+    let tasks =
+        Task::find_by_project_id_with_attempt_status(&deployment.db().pool, query.project_id)
+            .await?;
+
+    Ok(ResponseJson(ApiResponse::success(tasks)))
 }
 
 pub async fn get_task(
     Extension(task): Extension<Task>,
     State(_deployment): State<DeploymentImpl>,
-) -> Result<ResponseJson<ApiResponse<Task>>, StatusCode> {
+) -> Result<ResponseJson<ApiResponse<Task>>, DeploymentError> {
     Ok(ResponseJson(ApiResponse::success(task)))
 }
 
 pub async fn create_task(
     State(deployment): State<DeploymentImpl>,
     Json(payload): Json<CreateTask>,
-) -> Result<ResponseJson<ApiResponse<Task>>, StatusCode> {
+) -> Result<ResponseJson<ApiResponse<Task>>, DeploymentError> {
     let id = Uuid::new_v4();
 
     tracing::debug!(
@@ -63,27 +56,21 @@ pub async fn create_task(
         payload.project_id
     );
 
-    match Task::create(&deployment.db().pool, &payload, id).await {
-        Ok(task) => {
-            // Track task creation event
-            deployment
-                .track_if_analytics_allowed(
-                    "task_created",
-                    serde_json::json!({
-                    "task_id": task.id.to_string(),
-                    "project_id": payload.project_id,
-                    "has_description": task.description.is_some(),
-                    }),
-                )
-                .await;
+    let task = Task::create(&deployment.db().pool, &payload, id).await?;
 
-            Ok(ResponseJson(ApiResponse::success(task)))
-        }
-        Err(e) => {
-            tracing::error!("Failed to create task: {}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+    // Track task creation event
+    deployment
+        .track_if_analytics_allowed(
+            "task_created",
+            serde_json::json!({
+            "task_id": task.id.to_string(),
+            "project_id": payload.project_id,
+            "has_description": task.description.is_some(),
+            }),
+        )
+        .await;
+
+    Ok(ResponseJson(ApiResponse::success(task)))
 }
 
 // TODO: create and start
@@ -189,7 +176,7 @@ pub async fn update_task(
     Extension(existing_task): Extension<Task>,
     State(deployment): State<DeploymentImpl>,
     Json(payload): Json<UpdateTask>,
-) -> Result<ResponseJson<ApiResponse<Task>>, StatusCode> {
+) -> Result<ResponseJson<ApiResponse<Task>>, DeploymentError> {
     // Use existing values if not provided in update
     let title = payload.title.unwrap_or(existing_task.title);
     let description = payload.description.or(existing_task.description);
@@ -198,7 +185,7 @@ pub async fn update_task(
         .parent_task_attempt
         .or(existing_task.parent_task_attempt);
 
-    match Task::update(
+    let task = Task::update(
         &deployment.db().pool,
         existing_task.id,
         existing_task.project_id,
@@ -207,20 +194,15 @@ pub async fn update_task(
         status,
         parent_task_attempt,
     )
-    .await
-    {
-        Ok(task) => Ok(ResponseJson(ApiResponse::success(task))),
-        Err(e) => {
-            tracing::error!("Failed to update task: {}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+    .await?;
+
+    Ok(ResponseJson(ApiResponse::success(task)))
 }
 
 pub async fn delete_task(
     Extension(task): Extension<Task>,
     State(deployment): State<DeploymentImpl>,
-) -> Result<ResponseJson<ApiResponse<()>>, StatusCode> {
+) -> Result<ResponseJson<ApiResponse<()>>, DeploymentError> {
     // Clean up all worktrees for this task before deletion
     // TODO: readd worktree cleanup
     // if let Err(e) =
@@ -261,18 +243,12 @@ pub async fn delete_task(
     //     }
     // }
 
-    match Task::delete(&deployment.db().pool, task.id).await {
-        Ok(rows_affected) => {
-            if rows_affected == 0 {
-                Err(StatusCode::NOT_FOUND)
-            } else {
-                Ok(ResponseJson(ApiResponse::success(())))
-            }
-        }
-        Err(e) => {
-            tracing::error!("Failed to delete task: {}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
+    let rows_affected = Task::delete(&deployment.db().pool, task.id).await?;
+
+    if rows_affected == 0 {
+        Err(DeploymentError::Sqlx(SqlxError::RowNotFound))
+    } else {
+        Ok(ResponseJson(ApiResponse::success(())))
     }
 }
 

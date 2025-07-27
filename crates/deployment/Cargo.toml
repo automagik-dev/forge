@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 db = { path = "../db" }
+utils = { path = "../utils" }
 services = { path = "../services" }
 async-trait = "0.1"
 thiserror = "2.0.12"
@@ -14,4 +15,5 @@ sqlx = "0.8.6"
 serde_json.workspace = true
 axum.workspace = true
 tracing = { workspace = true }
+git2 = "^0.18.1"
 

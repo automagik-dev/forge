@@ -1,5 +1,6 @@
 use std::{collections::HashMap, path::Path};
 
+use anyhow::anyhow;
 use axum::{
     extract::{Query, State},
     http::StatusCode,
@@ -12,7 +13,7 @@ use db::models::project::{
     CreateBranch, CreateProject, GitBranch, Project, ProjectWithBranch, SearchMatchType,
     SearchResult, UpdateProject,
 };
-use deployment::Deployment;
+use deployment::{Deployment, DeploymentError};
 use ignore::WalkBuilder;
 use services::services::config::{EditorConfig, EditorType};
 use utils::response::ApiResponse;
@@ -22,25 +23,20 @@ use crate::{middleware::load_project_middleware, DeploymentImpl};
 
 pub async fn get_projects(
     State(deployment): State<DeploymentImpl>,
-) -> Result<ResponseJson<ApiResponse<Vec<Project>>>, StatusCode> {
-    match Project::find_all(&deployment.db().pool).await {
-        Ok(projects) => Ok(ResponseJson(ApiResponse::success(projects))),
-        Err(e) => {
-            tracing::error!("Failed to fetch projects: {}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+) -> Result<ResponseJson<ApiResponse<Vec<Project>>>, DeploymentError> {
+    let projects = Project::find_all(&deployment.db().pool).await?;
+    Ok(ResponseJson(ApiResponse::success(projects)))
 }
 
 pub async fn get_project(
     Extension(project): Extension<Project>,
-) -> Result<ResponseJson<ApiResponse<Project>>, StatusCode> {
+) -> Result<ResponseJson<ApiResponse<Project>>, DeploymentError> {
     Ok(ResponseJson(ApiResponse::success(project)))
 }
 
 pub async fn get_project_with_branch(
     Extension(project): Extension<Project>,
-) -> Result<ResponseJson<ApiResponse<ProjectWithBranch>>, StatusCode> {
+) -> Result<ResponseJson<ApiResponse<ProjectWithBranch>>, DeploymentError> {
     Ok(ResponseJson(ApiResponse::success(
         project.with_branch_info(),
     )))
@@ -48,20 +44,15 @@ pub async fn get_project_with_branch(
 
 pub async fn get_project_branches(
     Extension(project): Extension<Project>,
-) -> Result<ResponseJson<ApiResponse<Vec<GitBranch>>>, StatusCode> {
-    match project.get_all_branches() {
-        Ok(branches) => Ok(ResponseJson(ApiResponse::success(branches))),
-        Err(e) => {
-            tracing::error!("Failed to get branches for project {}: {}", project.id, e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+) -> Result<ResponseJson<ApiResponse<Vec<GitBranch>>>, DeploymentError> {
+    let branches = project.get_all_branches()?;
+    Ok(ResponseJson(ApiResponse::success(branches)))
 }
 
 pub async fn create_project_branch(
     Extension(project): Extension<Project>,
     Json(payload): Json<CreateBranch>,
-) -> Result<ResponseJson<ApiResponse<GitBranch>>, StatusCode> {
+) -> Result<ResponseJson<ApiResponse<GitBranch>>, DeploymentError> {
     // Validate branch name
     if payload.name.trim().is_empty() {
         return Ok(ResponseJson(ApiResponse::error(
@@ -96,7 +87,7 @@ pub async fn create_project_branch(
 pub async fn create_project(
     State(deployment): State<DeploymentImpl>,
     Json(payload): Json<CreateProject>,
-) -> Result<ResponseJson<ApiResponse<Project>>, StatusCode> {
+) -> Result<ResponseJson<ApiResponse<Project>>, DeploymentError> {
     let id = Uuid::new_v4();
 
     tracing::debug!("Creating project '{}'", payload.name);
@@ -112,8 +103,10 @@ pub async fn create_project(
             // Path is available, continue
         }
         Err(e) => {
-            tracing::error!("Failed to check for existing git repo path: {}", e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+            return Err(DeploymentError::Other(anyhow!(
+                "Failed to check for existing git repo path: {}",
+                e
+            )));
         }
     }
 
@@ -199,8 +192,10 @@ pub async fn create_project(
             Ok(ResponseJson(ApiResponse::success(project)))
         }
         Err(e) => {
-            tracing::error!("Failed to create project: {}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            return Err(DeploymentError::Other(anyhow!(
+                "Failed to create project: {}",
+                e
+            )));
         }
     }
 }
