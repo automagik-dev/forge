@@ -1,8 +1,9 @@
 use core::task;
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf, process::ExitStatus, sync::Arc};
 
 use anyhow::anyhow;
 use async_trait::async_trait;
+use command_group::AsyncGroupChild;
 use db::{
     DBService,
     models::{
@@ -15,6 +16,7 @@ use services::services::{
     container::{ContainerError, ContainerRef, ContainerService},
     git::GitService,
 };
+use tokio::sync::RwLock;
 use utils::text::{git_branch_id, short_uuid};
 use uuid::Uuid;
 
@@ -22,11 +24,33 @@ use uuid::Uuid;
 pub struct LocalContainerService {
     db: DBService,
     git: GitService,
+    running_executions: Arc<RwLock<HashMap<Uuid, AsyncGroupChild>>>,
 }
 
 impl LocalContainerService {
     pub fn new(db: DBService, git: GitService) -> Self {
-        LocalContainerService { db, git }
+        LocalContainerService {
+            db,
+            git,
+            running_executions: Arc::new(RwLock::new(HashMap::new())),
+        }
+    }
+
+    pub async fn add_execution(&self, id: Uuid, exec: AsyncGroupChild) {
+        let mut map = self.running_executions.write().await;
+        map.insert(id, exec);
+    }
+
+    /// Returns `Some(true)` if the execution with the given `id` is still running,
+    /// `Some(false)` if it’s known but already exited, or `None` if no such execution exists.
+    pub async fn is_running(&self, id: &Uuid) -> Option<bool> {
+        let map = self.running_executions.read().await;
+        map.get(id).map(|child| child.id().is_some())
+    }
+
+    pub async fn remove_execution(&self, id: &Uuid) -> Option<AsyncGroupChild> {
+        let mut map = self.running_executions.write().await;
+        map.remove(id)
     }
 
     pub fn dir_name_from_task_attempt(attempt_id: &Uuid, task_title: &str) -> String {
@@ -143,11 +167,16 @@ impl ContainerService for LocalContainerService {
 
         let current_dir = PathBuf::from(container_ref);
 
-        let mut child = executor_action.spawn(&current_dir).await?;
+        let mut child: AsyncGroupChild = executor_action.spawn(&current_dir).await?;
 
-        let result = child.wait_with_output().await.unwrap();
+        // Add the execution to the running processes
+        // self.add_execution(execution_process.id, child).await;
 
-        println!("got {:?}", String::from_utf8(result.stdout));
+        let stdout = child
+            .inner()
+            .stdout
+            .take()
+            .expect("Failed to take stdout from child process");
 
         return Err(ContainerError::Other(anyhow!(
             "The rest needs implementing"

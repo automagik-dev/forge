@@ -20,22 +20,6 @@ use crate::container::LocalContainerService;
 
 pub mod container;
 
-#[derive(Debug)]
-pub enum ExecutionType {
-    SetupScript,
-    CleanupScript,
-    CodingAgent,
-    DevServer,
-}
-
-#[derive(Debug)]
-pub struct RunningExecution {
-    pub task_attempt_id: Uuid,
-    pub _execution_type: ExecutionType,
-    // TODO: fix
-    pub child: AsyncGroupChild,
-}
-
 #[derive(Clone)]
 pub struct LocalDeployment {
     config: Arc<RwLock<Config>>,
@@ -45,7 +29,6 @@ pub struct LocalDeployment {
     analytics: Option<AnalyticsService>,
     container: LocalContainerService,
     git: GitService,
-    running_executions: Arc<RwLock<HashMap<Uuid, RunningExecution>>>,
     process: ProcessService,
 }
 
@@ -59,7 +42,6 @@ impl Deployment for LocalDeployment {
         let analytics = AnalyticsConfig::new().map(AnalyticsService::new);
         let git = GitService::new();
         let container = LocalContainerService::new(db.clone(), git.clone());
-        let running_executions = Arc::new(RwLock::new(HashMap::new()));
         let process = ProcessService::new();
 
         Ok(Self {
@@ -70,7 +52,6 @@ impl Deployment for LocalDeployment {
             analytics,
             container,
             git,
-            running_executions,
             process,
         })
     }
