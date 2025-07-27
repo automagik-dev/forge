@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT \n                id as \"id!: Uuid\", \n                task_attempt_id as \"task_attempt_id!: Uuid\", \n                process_type as \"process_type!: ExecutionProcessType\",\n                executor_type,\n                status as \"status!: ExecutionProcessStatus\",\n                command, \n                args, \n                working_directory, \n                stdout, \n                stderr, \n                exit_code,\n                started_at as \"started_at!: DateTime<Utc>\",\n                completed_at as \"completed_at?: DateTime<Utc>\",\n                created_at as \"created_at!: DateTime<Utc>\", \n                updated_at as \"updated_at!: DateTime<Utc>\"\n               FROM execution_processes \n               WHERE id = $1",
+  "query": "INSERT INTO execution_processes (\n                id, task_attempt_id, process_type, executor_type, status, \n                stdout, stderr, exit_code, started_at, \n                completed_at, created_at, updated_at\n               ) \n               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) \n               RETURNING \n                id as \"id!: Uuid\", \n                task_attempt_id as \"task_attempt_id!: Uuid\", \n                process_type as \"process_type!: ExecutionProcessType\",\n                executor_type,\n                status as \"status!: ExecutionProcessStatus\",\n                stdout, \n                stderr, \n                exit_code,\n                started_at as \"started_at!: DateTime<Utc>\",\n                completed_at as \"completed_at?: DateTime<Utc>\",\n                created_at as \"created_at!: DateTime<Utc>\", \n                updated_at as \"updated_at!: DateTime<Utc>\"",
   "describe": {
     "columns": [
       {
@@ -29,63 +29,45 @@
         "type_info": "Text"
       },
       {
-        "name": "command",
+        "name": "stdout",
         "ordinal": 5,
         "type_info": "Text"
       },
       {
-        "name": "args",
+        "name": "stderr",
         "ordinal": 6,
         "type_info": "Text"
       },
       {
-        "name": "working_directory",
-        "ordinal": 7,
-        "type_info": "Text"
-      },
-      {
-        "name": "stdout",
-        "ordinal": 8,
-        "type_info": "Text"
-      },
-      {
-        "name": "stderr",
-        "ordinal": 9,
-        "type_info": "Text"
-      },
-      {
         "name": "exit_code",
-        "ordinal": 10,
+        "ordinal": 7,
         "type_info": "Integer"
       },
       {
         "name": "started_at!: DateTime<Utc>",
-        "ordinal": 11,
+        "ordinal": 8,
         "type_info": "Text"
       },
       {
         "name": "completed_at?: DateTime<Utc>",
-        "ordinal": 12,
+        "ordinal": 9,
         "type_info": "Text"
       },
       {
         "name": "created_at!: DateTime<Utc>",
-        "ordinal": 13,
+        "ordinal": 10,
         "type_info": "Text"
       },
       {
         "name": "updated_at!: DateTime<Utc>",
-        "ordinal": 14,
+        "ordinal": 11,
         "type_info": "Text"
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 12
     },
     "nullable": [
-      true,
-      false,
-      false,
       true,
       false,
       false,
@@ -100,5 +82,5 @@
       false
     ]
   },
-  "hash": "9edb2c01e91fd0f0fe7b56e988c7ae0393150f50be3f419a981e035c0121dfc7"
+  "hash": "646c2a463f5a352218c51b211c33bc7061e4c7ea5155c65afd0f6380e32c3303"
 }

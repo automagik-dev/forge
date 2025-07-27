@@ -1,5 +1,5 @@
 [package]
-name = "vibe-kanban-executors"
+name = "executors"
 version = "0.1.0"
 edition = "2024"
 
@@ -51,3 +51,4 @@ json-patch = "2.0"
 backon = "1.5.1"
 reqwest-eventsource = "0.6"
 base64 = "0.22"
+strum_macros = "0.27.2"

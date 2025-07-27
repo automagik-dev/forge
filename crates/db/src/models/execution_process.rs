@@ -75,9 +75,6 @@ pub struct ExecutionProcess {
     pub process_type: ExecutionProcessType,
     pub executor_type: Option<String>, // "echo", "claude", "amp", etc. - only for CodingAgent processes
     pub status: ExecutionProcessStatus,
-    pub command: String,
-    pub args: Option<String>, // JSON array of arguments
-    pub working_directory: String,
     pub stdout: Option<String>,
     #[serde(serialize_with = "serialize_filtered_stderr")]
     pub stderr: Option<String>,
@@ -94,9 +91,6 @@ pub struct CreateExecutionProcess {
     pub task_attempt_id: Uuid,
     pub process_type: ExecutionProcessType,
     pub executor_type: Option<String>,
-    pub command: String,
-    pub args: Option<String>,
-    pub working_directory: String,
 }
 
 #[derive(Debug, Deserialize, TS)]
@@ -116,9 +110,6 @@ pub struct ExecutionProcessSummary {
     pub process_type: ExecutionProcessType,
     pub executor_type: Option<String>, // "echo", "claude", "amp", etc. - only for CodingAgent processes
     pub status: ExecutionProcessStatus,
-    pub command: String,
-    pub args: Option<String>, // JSON array of arguments
-    pub working_directory: String,
     pub exit_code: Option<i64>,
     pub started_at: DateTime<Utc>,
     pub completed_at: Option<DateTime<Utc>>,
@@ -137,9 +128,6 @@ impl ExecutionProcess {
                 process_type as "process_type!: ExecutionProcessType",
                 executor_type,
                 status as "status!: ExecutionProcessStatus",
-                command, 
-                args, 
-                working_directory, 
                 stdout, 
                 stderr, 
                 exit_code,
@@ -168,9 +156,6 @@ impl ExecutionProcess {
                 process_type as "process_type!: ExecutionProcessType",
                 executor_type,
                 status as "status!: ExecutionProcessStatus",
-                command, 
-                args, 
-                working_directory, 
                 stdout, 
                 stderr, 
                 exit_code,
@@ -200,9 +185,6 @@ impl ExecutionProcess {
                 process_type as "process_type!: ExecutionProcessType",
                 executor_type,
                 status as "status!: ExecutionProcessStatus",
-                command, 
-                args, 
-                working_directory, 
                 exit_code,
                 started_at as "started_at!: DateTime<Utc>",
                 completed_at as "completed_at?: DateTime<Utc>",
@@ -227,9 +209,6 @@ impl ExecutionProcess {
                 process_type as "process_type!: ExecutionProcessType",
                 executor_type,
                 status as "status!: ExecutionProcessStatus",
-                command, 
-                args, 
-                working_directory, 
                 stdout, 
                 stderr, 
                 exit_code,
@@ -258,9 +237,6 @@ impl ExecutionProcess {
                 ep.process_type as "process_type!: ExecutionProcessType",
                 ep.executor_type,
                 ep.status as "status!: ExecutionProcessStatus",
-                ep.command, 
-                ep.args, 
-                ep.working_directory, 
                 ep.stdout, 
                 ep.stderr, 
                 ep.exit_code,
@@ -292,20 +268,17 @@ impl ExecutionProcess {
         sqlx::query_as!(
             ExecutionProcess,
             r#"INSERT INTO execution_processes (
-                id, task_attempt_id, process_type, executor_type, status, command, args, 
-                working_directory, stdout, stderr, exit_code, started_at, 
+                id, task_attempt_id, process_type, executor_type, status, 
+                stdout, stderr, exit_code, started_at, 
                 completed_at, created_at, updated_at
                ) 
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
                RETURNING 
                 id as "id!: Uuid", 
                 task_attempt_id as "task_attempt_id!: Uuid", 
                 process_type as "process_type!: ExecutionProcessType",
                 executor_type,
                 status as "status!: ExecutionProcessStatus",
-                command, 
-                args, 
-                working_directory, 
                 stdout, 
                 stderr, 
                 exit_code,
@@ -318,9 +291,6 @@ impl ExecutionProcess {
             data.process_type,
             data.executor_type,
             ExecutionProcessStatus::Running,
-            data.command,
-            data.args,
-            data.working_directory,
             None::<String>,        // stdout
             None::<String>,        // stderr
             None::<i64>,           // exit_code

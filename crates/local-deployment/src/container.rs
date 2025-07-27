@@ -1,5 +1,15 @@
+use core::task;
+
+use anyhow::anyhow;
 use async_trait::async_trait;
-use db::{DBService, models::task_attempt::TaskAttempt};
+use db::{
+    DBService,
+    models::{
+        execution_process::{CreateExecutionProcess, ExecutionProcess, ExecutionProcessType},
+        task_attempt::TaskAttempt,
+    },
+};
+use executors::actions::{ExecutorActions, script::ScriptContext};
 use services::services::{
     container::{ContainerError, ContainerRef, ContainerService},
     git::GitService,
@@ -42,6 +52,37 @@ impl LocalContainerService {
             std::env::temp_dir().join(dir_name)
         }
     }
+
+    pub fn create_execution_process_from_action(
+        task_attempt: &TaskAttempt,
+        executor_action: &ExecutorActions,
+    ) -> CreateExecutionProcess {
+        match executor_action {
+            ExecutorActions::StandardCodingAgentRequest(standard_coding_agent_request) => {
+                CreateExecutionProcess {
+                    task_attempt_id: task_attempt.id,
+                    process_type: ExecutionProcessType::CodingAgent,
+                    executor_type: Some(standard_coding_agent_request.executor.to_string()),
+                }
+            }
+            ExecutorActions::StandardFollowUpCodingAgentRequest(
+                standard_follow_up_coding_agent_request,
+            ) => CreateExecutionProcess {
+                task_attempt_id: task_attempt.id,
+                process_type: ExecutionProcessType::CodingAgent,
+                executor_type: Some(standard_follow_up_coding_agent_request.executor.to_string()),
+            },
+            ExecutorActions::ScriptRequest(script_request) => CreateExecutionProcess {
+                task_attempt_id: task_attempt.id,
+                process_type: match script_request.context {
+                    ScriptContext::SetupScript => ExecutionProcessType::SetupScript,
+                    ScriptContext::CleanupScript => ExecutionProcessType::CleanupScript,
+                    ScriptContext::DevServer => ExecutionProcessType::DevServer,
+                },
+                executor_type: None,
+            },
+        }
+    }
 }
 
 #[async_trait]
@@ -77,5 +118,21 @@ impl ContainerService for LocalContainerService {
         .await?;
 
         Ok(worktree_path.to_string_lossy().to_string())
+    }
+
+    async fn start_execution(
+        &self,
+        task_attempt: &TaskAttempt,
+        executor_action: &ExecutorActions,
+    ) -> Result<ExecutionProcess, ContainerError> {
+        // Create execution process record
+        let create_execution_process =
+            Self::create_execution_process_from_action(&task_attempt, &executor_action);
+
+        let execution_process =
+            ExecutionProcess::create(&self.db.pool, &create_execution_process, Uuid::new_v4())
+                .await?;
+
+        return Err(ContainerError::Other(anyhow!("test")));
     }
 }

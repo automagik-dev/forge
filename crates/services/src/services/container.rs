@@ -1,6 +1,7 @@
 use anyhow::Error as AnyhowError;
 use async_trait::async_trait;
-use db::models::task_attempt::TaskAttempt;
+use db::models::{execution_process::ExecutionProcess, task_attempt::TaskAttempt};
+use executors::actions::ExecutorActions;
 use sqlx::Error as SqlxError;
 use thiserror::Error;
 
@@ -20,4 +21,10 @@ pub enum ContainerError {
 #[async_trait]
 pub trait ContainerService {
     async fn create(&self, task_attempt: &TaskAttempt) -> Result<ContainerRef, ContainerError>;
+
+    async fn start_execution(
+        &self,
+        task_attempt: &TaskAttempt,
+        executor_action: &ExecutorActions,
+    ) -> Result<ExecutionProcess, ContainerError>;
 }

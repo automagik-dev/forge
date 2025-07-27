@@ -77,6 +77,14 @@ pub struct UpdateTask {
 }
 
 impl Task {
+    pub fn to_prompt(&self) -> String {
+        if let Some(description) = &self.description {
+            format!("Title: {}\n\nDescription:{}", &self.title, description)
+        } else {
+            self.title.clone()
+        }
+    }
+
     pub async fn parent_project(&self, pool: &SqlitePool) -> Result<Option<Project>, sqlx::Error> {
         Project::find_by_id(pool, self.project_id).await
     }

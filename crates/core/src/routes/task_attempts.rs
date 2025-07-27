@@ -8,8 +8,16 @@ use axum::{
 };
 use db::models::task_attempt::{CreateTaskAttempt, TaskAttempt};
 use deployment::Deployment;
+use executors::{
+    actions::{
+        script::{ScriptContext, ScriptRequest, ScriptRequestLanguage},
+        standard::StandardCodingAgentRequest,
+        ExecutorActions,
+    },
+    executors::{amp::AmpExecutor, standard::StandardCodingAgentExecutor},
+};
 use serde::{Deserialize, Serialize};
-use services::services::container::ContainerService;
+use services::services::container::{ContainerRef, ContainerService};
 use sqlx::SqlitePool;
 use ts_rs::TS;
 use utils::response::ApiResponse;
@@ -254,7 +262,7 @@ pub async fn create_task_attempt(
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     // Create container
-    let _ = deployment
+    let container_ref: ContainerRef = deployment
         .container()
         .create(&task_attempt)
         .await
@@ -275,15 +283,29 @@ pub async fn create_task_attempt(
         .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
 
     // Choose whether to execute the setup_script or coding agent first
-    // if let Some(setup_script) = project.setup_script {
-    // } else {
-    // }
+    let executor_action = if let Some(setup_script) = project.setup_script {
+        ExecutorActions::ScriptRequest(ScriptRequest {
+            script: setup_script,
+            language: ScriptRequestLanguage::Bash,
+            context: ScriptContext::SetupScript,
+        })
+    } else {
+        ExecutorActions::StandardCodingAgentRequest(StandardCodingAgentRequest {
+            prompt: task.to_prompt(),
+            executor: StandardCodingAgentExecutor::AmpExecutor(AmpExecutor),
+        })
+    };
 
     // Get latest version of task attempt
     let task_attempt = TaskAttempt::find_by_id(&deployment.db().pool, task_attempt.id)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let _ = deployment
+        .container()
+        .start_execution(&task_attempt, &executor_action)
+        .await;
 
     Ok(ResponseJson(ApiResponse::success(task_attempt)))
 }
