@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+utils = { path = "../utils" }
 tokio = { workspace = true }
 tokio-util = { version = "0.7", features = ["io"] }
 bytes = "1.0"
@@ -54,3 +55,4 @@ base64 = "0.22"
 strum_macros = "0.27.2"
 thiserror = "2.0.12"
 enum_dispatch = "0.3.13"
+futures-io = "0.3.31"

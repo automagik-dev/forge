@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use async_trait::async_trait;
 use command_group::AsyncGroupChild;
 
@@ -17,7 +19,7 @@ pub struct StandardFollowUpCodingAgentRequest {
 
 #[async_trait]
 impl ExecutorAction for StandardFollowUpCodingAgentRequest {
-    async fn spawn(&self) -> Result<AsyncGroupChild, ExecutorError> {
-        self.executor.spawn_follow_up().await
+    async fn spawn(&self, current_dir: &PathBuf) -> Result<AsyncGroupChild, ExecutorError> {
+        self.executor.spawn_follow_up(current_dir).await
     }
 }

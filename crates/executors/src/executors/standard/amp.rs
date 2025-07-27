@@ -10,6 +10,8 @@
 
 // use crate::utils::shell::get_shell_command;
 
+use std::path::PathBuf;
+
 use async_trait::async_trait;
 use command_group::AsyncGroupChild;
 
@@ -53,11 +55,14 @@ impl StandardCodingAgentExecutor for AmpExecutor {
     //     Ok(child)
     // }
 
-    async fn spawn(&self) -> Result<AsyncGroupChild, ExecutorError> {
+    async fn spawn(&self, current_dir: &PathBuf) -> Result<AsyncGroupChild, ExecutorError> {
         todo!()
     }
 
-    async fn spawn_follow_up(&self) -> Result<AsyncGroupChild, ExecutorError> {
+    async fn spawn_follow_up(
+        &self,
+        current_dir: &PathBuf,
+    ) -> Result<AsyncGroupChild, ExecutorError> {
         todo!()
     }
 

@@ -1,4 +1,5 @@
 use core::task;
+use std::path::PathBuf;
 
 use anyhow::anyhow;
 use async_trait::async_trait;
@@ -133,9 +134,23 @@ impl ContainerService for LocalContainerService {
         let execution_process =
             ExecutionProcess::create(&self.db.pool, &create_execution_process, Uuid::new_v4())
                 .await?;
+        let container_ref = task_attempt
+            .container_ref
+            .as_ref()
+            .ok_or(ContainerError::Other(anyhow!(
+                "Container ref not found for task"
+            )))?;
 
-        let child = executor_action.spawn().await;
+        let current_dir = PathBuf::from(container_ref);
 
-        return Err(ContainerError::Other(anyhow!("test")));
+        let mut child = executor_action.spawn(&current_dir).await?;
+
+        let result = child.wait_with_output().await.unwrap();
+
+        println!("got {:?}", String::from_utf8(result.stdout));
+
+        return Err(ContainerError::Other(anyhow!(
+            "The rest needs implementing"
+        )));
     }
 }

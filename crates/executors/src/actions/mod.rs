@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use async_trait::async_trait;
 use command_group::AsyncGroupChild;
 use enum_dispatch::enum_dispatch;
@@ -24,5 +26,5 @@ pub enum ExecutorActions {
 #[async_trait]
 #[enum_dispatch(ExecutorActions)]
 pub trait ExecutorAction {
-    async fn spawn(&self) -> Result<AsyncGroupChild, ExecutorError>;
+    async fn spawn(&self, current_dir: &PathBuf) -> Result<AsyncGroupChild, ExecutorError>;
 }

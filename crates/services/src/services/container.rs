@@ -1,7 +1,7 @@
 use anyhow::Error as AnyhowError;
 use async_trait::async_trait;
 use db::models::{execution_process::ExecutionProcess, task_attempt::TaskAttempt};
-use executors::actions::ExecutorActions;
+use executors::{actions::ExecutorActions, executors::ExecutorError};
 use sqlx::Error as SqlxError;
 use thiserror::Error;
 
@@ -14,6 +14,8 @@ pub enum ContainerError {
     GitServiceError(#[from] GitServiceError),
     #[error(transparent)]
     Sqlx(#[from] SqlxError),
+    #[error(transparent)]
+    ExecutorError(#[from] ExecutorError),
     #[error(transparent)]
     Other(#[from] AnyhowError), // Catches any unclassified errors
 }

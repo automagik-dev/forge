@@ -1,5 +1,8 @@
+use std::path::PathBuf;
+
 use async_trait::async_trait;
 use command_group::AsyncGroupChild;
+use futures_io::Error as FuturesIoError;
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -11,20 +14,18 @@ pub mod standard;
 pub enum ExecutorError {
     #[error("Follow-up is not supported")]
     FollowUpNotSupported,
+    #[error(transparent)]
+    SpawnError(#[from] FuturesIoError),
 }
 
 /// Trait for coding agents that can execute tasks, normalize logs, and support follow-up sessions
 #[async_trait]
 pub trait Executor: Send + Sync {
-    /// Spawn the command for a given task attempt
-    async fn spawn() -> Result<AsyncGroupChild, ExecutorError>;
-
-    /// Spawn a follow-up session for executors that support it
-    ///
-    /// This method is used to continue an existing session with a new prompt.
-    /// Not all executors support follow-up sessions, so the default implementation
-    /// returns an error.
-    async fn spawn_followup() -> Result<AsyncGroupChild, ExecutorError> {
+    async fn spawn(&self, current_dir: &PathBuf) -> Result<AsyncGroupChild, ExecutorError>;
+    async fn spawn_followup(
+        &self,
+        current_dir: &PathBuf,
+    ) -> Result<AsyncGroupChild, ExecutorError> {
         Err(ExecutorError::FollowUpNotSupported)
     }
 }
