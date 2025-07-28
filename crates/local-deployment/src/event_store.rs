@@ -6,20 +6,36 @@ use std::{
 
 use axum::response::sse::Event;
 use futures::{Stream, StreamExt};
-use tokio::{sync::broadcast, task::JoinHandle}; // for .next()
+use tokio::{sync::broadcast, task::JoinHandle};
 
-const HISTORY_SIZE: usize = 10_000;
+/// Keep ~10 KiB of recent SSE payloads.
+const HISTORY_BYTES: usize = 10 * 1024;
+
+/// Stored event with its approximate byte footprint.
+#[derive(Clone)]
+struct StoredEvent {
+    event: Event,
+    bytes: usize,
+}
+
+struct Inner {
+    history: VecDeque<StoredEvent>,
+    total_bytes: usize,
+}
 
 pub struct EventStore {
-    history: Mutex<VecDeque<Event>>,  // stores recent history
-    sender: broadcast::Sender<Event>, // for streaming live events
+    inner: Mutex<Inner>,
+    sender: broadcast::Sender<Event>,
 }
 
 impl EventStore {
     pub fn new() -> Self {
         let (sender, _) = broadcast::channel(100);
         Self {
-            history: Mutex::new(VecDeque::with_capacity(HISTORY_SIZE)),
+            inner: Mutex::new(Inner {
+                history: VecDeque::with_capacity(32),
+                total_bytes: 0,
+            }),
             sender,
         }
     }
@@ -29,64 +45,86 @@ impl EventStore {
     }
 
     pub fn get_history(&self) -> Vec<Event> {
-        self.history.lock().unwrap().iter().cloned().collect()
+        let inner = self.inner.lock().unwrap();
+        inner.history.iter().map(|s| s.event.clone()).collect()
     }
 
-    pub fn push_event(&self, event: Event) {
-        {
-            let mut hist = self.history.lock().unwrap();
-            if hist.len() == HISTORY_SIZE {
-                hist.pop_front();
-            }
-            hist.push_back(event.clone());
-        }
-        let _ = self.sender.send(event); // ignore if no receivers
+    /// Push an already-built event with an explicit size (in bytes).
+    /// `bytes` should approximate the payload budget, e.g. `name.len() + data.len() + overhead`.
+    pub fn push_event_sized(&self, event: Event, bytes: usize) {
+        // Broadcast full event to live listeners
+        let _ = self.sender.send(event.clone());
+
+        // Store for history (tracked by size budget)
+        let mut inner = self.inner.lock().unwrap();
+        Self::evict_until_fits(&mut inner, bytes);
+
+        inner.history.push_back(StoredEvent { event, bytes });
+        inner.total_bytes = inner.total_bytes.saturating_add(bytes);
     }
 
-    pub fn push_stdout<S: AsRef<str>>(&self, line: S) {
-        self.push_event(Event::default().event("stdout").data(line.as_ref()));
+    /// Convenience: create & store an event from (name, data).
+    /// Uses exact bytes of name + data plus a tiny framing overhead.
+    pub fn push_named<S: AsRef<str>>(&self, name: &str, data: S) {
+        let data = data.as_ref();
+        let bytes = name.len() + data.as_bytes().len() + 8; // tiny framing overhead
+        let ev = Event::default().event(name).data(data.to_owned());
+        self.push_event_sized(ev, bytes);
+    }
+
+    pub fn push_stdout<S: AsRef<str>>(&self, s: S) {
+        self.push_named("stdout", s);
     }
 
     pub fn push_stderr<E: Display>(&self, err: E) {
-        self.push_event(Event::default().event("stderr").data(err.to_string()));
+        let s = err.to_string();
+        self.push_named("stderr", &s);
     }
 
     pub fn push_exit(&self, code: i32) {
-        self.push_event(Event::default().event("exit").data(code.to_string()));
+        self.push_named("exit", code.to_string());
     }
 
     pub fn push_stream_closed(&self) {
-        self.push_event(Event::default().event("stream").data("closed"));
+        self.push_named("stream", "closed");
     }
 
-    /// If you often send small JSON payloads:
     pub fn push_json<T: serde::Serialize>(&self, name: &str, value: &T) {
         let data = serde_json::to_string(value).unwrap_or_else(|_| "{}".into());
-        self.push_event(Event::default().event(name).data(data));
+        self.push_named(name, data);
     }
 
-    /// Useful when a consumer connects and wants backfill + live.
     pub fn subscribe_with_history(&self) -> (Vec<Event>, broadcast::Receiver<Event>) {
         (self.get_history(), self.get_receiver())
     }
 
-    /// Spawns a task that forwards a stream of `Event`s into this store.
-    /// Reports errors as `stderr` and emits a final `stream: closed`.
+    /// Forward a stream of sized events `(Event, approx_bytes)` into this store.
     pub fn spawn_forwarder<S, E>(self: Arc<Self>, stream: S) -> JoinHandle<()>
     where
-        S: Stream<Item = Result<Event, E>> + Send + 'static,
+        S: Stream<Item = Result<(Event, usize), E>> + Send + 'static,
         E: Display + Send + 'static,
     {
         tokio::spawn(async move {
-            tokio::pin!(stream); // <— pins `stream` on the stack
+            tokio::pin!(stream);
 
             while let Some(next) = stream.next().await {
                 match next {
-                    Ok(ev) => self.push_event(ev),
+                    Ok((ev, bytes)) => self.push_event_sized(ev, bytes),
                     Err(e) => self.push_stderr(format!("stream error: {e}")),
                 }
             }
             self.push_stream_closed();
         })
+    }
+
+    /// Evict from the front until `incoming_bytes` would fit.
+    fn evict_until_fits(inner: &mut Inner, incoming_bytes: usize) {
+        while inner.total_bytes.saturating_add(incoming_bytes) > HISTORY_BYTES {
+            if let Some(front) = inner.history.pop_front() {
+                inner.total_bytes = inner.total_bytes.saturating_sub(front.bytes);
+            } else {
+                break;
+            }
+        }
     }
 }

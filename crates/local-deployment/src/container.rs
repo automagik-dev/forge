@@ -1,9 +1,8 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
+use std::path::PathBuf;
 
 use anyhow::anyhow;
 use async_trait::async_trait;
 use axum::response::sse::Event;
-use command_group::AsyncGroupChild;
 use db::{
     DBService,
     models::{
@@ -12,17 +11,14 @@ use db::{
     },
 };
 use executors::actions::{ExecutorAction, ExecutorActions, script::ScriptContext};
-use futures::StreamExt;
 use services::services::{
     container::{ContainerError, ContainerRef, ContainerService},
     git::GitService,
 };
-use tokio::sync::RwLock;
-use tokio_stream::wrappers::BroadcastStream;
 use utils::text::{git_branch_id, short_uuid};
 use uuid::Uuid;
 
-use crate::{event_store::EventStore, execution_tracker::ExecutionTracker};
+use crate::execution_tracker::ExecutionTracker;
 
 #[derive(Clone)]
 pub struct LocalContainerService {
@@ -158,20 +154,12 @@ impl ContainerService for LocalContainerService {
         let current_dir = PathBuf::from(container_ref);
 
         // Create the child and stream, add to execution tracker
-        let (child, stream) = executor_action.spawn_and_stream(&current_dir).await?;
-        let exec_id = execution_process.id;
-        let store = Arc::new(EventStore::new());
+        let child = executor_action.spawn(&current_dir).await?;
+
+        // Track stream in the event store
         self.execution_tracker
-            .add_execution(exec_id, (child, store.clone()))
+            .start_and_track(execution_process.id, child)
             .await;
-
-        // Spawn thread to listen to events and store
-        store.clone().spawn_forwarder(stream);
-
-        // Spawn thread waiting for child exit to clean things up
-        let _jh = self
-            .execution_tracker
-            .spawn_exit_monitor(exec_id, store.clone());
 
         Ok(execution_process)
     }

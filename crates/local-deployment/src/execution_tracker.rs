@@ -2,9 +2,10 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use axum::response::sse::Event;
 use command_group::AsyncGroupChild;
-use futures::{StreamExt, stream};
+use futures::{StreamExt, TryStreamExt, stream::select};
 use tokio::{sync::RwLock, task::JoinHandle};
 use tokio_stream::wrappers::BroadcastStream;
+use tokio_util::io::ReaderStream;
 use uuid::Uuid;
 
 use crate::event_store::EventStore;
@@ -81,19 +82,16 @@ impl ExecutionTracker {
         &self,
         id: &Uuid,
     ) -> Option<futures::stream::BoxStream<'static, Result<Event, std::io::Error>>> {
-        // grab Arc<EventStore> without holding the lock
         let store = {
             let map = self.running_executions.read().await;
             map.get(id).map(|(_, s)| s.clone())?
         };
 
-        // history first
-        let history = store.get_history();
+        let (history, rx) = store.subscribe_with_history();
+
         let history_stream =
             futures::stream::iter(history.into_iter().map(Ok::<_, std::io::Error>));
 
-        // then live
-        let rx = store.get_receiver(); // or store.subscribe()
         let live = BroadcastStream::new(rx).filter_map(|res| async move {
             match res {
                 Ok(ev) => Some(Ok::<_, std::io::Error>(ev)),
@@ -102,5 +100,34 @@ impl ExecutionTracker {
         });
 
         Some(Box::pin(history_stream.chain(live)))
+    }
+
+    pub async fn start_and_track(&self, id: Uuid, mut child: AsyncGroupChild) {
+        let store = Arc::new(EventStore::new());
+
+        // Take pipes once, *before* we stash the child.
+        let out = child.inner().stdout.take().expect("no stdout");
+        let err = child.inner().stderr.take().expect("no stderr");
+
+        // Stream raw chunks; budget with chunk.len()
+        let out = ReaderStream::new(out).map_ok(|chunk| {
+            let text = String::from_utf8_lossy(&chunk).to_string();
+            let ev = Event::default().event("stdout").data(text);
+            (ev, chunk.len())
+        });
+
+        let err = ReaderStream::new(err).map_ok(|chunk| {
+            let text = String::from_utf8_lossy(&chunk).to_string();
+            let ev = Event::default().event("stderr").data(text);
+            (ev, chunk.len())
+        });
+
+        // Merge and forward into byte‑budgeted history
+        let merged = select(out, err);
+        store.clone().spawn_forwarder(merged);
+
+        // Register and monitor exit
+        self.add_execution(id, (child, store.clone())).await;
+        self.spawn_exit_monitor(id, store.clone());
     }
 }

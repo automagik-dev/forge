@@ -8,14 +8,11 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use db::{
-    DBService,
-    models::task_attempt::{TaskAttempt, TaskAttemptError},
-};
+use db::{DBService, models::task_attempt::TaskAttemptError};
 use git2::Error as Git2Error;
 use serde_json::Value;
 use services::services::{
-    container::{ContainerError, ContainerRef, ContainerService},
+    container::{ContainerError, ContainerService},
     git::{GitService, GitServiceError},
 };
 use sqlx::Error as SqlxError;

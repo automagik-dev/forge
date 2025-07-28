@@ -1,20 +1,18 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use async_trait::async_trait;
-use command_group::AsyncGroupChild;
-use db::{DBService, models::task_attempt::TaskAttempt};
+use db::DBService;
 use deployment::{Deployment, DeploymentError};
 use services::services::{
     analytics::{AnalyticsConfig, AnalyticsService, generate_user_id},
     config::Config,
-    container::{ContainerRef, ContainerService},
+    container::ContainerService,
     git::GitService,
     process_service::ProcessService,
     sentry::SentryService,
 };
 use tokio::sync::RwLock;
 use utils::assets::config_path;
-use uuid::Uuid;
 
 use crate::container::LocalContainerService;
 
