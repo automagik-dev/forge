@@ -7,13 +7,12 @@ use services::services::{
     analytics::{AnalyticsConfig, AnalyticsService, generate_user_id},
     config::Config,
     container::ContainerService,
-    event_store::EventStore,
     git::GitService,
     process_service::ProcessService,
     sentry::SentryService,
 };
 use tokio::sync::RwLock;
-use utils::assets::config_path;
+use utils::{assets::config_path, event_store::EventStore};
 use uuid::Uuid;
 
 use crate::container::LocalContainerService;

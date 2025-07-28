@@ -13,13 +13,12 @@ use git2::Error as Git2Error;
 use serde_json::Value;
 use services::services::{
     container::{ContainerError, ContainerService},
-    event_store::EventStore,
     git::{GitService, GitServiceError},
 };
 use sqlx::{Error as SqlxError, types::Uuid};
 use thiserror::Error;
 use tokio::sync::RwLock;
-use utils::response::ApiResponse;
+use utils::{event_store::EventStore, response::ApiResponse};
 
 #[derive(Debug, Error)]
 pub enum DeploymentError {

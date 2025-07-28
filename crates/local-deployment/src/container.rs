@@ -11,16 +11,21 @@ use db::{
         task_attempt::TaskAttempt,
     },
 };
-use executors::actions::{ExecutorAction, ExecutorActions, script::ScriptContext};
+use executors::{
+    actions::{ExecutorAction, ExecutorActions, script::ScriptContext},
+    logs::{LogNormalizer, amp::AmpLogNormalizer},
+};
 use futures::{TryStreamExt, stream::select};
 use services::services::{
     container::{ContainerError, ContainerRef, ContainerService},
-    event_store::EventStore,
     git::GitService,
 };
 use tokio::{sync::RwLock, task::JoinHandle};
 use tokio_util::io::ReaderStream;
-use utils::text::{git_branch_id, short_uuid};
+use utils::{
+    event_store::EventStore,
+    text::{git_branch_id, short_uuid},
+};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -55,32 +60,6 @@ impl LocalContainerService {
     pub async fn remove_child_from_store(&self, id: &Uuid) {
         let mut map = self.child_store.write().await;
         map.remove(id);
-    }
-
-    pub async fn track_child_events_in_store(&self, id: Uuid, child: &mut AsyncGroupChild) {
-        let store = Arc::new(EventStore::new());
-
-        let out = child.inner().stdout.take().expect("no stdout");
-        let err = child.inner().stderr.take().expect("no stderr");
-
-        let out = ReaderStream::new(out).map_ok(|chunk| {
-            let text = String::from_utf8_lossy(&chunk).to_string();
-            let ev = Event::default().event("stdout").data(text);
-            (ev, chunk.len())
-        });
-
-        let err = ReaderStream::new(err).map_ok(|chunk| {
-            let text = String::from_utf8_lossy(&chunk).to_string();
-            let ev = Event::default().event("stderr").data(text);
-            (ev, chunk.len())
-        });
-
-        // Merge and forward into byte‑budgeted history
-        let merged = select(out, err);
-        store.clone().spawn_forwarder(merged);
-
-        let mut map = self.event_stores.write().await;
-        map.insert(id, store);
     }
 
     // / Spawn a background task that polls the child process for completion and
@@ -192,6 +171,44 @@ impl LocalContainerService {
             },
         }
     }
+
+    async fn track_child_events_in_store(
+        &self,
+        id: Uuid,
+        child: &mut AsyncGroupChild,
+        normalizer: Option<impl LogNormalizer + Send>,
+    ) {
+        let store = Arc::new(EventStore::new());
+
+        let out = child.inner().stdout.take().expect("no stdout");
+        let err = child.inner().stderr.take().expect("no stderr");
+
+        let out = ReaderStream::new(out).map_ok(|chunk| {
+            let text = String::from_utf8_lossy(&chunk).to_string();
+            let ev = Event::default().event("stdout").data(text);
+            (ev, chunk.len())
+        });
+
+        let err = ReaderStream::new(err).map_ok(|chunk| {
+            let text = String::from_utf8_lossy(&chunk).to_string();
+            let ev = Event::default().event("stderr").data(text);
+            (ev, chunk.len())
+        });
+
+        // Merge and forward into byte‑budgeted history
+        let merged = select(out, err);
+        store.clone().spawn_forwarder(merged);
+
+        // if let Some(normalizer) = normalizer {
+        //     tokio::spawn(||
+        //         let normalised_logs_stream = normalizer.normalize_logs(store.clone(), worktree_path));
+        // }
+
+        // Thread -> subscriber to ^ stream, create a new stream of normalised logs
+
+        let mut map = self.event_stores().write().await;
+        map.insert(id, store);
+    }
 }
 
 #[async_trait]
@@ -255,8 +272,10 @@ impl ContainerService for LocalContainerService {
 
         // Create the child and stream, add to execution tracker
         let mut child = executor_action.spawn(&current_dir).await?;
-        self.track_child_events_in_store(execution_process.id, &mut child)
+        let normalizer = AmpLogNormalizer {};
+        self.track_child_events_in_store(execution_process.id, &mut child, Some(normalizer))
             .await;
+
         self.add_child_to_store(execution_process.id, child).await;
 
         Ok(execution_process)

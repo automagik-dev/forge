@@ -3,14 +3,18 @@ use std::{collections::HashMap, sync::Arc};
 use anyhow::{Error as AnyhowError, anyhow};
 use async_trait::async_trait;
 use axum::response::sse::Event;
+use command_group::AsyncGroupChild;
 use db::models::{execution_process::ExecutionProcess, task_attempt::TaskAttempt};
-use executors::{actions::ExecutorActions, executors::ExecutorError};
+use executors::{actions::ExecutorActions, executors::ExecutorError, logs::LogNormalizer};
+use futures::{TryStreamExt, stream::select};
 use sqlx::Error as SqlxError;
 use thiserror::Error;
 use tokio::sync::RwLock;
+use tokio_util::io::ReaderStream;
+use utils::event_store::EventStore;
 use uuid::Uuid;
 
-use crate::services::{event_store::EventStore, git::GitServiceError};
+use crate::services::git::GitServiceError;
 pub type ContainerRef = String;
 
 #[derive(Debug, Error)]

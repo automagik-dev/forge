@@ -1,27 +1,14 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use utils::event_store::EventStore;
 
 pub mod amp;
 
-#[async_trait]
-pub trait NormalizeLogs {
-    /// Normalize executor logs into a standard format
-    fn normalize_logs(
-        &self,
-        logs: &str,
-        base_path: &PathBuf,
-    ) -> Result<NormalizedConversation, String>;
-}
-
 pub trait LogNormalizer {
-    fn normalize_logs(
-        &self,
-        _logs: &str,
-        _worktree_path: &str,
-    ) -> Result<NormalizedConversation, String>;
+    fn normalize_logs(&self, _raw_logs_event_store: Arc<EventStore>, _worktree_path: &str);
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

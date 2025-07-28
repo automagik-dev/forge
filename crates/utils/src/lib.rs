@@ -4,6 +4,7 @@ use directories::ProjectDirs;
 
 pub mod assets;
 pub mod browser;
+pub mod event_store;
 pub mod path;
 pub mod response;
 pub mod sentry;

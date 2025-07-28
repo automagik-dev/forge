@@ -1,60 +1,60 @@
+use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
+use utils::event_store::EventStore;
 
 use super::{LogNormalizer, NormalizedConversation, NormalizedEntry, NormalizedEntryType};
 
 pub struct AmpLogNormalizer {}
 
 impl LogNormalizer for AmpLogNormalizer {
-    fn normalize_logs(
-        &self,
-        logs: &str,
-        worktree_path: &str,
-    ) -> Result<NormalizedConversation, String> {
-        let mut entries = Vec::new();
-        let mut session_id = None;
+    fn normalize_logs(&self, raw_logs_event_store: Arc<EventStore>, worktree_path: &str) {
+        todo!();
+        // let mut entries = Vec::new();
+        // let mut session_id = None;
 
-        for line in logs.lines() {
-            let trimmed = line.trim();
-            if trimmed.is_empty() {
-                continue;
-            }
+        // for line in logs.lines() {
+        //     let trimmed = line.trim();
+        //     if trimmed.is_empty() {
+        //         continue;
+        //     }
 
-            // Try to parse as AmpMessage
-            let amp_message: AmpJson = match serde_json::from_str(trimmed) {
-                Ok(msg) => msg,
-                Err(_) => {
-                    // If line isn't valid JSON, add it as raw text
-                    entries.push(NormalizedEntry {
-                        timestamp: None,
-                        entry_type: NormalizedEntryType::SystemMessage,
-                        content: format!("Raw output: {}", trimmed),
-                        metadata: None,
-                    });
-                    continue;
-                }
-            };
+        //     // Try to parse as AmpMessage
+        //     let amp_message: AmpJson = match serde_json::from_str(trimmed) {
+        //         Ok(msg) => msg,
+        //         Err(_) => {
+        //             // If line isn't valid JSON, add it as raw text
+        //             entries.push(NormalizedEntry {
+        //                 timestamp: None,
+        //                 entry_type: NormalizedEntryType::SystemMessage,
+        //                 content: format!("Raw output: {}", trimmed),
+        //                 metadata: None,
+        //             });
+        //             continue;
+        //         }
+        //     };
 
-            // Extract session ID if available
-            if session_id.is_none() {
-                if let Some(id) = amp_message.extract_session_id() {
-                    session_id = Some(id);
-                }
-            }
+        //     // Extract session ID if available
+        //     if session_id.is_none() {
+        //         if let Some(id) = amp_message.extract_session_id() {
+        //             session_id = Some(id);
+        //         }
+        //     }
 
-            // Process the message if it's a type we care about
-            if amp_message.should_process() {
-                let new_entries = amp_message.to_normalized_entries(worktree_path);
-                entries.extend(new_entries);
-            }
-        }
+        //     // Process the message if it's a type we care about
+        //     if amp_message.should_process() {
+        //         let new_entries = amp_message.to_normalized_entries(worktree_path);
+        //         entries.extend(new_entries);
+        //     }
+        // }
 
-        Ok(NormalizedConversation {
-            entries,
-            session_id,
-            executor_type: "amp".to_string(),
-            prompt: None,
-            summary: None,
-        })
+        // Ok(NormalizedConversation {
+        //     entries,
+        //     session_id,
+        //     executor_type: "amp".to_string(),
+        //     prompt: None,
+        //     summary: None,
+        // })
     }
 }
 
