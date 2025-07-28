@@ -1,6 +1,7 @@
 pub mod analytics;
 pub mod config;
 pub mod container;
+pub mod event_store;
 pub mod git;
 pub mod github_service;
 pub mod process_service;

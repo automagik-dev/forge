@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use ::services::services::{analytics::AnalyticsService, config::Config, sentry::SentryService};
 use anyhow::Error as AnyhowError;
@@ -13,9 +13,10 @@ use git2::Error as Git2Error;
 use serde_json::Value;
 use services::services::{
     container::{ContainerError, ContainerService},
+    event_store::EventStore,
     git::{GitService, GitServiceError},
 };
-use sqlx::Error as SqlxError;
+use sqlx::{Error as SqlxError, types::Uuid};
 use thiserror::Error;
 use tokio::sync::RwLock;
 use utils::response::ApiResponse;
@@ -64,6 +65,8 @@ pub trait Deployment: Clone + Send + Sync + 'static {
     fn container(&self) -> &impl ContainerService;
 
     fn git(&self) -> &GitService;
+
+    fn event_store(&self) -> &Arc<RwLock<HashMap<Uuid, Arc<EventStore>>>>;
 
     async fn update_sentry_scope(&self) -> Result<(), DeploymentError> {
         let user_id = self.user_id();

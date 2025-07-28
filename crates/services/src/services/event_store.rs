@@ -7,6 +7,8 @@ use std::{
 use axum::response::sse::Event;
 use futures::{Stream, StreamExt};
 use tokio::{sync::broadcast, task::JoinHandle};
+use tokio_stream::wrappers::BroadcastStream;
+use uuid::Uuid;
 
 /// Keep ~10 KiB of recent SSE payloads.
 const HISTORY_BYTES: usize = 10 * 1024;
@@ -126,5 +128,23 @@ impl EventStore {
                 break;
             }
         }
+    }
+
+    pub async fn history_plus_stream(
+        &self,
+    ) -> Option<futures::stream::BoxStream<'static, Result<Event, std::io::Error>>> {
+        let (history, rx) = self.subscribe_with_history();
+
+        let history_stream =
+            futures::stream::iter(history.into_iter().map(Ok::<_, std::io::Error>));
+
+        let live = BroadcastStream::new(rx).filter_map(|res| async move {
+            match res {
+                Ok(ev) => Some(Ok::<_, std::io::Error>(ev)),
+                Err(_) => None, // drop lagged frames
+            }
+        });
+
+        Some(Box::pin(history_stream.chain(live)))
     }
 }

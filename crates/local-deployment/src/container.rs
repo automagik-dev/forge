@@ -1,8 +1,9 @@
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::anyhow;
 use async_trait::async_trait;
 use axum::response::sse::Event;
+use command_group::AsyncGroupChild;
 use db::{
     DBService,
     models::{
@@ -11,31 +12,127 @@ use db::{
     },
 };
 use executors::actions::{ExecutorAction, ExecutorActions, script::ScriptContext};
+use futures::{TryStreamExt, stream::select};
 use services::services::{
     container::{ContainerError, ContainerRef, ContainerService},
+    event_store::EventStore,
     git::GitService,
 };
+use tokio::{sync::RwLock, task::JoinHandle};
+use tokio_util::io::ReaderStream;
 use utils::text::{git_branch_id, short_uuid};
 use uuid::Uuid;
-
-use crate::execution_tracker::ExecutionTracker;
 
 #[derive(Clone)]
 pub struct LocalContainerService {
     db: DBService,
     git: GitService,
-    execution_tracker: ExecutionTracker,
+    child_store: Arc<RwLock<HashMap<Uuid, Arc<RwLock<AsyncGroupChild>>>>>,
+    event_stores: Arc<RwLock<HashMap<Uuid, Arc<EventStore>>>>,
 }
 
 impl LocalContainerService {
-    pub fn new(db: DBService, git: GitService) -> Self {
-        let execution_tracker = ExecutionTracker::new();
+    pub fn new(
+        db: DBService,
+        git: GitService,
+        event_stores: Arc<RwLock<HashMap<Uuid, Arc<EventStore>>>>,
+    ) -> Self {
+        let child_store = Arc::new(RwLock::new(HashMap::new()));
 
         LocalContainerService {
             db,
             git,
-            execution_tracker,
+            child_store,
+            event_stores,
         }
+    }
+
+    pub async fn add_child_to_store(&self, id: Uuid, exec: AsyncGroupChild) {
+        let mut map = self.child_store.write().await;
+        map.insert(id, Arc::new(RwLock::new(exec)));
+    }
+
+    pub async fn remove_child_from_store(&self, id: &Uuid) {
+        let mut map = self.child_store.write().await;
+        map.remove(id);
+    }
+
+    pub async fn track_child_events_in_store(&self, id: Uuid, child: &mut AsyncGroupChild) {
+        let store = Arc::new(EventStore::new());
+
+        let out = child.inner().stdout.take().expect("no stdout");
+        let err = child.inner().stderr.take().expect("no stderr");
+
+        let out = ReaderStream::new(out).map_ok(|chunk| {
+            let text = String::from_utf8_lossy(&chunk).to_string();
+            let ev = Event::default().event("stdout").data(text);
+            (ev, chunk.len())
+        });
+
+        let err = ReaderStream::new(err).map_ok(|chunk| {
+            let text = String::from_utf8_lossy(&chunk).to_string();
+            let ev = Event::default().event("stderr").data(text);
+            (ev, chunk.len())
+        });
+
+        // Merge and forward into byte‑budgeted history
+        let merged = select(out, err);
+        store.clone().spawn_forwarder(merged);
+
+        let mut map = self.event_stores.write().await;
+        map.insert(id, store);
+    }
+
+    // / Spawn a background task that polls the child process for completion and
+    // / cleans up the execution entry when it exits.
+    pub fn spawn_exit_monitor(
+        &self,
+        exec_id: Uuid,
+        child_store: Arc<RwLock<HashMap<Uuid, Arc<RwLock<AsyncGroupChild>>>>>,
+        event_stores: Arc<RwLock<HashMap<Uuid, Arc<EventStore>>>>,
+    ) -> JoinHandle<()> {
+        let child_store = child_store.clone();
+        let event_stores = event_stores.clone();
+        tokio::spawn(async move {
+            loop {
+                // Keep the lock only while calling try_wait (needs &mut)
+                let status_opt = {
+                    let map = child_store.read().await;
+                    match map.get(&exec_id) {
+                        Some(child) => match child.clone().write().await.try_wait() {
+                            Ok(Some(status)) => Some(Ok(status)),
+                            Ok(None) => None,
+                            Err(e) => Some(Err(e)),
+                        },
+                        None => break, // already removed elsewhere
+                    }
+                };
+
+                let mut map = event_stores.write().await;
+                match map.get_mut(&exec_id) {
+                    Some(event_store) => match status_opt {
+                        Some(Ok(status)) => {
+                            let code = status.code().unwrap_or_default();
+                            event_store.push_exit(code);
+                            // TODO: remove execution from event and child store when it's finished
+                            // let _ = event_store.remove_execution(&exec_id).await;
+
+                            // Optional: persist completion here if desired
+                            // e.g. ExecutionProcess::mark_finished(...).await?;
+
+                            break;
+                        }
+                        Some(Err(e)) => {
+                            event_store.push_stderr(format!("wait error: {e}"));
+                            // let _ = svc.remove_execution(&exec_id).await;
+                            break;
+                        }
+                        None => tokio::time::sleep(Duration::from_millis(250)).await,
+                    },
+                    None => break,
+                }
+            }
+        })
     }
 
     pub fn dir_name_from_task_attempt(attempt_id: &Uuid, task_title: &str) -> String {
@@ -99,6 +196,9 @@ impl LocalContainerService {
 
 #[async_trait]
 impl ContainerService for LocalContainerService {
+    fn event_stores(&self) -> &Arc<RwLock<HashMap<Uuid, Arc<EventStore>>>> {
+        &self.event_stores
+    }
     /// Create a container
     async fn create(&self, task_attempt: &TaskAttempt) -> Result<ContainerRef, ContainerError> {
         let task = task_attempt
@@ -154,20 +254,11 @@ impl ContainerService for LocalContainerService {
         let current_dir = PathBuf::from(container_ref);
 
         // Create the child and stream, add to execution tracker
-        let child = executor_action.spawn(&current_dir).await?;
-
-        // Track stream in the event store
-        self.execution_tracker
-            .start_and_track(execution_process.id, child)
+        let mut child = executor_action.spawn(&current_dir).await?;
+        self.track_child_events_in_store(execution_process.id, &mut child)
             .await;
+        self.add_child_to_store(execution_process.id, child).await;
 
         Ok(execution_process)
-    }
-
-    async fn stream_logs(
-        &self,
-        id: &Uuid,
-    ) -> Option<futures::stream::BoxStream<'static, Result<Event, std::io::Error>>> {
-        self.execution_tracker.history_plus_stream(id).await
     }
 }
