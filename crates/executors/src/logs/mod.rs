@@ -3,12 +3,12 @@ use std::{path::PathBuf, sync::Arc};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-use utils::event_store::EventStore;
+use utils::msg_store::MsgStore;
 
 pub mod amp;
 
 pub trait LogNormalizer {
-    fn normalize_logs(&self, _raw_logs_event_store: Arc<EventStore>, _worktree_path: &str);
+    fn normalize_logs(&self, _raw_logs_event_store: Arc<MsgStore>, _worktree_path: &str);
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

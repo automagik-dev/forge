@@ -18,7 +18,7 @@ use services::services::{
 use sqlx::{Error as SqlxError, types::Uuid};
 use thiserror::Error;
 use tokio::sync::RwLock;
-use utils::{event_store::EventStore, response::ApiResponse};
+use utils::{msg_store::MsgStore, response::ApiResponse};
 
 #[derive(Debug, Error)]
 pub enum DeploymentError {
@@ -65,7 +65,7 @@ pub trait Deployment: Clone + Send + Sync + 'static {
 
     fn git(&self) -> &GitService;
 
-    fn event_store(&self) -> &Arc<RwLock<HashMap<Uuid, Arc<EventStore>>>>;
+    fn msg_stores(&self) -> &Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>;
 
     async fn update_sentry_scope(&self) -> Result<(), DeploymentError> {
         let user_id = self.user_id();

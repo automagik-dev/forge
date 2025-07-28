@@ -23,7 +23,8 @@ use services::services::{
 use tokio::{sync::RwLock, task::JoinHandle};
 use tokio_util::io::ReaderStream;
 use utils::{
-    event_store::EventStore,
+    log_msg::LogMsg,
+    msg_store::MsgStore,
     text::{git_branch_id, short_uuid},
 };
 use uuid::Uuid;
@@ -33,14 +34,14 @@ pub struct LocalContainerService {
     db: DBService,
     git: GitService,
     child_store: Arc<RwLock<HashMap<Uuid, Arc<RwLock<AsyncGroupChild>>>>>,
-    event_stores: Arc<RwLock<HashMap<Uuid, Arc<EventStore>>>>,
+    msg_stores: Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>,
 }
 
 impl LocalContainerService {
     pub fn new(
         db: DBService,
         git: GitService,
-        event_stores: Arc<RwLock<HashMap<Uuid, Arc<EventStore>>>>,
+        msg_stores: Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>,
     ) -> Self {
         let child_store = Arc::new(RwLock::new(HashMap::new()));
 
@@ -48,7 +49,7 @@ impl LocalContainerService {
             db,
             git,
             child_store,
-            event_stores,
+            msg_stores,
         }
     }
 
@@ -68,7 +69,7 @@ impl LocalContainerService {
         &self,
         exec_id: Uuid,
         child_store: Arc<RwLock<HashMap<Uuid, Arc<RwLock<AsyncGroupChild>>>>>,
-        event_stores: Arc<RwLock<HashMap<Uuid, Arc<EventStore>>>>,
+        event_stores: Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>,
     ) -> JoinHandle<()> {
         let child_store = child_store.clone();
         let event_stores = event_stores.clone();
@@ -92,7 +93,6 @@ impl LocalContainerService {
                     Some(event_store) => match status_opt {
                         Some(Ok(status)) => {
                             let code = status.code().unwrap_or_default();
-                            event_store.push_exit(code);
                             // TODO: remove execution from event and child store when it's finished
                             // let _ = event_store.remove_execution(&exec_id).await;
 
@@ -178,33 +178,26 @@ impl LocalContainerService {
         child: &mut AsyncGroupChild,
         normalizer: Option<impl LogNormalizer + Send>,
     ) {
-        let store = Arc::new(EventStore::new());
+        let store = Arc::new(MsgStore::new());
 
         let out = child.inner().stdout.take().expect("no stdout");
         let err = child.inner().stderr.take().expect("no stderr");
 
-        let out = ReaderStream::new(out).map_ok(|chunk| {
-            let text = String::from_utf8_lossy(&chunk).to_string();
-            let ev = Event::default().event("stdout").data(text);
-            (ev, chunk.len())
-        });
+        // Map stdout bytes -> LogMsg::Stdout
+        let out = ReaderStream::new(out)
+            .map_ok(|chunk| LogMsg::Stdout(String::from_utf8_lossy(&chunk).into_owned()));
 
-        let err = ReaderStream::new(err).map_ok(|chunk| {
-            let text = String::from_utf8_lossy(&chunk).to_string();
-            let ev = Event::default().event("stderr").data(text);
-            (ev, chunk.len())
-        });
+        // Map stderr bytes -> LogMsg::Stderr
+        let err = ReaderStream::new(err)
+            .map_ok(|chunk| LogMsg::Stderr(String::from_utf8_lossy(&chunk).into_owned()));
 
-        // Merge and forward into byte‑budgeted history
-        let merged = select(out, err);
+        // If you have a JSON Patch source, map it to LogMsg::JsonPatch too, then select all three.
+
+        // Merge and forward into the store
+        let merged = select(out, err); // Stream<Item = Result<LogMsg, io::Error>>
         store.clone().spawn_forwarder(merged);
 
-        // if let Some(normalizer) = normalizer {
-        //     tokio::spawn(||
-        //         let normalised_logs_stream = normalizer.normalize_logs(store.clone(), worktree_path));
-        // }
-
-        // Thread -> subscriber to ^ stream, create a new stream of normalised logs
+        // (normalizer usage omitted)
 
         let mut map = self.event_stores().write().await;
         map.insert(id, store);
@@ -213,8 +206,8 @@ impl LocalContainerService {
 
 #[async_trait]
 impl ContainerService for LocalContainerService {
-    fn event_stores(&self) -> &Arc<RwLock<HashMap<Uuid, Arc<EventStore>>>> {
-        &self.event_stores
+    fn event_stores(&self) -> &Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>> {
+        &self.msg_stores
     }
     /// Create a container
     async fn create(&self, task_attempt: &TaskAttempt) -> Result<ContainerRef, ContainerError> {

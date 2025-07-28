@@ -12,7 +12,7 @@ use services::services::{
     sentry::SentryService,
 };
 use tokio::sync::RwLock;
-use utils::{assets::config_path, event_store::EventStore};
+use utils::{assets::config_path, msg_store::MsgStore};
 use uuid::Uuid;
 
 use crate::container::LocalContainerService;
@@ -26,7 +26,7 @@ pub struct LocalDeployment {
     user_id: String,
     db: DBService,
     analytics: Option<AnalyticsService>,
-    event_store: Arc<RwLock<HashMap<Uuid, Arc<EventStore>>>>,
+    msg_stores: Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>,
     container: LocalContainerService,
     git: GitService,
     process: ProcessService,
@@ -41,8 +41,8 @@ impl Deployment for LocalDeployment {
         let db = DBService::new().await?;
         let analytics = AnalyticsConfig::new().map(AnalyticsService::new);
         let git = GitService::new();
-        let event_store = Arc::new(RwLock::new(HashMap::new()));
-        let container = LocalContainerService::new(db.clone(), git.clone(), event_store.clone());
+        let msg_stores = Arc::new(RwLock::new(HashMap::new()));
+        let container = LocalContainerService::new(db.clone(), git.clone(), msg_stores.clone());
         let process = ProcessService::new();
 
         Ok(Self {
@@ -51,7 +51,7 @@ impl Deployment for LocalDeployment {
             user_id,
             db,
             analytics,
-            event_store,
+            msg_stores,
             container,
             git,
             process,
@@ -90,7 +90,7 @@ impl Deployment for LocalDeployment {
         &self.git
     }
 
-    fn event_store(&self) -> &Arc<RwLock<HashMap<Uuid, Arc<EventStore>>>> {
-        &self.event_store
+    fn msg_stores(&self) -> &Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>> {
+        &self.msg_stores
     }
 }

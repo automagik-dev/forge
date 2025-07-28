@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
-use utils::event_store::EventStore;
+use utils::msg_store::MsgStore;
 
 use super::{LogNormalizer, NormalizedConversation, NormalizedEntry, NormalizedEntryType};
 
 pub struct AmpLogNormalizer {}
 
 impl LogNormalizer for AmpLogNormalizer {
-    fn normalize_logs(&self, raw_logs_event_store: Arc<EventStore>, worktree_path: &str) {
+    fn normalize_logs(&self, raw_logs_event_store: Arc<MsgStore>, worktree_path: &str) {
         todo!();
         // let mut entries = Vec::new();
         // let mut session_id = None;
