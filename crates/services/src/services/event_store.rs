@@ -1,7 +1,7 @@
 use std::{
     collections::VecDeque,
     fmt::Display,
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
 };
 
 use axum::response::sse::Event;
@@ -26,7 +26,7 @@ struct Inner {
 }
 
 pub struct EventStore {
-    inner: Mutex<Inner>,
+    inner: RwLock<Inner>,
     sender: broadcast::Sender<Event>,
 }
 
@@ -34,7 +34,7 @@ impl EventStore {
     pub fn new() -> Self {
         let (sender, _) = broadcast::channel(100);
         Self {
-            inner: Mutex::new(Inner {
+            inner: RwLock::new(Inner {
                 history: VecDeque::with_capacity(32),
                 total_bytes: 0,
             }),
@@ -47,7 +47,7 @@ impl EventStore {
     }
 
     pub fn get_history(&self) -> Vec<Event> {
-        let inner = self.inner.lock().unwrap();
+        let inner = self.inner.read().unwrap();
         inner.history.iter().map(|s| s.event.clone()).collect()
     }
 
@@ -58,7 +58,7 @@ impl EventStore {
         let _ = self.sender.send(event.clone());
 
         // Store for history (tracked by size budget)
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.inner.write().unwrap();
         Self::evict_until_fits(&mut inner, bytes);
 
         inner.history.push_back(StoredEvent { event, bytes });
