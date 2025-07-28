@@ -2,7 +2,6 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::anyhow;
 use async_trait::async_trait;
-use axum::response::sse::Event;
 use command_group::AsyncGroupChild;
 use db::{
     DBService,
@@ -69,10 +68,10 @@ impl LocalContainerService {
         &self,
         exec_id: Uuid,
         child_store: Arc<RwLock<HashMap<Uuid, Arc<RwLock<AsyncGroupChild>>>>>,
-        event_stores: Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>,
+        msg_stores: Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>,
     ) -> JoinHandle<()> {
         let child_store = child_store.clone();
-        let event_stores = event_stores.clone();
+        let msg_stores = msg_stores.clone();
         tokio::spawn(async move {
             loop {
                 // Keep the lock only while calling try_wait (needs &mut)
@@ -88,13 +87,13 @@ impl LocalContainerService {
                     }
                 };
 
-                let mut map = event_stores.write().await;
+                let mut map = msg_stores.write().await;
                 match map.get_mut(&exec_id) {
-                    Some(event_store) => match status_opt {
+                    Some(msg_store) => match status_opt {
                         Some(Ok(status)) => {
                             let code = status.code().unwrap_or_default();
                             // TODO: remove execution from event and child store when it's finished
-                            // let _ = event_store.remove_execution(&exec_id).await;
+                            // let _ = msg_store.remove_execution(&exec_id).await;
 
                             // Optional: persist completion here if desired
                             // e.g. ExecutionProcess::mark_finished(...).await?;
@@ -102,7 +101,7 @@ impl LocalContainerService {
                             break;
                         }
                         Some(Err(e)) => {
-                            event_store.push_stderr(format!("wait error: {e}"));
+                            msg_store.push_stderr(format!("wait error: {e}"));
                             // let _ = svc.remove_execution(&exec_id).await;
                             break;
                         }
@@ -172,7 +171,7 @@ impl LocalContainerService {
         }
     }
 
-    async fn track_child_events_in_store(
+    async fn track_child_msgs_in_store(
         &self,
         id: Uuid,
         child: &mut AsyncGroupChild,
@@ -199,14 +198,14 @@ impl LocalContainerService {
 
         // (normalizer usage omitted)
 
-        let mut map = self.event_stores().write().await;
+        let mut map = self.msg_stores().write().await;
         map.insert(id, store);
     }
 }
 
 #[async_trait]
 impl ContainerService for LocalContainerService {
-    fn event_stores(&self) -> &Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>> {
+    fn msg_stores(&self) -> &Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>> {
         &self.msg_stores
     }
     /// Create a container
@@ -266,7 +265,7 @@ impl ContainerService for LocalContainerService {
         // Create the child and stream, add to execution tracker
         let mut child = executor_action.spawn(&current_dir).await?;
         let normalizer = AmpLogNormalizer {};
-        self.track_child_events_in_store(execution_process.id, &mut child, Some(normalizer))
+        self.track_child_msgs_in_store(execution_process.id, &mut child, Some(normalizer))
             .await;
 
         self.add_child_to_store(execution_process.id, child).await;

@@ -31,7 +31,7 @@ pub enum ContainerError {
 
 #[async_trait]
 pub trait ContainerService {
-    fn event_stores(&self) -> &Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>;
+    fn msg_stores(&self) -> &Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>;
 
     async fn create(&self, task_attempt: &TaskAttempt) -> Result<ContainerRef, ContainerError>;
 
@@ -42,8 +42,8 @@ pub trait ContainerService {
     ) -> Result<ExecutionProcess, ContainerError>;
 
     /// Fetch the MsgStore for a given execution ID, panicking if missing.
-    async fn get_event_store_by_id(&self, uuid: &Uuid) -> Option<Arc<MsgStore>> {
-        let map = self.event_stores().read().await;
+    async fn get_msg_store_by_id(&self, uuid: &Uuid) -> Option<Arc<MsgStore>> {
+        let map = self.msg_stores().read().await;
         map.get(uuid).cloned()
     }
 
@@ -53,7 +53,7 @@ pub trait ContainerService {
     ) -> Option<
         futures::stream::BoxStream<'static, Result<axum::response::sse::Event, std::io::Error>>,
     > {
-        if let Some(store) = self.get_event_store_by_id(id).await {
+        if let Some(store) = self.get_msg_store_by_id(id).await {
             Some(
                 store
                     .history_plus_stream() // BoxStream<Result<LogMsg, io::Error>>
