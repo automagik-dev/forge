@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use async_trait::async_trait;
 use command_group::AsyncGroupChild;
 use enum_dispatch::enum_dispatch;
+use serde::Serialize;
 
 use crate::{
     actions::{
@@ -16,6 +17,8 @@ pub mod standard;
 pub mod standard_follow_up;
 
 #[enum_dispatch]
+#[derive(Serialize)]
+
 pub enum ExecutorActions {
     StandardCodingAgentRequest,
     StandardFollowUpCodingAgentRequest,

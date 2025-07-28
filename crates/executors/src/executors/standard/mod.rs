@@ -3,12 +3,15 @@ use std::path::PathBuf;
 use async_trait::async_trait;
 use command_group::AsyncGroupChild;
 use enum_dispatch::enum_dispatch;
+use serde::Serialize;
 
 use crate::executors::{ExecutorError, standard::amp::AmpExecutor};
 
 pub mod amp;
+pub mod gemini;
 
 #[enum_dispatch]
+#[derive(Serialize)]
 pub enum StandardCodingAgentExecutors {
     AmpExecutor,
 }

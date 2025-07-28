@@ -6,8 +6,6 @@ use futures_io::Error as FuturesIoError;
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::logs::NormalizedConversation;
-
 pub mod standard;
 
 #[derive(Debug, Error)]

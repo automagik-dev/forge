@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use async_trait::async_trait;
 use command_group::AsyncGroupChild;
+use serde::Serialize;
 
 use crate::{
     actions::ExecutorAction,
@@ -11,6 +12,7 @@ use crate::{
     },
 };
 
+#[derive(Serialize)]
 pub struct StandardFollowUpCodingAgentRequest {
     pub prompt: String,
     pub session_id: String,

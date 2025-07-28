@@ -2,21 +2,25 @@ use std::{path::PathBuf, process::Stdio};
 
 use async_trait::async_trait;
 use command_group::{AsyncCommandGroup, AsyncGroupChild};
+use serde::Serialize;
 use tokio::{io::AsyncWriteExt, process::Command};
 use utils::shell::get_shell_command;
 
 use crate::{actions::ExecutorAction, executors::ExecutorError};
 
+#[derive(Serialize)]
 pub enum ScriptRequestLanguage {
     Bash,
 }
 
+#[derive(Serialize)]
 pub enum ScriptContext {
     SetupScript,
     CleanupScript,
     DevServer,
 }
 
+#[derive(Serialize)]
 pub struct ScriptRequest {
     pub script: String,
     pub language: ScriptRequestLanguage,

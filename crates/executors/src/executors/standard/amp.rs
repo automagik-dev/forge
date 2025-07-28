@@ -13,12 +13,14 @@ use std::{path::PathBuf, process::Stdio};
 
 use async_trait::async_trait;
 use command_group::{AsyncCommandGroup, AsyncGroupChild};
+use serde::Serialize;
 use tokio::{io::AsyncWriteExt, process::Command};
 use utils::shell::get_shell_command;
 
 use crate::executors::{ExecutorError, standard::StandardCodingAgentExecutor};
 
 /// An executor that uses Amp to process tasks
+#[derive(Serialize)]
 pub struct AmpExecutor {}
 
 #[async_trait]
