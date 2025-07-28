@@ -37,10 +37,6 @@ yarn-error.log*
 ehthumbs.db
 Thumbs.db
 
-# Logs
-*.log
-logs/
-
 # Runtime data
 pids
 *.pid
