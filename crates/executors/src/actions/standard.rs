@@ -19,6 +19,6 @@ pub struct StandardCodingAgentRequest {
 #[async_trait]
 impl ExecutorAction for StandardCodingAgentRequest {
     async fn spawn(&self, current_dir: &PathBuf) -> Result<AsyncGroupChild, ExecutorError> {
-        self.executor.spawn(current_dir).await
+        self.executor.spawn(current_dir, &self.prompt).await
     }
 }

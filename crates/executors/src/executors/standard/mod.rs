@@ -16,9 +16,15 @@ pub enum StandardCodingAgentExecutors {
 #[async_trait]
 #[enum_dispatch(StandardCodingAgentExecutors)]
 pub trait StandardCodingAgentExecutor {
-    async fn spawn(&self, current_dir: &PathBuf) -> Result<AsyncGroupChild, ExecutorError>;
+    async fn spawn(
+        &self,
+        current_dir: &PathBuf,
+        prompt: &str,
+    ) -> Result<AsyncGroupChild, ExecutorError>;
     async fn spawn_follow_up(
         &self,
         current_dir: &PathBuf,
+        prompt: &str,
+        session_id: &str,
     ) -> Result<AsyncGroupChild, ExecutorError>;
 }

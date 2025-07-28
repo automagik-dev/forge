@@ -20,6 +20,8 @@ pub struct StandardFollowUpCodingAgentRequest {
 #[async_trait]
 impl ExecutorAction for StandardFollowUpCodingAgentRequest {
     async fn spawn(&self, current_dir: &PathBuf) -> Result<AsyncGroupChild, ExecutorError> {
-        self.executor.spawn_follow_up(current_dir).await
+        self.executor
+            .spawn_follow_up(current_dir, &self.prompt, &self.session_id)
+            .await
     }
 }
