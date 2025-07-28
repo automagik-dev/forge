@@ -196,7 +196,10 @@ impl LocalContainerService {
         let merged = select(out, err); // Stream<Item = Result<LogMsg, io::Error>>
         store.clone().spawn_forwarder(merged);
 
-        // (normalizer usage omitted)
+        // Testing normalizer stream
+        if let Some(normalizer) = normalizer {
+            normalizer.normalize_logs(store.clone(), "worktree_path");
+        }
 
         let mut map = self.msg_stores().write().await;
         map.insert(id, store);

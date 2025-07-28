@@ -1,15 +1,44 @@
 use std::sync::Arc;
 
+use futures::StreamExt;
 use serde::{Deserialize, Serialize};
-use utils::msg_store::MsgStore;
+use tokio::task::JoinHandle;
+use utils::{log_msg::LogMsg, msg_store::MsgStore};
 
 use super::{LogNormalizer, NormalizedConversation, NormalizedEntry, NormalizedEntryType};
 
 pub struct AmpLogNormalizer {}
 
 impl LogNormalizer for AmpLogNormalizer {
-    fn normalize_logs(&self, raw_logs_event_store: Arc<MsgStore>, worktree_path: &str) {
-        todo!();
+    fn normalize_logs(&self, raw_logs_event_store: Arc<MsgStore>, working_dir: &str) {
+        tokio::spawn(async move {
+            let mut s = raw_logs_event_store.history_plus_stream().await;
+            let mut buf = String::new();
+            while let Some(Ok(m)) = s.next().await {
+                let chunk = match m {
+                    LogMsg::Stdout(x) | LogMsg::Stderr(x) => x,
+                    LogMsg::JsonPatch(p) => {
+                        format!("{}\n", serde_json::to_string(&p).unwrap_or_default())
+                    }
+                };
+                buf.push_str(&chunk);
+
+                // Print complete lines; keep the trailing partial (if any)
+                for line in buf
+                    .split_inclusive('\n')
+                    .filter(|l| l.ends_with('\n'))
+                    .map(str::to_owned)
+                    .collect::<Vec<_>>()
+                {
+                    print!("{line}");
+                }
+                buf = buf.rsplit('\n').next().unwrap_or("").to_owned();
+            }
+            if !buf.is_empty() {
+                print!("{buf}");
+            }
+        });
+
         // let mut entries = Vec::new();
         // let mut session_id = None;
 

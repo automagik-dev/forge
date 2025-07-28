@@ -5,7 +5,11 @@ use async_trait::async_trait;
 use axum::response::sse::Event;
 use command_group::AsyncGroupChild;
 use db::models::{execution_process::ExecutionProcess, task_attempt::TaskAttempt};
-use executors::{actions::ExecutorActions, executors::ExecutorError, logs::LogNormalizer};
+use executors::{
+    actions::ExecutorActions,
+    executors::ExecutorError,
+    logs::{LogNormalizer, amp::AmpLogNormalizer},
+};
 use futures::{StreamExt, TryStreamExt, stream::select};
 use sqlx::Error as SqlxError;
 use thiserror::Error;
@@ -50,9 +54,7 @@ pub trait ContainerService {
     async fn stream_raw_logs(
         &self,
         id: &Uuid,
-    ) -> Option<
-        futures::stream::BoxStream<'static, Result<axum::response::sse::Event, std::io::Error>>,
-    > {
+    ) -> Option<futures::stream::BoxStream<'static, Result<Event, std::io::Error>>> {
         if let Some(store) = self.get_msg_store_by_id(id).await {
             Some(
                 store
@@ -71,6 +73,5 @@ pub trait ContainerService {
         id: &Uuid,
     ) -> Option<futures::stream::BoxStream<'static, Result<Event, std::io::Error>>> {
         todo!()
-        // self.execution_tracker.history_plus_stream(id).await
     }
 }
