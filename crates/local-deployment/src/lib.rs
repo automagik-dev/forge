@@ -20,6 +20,7 @@ use crate::container::LocalContainerService;
 
 pub mod container;
 pub mod event_store;
+pub mod execution_tracker;
 
 #[derive(Clone)]
 pub struct LocalDeployment {

@@ -12,47 +12,34 @@ use db::{
     },
 };
 use executors::actions::{ExecutorAction, ExecutorActions, script::ScriptContext};
-use futures_util::StreamExt;
+use futures::StreamExt;
 use services::services::{
     container::{ContainerError, ContainerRef, ContainerService},
     git::GitService,
 };
-use tokio::{sync::RwLock, time::sleep};
+use tokio::sync::RwLock;
 use tokio_stream::wrappers::BroadcastStream;
 use utils::text::{git_branch_id, short_uuid};
 use uuid::Uuid;
 
-use crate::event_store::EventStore;
+use crate::{event_store::EventStore, execution_tracker::ExecutionTracker};
 
 #[derive(Clone)]
 pub struct LocalContainerService {
     db: DBService,
     git: GitService,
-    running_executions: Arc<RwLock<HashMap<Uuid, (AsyncGroupChild, Arc<EventStore>)>>>,
+    execution_tracker: ExecutionTracker,
 }
 
 impl LocalContainerService {
     pub fn new(db: DBService, git: GitService) -> Self {
+        let execution_tracker = ExecutionTracker::new();
+
         LocalContainerService {
             db,
             git,
-            running_executions: Arc::new(RwLock::new(HashMap::new())),
+            execution_tracker,
         }
-    }
-
-    pub async fn add_execution(&self, id: Uuid, exec: (AsyncGroupChild, Arc<EventStore>)) {
-        let mut map = self.running_executions.write().await;
-        map.insert(id, exec);
-    }
-
-    pub async fn remove_execution(&self, id: &Uuid) -> Option<(AsyncGroupChild, Arc<EventStore>)> {
-        let mut map = self.running_executions.write().await;
-        map.remove(id)
-    }
-
-    pub async fn get_event_store(&self, id: &Uuid) -> Option<Arc<EventStore>> {
-        let map = self.running_executions.read().await;
-        map.get(id).map(|(_, store)| store.clone())
     }
 
     pub fn dir_name_from_task_attempt(attempt_id: &Uuid, task_title: &str) -> String {
@@ -154,126 +141,45 @@ impl ContainerService for LocalContainerService {
         task_attempt: &TaskAttempt,
         executor_action: &ExecutorActions,
     ) -> Result<ExecutionProcess, ContainerError> {
-        // 1) Record
+        // Create new execution process record
         let create_execution_process =
             Self::create_execution_process_from_action(&task_attempt, &executor_action);
         let execution_process =
             ExecutionProcess::create(&self.db.pool, &create_execution_process, Uuid::new_v4())
                 .await?;
 
-        // 2) Workdir
+        // Get the worktree path
         let container_ref = task_attempt
             .container_ref
             .as_ref()
             .ok_or(ContainerError::Other(anyhow!(
-                "Container ref not found for task"
+                "Container ref not found for task attempt"
             )))?;
         let current_dir = PathBuf::from(container_ref);
 
-        // 3) Spawn child + line stream
-        let (child, mut stream) = executor_action.spawn_and_stream(&current_dir).await?;
-
-        // 4) Create store & register execution
+        // Create the child and stream, add to execution tracker
+        let (child, stream) = executor_action.spawn_and_stream(&current_dir).await?;
         let exec_id = execution_process.id;
         let store = Arc::new(EventStore::new());
-
-        self.add_execution(execution_process.id, (child, store.clone()))
+        self.execution_tracker
+            .add_execution(exec_id, (child, store.clone()))
             .await;
 
-        // 5) Forward stream lines -> store
-        {
-            let store = store.clone();
-            tokio::spawn(async move {
-                while let Some(next) = stream.next().await {
-                    match next {
-                        Ok(ev) => store.push(ev),
-                        Err(e) => {
-                            store.push(
-                                Event::default()
-                                    .event("stderr")
-                                    .data(format!("stream error: {e}")),
-                            );
-                        }
-                    }
-                }
-                store.push(Event::default().event("stream").data("closed"));
-            });
-        }
+        // Spawn thread to listen to events and store
+        store.clone().spawn_forwarder(stream);
 
-        // 6) Monitor process exit (non-blocking)
-        {
-            let svc = self.clone();
-            let store = store.clone();
-            tokio::spawn(async move {
-                loop {
-                    // Take a short write lock to call try_wait (needs &mut)
-                    let status_opt = {
-                        let mut map = svc.running_executions.write().await;
-                        match map.get_mut(&exec_id) {
-                            Some((child, _)) => match child.try_wait() {
-                                Ok(Some(status)) => Some(Ok(status)),
-                                Ok(None) => None,
-                                Err(e) => Some(Err(e)),
-                            },
-                            None => break, // already removed
-                        }
-                    };
+        // Spawn thread waiting for child exit to clean things up
+        let _jh = self
+            .execution_tracker
+            .spawn_exit_monitor(exec_id, store.clone());
 
-                    match status_opt {
-                        Some(Ok(status)) => {
-                            let code = status.code().unwrap_or_default();
-                            store.push(Event::default().event("exit").data(format!("{code}")));
-                            // Remove from map
-                            let _ = svc.remove_execution(&exec_id).await;
-
-                            // Optional: persist status if you have an API like:
-                            // let _ = ExecutionProcess::mark_finished(&svc.db.pool, exec_id, status.success(), code).await;
-
-                            break;
-                        }
-                        Some(Err(e)) => {
-                            store.push(
-                                Event::default()
-                                    .event("stderr")
-                                    .data(format!("wait error: {e}")),
-                            );
-                            let _ = svc.remove_execution(&exec_id).await;
-                            break;
-                        }
-                        None => sleep(Duration::from_millis(250)).await, // still running
-                    }
-                }
-            });
-        }
-
-        // 7) Return the record immediately; stream continues in background
         Ok(execution_process)
     }
 
-    async fn history_plus_live_stream(
+    async fn stream_logs(
         &self,
         id: &Uuid,
-    ) -> Option<futures_util::stream::BoxStream<'static, Result<Event, std::io::Error>>> {
-        // grab Arc<EventStore> without holding the lock
-        let store = {
-            let map = self.running_executions.read().await;
-            map.get(id).map(|(_, s)| s.clone())?
-        };
-
-        // history first
-        let history = store.get_history();
-        let history_stream =
-            futures_util::stream::iter(history.into_iter().map(Ok::<_, std::io::Error>));
-
-        // then live
-        let rx = store.get_receiver(); // or store.subscribe()
-        let live = BroadcastStream::new(rx).filter_map(|res| async move {
-            match res {
-                Ok(ev) => Some(Ok::<_, std::io::Error>(ev)),
-                Err(_) => None, // drop lagged frames
-            }
-        });
-
-        Some(Box::pin(history_stream.chain(live)))
+    ) -> Option<futures::stream::BoxStream<'static, Result<Event, std::io::Error>>> {
+        self.execution_tracker.history_plus_stream(id).await
     }
 }

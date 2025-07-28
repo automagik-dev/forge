@@ -22,7 +22,7 @@ pub async fn stream_execution_logs(
     // Ask the container service for a combined "history + live" stream
     let stream = deployment
         .container()
-        .history_plus_live_stream(&exec_id)
+        .stream_logs(&exec_id)
         .await
         .ok_or(axum::http::StatusCode::NOT_FOUND)?;
 

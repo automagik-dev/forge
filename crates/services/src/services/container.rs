@@ -32,7 +32,7 @@ pub trait ContainerService {
         executor_action: &ExecutorActions,
     ) -> Result<ExecutionProcess, ContainerError>;
 
-    async fn history_plus_live_stream(
+    async fn stream_logs(
         &self,
         id: &Uuid,
     ) -> Option<futures_util::stream::BoxStream<'static, Result<Event, std::io::Error>>>;
