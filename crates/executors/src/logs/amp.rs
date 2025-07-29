@@ -43,8 +43,8 @@ impl LogNormalizer for AmpLogNormalizer {
             while let Some(Ok(m)) = s.next().await {
                 let chunk = match m {
                     LogMsg::Stdout(x) | LogMsg::Stderr(x) => x,
-                    LogMsg::JsonPatch(p) => {
-                        format!("{}\n", serde_json::to_string(&p).unwrap_or_default())
+                    LogMsg::JsonPatch(_) => {
+                        continue;
                     }
                 };
                 buf.push_str(&chunk);
@@ -136,7 +136,7 @@ impl LogNormalizer for AmpLogNormalizer {
                     };
 
                     for patch in patches {
-                        tracing::info!("{}", serde_json::to_string(&patch).unwrap());
+                        raw_logs_msg_store.push_patch(patch);
                     }
                 }
                 buf = buf.rsplit('\n').next().unwrap_or("").to_owned();
