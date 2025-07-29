@@ -176,6 +176,7 @@ impl LocalContainerService {
         id: Uuid,
         child: &mut AsyncGroupChild,
         normalizer: Option<impl LogNormalizer + Send>,
+        current_dir: &PathBuf,
     ) {
         let store = Arc::new(MsgStore::new());
 
@@ -198,7 +199,7 @@ impl LocalContainerService {
 
         // Testing normalizer stream
         if let Some(normalizer) = normalizer {
-            normalizer.normalize_logs(store.clone(), "worktree_path");
+            normalizer.normalize_logs(store.clone(), current_dir);
         }
 
         let mut map = self.msg_stores().write().await;
@@ -268,8 +269,13 @@ impl ContainerService for LocalContainerService {
         // Create the child and stream, add to execution tracker
         let mut child = executor_action.spawn(&current_dir).await?;
         let normalizer = AmpLogNormalizer {};
-        self.track_child_msgs_in_store(execution_process.id, &mut child, Some(normalizer))
-            .await;
+        self.track_child_msgs_in_store(
+            execution_process.id,
+            &mut child,
+            Some(normalizer),
+            &current_dir,
+        )
+        .await;
 
         self.add_child_to_store(execution_process.id, child).await;
 
