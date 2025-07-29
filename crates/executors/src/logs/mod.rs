@@ -8,7 +8,7 @@ use utils::msg_store::MsgStore;
 pub mod amp;
 
 pub trait LogNormalizer {
-    fn normalize_logs(&self, _raw_logs_event_store: Arc<MsgStore>, _worktree_path: &str);
+    fn normalize_logs(&self, _raw_logs_event_store: Arc<MsgStore>, _worktree_path: &PathBuf);
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

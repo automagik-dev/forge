@@ -1,7 +1,9 @@
-use std::sync::Arc;
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use futures::StreamExt;
+use json_patch::Patch;
 use serde::{Deserialize, Serialize};
+use serde_json::{from_value, json};
 use tokio::task::JoinHandle;
 use utils::{log_msg::LogMsg, msg_store::MsgStore};
 
@@ -9,16 +11,40 @@ use super::{LogNormalizer, NormalizedConversation, NormalizedEntry, NormalizedEn
 
 pub struct AmpLogNormalizer {}
 
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+enum PATCH_OPERATION {
+    ADD,
+    REPLACE,
+}
+
+impl AmpLogNormalizer {
+    fn normalize_log_line(log_line: &str) -> Option<AmpJson> {
+        let trimmed = log_line.trim();
+        let amp_json: AmpJson = match serde_json::from_str(trimmed) {
+            Ok(json_msg) => json_msg,
+            Err(_) => return None,
+        };
+
+        Some(amp_json)
+    }
+}
+
 impl LogNormalizer for AmpLogNormalizer {
-    fn normalize_logs(&self, raw_logs_event_store: Arc<MsgStore>, working_dir: &str) {
+    fn normalize_logs(&self, raw_logs_msg_store: Arc<MsgStore>, current_dir: &PathBuf) {
+        let current_dir = current_dir.clone();
         tokio::spawn(async move {
-            let mut s = raw_logs_event_store.history_plus_stream().await;
+            let mut s = raw_logs_msg_store.history_plus_stream().await;
             let mut buf = String::new();
+            let mut patches: Vec<Patch> = vec![];
+            let mut last_patch_entry_id = 0;
+            // 1 amp message id = multiple patch entry ids
+            let mut seen_amp_message_ids: HashMap<usize, Vec<usize>> = HashMap::new();
             while let Some(Ok(m)) = s.next().await {
                 let chunk = match m {
                     LogMsg::Stdout(x) | LogMsg::Stderr(x) => x,
-                    LogMsg::JsonPatch(p) => {
-                        format!("{}\n", serde_json::to_string(&p).unwrap_or_default())
+                    LogMsg::JsonPatch(_) => {
+                        continue;
                     }
                 };
                 buf.push_str(&chunk);
@@ -30,7 +56,88 @@ impl LogNormalizer for AmpLogNormalizer {
                     .map(str::to_owned)
                     .collect::<Vec<_>>()
                 {
-                    print!("{line}");
+                    let patches: Vec<Patch> = match Self::normalize_log_line(&line) {
+                        Some(amp_json) => match amp_json {
+                            AmpJson::Messages {
+                                messages,
+                                tool_results,
+                            } => {
+                                let mut inner_patches: Vec<Patch> = vec![];
+
+                                for (amp_message_id, message) in messages {
+                                    let role = &message.role;
+
+                                    for (content_index, content_item) in
+                                        message.content.iter().enumerate()
+                                    {
+                                        let mut has_patch_ids =
+                                            seen_amp_message_ids.get_mut(&amp_message_id);
+
+                                        if let Some(entry) = content_item.to_normalized_entry(
+                                            role,
+                                            &message,
+                                            &current_dir.to_string_lossy(),
+                                        ) {
+                                            let patch: Patch = match &mut has_patch_ids {
+                                                None => {
+                                                    let new_id = last_patch_entry_id + 1;
+                                                    last_patch_entry_id = new_id;
+                                                    seen_amp_message_ids
+                                                        .entry(amp_message_id)
+                                                        .or_default()
+                                                        .push(new_id);
+                                                    from_value(json!([
+                                                        { "op": PATCH_OPERATION::ADD, "path": format!("/entries/{new_id}"), "value": entry },
+                                                        ]))
+                                                        .unwrap()
+                                                }
+                                                Some(patch_ids) => {
+                                                    match patch_ids.get(content_index) {
+                                                        Some(patch_id) => {
+                                                            from_value(json!([
+                                                            { "op": PATCH_OPERATION::REPLACE, "path": format!("/entries/{patch_id}"), "value": entry },
+                                                            ]))
+                                                            .unwrap()
+                                                        }
+                                                        None => {
+                                                            let new_id = last_patch_entry_id + 1;
+                                                            last_patch_entry_id = new_id;
+                                                            patch_ids.push(new_id);
+                                                            from_value(json!([
+                                                            { "op": PATCH_OPERATION::ADD, "path": format!("/entries/{new_id}"), "value": entry },
+                                                            ]))
+                                                                .unwrap()
+                                                        }
+                                                    }
+                                                }
+                                            };
+
+                                            inner_patches.push(patch);
+                                        }
+                                    }
+                                }
+
+                                inner_patches
+                            }
+                            _ => {
+                                vec![]
+                            }
+                        },
+                        None => {
+                            todo!();
+                            // let trimmed = line.trim();
+                            // vec![NormalizedEntry {
+                            //     timestamp: None,
+                            //     entry_type: NormalizedEntryType::SystemMessage,
+                            //     content: format!("Raw output: {}", trimmed),
+                            //     metadata: None,
+                            // }];
+                        }
+                    };
+
+                    for patch in patches {
+                        raw_logs_msg_store.push_patch(patch);
+                    }
                 }
                 buf = buf.rsplit('\n').next().unwrap_or("").to_owned();
             }
@@ -140,29 +247,31 @@ impl AmpJson {
         }
     }
 
-    pub fn to_normalized_entries(&self, worktree_path: &str) -> Vec<NormalizedEntry> {
-        match self {
-            AmpJson::Messages { messages, .. } => {
-                if self.has_streaming_content() {
-                    return vec![];
-                }
+    // pub fn to_normalized_entries(&self, current_dir: &PathBuf) -> Vec<NormalizedEntry> {
+    //     match self {
+    //         AmpJson::Messages { messages, .. } => {
+    //             if self.has_streaming_content() {
+    //                 return vec![];
+    //             }
 
-                let mut entries = Vec::new();
-                for (_index, message) in messages {
-                    let role = &message.role;
-                    for content_item in &message.content {
-                        if let Some(entry) =
-                            content_item.to_normalized_entry(role, message, worktree_path)
-                        {
-                            entries.push(entry);
-                        }
-                    }
-                }
-                entries
-            }
-            _ => vec![],
-        }
-    }
+    //             let mut entries = Vec::new();
+    //             for (_index, message) in messages {
+    //                 let role = &message.role;
+    //                 for content_item in &message.content {
+    //                     if let Some(entry) = content_item.to_normalized_entry(
+    //                         role,
+    //                         message,
+    //                         &current_dir.to_string_lossy(),
+    //                     ) {
+    //                         entries.push(entry);
+    //                     }
+    //                 }
+    //             }
+    //             entries
+    //         }
+    //         _ => vec![],
+    //     }
+    // }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]

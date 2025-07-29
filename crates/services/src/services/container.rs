@@ -10,12 +10,12 @@ use executors::{
     executors::ExecutorError,
     logs::{LogNormalizer, amp::AmpLogNormalizer},
 };
-use futures::{StreamExt, TryStreamExt, stream::select};
+use futures::{StreamExt, TryStreamExt, future, stream::select};
 use sqlx::Error as SqlxError;
 use thiserror::Error;
 use tokio::sync::RwLock;
 use tokio_util::io::ReaderStream;
-use utils::msg_store::MsgStore;
+use utils::{log_msg::LogMsg, msg_store::MsgStore};
 use uuid::Uuid;
 
 use crate::services::git::GitServiceError;
@@ -60,6 +60,9 @@ pub trait ContainerService {
                 store
                     .history_plus_stream() // BoxStream<Result<LogMsg, io::Error>>
                     .await
+                    .filter(|msg| {
+                        future::ready(matches!(msg, Ok(LogMsg::Stdout(..) | LogMsg::Stderr(..))))
+                    })
                     .map_ok(|m| m.to_sse_event()) // LogMsg -> Event
                     .boxed(),
             )
@@ -72,6 +75,17 @@ pub trait ContainerService {
         &self,
         id: &Uuid,
     ) -> Option<futures::stream::BoxStream<'static, Result<Event, std::io::Error>>> {
-        todo!()
+        if let Some(store) = self.get_msg_store_by_id(id).await {
+            Some(
+                store
+                    .history_plus_stream() // BoxStream<Result<LogMsg, io::Error>>
+                    .await
+                    .filter(|msg| future::ready(matches!(msg, Ok(LogMsg::JsonPatch(..)))))
+                    .map_ok(|m| m.to_sse_event()) // LogMsg -> Event
+                    .boxed(),
+            )
+        } else {
+            None
+        }
     }
 }
