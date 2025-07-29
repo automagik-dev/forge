@@ -252,7 +252,7 @@ pub async fn create_task_attempt(
     let task_attempt = TaskAttempt::create(
         &deployment.db().pool,
         &CreateTaskAttempt {
-            executor: executor,
+            executor: executor.clone(),
             base_branch: payload.base_branch,
         },
         payload.task_id,
@@ -284,7 +284,7 @@ pub async fn create_task_attempt(
     } else {
         ExecutorActions::StandardCodingAgentRequest(StandardCodingAgentRequest {
             prompt: task.to_prompt(),
-            executor: StandardCodingAgentExecutors::AmpExecutor(AmpExecutor {}),
+            executor: executor.parse()?,
         })
     };
 

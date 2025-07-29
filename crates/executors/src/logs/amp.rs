@@ -7,16 +7,12 @@ use serde_json::{from_value, json};
 use tokio::task::JoinHandle;
 use utils::{log_msg::LogMsg, msg_store::MsgStore};
 
-use super::{LogNormalizer, NormalizedConversation, NormalizedEntry, NormalizedEntryType};
+use super::{
+    LogNormalizer, NormalizedConversation, NormalizedEntry, NormalizedEntryType,
+    patch::ConversationPatch,
+};
 
 pub struct AmpLogNormalizer {}
-
-#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-enum PATCH_OPERATION {
-    ADD,
-    REPLACE,
-}
 
 impl AmpLogNormalizer {
     fn normalize_log_line(log_line: &str) -> Option<AmpJson> {
@@ -86,27 +82,20 @@ impl LogNormalizer for AmpLogNormalizer {
                                                         .entry(amp_message_id)
                                                         .or_default()
                                                         .push(new_id);
-                                                    from_value(json!([
-                                                        { "op": PATCH_OPERATION::ADD, "path": format!("/entries/{new_id}"), "value": entry },
-                                                        ]))
-                                                        .unwrap()
+                                                    ConversationPatch::add(new_id, entry)
                                                 }
                                                 Some(patch_ids) => {
                                                     match patch_ids.get(content_index) {
                                                         Some(patch_id) => {
-                                                            from_value(json!([
-                                                            { "op": PATCH_OPERATION::REPLACE, "path": format!("/entries/{patch_id}"), "value": entry },
-                                                            ]))
-                                                            .unwrap()
+                                                            ConversationPatch::replace(
+                                                                *patch_id, entry,
+                                                            )
                                                         }
                                                         None => {
                                                             let new_id = last_patch_entry_id + 1;
                                                             last_patch_entry_id = new_id;
                                                             patch_ids.push(new_id);
-                                                            from_value(json!([
-                                                            { "op": PATCH_OPERATION::ADD, "path": format!("/entries/{new_id}"), "value": entry },
-                                                            ]))
-                                                                .unwrap()
+                                                            ConversationPatch::add(new_id, entry)
                                                         }
                                                     }
                                                 }

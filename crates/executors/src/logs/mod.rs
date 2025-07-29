@@ -6,6 +6,8 @@ use ts_rs::TS;
 use utils::msg_store::MsgStore;
 
 pub mod amp;
+pub mod gemini;
+pub mod patch;
 
 pub trait LogNormalizer {
     fn normalize_logs(&self, _raw_logs_event_store: Arc<MsgStore>, _worktree_path: &PathBuf);

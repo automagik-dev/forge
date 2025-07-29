@@ -1,11 +1,14 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, str::FromStr};
 
 use async_trait::async_trait;
 use command_group::AsyncGroupChild;
 use enum_dispatch::enum_dispatch;
 use serde::Serialize;
 
-use crate::executors::{ExecutorError, standard::amp::AmpExecutor};
+use crate::executors::{
+    ExecutorError,
+    standard::{amp::AmpExecutor, gemini::GeminiExecutor},
+};
 
 pub mod amp;
 pub mod gemini;
@@ -14,6 +17,7 @@ pub mod gemini;
 #[derive(Serialize)]
 pub enum StandardCodingAgentExecutors {
     AmpExecutor,
+    GeminiExecutor,
 }
 
 #[async_trait]
@@ -30,4 +34,18 @@ pub trait StandardCodingAgentExecutor {
         prompt: &str,
         session_id: &str,
     ) -> Result<AsyncGroupChild, ExecutorError>;
+}
+
+impl FromStr for StandardCodingAgentExecutors {
+    type Err = ExecutorError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "amp" => Ok(StandardCodingAgentExecutors::AmpExecutor(AmpExecutor {})),
+            "gemini" => Ok(StandardCodingAgentExecutors::GeminiExecutor(
+                GeminiExecutor {},
+            )),
+            _ => Err(ExecutorError::UnknownExecutorType(s.to_string())),
+        }
+    }
 }

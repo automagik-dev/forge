@@ -9,6 +9,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use db::{DBService, models::task_attempt::TaskAttemptError};
+use executors::executors::ExecutorError;
 use git2::Error as Git2Error;
 use serde_json::Value;
 use services::services::{
@@ -34,6 +35,8 @@ pub enum DeploymentError {
     TaskAttempt(#[from] TaskAttemptError),
     #[error(transparent)]
     Container(#[from] ContainerError),
+    #[error(transparent)]
+    Executor(#[from] ExecutorError),
     #[error(transparent)]
     Auth(#[from] AuthError),
     #[error(transparent)]

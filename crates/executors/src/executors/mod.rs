@@ -14,6 +14,8 @@ pub enum ExecutorError {
     FollowUpNotSupported,
     #[error(transparent)]
     SpawnError(#[from] FuturesIoError),
+    #[error("Unknown executor type: {0}")]
+    UnknownExecutorType(String),
 }
 
 /// Trait for coding agents that can execute tasks, normalize logs, and support follow-up sessions

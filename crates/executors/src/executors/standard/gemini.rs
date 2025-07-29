@@ -13,12 +13,14 @@ use std::{path::PathBuf, process::Stdio};
 
 use async_trait::async_trait;
 use command_group::{AsyncCommandGroup, AsyncGroupChild};
+use serde::Serialize;
 use tokio::{io::AsyncWriteExt, process::Command};
 use utils::shell::get_shell_command;
 
 use crate::executors::{ExecutorError, standard::StandardCodingAgentExecutor};
 
 /// An executor that uses Amp to process tasks
+#[derive(Serialize)]
 pub struct GeminiExecutor {}
 
 #[async_trait]
@@ -56,10 +58,11 @@ impl StandardCodingAgentExecutor for GeminiExecutor {
 
     async fn spawn_follow_up(
         &self,
-        current_dir: &PathBuf,
-        prompt: &str,
-        session_id: &str,
+        _current_dir: &PathBuf,
+        _prompt: &str,
+        _session_id: &str,
     ) -> Result<AsyncGroupChild, ExecutorError> {
-        todo!()
+        // TODO:
+        Err(ExecutorError::FollowUpNotSupported)
     }
 }

@@ -94,6 +94,20 @@ impl MsgStore {
         Box::pin(hist.chain(live))
     }
 
+    pub async fn stdout_chunked_stream(
+        &self,
+    ) -> futures::stream::BoxStream<'static, Result<String, std::io::Error>> {
+        self.history_plus_stream()
+            .await
+            .filter_map(|res| async move {
+                match res {
+                    Ok(LogMsg::Stdout(s)) => Some(Ok(s)),
+                    _ => None,
+                }
+            })
+            .boxed()
+    }
+
     /// Same stream but mapped to `Event` for SSE handlers.
     pub async fn sse_stream(
         &self,
