@@ -6,7 +6,9 @@ use command_group::AsyncGroupChild;
 use db::{
     DBService,
     models::{
-        execution_process::{CreateExecutionProcess, ExecutionProcess, ExecutionProcessType},
+        execution_process::{
+            CreateExecutionProcess, ExecutionProcess, ExecutionProcessStatus, ExecutionProcessType,
+        },
         task_attempt::TaskAttempt,
     },
 };
@@ -62,53 +64,76 @@ impl LocalContainerService {
         map.remove(id);
     }
 
-    // / Spawn a background task that polls the child process for completion and
-    // / cleans up the execution entry when it exits.
-    pub fn spawn_exit_monitor(
-        &self,
-        exec_id: Uuid,
-        child_store: Arc<RwLock<HashMap<Uuid, Arc<RwLock<AsyncGroupChild>>>>>,
-        msg_stores: Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>,
-    ) -> JoinHandle<()> {
-        let child_store = child_store.clone();
-        let msg_stores = msg_stores.clone();
+    /// Spawn a background task that polls the child process for completion and
+    /// cleans up the execution entry when it exits.
+    pub fn spawn_exit_monitor(&self, exec_id: &Uuid) -> JoinHandle<()> {
+        let exec_id = exec_id.clone();
+        let child_store = self.child_store.clone();
+        let msg_stores = self.msg_stores.clone();
+        let db = self.db.clone();
+
         tokio::spawn(async move {
             loop {
-                // Keep the lock only while calling try_wait (needs &mut)
                 let status_opt = {
-                    let map = child_store.read().await;
-                    match map.get(&exec_id) {
-                        Some(child) => match child.clone().write().await.try_wait() {
-                            Ok(Some(status)) => Some(Ok(status)),
-                            Ok(None) => None,
-                            Err(e) => Some(Err(e)),
-                        },
-                        None => break, // already removed elsewhere
+                    let child_lock = {
+                        let map = child_store.read().await;
+                        map.get(&exec_id)
+                            .cloned()
+                            .expect(&format!("Child handle missing for {}", exec_id))
+                    };
+
+                    let mut child_handler = child_lock.write().await;
+                    match child_handler.try_wait() {
+                        Ok(Some(status)) => Some(Ok(status)),
+                        Ok(None) => None,
+                        Err(e) => Some(Err(e)),
                     }
                 };
 
-                let mut map = msg_stores.write().await;
-                match map.get_mut(&exec_id) {
-                    Some(msg_store) => match status_opt {
-                        Some(Ok(status)) => {
-                            let code = status.code().unwrap_or_default();
-                            // TODO: remove execution from event and child store when it's finished
-                            // let _ = msg_store.remove_execution(&exec_id).await;
-
-                            // Optional: persist completion here if desired
-                            // e.g. ExecutionProcess::mark_finished(...).await?;
-
-                            break;
+                // Update execution process and cleanup if exit
+                if let Some(status_result) = status_opt {
+                    // Update execution process record with completion info
+                    let (exit_code, status) = match status_result {
+                        Ok(exit_status) => {
+                            let code = exit_status.code().unwrap_or(-1) as i64;
+                            let status = if exit_status.success() {
+                                ExecutionProcessStatus::Completed
+                            } else {
+                                ExecutionProcessStatus::Failed
+                            };
+                            (Some(code), status)
                         }
-                        Some(Err(e)) => {
-                            msg_store.push_stderr(format!("wait error: {e}"));
-                            // let _ = svc.remove_execution(&exec_id).await;
-                            break;
+                        Err(_) => (None, ExecutionProcessStatus::Failed),
+                    };
+
+                    if let Err(e) =
+                        ExecutionProcess::update_completion(&db.pool, exec_id, status, exit_code)
+                            .await
+                    {
+                        tracing::error!("Failed to update execution process completion: {}", e);
+                    }
+                    // Cleanup msg store
+                    if let Some(msg_arc) = msg_stores.write().await.remove(&exec_id) {
+                        msg_arc.push_finished();
+                        tokio::time::sleep(Duration::from_millis(50)).await; // Wait for the finish message to propogate
+                        match Arc::try_unwrap(msg_arc) {
+                            Ok(inner) => drop(inner),
+                            Err(arc) => tracing::error!(
+                                "There are still {} strong Arcs to MsgStore for {}",
+                                Arc::strong_count(&arc),
+                                exec_id
+                            ),
                         }
-                        None => tokio::time::sleep(Duration::from_millis(250)).await,
-                    },
-                    None => break,
+                    }
+
+                    // Cleanup child handle
+                    child_store.write().await.remove(&exec_id);
+
+                    break;
                 }
+
+                // still running, sleep and try again
+                tokio::time::sleep(Duration::from_millis(250)).await;
             }
         })
     }
@@ -202,6 +227,9 @@ impl LocalContainerService {
             normalizer.normalize_logs(store.clone(), current_dir);
         }
 
+        // Start MsgStore -> DB sync
+        self.spawn_stream_raw_logs_to_db(&id);
+
         let mut map = self.msg_stores().write().await;
         map.insert(id, store);
     }
@@ -212,6 +240,11 @@ impl ContainerService for LocalContainerService {
     fn msg_stores(&self) -> &Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>> {
         &self.msg_stores
     }
+
+    fn db(&self) -> &DBService {
+        &self.db
+    }
+
     /// Create a container
     async fn create(&self, task_attempt: &TaskAttempt) -> Result<ContainerRef, ContainerError> {
         let task = task_attempt
@@ -284,6 +317,9 @@ impl ContainerService for LocalContainerService {
             .await;
 
         self.add_child_to_store(execution_process.id, child).await;
+
+        // Spawn exit monitor
+        let _hn = self.spawn_exit_monitor(&execution_process.id);
 
         Ok(execution_process)
     }
