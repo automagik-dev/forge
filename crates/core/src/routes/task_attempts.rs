@@ -260,7 +260,7 @@ pub async fn create_task_attempt(
     .await?;
 
     // Create container
-    let container_ref: ContainerRef = deployment.container().create(&task_attempt).await?;
+    deployment.container().create(&task_attempt).await?;
 
     // Get parent task
     let task = task_attempt

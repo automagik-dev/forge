@@ -9,7 +9,7 @@ use db::{
     models::{
         execution_process::{CreateExecutionProcess, ExecutionProcess, ExecutionProcessType},
         execution_process_logs::{self, ExecutionProcessLogs},
-        executor_session::ExecutorSession,
+        executor_session::{CreateExecutorSession, ExecutorSession},
         task_attempt::TaskAttempt,
     },
 };
@@ -286,9 +286,27 @@ pub trait ContainerService {
         // Create new execution process record
         let create_execution_process =
             Self::create_execution_process_from_action(&task_attempt, &executor_action);
+
         let execution_process =
             ExecutionProcess::create(&self.db().pool, &create_execution_process, Uuid::new_v4())
                 .await?;
+
+        if let ExecutorActions::StandardCodingAgentRequest(coding_agent_request) = executor_action {
+            let create_executor_data = CreateExecutorSession {
+                task_attempt_id: task_attempt.id,
+                execution_process_id: execution_process.id,
+                prompt: Some(coding_agent_request.prompt.clone()),
+            };
+
+            let executor_session_record_id = Uuid::new_v4();
+
+            ExecutorSession::create(
+                &self.db().pool,
+                &create_executor_data,
+                executor_session_record_id,
+            )
+            .await?;
+        }
 
         let _ = self
             .start_execution_inner(task_attempt, &execution_process, executor_action)
