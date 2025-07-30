@@ -13,14 +13,16 @@ use std::{path::PathBuf, process::Stdio, sync::Arc};
 
 use async_trait::async_trait;
 use command_group::{AsyncCommandGroup, AsyncGroupChild};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 use tokio::{io::AsyncWriteExt, process::Command};
 use utils::{msg_store::MsgStore, shell::get_shell_command};
 
 use crate::executors::{ExecutorError, standard::StandardCodingAgentExecutor};
 
-/// An executor that uses Amp to process tasks
-#[derive(Serialize)]
+/// An executor that uses Gemini to process tasks
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[ts(export)]
 pub struct GeminiExecutor {}
 
 #[async_trait]

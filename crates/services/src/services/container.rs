@@ -7,7 +7,7 @@ use command_group::AsyncGroupChild;
 use db::{
     DBService,
     models::{
-        execution_process::{CreateExecutionProcess, ExecutionProcess, ExecutionProcessType},
+        execution_process::{CreateExecutionProcess, ExecutionProcess, ExecutionProcessRunReason},
         execution_process_logs::{self, ExecutionProcessLogs},
         executor_session::{CreateExecutorSession, ExecutorSession},
         task,
@@ -15,7 +15,7 @@ use db::{
     },
 };
 use executors::{
-    actions::{ExecutorActions, script::ScriptContext},
+    actions::ExecutorActions,
     executors::{ExecutorError, standard::StandardCodingAgentExecutor},
 };
 use futures::{StreamExt, TryStreamExt, future, stream::select};
@@ -57,39 +57,6 @@ pub trait ContainerService {
         execution_process: &ExecutionProcess,
         executor_action: &ExecutorActions,
     ) -> Result<(), ContainerError>;
-
-    fn create_execution_process_from_action(
-        task_attempt: &TaskAttempt,
-        executor_action: &ExecutorActions,
-    ) -> CreateExecutionProcess {
-        match executor_action {
-            ExecutorActions::StandardCodingAgentRequest(standard_coding_agent_request) => {
-                CreateExecutionProcess {
-                    task_attempt_id: task_attempt.id,
-                    process_type: ExecutionProcessType::CodingAgent,
-                    // executor_type: Some(standard_coding_agent_request.executor.to_string()),
-                    executor_type: None,
-                }
-            }
-            ExecutorActions::StandardFollowUpCodingAgentRequest(
-                standard_follow_up_coding_agent_request,
-            ) => CreateExecutionProcess {
-                task_attempt_id: task_attempt.id,
-                process_type: ExecutionProcessType::CodingAgent,
-                // executor_type: Some(standard_follow_up_coding_agent_request.executor.to_string()),
-                executor_type: None,
-            },
-            ExecutorActions::ScriptRequest(script_request) => CreateExecutionProcess {
-                task_attempt_id: task_attempt.id,
-                process_type: match script_request.context {
-                    ScriptContext::SetupScript => ExecutionProcessType::SetupScript,
-                    ScriptContext::CleanupScript => ExecutionProcessType::CleanupScript,
-                    ScriptContext::DevServer => ExecutionProcessType::DevServer,
-                },
-                executor_type: None,
-            },
-        }
-    }
 
     /// Fetch the MsgStore for a given execution ID, panicking if missing.
     async fn get_msg_store_by_id(&self, uuid: &Uuid) -> Option<Arc<MsgStore>> {
@@ -285,10 +252,14 @@ pub trait ContainerService {
         &self,
         task_attempt: &TaskAttempt,
         executor_action: &ExecutorActions,
+        run_reason: &ExecutionProcessRunReason,
     ) -> Result<ExecutionProcess, ContainerError> {
         // Create new execution process record
-        let create_execution_process =
-            Self::create_execution_process_from_action(&task_attempt, &executor_action);
+        let create_execution_process = CreateExecutionProcess {
+            task_attempt_id: task_attempt.id,
+            executor_action: executor_action.clone(),
+            run_reason: run_reason.clone(),
+        };
 
         let execution_process =
             ExecutionProcess::create(&self.db().pool, &create_execution_process, Uuid::new_v4())

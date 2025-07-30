@@ -6,9 +6,7 @@ use command_group::AsyncGroupChild;
 use db::{
     DBService,
     models::{
-        execution_process::{
-            CreateExecutionProcess, ExecutionProcess, ExecutionProcessStatus, ExecutionProcessType,
-        },
+        execution_process::{CreateExecutionProcess, ExecutionProcess, ExecutionProcessStatus},
         task_attempt::TaskAttempt,
     },
 };

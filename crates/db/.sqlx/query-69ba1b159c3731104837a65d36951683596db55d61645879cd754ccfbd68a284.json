@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT \n                ep.id as \"id!: Uuid\", \n                ep.task_attempt_id as \"task_attempt_id!: Uuid\", \n                ep.process_type as \"process_type!: ExecutionProcessType\",\n                ep.executor_type,\n                ep.status as \"status!: ExecutionProcessStatus\",\n                ep.exit_code,\n                ep.started_at as \"started_at!: DateTime<Utc>\",\n                ep.completed_at as \"completed_at?: DateTime<Utc>\",\n                ep.created_at as \"created_at!: DateTime<Utc>\", \n                ep.updated_at as \"updated_at!: DateTime<Utc>\"\n               FROM execution_processes ep\n               JOIN task_attempts ta ON ep.task_attempt_id = ta.id\n               JOIN tasks t ON ta.task_id = t.id\n               WHERE ep.status = 'running' \n               AND ep.process_type = 'devserver'\n               AND t.project_id = $1\n               ORDER BY ep.created_at ASC",
+  "query": "SELECT \n                id as \"id!: Uuid\", \n                task_attempt_id as \"task_attempt_id!: Uuid\", \n                run_reason as \"run_reason!: ExecutionProcessRunReason\",\n                executor_action as \"executor_action!: sqlx::types::Json<ExecutorActions>\",\n                status as \"status!: ExecutionProcessStatus\",\n                exit_code,\n                started_at as \"started_at!: DateTime<Utc>\",\n                completed_at as \"completed_at?: DateTime<Utc>\",\n                created_at as \"created_at!: DateTime<Utc>\", \n                updated_at as \"updated_at!: DateTime<Utc>\"\n               FROM execution_processes \n               WHERE task_attempt_id = $1 \n               ORDER BY created_at ASC",
   "describe": {
     "columns": [
       {
@@ -14,12 +14,12 @@
         "type_info": "Blob"
       },
       {
-        "name": "process_type!: ExecutionProcessType",
+        "name": "run_reason!: ExecutionProcessRunReason",
         "ordinal": 2,
         "type_info": "Text"
       },
       {
-        "name": "executor_type",
+        "name": "executor_action!: sqlx::types::Json<ExecutorActions>",
         "ordinal": 3,
         "type_info": "Text"
       },
@@ -61,7 +61,7 @@
       true,
       false,
       false,
-      true,
+      false,
       false,
       true,
       false,
@@ -70,5 +70,5 @@
       false
     ]
   },
-  "hash": "e21b2e9f03e2d0d7d3adf1a65a8409b9fb1acf4ce4391317270edd89d58d0867"
+  "hash": "69ba1b159c3731104837a65d36951683596db55d61645879cd754ccfbd68a284"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT \n                id as \"id!: Uuid\", \n                task_attempt_id as \"task_attempt_id!: Uuid\", \n                process_type as \"process_type!: ExecutionProcessType\",\n                executor_type,\n                status as \"status!: ExecutionProcessStatus\",\n                exit_code,\n                started_at as \"started_at!: DateTime<Utc>\",\n                completed_at as \"completed_at?: DateTime<Utc>\",\n                created_at as \"created_at!: DateTime<Utc>\", \n                updated_at as \"updated_at!: DateTime<Utc>\"\n               FROM execution_processes \n               WHERE status = 'running' \n               ORDER BY created_at ASC",
+  "query": "SELECT \n                id as \"id!: Uuid\", \n                task_attempt_id as \"task_attempt_id!: Uuid\", \n                run_reason as \"run_reason!: ExecutionProcessRunReason\",\n                executor_action as \"executor_action!: sqlx::types::Json<ExecutorActions>\",\n                status as \"status!: ExecutionProcessStatus\",\n                exit_code,\n                started_at as \"started_at!: DateTime<Utc>\",\n                completed_at as \"completed_at?: DateTime<Utc>\",\n                created_at as \"created_at!: DateTime<Utc>\", \n                updated_at as \"updated_at!: DateTime<Utc>\"\n               FROM execution_processes \n               WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -14,12 +14,12 @@
         "type_info": "Blob"
       },
       {
-        "name": "process_type!: ExecutionProcessType",
+        "name": "run_reason!: ExecutionProcessRunReason",
         "ordinal": 2,
         "type_info": "Text"
       },
       {
-        "name": "executor_type",
+        "name": "executor_action!: sqlx::types::Json<ExecutorActions>",
         "ordinal": 3,
         "type_info": "Text"
       },
@@ -55,13 +55,13 @@
       }
     ],
     "parameters": {
-      "Right": 0
+      "Right": 1
     },
     "nullable": [
       true,
       false,
       false,
-      true,
+      false,
       false,
       true,
       false,
@@ -70,5 +70,5 @@
       false
     ]
   },
-  "hash": "6fe71b68f9a05f214bd21e9e453049152538025f373af3d951fb817c1d78f021"
+  "hash": "fa84623b945233f31668992491d00b2c1950679b1e3d5ab520a2924847254300"
 }

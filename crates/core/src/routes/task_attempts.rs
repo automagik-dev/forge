@@ -9,7 +9,10 @@ use axum::{
     routing::get,
     BoxError, Extension, Json, Router,
 };
-use db::models::task_attempt::{CreateTaskAttempt, TaskAttempt};
+use db::models::{
+    execution_process::ExecutionProcessRunReason,
+    task_attempt::{CreateTaskAttempt, TaskAttempt},
+};
 use deployment::{Deployment, DeploymentError};
 use executors::{
     actions::{
@@ -274,29 +277,43 @@ pub async fn create_task_attempt(
         .await?
         .ok_or(SqlxError::RowNotFound)?;
 
-    // Choose whether to execute the setup_script or coding agent first
-    let executor_action = if let Some(setup_script) = project.setup_script {
-        ExecutorActions::ScriptRequest(ScriptRequest {
-            script: setup_script,
-            language: ScriptRequestLanguage::Bash,
-            context: ScriptContext::SetupScript,
-        })
-    } else {
-        ExecutorActions::StandardCodingAgentRequest(StandardCodingAgentRequest {
-            prompt: task.to_prompt(),
-            executor: executor.parse()?,
-        })
-    };
-
     // Get latest version of task attempt
     let task_attempt = TaskAttempt::find_by_id(&deployment.db().pool, task_attempt.id)
         .await?
         .ok_or(SqlxError::RowNotFound)?;
 
-    let execution_process = deployment
-        .container()
-        .start_execution(&task_attempt, &executor_action)
-        .await?;
+    // Choose whether to execute the setup_script or coding agent first
+    let execution_process = if let Some(setup_script) = project.setup_script {
+        let executor_action = ExecutorActions::ScriptRequest(ScriptRequest {
+            script: setup_script,
+            language: ScriptRequestLanguage::Bash,
+            context: ScriptContext::SetupScript,
+        });
+
+        deployment
+            .container()
+            .start_execution(
+                &task_attempt,
+                &executor_action,
+                &ExecutionProcessRunReason::SetupScript,
+            )
+            .await?
+    } else {
+        let executor_action =
+            ExecutorActions::StandardCodingAgentRequest(StandardCodingAgentRequest {
+                prompt: task.to_prompt(),
+                executor: executor.parse()?,
+            });
+
+        deployment
+            .container()
+            .start_execution(
+                &task_attempt,
+                &executor_action,
+                &ExecutionProcessRunReason::CodingAgent,
+            )
+            .await?
+    };
 
     tracing::info!("Started execution process {}", execution_process.id);
 

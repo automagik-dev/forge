@@ -2,7 +2,8 @@ use std::{path::PathBuf, sync::Arc};
 
 use async_trait::async_trait;
 use command_group::AsyncGroupChild;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 use utils::msg_store::MsgStore;
 
 use crate::{
@@ -13,7 +14,8 @@ use crate::{
     },
 };
 
-#[derive(Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[ts(export)]
 pub struct StandardCodingAgentRequest {
     pub prompt: String,
     pub executor: StandardCodingAgentExecutors,

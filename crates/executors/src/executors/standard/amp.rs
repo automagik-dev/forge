@@ -17,6 +17,7 @@ use futures::StreamExt;
 use json_patch::Patch;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_value, json};
+use ts_rs::TS;
 use tokio::{io::AsyncWriteExt, process::Command, task::JoinHandle};
 use utils::{log_msg::LogMsg, msg_store::MsgStore, shell::get_shell_command};
 
@@ -26,7 +27,8 @@ use crate::{
 };
 
 /// An executor that uses Amp to process tasks
-#[derive(Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[ts(export)]
 pub struct AmpExecutor {}
 
 #[async_trait]

@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize, Serializer};
+use executors::actions::{ExecutorActions, script::ScriptContext};
+use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool, Type};
 use ts_rs::TS;
 use uuid::Uuid;
@@ -16,10 +17,10 @@ pub enum ExecutionProcessStatus {
 }
 
 #[derive(Debug, Clone, Type, Serialize, Deserialize, PartialEq, TS)]
-#[sqlx(type_name = "execution_process_type", rename_all = "lowercase")]
+#[sqlx(type_name = "execution_process_run_reason", rename_all = "lowercase")]
 #[serde(rename_all = "lowercase")]
 #[ts(export)]
-pub enum ExecutionProcessType {
+pub enum ExecutionProcessRunReason {
     SetupScript,
     CleanupScript,
     CodingAgent,
@@ -49,13 +50,12 @@ pub enum ExecutionProcessType {
 //     }
 // }
 
-#[derive(Debug, Clone, FromRow, Serialize, Deserialize, TS)]
-#[ts(export)]
+#[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct ExecutionProcess {
     pub id: Uuid,
     pub task_attempt_id: Uuid,
-    pub process_type: ExecutionProcessType,
-    pub executor_type: Option<String>, // "echo", "claude", "amp", etc. - only for CodingAgent processes
+    pub run_reason: ExecutionProcessRunReason,
+    pub executor_action: sqlx::types::Json<ExecutorActions>,
     pub status: ExecutionProcessStatus,
     pub exit_code: Option<i64>,
     pub started_at: DateTime<Utc>,
@@ -68,8 +68,8 @@ pub struct ExecutionProcess {
 #[ts(export)]
 pub struct CreateExecutionProcess {
     pub task_attempt_id: Uuid,
-    pub process_type: ExecutionProcessType,
-    pub executor_type: Option<String>,
+    pub executor_action: ExecutorActions,
+    pub run_reason: ExecutionProcessRunReason,
 }
 
 #[derive(Debug, Deserialize, TS)]
@@ -81,13 +81,12 @@ pub struct UpdateExecutionProcess {
     pub completed_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Clone, FromRow, Serialize, Deserialize, TS)]
-#[ts(export)]
+#[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct ExecutionProcessSummary {
     pub id: Uuid,
     pub task_attempt_id: Uuid,
-    pub process_type: ExecutionProcessType,
-    pub executor_type: Option<String>, // "echo", "claude", "amp", etc. - only for CodingAgent processes
+    pub run_reason: ExecutionProcessRunReason,
+    pub executor_action: sqlx::types::Json<ExecutorActions>,
     pub status: ExecutionProcessStatus,
     pub exit_code: Option<i64>,
     pub started_at: DateTime<Utc>,
@@ -104,8 +103,8 @@ impl ExecutionProcess {
             r#"SELECT 
                 id as "id!: Uuid", 
                 task_attempt_id as "task_attempt_id!: Uuid", 
-                process_type as "process_type!: ExecutionProcessType",
-                executor_type,
+                run_reason as "run_reason!: ExecutionProcessRunReason",
+                executor_action as "executor_action!: sqlx::types::Json<ExecutorActions>",
                 status as "status!: ExecutionProcessStatus",
                 exit_code,
                 started_at as "started_at!: DateTime<Utc>",
@@ -130,8 +129,8 @@ impl ExecutionProcess {
             r#"SELECT 
                 id as "id!: Uuid", 
                 task_attempt_id as "task_attempt_id!: Uuid", 
-                process_type as "process_type!: ExecutionProcessType",
-                executor_type,
+                run_reason as "run_reason!: ExecutionProcessRunReason",
+                executor_action as "executor_action!: sqlx::types::Json<ExecutorActions>",
                 status as "status!: ExecutionProcessStatus",
                 exit_code,
                 started_at as "started_at!: DateTime<Utc>",
@@ -157,8 +156,8 @@ impl ExecutionProcess {
             r#"SELECT 
                 id as "id!: Uuid", 
                 task_attempt_id as "task_attempt_id!: Uuid", 
-                process_type as "process_type!: ExecutionProcessType",
-                executor_type,
+                run_reason as "run_reason!: ExecutionProcessRunReason",
+                executor_action as "executor_action!: sqlx::types::Json<ExecutorActions>",
                 status as "status!: ExecutionProcessStatus",
                 exit_code,
                 started_at as "started_at!: DateTime<Utc>",
@@ -181,8 +180,8 @@ impl ExecutionProcess {
             r#"SELECT 
                 id as "id!: Uuid", 
                 task_attempt_id as "task_attempt_id!: Uuid", 
-                process_type as "process_type!: ExecutionProcessType",
-                executor_type,
+                run_reason as "run_reason!: ExecutionProcessRunReason",
+                executor_action as "executor_action!: sqlx::types::Json<ExecutorActions>",
                 status as "status!: ExecutionProcessStatus",
                 exit_code,
                 started_at as "started_at!: DateTime<Utc>",
@@ -207,8 +206,8 @@ impl ExecutionProcess {
             r#"SELECT 
                 ep.id as "id!: Uuid", 
                 ep.task_attempt_id as "task_attempt_id!: Uuid", 
-                ep.process_type as "process_type!: ExecutionProcessType",
-                ep.executor_type,
+                ep.run_reason as "run_reason!: ExecutionProcessRunReason",
+                ep.executor_action as "executor_action!: sqlx::types::Json<ExecutorActions>",
                 ep.status as "status!: ExecutionProcessStatus",
                 ep.exit_code,
                 ep.started_at as "started_at!: DateTime<Utc>",
@@ -219,7 +218,7 @@ impl ExecutionProcess {
                JOIN task_attempts ta ON ep.task_attempt_id = ta.id
                JOIN tasks t ON ta.task_id = t.id
                WHERE ep.status = 'running' 
-               AND ep.process_type = 'devserver'
+               AND ep.run_reason = 'devserver'
                AND t.project_id = $1
                ORDER BY ep.created_at ASC"#,
             project_id
@@ -235,11 +234,12 @@ impl ExecutionProcess {
         process_id: Uuid,
     ) -> Result<Self, sqlx::Error> {
         let now = Utc::now();
+        let executor_action_json = sqlx::types::Json(&data.executor_action);
 
         sqlx::query_as!(
             ExecutionProcess,
             r#"INSERT INTO execution_processes (
-                id, task_attempt_id, process_type, executor_type, status, 
+                id, task_attempt_id, run_reason, executor_action, status, 
                 exit_code, started_at, 
                 completed_at, created_at, updated_at
                ) 
@@ -247,8 +247,8 @@ impl ExecutionProcess {
                RETURNING 
                 id as "id!: Uuid", 
                 task_attempt_id as "task_attempt_id!: Uuid", 
-                process_type as "process_type!: ExecutionProcessType",
-                executor_type,
+                run_reason as "run_reason!: ExecutionProcessRunReason",
+                executor_action as "executor_action!: sqlx::types::Json<ExecutorActions>",
                 status as "status!: ExecutionProcessStatus",
                 exit_code,
                 started_at as "started_at!: DateTime<Utc>",
@@ -257,8 +257,8 @@ impl ExecutionProcess {
                 updated_at as "updated_at!: DateTime<Utc>""#,
             process_id,
             data.task_attempt_id,
-            data.process_type,
-            data.executor_type,
+            data.run_reason,
+            executor_action_json,
             ExecutionProcessStatus::Running,
             None::<i64>,           // exit_code
             now,                   // started_at
@@ -285,7 +285,7 @@ impl ExecutionProcess {
 
         sqlx::query!(
             r#"UPDATE execution_processes 
-               SET status = $1, exit_code = $2, completed_at = $3, updated_at = datetime('now') 
+               SET status = $1, exit_code = $2, completed_at = $3
                WHERE id = $4"#,
             status,
             exit_code,

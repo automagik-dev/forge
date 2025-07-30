@@ -3,7 +3,8 @@ use std::{path::PathBuf, str::FromStr, sync::Arc};
 use async_trait::async_trait;
 use command_group::AsyncGroupChild;
 use enum_dispatch::enum_dispatch;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 use utils::msg_store::MsgStore;
 
 use crate::executors::{
@@ -15,7 +16,8 @@ pub mod amp;
 pub mod gemini;
 
 #[enum_dispatch]
-#[derive(Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[ts(export)]
 pub enum StandardCodingAgentExecutors {
     AmpExecutor,
     GeminiExecutor,
