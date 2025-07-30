@@ -335,7 +335,7 @@ pub async fn follow_up(
     Extension(task_attempt): Extension<TaskAttempt>,
     State(deployment): State<DeploymentImpl>,
     Json(payload): Json<CreateFollowUpAttempt>,
-) -> Result<ResponseJson<ApiResponse<()>>, DeploymentError> {
+) -> Result<ResponseJson<ApiResponse<ExecutionProcess>>, DeploymentError> {
     tracing::info!("{:?}", task_attempt);
 
     // First, get the most recent execution process with executor action type = StandardCoding
@@ -375,7 +375,7 @@ pub async fn follow_up(
             executor,
         });
 
-    deployment
+    let execution_process = deployment
         .container()
         .start_execution(
             &task_attempt,
@@ -384,7 +384,7 @@ pub async fn follow_up(
         )
         .await?;
 
-    Ok(ResponseJson(ApiResponse::success(())))
+    Ok(ResponseJson(ApiResponse::success(execution_process)))
 }
 
 // pub async fn get_task_attempt_diff(
