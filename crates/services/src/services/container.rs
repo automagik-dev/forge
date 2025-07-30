@@ -9,6 +9,7 @@ use db::{
     models::{
         execution_process::ExecutionProcess,
         execution_process_logs::{self, ExecutionProcessLogs},
+        executor_session::ExecutorSession,
         task_attempt::TaskAttempt,
     },
 };
@@ -198,24 +199,43 @@ pub trait ContainerService {
                                     )
                                     .await
                                     {
-                                        eprintln!(
+                                        tracing::error!(
                                             "Failed to append log line for execution {}: {}",
-                                            execution_id, e
+                                            execution_id,
+                                            e
                                         );
                                     }
                                 }
                                 Err(e) => {
-                                    eprintln!(
+                                    tracing::error!(
                                         "Failed to serialize log message for execution {}: {}",
-                                        execution_id, e
+                                        execution_id,
+                                        e
                                     );
                                 }
+                            }
+                        }
+                        LogMsg::SessionId(session_id) => {
+                            // Append this line to the database
+                            if let Err(e) = ExecutorSession::update_session_id(
+                                &db.pool,
+                                execution_id,
+                                session_id,
+                            )
+                            .await
+                            {
+                                tracing::error!(
+                                    "Failed to update session_id {} for execution process {}: {}",
+                                    session_id,
+                                    execution_id,
+                                    e
+                                );
                             }
                         }
                         LogMsg::Finished => {
                             break;
                         }
-                        _ => continue,
+                        LogMsg::JsonPatch(_) => continue,
                     }
                 }
             }
