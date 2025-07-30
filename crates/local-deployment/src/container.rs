@@ -12,10 +12,7 @@ use db::{
         task_attempt::TaskAttempt,
     },
 };
-use executors::{
-    actions::{ExecutorAction, ExecutorActions, script::ScriptContext},
-    logs::{LogNormalizer, LogNormalizers},
-};
+use executors::actions::{ExecutorAction, ExecutorActions, script::ScriptContext};
 use futures::{TryStreamExt, stream::select};
 use services::services::{
     container::{ContainerError, ContainerRef, ContainerService},
@@ -163,13 +160,7 @@ impl LocalContainerService {
         }
     }
 
-    async fn track_child_msgs_in_store(
-        &self,
-        id: Uuid,
-        child: &mut AsyncGroupChild,
-        normalizer: Option<LogNormalizers>,
-        current_dir: &PathBuf,
-    ) {
+    async fn track_child_msgs_in_store(&self, id: Uuid, child: &mut AsyncGroupChild) {
         let store = Arc::new(MsgStore::new());
 
         let out = child.inner().stdout.take().expect("no stdout");
@@ -202,6 +193,10 @@ impl ContainerService for LocalContainerService {
 
     fn db(&self) -> &DBService {
         &self.db
+    }
+
+    fn task_attempt_to_current_dir(&self, task_attempt: &TaskAttempt) -> PathBuf {
+        PathBuf::from(task_attempt.container_ref.clone().unwrap_or_default())
     }
 
     /// Create a container
@@ -255,20 +250,7 @@ impl ContainerService for LocalContainerService {
         // Create the child and stream, add to execution tracker
         let mut child = executor_action.spawn(&current_dir).await?;
 
-        let normalizer = match executor_action {
-            ExecutorActions::StandardCodingAgentRequest(request) => {
-                Some(request.executor.to_normalizer())
-            }
-            ExecutorActions::StandardFollowUpCodingAgentRequest(request) => {
-                Some(request.executor.to_normalizer())
-            }
-            ExecutorActions::ScriptRequest(_) => {
-                // Scripts don't need normalizers since they output raw text
-                None
-            }
-        };
-
-        self.track_child_msgs_in_store(execution_process.id, &mut child, normalizer, &current_dir)
+        self.track_child_msgs_in_store(execution_process.id, &mut child)
             .await;
 
         self.add_child_to_store(execution_process.id, child).await;

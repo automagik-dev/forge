@@ -9,13 +9,13 @@
 // use tokio::{io::AsyncWriteExt, process::Command};
 
 // use crate::utils::shell::get_shell_command;
-use std::{path::PathBuf, process::Stdio};
+use std::{path::PathBuf, process::Stdio, sync::Arc};
 
 use async_trait::async_trait;
 use command_group::{AsyncCommandGroup, AsyncGroupChild};
 use serde::Serialize;
 use tokio::{io::AsyncWriteExt, process::Command};
-use utils::shell::get_shell_command;
+use utils::{msg_store::MsgStore, shell::get_shell_command};
 
 use crate::executors::{ExecutorError, standard::StandardCodingAgentExecutor};
 
@@ -64,5 +64,9 @@ impl StandardCodingAgentExecutor for GeminiExecutor {
     ) -> Result<AsyncGroupChild, ExecutorError> {
         // TODO:
         Err(ExecutorError::FollowUpNotSupported)
+    }
+
+    fn normalize_logs(&self, _raw_logs_event_store: Arc<MsgStore>, _worktree_path: &PathBuf) {
+        todo!()
     }
 }

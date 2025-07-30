@@ -6,6 +6,7 @@ use futures_io::Error as FuturesIoError;
 use thiserror::Error;
 use uuid::Uuid;
 
+pub mod patch;
 pub mod standard;
 
 #[derive(Debug, Error)]

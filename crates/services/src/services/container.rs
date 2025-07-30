@@ -10,13 +10,13 @@ use db::{
         execution_process::{CreateExecutionProcess, ExecutionProcess, ExecutionProcessType},
         execution_process_logs::{self, ExecutionProcessLogs},
         executor_session::{CreateExecutorSession, ExecutorSession},
+        task,
         task_attempt::TaskAttempt,
     },
 };
 use executors::{
     actions::{ExecutorActions, script::ScriptContext},
-    executors::ExecutorError,
-    logs::{LogNormalizer, amp::AmpLogNormalizer},
+    executors::{ExecutorError, standard::StandardCodingAgentExecutor},
 };
 use futures::{StreamExt, TryStreamExt, future, stream::select};
 use sqlx::Error as SqlxError;
@@ -46,6 +46,8 @@ pub trait ContainerService {
     fn msg_stores(&self) -> &Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>;
 
     fn db(&self) -> &DBService;
+
+    fn task_attempt_to_current_dir(&self, task_attempt: &TaskAttempt) -> PathBuf;
 
     async fn create(&self, task_attempt: &TaskAttempt) -> Result<ContainerRef, ContainerError>;
 
@@ -187,9 +189,10 @@ pub trait ContainerService {
             }
             temp_store.push_finished();
 
-            // Spawn normalizer on populated store
-            let normalizer = AmpLogNormalizer {};
-            normalizer.normalize_logs(temp_store.clone(), &PathBuf::from("/"));
+            // TODO: Reimplement in-memory normaliser for finished executions
+            // // Spawn normalizer on populated store
+            // let normalizer = AmpLogNormalizer {};
+            // normalizer.normalize_logs(temp_store.clone(), &PathBuf::from("/"));
 
             Some(
                 temp_store
@@ -312,27 +315,24 @@ pub trait ContainerService {
             .start_execution_inner(task_attempt, &execution_process, executor_action)
             .await?;
 
-        let normalizer = match executor_action {
+        // Start processing normalised logs for executor requests and follow ups
+        match executor_action {
             ExecutorActions::StandardCodingAgentRequest(request) => {
-                Some(request.executor.to_normalizer())
+                if let Some(msg_store) = self.get_msg_store_by_id(&execution_process.id).await {
+                    request
+                        .executor
+                        .normalize_logs(msg_store, &self.task_attempt_to_current_dir(task_attempt));
+                }
             }
             ExecutorActions::StandardFollowUpCodingAgentRequest(request) => {
-                Some(request.executor.to_normalizer())
+                if let Some(msg_store) = self.get_msg_store_by_id(&execution_process.id).await {
+                    request
+                        .executor
+                        .normalize_logs(msg_store, &self.task_attempt_to_current_dir(task_attempt));
+                }
             }
-            ExecutorActions::ScriptRequest(_) => {
-                // Scripts don't need normalizers since they output raw text
-                None
-            }
+            _ => {}
         };
-
-        if let Some(store) = self.get_msg_store_by_id(&execution_process.id).await {
-            if let Some(normalizer) = normalizer {
-                // TODO: This path will be different on remote, needed to normalise paths
-                let current_dir =
-                    PathBuf::from(task_attempt.container_ref.clone().unwrap_or_default());
-                normalizer.normalize_logs(store.clone(), &current_dir);
-            }
-        }
 
         self.spawn_stream_raw_logs_to_db(&execution_process.id);
         Ok(execution_process)
