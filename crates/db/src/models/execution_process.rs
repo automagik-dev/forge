@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use executors::actions::{ExecutorActions, script::ScriptContext};
+use executors::actions::{ExecutorActionKind, ExecutorActions, script::ScriptContext};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool, Type};
 use ts_rs::TS;
@@ -26,29 +26,6 @@ pub enum ExecutionProcessRunReason {
     CodingAgent,
     DevServer,
 }
-
-// TODO: fix
-// impl From<ExecutionType> for ExecutionProcessType {
-//     fn from(exec_type: ExecutionType) -> Self {
-//         match exec_type {
-//             ExecutionType::SetupScript => ExecutionProcessType::SetupScript,
-//             ExecutionType::CleanupScript => ExecutionProcessType::CleanupScript,
-//             ExecutionType::CodingAgent => ExecutionProcessType::CodingAgent,
-//             ExecutionType::DevServer => ExecutionProcessType::DevServer,
-//         }
-//     }
-// }
-
-// impl From<ExecutionProcessType> for ExecutionType {
-//     fn from(exec_type: ExecutionProcessType) -> Self {
-//         match exec_type {
-//             ExecutionProcessType::SetupScript => ExecutionType::SetupScript,
-//             ExecutionProcessType::CleanupScript => ExecutionType::CleanupScript,
-//             ExecutionProcessType::CodingAgent => ExecutionType::CodingAgent,
-//             ExecutionProcessType::DevServer => ExecutionType::DevServer,
-//         }
-//     }
-// }
 
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct ExecutionProcess {
@@ -227,6 +204,38 @@ impl ExecutionProcess {
         .await
     }
 
+    /// Find latest execution process by task attempt and executor action type
+    pub async fn find_latest_by_task_attempt_and_action_type(
+        pool: &SqlitePool,
+        task_attempt_id: Uuid,
+        executor_action: &ExecutorActionKind,
+    ) -> Result<Option<Self>, sqlx::Error> {
+        let executor_action_kind = executor_action.to_string();
+        sqlx::query_as!(
+            ExecutionProcess,
+            r#"SELECT 
+                id as "id!: Uuid", 
+                task_attempt_id as "task_attempt_id!: Uuid", 
+                run_reason as "run_reason!: ExecutionProcessRunReason",
+                executor_action as "executor_action!: sqlx::types::Json<ExecutorActions>",
+                status as "status!: ExecutionProcessStatus",
+                exit_code,
+                started_at as "started_at!: DateTime<Utc>",
+                completed_at as "completed_at?: DateTime<Utc>",
+                created_at as "created_at!: DateTime<Utc>", 
+                updated_at as "updated_at!: DateTime<Utc>"
+               FROM execution_processes 
+               WHERE task_attempt_id = $1 
+               AND executor_action_type = $2
+               ORDER BY created_at DESC 
+               LIMIT 1"#,
+            task_attempt_id,
+            executor_action_kind
+        )
+        .fetch_optional(pool)
+        .await
+    }
+
     /// Create a new execution process
     pub async fn create(
         pool: &SqlitePool,
@@ -312,5 +321,9 @@ impl ExecutionProcess {
         .await?;
 
         Ok(())
+    }
+
+    pub fn executor_actions(&self) -> &ExecutorActions {
+        &self.executor_action
     }
 }

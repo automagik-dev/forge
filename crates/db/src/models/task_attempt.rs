@@ -117,12 +117,6 @@ pub struct CreatePrParams<'a> {
     pub base_branch: Option<&'a str>,
 }
 
-#[derive(Debug, Deserialize, TS)]
-#[ts(export)]
-pub struct CreateFollowUpAttempt {
-    pub prompt: String,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct BranchStatus {
@@ -287,13 +281,13 @@ impl TaskAttempt {
     ) -> Result<(), sqlx::Error> {
         let now = Utc::now();
         sqlx::query!(
-        "UPDATE task_attempts SET container_ref = $1, updated_at = $2 WHERE id = $3",
-        container_ref,
-        now,
-        attempt_id
-    )
-    .execute(pool)
-    .await?;
+            "UPDATE task_attempts SET container_ref = $1, updated_at = $2 WHERE id = $3",
+            container_ref,
+            now,
+            attempt_id
+        )
+        .execute(pool)
+        .await?;
 
         Ok(())
     }

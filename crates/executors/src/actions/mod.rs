@@ -4,27 +4,40 @@ use async_trait::async_trait;
 use command_group::AsyncGroupChild;
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumDiscriminants};
 use ts_rs::TS;
 
 use crate::{
     actions::{
-        script::ScriptRequest, standard::StandardCodingAgentRequest,
-        standard_follow_up::StandardFollowUpCodingAgentRequest,
+        coding_agent_follow_up::CodingAgentFollowUpRequest,
+        coding_agent_initial::CodingAgentInitialRequest, script::ScriptRequest,
     },
     executors::ExecutorError,
 };
+pub mod coding_agent_follow_up;
+pub mod coding_agent_initial;
 pub mod script;
-pub mod standard;
-pub mod standard_follow_up;
 
 #[enum_dispatch]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS, EnumDiscriminants, Display)]
 #[serde(tag = "type")]
 #[ts(export)]
+#[strum_discriminants(name(ExecutorActionKind), derive(Display))]
 pub enum ExecutorActions {
-    StandardCodingAgentRequest,
-    StandardFollowUpCodingAgentRequest,
+    CodingAgentInitialRequest,
+    CodingAgentFollowUpRequest,
     ScriptRequest,
+}
+
+impl ExecutorActions {
+    /// Get the action type as a string (matches the JSON "type" field)
+    pub fn action_type(&self) -> &'static str {
+        match self {
+            ExecutorActions::CodingAgentInitialRequest(_) => "CodingAgentInitialRequest",
+            ExecutorActions::CodingAgentFollowUpRequest(_) => "CodingAgentFollowUpRequest",
+            ExecutorActions::ScriptRequest(_) => "ScriptRequest",
+        }
+    }
 }
 
 #[async_trait]

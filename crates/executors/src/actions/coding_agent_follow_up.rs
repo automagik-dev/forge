@@ -16,14 +16,14 @@ use crate::{
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
 #[ts(export)]
-pub struct StandardFollowUpCodingAgentRequest {
+pub struct CodingAgentFollowUpRequest {
     pub prompt: String,
     pub session_id: String,
     pub executor: StandardCodingAgentExecutors,
 }
 
 #[async_trait]
-impl ExecutorAction for StandardFollowUpCodingAgentRequest {
+impl ExecutorAction for CodingAgentFollowUpRequest {
     async fn spawn(&self, current_dir: &PathBuf) -> Result<AsyncGroupChild, ExecutorError> {
         self.executor
             .spawn_follow_up(current_dir, &self.prompt, &self.session_id)

@@ -265,7 +265,7 @@ pub trait ContainerService {
             ExecutionProcess::create(&self.db().pool, &create_execution_process, Uuid::new_v4())
                 .await?;
 
-        if let ExecutorActions::StandardCodingAgentRequest(coding_agent_request) = executor_action {
+        if let ExecutorActions::CodingAgentInitialRequest(coding_agent_request) = executor_action {
             let create_executor_data = CreateExecutorSession {
                 task_attempt_id: task_attempt.id,
                 execution_process_id: execution_process.id,
@@ -288,14 +288,14 @@ pub trait ContainerService {
 
         // Start processing normalised logs for executor requests and follow ups
         match executor_action {
-            ExecutorActions::StandardCodingAgentRequest(request) => {
+            ExecutorActions::CodingAgentInitialRequest(request) => {
                 if let Some(msg_store) = self.get_msg_store_by_id(&execution_process.id).await {
                     request
                         .executor
                         .normalize_logs(msg_store, &self.task_attempt_to_current_dir(task_attempt));
                 }
             }
-            ExecutorActions::StandardFollowUpCodingAgentRequest(request) => {
+            ExecutorActions::CodingAgentFollowUpRequest(request) => {
                 if let Some(msg_store) = self.get_msg_store_by_id(&execution_process.id).await {
                     request
                         .executor

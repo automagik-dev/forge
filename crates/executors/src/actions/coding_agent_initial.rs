@@ -16,13 +16,13 @@ use crate::{
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
 #[ts(export)]
-pub struct StandardCodingAgentRequest {
+pub struct CodingAgentInitialRequest {
     pub prompt: String,
     pub executor: StandardCodingAgentExecutors,
 }
 
 #[async_trait]
-impl ExecutorAction for StandardCodingAgentRequest {
+impl ExecutorAction for CodingAgentInitialRequest {
     async fn spawn(&self, current_dir: &PathBuf) -> Result<AsyncGroupChild, ExecutorError> {
         self.executor.spawn(current_dir, &self.prompt).await
     }
