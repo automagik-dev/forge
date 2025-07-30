@@ -33,14 +33,13 @@ impl LogNormalizer for AmpLogNormalizer {
         tokio::spawn(async move {
             let mut s = raw_logs_msg_store.history_plus_stream().await;
             let mut buf = String::new();
-            let mut patches: Vec<Patch> = vec![];
             let mut last_patch_entry_id = 0;
             // 1 amp message id = multiple patch entry ids
             let mut seen_amp_message_ids: HashMap<usize, Vec<usize>> = HashMap::new();
             while let Some(Ok(m)) = s.next().await {
                 let chunk = match m {
                     LogMsg::Stdout(x) | LogMsg::Stderr(x) => x,
-                    LogMsg::JsonPatch(_) => {
+                    LogMsg::JsonPatch(_) | LogMsg::SessionId(_) => {
                         continue;
                     }
                     LogMsg::Finished => break,
@@ -54,14 +53,12 @@ impl LogNormalizer for AmpLogNormalizer {
                     .map(str::to_owned)
                     .collect::<Vec<_>>()
                 {
-                    let patches: Vec<Patch> = match Self::normalize_log_line(&line) {
+                    match Self::normalize_log_line(&line) {
                         Some(amp_json) => match amp_json {
                             AmpJson::Messages {
                                 messages,
-                                tool_results,
+                                tool_results: _,
                             } => {
-                                let mut inner_patches: Vec<Patch> = vec![];
-
                                 for (amp_message_id, message) in messages {
                                     let role = &message.role;
 
@@ -103,32 +100,33 @@ impl LogNormalizer for AmpLogNormalizer {
                                                 }
                                             };
 
-                                            inner_patches.push(patch);
+                                            raw_logs_msg_store.push_patch(patch);
                                         }
                                     }
                                 }
-
-                                inner_patches
                             }
-                            _ => {
-                                vec![]
+                            AmpJson::Initial { thread_id } => {
+                                if let Some(thread_id) = thread_id {
+                                    raw_logs_msg_store.push_session_id(thread_id);
+                                }
                             }
+                            _ => {}
                         },
                         None => {
-                            todo!();
-                            // let trimmed = line.trim();
-                            // vec![NormalizedEntry {
-                            //     timestamp: None,
-                            //     entry_type: NormalizedEntryType::SystemMessage,
-                            //     content: format!("Raw output: {}", trimmed),
-                            //     metadata: None,
-                            // }];
+                            let trimmed = line.trim();
+                            let entry = NormalizedEntry {
+                                timestamp: None,
+                                entry_type: NormalizedEntryType::SystemMessage,
+                                content: format!("Raw output: {}", trimmed),
+                                metadata: None,
+                            };
+
+                            let new_id = last_patch_entry_id + 1;
+                            last_patch_entry_id = new_id;
+                            let patch = ConversationPatch::add(new_id, entry);
+                            raw_logs_msg_store.push_patch(patch);
                         }
                     };
-
-                    for patch in patches {
-                        raw_logs_msg_store.push_patch(patch);
-                    }
                 }
                 buf = buf.rsplit('\n').next().unwrap_or("").to_owned();
             }
@@ -136,52 +134,6 @@ impl LogNormalizer for AmpLogNormalizer {
                 print!("{buf}");
             }
         });
-
-        // let mut entries = Vec::new();
-        // let mut session_id = None;
-
-        // for line in logs.lines() {
-        //     let trimmed = line.trim();
-        //     if trimmed.is_empty() {
-        //         continue;
-        //     }
-
-        //     // Try to parse as AmpMessage
-        //     let amp_message: AmpJson = match serde_json::from_str(trimmed) {
-        //         Ok(msg) => msg,
-        //         Err(_) => {
-        //             // If line isn't valid JSON, add it as raw text
-        //             entries.push(NormalizedEntry {
-        //                 timestamp: None,
-        //                 entry_type: NormalizedEntryType::SystemMessage,
-        //                 content: format!("Raw output: {}", trimmed),
-        //                 metadata: None,
-        //             });
-        //             continue;
-        //         }
-        //     };
-
-        //     // Extract session ID if available
-        //     if session_id.is_none() {
-        //         if let Some(id) = amp_message.extract_session_id() {
-        //             session_id = Some(id);
-        //         }
-        //     }
-
-        //     // Process the message if it's a type we care about
-        //     if amp_message.should_process() {
-        //         let new_entries = amp_message.to_normalized_entries(worktree_path);
-        //         entries.extend(new_entries);
-        //     }
-        // }
-
-        // Ok(NormalizedConversation {
-        //     entries,
-        //     session_id,
-        //     executor_type: "amp".to_string(),
-        //     prompt: None,
-        //     summary: None,
-        // })
     }
 }
 

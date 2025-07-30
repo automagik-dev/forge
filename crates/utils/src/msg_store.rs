@@ -68,6 +68,10 @@ impl MsgStore {
         self.push(LogMsg::JsonPatch(patch));
     }
 
+    pub fn push_session_id(&self, session_id: String) {
+        self.push(LogMsg::SessionId(session_id));
+    }
+
     pub fn push_finished(&self) {
         self.push(LogMsg::Finished);
     }
