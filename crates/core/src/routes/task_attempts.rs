@@ -17,16 +17,11 @@ use db::models::{
     task_attempt::{CreateTaskAttempt, TaskAttempt},
 };
 use deployment::{Deployment, DeploymentError};
-use executors::{
-    actions::{
-        coding_agent_follow_up::CodingAgentFollowUpRequest,
-        coding_agent_initial::CodingAgentInitialRequest,
-        script::{ScriptContext, ScriptRequest, ScriptRequestLanguage},
-        ExecutorActionKind, ExecutorActions,
-    },
-    executors::standard::{
-        amp::AmpExecutor, StandardCodingAgentExecutor, StandardCodingAgentExecutors,
-    },
+use executors::actions::{
+    coding_agent_follow_up::CodingAgentFollowUpRequest,
+    coding_agent_initial::CodingAgentInitialRequest,
+    script::{ScriptContext, ScriptRequest, ScriptRequestLanguage},
+    ExecutorActionKind, ExecutorActions,
 };
 use futures_util::TryStreamExt;
 use serde::{Deserialize, Serialize};

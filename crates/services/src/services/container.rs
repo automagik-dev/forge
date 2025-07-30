@@ -16,7 +16,7 @@ use db::{
 };
 use executors::{
     actions::ExecutorActions,
-    executors::{ExecutorError, standard::StandardCodingAgentExecutor},
+    executors::{ExecutorError, StandardCodingAgentExecutor},
 };
 use futures::{StreamExt, TryStreamExt, future, stream::select};
 use sqlx::Error as SqlxError;

@@ -8,17 +8,14 @@ use utils::msg_store::MsgStore;
 
 use crate::{
     actions::ExecutorAction,
-    executors::{
-        ExecutorError,
-        standard::{StandardCodingAgentExecutor, StandardCodingAgentExecutors},
-    },
+    executors::{CodingAgentExecutors, ExecutorError, StandardCodingAgentExecutor},
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
 #[ts(export)]
 pub struct CodingAgentInitialRequest {
     pub prompt: String,
-    pub executor: StandardCodingAgentExecutors,
+    pub executor: CodingAgentExecutors,
 }
 
 #[async_trait]

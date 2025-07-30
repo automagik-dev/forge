@@ -8,10 +8,7 @@ use utils::msg_store::MsgStore;
 
 use crate::{
     actions::ExecutorAction,
-    executors::{
-        ExecutorError,
-        standard::{StandardCodingAgentExecutor, StandardCodingAgentExecutors},
-    },
+    executors::{CodingAgentExecutors, ExecutorError, StandardCodingAgentExecutor},
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
@@ -19,7 +16,7 @@ use crate::{
 pub struct CodingAgentFollowUpRequest {
     pub prompt: String,
     pub session_id: String,
-    pub executor: StandardCodingAgentExecutors,
+    pub executor: CodingAgentExecutors,
 }
 
 #[async_trait]
