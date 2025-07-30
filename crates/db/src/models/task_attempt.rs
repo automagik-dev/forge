@@ -285,9 +285,11 @@ impl TaskAttempt {
         attempt_id: Uuid,
         container_ref: &str,
     ) -> Result<(), sqlx::Error> {
+        let now = Utc::now();
         sqlx::query!(
-        "UPDATE task_attempts SET container_ref = $1, updated_at = datetime('now') WHERE id = $2",
+        "UPDATE task_attempts SET container_ref = $1, updated_at = $2 WHERE id = $3",
         container_ref,
+        now,
         attempt_id
     )
     .execute(pool)

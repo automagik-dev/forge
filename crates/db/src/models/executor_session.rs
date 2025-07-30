@@ -157,11 +157,13 @@ impl ExecutorSession {
         execution_process_id: Uuid,
         external_session_id: &str,
     ) -> Result<(), sqlx::Error> {
+        let now = Utc::now();
         sqlx::query!(
             r#"UPDATE executor_sessions
-               SET session_id = $1, updated_at = datetime('now')
-               WHERE execution_process_id = $2"#,
+               SET session_id = $1, updated_at = $2
+               WHERE execution_process_id = $3"#,
             external_session_id,
+            now,
             execution_process_id
         )
         .execute(pool)
@@ -177,11 +179,13 @@ impl ExecutorSession {
         id: Uuid,
         prompt: &str,
     ) -> Result<(), sqlx::Error> {
+        let now = Utc::now();
         sqlx::query!(
             r#"UPDATE executor_sessions 
-               SET prompt = $1, updated_at = datetime('now') 
-               WHERE id = $2"#,
+               SET prompt = $1, updated_at = $2 
+               WHERE id = $3"#,
             prompt,
+            now,
             id
         )
         .execute(pool)
@@ -196,11 +200,13 @@ impl ExecutorSession {
         execution_process_id: Uuid,
         summary: &str,
     ) -> Result<(), sqlx::Error> {
+        let now = Utc::now();
         sqlx::query!(
             r#"UPDATE executor_sessions 
-               SET summary = $1, updated_at = datetime('now') 
-               WHERE execution_process_id = $2"#,
+               SET summary = $1, updated_at = $2 
+               WHERE execution_process_id = $3"#,
             summary,
+            now,
             execution_process_id
         )
         .execute(pool)
