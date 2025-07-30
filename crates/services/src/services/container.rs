@@ -7,14 +7,14 @@ use command_group::AsyncGroupChild;
 use db::{
     DBService,
     models::{
-        execution_process::ExecutionProcess,
+        execution_process::{CreateExecutionProcess, ExecutionProcess, ExecutionProcessType},
         execution_process_logs::{self, ExecutionProcessLogs},
         executor_session::ExecutorSession,
         task_attempt::TaskAttempt,
     },
 };
 use executors::{
-    actions::ExecutorActions,
+    actions::{ExecutorActions, script::ScriptContext},
     executors::ExecutorError,
     logs::{LogNormalizer, amp::AmpLogNormalizer},
 };
@@ -49,11 +49,45 @@ pub trait ContainerService {
 
     async fn create(&self, task_attempt: &TaskAttempt) -> Result<ContainerRef, ContainerError>;
 
-    async fn start_execution(
+    async fn start_execution_inner(
         &self,
         task_attempt: &TaskAttempt,
+        execution_process: &ExecutionProcess,
         executor_action: &ExecutorActions,
-    ) -> Result<ExecutionProcess, ContainerError>;
+    ) -> Result<(), ContainerError>;
+
+    fn create_execution_process_from_action(
+        task_attempt: &TaskAttempt,
+        executor_action: &ExecutorActions,
+    ) -> CreateExecutionProcess {
+        match executor_action {
+            ExecutorActions::StandardCodingAgentRequest(standard_coding_agent_request) => {
+                CreateExecutionProcess {
+                    task_attempt_id: task_attempt.id,
+                    process_type: ExecutionProcessType::CodingAgent,
+                    // executor_type: Some(standard_coding_agent_request.executor.to_string()),
+                    executor_type: None,
+                }
+            }
+            ExecutorActions::StandardFollowUpCodingAgentRequest(
+                standard_follow_up_coding_agent_request,
+            ) => CreateExecutionProcess {
+                task_attempt_id: task_attempt.id,
+                process_type: ExecutionProcessType::CodingAgent,
+                // executor_type: Some(standard_follow_up_coding_agent_request.executor.to_string()),
+                executor_type: None,
+            },
+            ExecutorActions::ScriptRequest(script_request) => CreateExecutionProcess {
+                task_attempt_id: task_attempt.id,
+                process_type: match script_request.context {
+                    ScriptContext::SetupScript => ExecutionProcessType::SetupScript,
+                    ScriptContext::CleanupScript => ExecutionProcessType::CleanupScript,
+                    ScriptContext::DevServer => ExecutionProcessType::DevServer,
+                },
+                executor_type: None,
+            },
+        }
+    }
 
     /// Fetch the MsgStore for a given execution ID, panicking if missing.
     async fn get_msg_store_by_id(&self, uuid: &Uuid) -> Option<Arc<MsgStore>> {
@@ -242,5 +276,47 @@ pub trait ContainerService {
         });
 
         handle
+    }
+
+    async fn start_execution(
+        &self,
+        task_attempt: &TaskAttempt,
+        executor_action: &ExecutorActions,
+    ) -> Result<ExecutionProcess, ContainerError> {
+        // Create new execution process record
+        let create_execution_process =
+            Self::create_execution_process_from_action(&task_attempt, &executor_action);
+        let execution_process =
+            ExecutionProcess::create(&self.db().pool, &create_execution_process, Uuid::new_v4())
+                .await?;
+
+        let _ = self
+            .start_execution_inner(task_attempt, &execution_process, executor_action)
+            .await?;
+
+        let normalizer = match executor_action {
+            ExecutorActions::StandardCodingAgentRequest(request) => {
+                Some(request.executor.to_normalizer())
+            }
+            ExecutorActions::StandardFollowUpCodingAgentRequest(request) => {
+                Some(request.executor.to_normalizer())
+            }
+            ExecutorActions::ScriptRequest(_) => {
+                // Scripts don't need normalizers since they output raw text
+                None
+            }
+        };
+
+        if let Some(store) = self.get_msg_store_by_id(&execution_process.id).await {
+            if let Some(normalizer) = normalizer {
+                // TODO: This path will be different on remote, needed to normalise paths
+                let current_dir =
+                    PathBuf::from(task_attempt.container_ref.clone().unwrap_or_default());
+                normalizer.normalize_logs(store.clone(), &current_dir);
+            }
+        }
+
+        self.spawn_stream_raw_logs_to_db(&execution_process.id);
+        Ok(execution_process)
     }
 }

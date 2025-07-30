@@ -163,39 +163,6 @@ impl LocalContainerService {
         }
     }
 
-    pub fn create_execution_process_from_action(
-        task_attempt: &TaskAttempt,
-        executor_action: &ExecutorActions,
-    ) -> CreateExecutionProcess {
-        match executor_action {
-            ExecutorActions::StandardCodingAgentRequest(standard_coding_agent_request) => {
-                CreateExecutionProcess {
-                    task_attempt_id: task_attempt.id,
-                    process_type: ExecutionProcessType::CodingAgent,
-                    // executor_type: Some(standard_coding_agent_request.executor.to_string()),
-                    executor_type: None,
-                }
-            }
-            ExecutorActions::StandardFollowUpCodingAgentRequest(
-                standard_follow_up_coding_agent_request,
-            ) => CreateExecutionProcess {
-                task_attempt_id: task_attempt.id,
-                process_type: ExecutionProcessType::CodingAgent,
-                // executor_type: Some(standard_follow_up_coding_agent_request.executor.to_string()),
-                executor_type: None,
-            },
-            ExecutorActions::ScriptRequest(script_request) => CreateExecutionProcess {
-                task_attempt_id: task_attempt.id,
-                process_type: match script_request.context {
-                    ScriptContext::SetupScript => ExecutionProcessType::SetupScript,
-                    ScriptContext::CleanupScript => ExecutionProcessType::CleanupScript,
-                    ScriptContext::DevServer => ExecutionProcessType::DevServer,
-                },
-                executor_type: None,
-            },
-        }
-    }
-
     async fn track_child_msgs_in_store(
         &self,
         id: Uuid,
@@ -221,14 +188,6 @@ impl LocalContainerService {
         // Merge and forward into the store
         let merged = select(out, err); // Stream<Item = Result<LogMsg, io::Error>>
         store.clone().spawn_forwarder(merged);
-
-        // Testing normalizer stream
-        if let Some(normalizer) = normalizer {
-            normalizer.normalize_logs(store.clone(), current_dir);
-        }
-
-        // Start MsgStore -> DB sync
-        self.spawn_stream_raw_logs_to_db(&id);
 
         let mut map = self.msg_stores().write().await;
         map.insert(id, store);
@@ -278,18 +237,12 @@ impl ContainerService for LocalContainerService {
         Ok(worktree_path.to_string_lossy().to_string())
     }
 
-    async fn start_execution(
+    async fn start_execution_inner(
         &self,
         task_attempt: &TaskAttempt,
+        execution_process: &ExecutionProcess,
         executor_action: &ExecutorActions,
-    ) -> Result<ExecutionProcess, ContainerError> {
-        // Create new execution process record
-        let create_execution_process =
-            Self::create_execution_process_from_action(&task_attempt, &executor_action);
-        let execution_process =
-            ExecutionProcess::create(&self.db.pool, &create_execution_process, Uuid::new_v4())
-                .await?;
-
+    ) -> Result<(), ContainerError> {
         // Get the worktree path
         let container_ref = task_attempt
             .container_ref
@@ -301,6 +254,7 @@ impl ContainerService for LocalContainerService {
 
         // Create the child and stream, add to execution tracker
         let mut child = executor_action.spawn(&current_dir).await?;
+
         let normalizer = match executor_action {
             ExecutorActions::StandardCodingAgentRequest(request) => {
                 Some(request.executor.to_normalizer())
@@ -313,6 +267,7 @@ impl ContainerService for LocalContainerService {
                 None
             }
         };
+
         self.track_child_msgs_in_store(execution_process.id, &mut child, normalizer, &current_dir)
             .await;
 
@@ -321,6 +276,6 @@ impl ContainerService for LocalContainerService {
         // Spawn exit monitor
         let _hn = self.spawn_exit_monitor(&execution_process.id);
 
-        Ok(execution_process)
+        Ok(())
     }
 }
