@@ -1,8 +1,8 @@
 [package]
-name = "core"
+name = "server"
 version = "0.0.56"
 edition = "2021"
-default-run = "core"
+default-run = "server"
 
 [lints.clippy]
 uninlined-format-args = "allow"
