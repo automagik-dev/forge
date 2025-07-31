@@ -19,15 +19,15 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Key, Loader2, Volume2 } from 'lucide-react';
-import type { EditorType, SoundFile, ThemeMode } from 'shared/types';
+import type { SoundFile, ThemeMode } from 'shared/types';
+import { CodingAgentExecutorType, EditorType } from 'shared/types';
 import {
   EDITOR_LABELS,
   EDITOR_TYPES,
-  EXECUTOR_LABELS,
-  EXECUTOR_TYPES,
   SOUND_FILES,
   SOUND_LABELS,
-} from 'shared/types';
+} from 'shared/old_frozen_types';
+import { toPrettyCase } from '@/utils/string';
 import { useTheme } from '@/components/theme-provider';
 import { useConfig } from '@/components/config-provider';
 import { GitHubLoginDialog } from '@/components/GitHubLoginDialog';
@@ -200,18 +200,18 @@ export function Settings() {
               <div className="space-y-2">
                 <Label htmlFor="executor">Default Executor</Label>
                 <Select
-                  value={config.executor.type}
-                  onValueChange={(value: 'echo' | 'claude' | 'amp') =>
-                    updateConfig({ executor: { type: value } })
+                  value={config.executor}
+                  onValueChange={(value: CodingAgentExecutorType) =>
+                    updateConfig({ executor: value })
                   }
                 >
                   <SelectTrigger id="executor">
                     <SelectValue placeholder="Select executor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {EXECUTOR_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {EXECUTOR_LABELS[type]}
+                    {Object.values(CodingAgentExecutorType).map((executorType) => (
+                      <SelectItem key={executorType} value={executorType}>
+                        {toPrettyCase(executorType)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -241,7 +241,7 @@ export function Settings() {
                         ...config.editor,
                         editor_type: value,
                         custom_command:
-                          value === 'custom'
+                          value === EditorType.CUSTOM
                             ? config.editor.custom_command
                             : null,
                       },
@@ -264,7 +264,7 @@ export function Settings() {
                 </p>
               </div>
 
-              {config.editor.editor_type === 'custom' && (
+              {config.editor.editor_type === EditorType.CUSTOM && (
                 <div className="space-y-2">
                   <Label htmlFor="custom-command">Custom Command</Label>
                   <Input

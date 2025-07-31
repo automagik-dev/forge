@@ -19,7 +19,8 @@ import {
 } from '@/components/ui/select';
 import { useConfig } from '@/components/config-provider';
 import { templatesApi } from '@/lib/api';
-import type { TaskStatus, ExecutorConfig, TaskTemplate } from 'shared/types';
+import type { TaskStatus, ExecutorConfig, TaskTemplate } from 'shared/old_frozen_types';
+import { CodingAgentExecutorType } from 'shared/types';
 
 interface Task {
   id: string;
@@ -167,7 +168,9 @@ export function TaskFormDialog({
     setIsSubmittingAndStart(true);
     try {
       if (!isEditMode && onCreateAndStartTask) {
-        await onCreateAndStartTask(title, description, config?.executor);
+        // Convert CodingAgentExecutorType to ExecutorConfig format  
+        const executorConfig = config?.executor ? { type: config.executor === CodingAgentExecutorType.CLAUDE_CODE ? 'claude' : config.executor } as any : undefined;
+        await onCreateAndStartTask(title, description, executorConfig);
       }
 
       // Reset form on successful creation

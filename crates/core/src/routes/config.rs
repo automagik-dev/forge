@@ -5,7 +5,7 @@ use axum::{
     extract::{Path, Query, State},
     http,
     response::{Json as ResponseJson, Response},
-    routing::{get, post},
+    routing::{get, post, put},
     Json, Router,
 };
 use deployment::{Deployment, DeploymentError};
@@ -21,7 +21,7 @@ use crate::{error::ApiError, DeploymentImpl};
 pub fn router() -> Router<DeploymentImpl> {
     Router::new()
         .route("/info", get(get_user_system_info))
-        .route("/config", get(get_config).put(update_config))
+        .route("/config", put(update_config))
         .route("/sounds/{sound}", get(get_sound))
     // TODO: fix
     // .route("/mcp-servers", get(get_mcp_servers))
@@ -29,7 +29,8 @@ pub fn router() -> Router<DeploymentImpl> {
 }
 
 #[derive(Debug, Serialize, Deserialize, TS)]
-struct Environment {
+#[ts(export)]
+pub struct Environment {
     pub os_type: String,
     pub os_version: String,
     pub os_architecture: String,
@@ -52,8 +53,6 @@ impl Environment {
 pub struct UserSystemInfo {
     pub config: Config,
     pub environment: Environment,
-    pub editor_config_options: EditorConstants,
-    pub sound_config_options: SoundConstants,
 }
 
 // TODO: update frontend, BE schema has changed, this replaces GET /config and /config/constants
@@ -66,8 +65,6 @@ async fn get_user_system_info(
     let user_system_info = UserSystemInfo {
         config: config.clone(),
         environment: Environment::new(),
-        editor_config_options: EditorConstants::new(),
-        sound_config_options: SoundConstants::new(),
     };
 
     ResponseJson(ApiResponse::success(user_system_info))

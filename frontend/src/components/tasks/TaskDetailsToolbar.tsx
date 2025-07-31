@@ -4,8 +4,9 @@ import { Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useConfig } from '@/components/config-provider';
 import { attemptsApi, projectsApi } from '@/lib/api';
-import type { GitBranch, TaskAttempt } from 'shared/types';
-import { EXECUTOR_LABELS, EXECUTOR_TYPES } from 'shared/types';
+import type { GitBranch, TaskAttempt } from 'shared/old_frozen_types';
+import { EXECUTOR_LABELS, EXECUTOR_TYPES } from 'shared/old_frozen_types';
+import { CodingAgentExecutorType } from 'shared/types';
 import {
   TaskAttemptDataContext,
   TaskAttemptLoadingContext,
@@ -43,7 +44,7 @@ function TaskDetailsToolbar() {
   const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
 
   const [selectedExecutor, setSelectedExecutor] = useState<string>(
-    config?.executor.type || 'claude'
+    config?.executor || CodingAgentExecutorType.CLAUDE_CODE
   );
 
   // State for create attempt mode
@@ -76,8 +77,8 @@ function TaskDetailsToolbar() {
 
   // Set default executor from config
   useEffect(() => {
-    if (config && config.executor.type !== selectedExecutor) {
-      setSelectedExecutor(config.executor.type);
+    if (config && config.executor !== selectedExecutor) {
+      setSelectedExecutor(config.executor);
     }
   }, [config, selectedExecutor]);
 

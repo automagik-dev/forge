@@ -36,11 +36,11 @@ import { TaskDetailsPanel } from '@/components/tasks/TaskDetailsPanel';
 import type {
   CreateTaskAndStart,
   ExecutorConfig,
-  ProjectWithBranch,
   TaskStatus,
   TaskWithAttemptStatus,
   TaskTemplate,
-} from 'shared/types';
+} from 'shared/old_frozen_types';
+import type { Project } from 'shared/types';
 import type { DragEndEvent } from '@/components/ui/shadcn-io/kanban';
 
 type Task = TaskWithAttemptStatus;
@@ -52,7 +52,7 @@ export function ProjectTasks() {
   }>();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [project, setProject] = useState<ProjectWithBranch | null>(null);
+  const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
@@ -102,7 +102,7 @@ export function ProjectTasks() {
 
   const fetchProject = useCallback(async () => {
     try {
-      const result = await projectsApi.getWithBranch(projectId!);
+      const result = await projectsApi.getById(projectId!);
       setProject(result);
     } catch (err) {
       setError('Failed to load project');
@@ -177,7 +177,7 @@ export function ProjectTasks() {
   const handleCreateTask = useCallback(
     async (title: string, description: string) => {
       try {
-        const createdTask = await tasksApi.create(projectId!, {
+        const createdTask = await tasksApi.create({
           project_id: projectId!,
           title,
           description: description || null,
@@ -221,7 +221,7 @@ export function ProjectTasks() {
       if (!editingTask) return;
 
       try {
-        await tasksApi.update(projectId!, editingTask.id, {
+        await tasksApi.update(editingTask.id, {
           title,
           description: description || null,
           status,
@@ -241,7 +241,7 @@ export function ProjectTasks() {
       if (!confirm('Are you sure you want to delete this task?')) return;
 
       try {
-        await tasksApi.delete(projectId!, taskId);
+        await tasksApi.delete(taskId);
         await fetchTasks();
       } catch (error) {
         setError('Failed to delete task');
@@ -296,7 +296,7 @@ export function ProjectTasks() {
       );
 
       try {
-        await tasksApi.update(projectId!, taskId, {
+        await tasksApi.update(taskId, {
           title: task.title,
           description: task.description,
           status: newStatus,
@@ -383,11 +383,6 @@ export function ProjectTasks() {
         <div className="px-8 my-12 flex flex-row">
           <div className="w-full flex items-center gap-3">
             <h1 className="text-2xl font-bold">{project?.name || 'Project'}</h1>
-            {project?.current_branch && (
-              <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-md">
-                {project.current_branch}
-              </span>
-            )}
             <Button
               variant="ghost"
               size="sm"

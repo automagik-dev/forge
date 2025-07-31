@@ -1,33 +1,35 @@
 // Import all necessary types from shared types
 import {
   BranchStatus,
-  Config,
-  ConfigConstants,
   CreateFollowUpAttempt,
-  CreateProject,
   CreateProjectFromGitHub,
   CreateTask,
   CreateTaskAndStart,
   CreateTaskAttempt,
   CreateTaskTemplate,
   DeviceStartResponse,
-  DirectoryEntry,
-  type EditorType,
   ExecutionProcess,
   ExecutionProcessSummary,
   GitBranch,
   ProcessLogsResponse,
-  Project,
-  ProjectWithBranch,
   Task,
   TaskAttempt,
   TaskAttemptState,
   TaskTemplate,
   TaskWithAttemptStatus,
-  UpdateProject,
   UpdateTask,
   UpdateTaskTemplate,
   WorktreeDiff,
+} from 'shared/old_frozen_types';
+
+import {
+  Config,
+  DirectoryListResponse,
+  EditorType,
+  Project,
+  CreateProject,
+  UpdateProject,
+  UserSystemInfo,
 } from 'shared/types';
 
 export const makeRequest = async (url: string, options: RequestInit = {}) => {
@@ -58,12 +60,6 @@ export interface FollowUpResponse {
 export interface FileSearchResult {
   path: string;
   name: string;
-}
-
-// Directory listing response
-export interface DirectoryListResponse {
-  entries: DirectoryEntry[];
-  current_path: string;
 }
 
 // GitHub Repository Info (manually defined since not exported from Rust yet)
@@ -142,10 +138,7 @@ export const projectsApi = {
     return handleApiResponse<Project>(response);
   },
 
-  getWithBranch: async (id: string): Promise<ProjectWithBranch> => {
-    const response = await makeRequest(`/api/projects/${id}/with-branch`);
-    return handleApiResponse<ProjectWithBranch>(response);
-  },
+
 
   create: async (data: CreateProject): Promise<Project> => {
     const response = await makeRequest('/api/projects', {
@@ -197,19 +190,17 @@ export const projectsApi = {
 // Task Management APIs
 export const tasksApi = {
   getAll: async (projectId: string): Promise<TaskWithAttemptStatus[]> => {
-    const response = await makeRequest(`/api/projects/${projectId}/tasks`);
+    const response = await makeRequest(`/api/tasks?project_id=${projectId}`);
     return handleApiResponse<TaskWithAttemptStatus[]>(response);
   },
 
-  getById: async (projectId: string, taskId: string): Promise<Task> => {
-    const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}`
-    );
+  getById: async (taskId: string): Promise<Task> => {
+    const response = await makeRequest(`/api/tasks/${taskId}`);
     return handleApiResponse<Task>(response);
   },
 
-  create: async (projectId: string, data: CreateTask): Promise<Task> => {
-    const response = await makeRequest(`/api/projects/${projectId}/tasks`, {
+  create: async (data: CreateTask): Promise<Task> => {
+    const response = await makeRequest(`/api/tasks`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -231,27 +222,20 @@ export const tasksApi = {
   },
 
   update: async (
-    projectId: string,
     taskId: string,
     data: UpdateTask
   ): Promise<Task> => {
-    const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      }
-    );
+    const response = await makeRequest(`/api/tasks/${taskId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
     return handleApiResponse<Task>(response);
   },
 
-  delete: async (projectId: string, taskId: string): Promise<void> => {
-    const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}`,
-      {
-        method: 'DELETE',
-      }
-    );
+  delete: async (taskId: string): Promise<void> => {
+    const response = await makeRequest(`/api/tasks/${taskId}`, {
+      method: 'DELETE',
+    });
     return handleApiResponse<void>(response);
   },
 
@@ -511,27 +495,31 @@ export const executionProcessesApi = {
 export const fileSystemApi = {
   list: async (path?: string): Promise<DirectoryListResponse> => {
     const queryParam = path ? `?path=${encodeURIComponent(path)}` : '';
-    const response = await makeRequest(`/api/filesystem/list${queryParam}`);
+    const response = await makeRequest(`/api/filesystem/directory${queryParam}`);
     return handleApiResponse<DirectoryListResponse>(response);
   },
 };
 
-// Config APIs
+// System API (new)
+export const systemApi = {
+  getInfo: async (): Promise<UserSystemInfo> => {
+    const response = await makeRequest('/api/info');
+    return handleApiResponse<UserSystemInfo>(response);
+  },
+};
+
+// Config APIs (backwards compatible)
 export const configApi = {
   getConfig: async (): Promise<Config> => {
-    const response = await makeRequest('/api/config');
-    return handleApiResponse<Config>(response);
+    const { config } = await systemApi.getInfo();
+    return config;
   },
   saveConfig: async (config: Config): Promise<Config> => {
     const response = await makeRequest('/api/config', {
-      method: 'POST',
+      method: 'PUT',
       body: JSON.stringify(config),
     });
     return handleApiResponse<Config>(response);
-  },
-  getConstants: async (): Promise<ConfigConstants> => {
-    const response = await makeRequest('/api/config/constants');
-    return handleApiResponse<ConfigConstants>(response);
   },
 };
 
@@ -593,12 +581,12 @@ export const templatesApi = {
   },
 
   listGlobal: async (): Promise<TaskTemplate[]> => {
-    const response = await makeRequest('/api/templates/global');
+    const response = await makeRequest('/api/templates?global=true');
     return handleApiResponse<TaskTemplate[]>(response);
   },
 
   listByProject: async (projectId: string): Promise<TaskTemplate[]> => {
-    const response = await makeRequest(`/api/projects/${projectId}/templates`);
+    const response = await makeRequest(`/api/templates?project_id=${projectId}`);
     return handleApiResponse<TaskTemplate[]>(response);
   },
 
