@@ -95,7 +95,7 @@ impl LocalContainerService {
             );
             return;
         }
-        let worktree_base_dir = Self::get_worktree_base_dir();
+        let worktree_base_dir = WorktreeManager::get_worktree_base_dir();
         if !worktree_base_dir.exists() {
             tracing::debug!(
                 "Worktree base directory {} does not exist, skipping orphan cleanup",
