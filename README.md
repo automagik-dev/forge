@@ -1,3 +1,7 @@
+> [!IMPORTANT]  
+> We're re-writing the codebase, expect a delayed response to feedback until that's shipped. The current version on NPM is stable and we expect to be releasing alpha builds of V2 within days.
+> You can track progress [here](https://github.com/BloopAI/vibe-kanban/tree/deployments).
+
 <p align="center">
   <a href="https://vibekanban.com">
     <picture>
