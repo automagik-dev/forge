@@ -15,7 +15,6 @@ use executors::actions::{ExecutorAction, ExecutorActions};
 use futures::{TryStreamExt, stream::select};
 use services::services::{
     container::{ContainerError, ContainerRef, ContainerService},
-    git::GitService,
     worktree_manager::WorktreeManager,
 };
 use tokio::{sync::RwLock, task::JoinHandle};
@@ -30,22 +29,16 @@ use uuid::Uuid;
 #[derive(Clone)]
 pub struct LocalContainerService {
     db: DBService,
-    git: GitService,
     child_store: Arc<RwLock<HashMap<Uuid, Arc<RwLock<AsyncGroupChild>>>>>,
     msg_stores: Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>,
 }
 
 impl LocalContainerService {
-    pub fn new(
-        db: DBService,
-        git: GitService,
-        msg_stores: Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>,
-    ) -> Self {
+    pub fn new(db: DBService, msg_stores: Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>) -> Self {
         let child_store = Arc::new(RwLock::new(HashMap::new()));
 
         LocalContainerService {
             db,
-            git,
             child_store,
             msg_stores,
         }
@@ -296,26 +289,6 @@ impl LocalContainerService {
         format!("vk-{}-{}", short_uuid(attempt_id), task_title_id)
     }
 
-    /// Get the base directory for vibe-kanban worktrees
-    pub fn get_worktree_base_dir() -> std::path::PathBuf {
-        let dir_name = if cfg!(debug_assertions) {
-            "vibe-kanban-dev"
-        } else {
-            "vibe-kanban"
-        };
-
-        if cfg!(target_os = "macos") {
-            // macOS already uses /var/folders/... which is persistent storage
-            std::env::temp_dir().join(dir_name)
-        } else if cfg!(target_os = "linux") {
-            // Linux: use /var/tmp instead of /tmp to avoid RAM usage
-            std::path::PathBuf::from("/var/tmp").join(dir_name)
-        } else {
-            // Windows and other platforms: use temp dir with vibe-kanban subdirectory
-            std::env::temp_dir().join(dir_name)
-        }
-    }
-
     async fn track_child_msgs_in_store(&self, id: Uuid, child: &mut AsyncGroupChild) {
         let store = Arc::new(MsgStore::new());
 
@@ -364,19 +337,21 @@ impl ContainerService for LocalContainerService {
 
         let task_branch_name =
             LocalContainerService::dir_name_from_task_attempt(&task_attempt.id, &task.title);
-        let worktree_path = LocalContainerService::get_worktree_base_dir().join(&task_branch_name);
+        let worktree_path = WorktreeManager::get_worktree_base_dir().join(&task_branch_name);
 
         let project = task
             .parent_project(&self.db.pool)
             .await?
             .ok_or(sqlx::Error::RowNotFound)?;
 
-        let _ = &self.git.create_worktree(
+        WorktreeManager::create_worktree(
             &project.git_repo_path,
             &task_branch_name,
             &worktree_path,
             Some(&task_attempt.base_branch),
-        )?;
+            true, // create new branch
+        )
+        .await?;
 
         // Update both container_ref and branch in the database
         TaskAttempt::update_container_ref(
@@ -389,6 +364,41 @@ impl ContainerService for LocalContainerService {
         TaskAttempt::update_branch(&self.db.pool, task_attempt.id, &task_branch_name).await?;
 
         Ok(worktree_path.to_string_lossy().to_string())
+    }
+
+    async fn ensure_container_exists(
+        &self,
+        task_attempt: &TaskAttempt,
+    ) -> Result<ContainerRef, ContainerError> {
+        // Get required context
+        let task = task_attempt
+            .parent_task(&self.db.pool)
+            .await?
+            .ok_or(sqlx::Error::RowNotFound)?;
+
+        let project = task
+            .parent_project(&self.db.pool)
+            .await?
+            .ok_or(sqlx::Error::RowNotFound)?;
+
+        let container_ref = task_attempt.container_ref.as_ref().ok_or_else(|| {
+            ContainerError::Other(anyhow!("Container ref not found for task attempt"))
+        })?;
+        let worktree_path = PathBuf::from(container_ref);
+
+        let branch_name = task_attempt
+            .branch
+            .as_ref()
+            .ok_or_else(|| ContainerError::Other(anyhow!("Branch not found for task attempt")))?;
+
+        WorktreeManager::ensure_worktree_exists(
+            &project.git_repo_path,
+            branch_name,
+            &worktree_path,
+        )
+        .await?;
+
+        Ok(container_ref.to_string())
     }
 
     async fn start_execution_inner(
