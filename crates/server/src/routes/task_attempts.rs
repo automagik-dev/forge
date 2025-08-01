@@ -479,7 +479,7 @@ pub async fn merge_task_attempt(
     )?;
 
     TaskAttempt::update_merge_commit(pool, task_attempt.id, &merge_commit_id).await?;
-    Task::update_status(pool, ctx.task.id, ctx.project.id, TaskStatus::Done).await?;
+    Task::update_status(pool, ctx.task.id, TaskStatus::Done).await?;
 
     deployment
         .track_if_analytics_allowed(
@@ -500,14 +500,11 @@ pub async fn create_github_pr(
     State(deployment): State<DeploymentImpl>,
     Json(request): Json<CreateGitHubPRRequest>,
 ) -> Result<ResponseJson<ApiResponse<String>>, ApiError> {
-    let config = deployment.config().read().await;
-    let github_token = match &config.github.token {
-        Some(token) => token,
-        None => {
-            return Ok(ResponseJson(ApiResponse::error(
-                "GitHub authentication not configured. Please sign in with GitHub.",
-            )));
-        }
+    let github_config = deployment.config().read().await.github.clone();
+    let Some(github_token) = github_config.token() else {
+        return Ok(ResponseJson(ApiResponse::error(
+            "GitHub authentication not configured. Please sign in with GitHub.",
+        )));
     };
 
     // Get the task attempt to access the stored base branch
@@ -517,8 +514,7 @@ pub async fn create_github_pr(
         if !task_attempt.base_branch.trim().is_empty() {
             task_attempt.base_branch.clone()
         } else {
-            config
-                .github
+            github_config
                 .default_pr_base
                 .as_ref()
                 .map_or_else(|| "main".to_string(), |b| b.to_string())
@@ -540,8 +536,7 @@ pub async fn create_github_pr(
     let worktree_path = std::path::Path::new(&container_ref);
 
     // Create GitHub service instance
-    let github_token_to_use = config.github.pat.as_ref().unwrap_or(&github_token);
-    let github_service = match GitHubService::new(github_token_to_use) {
+    let github_service = match GitHubService::new(&github_token) {
         Ok(service) => service,
         Err(GitHubServiceError::TokenInvalid) => {
             return Ok(ResponseJson(ApiResponse::error("github_token_invalid")));
@@ -563,9 +558,7 @@ pub async fn create_github_pr(
     })?;
 
     // Push the branch to GitHub first
-    if let Err(e) =
-        GitService::new().push_to_github(&worktree_path, branch_name, github_token_to_use)
-    {
+    if let Err(e) = GitService::new().push_to_github(&worktree_path, branch_name, &github_token) {
         tracing::error!("Failed to push branch to GitHub: {}", e);
         let message = match &e {
             GitServiceError::Git(err)

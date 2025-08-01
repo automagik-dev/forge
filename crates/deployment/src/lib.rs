@@ -23,6 +23,7 @@ use services::services::{
     events::{EventError, EventService},
     filesystem::{FilesystemError, FilesystemService},
     git::{GitService, GitServiceError},
+    pr_monitor::PrMonitorService,
     sentry::SentryService,
     worktree_manager::WorktreeError,
 };
@@ -100,6 +101,12 @@ pub trait Deployment: Clone + Send + Sync + 'static {
         Ok(())
     }
 
+    async fn spawn_pr_monitor_service(&self) -> tokio::task::JoinHandle<()> {
+        let db = self.db().clone();
+        let config = self.config().clone();
+        PrMonitorService::spawn(db, config).await
+    }
+
     async fn track_if_analytics_allowed(&self, event_name: &str, properties: Value) {
         if let Some(true) = self.config().read().await.analytics_enabled {
             // Does the user allow analytics?
@@ -150,13 +157,9 @@ pub trait Deployment: Clone + Send + Sync + 'static {
                     if let Ok(Some(task)) =
                         Task::find_by_id(&self.db().pool, task_attempt.task_id).await
                     {
-                        if let Err(e) = Task::update_status(
-                            &self.db().pool,
-                            task.id,
-                            task.project_id,
-                            TaskStatus::InReview,
-                        )
-                        .await
+                        if let Err(e) =
+                            Task::update_status(&self.db().pool, task.id, TaskStatus::InReview)
+                                .await
                         {
                             tracing::error!(
                                 "Failed to update task status to InReview for orphaned attempt: {}",
