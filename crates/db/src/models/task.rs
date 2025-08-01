@@ -183,6 +183,18 @@ ORDER BY t.created_at DESC"#,
         .await
     }
 
+    pub async fn find_by_rowid(pool: &SqlitePool, rowid: i64) -> Result<Option<Self>, sqlx::Error> {
+        sqlx::query_as!(
+            Task,
+            r#"SELECT id as "id!: Uuid", project_id as "project_id!: Uuid", title, description, status as "status!: TaskStatus", parent_task_attempt as "parent_task_attempt: Uuid", created_at as "created_at!: DateTime<Utc>", updated_at as "updated_at!: DateTime<Utc>"
+               FROM tasks 
+               WHERE rowid = $1"#,
+            rowid
+        )
+        .fetch_optional(pool)
+        .await
+    }
+
     pub async fn find_by_id_and_project_id(
         pool: &SqlitePool,
         id: Uuid,
@@ -291,7 +303,6 @@ ORDER BY t.created_at DESC"#,
     pub async fn find_related_tasks_by_attempt_id(
         pool: &SqlitePool,
         attempt_id: Uuid,
-        project_id: Uuid,
     ) -> Result<Vec<Self>, sqlx::Error> {
         // Find both children and parent for this attempt
         sqlx::query_as!(
@@ -300,22 +311,19 @@ ORDER BY t.created_at DESC"#,
                FROM tasks t
                WHERE (
                    -- Find children: tasks that have this attempt as parent
-                   t.parent_task_attempt = $1 AND t.project_id = $2
+                   t.parent_task_attempt = $1
                ) OR (
                    -- Find parent: task that owns the parent attempt of current task
                    EXISTS (
                        SELECT 1 FROM tasks current_task 
                        JOIN task_attempts parent_attempt ON current_task.parent_task_attempt = parent_attempt.id
                        WHERE parent_attempt.task_id = t.id 
-                       AND parent_attempt.id = $1 
-                       AND current_task.project_id = $2
                    )
                )
                -- Exclude the current task itself to prevent circular references
                AND t.id != (SELECT task_id FROM task_attempts WHERE id = $1)
                ORDER BY t.created_at DESC"#,
             attempt_id,
-            project_id
         )
         .fetch_all(pool)
         .await

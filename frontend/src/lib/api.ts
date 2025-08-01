@@ -1,25 +1,20 @@
 // Import all necessary types from shared types
 import {
-  BranchStatus,
   CreateFollowUpAttempt,
-  CreateTask,
   CreateTaskAndStart,
-  CreateTaskAttempt,
   DeviceStartResponse,
   ExecutionProcess,
   ExecutionProcessSummary,
   ProcessLogsResponse,
-  Task,
-  TaskAttempt,
-  TaskAttemptState,
-  TaskWithAttemptStatus,
-  UpdateTask,
   WorktreeDiff,
 } from 'shared/old_frozen_types';
 
 import {
   ApiResponse,
+  BranchStatus,
   Config,
+  CreateTask,
+  CreateTaskAttemptBody,
   CreateTaskTemplate,
   DirectoryListResponse,
   EditorType,
@@ -28,8 +23,13 @@ import {
   CreateProject,
   RepositoryInfo,
   SearchResult,
+  Task,
+  TaskAttempt,
+  TaskAttemptState,
   TaskTemplate,
+  TaskWithAttemptStatus,
   UpdateProject,
+  UpdateTask,
   UpdateTaskTemplate,
   UserSystemInfo,
 } from 'shared/types';
@@ -39,7 +39,7 @@ export type { RepositoryInfo } from 'shared/types';
 
 export class ApiError extends Error {
   public status?: number;
-  
+
   constructor(
     message: string,
     public statusCode?: number,
@@ -223,12 +223,10 @@ export const tasksApi = {
   },
 
   getChildren: async (
-    projectId: string,
-    taskId: string,
     attemptId: string
   ): Promise<Task[]> => {
     const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}/attempts/${attemptId}/children`
+      `/api/task-attempts/${attemptId}/children`
     );
     return handleApiResponse<Task[]>(response);
   },
@@ -236,20 +234,18 @@ export const tasksApi = {
 
 // Task Attempts APIs
 export const attemptsApi = {
-  getAll: async (projectId: string, taskId: string): Promise<TaskAttempt[]> => {
+  getAll: async (taskId: string): Promise<TaskAttempt[]> => {
     const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}/attempts`
+      `/api/task-attempts?task_id=${taskId}`
     );
     return handleApiResponse<TaskAttempt[]>(response);
   },
 
   create: async (
-    projectId: string,
-    taskId: string,
-    data: CreateTaskAttempt
+    data: CreateTaskAttemptBody
   ): Promise<TaskAttempt> => {
     const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}/attempts`,
+      `/api/task-attempts`,
       {
         method: 'POST',
         body: JSON.stringify(data),
@@ -300,24 +296,20 @@ export const attemptsApi = {
   },
 
   getDiff: async (
-    projectId: string,
-    taskId: string,
     attemptId: string
   ): Promise<WorktreeDiff> => {
     const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}/attempts/${attemptId}/diff`
+      `/api/task-attempts/${attemptId}/diff`
     );
     return handleApiResponse<WorktreeDiff>(response);
   },
 
   deleteFile: async (
-    projectId: string,
-    taskId: string,
     attemptId: string,
     fileToDelete: string
   ): Promise<void> => {
     const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}/attempts/${attemptId}/delete-filefile_path=${encodeURIComponent(
+      `/api/task-attempts/${attemptId}/delete-file?file_path=${encodeURIComponent(
         fileToDelete
       )}`,
       {
@@ -344,12 +336,10 @@ export const attemptsApi = {
   },
 
   getBranchStatus: async (
-    projectId: string,
-    taskId: string,
     attemptId: string
   ): Promise<BranchStatus> => {
     const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}/attempts/${attemptId}/branch-status`
+      `/api/task-attempts/${attemptId}/branch-status`
     );
     return handleApiResponse<BranchStatus>(response);
   },
@@ -390,8 +380,6 @@ export const attemptsApi = {
   },
 
   createPR: async (
-    projectId: string,
-    taskId: string,
     attemptId: string,
     data: {
       title: string;
@@ -400,7 +388,7 @@ export const attemptsApi = {
     }
   ): Promise<string> => {
     const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}/attempts/${attemptId}/create-pr`,
+      `/api/task-attempts/${attemptId}/create-pr`,
       {
         method: 'POST',
         body: JSON.stringify(data),

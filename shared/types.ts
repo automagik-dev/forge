@@ -26,9 +26,17 @@ export type CreateTaskTemplate = { project_id: string | null, title: string, des
 
 export type UpdateTaskTemplate = { title: string | null, description: string | null, template_name: string | null, };
 
-export type ApiResponse<T> = { success: boolean, data: T | null, message: string | null, };
+export type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelled";
 
-export type ApiError = string;
+export type Task = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, created_at: string, updated_at: string, };
+
+export type TaskWithAttemptStatus = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, created_at: string, updated_at: string, has_in_progress_attempt: boolean, has_merged_attempt: boolean, last_attempt_failed: boolean, latest_attempt_executor: string | null, };
+
+export type CreateTask = { project_id: string, title: string, description: string | null, parent_task_attempt: string | null, };
+
+export type UpdateTask = { title: string | null, description: string | null, status: TaskStatus | null, parent_task_attempt: string | null, };
+
+export type ApiResponse<T> = { success: boolean, data: T | null, message: string | null, };
 
 export type UserSystemInfo = { config: Config, environment: Environment, };
 
@@ -52,6 +60,22 @@ export type SoundConstants = { sound_files: Array<SoundFile>, sound_labels: Arra
 
 export type GitBranch = { name: string, is_current: boolean, is_remote: boolean, last_commit_date: Date, };
 
+export type BranchStatus = { is_behind: boolean, commits_behind: number, commits_ahead: number, up_to_date: boolean, merged: boolean, has_uncommitted_changes: boolean, base_branch_name: string, };
+
 export type RepositoryInfo = { id: bigint, name: string, full_name: string, owner: string, description: string | null, clone_url: string, ssh_url: string, default_branch: string, private: boolean, };
 
 export enum CodingAgentExecutorType { CLAUDE_CODE = "CLAUDE_CODE", AMP = "AMP", GEMINI = "GEMINI" }
+
+export type CreateTaskAttemptBody = { task_id: string, executor: string | null, base_branch: string, };
+
+export type TaskAttempt = { id: string, task_id: string, container_ref: string | null, branch: string | null, base_branch: string, merge_commit: string | null, executor: string | null, pr_url: string | null, pr_number: bigint | null, pr_status: string | null, pr_merged_at: string | null, worktree_deleted: boolean, setup_completed_at: string | null, created_at: string, updated_at: string, };
+
+export type TaskAttemptState = { execution_state: ExecutionState, has_changes: boolean, has_setup_script: boolean, setup_process_id: string | null, coding_agent_process_id: string | null, };
+
+export type ExecutionState = "NotStarted" | "SetupRunning" | "SetupComplete" | "SetupFailed" | "SetupStopped" | "CodingAgentRunning" | "CodingAgentComplete" | "CodingAgentFailed" | "CodingAgentStopped" | "Complete";
+
+export type EventPatch = { op: string, path: string, value: EventPatchInner, };
+
+export type EventPatchInner = { db_op: string, record: RecordTypes, };
+
+export type RecordTypes = { "type": "TASK", "data": Task } | { "type": "TASK_ATTEMPT", "data": TaskAttempt } | { "type": "DELETED_TASK", "data": { rowid: bigint, } } | { "type": "DELETED_TASK_ATTEMPT", "data": { rowid: bigint, } };

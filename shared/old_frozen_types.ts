@@ -6,25 +6,7 @@ export type ExecutorConfig = { "type": "echo" } | { "type": "claude" } | { "type
 
 export type ExecutorConstants = { executor_types: Array<ExecutorConfig>, executor_labels: Array<string>, };
 
-export type CreateTask = { project_id: string, title: string, description: string | null, parent_task_attempt: string | null, };
-
 export type CreateTaskAndStart = { project_id: string, title: string, description: string | null, parent_task_attempt: string | null, executor: ExecutorConfig | null, };
-
-export type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelled";
-
-export type Task = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, created_at: string, updated_at: string, };
-
-export type TaskWithAttemptStatus = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, created_at: string, updated_at: string, has_in_progress_attempt: boolean, has_merged_attempt: boolean, last_attempt_failed: boolean, latest_attempt_executor: string | null, };
-
-export type UpdateTask = { title: string | null, description: string | null, status: TaskStatus | null, parent_task_attempt: string | null, };
-
-export type TaskAttemptStatus = "setuprunning" | "setupcomplete" | "setupfailed" | "executorrunning" | "executorcomplete" | "executorfailed";
-
-export type TaskAttempt = { id: string, task_id: string, worktree_path: string, branch: string, base_branch: string, merge_commit: string | null, executor: string | null, pr_url: string | null, pr_number: bigint | null, pr_status: string | null, pr_merged_at: string | null, worktree_deleted: boolean, setup_completed_at: string | null, created_at: string, updated_at: string, };
-
-export type CreateTaskAttempt = { executor: string | null, base_branch: string | null, };
-
-export type UpdateTaskAttempt = Record<string, never>;
 
 export type CreateFollowUpAttempt = { prompt: string, };
 
@@ -42,11 +24,7 @@ export type FileDiff = { path: string, chunks: Array<DiffChunk>, };
 
 export type WorktreeDiff = { files: Array<FileDiff>, };
 
-export type BranchStatus = { is_behind: boolean, commits_behind: number, commits_ahead: number, up_to_date: boolean, merged: boolean, has_uncommitted_changes: boolean, base_branch_name: string, };
-
 export type ExecutionState = "NotStarted" | "SetupRunning" | "SetupComplete" | "SetupFailed" | "SetupStopped" | "CodingAgentRunning" | "CodingAgentComplete" | "CodingAgentFailed" | "CodingAgentStopped" | "Complete";
-
-export type TaskAttemptState = { execution_state: ExecutionState, has_changes: boolean, has_setup_script: boolean, setup_process_id: string | null, coding_agent_process_id: string | null, };
 
 export type ExecutionProcess = { id: string, task_attempt_id: string, process_type: ExecutionProcessType, executor_type: string | null, status: ExecutionProcessStatus, command: string, args: string | null, working_directory: string, stdout: string | null, stderr: string | null, exit_code: bigint | null, started_at: string, completed_at: string | null, created_at: string, updated_at: string, };
 

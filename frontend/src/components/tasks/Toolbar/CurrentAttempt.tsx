@@ -50,11 +50,9 @@ import {
   useState,
 } from 'react';
 import type {
-  BranchStatus,
   ExecutionProcess,
-  TaskAttempt,
 } from 'shared/old_frozen_types';
-import type { GitBranch } from 'shared/types';
+import type { BranchStatus, GitBranch, TaskAttempt } from 'shared/types';
 import {
   TaskAttemptDataContext,
   TaskAttemptStoppingContext,
@@ -289,13 +287,11 @@ function CurrentAttempt({
   };
 
   const fetchBranchStatus = useCallback(async () => {
-    if (!projectId || !selectedAttempt?.id || !selectedAttempt?.task_id) return;
+    if (!selectedAttempt?.id) return;
 
     try {
       setBranchStatusLoading(true);
       const result = await attemptsApi.getBranchStatus(
-        projectId,
-        selectedAttempt.task_id,
         selectedAttempt.id
       );
       setBranchStatus((prev) => {
@@ -462,13 +458,13 @@ function CurrentAttempt({
 
   const handleCopyWorktreePath = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(selectedAttempt.worktree_path);
+      await navigator.clipboard.writeText(selectedAttempt.container_ref || '');
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy worktree path:', err);
     }
-  }, [selectedAttempt.worktree_path]);
+  }, [selectedAttempt.container_ref]);
 
   return (
     <div className="space-y-2">
@@ -603,7 +599,7 @@ function CurrentAttempt({
         >
           {copied && <Check className="h-3 w-3 text-green-600" />}
           <span className={copied ? 'text-green-800' : ''}>
-            {selectedAttempt.worktree_path}
+            {selectedAttempt.container_ref}
           </span>
           {copied && (
             <span className="text-green-700 font-medium">Copied!</span>

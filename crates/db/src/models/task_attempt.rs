@@ -57,12 +57,6 @@ pub struct TaskAttempt {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Deserialize, TS)]
-#[ts(export)]
-pub struct UpdateTaskAttempt {
-    // Currently no updateable fields, but keeping struct for API compatibility
-}
-
 /// GitHub PR creation parameters
 pub struct CreatePrParams<'a> {
     pub attempt_id: Uuid,
@@ -294,6 +288,32 @@ impl TaskAttempt {
                FROM    task_attempts
                WHERE   id = $1"#,
             id
+        )
+        .fetch_optional(pool)
+        .await
+    }
+
+    pub async fn find_by_rowid(pool: &SqlitePool, rowid: i64) -> Result<Option<Self>, sqlx::Error> {
+        sqlx::query_as!(
+            TaskAttempt,
+            r#"SELECT  id                AS "id!: Uuid",
+                       task_id           AS "task_id!: Uuid",
+                       container_ref,
+                       branch,
+                       merge_commit,
+                       base_branch,
+                       executor,
+                       pr_url,
+                       pr_number,
+                       pr_status,
+                       pr_merged_at      AS "pr_merged_at: DateTime<Utc>",
+                       worktree_deleted  AS "worktree_deleted!: bool",
+                       setup_completed_at AS "setup_completed_at: DateTime<Utc>",
+                       created_at        AS "created_at!: DateTime<Utc>",
+                       updated_at        AS "updated_at!: DateTime<Utc>"
+               FROM    task_attempts
+               WHERE   rowid = $1"#,
+            rowid
         )
         .fetch_optional(pool)
         .await

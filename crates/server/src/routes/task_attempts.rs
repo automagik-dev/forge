@@ -230,13 +230,22 @@ pub struct TaskAttemptQuery {
 pub async fn get_task_attempts(
     State(deployment): State<DeploymentImpl>,
     Query(query): Query<TaskAttemptQuery>,
-) -> Result<Json<Vec<TaskAttempt>>, ApiError> {
+) -> Result<ResponseJson<ApiResponse<Vec<TaskAttempt>>>, ApiError> {
     let pool = &deployment.db().pool;
     let attempts = TaskAttempt::fetch_all(pool, query.task_id).await?;
-    Ok(Json(attempts))
+
+    Ok(ResponseJson(ApiResponse::success(attempts)))
 }
 
-#[derive(Debug, Deserialize)]
+pub async fn get_task_attempt(
+    Extension(task_attempt): Extension<TaskAttempt>,
+    State(_deployment): State<DeploymentImpl>,
+) -> Result<ResponseJson<ApiResponse<TaskAttempt>>, ApiError> {
+    Ok(ResponseJson(ApiResponse::success(task_attempt)))
+}
+
+#[derive(Debug, Deserialize, ts_rs::TS)]
+#[ts(export)]
 pub struct CreateTaskAttemptBody {
     pub task_id: Uuid,
     pub executor: Option<String>,
@@ -1170,25 +1179,22 @@ pub async fn delete_task_attempt_file(
 //     Ok(ResponseJson(ApiResponse::success(task_attempt)))
 // }
 
-// pub async fn get_task_attempt_children(
-//     Extension(task_attempt): Extension<TaskAttempt>,
-//     Extension(project): Extension<Project>,
-//     State(app_state): State<AppState>,
-// ) -> Result<ResponseJson<ApiResponse<Vec<Task>>>, StatusCode> {
-//     match Task::find_related_tasks_by_attempt_id(&app_state.db_pool, task_attempt.id, project.id)
-//         .await
-//     {
-//         Ok(related_tasks) => Ok(ResponseJson(ApiResponse::success(related_tasks))),
-//         Err(e) => {
-//             tracing::error!(
-//                 "Failed to fetch children for task attempt {}: {}",
-//                 task_attempt.id,
-//                 e
-//             );
-//             Err(StatusCode::INTERNAL_SERVER_ERROR)
-//         }
-//     }
-// }
+pub async fn get_task_attempt_children(
+    Extension(task_attempt): Extension<TaskAttempt>,
+    State(deployment): State<DeploymentImpl>,
+) -> Result<ResponseJson<ApiResponse<Vec<Task>>>, StatusCode> {
+    match Task::find_related_tasks_by_attempt_id(&deployment.db().pool, task_attempt.id).await {
+        Ok(related_tasks) => Ok(ResponseJson(ApiResponse::success(related_tasks))),
+        Err(e) => {
+            tracing::error!(
+                "Failed to fetch children for task attempt {}: {}",
+                task_attempt.id,
+                e
+            );
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
 
 // pub fn task_attempts_list_router(_state: AppState) -> Router<AppState> {
 //     Router::new().route(
@@ -1281,6 +1287,7 @@ pub async fn delete_task_attempt_file(
 
 pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
     let task_attempt_id_router = Router::new()
+        .route("/", get(get_task_attempt))
         .route("/follow-up", post(follow_up))
         .route("/branch-status", get(get_task_attempt_branch_status))
         .route("/diff", get(get_task_attempt_diff))
@@ -1289,6 +1296,7 @@ pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
         .route("/pr", post(create_github_pr))
         .route("/open-editor", post(open_task_attempt_in_editor))
         .route("/delete-file", post(delete_task_attempt_file))
+        .route("/children", get(get_task_attempt_children))
         .layer(from_fn_with_state(
             deployment.clone(),
             load_task_attempt_middleware,
