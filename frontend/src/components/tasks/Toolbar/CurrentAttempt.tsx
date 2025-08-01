@@ -38,8 +38,8 @@ import {
   executionProcessesApi,
   makeRequest,
   FollowUpResponse,
-  ApiResponse,
 } from '@/lib/api.ts';
+import type { ApiResponse } from 'shared/types';
 import {
   Dispatch,
   SetStateAction,
@@ -52,9 +52,9 @@ import {
 import type {
   BranchStatus,
   ExecutionProcess,
-  GitBranch,
   TaskAttempt,
 } from 'shared/old_frozen_types';
+import type { GitBranch } from 'shared/types';
 import {
   TaskAttemptDataContext,
   TaskAttemptStoppingContext,

@@ -20,6 +20,16 @@ export type SearchResult = { path: string, is_file: boolean, match_type: SearchM
 
 export type SearchMatchType = "FileName" | "DirectoryName" | "FullPath";
 
+export type TaskTemplate = { id: string, project_id: string | null, title: string, description: string | null, template_name: string, created_at: string, updated_at: string, };
+
+export type CreateTaskTemplate = { project_id: string | null, title: string, description: string | null, template_name: string, };
+
+export type UpdateTaskTemplate = { title: string | null, description: string | null, template_name: string | null, };
+
+export type ApiResponse<T> = { success: boolean, data: T | null, message: string | null, };
+
+export type ApiError = string;
+
 export type UserSystemInfo = { config: Config, environment: Environment, };
 
 export type Environment = { os_type: string, os_version: string, os_architecture: string, bitness: string, };
@@ -34,12 +44,14 @@ export type EditorConfig = { editor_type: EditorType, custom_command: string | n
 
 export enum EditorType { VS_CODE = "VS_CODE", CURSOR = "CURSOR", WINDSURF = "WINDSURF", INTELLI_J = "INTELLI_J", ZED = "ZED", CUSTOM = "CUSTOM" }
 
-export type EditorConstants = { editor_types: Array<EditorType>, editor_labels: Array<string>, };
-
 export type GitHubConfig = { pat: string | null, token: string | null, username: string | null, primary_email: string | null, default_pr_base: string | null, };
 
-export type SoundFile = "ABSTRACT_SOUND1" | "ABSTRACT_SOUND2" | "ABSTRACT_SOUND3" | "ABSTRACT_SOUND4" | "COW_MOOING" | "PHONE_VIBRATION" | "ROOSTER";
+export enum SoundFile { ABSTRACT_SOUND1 = "ABSTRACT_SOUND1", ABSTRACT_SOUND2 = "ABSTRACT_SOUND2", ABSTRACT_SOUND3 = "ABSTRACT_SOUND3", ABSTRACT_SOUND4 = "ABSTRACT_SOUND4", COW_MOOING = "COW_MOOING", PHONE_VIBRATION = "PHONE_VIBRATION", ROOSTER = "ROOSTER" }
 
 export type SoundConstants = { sound_files: Array<SoundFile>, sound_labels: Array<string>, };
+
+export type GitBranch = { name: string, is_current: boolean, is_remote: boolean, last_commit_date: Date, };
+
+export type RepositoryInfo = { id: bigint, name: string, full_name: string, owner: string, description: string | null, clone_url: string, ssh_url: string, default_branch: string, private: boolean, };
 
 export enum CodingAgentExecutorType { CLAUDE_CODE = "CLAUDE_CODE", AMP = "AMP", GEMINI = "GEMINI" }
