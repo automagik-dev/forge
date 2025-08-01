@@ -23,6 +23,7 @@ use uuid::Uuid;
 
 use crate::container::LocalContainerService;
 
+mod command;
 pub mod container;
 
 #[derive(Clone)]
