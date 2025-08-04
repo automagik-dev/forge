@@ -1,12 +1,7 @@
 // Import all necessary types from shared types
 import {
   CreateFollowUpAttempt,
-  CreateTaskAndStart,
   DeviceStartResponse,
-  ExecutionProcess,
-  ExecutionProcessSummary,
-  ProcessLogsResponse,
-  WorktreeDiff,
 } from 'shared/old_frozen_types';
 
 import {
@@ -14,10 +9,13 @@ import {
   BranchStatus,
   Config,
   CreateTask,
+  CreateTaskAndStart,
   CreateTaskAttemptBody,
   CreateTaskTemplate,
   DirectoryListResponse,
   EditorType,
+  ExecutionProcess,
+  ExecutionProcessSummary,
   GitBranch,
   Project,
   CreateProject,
@@ -32,6 +30,7 @@ import {
   UpdateTask,
   UpdateTaskTemplate,
   UserSystemInfo,
+  WorktreeDiff,
 } from 'shared/types';
 
 // Re-export types for convenience
@@ -255,12 +254,10 @@ export const attemptsApi = {
   },
 
   getState: async (
-    projectId: string,
-    taskId: string,
     attemptId: string
   ): Promise<TaskAttemptState> => {
     const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}/attempts/${attemptId}`
+      `/api/task-attempts/${attemptId}`
     );
     return handleApiResponse<TaskAttemptState>(response);
   },
@@ -412,24 +409,19 @@ export const attemptsApi = {
   },
 
   getExecutionProcesses: async (
-    projectId: string,
-    taskId: string,
     attemptId: string
   ): Promise<ExecutionProcessSummary[]> => {
     const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}/attempts/${attemptId}/execution-processes`
+      `/api/execution-processes?task_attempt_id=${attemptId}`
     );
     return handleApiResponse<ExecutionProcessSummary[]>(response);
   },
 
   stopExecutionProcess: async (
-    projectId: string,
-    taskId: string,
-    attemptId: string,
     processId: string
   ): Promise<void> => {
     const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}/attempts/${attemptId}/execution-processes/${processId}/stop`,
+      `/api/execution-processes/${processId}/stop`,
       {
         method: 'POST',
       }
@@ -440,17 +432,6 @@ export const attemptsApi = {
   getDetails: async (attemptId: string): Promise<TaskAttempt> => {
     const response = await makeRequest(`/api/attempts/${attemptId}/details`);
     return handleApiResponse<TaskAttempt>(response);
-  },
-
-  getAllLogs: async (
-    projectId: string,
-    taskId: string,
-    attemptId: string
-  ): Promise<ProcessLogsResponse[]> => {
-    const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}/attempts/${attemptId}/logs`
-    );
-    return handleApiResponse(response);
   },
 };
 

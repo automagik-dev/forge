@@ -9,11 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import type {
-  ExecutionProcess,
-  ExecutionProcessSummary,
-  WorktreeDiff,
-} from 'shared/old_frozen_types';
+import type { ExecutionProcess, ExecutionProcessSummary, WorktreeDiff } from 'shared/types';
 import type { EditorType, Task, TaskAttempt, TaskAttemptState, TaskWithAttemptStatus } from 'shared/types';
 import { attemptsApi, executionProcessesApi, tasksApi } from '@/lib/api.ts';
 import {
@@ -28,8 +24,6 @@ import {
   TaskRelatedTasksContext,
   TaskSelectedAttemptContext,
 } from './taskDetailsContext.ts';
-import { TaskPlanContext } from './TaskPlanContext.ts';
-import { is_planning_executor_type } from '@/lib/utils.ts';
 import type { AttemptData } from '@/lib/types.ts';
 
 const TaskDetailsProvider: FC<{
@@ -73,7 +67,6 @@ const TaskDetailsProvider: FC<{
     const [attemptData, setAttemptData] = useState<AttemptData>({
       processes: [],
       runningProcessDetails: {},
-      allLogs: [], // new field for all logs
     });
 
     const relatedTasksLoadingRef = useRef(false);
@@ -159,11 +152,11 @@ const TaskDetailsProvider: FC<{
     }, [selectedAttempt, task, fetchRelatedTasks]);
 
     const fetchExecutionState = useCallback(
-      async (attemptId: string, taskId: string) => {
+      async (attemptId: string) => {
         if (!task) return;
 
         try {
-          const result = await attemptsApi.getState(projectId, taskId, attemptId);
+          const result = await attemptsApi.getState(attemptId);
 
           if (result !== undefined) {
             setExecutionState((prev) => {
@@ -204,16 +197,13 @@ const TaskDetailsProvider: FC<{
     );
 
     const fetchAttemptData = useCallback(
-      async (attemptId: string, taskId: string) => {
+      async (attemptId: string) => {
         if (!task) return;
 
         try {
-          const [processesResult, allLogsResult] = await Promise.all([
-            attemptsApi.getExecutionProcesses(projectId, taskId, attemptId),
-            attemptsApi.getAllLogs(projectId, taskId, attemptId),
-          ]);
+          const processesResult = await attemptsApi.getExecutionProcesses(attemptId);
 
-          if (processesResult !== undefined && allLogsResult !== undefined) {
+          if (processesResult !== undefined) {
             const runningProcesses = processesResult.filter(
               (process) => process.status === 'running'
             );
@@ -231,7 +221,7 @@ const TaskDetailsProvider: FC<{
 
             // Also fetch setup script process details if it exists in the processes
             const setupProcess = processesResult.find(
-              (process) => process.process_type === 'setupscript'
+              (process) => process.run_reason === 'setupscript'
             );
             if (setupProcess && !runningProcessDetails[setupProcess.id]) {
               const result = await executionProcessesApi.getDetails(
@@ -247,7 +237,6 @@ const TaskDetailsProvider: FC<{
               const newData = {
                 processes: processesResult,
                 runningProcessDetails,
-                allLogs: allLogsResult,
               };
               if (JSON.stringify(prev) === JSON.stringify(newData)) return prev;
               return newData;
@@ -262,8 +251,8 @@ const TaskDetailsProvider: FC<{
 
     useEffect(() => {
       if (selectedAttempt && task) {
-        fetchAttemptData(selectedAttempt.id, selectedAttempt.task_id);
-        fetchExecutionState(selectedAttempt.id, selectedAttempt.task_id);
+        fetchAttemptData(selectedAttempt.id);
+        fetchExecutionState(selectedAttempt.id);
       }
     }, [selectedAttempt, task, fetchAttemptData, fetchExecutionState]);
 
@@ -274,9 +263,9 @@ const TaskDetailsProvider: FC<{
 
       return attemptData.processes.some(
         (process: ExecutionProcessSummary) =>
-          (process.process_type === 'codingagent' ||
-            process.process_type === 'setupscript' ||
-            process.process_type === 'cleanupscript') &&
+          (process.run_reason === 'codingagent' ||
+            process.run_reason === 'setupscript' ||
+            process.run_reason === 'cleanupscript') &&
           process.status === 'running'
       );
     }, [selectedAttempt, attemptData.processes, isStopping]);
@@ -286,8 +275,8 @@ const TaskDetailsProvider: FC<{
 
       const interval = setInterval(() => {
         if (selectedAttempt) {
-          fetchAttemptData(selectedAttempt.id, selectedAttempt.task_id);
-          fetchExecutionState(selectedAttempt.id, selectedAttempt.task_id);
+          fetchAttemptData(selectedAttempt.id);
+          fetchExecutionState(selectedAttempt.id);
         }
       }, 5000);
 
@@ -428,56 +417,6 @@ const TaskDetailsProvider: FC<{
       ]
     );
 
-    // Plan context value
-    const planValue = useMemo(() => {
-      const isPlanningMode =
-        attemptData.processes?.some(
-          (process) =>
-            process.executor_type &&
-            is_planning_executor_type(process.executor_type)
-        ) ?? false;
-
-      const planCount =
-        attemptData.allLogs?.reduce((count, processLog) => {
-          const planEntries =
-            processLog.normalized_conversation?.entries.filter(
-              (entry) =>
-                entry.entry_type.type === 'tool_use' &&
-                entry.entry_type.action_type.action === 'plan_presentation'
-            ) ?? [];
-          return count + planEntries.length;
-        }, 0) ?? 0;
-
-      const hasPlans = planCount > 0;
-
-      const latestProcessHasNoPlan = (() => {
-        if (!attemptData.allLogs || attemptData.allLogs.length === 0)
-          return false;
-        const latestProcessLog =
-          attemptData.allLogs[attemptData.allLogs.length - 1];
-        if (!latestProcessLog.normalized_conversation?.entries) return true;
-
-        return !latestProcessLog.normalized_conversation.entries.some(
-          (entry) =>
-            entry.entry_type.type === 'tool_use' &&
-            entry.entry_type.action_type.action === 'plan_presentation'
-        );
-      })();
-
-      // Can create task if not in planning mode, or if in planning mode and has plans
-      const canCreateTask =
-        !isPlanningMode ||
-        (isPlanningMode && hasPlans && !latestProcessHasNoPlan);
-
-      return {
-        isPlanningMode,
-        hasPlans,
-        planCount,
-        latestProcessHasNoPlan,
-        canCreateTask,
-      };
-    }, [attemptData.processes, attemptData.allLogs]);
-
     return (
       <TaskDetailsContext.Provider value={value}>
         <TaskAttemptLoadingContext.Provider value={taskAttemptLoadingValue}>
@@ -495,9 +434,7 @@ const TaskDetailsProvider: FC<{
                         <TaskRelatedTasksContext.Provider
                           value={relatedTasksValue}
                         >
-                          <TaskPlanContext.Provider value={planValue}>
-                            {children}
-                          </TaskPlanContext.Provider>
+                          {children}
                         </TaskRelatedTasksContext.Provider>
                       </TaskBackgroundRefreshContext.Provider>
                     </TaskExecutionStateContext.Provider>
