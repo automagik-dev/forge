@@ -1,8 +1,5 @@
 import { createContext, Dispatch, SetStateAction } from 'react';
-import type {
-  WorktreeDiff,
-} from 'shared/types';
-import type { EditorType, Task, TaskAttempt, TaskAttemptState, TaskWithAttemptStatus } from 'shared/types';
+import type { EditorType, TaskAttempt, TaskAttemptState, TaskWithAttemptStatus } from 'shared/types';
 import { AttemptData } from '@/lib/types.ts';
 
 export interface TaskDetailsContextValue {
@@ -68,20 +65,6 @@ export const TaskDeletingFilesContext =
     {} as TaskDeletingFilesContextValue
   );
 
-interface TaskDiffContextValue {
-  setDiffError: Dispatch<SetStateAction<string | null>>;
-  fetchDiff: (isBackgroundRefresh?: boolean) => Promise<void>;
-  diff: WorktreeDiff | null;
-  diffError: string | null;
-  diffLoading: boolean;
-  setDiff: Dispatch<SetStateAction<WorktreeDiff | null>>;
-  setDiffLoading: Dispatch<SetStateAction<boolean>>;
-}
-
-export const TaskDiffContext = createContext<TaskDiffContextValue>(
-  {} as TaskDiffContextValue
-);
-
 interface TaskBackgroundRefreshContextValue {
   isBackgroundRefreshing: boolean;
 }
@@ -102,20 +85,4 @@ interface TaskExecutionStateContextValue {
 export const TaskExecutionStateContext =
   createContext<TaskExecutionStateContextValue>(
     {} as TaskExecutionStateContextValue
-  );
-
-interface TaskRelatedTasksContextValue {
-  relatedTasks: Task[] | null;
-  setRelatedTasks: Dispatch<SetStateAction<Task[] | null>>;
-  relatedTasksLoading: boolean;
-  setRelatedTasksLoading: Dispatch<SetStateAction<boolean>>;
-  relatedTasksError: string | null;
-  setRelatedTasksError: Dispatch<SetStateAction<string | null>>;
-  fetchRelatedTasks: () => Promise<void>;
-  totalRelatedCount: number;
-}
-
-export const TaskRelatedTasksContext =
-  createContext<TaskRelatedTasksContextValue>(
-    {} as TaskRelatedTasksContextValue
   );

@@ -1,7 +1,9 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
+use std::{collections::{HashMap, HashSet}, io, path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::anyhow;
+use async_stream::try_stream;
 use async_trait::async_trait;
+use axum::response::sse::Event;
 use command_group::AsyncGroupChild;
 use db::{
     DBService,
@@ -11,11 +13,16 @@ use db::{
     },
 };
 use deployment::DeploymentError;
-use executors::actions::{ExecutorAction, ExecutorActions};
-use futures::{TryStreamExt, stream::select};
+use executors::{
+    actions::{ExecutorAction, ExecutorActions},
+    logs::utils::ConversationPatch,
+};
+use futures::{StreamExt, TryStreamExt, stream::select};
 use services::services::{
     config::Config,
     container::{ContainerError, ContainerRef, ContainerService},
+    filesystem_watcher,
+    git::GitService,
     notification::NotificationService,
     worktree_manager::WorktreeManager,
 };
@@ -36,6 +43,7 @@ pub struct LocalContainerService {
     child_store: Arc<RwLock<HashMap<Uuid, Arc<RwLock<AsyncGroupChild>>>>>,
     msg_stores: Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>,
     config: Arc<RwLock<Config>>,
+    git: GitService,
 }
 
 impl LocalContainerService {
@@ -43,6 +51,7 @@ impl LocalContainerService {
         db: DBService,
         msg_stores: Arc<RwLock<HashMap<Uuid, Arc<MsgStore>>>>,
         config: Arc<RwLock<Config>>,
+        git: GitService,
     ) -> Self {
         let child_store = Arc::new(RwLock::new(HashMap::new()));
 
@@ -51,6 +60,7 @@ impl LocalContainerService {
             child_store,
             msg_stores,
             config,
+            git,
         }
     }
 
@@ -346,6 +356,10 @@ impl ContainerService for LocalContainerService {
         &self.db
     }
 
+    fn git(&self) -> &GitService {
+        &self.git
+    }
+
     fn task_attempt_to_current_dir(&self, task_attempt: &TaskAttempt) -> PathBuf {
         PathBuf::from(task_attempt.container_ref.clone().unwrap_or_default())
     }
@@ -489,5 +503,148 @@ impl ContainerService for LocalContainerService {
         );
 
         Ok(())
+    }
+
+    async fn get_diff(
+        &self,
+        task_attempt: &TaskAttempt,
+    ) -> Result<futures::stream::BoxStream<'static, Result<Event, std::io::Error>>, ContainerError>
+    {
+        let container_ref = task_attempt
+            .container_ref
+            .as_ref()
+            .ok_or(ContainerError::Other(anyhow!(
+                "Container reference not found"
+            )))?;
+
+        let worktree_dir = PathBuf::from(&container_ref);
+
+        // Return error if directory doesn't exist
+        if !worktree_dir.exists() {
+            return Err(ContainerError::Other(anyhow!(
+                "Worktree directory not found"
+            )));
+        }
+
+        let project_git_repo_path = task_attempt
+            .parent_task(&self.db().pool)
+            .await?
+            .ok_or(ContainerError::Other(anyhow!("Parent task not found")))?
+            .parent_project(&self.db().pool)
+            .await?
+            .ok_or(ContainerError::Other(anyhow!("Parent project not found")))?
+            .git_repo_path;
+
+        // Fast-exit for merged attempts - they never change
+        if let Some(merge_commit_id) = &task_attempt.merge_commit {
+            let existing_diff = self.git().get_enhanced_diff(
+                &project_git_repo_path,
+                std::path::Path::new(""),
+                Some(merge_commit_id.as_str()),
+                &task_attempt.base_branch,
+                None::<&[&str]>,
+            )?;
+
+            let stream = futures::stream::iter(existing_diff.files.into_iter().map(|file_diff| {
+                let patch = ConversationPatch::add_file_diff(file_diff);
+                let event = LogMsg::JsonPatch(patch).to_sse_event();
+                Ok::<_, std::io::Error>(event)
+            }))
+            .boxed();
+
+            return Ok(stream);
+        }
+
+        // Get initial diff
+        let initial_diff = self.git().get_enhanced_diff(
+            &project_git_repo_path,
+            &worktree_dir,
+            None,
+            &task_attempt.base_branch,
+            None::<&[&str]>,
+        )?;
+
+        // Create initial stream
+        let initial_stream =
+            futures::stream::iter(initial_diff.files.into_iter().map(|file_diff| {
+                let patch = ConversationPatch::add_file_diff(file_diff);
+                let event = LogMsg::JsonPatch(patch).to_sse_event();
+                Ok::<_, std::io::Error>(event)
+            }));
+
+        // Create live diff stream for ongoing changes
+        let git_service = self.git().clone();
+        let project_repo_path = project_git_repo_path.clone();
+        let base_branch = task_attempt.base_branch.clone();
+        let worktree_path = worktree_dir.clone();
+
+        let live_stream = try_stream! {
+            // Create filesystem watcher
+            let (_debouncer, mut rx, canonical_worktree_path) = filesystem_watcher::async_watcher(worktree_path.clone())
+                .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+
+            while let Some(res) = rx.next().await {
+                match res {
+                    Ok(events) => {
+                        // Extract changed file paths relative to worktree
+                        let changed_paths: Vec<String> = events
+                            .iter()
+                            .flat_map(|event| &event.paths)
+                            .filter_map(|path| {
+                                // Try canonical first, fall back to original for non-macOS paths
+                                path.strip_prefix(&canonical_worktree_path)
+                                    .or_else(|_| path.strip_prefix(&worktree_path))
+                                    .ok()
+                                    .map(|p| p.to_string_lossy().replace('\\', "/"))
+                            })
+                            .collect();
+
+                        if !changed_paths.is_empty() {
+                            // Generate diff for only the changed files
+                            let diff = git_service.get_enhanced_diff(
+                                &project_repo_path,
+                                &worktree_path,
+                                None,
+                                &base_branch,
+                                Some(&changed_paths),
+                            ).map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+
+                            // Track which files still have diffs
+                            let mut still_dirty: HashSet<String> = HashSet::new();
+
+                            // Send ADD/REPLACE messages for files that still have diffs
+                            for file_diff in diff.files {
+                                still_dirty.insert(file_diff.path.clone());
+                                let patch = ConversationPatch::add_file_diff(file_diff);
+                                let event = LogMsg::JsonPatch(patch).to_sse_event();
+                                yield event;
+                            }
+
+                            // Send REMOVE messages for files that changed but no longer have diffs
+                            for path in &changed_paths {
+                                if !still_dirty.contains(path) {
+                                    let patch = ConversationPatch::remove_file_diff(path);
+                                    let event = LogMsg::JsonPatch(patch).to_sse_event();
+                                    yield event;
+                                }
+                            }
+                        }
+                    }
+                    Err(errors) => {
+                        // Convert filesystem watcher errors to io::Error
+                        let error_msg = errors
+                            .iter()
+                            .map(|e| e.to_string())
+                            .collect::<Vec<_>>()
+                            .join("; ");
+                        Err(io::Error::new(io::ErrorKind::Other, error_msg))?;
+                    }
+                }
+            }
+        };
+
+        // Combine initial snapshot with live updates
+        let combined_stream = select(initial_stream, live_stream);
+        Ok(combined_stream.boxed())
     }
 }

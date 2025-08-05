@@ -277,13 +277,11 @@ export const attemptsApi = {
   },
 
   followUp: async (
-    projectId: string,
-    taskId: string,
     attemptId: string,
     data: CreateFollowUpAttempt
   ): Promise<void> => {
     const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}/attempts/${attemptId}/follow-up`,
+      `/api/task-attempts/${attemptId}/follow-up`,
       {
         method: 'POST',
         body: JSON.stringify(data),
@@ -317,13 +315,11 @@ export const attemptsApi = {
   },
 
   openEditor: async (
-    projectId: string,
-    taskId: string,
     attemptId: string,
     editorType?: EditorType
   ): Promise<void> => {
     const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}/attempts/${attemptId}/open-editor`,
+      `/api/task-attempts/${attemptId}/open-editor`,
       {
         method: 'POST',
         body: JSON.stringify(editorType ? { editor_type: editorType } : null),
@@ -342,12 +338,10 @@ export const attemptsApi = {
   },
 
   merge: async (
-    projectId: string,
-    taskId: string,
     attemptId: string
   ): Promise<void> => {
     const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}/attempts/${attemptId}/merge`,
+      `/api/task-attempts/${attemptId}/merge`,
       {
         method: 'POST',
       }
@@ -385,7 +379,7 @@ export const attemptsApi = {
     }
   ): Promise<string> => {
     const response = await makeRequest(
-      `/api/task-attempts/${attemptId}/create-pr`,
+      `/api/task-attempts/${attemptId}/pr`,
       {
         method: 'POST',
         body: JSON.stringify(data),

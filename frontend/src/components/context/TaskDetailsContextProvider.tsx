@@ -6,22 +6,18 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
-import type { ExecutionProcess, ExecutionProcessSummary, WorktreeDiff } from 'shared/types';
-import type { EditorType, Task, TaskAttempt, TaskAttemptState, TaskWithAttemptStatus } from 'shared/types';
-import { attemptsApi, executionProcessesApi, tasksApi } from '@/lib/api.ts';
+import type { ExecutionProcess, ExecutionProcessSummary } from 'shared/types';
+import type { EditorType, TaskAttempt, TaskAttemptState, TaskWithAttemptStatus } from 'shared/types';
+import { attemptsApi, executionProcessesApi } from '@/lib/api.ts';
 import {
   TaskAttemptDataContext,
   TaskAttemptLoadingContext,
   TaskAttemptStoppingContext,
-  TaskBackgroundRefreshContext,
   TaskDeletingFilesContext,
   TaskDetailsContext,
-  TaskDiffContext,
   TaskExecutionStateContext,
-  TaskRelatedTasksContext,
   TaskSelectedAttemptContext,
 } from './taskDetailsContext.ts';
 import type { AttemptData } from '@/lib/types.ts';
@@ -47,19 +43,6 @@ const TaskDetailsProvider: FC<{
     const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set());
     const [fileToDelete, setFileToDelete] = useState<string | null>(null);
 
-    // Diff-related state
-    const [diff, setDiff] = useState<WorktreeDiff | null>(null);
-    const [diffLoading, setDiffLoading] = useState(true);
-    const [diffError, setDiffError] = useState<string | null>(null);
-    const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
-
-    // Related tasks state
-    const [relatedTasks, setRelatedTasks] = useState<Task[] | null>(null);
-    const [relatedTasksLoading, setRelatedTasksLoading] = useState(true);
-    const [relatedTasksError, setRelatedTasksError] = useState<string | null>(
-      null
-    );
-
     const [executionState, setExecutionState] = useState<TaskAttemptState | null>(
       null
     );
@@ -68,88 +51,6 @@ const TaskDetailsProvider: FC<{
       processes: [],
       runningProcessDetails: {},
     });
-
-    const relatedTasksLoadingRef = useRef(false);
-
-    const fetchRelatedTasks = useCallback(async () => {
-      if (!projectId || !task?.id || !selectedAttempt?.id) {
-        setRelatedTasks(null);
-        setRelatedTasksLoading(false);
-        return;
-      }
-
-      // Prevent multiple concurrent requests
-      if (relatedTasksLoadingRef.current) {
-        return;
-      }
-
-      relatedTasksLoadingRef.current = true;
-      setRelatedTasksLoading(true);
-      setRelatedTasksError(null);
-
-      try {
-        const children = await tasksApi.getChildren(
-          selectedAttempt.id
-        );
-        setRelatedTasks(children);
-      } catch (err) {
-        console.error('Failed to load related tasks:', err);
-        setRelatedTasksError('Failed to load related tasks');
-      } finally {
-        relatedTasksLoadingRef.current = false;
-        setRelatedTasksLoading(false);
-      }
-    }, [projectId, task?.id, selectedAttempt?.id]);
-
-    const fetchDiff = useCallback(
-      async (isBackgroundRefresh = false) => {
-        if (!projectId || !selectedAttempt?.id || !selectedAttempt?.task_id) {
-          setDiff(null);
-          setDiffLoading(false);
-          return;
-        }
-
-        if (isBackgroundRefresh) {
-          setIsBackgroundRefreshing(true);
-        } else {
-          setDiffLoading(true);
-        }
-        setDiffError(null);
-
-        try {
-          const result = await attemptsApi.getDiff(selectedAttempt.id);
-
-          if (result !== undefined) {
-            setDiff(result);
-          }
-        } catch (err) {
-          console.error('Failed to load diff:', err);
-          setDiffError('Failed to load diff');
-        } finally {
-          if (isBackgroundRefresh) {
-            setIsBackgroundRefreshing(false);
-          } else {
-            setDiffLoading(false);
-          }
-        }
-      },
-      [projectId, selectedAttempt?.id, selectedAttempt?.task_id]
-    );
-
-    useEffect(() => {
-      if (selectedAttempt && task) {
-        fetchRelatedTasks();
-      } else if (task && !selectedAttempt) {
-        // If we have a task but no selectedAttempt, wait a bit then clear loading state
-        // This happens when a task has no attempts yet
-        const timeout = setTimeout(() => {
-          setRelatedTasks(null);
-          setRelatedTasksLoading(false);
-        }, 1000); // Wait 1 second for attempts to load
-
-        return () => clearTimeout(timeout);
-      }
-    }, [selectedAttempt, task, fetchRelatedTasks]);
 
     const fetchExecutionState = useCallback(
       async (attemptId: string) => {
@@ -177,8 +78,6 @@ const TaskDetailsProvider: FC<{
 
         try {
           const result = await attemptsApi.openEditor(
-            projectId,
-            selectedAttempt.task_id,
             selectedAttempt.id,
             editorType
           );
@@ -289,40 +188,6 @@ const TaskDetailsProvider: FC<{
       fetchExecutionState,
     ]);
 
-    // Refresh diff when coding agent is running and making changes
-    useEffect(() => {
-      if (!executionState || !selectedAttempt) return;
-
-      const isCodingAgentRunning =
-        executionState.execution_state === 'CodingAgentRunning';
-
-      if (isCodingAgentRunning) {
-        // Immediately refresh diff when coding agent starts running
-        fetchDiff(true);
-
-        // Then refresh diff every 2 seconds while coding agent is active
-        const interval = setInterval(() => {
-          fetchDiff(true);
-        }, 2000);
-
-        return () => {
-          clearInterval(interval);
-        };
-      }
-    }, [executionState, selectedAttempt, fetchDiff]);
-
-    // Refresh diff when coding agent completes or changes state
-    useEffect(() => {
-      if (!executionState?.execution_state || !selectedAttempt) return;
-
-      fetchDiff();
-    }, [
-      executionState?.execution_state,
-      executionState?.has_changes,
-      selectedAttempt,
-      fetchDiff,
-    ]);
-
     const value = useMemo(
       () => ({
         task,
@@ -358,26 +223,6 @@ const TaskDetailsProvider: FC<{
       [deletingFiles, fileToDelete]
     );
 
-    const diffValue = useMemo(
-      () => ({
-        setDiffError,
-        fetchDiff,
-        diff,
-        diffError,
-        diffLoading,
-        setDiff,
-        setDiffLoading,
-      }),
-      [fetchDiff, diff, diffError, diffLoading]
-    );
-
-    const backgroundRefreshingValue = useMemo(
-      () => ({
-        isBackgroundRefreshing,
-      }),
-      [isBackgroundRefreshing]
-    );
-
     const attemptDataValue = useMemo(
       () => ({
         attemptData,
@@ -396,50 +241,19 @@ const TaskDetailsProvider: FC<{
       [executionState, fetchExecutionState]
     );
 
-    const relatedTasksValue = useMemo(
-      () => ({
-        relatedTasks,
-        setRelatedTasks,
-        relatedTasksLoading,
-        setRelatedTasksLoading,
-        relatedTasksError,
-        setRelatedTasksError,
-        fetchRelatedTasks,
-        totalRelatedCount:
-          (task?.parent_task_attempt ? 1 : 0) + (relatedTasks?.length || 0),
-      }),
-      [
-        relatedTasks,
-        relatedTasksLoading,
-        relatedTasksError,
-        fetchRelatedTasks,
-        task?.parent_task_attempt,
-      ]
-    );
-
     return (
       <TaskDetailsContext.Provider value={value}>
         <TaskAttemptLoadingContext.Provider value={taskAttemptLoadingValue}>
           <TaskSelectedAttemptContext.Provider value={selectedAttemptValue}>
             <TaskAttemptStoppingContext.Provider value={attemptStoppingValue}>
               <TaskDeletingFilesContext.Provider value={deletingFilesValue}>
-                <TaskDiffContext.Provider value={diffValue}>
-                  <TaskAttemptDataContext.Provider value={attemptDataValue}>
-                    <TaskExecutionStateContext.Provider
-                      value={executionStateValue}
-                    >
-                      <TaskBackgroundRefreshContext.Provider
-                        value={backgroundRefreshingValue}
-                      >
-                        <TaskRelatedTasksContext.Provider
-                          value={relatedTasksValue}
-                        >
-                          {children}
-                        </TaskRelatedTasksContext.Provider>
-                      </TaskBackgroundRefreshContext.Provider>
-                    </TaskExecutionStateContext.Provider>
-                  </TaskAttemptDataContext.Provider>
-                </TaskDiffContext.Provider>
+                <TaskAttemptDataContext.Provider value={attemptDataValue}>
+                  <TaskExecutionStateContext.Provider
+                    value={executionStateValue}
+                  >
+                    {children}
+                  </TaskExecutionStateContext.Provider>
+                </TaskAttemptDataContext.Provider>
               </TaskDeletingFilesContext.Provider>
             </TaskAttemptStoppingContext.Provider>
           </TaskSelectedAttemptContext.Provider>

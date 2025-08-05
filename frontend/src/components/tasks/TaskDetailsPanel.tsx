@@ -7,9 +7,9 @@ import {
   getTaskPanelClasses,
 } from '@/lib/responsive-config';
 import type { TaskWithAttemptStatus } from 'shared/types';
+import type { TabType } from '@/types/tabs';
 import DiffTab from '@/components/tasks/TaskDetails/DiffTab.tsx';
 import LogsTab from '@/components/tasks/TaskDetails/LogsTab.tsx';
-import RelatedTasksTab from '@/components/tasks/TaskDetails/RelatedTasksTab.tsx';
 import ProcessesTab from '@/components/tasks/TaskDetails/ProcessesTab.tsx';
 import DeleteFileConfirmationDialog from '@/components/tasks/DeleteFileConfirmationDialog.tsx';
 import TabNavigation from '@/components/tasks/TaskDetails/TabNavigation.tsx';
@@ -38,9 +38,7 @@ export function TaskDetailsPanel({
   const [showEditorDialog, setShowEditorDialog] = useState(false);
 
   // Tab and collapsible state
-  const [activeTab, setActiveTab] = useState<
-    'logs' | 'diffs' | 'related' | 'processes' | 'plan'
-  >('logs');
+  const [activeTab, setActiveTab] = useState<TabType>('logs');
 
   // Reset to logs tab when task changes
   useEffect(() => {
@@ -100,8 +98,6 @@ export function TaskDetailsPanel({
               >
                 {activeTab === 'diffs' ? (
                   <DiffTab />
-                ) : activeTab === 'related' ? (
-                  <RelatedTasksTab />
                 ) : activeTab === 'processes' ? (
                   <ProcessesTab />
                 ) : (
