@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT  id                AS \"id!: Uuid\",\n                       task_id           AS \"task_id!: Uuid\",\n                       container_ref,\n                       branch,\n                       merge_commit,\n                       base_branch,\n                       executor,\n                       pr_url,\n                       pr_number,\n                       pr_status,\n                       pr_merged_at      AS \"pr_merged_at: DateTime<Utc>\",\n                       worktree_deleted  AS \"worktree_deleted!: bool\",\n                       setup_completed_at AS \"setup_completed_at: DateTime<Utc>\",\n                       created_at        AS \"created_at!: DateTime<Utc>\",\n                       updated_at        AS \"updated_at!: DateTime<Utc>\"\n               FROM    task_attempts\n               WHERE   rowid = $1",
+  "query": "INSERT INTO task_attempts (id, task_id, container_ref, branch, base_branch, merge_commit, base_coding_agent, pr_url, pr_number, pr_status, pr_merged_at, worktree_deleted, setup_completed_at)\n               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)\n               RETURNING id as \"id!: Uuid\", task_id as \"task_id!: Uuid\", container_ref, branch, base_branch, merge_commit, base_coding_agent as \"base_coding_agent!\",  pr_url, pr_number, pr_status, pr_merged_at as \"pr_merged_at: DateTime<Utc>\", worktree_deleted as \"worktree_deleted!: bool\", setup_completed_at as \"setup_completed_at: DateTime<Utc>\", created_at as \"created_at!: DateTime<Utc>\", updated_at as \"updated_at!: DateTime<Utc>\"",
   "describe": {
     "columns": [
       {
@@ -24,17 +24,17 @@
         "type_info": "Text"
       },
       {
-        "name": "merge_commit",
+        "name": "base_branch",
         "ordinal": 4,
         "type_info": "Text"
       },
       {
-        "name": "base_branch",
+        "name": "merge_commit",
         "ordinal": 5,
         "type_info": "Text"
       },
       {
-        "name": "executor",
+        "name": "base_coding_agent!",
         "ordinal": 6,
         "type_info": "Text"
       },
@@ -80,15 +80,15 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 13
     },
     "nullable": [
       true,
       false,
       true,
       true,
-      true,
       false,
+      true,
       true,
       true,
       true,
@@ -100,5 +100,5 @@
       false
     ]
   },
-  "hash": "1dd3d7d9c054d2624582f2889e7efcfd98a784158ef8901b7ef932069ee86d17"
+  "hash": "1174eecd9f26565a4f4e1e367b5d7c90b4d19b793e496c2e01593f32c5101f24"
 }

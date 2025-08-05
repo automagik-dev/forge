@@ -1,4 +1,10 @@
-use std::{collections::{HashMap, HashSet}, io, path::PathBuf, sync::Arc, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    io,
+    path::PathBuf,
+    sync::Arc,
+    time::Duration,
+};
 
 use anyhow::anyhow;
 use async_stream::try_stream;
@@ -14,7 +20,7 @@ use db::{
 };
 use deployment::DeploymentError;
 use executors::{
-    actions::{ExecutorAction, ExecutorActions},
+    actions::{Executable, ExecutorAction},
     logs::utils::ConversationPatch,
 };
 use futures::{StreamExt, TryStreamExt, stream::select};
@@ -240,6 +246,7 @@ impl LocalContainerService {
         let msg_stores = self.msg_stores.clone();
         let db = self.db.clone();
         let config = self.config.clone();
+        let container = self.clone();
 
         tokio::spawn(async move {
             loop {
@@ -275,12 +282,39 @@ impl LocalContainerService {
                         Err(_) => (None, ExecutionProcessStatus::Failed),
                     };
 
-                    if let Err(e) =
-                        ExecutionProcess::update_completion(&db.pool, exec_id, status, exit_code)
-                            .await
+                    if let Err(e) = ExecutionProcess::update_completion(
+                        &db.pool,
+                        exec_id,
+                        status.clone(),
+                        exit_code,
+                    )
+                    .await
                     {
                         tracing::error!("Failed to update execution process completion: {}", e);
                     }
+
+                    // If the process exited successfully, start the next action
+                    if let Ok(ctx) = ExecutionProcess::load_context(&db.pool, exec_id).await {
+                        if matches!(status, ExecutionProcessStatus::Completed)
+                            && exit_code == Some(0)
+                        {
+                            if let Err(e) = container.try_start_next_action(&ctx).await {
+                                tracing::error!(
+                                    "Failed to start next action after completion: {}",
+                                    e
+                                );
+                            } else {
+                                tracing::debug!(
+                                    "Successfully started next action after completion: {}",
+                                    ctx.task_attempt.id
+                                );
+                            }
+                        }
+
+                        let notify_cfg = config.read().await.notifications.clone();
+                        NotificationService::notify_execution_halted(notify_cfg, &ctx).await;
+                    }
+
                     // Cleanup msg store
                     if let Some(msg_arc) = msg_stores.write().await.remove(&exec_id) {
                         msg_arc.push_finished();
@@ -297,16 +331,6 @@ impl LocalContainerService {
 
                     // Cleanup child handle
                     child_store.write().await.remove(&exec_id);
-                    match ExecutionProcess::load_context(&db.pool, exec_id).await {
-                        Ok(ctx) => {
-                            let notify_cfg = config.read().await.notifications.clone();
-                            NotificationService::notify_execution_halted(notify_cfg, &ctx).await
-                        }
-                        Err(e) => {
-                            tracing::error!("Failed to get execution context: {}", e);
-                        }
-                    }
-
                     break;
                 }
 
@@ -441,7 +465,7 @@ impl ContainerService for LocalContainerService {
         &self,
         task_attempt: &TaskAttempt,
         execution_process: &ExecutionProcess,
-        executor_action: &ExecutorActions,
+        executor_action: &ExecutorAction,
     ) -> Result<(), ContainerError> {
         // Get the worktree path
         let container_ref = task_attempt

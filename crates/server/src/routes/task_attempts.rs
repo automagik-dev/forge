@@ -20,19 +20,18 @@ use executors::actions::{
     coding_agent_follow_up::CodingAgentFollowUpRequest,
     coding_agent_initial::CodingAgentInitialRequest,
     script::{ScriptContext, ScriptRequest, ScriptRequestLanguage},
-    ExecutorActionKind, ExecutorActions,
+    ExecutorAction, ExecutorActionKind, ExecutorActionType,
 };
 use futures_util::TryStreamExt;
 use serde::{Deserialize, Serialize};
 use services::services::{
-    config::{Config, EditorConfig, EditorType},
     container::{ContainerRef, ContainerService},
     git::{BranchStatus, GitService, GitServiceError},
     github_service::{CreatePrRequest, GitHubRepoInfo, GitHubService, GitHubServiceError},
 };
 use sqlx::Error as SqlxError;
 use ts_rs::TS;
-use utils::{assets::config_path, response::ApiResponse};
+use utils::response::ApiResponse;
 use uuid::Uuid;
 
 use crate::{error::ApiError, middleware::load_task_attempt_middleware, DeploymentImpl};
@@ -246,7 +245,7 @@ pub async fn get_task_attempt(
 #[ts(export)]
 pub struct CreateTaskAttemptBody {
     pub task_id: Uuid,
-    pub executor: Option<String>,
+    pub profile: Option<String>,
     pub base_branch: String,
 }
 
@@ -255,14 +254,23 @@ pub async fn create_task_attempt(
     State(deployment): State<DeploymentImpl>,
     Json(payload): Json<CreateTaskAttemptBody>,
 ) -> Result<ResponseJson<ApiResponse<TaskAttempt>>, ApiError> {
-    let executor = payload
-        .executor
-        .unwrap_or(deployment.config().read().await.executor.to_string());
+    let profile_label = payload
+        .profile
+        .unwrap_or(deployment.config().read().await.profile.to_string());
+
+    let profile = executors::command::AgentProfiles::get_cached()
+        .get_profile(&profile_label)
+        .ok_or_else(|| {
+            ApiError::TaskAttempt(TaskAttemptError::ValidationError(format!(
+                "Profile not found: {}",
+                profile_label
+            )))
+        })?;
 
     let task_attempt = TaskAttempt::create(
         &deployment.db().pool,
         &CreateTaskAttempt {
-            executor: executor.clone(),
+            base_coding_agent: profile.agent.to_string(),
             base_branch: payload.base_branch,
         },
         payload.task_id,
@@ -291,11 +299,21 @@ pub async fn create_task_attempt(
 
     // Choose whether to execute the setup_script or coding agent first
     let execution_process = if let Some(setup_script) = project.setup_script {
-        let executor_action = ExecutorActions::ScriptRequest(ScriptRequest {
-            script: setup_script,
-            language: ScriptRequestLanguage::Bash,
-            context: ScriptContext::SetupScript,
-        });
+        let executor_action = ExecutorAction::new(
+            ExecutorActionType::ScriptRequest(ScriptRequest {
+                script: setup_script,
+                language: ScriptRequestLanguage::Bash,
+                context: ScriptContext::SetupScript,
+            }),
+            // once the setup script is done, run the initial coding agent request
+            Some(Box::new(ExecutorAction::new(
+                ExecutorActionType::CodingAgentInitialRequest(CodingAgentInitialRequest {
+                    prompt: task.to_prompt(),
+                    profile: profile_label,
+                }),
+                None,
+            ))),
+        );
 
         deployment
             .container()
@@ -306,11 +324,13 @@ pub async fn create_task_attempt(
             )
             .await?
     } else {
-        let executor_action =
-            ExecutorActions::CodingAgentInitialRequest(CodingAgentInitialRequest {
+        let executor_action = ExecutorAction::new(
+            ExecutorActionType::CodingAgentInitialRequest(CodingAgentInitialRequest {
                 prompt: task.to_prompt(),
-                executor: executor.parse()?,
-            });
+                profile: profile_label,
+            }),
+            None,
+        );
 
         deployment
             .container()
@@ -365,19 +385,21 @@ pub async fn follow_up(
         "This executor session doesn't have a session_id".to_string(),
     )))?;
 
-    let executor = match initial_execution_process.executor_actions() {
-        ExecutorActions::CodingAgentInitialRequest(request) => Ok(request.executor.clone()),
+    let profile = match &initial_execution_process.executor_action.0.typ {
+        ExecutorActionType::CodingAgentInitialRequest(request) => Ok(request.profile.clone()),
         _ => Err(ApiError::TaskAttempt(TaskAttemptError::ValidationError(
-            "Couldn't find executor".to_string(),
+            "Couldn't find profile from initial request".to_string(),
         ))),
     }?;
 
-    let follow_up_action =
-        ExecutorActions::CodingAgentFollowUpRequest(CodingAgentFollowUpRequest {
+    let follow_up_action = ExecutorAction::new(
+        ExecutorActionType::CodingAgentFollowUpRequest(CodingAgentFollowUpRequest {
             prompt: payload.prompt,
             session_id,
-            executor,
-        });
+            profile,
+        }),
+        None,
+    );
 
     let execution_process = deployment
         .container()
@@ -972,11 +994,14 @@ pub async fn start_dev_server(
 
     if let Some(dev_server) = project.dev_script {
         // TODO: Derive script language from system config
-        let executor_action = ExecutorActions::ScriptRequest(ScriptRequest {
-            script: dev_server,
-            language: ScriptRequestLanguage::Bash,
-            context: ScriptContext::DevServer,
-        });
+        let executor_action = ExecutorAction::new(
+            ExecutorActionType::ScriptRequest(ScriptRequest {
+                script: dev_server,
+                language: ScriptRequestLanguage::Bash,
+                context: ScriptContext::DevServer,
+            }),
+            None,
+        );
 
         deployment
             .container()

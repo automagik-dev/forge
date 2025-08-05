@@ -9,7 +9,7 @@ use axum::{
     Json, Router,
 };
 use deployment::{Deployment, DeploymentError};
-use executors::executors::CodingAgentExecutorType;
+use executors::{command::AgentProfiles, executors::BaseCodingAgent};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use services::services::config::{Config, SoundFile};
@@ -51,6 +51,7 @@ impl Environment {
 #[derive(Debug, Serialize, Deserialize, TS)]
 pub struct UserSystemInfo {
     pub config: Config,
+    pub profiles: AgentProfiles,
     pub environment: Environment,
 }
 
@@ -63,6 +64,7 @@ async fn get_user_system_info(
 
     let user_system_info = UserSystemInfo {
         config: config.clone(),
+        profiles: AgentProfiles::get_cached().clone(),
         environment: Environment::new(),
     };
 
@@ -107,18 +109,21 @@ async fn get_sound(Path(sound): Path<SoundFile>) -> Result<Response, ApiError> {
 
 #[derive(Debug, Deserialize)]
 struct McpServerQuery {
-    executor: Option<CodingAgentExecutorType>,
+    base_coding_agent: Option<BaseCodingAgent>,
 }
 
 async fn get_mcp_servers(
     State(deployment): State<DeploymentImpl>,
     Query(query): Query<McpServerQuery>,
 ) -> Result<ResponseJson<ApiResponse<Value>>, ApiError> {
-    let agent = match query.executor {
+    let agent = match query.base_coding_agent {
         Some(executor) => executor,
         None => {
             let config = deployment.config().read().await;
-            config.executor.clone()
+            let profile = executors::command::AgentProfiles::get_cached()
+                .get_profile(&config.profile)
+                .expect("Corrupted config");
+            profile.agent.clone()
         }
     };
 
@@ -158,11 +163,14 @@ async fn update_mcp_servers(
     Query(query): Query<McpServerQuery>,
     Json(new_servers): Json<HashMap<String, Value>>,
 ) -> Result<ResponseJson<ApiResponse<String>>, ApiError> {
-    let agent = match query.executor {
+    let agent = match query.base_coding_agent {
         Some(executor) => executor,
         None => {
             let config = deployment.config().read().await;
-            config.executor.clone()
+            let profile = executors::command::AgentProfiles::get_cached()
+                .get_profile(&config.profile)
+                .expect("Corrupted config");
+            profile.agent.clone()
         }
     };
 
@@ -193,7 +201,7 @@ async fn update_mcp_servers(
 
 async fn update_mcp_servers_in_config(
     config_path: &std::path::Path,
-    agent: &CodingAgentExecutorType,
+    agent: &BaseCodingAgent,
     new_servers: HashMap<String, Value>,
 ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
     // Ensure parent directory exists
@@ -235,7 +243,7 @@ async fn update_mcp_servers_in_config(
 
 async fn read_mcp_servers_from_config(
     config_path: &std::path::Path,
-    agent: &CodingAgentExecutorType,
+    agent: &BaseCodingAgent,
 ) -> Result<HashMap<String, Value>, Box<dyn std::error::Error + Send + Sync>> {
     let file_content = fs::read_to_string(config_path)
         .await
@@ -248,12 +256,12 @@ async fn read_mcp_servers_from_config(
 
 /// Helper function to get MCP servers from config using a path
 fn get_mcp_servers_from_config_path(
-    agent: &CodingAgentExecutorType,
+    agent: &BaseCodingAgent,
     raw_config: &Value,
     path: &[&str],
 ) -> HashMap<String, Value> {
     // Special handling for AMP - use flat key structure
-    let current = if matches!(agent, CodingAgentExecutorType::Amp) {
+    let current = if matches!(agent, BaseCodingAgent::Amp) {
         let flat_key = format!("{}.{}", path[0], path[1]);
         let current = match raw_config.get(&flat_key) {
             Some(val) => val,
@@ -283,7 +291,7 @@ fn get_mcp_servers_from_config_path(
 
 /// Helper function to set MCP servers in config using a path
 fn set_mcp_servers_in_config_path(
-    agent: &CodingAgentExecutorType,
+    agent: &BaseCodingAgent,
     raw_config: &mut Value,
     path: &[&str],
     servers: &HashMap<String, Value>,
@@ -294,7 +302,7 @@ fn set_mcp_servers_in_config_path(
     }
 
     // Special handling for AMP - use flat key structure
-    if matches!(agent, CodingAgentExecutorType::Amp) {
+    if matches!(agent, BaseCodingAgent::Amp) {
         let flat_key = format!("{}.{}", path[0], path[1]);
         raw_config
             .as_object_mut()

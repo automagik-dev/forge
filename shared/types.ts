@@ -40,11 +40,11 @@ export type UpdateTask = { title: string | null, description: string | null, sta
 
 export type ApiResponse<T> = { success: boolean, data: T | null, message: string | null, };
 
-export type UserSystemInfo = { config: Config, environment: Environment, };
+export type UserSystemInfo = { config: Config, profiles: AgentProfiles, environment: Environment, };
 
 export type Environment = { os_type: string, os_version: string, os_architecture: string, bitness: string, };
 
-export type Config = { theme: ThemeMode, executor: CodingAgentExecutorType, disclaimer_acknowledged: boolean, onboarding_acknowledged: boolean, github_login_acknowledged: boolean, telemetry_acknowledged: boolean, notifications: NotificationConfig, editor: EditorConfig, github: GitHubConfig, analytics_enabled: boolean | null, environment: EnvironmentInfo, workspace_dir: string | null, };
+export type Config = { theme: ThemeMode, profile: string, disclaimer_acknowledged: boolean, onboarding_acknowledged: boolean, github_login_acknowledged: boolean, telemetry_acknowledged: boolean, notifications: NotificationConfig, editor: EditorConfig, github: GitHubConfig, analytics_enabled: boolean | null, environment: EnvironmentInfo, workspace_dir: string | null, };
 
 export type EnvironmentInfo = { os_type: string, os_version: string, architecture: string, bitness: string, };
 
@@ -76,11 +76,41 @@ export type DiffChunkType = "Equal" | "Insert" | "Delete";
 
 export type RepositoryInfo = { id: bigint, name: string, full_name: string, owner: string, description: string | null, clone_url: string, ssh_url: string, default_branch: string, private: boolean, };
 
-export enum CodingAgentExecutorType { CLAUDE_CODE = "CLAUDE_CODE", AMP = "AMP", GEMINI = "GEMINI" }
+export enum BaseCodingAgent { CLAUDE_CODE = "CLAUDE_CODE", AMP = "AMP", GEMINI = "GEMINI" }
 
-export type CreateTaskAttemptBody = { task_id: string, executor: string | null, base_branch: string, };
+export type CommandBuilder = { 
+/**
+ * Base executable command (e.g., "npx -y @anthropic-ai/claude-code@latest")
+ */
+base: string, 
+/**
+ * Optional parameters to append to the base command
+ */
+params: Array<string> | null, };
 
-export type TaskAttempt = { id: string, task_id: string, container_ref: string | null, branch: string | null, base_branch: string, merge_commit: string | null, executor: string | null, pr_url: string | null, pr_number: bigint | null, pr_status: string | null, pr_merged_at: string | null, worktree_deleted: boolean, setup_completed_at: string | null, created_at: string, updated_at: string, };
+export type AgentProfile = { 
+/**
+ * Unique identifier for this profile (e.g., "MyClaudeCode", "FastAmp")
+ */
+label: string, 
+/**
+ * The executor type this profile configures
+ */
+agent: BaseCodingAgent, 
+/**
+ * Command builder configuration
+ */
+command: CommandBuilder, };
+
+export type AgentProfiles = { profiles: Array<AgentProfile>, };
+
+export type CodingAgentInitialRequest = { prompt: string, profile: string, };
+
+export type CodingAgentFollowUpRequest = { prompt: string, session_id: string, profile: string, };
+
+export type CreateTaskAttemptBody = { task_id: string, profile: string | null, base_branch: string, };
+
+export type TaskAttempt = { id: string, task_id: string, container_ref: string | null, branch: string | null, base_branch: string, merge_commit: string | null, base_coding_agent: string, pr_url: string | null, pr_number: bigint | null, pr_status: string | null, pr_merged_at: string | null, worktree_deleted: boolean, setup_completed_at: string | null, created_at: string, updated_at: string, };
 
 export type TaskAttemptState = { execution_state: ExecutionState, has_changes: boolean, has_setup_script: boolean, setup_process_id: string | null, coding_agent_process_id: string | null, };
 
