@@ -38,9 +38,11 @@ export type UpdateTask = { title: string | null, description: string | null, sta
 
 export type ApiResponse<T> = { success: boolean, data: T | null, message: string | null, };
 
-export type UserSystemInfo = { config: Config, profiles: AgentProfiles, environment: Environment, };
+export type UserSystemInfo = { config: Config, environment: Environment, profiles: Array<AgentProfile>, };
 
 export type Environment = { os_type: string, os_version: string, os_architecture: string, bitness: string, };
+
+export type CreateFollowUpAttempt = { prompt: string, };
 
 export type Config = { theme: ThemeMode, profile: string, disclaimer_acknowledged: boolean, onboarding_acknowledged: boolean, github_login_acknowledged: boolean, telemetry_acknowledged: boolean, notifications: NotificationConfig, editor: EditorConfig, github: GitHubConfig, analytics_enabled: boolean | null, environment: EnvironmentInfo, workspace_dir: string | null, };
 

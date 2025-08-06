@@ -1,6 +1,5 @@
 // Import all necessary types from shared types
 import {
-  CreateFollowUpAttempt,
   DeviceStartResponse,
 } from 'shared/old_frozen_types';
 
@@ -30,6 +29,7 @@ import {
   UpdateTaskTemplate,
   UserSystemInfo,
   WorktreeDiff,
+  CreateFollowUpAttempt
 } from 'shared/types';
 
 // Re-export types for convenience
@@ -455,9 +455,9 @@ export const systemApi = {
 
 // Config APIs (backwards compatible)
 export const configApi = {
-  getConfig: async (): Promise<Config> => {
-    const { config } = await systemApi.getInfo();
-    return config;
+  getConfig: async (): Promise<UserSystemInfo> => {
+    const response = await makeRequest('/api/info');
+    return handleApiResponse<UserSystemInfo>(response);
   },
   saveConfig: async (config: Config): Promise<Config> => {
     const response = await makeRequest('/api/config', {

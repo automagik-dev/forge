@@ -84,10 +84,6 @@ type Props = {
   taskAttempts: TaskAttempt[];
   creatingPR: boolean;
   handleEnterCreateAttemptMode: () => void;
-  availableExecutors: {
-    id: string;
-    name: string;
-  }[];
   branches: GitBranch[];
 };
 
@@ -99,7 +95,6 @@ function CurrentAttempt({
   taskAttempts,
   creatingPR,
   handleEnterCreateAttemptMode,
-  availableExecutors,
   branches,
 }: Props) {
   const { task, projectId, handleOpenInEditor, projectHasDevScript } =
@@ -406,13 +401,10 @@ function CurrentAttempt({
 
         <div>
           <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-            Agent
+            Base Agent
           </div>
           <div className="text-sm font-medium">
-            {availableExecutors.find((e) => e.id === selectedAttempt.executor)
-              ?.name ||
-              selectedAttempt.executor ||
-              'Unknown'}
+            {selectedAttempt.base_coding_agent}
           </div>
         </div>
 
@@ -605,7 +597,7 @@ function CurrentAttempt({
                         {new Date(attempt.created_at).toLocaleTimeString()}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {attempt.executor || 'executor'}
+                        {attempt.base_coding_agent || 'Base Agent'}
                       </span>
                     </div>
                   </DropdownMenuItem>

@@ -21,12 +21,11 @@ import { Loader2 } from 'lucide-react';
 import {
   MCP_SUPPORTED_EXECUTORS,
 } from 'shared/old_frozen_types';
-import { CodingAgentExecutorType } from 'shared/types';
-import { useConfig } from '@/components/config-provider';
+import { useUserSystem } from '@/components/config-provider';
 import { mcpServersApi } from '../lib/api';
 
 export function McpServers() {
-  const { config } = useConfig();
+  const { config, profiles } = useUserSystem();
   const [mcpServers, setMcpServers] = useState('{}');
   const [mcpError, setMcpError] = useState<string | null>(null);
   const [mcpLoading, setMcpLoading] = useState(true);
@@ -37,15 +36,15 @@ export function McpServers() {
 
   // Initialize selected MCP executor when config loads
   useEffect(() => {
-    if (config?.executor && !selectedMcpExecutor) {
+    if (config?.profile && !selectedMcpExecutor) {
       // If current executor supports MCP, use it; otherwise use first available MCP executor
-      if (MCP_SUPPORTED_EXECUTORS.includes(config.executor)) {
-        setSelectedMcpExecutor(config.executor);
+      if (MCP_SUPPORTED_EXECUTORS.includes(config.profile)) {
+        setSelectedMcpExecutor(config.profile);
       } else {
         setSelectedMcpExecutor(MCP_SUPPORTED_EXECUTORS[0] || 'claude');
       }
     }
-  }, [config?.executor, selectedMcpExecutor]);
+  }, [config?.profile, selectedMcpExecutor]);
 
   // Load existing MCP configuration when selected executor changes
   useEffect(() => {
@@ -151,14 +150,14 @@ export function McpServers() {
       const vibeKanbanConfig =
         selectedMcpExecutor === 'sst-opencode'
           ? {
-              type: 'local',
-              command: ['npx', '-y', 'vibe-kanban', '--mcp'],
-              enabled: true,
-            }
+            type: 'local',
+            command: ['npx', '-y', 'vibe-kanban', '--mcp'],
+            enabled: true,
+          }
           : {
-              command: 'npx',
-              args: ['-y', 'vibe-kanban', '--mcp'],
-            };
+            command: 'npx',
+            args: ['-y', 'vibe-kanban', '--mcp'],
+          };
 
       // Add vibe_kanban to the existing configuration
       let updatedConfig;
@@ -322,11 +321,9 @@ export function McpServers() {
                   <SelectValue placeholder="Select executor" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.values(CodingAgentExecutorType).filter((type) =>
-                    MCP_SUPPORTED_EXECUTORS.includes(type)
-                  ).map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
+                  {profiles?.map((profile) => (
+                    <SelectItem key={profile.label} value={profile.label}>
+                      {profile.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -20,17 +20,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Key, Loader2, Volume2 } from 'lucide-react';
 import type { ThemeMode } from 'shared/types';
-import { CodingAgentExecutorType, EditorType, SoundFile } from 'shared/types';
+import { EditorType, SoundFile } from 'shared/types';
 
 import { toPrettyCase } from '@/utils/string';
 import { useTheme } from '@/components/theme-provider';
-import { useConfig } from '@/components/config-provider';
+import { useUserSystem } from '@/components/config-provider';
 import { GitHubLoginDialog } from '@/components/GitHubLoginDialog';
 import { TaskTemplateManager } from '@/components/TaskTemplateManager';
 
 export function Settings() {
-  const { config, updateConfig, saveConfig, loading, updateAndSaveConfig } =
-    useConfig();
+  const { config, updateConfig, saveConfig, loading, updateAndSaveConfig, profiles } =
+    useUserSystem();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -38,7 +38,7 @@ export function Settings() {
   const [showGitHubLogin, setShowGitHubLogin] = useState(false);
 
   const playSound = async (soundFile: SoundFile) => {
-    const audio = new Audio(`/api/sounds/${soundFile}.wav`);
+    const audio = new Audio(`/api/sounds/${soundFile}`);
     try {
       await audio.play();
     } catch (err) {
@@ -193,26 +193,26 @@ export function Settings() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="executor">Default Executor</Label>
+                <Label htmlFor="executor">Default Profile</Label>
                 <Select
-                  value={config.executor}
-                  onValueChange={(value: CodingAgentExecutorType) =>
-                    updateConfig({ executor: value })
+                  value={config.profile}
+                  onValueChange={(value: string) =>
+                    updateConfig({ profile: value })
                   }
                 >
                   <SelectTrigger id="executor">
                     <SelectValue placeholder="Select executor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.values(CodingAgentExecutorType).map((executorType) => (
-                      <SelectItem key={executorType} value={executorType}>
-                        {toPrettyCase(executorType)}
+                    {profiles?.map((profile) => (
+                      <SelectItem key={profile.label} value={profile.label}>
+                        {profile.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
-                  Choose the default executor for running tasks.
+                  Choose the default profile to use when creating a task attempt.
                 </p>
               </div>
             </CardContent>
@@ -600,6 +600,6 @@ export function Settings() {
         {/* Spacer to prevent content from being hidden behind sticky button */}
         <div className="h-20"></div>
       </div>
-    </div>
+    </div >
   );
 }
