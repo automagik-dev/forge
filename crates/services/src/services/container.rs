@@ -15,16 +15,21 @@ use db::{
     models::{
         execution_process::{
             CreateExecutionProcess, ExecutionContext, ExecutionProcess, ExecutionProcessRunReason,
+            ExecutionProcessStatus,
         },
         execution_process_logs::ExecutionProcessLogs,
         executor_session::{CreateExecutorSession, ExecutorSession},
-        task_attempt::TaskAttempt,
+        task_attempt::{TaskAttempt, TaskAttemptError},
     },
 };
 use executors::{
-    actions::{ExecutorAction, ExecutorActionType},
+    actions::{
+        ExecutorAction, ExecutorActionType,
+        coding_agent_initial::CodingAgentInitialRequest,
+        script::{ScriptContext, ScriptRequest, ScriptRequestLanguage},
+    },
     executors::{CodingAgent, ExecutorError, StandardCodingAgentExecutor},
-    logs::{NormalizedEntry, NormalizedEntryType, utils::patch::ConversationPatch},
+    logs::utils::patch::ConversationPatch,
 };
 use futures::{StreamExt, TryStreamExt, future};
 use sqlx::Error as SqlxError;
@@ -54,6 +59,8 @@ pub enum ContainerError {
     #[error("Failed to kill process: {0}")]
     KillFailed(std::io::Error),
     #[error(transparent)]
+    TaskAttemptError(#[from] TaskAttemptError),
+    #[error(transparent)]
     Other(#[from] AnyhowError), // Catches any unclassified errors
 }
 
@@ -68,6 +75,28 @@ pub trait ContainerService {
     fn task_attempt_to_current_dir(&self, task_attempt: &TaskAttempt) -> PathBuf;
 
     async fn create(&self, task_attempt: &TaskAttempt) -> Result<ContainerRef, ContainerError>;
+
+    async fn delete(&self, task_attempt: &TaskAttempt) -> Result<(), ContainerError> {
+        // stop all execution processes for this attempt
+        if let Ok(processes) =
+            ExecutionProcess::find_by_task_attempt_id(&self.db().pool, task_attempt.id).await
+        {
+            for process in processes {
+                if process.status == ExecutionProcessStatus::Running {
+                    self.stop_execution(&process).await.unwrap_or_else(|e| {
+                        tracing::debug!(
+                            "Failed to stop execution process {} for task attempt {}: {}",
+                            process.id,
+                            task_attempt.id,
+                            e
+                        );
+                    });
+                }
+            }
+        }
+        self.delete_inner(task_attempt).await
+    }
+    async fn delete_inner(&self, task_attempt: &TaskAttempt) -> Result<(), ContainerError>;
 
     async fn ensure_container_exists(
         &self,
@@ -281,7 +310,6 @@ pub trait ContainerService {
                     return None;
                 }
             }
-
             Some(
                 temp_store
                     .history_plus_stream()
@@ -367,6 +395,74 @@ pub trait ContainerService {
         });
 
         handle
+    }
+
+    async fn start_attempt(
+        &self,
+        task_attempt: &TaskAttempt,
+        profile_label: String,
+    ) -> Result<ExecutionProcess, ContainerError> {
+        // Create container
+        self.create(&task_attempt).await?;
+
+        // Get parent task
+        let task = task_attempt
+            .parent_task(&self.db().pool)
+            .await?
+            .ok_or(SqlxError::RowNotFound)?;
+
+        // Get parent project
+        let project = task
+            .parent_project(&self.db().pool)
+            .await?
+            .ok_or(SqlxError::RowNotFound)?;
+
+        // // Get latest version of task attempt
+        let task_attempt = TaskAttempt::find_by_id(&self.db().pool, task_attempt.id)
+            .await?
+            .ok_or(SqlxError::RowNotFound)?;
+
+        // Choose whether to execute the setup_script or coding agent first
+        let execution_process = if let Some(setup_script) = project.setup_script {
+            let executor_action = ExecutorAction::new(
+                ExecutorActionType::ScriptRequest(ScriptRequest {
+                    script: setup_script,
+                    language: ScriptRequestLanguage::Bash,
+                    context: ScriptContext::SetupScript,
+                }),
+                // once the setup script is done, run the initial coding agent request
+                Some(Box::new(ExecutorAction::new(
+                    ExecutorActionType::CodingAgentInitialRequest(CodingAgentInitialRequest {
+                        prompt: task.to_prompt(),
+                        profile: profile_label,
+                    }),
+                    None,
+                ))),
+            );
+
+            self.start_execution(
+                &task_attempt,
+                &executor_action,
+                &ExecutionProcessRunReason::SetupScript,
+            )
+            .await?
+        } else {
+            let executor_action = ExecutorAction::new(
+                ExecutorActionType::CodingAgentInitialRequest(CodingAgentInitialRequest {
+                    prompt: task.to_prompt(),
+                    profile: profile_label,
+                }),
+                None,
+            );
+
+            self.start_execution(
+                &task_attempt,
+                &executor_action,
+                &ExecutionProcessRunReason::CodingAgent,
+            )
+            .await?
+        };
+        Ok(execution_process)
     }
 
     async fn start_execution(

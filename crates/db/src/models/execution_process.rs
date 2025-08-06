@@ -342,8 +342,6 @@ impl ExecutionProcess {
         Ok(())
     }
 
-    /// Delete execution processes for a task attempt (cleanup)
-    #[allow(dead_code)]
     pub async fn delete_by_task_attempt_id(
         pool: &SqlitePool,
         task_attempt_id: Uuid,
@@ -354,7 +352,6 @@ impl ExecutionProcess {
         )
         .execute(pool)
         .await?;
-
         Ok(())
     }
 

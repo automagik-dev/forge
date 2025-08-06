@@ -15,6 +15,7 @@ use db::{
     DBService,
     models::{
         execution_process::{ExecutionProcess, ExecutionProcessStatus},
+        project::Project,
         task_attempt::TaskAttempt,
     },
 };
@@ -424,6 +425,35 @@ impl ContainerService for LocalContainerService {
         TaskAttempt::update_branch(&self.db.pool, task_attempt.id, &task_branch_name).await?;
 
         Ok(worktree_path.to_string_lossy().to_string())
+    }
+
+    async fn delete_inner(&self, task_attempt: &TaskAttempt) -> Result<(), ContainerError> {
+        // cleanup the container, here that means deleting the worktree
+        let task = task_attempt
+            .parent_task(&self.db.pool)
+            .await?
+            .ok_or(sqlx::Error::RowNotFound)?;
+        let git_repo_path = match Project::find_by_id(&self.db.pool, task.project_id).await {
+            Ok(Some(project)) => Some(project.git_repo_path.clone()),
+            Ok(None) => None,
+            Err(e) => {
+                tracing::error!("Failed to fetch project {}: {}", task.project_id, e);
+                None
+            }
+        };
+        WorktreeManager::cleanup_worktree(
+            &PathBuf::from(task_attempt.container_ref.clone().unwrap_or_default()),
+            git_repo_path.as_ref().map(|p| p.as_path()),
+        )
+        .await
+        .unwrap_or_else(|e| {
+            tracing::warn!(
+                "Failed to clean up worktree for task attempt {}: {}",
+                task_attempt.id,
+                e
+            );
+        });
+        Ok(())
     }
 
     async fn ensure_container_exists(
