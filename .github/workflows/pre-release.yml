@@ -221,7 +221,7 @@ jobs:
 
       - name: Build backend for target
         run: |
-          cargo build --release --target ${{ matrix.target }} -p vibe-kanban
+          cargo build --release --target ${{ matrix.target }} -p server
           cargo build --release --target ${{ matrix.target }} --bin mcp_task_server
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: ${{ matrix.target == 'aarch64-unknown-linux-gnu' && 'aarch64-linux-gnu-gcc' || '' }}
