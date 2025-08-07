@@ -200,7 +200,7 @@ export function ProjectTasks() {
           description: description || null,
           parent_task_attempt: null,
         };
-        const result = await tasksApi.createAndStart(projectId!, payload);
+        const result = await tasksApi.createAndStart(payload);
         await fetchTasks();
         // Open the newly created task in the details panel
         handleViewTaskDetails(result);

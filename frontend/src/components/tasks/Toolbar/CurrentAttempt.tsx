@@ -298,9 +298,8 @@ function CurrentAttempt({
     try {
       setRebasing(true);
       await attemptsApi.rebase(
-        projectId,
-        selectedAttempt.task_id,
-        selectedAttempt.id
+        selectedAttempt.id,
+        { new_base_branch: null }
       );
       // Refresh branch status after rebase
       fetchBranchStatus();
@@ -317,10 +316,8 @@ function CurrentAttempt({
     try {
       setRebasing(true);
       await attemptsApi.rebase(
-        projectId,
-        selectedAttempt.task_id,
         selectedAttempt.id,
-        newBaseBranch
+        { new_base_branch: newBaseBranch }
       );
       // Refresh branch status after rebase
       fetchBranchStatus();

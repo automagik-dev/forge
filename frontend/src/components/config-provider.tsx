@@ -7,7 +7,7 @@ import {
   useMemo,
   useState,
 } from 'react';
-import type { Config, Environment, AgentProfile, UserSystemInfo } from 'shared/types';
+import { type Config, type Environment, type AgentProfile, type UserSystemInfo, CheckTokenResponse } from 'shared/types';
 import { configApi, githubAuthApi } from '../lib/api';
 
 interface UserSystemState {
@@ -77,7 +77,14 @@ export function UserSystemProvider({ children }: UserSystemProviderProps) {
         // Network/server error: do not update githubTokenInvalid
         return;
       }
-      setGithubTokenInvalid(!valid);
+      switch (valid) {
+        case CheckTokenResponse.VALID:
+          setGithubTokenInvalid(false);
+          break;
+        case CheckTokenResponse.INVALID:
+          setGithubTokenInvalid(true);
+          break;
+      }
     };
     checkToken();
   }, [loading]);

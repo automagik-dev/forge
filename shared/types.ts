@@ -36,7 +36,7 @@ export type CreateTask = { project_id: string, title: string, description: strin
 
 export type UpdateTask = { title: string | null, description: string | null, status: TaskStatus | null, parent_task_attempt: string | null, };
 
-export type ApiResponse<T> = { success: boolean, data: T | null, message: string | null, };
+export type ApiResponse<T, E = T> = { success: boolean, data: T | null, error_data: E | null, message: string | null, };
 
 export type UserSystemInfo = { config: Config, environment: Environment, profiles: Array<AgentProfile>, };
 
@@ -44,7 +44,11 @@ export type Environment = { os_type: string, os_version: string, os_architecture
 
 export type CreateFollowUpAttempt = { prompt: string, };
 
-export type Config = { config_schema: string, theme: ThemeMode, profile: string, disclaimer_acknowledged: boolean, onboarding_acknowledged: boolean, github_login_acknowledged: boolean, telemetry_acknowledged: boolean, notifications: NotificationConfig, editor: EditorConfig, github: GitHubConfig, analytics_enabled: boolean | null, workspace_dir: string | null, };
+export type CreateGitHubPrRequest = { title: string, body: string | null, base_branch: string | null, };
+
+export enum GitHubServiceError { TOKEN_INVALID = "TOKEN_INVALID", INSUFFICIENT_PERMISSIONS = "INSUFFICIENT_PERMISSIONS", REPO_NOT_FOUND_OR_NO_ACCESS = "REPO_NOT_FOUND_OR_NO_ACCESS" }
+
+export type Config = { config_version: string, theme: ThemeMode, profile: string, disclaimer_acknowledged: boolean, onboarding_acknowledged: boolean, github_login_acknowledged: boolean, telemetry_acknowledged: boolean, notifications: NotificationConfig, editor: EditorConfig, github: GitHubConfig, analytics_enabled: boolean | null, workspace_dir: string | null, };
 
 export type NotificationConfig = { sound_enabled: boolean, push_enabled: boolean, sound_file: SoundFile, };
 
@@ -57,6 +61,12 @@ export enum EditorType { VS_CODE = "VS_CODE", CURSOR = "CURSOR", WINDSURF = "WIN
 export type GitHubConfig = { pat: string | null, oauth_token: string | null, username: string | null, primary_email: string | null, default_pr_base: string | null, };
 
 export enum SoundFile { ABSTRACT_SOUND1 = "ABSTRACT_SOUND1", ABSTRACT_SOUND2 = "ABSTRACT_SOUND2", ABSTRACT_SOUND3 = "ABSTRACT_SOUND3", ABSTRACT_SOUND4 = "ABSTRACT_SOUND4", COW_MOOING = "COW_MOOING", PHONE_VIBRATION = "PHONE_VIBRATION", ROOSTER = "ROOSTER" }
+
+export type DeviceFlowStartResponse = { user_code: string, verification_uri: string, expires_in: number, interval: number, };
+
+export enum DevicePollStatus { SLOW_DOWN = "SLOW_DOWN", AUTHORIZATION_PENDING = "AUTHORIZATION_PENDING", SUCCESS = "SUCCESS" }
+
+export enum CheckTokenResponse { VALID = "VALID", INVALID = "INVALID" }
 
 export type GitBranch = { name: string, is_current: boolean, is_remote: boolean, last_commit_date: Date, };
 
@@ -74,29 +84,31 @@ export type RepositoryInfo = { id: bigint, name: string, full_name: string, owne
 
 export enum BaseCodingAgent { CLAUDE_CODE = "CLAUDE_CODE", AMP = "AMP", GEMINI = "GEMINI", CODEX = "CODEX", OPENCODE = "OPENCODE" }
 
-export type CommandBuilder = { 
-/**
- * Base executable command (e.g., "npx -y @anthropic-ai/claude-code@latest")
- */
-base: string, 
-/**
- * Optional parameters to append to the base command
- */
-params: Array<string> | null, };
+export type CommandBuilder = {
+    /**
+     * Base executable command (e.g., "npx -y @anthropic-ai/claude-code@latest")
+     */
+    base: string,
+    /**
+     * Optional parameters to append to the base command
+     */
+    params: Array<string> | null,
+};
 
-export type AgentProfile = { 
-/**
- * Unique identifier for this profile (e.g., "MyClaudeCode", "FastAmp")
- */
-label: string, 
-/**
- * The executor type this profile configures
- */
-agent: BaseCodingAgent, 
-/**
- * Command builder configuration
- */
-command: CommandBuilder, };
+export type AgentProfile = {
+    /**
+     * Unique identifier for this profile (e.g., "MyClaudeCode", "FastAmp")
+     */
+    label: string,
+    /**
+     * The executor type this profile configures
+     */
+    agent: BaseCodingAgent,
+    /**
+     * Command builder configuration
+     */
+    command: CommandBuilder,
+};
 
 export type AgentProfiles = { profiles: Array<AgentProfile>, };
 
@@ -105,6 +117,8 @@ export type CodingAgentInitialRequest = { prompt: string, profile: string, };
 export type CodingAgentFollowUpRequest = { prompt: string, session_id: string, profile: string, };
 
 export type CreateTaskAttemptBody = { task_id: string, profile: string | null, base_branch: string, };
+
+export type RebaseTaskAttemptRequest = { new_base_branch: string | null, };
 
 export type TaskAttempt = { id: string, task_id: string, container_ref: string | null, branch: string | null, base_branch: string, merge_commit: string | null, base_coding_agent: string, pr_url: string | null, pr_number: bigint | null, pr_status: string | null, pr_merged_at: string | null, worktree_deleted: boolean, setup_completed_at: string | null, created_at: string, updated_at: string, };
 

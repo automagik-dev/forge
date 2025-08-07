@@ -4,7 +4,7 @@ use anyhow::Error as AnyhowError;
 use axum::http::{HeaderName, header::ACCEPT};
 use octocrab::{
     OctocrabBuilder,
-    auth::{DeviceCodes, OAuth},
+    auth::{Continue, DeviceCodes, OAuth},
 };
 use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
@@ -24,12 +24,10 @@ pub enum AuthError {
     GitHubClient(#[from] octocrab::Error),
     #[error(transparent)]
     Parse(#[from] serde_json::Error),
-    #[error("Invalid access token!")]
-    InvalidAccessToken,
     #[error("Device flow not started")]
     DeviceFlowNotStarted,
     #[error("Device flow pending")]
-    Pending,
+    Pending(Continue),
     #[error(transparent)]
     Other(#[from] AnyhowError),
 }
@@ -39,8 +37,8 @@ pub enum AuthError {
 pub struct DeviceFlowStartResponse {
     pub user_code: String,
     pub verification_uri: String,
-    pub expires_in: u64,
-    pub interval: u64,
+    pub expires_in: u32,
+    pub interval: u32,
 }
 
 pub struct UserInfo {
@@ -82,8 +80,8 @@ impl AuthService {
         Ok(DeviceFlowStartResponse {
             user_code: device_codes.user_code,
             verification_uri: device_codes.verification_uri,
-            expires_in: device_codes.expires_in,
-            interval: device_codes.interval,
+            expires_in: device_codes.expires_in as u32,
+            interval: device_codes.interval as u32,
         })
     }
 
@@ -104,10 +102,7 @@ impl AuthService {
             .await?;
         let access_token = poll_response.either(
             |OAuth { access_token, .. }| Ok(access_token),
-            |_| {
-                // Polling continues
-                Err(AuthError::Pending)
-            },
+            |c| Err(AuthError::Pending(c)),
         )?;
         let client = OctocrabBuilder::new()
             .add_header(
@@ -127,21 +122,5 @@ impl AuthService {
             primary_email,
             token: access_token.expose_secret().to_string(),
         })
-    }
-
-    pub async fn check_token(&self, token: Option<&str>) -> Result<(), AuthError> {
-        let token = token.ok_or_else(|| AuthError::InvalidAccessToken)?;
-        let client = OctocrabBuilder::new()
-            .add_header(
-                HeaderName::try_from("User-Agent").unwrap(),
-                "vibe-kanban-app".to_string(),
-            )
-            .personal_token(token.to_string())
-            .build()?;
-        let res = client.current().user().await;
-        match res {
-            Ok(_) => Ok(()),
-            Err(_) => Err(AuthError::InvalidAccessToken),
-        }
     }
 }

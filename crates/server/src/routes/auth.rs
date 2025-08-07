@@ -7,10 +7,12 @@ use axum::{
     Router,
 };
 use deployment::{Deployment, DeploymentError};
+use octocrab::auth::Continue;
 use serde::{Deserialize, Serialize};
 use services::services::{
     auth::{AuthError, DeviceFlowStartResponse},
     config::save_config_to_file,
+    github_service::{GitHubService, GitHubServiceError},
 };
 use utils::response::ApiResponse;
 
@@ -36,12 +38,22 @@ async fn device_start(
 }
 
 #[derive(Serialize, Deserialize, ts_rs::TS)]
-#[serde(rename_all = "UPPERCASE")]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[ts(use_ts_enum)]
 #[ts(export)]
 pub enum DevicePollStatus {
-    NotStarted,
-    Pending,
+    SlowDown,
+    AuthorizationPending,
     Success,
+}
+
+#[derive(Serialize, Deserialize, ts_rs::TS)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[ts(use_ts_enum)]
+#[ts(export)]
+pub enum CheckTokenResponse {
+    Valid,
+    Invalid,
 }
 
 /// POST /auth/github/device/poll
@@ -50,14 +62,14 @@ async fn device_poll(
 ) -> Result<ResponseJson<ApiResponse<DevicePollStatus>>, ApiError> {
     let user_info = match deployment.auth().device_poll().await {
         Ok(info) => info,
-        Err(AuthError::Pending) => {
+        Err(AuthError::Pending(Continue::SlowDown)) => {
             return Ok(ResponseJson(ApiResponse::success(
-                DevicePollStatus::Pending,
+                DevicePollStatus::SlowDown,
             )));
         }
-        Err(AuthError::DeviceFlowNotStarted) => {
+        Err(AuthError::Pending(Continue::AuthorizationPending)) => {
             return Ok(ResponseJson(ApiResponse::success(
-                DevicePollStatus::NotStarted,
+                DevicePollStatus::AuthorizationPending,
             )));
         }
         Err(e) => return Err(e.into()),
@@ -88,13 +100,20 @@ async fn device_poll(
 /// GET /auth/github/check
 async fn github_check_token(
     State(deployment): State<DeploymentImpl>,
-) -> Result<ResponseJson<ApiResponse<()>>, ApiError> {
+) -> Result<ResponseJson<ApiResponse<CheckTokenResponse>>, ApiError> {
     let gh_config = deployment.config().read().await.github.clone();
-    let token = gh_config.token();
-    match deployment.auth().check_token(token.as_deref()).await {
-        Ok(_) => Ok(ResponseJson(ApiResponse::success(()))),
-        Err(AuthError::InvalidAccessToken) => Ok(ResponseJson(ApiResponse::error(
-            "Invalid access token".into(),
+    let Some(token) = gh_config.token() else {
+        return Ok(ResponseJson(ApiResponse::success(
+            CheckTokenResponse::Invalid,
+        )));
+    };
+    let gh = GitHubService::new(&token)?;
+    match gh.check_token().await {
+        Ok(()) => Ok(ResponseJson(ApiResponse::success(
+            CheckTokenResponse::Valid,
+        ))),
+        Err(GitHubServiceError::TokenInvalid) => Ok(ResponseJson(ApiResponse::success(
+            CheckTokenResponse::Invalid,
         ))),
         Err(e) => Err(e.into()),
     }

@@ -1,15 +1,17 @@
 // Import all necessary types from shared types
-import {
-  DeviceStartResponse,
-} from 'shared/old_frozen_types';
 
 import {
   ApiResponse,
   BranchStatus,
+  CheckTokenResponse,
   Config,
+  CreateFollowUpAttempt,
+  CreateGitHubPrRequest,
   CreateTask,
   CreateTaskAttemptBody,
   CreateTaskTemplate,
+  DeviceFlowStartResponse,
+  DevicePollStatus,
   DirectoryListResponse,
   EditorType,
   ExecutionProcess,
@@ -17,6 +19,7 @@ import {
   GitBranch,
   Project,
   CreateProject,
+  RebaseTaskAttemptRequest,
   RepositoryInfo,
   SearchResult,
   Task,
@@ -29,23 +32,26 @@ import {
   UpdateTaskTemplate,
   UserSystemInfo,
   WorktreeDiff,
-  CreateFollowUpAttempt
+  GitHubServiceError
 } from 'shared/types';
 
 // Re-export types for convenience
 export type { RepositoryInfo } from 'shared/types';
 
-export class ApiError extends Error {
+export class ApiError<E = unknown> extends Error {
   public status?: number;
+  public error_data?: E;
 
   constructor(
     message: string,
     public statusCode?: number,
-    public response?: Response
+    public response?: Response,
+    error_data?: E
   ) {
     super(message);
     this.name = 'ApiError';
     this.status = statusCode;
+    this.error_data = error_data;
   }
 }
 
@@ -67,7 +73,49 @@ export interface FollowUpResponse {
   created_new_attempt: boolean;
 }
 
-const handleApiResponse = async <T>(response: Response): Promise<T> => {
+// Result type for endpoints that need typed errors
+export type Result<T, E> =
+  | { success: true; data: T }
+  | { success: false; error: E | undefined; message?: string };
+
+// Special handler for Result-returning endpoints
+const handleApiResponseAsResult = async <T, E>(
+  response: Response
+): Promise<Result<T, E>> => {
+  if (!response.ok) {
+    // HTTP error - no structured error data
+    let errorMessage = `Request failed with status ${response.status}`;
+
+    try {
+      const errorData = await response.json();
+      if (errorData.message) {
+        errorMessage = errorData.message;
+      }
+    } catch {
+      errorMessage = response.statusText || errorMessage;
+    }
+
+    return {
+      success: false,
+      error: undefined,
+      message: errorMessage
+    };
+  }
+
+  const result: ApiResponse<T, E> = await response.json();
+
+  if (!result.success) {
+    return {
+      success: false,
+      error: result.error_data || undefined,
+      message: result.message || undefined
+    };
+  }
+
+  return { success: true, data: result.data as T };
+};
+
+const handleApiResponse = async <T, E = T>(response: Response): Promise<T> => {
   if (!response.ok) {
     let errorMessage = `Request failed with status ${response.status}`;
 
@@ -88,12 +136,31 @@ const handleApiResponse = async <T>(response: Response): Promise<T> => {
       endpoint: response.url,
       timestamp: new Date().toISOString(),
     });
-    throw new ApiError(errorMessage, response.status, response);
+    throw new ApiError<E>(errorMessage, response.status, response);
   }
 
-  const result: ApiResponse<T> = await response.json();
+  const result: ApiResponse<T, E> = await response.json();
 
   if (!result.success) {
+    // Check for error_data first (structured errors), then fall back to message
+    if (result.error_data) {
+      console.error('[API Error with data]', {
+        error_data: result.error_data,
+        message: result.message,
+        status: response.status,
+        response,
+        endpoint: response.url,
+        timestamp: new Date().toISOString(),
+      });
+      // Throw a properly typed error with the error data
+      throw new ApiError<E>(
+        result.message || 'API request failed',
+        response.status,
+        response,
+        result.error_data
+      );
+    }
+
     console.error('[API Error]', {
       message: result.message || 'API request failed',
       status: response.status,
@@ -101,7 +168,7 @@ const handleApiResponse = async <T>(response: Response): Promise<T> => {
       endpoint: response.url,
       timestamp: new Date().toISOString(),
     });
-    throw new ApiError(result.message || 'API request failed');
+    throw new ApiError<E>(result.message || 'API request failed', response.status, response);
   }
 
   return result.data as T;
@@ -189,11 +256,10 @@ export const tasksApi = {
   },
 
   createAndStart: async (
-    projectId: string,
     data: CreateTask
   ): Promise<TaskWithAttemptStatus> => {
     const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/create-and-start`,
+      `/api/tasks/create-and-start`,
       {
         method: 'POST',
         body: JSON.stringify(data),
@@ -349,21 +415,14 @@ export const attemptsApi = {
   },
 
   rebase: async (
-    projectId: string,
-    taskId: string,
     attemptId: string,
-    newBaseBranch?: string
+    data: RebaseTaskAttemptRequest
   ): Promise<void> => {
     const response = await makeRequest(
-      `/api/projects/${projectId}/tasks/${taskId}/attempts/${attemptId}/rebase`,
+      `/api/task-attempts/${attemptId}/rebase`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          new_base_branch: newBaseBranch || null,
-        }),
+        body: JSON.stringify(data),
       }
     );
     return handleApiResponse<void>(response);
@@ -371,12 +430,8 @@ export const attemptsApi = {
 
   createPR: async (
     attemptId: string,
-    data: {
-      title: string;
-      body: string | null;
-      base_branch: string | null;
-    }
-  ): Promise<string> => {
+    data: CreateGitHubPrRequest
+  ): Promise<Result<string, GitHubServiceError>> => {
     const response = await makeRequest(
       `/api/task-attempts/${attemptId}/pr`,
       {
@@ -384,7 +439,7 @@ export const attemptsApi = {
         body: JSON.stringify(data),
       }
     );
-    return handleApiResponse<string>(response);
+    return handleApiResponseAsResult<string, GitHubServiceError>(response);
   },
 
   startDevServer: async (
@@ -470,32 +525,22 @@ export const configApi = {
 
 // GitHub Device Auth APIs
 export const githubAuthApi = {
-  checkGithubToken: async (): Promise<boolean | undefined> => {
-    try {
-      const response = await makeRequest('/api/auth/github/check');
-      const result: ApiResponse<null> = await response.json();
-      if (!result.success && result.message === 'github_token_invalid') {
-        return false;
-      }
-      return result.success;
-    } catch (err) {
-      // On network/server error, return undefined (unknown)
-      return undefined;
-    }
+  checkGithubToken: async (): Promise<CheckTokenResponse> => {
+    const response = await makeRequest('/api/auth/github/check');
+    return handleApiResponse<CheckTokenResponse>(response);
   },
-  start: async (): Promise<DeviceStartResponse> => {
+  start: async (): Promise<DeviceFlowStartResponse> => {
     const response = await makeRequest('/api/auth/github/device/start', {
       method: 'POST',
     });
-    return handleApiResponse<DeviceStartResponse>(response);
+    return handleApiResponse<DeviceFlowStartResponse>(response);
   },
-  poll: async (device_code: string): Promise<string> => {
+  poll: async (): Promise<DevicePollStatus> => {
     const response = await makeRequest('/api/auth/github/device/poll', {
       method: 'POST',
-      body: JSON.stringify({ device_code }),
       headers: { 'Content-Type': 'application/json' },
     });
-    return handleApiResponse<string>(response);
+    return handleApiResponse<DevicePollStatus>(response);
   },
 };
 

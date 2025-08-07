@@ -25,7 +25,7 @@ use futures_util::TryStreamExt;
 use serde::{Deserialize, Serialize};
 use services::services::{
     container::{ContainerRef, ContainerService},
-    git::{BranchStatus, GitService, GitServiceError},
+    git::{BranchStatus, GitService},
     github_service::{CreatePrRequest, GitHubRepoInfo, GitHubService, GitHubServiceError},
 };
 use sqlx::Error as SqlxError;
@@ -35,13 +35,15 @@ use uuid::Uuid;
 
 use crate::{error::ApiError, middleware::load_task_attempt_middleware, DeploymentImpl};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
 pub struct RebaseTaskAttemptRequest {
     pub new_base_branch: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct CreateGitHubPRRequest {
+#[derive(Debug, Deserialize, Serialize, TS)]
+#[ts(export)]
+pub struct CreateGitHubPrRequest {
     pub title: String,
     pub body: Option<String>,
     pub base_branch: Option<String>,
@@ -476,15 +478,23 @@ pub async fn merge_task_attempt(
 pub async fn create_github_pr(
     Extension(task_attempt): Extension<TaskAttempt>,
     State(deployment): State<DeploymentImpl>,
-    Json(request): Json<CreateGitHubPRRequest>,
-) -> Result<ResponseJson<ApiResponse<String>>, ApiError> {
+    Json(request): Json<CreateGitHubPrRequest>,
+) -> Result<ResponseJson<ApiResponse<String, GitHubServiceError>>, ApiError> {
     let github_config = deployment.config().read().await.github.clone();
     let Some(github_token) = github_config.token() else {
-        return Ok(ResponseJson(ApiResponse::error(
-            "GitHub authentication not configured. Please sign in with GitHub.",
+        return Ok(ResponseJson(ApiResponse::error_with_data(
+            GitHubServiceError::TokenInvalid,
         )));
     };
-
+    // Create GitHub service instance
+    let github_service = GitHubService::new(&github_token)?;
+    if let Err(e) = github_service.check_token().await {
+        if e.is_api_data() {
+            return Ok(ResponseJson(ApiResponse::error_with_data(e)));
+        } else {
+            return Err(ApiError::GitHubService(e));
+        }
+    }
     // Get the task attempt to access the stored base branch
     let base_branch = request.base_branch.unwrap_or_else(|| {
         // Use the stored base branch from the task attempt as the default
@@ -513,17 +523,6 @@ pub async fn create_github_pr(
         .await?;
     let worktree_path = std::path::Path::new(&container_ref);
 
-    // Create GitHub service instance
-    let github_service = match GitHubService::new(&github_token) {
-        Ok(service) => service,
-        Err(GitHubServiceError::TokenInvalid) => {
-            return Ok(ResponseJson(ApiResponse::error("github_token_invalid")));
-        }
-        Err(e) => {
-            return Err(ApiError::GitHubService(e));
-        }
-    };
-
     // Use GitService to get the remote URL, then create GitHubRepoInfo
     let (owner, repo_name) = GitService::new().get_github_repo_info(&ctx.project.git_repo_path)?;
     let repo_info = GitHubRepoInfo { owner, repo_name };
@@ -538,25 +537,15 @@ pub async fn create_github_pr(
     // Push the branch to GitHub first
     if let Err(e) = GitService::new().push_to_github(&worktree_path, branch_name, &github_token) {
         tracing::error!("Failed to push branch to GitHub: {}", e);
-        let message = match &e {
-            GitServiceError::Git(err)
-                if err
-                    .message()
-                    .contains("too many redirects or authentication replays") =>
-            {
-                "insufficient_github_permissions"
-            }
-            GitServiceError::Git(err) if err.message().contains("status code: 403") => {
-                "insufficient_github_permissions"
-            }
-            GitServiceError::Git(err) if err.message().contains("status code: 404") => {
-                "github_repo_not_found_or_no_access"
-            }
-            _ => "Failed to push branch to GitHub",
-        };
-        return Ok(ResponseJson(ApiResponse::error(message)));
+        let gh_e = GitHubServiceError::from(e);
+        if gh_e.is_api_data() {
+            return Ok(ResponseJson(ApiResponse::error_with_data(gh_e)));
+        } else {
+            return Ok(ResponseJson(ApiResponse::error(
+                "Failed to push branch to GitHub",
+            )));
+        }
     }
-
     // Create the PR using GitHub service
     let pr_request = CreatePrRequest {
         title: request.title.clone(),
@@ -599,13 +588,11 @@ pub async fn create_github_pr(
                 task_attempt.id,
                 e
             );
-            let message = match &e {
-                services::services::github_service::GitHubServiceError::TokenInvalid => {
-                    "github_token_invalid"
-                }
-                _ => "Failed to create PR",
-            };
-            Ok(ResponseJson(ApiResponse::error(message)))
+            if e.is_api_data() {
+                return Ok(ResponseJson(ApiResponse::error_with_data(e)));
+            } else {
+                Ok(ResponseJson(ApiResponse::error("Failed to create PR")))
+            }
         }
     }
 }

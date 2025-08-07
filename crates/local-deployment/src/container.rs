@@ -104,6 +104,7 @@ impl LocalContainerService {
         ) && ctx
             .execution_process
             .executor_action()
+            .unwrap()
             .next_action
             .is_none())
             || matches!(
