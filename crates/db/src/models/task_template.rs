@@ -5,7 +5,6 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize, TS)]
-#[ts(export)]
 pub struct TaskTemplate {
     pub id: Uuid,
     pub project_id: Option<Uuid>, // None for global templates
@@ -17,7 +16,6 @@ pub struct TaskTemplate {
 }
 
 #[derive(Debug, Deserialize, TS)]
-#[ts(export)]
 pub struct CreateTaskTemplate {
     pub project_id: Option<Uuid>,
     pub title: String,
@@ -26,7 +24,6 @@ pub struct CreateTaskTemplate {
 }
 
 #[derive(Debug, Deserialize, TS)]
-#[ts(export)]
 pub struct UpdateTaskTemplate {
     pub title: Option<String>,
     pub description: Option<String>,

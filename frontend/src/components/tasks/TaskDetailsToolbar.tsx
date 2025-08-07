@@ -1,4 +1,11 @@
-import { useCallback, useContext, useEffect, useMemo, useReducer, useState } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+  useState,
+} from 'react';
 import { useLocation } from 'react-router-dom';
 import { Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -98,11 +105,15 @@ function TaskDetailsToolbar() {
   }, [taskAttempts]);
 
   // Derived state
-  const isInCreateAttemptMode = ui.userForcedCreateMode || taskAttempts.length === 0;
+  const isInCreateAttemptMode =
+    ui.userForcedCreateMode || taskAttempts.length === 0;
 
   // Derive createAttemptBranch for backward compatibility
   const createAttemptBranch = useMemo(() => {
-    if (latestAttempt?.base_branch && branches.some((b: GitBranch) => b.name === latestAttempt.base_branch)) {
+    if (
+      latestAttempt?.base_branch &&
+      branches.some((b: GitBranch) => b.name === latestAttempt.base_branch)
+    ) {
       return latestAttempt.base_branch;
     }
     return selectedBranch;
@@ -206,30 +217,45 @@ function TaskDetailsToolbar() {
     // This is now derived state, so no-op
   }, []);
 
-  const setIsInCreateAttemptMode = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
-    const boolValue = typeof value === 'function' ? value(isInCreateAttemptMode) : value;
-    if (boolValue) {
-      dispatch({ type: 'ENTER_CREATE_MODE' });
-    } else {
-      dispatch({ type: 'LEAVE_CREATE_MODE' });
-    }
-  }, [isInCreateAttemptMode]);
+  const setIsInCreateAttemptMode = useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      const boolValue =
+        typeof value === 'function' ? value(isInCreateAttemptMode) : value;
+      if (boolValue) {
+        dispatch({ type: 'ENTER_CREATE_MODE' });
+      } else {
+        dispatch({ type: 'LEAVE_CREATE_MODE' });
+      }
+    },
+    [isInCreateAttemptMode]
+  );
 
   // Wrapper functions for UI state dispatch
-  const setError = useCallback((value: string | null | ((prev: string | null) => string | null)) => {
-    const errorValue = typeof value === 'function' ? value(ui.error) : value;
-    dispatch({ type: 'SET_ERROR', payload: errorValue });
-  }, [ui.error]);
+  const setError = useCallback(
+    (value: string | null | ((prev: string | null) => string | null)) => {
+      const errorValue = typeof value === 'function' ? value(ui.error) : value;
+      dispatch({ type: 'SET_ERROR', payload: errorValue });
+    },
+    [ui.error]
+  );
 
-  const setShowCreatePRDialog = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
-    const boolValue = typeof value === 'function' ? value(ui.showCreatePRDialog) : value;
-    dispatch({ type: boolValue ? 'OPEN_CREATE_PR' : 'CLOSE_CREATE_PR' });
-  }, [ui.showCreatePRDialog]);
+  const setShowCreatePRDialog = useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      const boolValue =
+        typeof value === 'function' ? value(ui.showCreatePRDialog) : value;
+      dispatch({ type: boolValue ? 'OPEN_CREATE_PR' : 'CLOSE_CREATE_PR' });
+    },
+    [ui.showCreatePRDialog]
+  );
 
-  const setCreatingPR = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
-    const boolValue = typeof value === 'function' ? value(ui.creatingPR) : value;
-    dispatch({ type: boolValue ? 'CREATE_PR_START' : 'CREATE_PR_DONE' });
-  }, [ui.creatingPR]);
+  const setCreatingPR = useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      const boolValue =
+        typeof value === 'function' ? value(ui.creatingPR) : value;
+      dispatch({ type: boolValue ? 'CREATE_PR_START' : 'CREATE_PR_DONE' });
+    },
+    [ui.creatingPR]
+  );
 
   return (
     <>

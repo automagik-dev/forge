@@ -57,9 +57,9 @@ export function FileSearchTextarea({
       try {
         const result = await projectsApi.searchFiles(projectId, searchQuery);
         // Transform SearchResult to FileSearchResult by adding name field
-        const fileResults: FileSearchResult[] = result.map(item => ({
+        const fileResults: FileSearchResult[] = result.map((item) => ({
           ...item,
-          name: item.path.split('/').pop() || item.path
+          name: item.path.split('/').pop() || item.path,
         }));
         setSearchResults(fileResults);
         setShowDropdown(true);

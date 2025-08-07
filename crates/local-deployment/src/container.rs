@@ -228,7 +228,7 @@ impl LocalContainerService {
         );
         for (attempt_id, worktree_path, git_repo_path) in expired_attempts {
             Self::cleanup_expired_attempt(
-                &db,
+                db,
                 attempt_id,
                 PathBuf::from(worktree_path),
                 PathBuf::from(git_repo_path),
@@ -266,7 +266,7 @@ impl LocalContainerService {
     /// Spawn a background task that polls the child process for completion and
     /// cleans up the execution entry when it exits.
     pub fn spawn_exit_monitor(&self, exec_id: &Uuid) -> JoinHandle<()> {
-        let exec_id = exec_id.clone();
+        let exec_id = *exec_id;
         let child_store = self.child_store.clone();
         let msg_stores = self.msg_stores.clone();
         let db = self.db.clone();
@@ -281,7 +281,7 @@ impl LocalContainerService {
                         let map = child_store.read().await;
                         map.get(&exec_id)
                             .cloned()
-                            .expect(&format!("Child handle missing for {}", exec_id))
+                            .unwrap_or_else(|| panic!("Child handle missing for {exec_id}"))
                     };
 
                     let mut child_handler = child_lock.write().await;
@@ -308,8 +308,8 @@ impl LocalContainerService {
                         Err(_) => (None, ExecutionProcessStatus::Failed),
                     };
 
-                    if !ExecutionProcess::was_killed(&db.pool, exec_id).await {
-                        if let Err(e) = ExecutionProcess::update_completion(
+                    if !ExecutionProcess::was_killed(&db.pool, exec_id).await
+                        && let Err(e) = ExecutionProcess::update_completion(
                             &db.pool,
                             exec_id,
                             status.clone(),
@@ -319,7 +319,6 @@ impl LocalContainerService {
                         {
                             tracing::error!("Failed to update execution process completion: {}", e);
                         }
-                    }
 
                     if let Ok(ctx) = ExecutionProcess::load_context(&db.pool, exec_id).await {
                         if matches!(
@@ -355,8 +354,8 @@ impl LocalContainerService {
                         if matches!(
                             &ctx.execution_process.run_reason,
                             ExecutionProcessRunReason::CodingAgent
-                        ) {
-                            if let Some(analytics) = &analytics {
+                        )
+                            && let Some(analytics) = &analytics {
                                 analytics.analytics_service.track_event(&analytics.user_id, "task_attempt_finished", Some(json!({
                                     "task_id": ctx.task.id.to_string(),
                                     "project_id": ctx.task.project_id.to_string(),
@@ -365,7 +364,6 @@ impl LocalContainerService {
                                     "exit_code": ctx.execution_process.exit_code,
                                 })));
                             }
-                        }
                     }
 
                     // Cleanup msg store
@@ -495,7 +493,7 @@ impl ContainerService for LocalContainerService {
         };
         WorktreeManager::cleanup_worktree(
             &PathBuf::from(task_attempt.container_ref.clone().unwrap_or_default()),
-            git_repo_path.as_ref().map(|p| p.as_path()),
+            git_repo_path.as_deref(),
         )
         .await
         .unwrap_or_else(|e| {
@@ -593,7 +591,7 @@ impl ContainerService for LocalContainerService {
         // Kill the child process and remove from the store
         {
             let mut child_guard = child.write().await;
-            if let Err(e) = command::kill_process_group(&mut *child_guard).await {
+            if let Err(e) = command::kill_process_group(&mut child_guard).await {
                 tracing::error!(
                     "Failed to stop execution process {}: {}",
                     execution_process.id,
@@ -610,18 +608,16 @@ impl ContainerService for LocalContainerService {
         }
 
         // Update task status to InReview when execution is stopped
-        if let Ok(ctx) = ExecutionProcess::load_context(&self.db.pool, execution_process.id).await {
-            if !matches!(
+        if let Ok(ctx) = ExecutionProcess::load_context(&self.db.pool, execution_process.id).await
+            && !matches!(
                 ctx.execution_process.run_reason,
                 ExecutionProcessRunReason::DevServer
-            ) {
-                if let Err(e) =
+            )
+                && let Err(e) =
                     Task::update_status(&self.db.pool, ctx.task.id, TaskStatus::InReview).await
                 {
                     tracing::error!("Failed to update task status to InReview: {e}");
                 }
-            }
-        }
 
         tracing::debug!(
             "Execution process {} stopped successfully",
@@ -636,7 +632,7 @@ impl ContainerService for LocalContainerService {
         task_attempt: &TaskAttempt,
     ) -> Result<futures::stream::BoxStream<'static, Result<Event, std::io::Error>>, ContainerError>
     {
-        let container_ref = self.ensure_container_exists(&task_attempt).await?;
+        let container_ref = self.ensure_container_exists(task_attempt).await?;
 
         let worktree_dir = PathBuf::from(&container_ref);
 
@@ -702,7 +698,7 @@ impl ContainerService for LocalContainerService {
         let live_stream = try_stream! {
             // Create filesystem watcher
             let (_debouncer, mut rx, canonical_worktree_path) = filesystem_watcher::async_watcher(worktree_path.clone())
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+                .map_err(|e| io::Error::other(e.to_string()))?;
 
             while let Some(res) = rx.next().await {
                 match res {
@@ -728,7 +724,7 @@ impl ContainerService for LocalContainerService {
                                 None,
                                 &base_branch,
                                 Some(&changed_paths),
-                            ).map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+                            ).map_err(|e| io::Error::other(e.to_string()))?;
 
                             // Track which files still have diffs
                             let mut still_dirty: HashSet<String> = HashSet::new();
@@ -758,7 +754,7 @@ impl ContainerService for LocalContainerService {
                             .map(|e| e.to_string())
                             .collect::<Vec<_>>()
                             .join("; ");
-                        Err(io::Error::new(io::ErrorKind::Other, error_msg))?;
+                        Err(io::Error::other(error_msg))?;
                     }
                 }
             }

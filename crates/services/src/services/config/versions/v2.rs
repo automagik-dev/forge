@@ -58,7 +58,7 @@ impl Config {
             theme: ThemeMode::from(old_config.theme), // Now SCREAMING_SNAKE_CASE
             profile: profile.to_string(),
             disclaimer_acknowledged: old_config.disclaimer_acknowledged,
-            onboarding_acknowledged: onboarding_acknowledged,
+            onboarding_acknowledged,
             github_login_acknowledged: old_config.github_login_acknowledged,
             telemetry_acknowledged: old_config.telemetry_acknowledged,
             notifications: NotificationConfig::from(old_config_clone),
@@ -205,10 +205,10 @@ impl SoundFile {
             Some(content) => Ok(content),
             None => {
                 tracing::error!("Sound file not found: {}", self.to_filename());
-                return Err(anyhow::anyhow!(
+                Err(anyhow::anyhow!(
                     "Sound file not found: {}",
                     self.to_filename()
-                ));
+                ))
             }
         }
     }
@@ -218,32 +218,31 @@ impl SoundFile {
 
         let filename = self.to_filename();
         let cache_dir = cache_dir();
-        let cached_path = cache_dir.join(format!("sound-{}", filename));
+        let cached_path = cache_dir.join(format!("sound-{filename}"));
 
         // Check if cached file already exists and is valid
         if cached_path.exists() {
             // Verify file has content (basic validation)
-            if let Ok(metadata) = std::fs::metadata(&cached_path) {
-                if metadata.len() > 0 {
+            if let Ok(metadata) = std::fs::metadata(&cached_path)
+                && metadata.len() > 0 {
                     return Ok(cached_path);
                 }
-            }
         }
 
         // File doesn't exist or is invalid, create it
         let sound_data = SoundAssets::get(filename)
-            .ok_or_else(|| format!("Embedded sound file not found: {}", filename))?
+            .ok_or_else(|| format!("Embedded sound file not found: {filename}"))?
             .data;
 
         // Ensure cache directory exists
         std::fs::create_dir_all(&cache_dir)
-            .map_err(|e| format!("Failed to create cache directory: {}", e))?;
+            .map_err(|e| format!("Failed to create cache directory: {e}"))?;
 
         let mut file = std::fs::File::create(&cached_path)
-            .map_err(|e| format!("Failed to create cached sound file: {}", e))?;
+            .map_err(|e| format!("Failed to create cached sound file: {e}"))?;
 
         file.write_all(&sound_data)
-            .map_err(|e| format!("Failed to write sound data to cached file: {}", e))?;
+            .map_err(|e| format!("Failed to write sound data to cached file: {e}"))?;
 
         drop(file); // Ensure file is closed
 

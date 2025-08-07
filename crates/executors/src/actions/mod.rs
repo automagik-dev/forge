@@ -21,7 +21,6 @@ pub mod script;
 #[enum_dispatch]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS, EnumDiscriminants, Display)]
 #[serde(tag = "type")]
-#[ts(export)]
 #[strum_discriminants(name(ExecutorActionKind), derive(Display))]
 pub enum ExecutorActionType {
     CodingAgentInitialRequest,
@@ -41,7 +40,6 @@ impl ExecutorActionType {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
 pub struct ExecutorAction {
     pub typ: ExecutorActionType,
     pub next_action: Option<Box<ExecutorAction>>,

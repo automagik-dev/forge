@@ -15,7 +15,7 @@ use services::services::{
 };
 use tokio::sync::RwLock;
 use utils::{
-    assets::{asset_dir, config_path},
+    assets::config_path,
     msg_store::MsgStore,
 };
 use uuid::Uuid;

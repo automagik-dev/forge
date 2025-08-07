@@ -23,14 +23,14 @@ interface EditorSelectionDialogProps {
   onClose: () => void;
 }
 
-
-
 export function EditorSelectionDialog({
   isOpen,
   onClose,
 }: EditorSelectionDialogProps) {
   const { handleOpenInEditor } = useContext(TaskDetailsContext);
-  const [selectedEditor, setSelectedEditor] = useState<EditorType>(EditorType.VS_CODE);
+  const [selectedEditor, setSelectedEditor] = useState<EditorType>(
+    EditorType.VS_CODE
+  );
 
   const handleConfirm = () => {
     handleOpenInEditor(selectedEditor);

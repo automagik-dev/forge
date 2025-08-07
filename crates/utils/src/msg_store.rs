@@ -29,6 +29,12 @@ pub struct MsgStore {
     sender: broadcast::Sender<LogMsg>,
 }
 
+impl Default for MsgStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MsgStore {
     pub fn new() -> Self {
         let (sender, _) = broadcast::channel(100);
@@ -97,7 +103,7 @@ impl MsgStore {
 
         let hist = futures::stream::iter(history.into_iter().map(Ok::<_, std::io::Error>));
         let live = BroadcastStream::new(rx)
-            .filter_map(|res| async move { res.ok().map(|m| Ok::<_, std::io::Error>(m)) });
+            .filter_map(|res| async move { res.ok().map(Ok::<_, std::io::Error>) });
 
         Box::pin(hist.chain(live))
     }

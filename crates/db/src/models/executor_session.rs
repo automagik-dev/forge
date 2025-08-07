@@ -5,7 +5,6 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize, TS)]
-#[ts(export)]
 pub struct ExecutorSession {
     pub id: Uuid,
     pub task_attempt_id: Uuid,
@@ -18,7 +17,6 @@ pub struct ExecutorSession {
 }
 
 #[derive(Debug, Deserialize, TS)]
-#[ts(export)]
 pub struct CreateExecutorSession {
     pub task_attempt_id: Uuid,
     pub execution_process_id: Uuid,
@@ -26,7 +24,6 @@ pub struct CreateExecutorSession {
 }
 
 #[derive(Debug, Deserialize, TS)]
-#[ts(export)]
 #[allow(dead_code)]
 pub struct UpdateExecutorSession {
     pub session_id: Option<String>,

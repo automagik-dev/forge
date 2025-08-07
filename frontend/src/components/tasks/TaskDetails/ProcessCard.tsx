@@ -23,17 +23,19 @@ interface ProcessCardProps {
 function ProcessCard({ process }: ProcessCardProps) {
   const [showLogs, setShowLogs] = useState(false);
   const isCodingAgent = process.run_reason === 'codingagent';
-  
+
   // Use appropriate hook based on process type
-  const { logs, isConnected: rawConnected, error: rawError } = useLogStream(
-    process.id, 
-    showLogs && !isCodingAgent
-  );
-  const { entries, isConnected: normalizedConnected, error: normalizedError } = useProcessConversation(
-    process.id,
-    showLogs && isCodingAgent
-  );
-  
+  const {
+    logs,
+    isConnected: rawConnected,
+    error: rawError,
+  } = useLogStream(process.id, showLogs && !isCodingAgent);
+  const {
+    entries,
+    isConnected: normalizedConnected,
+    error: normalizedError,
+  } = useProcessConversation(process.id, showLogs && isCodingAgent);
+
   const logEndRef = useRef<HTMLDivElement>(null);
   const isConnected = isCodingAgent ? normalizedConnected : rawConnected;
   const error = isCodingAgent ? normalizedError : rawError;
@@ -81,12 +83,12 @@ function ProcessCard({ process }: ProcessCardProps) {
 
   const getDuration = () => {
     const startTime = new Date(process.started_at).getTime();
-    const endTime = process.completed_at 
+    const endTime = process.completed_at
       ? new Date(process.completed_at).getTime()
       : Date.now();
     const durationMs = endTime - startTime;
     const durationSeconds = Math.floor(durationMs / 1000);
-    
+
     if (durationSeconds < 60) {
       return `${durationSeconds}s`;
     }
@@ -101,9 +103,7 @@ function ProcessCard({ process }: ProcessCardProps) {
         <div className="flex items-center space-x-3">
           {getStatusIcon(process.status)}
           <div>
-            <h3 className="font-medium text-sm">
-              {process.run_reason}
-            </h3>
+            <h3 className="font-medium text-sm">{process.run_reason}</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Duration: {getDuration()}
             </p>
@@ -124,14 +124,16 @@ function ProcessCard({ process }: ProcessCardProps) {
           )}
         </div>
       </div>
-      
+
       <div className="mt-3 text-xs text-muted-foreground space-y-1">
         <div>
-          <span className="font-medium">Started:</span> {formatDate(process.started_at)}
+          <span className="font-medium">Started:</span>{' '}
+          {formatDate(process.started_at)}
         </div>
         {process.completed_at && (
           <div>
-            <span className="font-medium">Completed:</span> {formatDate(process.completed_at)}
+            <span className="font-medium">Completed:</span>{' '}
+            {formatDate(process.completed_at)}
           </div>
         )}
         <div>
@@ -156,17 +158,15 @@ function ProcessCard({ process }: ProcessCardProps) {
 
         {showLogs && (
           <div className="mt-3">
-            {error && (
-              <div className="text-red-500 text-sm mb-2">
-                {error}
-              </div>
-            )}
-            
+            {error && <div className="text-red-500 text-sm mb-2">{error}</div>}
+
             {isCodingAgent ? (
               // Normalized conversation display for coding agents
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {entries.length === 0 ? (
-                  <div className="text-gray-400 text-sm">No conversation entries available...</div>
+                  <div className="text-gray-400 text-sm">
+                    No conversation entries available...
+                  </div>
                 ) : (
                   entries.map((entry, index) => (
                     <DisplayConversationEntry

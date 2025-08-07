@@ -2,7 +2,7 @@ use std::{path::PathBuf, process::Stdio, sync::Arc};
 
 use async_trait::async_trait;
 use command_group::{AsyncCommandGroup, AsyncGroupChild};
-use futures::{Stream, StreamExt, stream::BoxStream};
+use futures::{StreamExt, stream::BoxStream};
 use serde::{Deserialize, Serialize};
 use tokio::{
     fs::{self, OpenOptions},
@@ -24,7 +24,6 @@ use crate::{
 
 /// An executor that uses Gemini to process tasks
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-#[ts(export)]
 pub struct Gemini {
     command_builder: CommandBuilder,
 }
@@ -290,8 +289,7 @@ impl Gemini {
         // Read existing session context
         let session_context = fs::read_to_string(&session_file_path).await.map_err(|e| {
             ExecutorError::FollowUpNotSupported(format!(
-                "No existing Gemini session found for this worktree. Session file not found at {:?}: {}",
-                session_file_path, e
+                "No existing Gemini session found for this worktree. Session file not found at {session_file_path:?}: {e}"
             ))
         })?;
 
@@ -300,15 +298,14 @@ impl Gemini {
 
 === EXECUTION HISTORY ===
 The following is the conversation history from this session:
-{}
+{session_context}
 
 === CURRENT REQUEST ===
-{}
+{prompt}
 
 === INSTRUCTIONS ===
 You are continuing work on the above task. The execution history shows the previous conversation in this session. Please continue from where the previous execution left off, taking into account all the context provided above.
-"#,
-            session_context, prompt
+"#
         ))
     }
 

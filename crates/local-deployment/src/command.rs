@@ -28,7 +28,7 @@ pub async fn kill_process_group(child: &mut AsyncGroupChild) -> Result<(), Conta
                 if child
                     .inner()
                     .try_wait()
-                    .map_err(|e| ContainerError::Io(e))?
+                    .map_err(ContainerError::Io)?
                     .is_some()
                 {
                     break;

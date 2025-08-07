@@ -22,7 +22,6 @@ pub enum ProjectError {
 }
 
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize, TS)]
-#[ts(export)]
 pub struct Project {
     pub id: Uuid,
     pub name: String,
@@ -38,7 +37,6 @@ pub struct Project {
 }
 
 #[derive(Debug, Deserialize, TS)]
-#[ts(export)]
 pub struct CreateProject {
     pub name: String,
     pub git_repo_path: String,
@@ -49,7 +47,6 @@ pub struct CreateProject {
 }
 
 #[derive(Debug, Deserialize, TS)]
-#[ts(export)]
 pub struct UpdateProject {
     pub name: Option<String>,
     pub git_repo_path: Option<String>,
@@ -59,7 +56,6 @@ pub struct UpdateProject {
 }
 
 #[derive(Debug, Serialize, TS)]
-#[ts(export)]
 pub struct ProjectWithBranch {
     pub id: Uuid,
     pub name: String,
@@ -92,7 +88,6 @@ impl ProjectWithBranch {
 }
 
 #[derive(Debug, Serialize, TS)]
-#[ts(export)]
 pub struct SearchResult {
     pub path: String,
     pub is_file: bool,
@@ -100,7 +95,6 @@ pub struct SearchResult {
 }
 
 #[derive(Debug, Serialize, TS)]
-#[ts(export)]
 pub enum SearchMatchType {
     FileName,
     DirectoryName,

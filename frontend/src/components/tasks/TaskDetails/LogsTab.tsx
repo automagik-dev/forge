@@ -1,4 +1,3 @@
-
 import { useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { VariableSizeList } from 'react-window';
 import { Cog } from 'lucide-react';
@@ -15,10 +14,7 @@ function LogsTab() {
   const innerRef = useRef<HTMLDivElement>(null);
   const [containerRef, bounds] = useMeasure();
 
-  const { entries } = useProcessesLogs(
-    attemptData.processes || [],
-    true
-  );
+  const { entries } = useProcessesLogs(attemptData.processes || [], true);
 
   const rowHeights = useRef<Record<number, number>>({});
 
@@ -40,12 +36,17 @@ function LogsTab() {
   }, [entries.length, autoScroll]);
 
   // Handle scroll events to detect user scrolling
-  const onScroll = useCallback(({ scrollOffset, scrollUpdateWasRequested }: any) => {
-    if (!scrollUpdateWasRequested && bounds.height) {
-      const atBottom = innerRef.current ? innerRef.current.offsetHeight - scrollOffset - bounds.height < 20 : false;
-      setAutoScroll(atBottom);
-    }
-  }, [bounds.height]);
+  const onScroll = useCallback(
+    ({ scrollOffset, scrollUpdateWasRequested }: any) => {
+      if (!scrollUpdateWasRequested && bounds.height) {
+        const atBottom = innerRef.current
+          ? innerRef.current.offsetHeight - scrollOffset - bounds.height < 20
+          : false;
+        setAutoScroll(atBottom);
+      }
+    },
+    [bounds.height]
+  );
 
   if (!attemptData.processes || attemptData.processes.length === 0) {
     return (
@@ -60,7 +61,7 @@ function LogsTab() {
 
   return (
     <div ref={containerRef} className="w-full h-full">
-      {bounds.height && bounds.width &&
+      {bounds.height && bounds.width && (
         <VariableSizeList
           ref={listRef}
           innerRef={innerRef}
@@ -71,21 +72,31 @@ function LogsTab() {
           onScroll={onScroll}
           itemData={entries}
         >
-          {({ index, style, data }: { index: number; style: React.CSSProperties; data: UnifiedLogEntry[] }) => {
-            let style_with_padding = { ...style };
+          {({
+            index,
+            style,
+            data,
+          }: {
+            index: number;
+            style: React.CSSProperties;
+            data: UnifiedLogEntry[];
+          }) => {
+            const style_with_padding = { ...style };
             if (index === entries.length - 1) {
-              style_with_padding.paddingBottom = "50px";
+              style_with_padding.paddingBottom = '50px';
             }
 
-            return (<LogEntryRow
-              entry={data[index]}
-              index={index}
-              style={style_with_padding}
-              setRowHeight={setRowHeight}
-            />)
+            return (
+              <LogEntryRow
+                entry={data[index]}
+                index={index}
+                style={style_with_padding}
+                setRowHeight={setRowHeight}
+              />
+            );
           }}
         </VariableSizeList>
-      }
+      )}
     </div>
   );
 }

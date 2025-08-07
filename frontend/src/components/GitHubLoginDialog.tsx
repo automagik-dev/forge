@@ -25,9 +25,8 @@ export function GitHubLoginDialog({
   const { config, loading, githubTokenInvalid } = useConfig();
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [deviceState, setDeviceState] = useState<null | DeviceFlowStartResponse>(
-    null
-  );
+  const [deviceState, setDeviceState] =
+    useState<null | DeviceFlowStartResponse>(null);
   const [polling, setPolling] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -57,7 +56,7 @@ export function GitHubLoginDialog({
     if (polling && deviceState) {
       const poll = async () => {
         try {
-          let poll_status = await githubAuthApi.poll();
+          const poll_status = await githubAuthApi.poll();
           switch (poll_status) {
             case DevicePollStatus.SUCCESS:
               setPolling(false);
@@ -71,8 +70,7 @@ export function GitHubLoginDialog({
             case DevicePollStatus.SLOW_DOWN:
               timer = setTimeout(poll, (deviceState.interval + 5) * 1000);
           }
-        }
-        catch (e: any) {
+        } catch (e: any) {
           if (e?.message === 'expired_token') {
             setPolling(false);
             setError('Device code expired. Please try again.');

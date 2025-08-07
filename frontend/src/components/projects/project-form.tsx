@@ -12,11 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FolderPicker } from '@/components/ui/folder-picker';
 import { TaskTemplateManager } from '@/components/TaskTemplateManager';
 import { ProjectFormFields } from './project-form-fields';
-import {
-  CreateProject,
-  Project,
-  UpdateProject,
-} from 'shared/types';
+import { CreateProject, Project, UpdateProject } from 'shared/types';
 import { projectsApi } from '@/lib/api';
 
 interface ProjectFormProps {
@@ -129,10 +125,7 @@ export function ProjectForm({
         // Local mode: Create local project
         let finalGitRepoPath = gitRepoPath;
         if (repoMode === 'new') {
-          finalGitRepoPath = `${parentPath}/${folderName}`.replace(
-            /\/+/g,
-            '/'
-          );
+          finalGitRepoPath = `${parentPath}/${folderName}`.replace(/\/+/g, '/');
         }
 
         const createData: CreateProject = {

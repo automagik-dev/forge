@@ -34,7 +34,7 @@ pub enum ExecutorError {
 }
 
 fn unknown_executor_error(s: &str) -> ExecutorError {
-    ExecutorError::UnknownExecutorType(format!("Unknown executor type: {}.", s))
+    ExecutorError::UnknownExecutorType(format!("Unknown executor type: {s}."))
 }
 
 #[enum_dispatch]
@@ -103,8 +103,7 @@ impl CodingAgent {
                     }
                 } else {
                     Err(ExecutorError::UnknownExecutorType(format!(
-                        "Unknown profile: {}",
-                        profile
+                        "Unknown profile: {profile}"
                     )))
                 }
             }

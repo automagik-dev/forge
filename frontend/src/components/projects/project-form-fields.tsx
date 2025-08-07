@@ -57,14 +57,14 @@ export function ProjectFormFields({
   // Create strategy-based placeholders
   const placeholders = system.environment
     ? new ScriptPlaceholderContext(
-      createScriptPlaceholderStrategy(system.environment.os_type)
-    ).getPlaceholders()
+        createScriptPlaceholderStrategy(system.environment.os_type)
+      ).getPlaceholders()
     : {
-      setup: '#!/bin/bash\nnpm install\n# Add any setup commands here...',
-      dev: '#!/bin/bash\nnpm run dev\n# Add dev server start command here...',
-      cleanup:
-        '#!/bin/bash\n# Add cleanup commands here...\n# This runs after coding agent execution',
-    };
+        setup: '#!/bin/bash\nnpm install\n# Add any setup commands here...',
+        dev: '#!/bin/bash\nnpm run dev\n# Add dev server start command here...',
+        cleanup:
+          '#!/bin/bash\n# Add cleanup commands here...\n# This runs after coding agent execution',
+      };
 
   return (
     <>

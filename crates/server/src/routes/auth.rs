@@ -6,7 +6,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use deployment::{Deployment, DeploymentError};
+use deployment::Deployment;
 use octocrab::auth::Continue;
 use serde::{Deserialize, Serialize};
 use services::services::{
@@ -40,7 +40,6 @@ async fn device_start(
 #[derive(Serialize, Deserialize, ts_rs::TS)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[ts(use_ts_enum)]
-#[ts(export)]
 pub enum DevicePollStatus {
     SlowDown,
     AuthorizationPending,
@@ -50,7 +49,6 @@ pub enum DevicePollStatus {
 #[derive(Serialize, Deserialize, ts_rs::TS)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[ts(use_ts_enum)]
-#[ts(export)]
 pub enum CheckTokenResponse {
     Valid,
     Invalid,

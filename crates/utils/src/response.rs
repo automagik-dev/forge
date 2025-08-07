@@ -3,7 +3,6 @@ mod response {
     use ts_rs::TS;
 
     #[derive(Debug, Serialize, TS)]
-    #[ts(export)]
     pub struct ApiResponse<T, E = T> {
         success: bool,
         data: Option<T>,

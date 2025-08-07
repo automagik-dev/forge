@@ -7,7 +7,13 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { type Config, type Environment, type AgentProfile, type UserSystemInfo, CheckTokenResponse } from 'shared/types';
+import {
+  type Config,
+  type Environment,
+  type AgentProfile,
+  type UserSystemInfo,
+  CheckTokenResponse,
+} from 'shared/types';
 import { configApi, githubAuthApi } from '../lib/api';
 
 interface UserSystemState {
@@ -37,7 +43,9 @@ interface UserSystemContextType {
   githubTokenInvalid: boolean;
 }
 
-const UserSystemContext = createContext<UserSystemContextType | undefined>(undefined);
+const UserSystemContext = createContext<UserSystemContextType | undefined>(
+  undefined
+);
 
 interface UserSystemProviderProps {
   children: ReactNode;
@@ -126,28 +134,31 @@ export function UserSystemProvider({ children }: UserSystemProviderProps) {
   );
 
   // Memoize context value to prevent unnecessary re-renders
-  const value = useMemo<UserSystemContextType>(() => ({
-    system: { config, environment, profiles },
-    config,
-    environment,
-    profiles,
-    updateConfig,
-    saveConfig,
-    updateAndSaveConfig,
-    setEnvironment,
-    setProfiles,
-    loading,
-    githubTokenInvalid,
-  }), [
-    config,
-    environment,
-    profiles,
-    updateConfig,
-    saveConfig,
-    updateAndSaveConfig,
-    loading,
-    githubTokenInvalid,
-  ]);
+  const value = useMemo<UserSystemContextType>(
+    () => ({
+      system: { config, environment, profiles },
+      config,
+      environment,
+      profiles,
+      updateConfig,
+      saveConfig,
+      updateAndSaveConfig,
+      setEnvironment,
+      setProfiles,
+      loading,
+      githubTokenInvalid,
+    }),
+    [
+      config,
+      environment,
+      profiles,
+      updateConfig,
+      saveConfig,
+      updateAndSaveConfig,
+      loading,
+      githubTokenInvalid,
+    ]
+  );
 
   return (
     <UserSystemContext.Provider value={value}>
@@ -167,8 +178,22 @@ export function useUserSystem() {
 // TODO: delete
 // Backward compatibility hook - maintains existing API
 export function useConfig() {
-  const { config, updateConfig, saveConfig, updateAndSaveConfig, loading, githubTokenInvalid } = useUserSystem();
-  return { config, updateConfig, saveConfig, updateAndSaveConfig, loading, githubTokenInvalid };
+  const {
+    config,
+    updateConfig,
+    saveConfig,
+    updateAndSaveConfig,
+    loading,
+    githubTokenInvalid,
+  } = useUserSystem();
+  return {
+    config,
+    updateConfig,
+    saveConfig,
+    updateAndSaveConfig,
+    loading,
+    githubTokenInvalid,
+  };
 }
 
 // TODO: delete

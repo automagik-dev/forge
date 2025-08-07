@@ -33,7 +33,6 @@ pub enum AuthError {
 }
 
 #[derive(Serialize, Deserialize, TS)]
-#[ts(export)]
 pub struct DeviceFlowStartResponse {
     pub user_code: String,
     pub verification_uri: String,
@@ -51,6 +50,12 @@ pub struct UserInfo {
 pub struct GitHubEmailEntry {
     pub email: String,
     pub primary: bool,
+}
+
+impl Default for AuthService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AuthService {

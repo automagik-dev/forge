@@ -27,17 +27,9 @@ function LogEntryRow({ entry, index, style, setRowHeight }: LogEntryRowProps) {
       {(() => {
         switch (entry.channel) {
           case 'stdout':
-            return (
-              <StdoutEntry
-                content={entry.payload as string}
-              />
-            );
+            return <StdoutEntry content={entry.payload as string} />;
           case 'stderr':
-            return (
-              <StderrEntry
-                content={entry.payload as string}
-              />
-            );
+            return <StderrEntry content={entry.payload as string} />;
           case 'normalized':
             return (
               <DisplayConversationEntry
@@ -63,13 +55,7 @@ function LogEntryRow({ entry, index, style, setRowHeight }: LogEntryRowProps) {
     </div>
   );
 
-  return style ? (
-    <div style={style}>
-      {content}
-    </div>
-  ) : (
-    content
-  );
+  return style ? <div style={style}>{content}</div> : content;
 }
 
 // Memoize to optimize react-window performance

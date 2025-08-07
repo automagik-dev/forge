@@ -9,15 +9,12 @@ use axum::{
     Extension, Json, Router,
 };
 use db::models::project::{
-    CreateProject, Project, ProjectError, ProjectWithBranch, SearchMatchType, SearchResult,
+    CreateProject, Project, ProjectError, SearchMatchType, SearchResult,
     UpdateProject,
 };
 use deployment::Deployment;
 use ignore::WalkBuilder;
-use services::services::{
-    config::{EditorConfig, EditorType},
-    git::{GitBranch, GitService},
-};
+use services::services::git::{GitBranch, GitService};
 use utils::response::ApiResponse;
 use uuid::Uuid;
 
@@ -148,7 +145,7 @@ pub async fn create_project(
             Ok(ResponseJson(ApiResponse::success(project)))
         }
         Err(e) => {
-            return Err(ProjectError::CreateFailed(e.to_string()).into());
+            Err(ProjectError::CreateFailed(e.to_string()).into())
         }
     }
 }

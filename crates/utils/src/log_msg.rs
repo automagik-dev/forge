@@ -45,13 +45,13 @@ impl LogMsg {
     pub fn approx_bytes(&self) -> usize {
         const OVERHEAD: usize = 8;
         match self {
-            LogMsg::Stdout(s) => EV_STDOUT.len() + s.as_bytes().len() + OVERHEAD,
-            LogMsg::Stderr(s) => EV_STDERR.len() + s.as_bytes().len() + OVERHEAD,
+            LogMsg::Stdout(s) => EV_STDOUT.len() + s.len() + OVERHEAD,
+            LogMsg::Stderr(s) => EV_STDERR.len() + s.len() + OVERHEAD,
             LogMsg::JsonPatch(patch) => {
                 let json_len = serde_json::to_string(patch).map(|s| s.len()).unwrap_or(2);
                 EV_JSON_PATCH.len() + json_len + OVERHEAD
             }
-            LogMsg::SessionId(s) => EV_SESSION_ID.len() + s.as_bytes().len() + OVERHEAD,
+            LogMsg::SessionId(s) => EV_SESSION_ID.len() + s.len() + OVERHEAD,
             LogMsg::Finished => EV_FINISHED.len() + OVERHEAD,
         }
     }

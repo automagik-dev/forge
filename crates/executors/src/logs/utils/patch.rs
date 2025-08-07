@@ -7,7 +7,6 @@ use utils::diff::FileDiff;
 use crate::logs::NormalizedEntry;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, TS)]
-#[ts(export)]
 #[serde(rename_all = "lowercase")]
 enum PatchOperation {
     Add,
@@ -43,7 +42,7 @@ impl ConversationPatch {
     pub fn add_normalized_entry(entry_index: usize, entry: NormalizedEntry) -> Patch {
         let patch_entry = PatchEntry {
             op: PatchOperation::Add,
-            path: format!("/entries/{}", entry_index),
+            path: format!("/entries/{entry_index}"),
             value: PatchType::NormalizedEntry(entry),
         };
 
@@ -54,7 +53,7 @@ impl ConversationPatch {
     pub fn add_stdout(entry_index: usize, entry: String) -> Patch {
         let patch_entry = PatchEntry {
             op: PatchOperation::Add,
-            path: format!("/entries/{}", entry_index),
+            path: format!("/entries/{entry_index}"),
             value: PatchType::Stdout(entry),
         };
 
@@ -65,7 +64,7 @@ impl ConversationPatch {
     pub fn add_stderr(entry_index: usize, entry: String) -> Patch {
         let patch_entry = PatchEntry {
             op: PatchOperation::Add,
-            path: format!("/entries/{}", entry_index),
+            path: format!("/entries/{entry_index}"),
             value: PatchType::Stderr(entry),
         };
 
@@ -107,7 +106,7 @@ impl ConversationPatch {
     pub fn replace(entry_index: usize, entry: NormalizedEntry) -> Patch {
         let patch_entry = PatchEntry {
             op: PatchOperation::Replace,
-            path: format!("/entries/{}", entry_index),
+            path: format!("/entries/{entry_index}"),
             value: PatchType::NormalizedEntry(entry),
         };
 

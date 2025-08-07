@@ -36,7 +36,7 @@ export const useEventSourceManager = ({
   useEffect(() => {
     if (!enabled || !processes.length) {
       // Close all connections and reset state
-      eventSourcesRef.current.forEach(es => es.close());
+      eventSourcesRef.current.forEach((es) => es.close());
       eventSourcesRef.current.clear();
       setProcessData({});
       setIsConnected(false);
@@ -46,8 +46,8 @@ export const useEventSourceManager = ({
       return;
     }
 
-    const currentIds = new Set(processes.map(p => p.id));
-    
+    const currentIds = new Set(processes.map((p) => p.id));
+
     // Remove old connections
     eventSourcesRef.current.forEach((es, id) => {
       if (!currentIds.has(id)) {
@@ -59,15 +59,17 @@ export const useEventSourceManager = ({
     });
 
     // Add new connections
-    processes.forEach(process => {
+    processes.forEach((process) => {
       if (eventSourcesRef.current.has(process.id)) return;
 
       const endpoint = getEndpoint(process);
 
       // Initialize process data
       if (!processDataRef.current[process.id]) {
-        processDataRef.current[process.id] = initialData ? structuredClone(initialData) : { entries: [] };
-        
+        processDataRef.current[process.id] = initialData
+          ? structuredClone(initialData)
+          : { entries: [] };
+
         // Inject process start marker as the first entry
         const processStartPayload: ProcessStartPayload = {
           processId: process.id,
@@ -85,7 +87,7 @@ export const useEventSourceManager = ({
       }
 
       const eventSource = new EventSource(endpoint);
-      
+
       eventSource.onopen = () => {
         setError(null);
       };
@@ -93,14 +95,14 @@ export const useEventSourceManager = ({
       eventSource.addEventListener('json_patch', (event) => {
         try {
           const patches = JSON.parse(event.data);
-          
+
           // Initialize tracking for this process if needed
           if (!processedEntriesRef.current.has(process.id)) {
             processedEntriesRef.current.set(process.id, new Set());
           }
-          
+
           const processedSet = processedEntriesRef.current.get(process.id)!;
-          
+
           // Filter out patches we've already processed
           const newPatches = patches.filter((patch: any) => {
             // Extract entry index from path like "/entries/123"
@@ -115,11 +117,11 @@ export const useEventSourceManager = ({
             // Always allow replace operations and non-entry patches
             return true;
           });
-          
+
           // Only apply new patches
           if (newPatches.length > 0) {
             applyPatch(processDataRef.current[process.id], newPatches);
-            
+
             // Trigger re-render with updated data
             setProcessData({ ...processDataRef.current });
           }
@@ -148,7 +150,7 @@ export const useEventSourceManager = ({
     setIsConnected(eventSourcesRef.current.size > 0);
 
     return () => {
-      eventSourcesRef.current.forEach(es => es.close());
+      eventSourcesRef.current.forEach((es) => es.close());
       eventSourcesRef.current.clear();
     };
   }, [processes, enabled, getEndpoint, initialData]);

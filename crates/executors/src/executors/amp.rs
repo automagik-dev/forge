@@ -23,7 +23,6 @@ use crate::{
 
 /// An executor that uses Amp to process tasks
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-#[ts(export)]
 pub struct Amp {
     command_builder: CommandBuilder,
 }
@@ -201,7 +200,7 @@ impl StandardCodingAgentExecutor for Amp {
                                 let entry = NormalizedEntry {
                                     timestamp: None,
                                     entry_type: NormalizedEntryType::SystemMessage,
-                                    content: format!("Raw output: {}", trimmed),
+                                    content: format!("Raw output: {trimmed}"),
                                     metadata: None,
                                 };
 
@@ -462,9 +461,9 @@ impl AmpContentItem {
             AmpContentItem::ToolUse { tool_data, .. } => {
                 let name = tool_data.get_name();
                 let input = tool_data;
-                let action_type = Self::extract_action_type(&name, &input, worktree_path);
+                let action_type = Self::extract_action_type(name, input, worktree_path);
                 let content =
-                    Self::generate_concise_content(&name, &input, &action_type, worktree_path);
+                    Self::generate_concise_content(name, input, &action_type, worktree_path);
 
                 Some(NormalizedEntry {
                     timestamp,
@@ -516,7 +515,7 @@ impl AmpContentItem {
                 description: "Manage TODO list".to_string(),
             },
             AmpToolData::Unknown { .. } => ActionType::Other {
-                description: format!("Tool: {}", tool_name),
+                description: format!("Tool: {tool_name}"),
             },
         }
     }
@@ -528,12 +527,12 @@ impl AmpContentItem {
         worktree_path: &str,
     ) -> String {
         match action_type {
-            ActionType::FileRead { path } => format!("`{}`", path),
-            ActionType::FileWrite { path } => format!("`{}`", path),
-            ActionType::CommandRun { command } => format!("`{}`", command),
-            ActionType::Search { query } => format!("`{}`", query),
-            ActionType::WebFetch { url } => format!("`{}`", url),
-            ActionType::PlanPresentation { plan } => format!("Plan Presentation: `{}`", plan),
+            ActionType::FileRead { path } => format!("`{path}`"),
+            ActionType::FileWrite { path } => format!("`{path}`"),
+            ActionType::CommandRun { command } => format!("`{command}`"),
+            ActionType::Search { query } => format!("`{query}`"),
+            ActionType::WebFetch { url } => format!("`{url}`"),
+            ActionType::PlanPresentation { plan } => format!("Plan Presentation: `{plan}`"),
             ActionType::TaskCreate { description } => description.clone(),
             ActionType::Other { description: _ } => {
                 // For other tools, try to extract key information or fall back to tool name
@@ -567,7 +566,7 @@ impl AmpContentItem {
                             if relative_path.is_empty() {
                                 "List directory".to_string()
                             } else {
-                                format!("List directory: `{}`", relative_path)
+                                format!("List directory: `{relative_path}`")
                             }
                         } else {
                             "List directory".to_string()
@@ -576,9 +575,9 @@ impl AmpContentItem {
                     AmpToolData::Glob { pattern, path, .. } => {
                         if let Some(path) = path {
                             let relative_path = make_path_relative(path, worktree_path);
-                            format!("Find files: `{}` in `{}`", pattern, relative_path)
+                            format!("Find files: `{pattern}` in `{relative_path}`")
                         } else {
-                            format!("Find files: `{}`", pattern)
+                            format!("Find files: `{pattern}`")
                         }
                     }
                     AmpToolData::Search {
@@ -589,11 +588,11 @@ impl AmpContentItem {
                     } => {
                         let mut parts = vec![format!("Search: `{}`", pattern)];
                         if let Some(include) = include {
-                            parts.push(format!("in `{}`", include));
+                            parts.push(format!("in `{include}`"));
                         }
                         if let Some(path) = path {
                             let relative_path = make_path_relative(path, worktree_path);
-                            parts.push(format!("at `{}`", relative_path));
+                            parts.push(format!("at `{relative_path}`"));
                         }
                         parts.join(" ")
                     }

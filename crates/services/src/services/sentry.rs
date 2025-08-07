@@ -1,6 +1,12 @@
 #[derive(Clone)]
 pub struct SentryService {}
 
+impl Default for SentryService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SentryService {
     pub fn new() -> Self {
         SentryService {}

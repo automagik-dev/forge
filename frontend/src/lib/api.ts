@@ -280,9 +280,7 @@ export const tasksApi = {
 
 // Task Attempts APIs
 export const attemptsApi = {
-  getChildren: async (
-    attemptId: string
-  ): Promise<Task[]> => {
+  getChildren: async (attemptId: string): Promise<Task[]> => {
     const response = await makeRequest(
       `/api/task-attempts/${attemptId}/children`
     );
@@ -413,8 +411,6 @@ export const attemptsApi = {
     );
     return handleApiResponse<void>(response);
   },
-
-
 };
 
 // Execution Process APIs

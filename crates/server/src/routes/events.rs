@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::State,
     response::{
         sse::{Event, KeepAlive},
         Sse,
@@ -9,8 +9,6 @@ use axum::{
 };
 use deployment::Deployment;
 use futures_util::TryStreamExt;
-use services::services::container::ContainerService;
-use uuid::Uuid;
 
 use crate::DeploymentImpl;
 
@@ -23,7 +21,7 @@ pub async fn events(
     Ok(Sse::new(stream.map_err(|e| -> BoxError { e.into() })).keep_alive(KeepAlive::default()))
 }
 
-pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
+pub fn router(_: &DeploymentImpl) -> Router<DeploymentImpl> {
     let events_router = Router::new().route("/", get(events));
 
     Router::new().nest("/events", events_router)

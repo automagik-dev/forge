@@ -16,11 +16,16 @@ export const useDiffStream = (
   attemptId: string | null,
   enabled: boolean
 ): UseDiffStreamResult => {
-  const endpoint = attemptId ? `/api/task-attempts/${attemptId}/diff` : undefined;
+  const endpoint = attemptId
+    ? `/api/task-attempts/${attemptId}/diff`
+    : undefined;
 
-  const initialData = useCallback((): DiffState => ({
-    entries: {},
-  }), []);
+  const initialData = useCallback(
+    (): DiffState => ({
+      entries: {},
+    }),
+    []
+  );
 
   const { data, isConnected, error } = useJsonPatchStream(
     endpoint,

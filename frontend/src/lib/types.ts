@@ -1,6 +1,4 @@
-import {
-  DiffChunkType,
-} from 'shared/types';
+import { DiffChunkType } from 'shared/types';
 import { ExecutionProcess, ExecutionProcessSummary } from 'shared/types';
 
 export type AttemptData = {

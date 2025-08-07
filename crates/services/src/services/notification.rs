@@ -99,8 +99,7 @@ impl NotificationService {
             let _ = tokio::process::Command::new("powershell.exe")
                 .arg("-c")
                 .arg(format!(
-                    r#"(New-Object Media.SoundPlayer "{}").PlaySync()"#,
-                    file_path
+                    r#"(New-Object Media.SoundPlayer "{file_path}").PlaySync()"#
                 ))
                 .spawn();
         }
@@ -236,7 +235,7 @@ impl NotificationService {
         // Get cached WSL root path from PowerShell
         if let Some(wsl_root) = Self::get_wsl_root_path().await {
             // Simply concatenate WSL root with the absolute path - PowerShell doesn't mind /
-            let windows_path = format!("{}{}", wsl_root, path_str);
+            let windows_path = format!("{wsl_root}{path_str}");
             tracing::debug!("WSL path converted: {} -> {}", path_str, windows_path);
             Some(windows_path)
         } else {

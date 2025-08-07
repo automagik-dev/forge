@@ -22,7 +22,6 @@ use crate::{
 
 /// An executor that uses Claude CLI to process tasks
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-#[ts(export)]
 pub struct ClaudeCode {
     executor_type: String,
     command_builder: CommandBuilder,
@@ -164,8 +163,8 @@ fn create_watchkill_script(command: &str) -> String {
         r#"#!/usr/bin/env bash
 set -euo pipefail
 
-word="{}"
-command="{}"
+word="{claude_plan_stop_indicator}"
+command="{command}"
 
 exit_code=0
 while IFS= read -r line; do
@@ -177,8 +176,7 @@ done < <($command <&0 2>&1)
 
 exit_code=${{PIPESTATUS[0]}}
 exit "$exit_code"
-"#,
-        claude_plan_stop_indicator, command
+"#
     )
 }
 
@@ -239,12 +237,11 @@ impl ClaudeLogProcessor {
                     match serde_json::from_str::<ClaudeJson>(trimmed) {
                         Ok(claude_json) => {
                             // Extract session ID if present
-                            if !session_id_extracted {
-                                if let Some(session_id) = Self::extract_session_id(&claude_json) {
+                            if !session_id_extracted
+                                && let Some(session_id) = Self::extract_session_id(&claude_json) {
                                     msg_store.push_session_id(session_id);
                                     session_id_extracted = true;
                                 }
-                            }
 
                             // Convert to normalized entries and create patches
                             for entry in
@@ -262,7 +259,7 @@ impl ClaudeLogProcessor {
                                 let entry = NormalizedEntry {
                                     timestamp: None,
                                     entry_type: NormalizedEntryType::SystemMessage,
-                                    content: format!("Raw output: {}", trimmed),
+                                    content: format!("Raw output: {trimmed}"),
                                     metadata: None,
                                 };
 
@@ -322,7 +319,7 @@ impl ClaudeLogProcessor {
                         // We'll send system initialized message with first assistant message that has a model field.
                         return vec![];
                     }
-                    Some(subtype) => format!("System: {}", subtype),
+                    Some(subtype) => format!("System: {subtype}"),
                     None => "System message".to_string(),
                 };
 
@@ -338,8 +335,8 @@ impl ClaudeLogProcessor {
             ClaudeJson::Assistant { message, .. } => {
                 let mut entries = Vec::new();
 
-                if self.model_name.is_none() {
-                    if let Some(model) = message.model.as_ref() {
+                if self.model_name.is_none()
+                    && let Some(model) = message.model.as_ref() {
                         self.model_name = Some(model.clone());
                         entries.push(NormalizedEntry {
                             timestamp: None,
@@ -348,7 +345,6 @@ impl ClaudeLogProcessor {
                             metadata: None,
                         });
                     }
-                }
 
                 for content_item in &message.content {
                     if let Some(entry) = Self::content_item_to_normalized_entry(
@@ -557,7 +553,7 @@ impl ClaudeLogProcessor {
                 }
             }
             _ => ActionType::Other {
-                description: format!("Tool: {}", tool_name),
+                description: format!("Tool: {tool_name}"),
             },
         }
     }
@@ -570,11 +566,11 @@ impl ClaudeLogProcessor {
         worktree_path: &str,
     ) -> String {
         match action_type {
-            ActionType::FileRead { path } => format!("`{}`", path),
-            ActionType::FileWrite { path } => format!("`{}`", path),
-            ActionType::CommandRun { command } => format!("`{}`", command),
-            ActionType::Search { query } => format!("`{}`", query),
-            ActionType::WebFetch { url } => format!("`{}`", url),
+            ActionType::FileRead { path } => format!("`{path}`"),
+            ActionType::FileWrite { path } => format!("`{path}`"),
+            ActionType::CommandRun { command } => format!("`{command}`"),
+            ActionType::Search { query } => format!("`{query}`"),
+            ActionType::WebFetch { url } => format!("`{url}`"),
             ActionType::TaskCreate { description } => description.clone(),
             ActionType::PlanPresentation { plan } => plan.clone(),
             ActionType::Other { description: _ } => match tool_name.to_lowercase().as_str() {
@@ -598,7 +594,7 @@ impl ClaudeLogProcessor {
                                     .and_then(|p| p.as_str())
                                     .unwrap_or("medium");
                                 todo_items
-                                    .push(format!("{} {} ({})", status_emoji, content, priority));
+                                    .push(format!("{status_emoji} {content} ({priority})"));
                             }
                         }
                         if !todo_items.is_empty() {
@@ -616,7 +612,7 @@ impl ClaudeLogProcessor {
                         if relative_path.is_empty() {
                             "List directory".to_string()
                         } else {
-                            format!("List directory: `{}`", relative_path)
+                            format!("List directory: `{relative_path}`")
                         }
                     } else {
                         "List directory".to_string()
@@ -633,12 +629,12 @@ impl ClaudeLogProcessor {
                             make_path_relative(search_path, worktree_path)
                         )
                     } else {
-                        format!("Find files: `{}`", pattern)
+                        format!("Find files: `{pattern}`")
                     }
                 }
                 "codebase_search_agent" => {
                     if let Some(query) = input.get("query").and_then(|q| q.as_str()) {
-                        format!("Search: {}", query)
+                        format!("Search: {query}")
                     } else {
                         "Codebase search".to_string()
                     }

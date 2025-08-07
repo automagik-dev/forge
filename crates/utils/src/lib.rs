@@ -27,12 +27,11 @@ pub fn is_wsl2() -> bool {
         }
 
         // Check /proc/version for WSL2 signature
-        if let Ok(version) = std::fs::read_to_string("/proc/version") {
-            if version.contains("WSL2") || version.contains("microsoft") {
+        if let Ok(version) = std::fs::read_to_string("/proc/version")
+            && (version.contains("WSL2") || version.contains("microsoft")) {
                 tracing::debug!("WSL2 detected via /proc/version");
                 return true;
             }
-        }
 
         tracing::debug!("WSL2 not detected");
         false
@@ -65,11 +64,10 @@ pub async fn get_powershell_script()
     // Check if cached file already exists and is valid
     if script_path.exists() {
         // Verify file has content (basic validation)
-        if let Ok(metadata) = std::fs::metadata(&script_path) {
-            if metadata.len() > 0 {
+        if let Ok(metadata) = std::fs::metadata(&script_path)
+            && metadata.len() > 0 {
                 return Ok(script_path);
             }
-        }
     }
 
     // File doesn't exist or is invalid, create it
@@ -79,13 +77,13 @@ pub async fn get_powershell_script()
 
     // Ensure cache directory exists
     std::fs::create_dir_all(&cache_dir)
-        .map_err(|e| format!("Failed to create cache directory: {}", e))?;
+        .map_err(|e| format!("Failed to create cache directory: {e}"))?;
 
     let mut file = std::fs::File::create(&script_path)
-        .map_err(|e| format!("Failed to create PowerShell script file: {}", e))?;
+        .map_err(|e| format!("Failed to create PowerShell script file: {e}"))?;
 
     file.write_all(&script_content)
-        .map_err(|e| format!("Failed to write PowerShell script data: {}", e))?;
+        .map_err(|e| format!("Failed to write PowerShell script data: {e}"))?;
 
     drop(file); // Ensure file is closed
 

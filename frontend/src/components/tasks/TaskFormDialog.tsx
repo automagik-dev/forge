@@ -38,10 +38,7 @@ interface TaskFormDialogProps {
   projectId?: string; // For file search functionality
   initialTemplate?: TaskTemplate | null; // For pre-filling from template
   onCreateTask?: (title: string, description: string) => Promise<void>;
-  onCreateAndStartTask?: (
-    title: string,
-    description: string
-  ) => Promise<void>;
+  onCreateAndStartTask?: (title: string, description: string) => Promise<void>;
   onUpdateTask?: (
     title: string,
     description: string,
@@ -371,9 +368,7 @@ export function TaskFormDialog({
                   variant="secondary"
                   onClick={handleSubmit}
                   disabled={
-                    isSubmitting ||
-                    isSubmittingAndStart ||
-                    !title.trim()
+                    isSubmitting || isSubmittingAndStart || !title.trim()
                   }
                 >
                   {isSubmitting ? 'Creating...' : 'Create Task'}
@@ -382,11 +377,9 @@ export function TaskFormDialog({
                   <Button
                     onClick={handleCreateAndStart}
                     disabled={
-                      isSubmitting ||
-                      isSubmittingAndStart ||
-                      !title.trim()
+                      isSubmitting || isSubmittingAndStart || !title.trim()
                     }
-                    className={"font-medium"}
+                    className={'font-medium'}
                   >
                     {isSubmittingAndStart
                       ? 'Creating & Starting...'
@@ -398,6 +391,6 @@ export function TaskFormDialog({
           </div>
         </div>
       </DialogContent>
-    </Dialog >
+    </Dialog>
   );
 }

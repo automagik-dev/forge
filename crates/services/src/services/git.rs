@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use chrono::{DateTime, Utc};
 use git2::{
-    BranchType, CherrypickOptions, Cred, DiffOptions, Error as GitError, FetchOptions,
+    BranchType, CherrypickOptions, Cred, Error as GitError, FetchOptions,
     RemoteCallbacks, Repository, Status, StatusOptions, build::CheckoutBuilder,
 };
 use regex;
@@ -12,7 +12,6 @@ use tracing::debug;
 use ts_rs::TS;
 use utils::diff::{DiffChunk, DiffChunkType, FileDiff, WorktreeDiff};
 
-use crate::services::worktree_manager::WorktreeManager;
 
 // use crate::{
 //     models::task_attempt::{DiffChunk, DiffChunkType, FileDiff, WorktreeDiff},
@@ -44,7 +43,6 @@ pub enum GitServiceError {
 pub struct GitService {}
 
 #[derive(Debug, Serialize, TS)]
-#[ts(export)]
 pub struct GitBranch {
     pub name: String,
     pub is_current: bool,
@@ -54,7 +52,6 @@ pub struct GitBranch {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
 pub struct BranchStatus {
     pub is_behind: bool,
     pub commits_behind: usize,
@@ -71,6 +68,12 @@ enum Snapshot<'a> {
     Tree(git2::Oid),
     /// The work-dir / index as it is *now*, compared to the given base tree
     WorkdirAgainst(git2::Oid, &'a Path),
+}
+
+impl Default for GitService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl GitService {
@@ -112,8 +115,7 @@ impl GitService {
         // Security check: prevent path traversal attacks
         if normalized.contains("../") || normalized.starts_with("../") {
             return Err(GitServiceError::InvalidFilePaths(format!(
-                "Path traversal not allowed: '{}'",
-                normalized
+                "Path traversal not allowed: '{normalized}'"
             )));
         }
 
@@ -383,7 +385,7 @@ impl GitService {
             Some("HEAD"),
             &signature,
             &signature,
-            &message,
+            message,
             &tree,
             &[&parent_commit],
         )?;
@@ -435,19 +437,17 @@ impl GitService {
 
         // Fix: Update main repo's HEAD if it's pointing to the base branch
         let main_repo = self.open_repo(repo_path)?;
-        let refname = format!("refs/heads/{}", base_branch_name);
+        let refname = format!("refs/heads/{base_branch_name}");
 
-        if let Ok(main_head) = main_repo.head() {
-            if let Some(branch_name) = main_head.shorthand() {
-                if branch_name == base_branch_name {
+        if let Ok(main_head) = main_repo.head()
+            && let Some(branch_name) = main_head.shorthand()
+                && branch_name == base_branch_name {
                     // Only update main repo's HEAD if it's currently on the base branch
                     main_repo.set_head(&refname)?;
                     let mut co = CheckoutBuilder::new();
                     co.force();
                     main_repo.checkout_head(Some(&mut co))?;
                 }
-            }
-        }
 
         Ok(squash_commit_id.to_string())
     }
@@ -463,24 +463,21 @@ impl GitService {
 
         let branch_ref = repo
             // try "refs/heads/<name>" first, then raw name
-            .find_reference(&format!("refs/heads/{}", branch_name))
-            .or_else(|_| repo.find_reference(&branch_name))?;
+            .find_reference(&format!("refs/heads/{branch_name}"))
+            .or_else(|_| repo.find_reference(branch_name))?;
         let branch_oid = branch_ref.target().unwrap();
 
         // 1. prefer the branch’s configured upstream, if any
-        if let Ok(local_branch) = repo.find_branch(&branch_name, BranchType::Local) {
-            if let Ok(upstream) = local_branch.upstream() {
-                if let Some(_name) = upstream.name()? {
-                    if let Some(base_oid) = upstream.get().target() {
+        if let Ok(local_branch) = repo.find_branch(branch_name, BranchType::Local)
+            && let Ok(upstream) = local_branch.upstream()
+                && let Some(_name) = upstream.name()?
+                    && let Some(base_oid) = upstream.get().target() {
                         let (_ahead, _behind) = repo.graph_ahead_behind(branch_oid, base_oid)?;
                         // Ignore upstream since we use stored base branch
                     }
-                }
-            }
-        }
         // Calculate ahead/behind counts using the stored base branch
         let (commits_ahead, commits_behind) =
-            if let Ok(base_branch) = repo.find_branch(&base_branch_name, BranchType::Local) {
+            if let Ok(base_branch) = repo.find_branch(base_branch_name, BranchType::Local) {
                 if let Some(base_oid) = base_branch.get().target() {
                     repo.graph_ahead_behind(branch_oid, base_oid)?
                 } else {
@@ -537,11 +534,10 @@ impl GitService {
                         | git2::Status::WT_DELETED
                         | git2::Status::WT_RENAMED
                         | git2::Status::WT_TYPECHANGE,
-                ) {
-                    if let Some(path) = entry.path() {
+                )
+                    && let Some(path) = entry.path() {
                         dirty_files.push(path.to_string());
                     }
-                }
             }
 
             if !dirty_files.is_empty() {
@@ -569,12 +565,11 @@ impl GitService {
 
         // Helper function to get last commit date for a branch
         let get_last_commit_date = |branch: &git2::Branch| -> Result<DateTime<Utc>, git2::Error> {
-            if let Some(target) = branch.get().target() {
-                if let Ok(commit) = repo.find_commit(target) {
+            if let Some(target) = branch.get().target()
+                && let Ok(commit) = repo.find_commit(target) {
                     let timestamp = commit.time().seconds();
                     return Ok(DateTime::from_timestamp(timestamp, 0).unwrap_or_else(Utc::now));
                 }
-            }
             Ok(Utc::now()) // Default to now if we can't get the commit date
         };
 
@@ -662,7 +657,7 @@ impl GitService {
         )?;
 
         // Update the base branch reference to point to the new commit
-        let refname = format!("refs/heads/{}", base_branch_name);
+        let refname = format!("refs/heads/{base_branch_name}");
         repo.reference(&refname, squash_commit_id, true, "Squash merge")?;
 
         Ok(squash_commit_id)
@@ -837,8 +832,7 @@ impl GitService {
         if file_full_path.exists() {
             std::fs::remove_file(&file_full_path).map_err(|e| {
                 GitServiceError::IoError(std::io::Error::other(format!(
-                    "Failed to delete file {}: {}",
-                    file_path, e
+                    "Failed to delete file {file_path}: {e}"
                 )))
             })?;
         }
@@ -857,7 +851,7 @@ impl GitService {
         let head = repo.head()?;
         let parent_commit = head.peel_to_commit()?;
 
-        let commit_message = format!("Delete file: {}", file_path);
+        let commit_message = format!("Delete file: {file_path}");
         let commit_id = repo.commit(
             Some("HEAD"),
             &signature,
@@ -874,7 +868,8 @@ impl GitService {
     pub fn get_default_branch_name(&self, repo_path: &PathBuf) -> Result<String, GitServiceError> {
         let repo = self.open_repo(repo_path)?;
 
-        let result = match repo.head() {
+        
+        match repo.head() {
             Ok(head_ref) => Ok(head_ref.shorthand().unwrap_or("main").to_string()),
             Err(e)
                 if e.class() == git2::ErrorClass::Reference
@@ -883,8 +878,7 @@ impl GitService {
                 Ok("main".to_string()) // Repository has no commits yet
             }
             Err(_) => Ok("main".to_string()), // Fallback
-        };
-        result
+        }
     }
 
     /// Extract GitHub owner and repo name from git repo path
@@ -903,7 +897,7 @@ impl GitService {
 
         // Parse GitHub URL (supports both HTTPS and SSH formats)
         let github_regex = regex::Regex::new(r"github\.com[:/]([^/]+)/(.+?)(?:\.git)?/?$")
-            .map_err(|e| GitServiceError::InvalidRepository(format!("Regex error: {}", e)))?;
+            .map_err(|e| GitServiceError::InvalidRepository(format!("Regex error: {e}")))?;
 
         if let Some(captures) = github_regex.captures(url) {
             let owner = captures.get(1).unwrap().as_str().to_string();
@@ -911,8 +905,7 @@ impl GitService {
             Ok((owner, repo_name))
         } else {
             Err(GitServiceError::InvalidRepository(format!(
-                "Not a GitHub repository: {}",
-                url
+                "Not a GitHub repository: {url}"
             )))
         }
     }
@@ -953,7 +946,7 @@ impl GitService {
         let mut temp_remote = repo.remote(temp_remote_name, &https_url)?;
 
         // Create refspec for pushing the branch
-        let refspec = format!("refs/heads/{}:refs/heads/{}", branch_name, branch_name);
+        let refspec = format!("refs/heads/{branch_name}:refs/heads/{branch_name}");
 
         // Set up authentication callback using the GitHub token
         let mut callbacks = git2::RemoteCallbacks::new();
@@ -988,11 +981,10 @@ impl GitService {
         let mut callbacks = RemoteCallbacks::new();
         callbacks.credentials(|_url, username_from_url, _| {
             // Try SSH agent first
-            if let Some(username) = username_from_url {
-                if let Ok(cred) = Cred::ssh_key_from_agent(username) {
+            if let Some(username) = username_from_url
+                && let Ok(cred) = Cred::ssh_key_from_agent(username) {
                     return Ok(cred);
                 }
-            }
             // Fallback to key file (~/.ssh/id_rsa)
             let home = dirs::home_dir()
                 .ok_or_else(|| git2::Error::from_str("Could not find home directory"))?;
@@ -1080,8 +1072,7 @@ impl GitService {
             let mut index = repo.index()?;
             if index.has_conflicts() {
                 return Err(GitServiceError::MergeConflicts(format!(
-                    "Cherry-pick failed due to conflicts on commit {}",
-                    commit_id
+                    "Cherry-pick failed due to conflicts on commit {commit_id}"
                 )));
             }
 

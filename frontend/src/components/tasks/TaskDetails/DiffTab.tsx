@@ -6,11 +6,14 @@ import { TaskSelectedAttemptContext } from '@/components/context/taskDetailsCont
 
 function DiffTab() {
   const { selectedAttempt } = useContext(TaskSelectedAttemptContext);
-  const { diff, isConnected, error } = useDiffStream(selectedAttempt?.id || null, true);
+  const { diff, isConnected, error } = useDiffStream(
+    selectedAttempt?.id || null,
+    true
+  );
 
   const worktreeDiff = useMemo((): WorktreeDiff | null => {
     if (!diff) return null;
-    
+
     return {
       files: Object.values(diff.entries).map((entry: any) => {
         // Handle PatchType wrapper properly
@@ -19,16 +22,14 @@ function DiffTab() {
         }
         // In case it's already unwrapped or a different format
         return entry as FileDiff;
-      })
+      }),
     };
   }, [diff]);
 
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <div className="text-red-800 text-sm">
-          Failed to load diff: {error}
-        </div>
+        <div className="text-red-800 text-sm">Failed to load diff: {error}</div>
       </div>
     );
   }
@@ -38,14 +39,16 @@ function DiffTab() {
       {/* Connection status indicator */}
       {selectedAttempt && (
         <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 border-b text-xs text-muted-foreground">
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`} />
+          <div
+            className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`}
+          />
           {isConnected ? 'Live' : 'Disconnected'}
         </div>
       )}
-      
+
       {/* Diff content */}
       <div className="flex-1 min-h-0">
-        <DiffCard 
+        <DiffCard
           diff={worktreeDiff}
           deletable={false}
           compact={false}

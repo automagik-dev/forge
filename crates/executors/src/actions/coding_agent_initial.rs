@@ -11,7 +11,6 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-#[ts(export)]
 pub struct CodingAgentInitialRequest {
     pub prompt: String,
     pub profile: String,

@@ -19,7 +19,7 @@ use uuid::Uuid;
 
 use crate::{
     error::ApiError,
-    middleware::{load_project_middleware, load_task_middleware},
+    middleware::load_task_middleware,
     DeploymentImpl,
 };
 

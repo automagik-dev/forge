@@ -110,10 +110,11 @@ function ProcessesTab() {
             {attemptData.processes.map((process) => (
               <div
                 key={process.id}
-                className={`border rounded-lg p-4 hover:bg-muted/30 cursor-pointer transition-colors ${loadingProcessId === process.id
-                  ? 'opacity-50 cursor-wait'
-                  : ''
-                  }`}
+                className={`border rounded-lg p-4 hover:bg-muted/30 cursor-pointer transition-colors ${
+                  loadingProcessId === process.id
+                    ? 'opacity-50 cursor-wait'
+                    : ''
+                }`}
                 onClick={() => handleProcessClick(process)}
               >
                 <div className="flex items-start justify-between">
@@ -150,9 +151,7 @@ function ProcessesTab() {
                       <span>Completed: {formatDate(process.completed_at)}</span>
                     )}
                   </div>
-                  <div className="mt-1">
-                    Process ID: {process.id}
-                  </div>
+                  <div className="mt-1">Process ID: {process.id}</div>
                 </div>
               </div>
             ))}
@@ -211,14 +210,20 @@ function ProcessesTab() {
 
                 {/* Command, working directory, stdout, stderr fields not available in new ExecutionProcess type */}
                 <div>
-                  <h3 className="font-medium text-sm mb-2">Process Information</h3>
+                  <h3 className="font-medium text-sm mb-2">
+                    Process Information
+                  </h3>
                   <div className="bg-muted/50 p-3 rounded-md font-mono text-sm">
                     <div>Process ID: {selectedProcess.id}</div>
-                    <div>Task Attempt ID: {selectedProcess.task_attempt_id}</div>
+                    <div>
+                      Task Attempt ID: {selectedProcess.task_attempt_id}
+                    </div>
                     <div>Run Reason: {selectedProcess.run_reason}</div>
                     <div>Status: {selectedProcess.status}</div>
                     {selectedProcess.exit_code !== null && (
-                      <div>Exit Code: {selectedProcess.exit_code.toString()}</div>
+                      <div>
+                        Exit Code: {selectedProcess.exit_code.toString()}
+                      </div>
                     )}
                   </div>
                 </div>

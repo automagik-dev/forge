@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Query, State},
     http::StatusCode,
     middleware::from_fn_with_state,
     response::{
@@ -10,7 +10,7 @@ use axum::{
     BoxError, Extension, Json, Router,
 };
 use db::models::{
-    execution_process::{ExecutionProcess, ExecutionProcessRunReason, ExecutionProcessStatus},
+    execution_process::{ExecutionProcess, ExecutionProcessRunReason},
     executor_session::ExecutorSession,
     task::{Task, TaskStatus},
     task_attempt::{CreateTaskAttempt, TaskAttempt, TaskAttemptError},
@@ -24,7 +24,7 @@ use executors::actions::{
 use futures_util::TryStreamExt;
 use serde::{Deserialize, Serialize};
 use services::services::{
-    container::{ContainerRef, ContainerService},
+    container::ContainerService,
     git::{BranchStatus, GitService},
     github_service::{CreatePrRequest, GitHubRepoInfo, GitHubService, GitHubServiceError},
 };
@@ -36,13 +36,11 @@ use uuid::Uuid;
 use crate::{error::ApiError, middleware::load_task_attempt_middleware, DeploymentImpl};
 
 #[derive(Debug, Deserialize, Serialize, TS)]
-#[ts(export)]
 pub struct RebaseTaskAttemptRequest {
     pub new_base_branch: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, TS)]
-#[ts(export)]
 pub struct CreateGitHubPrRequest {
     pub title: String,
     pub body: Option<String>,
@@ -56,8 +54,7 @@ pub struct FollowUpResponse {
     pub created_new_attempt: bool,
 }
 // #[derive(Debug, Serialize, TS)]
-// #[ts(export)]
-// pub struct ProcessLogsResponse {
+// // pub struct ProcessLogsResponse {
 //     pub id: Uuid,
 //     pub process_type: ExecutionProcessType,
 //     pub command: String,
@@ -242,7 +239,6 @@ pub async fn get_task_attempt(
 }
 
 #[derive(Debug, Deserialize, ts_rs::TS)]
-#[ts(export)]
 pub struct CreateTaskAttemptBody {
     pub task_id: Uuid,
     pub profile: Option<String>,
@@ -300,7 +296,6 @@ pub async fn create_task_attempt(
 }
 
 #[derive(Debug, Deserialize, TS)]
-#[ts(export)]
 pub struct CreateFollowUpAttempt {
     pub prompt: String,
 }
@@ -360,18 +355,16 @@ pub async fn follow_up(
         .await?
         .ok_or(SqlxError::RowNotFound)?;
 
-    let cleanup_action = if let Some(script) = project.cleanup_script {
-        Some(Box::new(ExecutorAction::new(
+    let cleanup_action = project.cleanup_script.map(|script| {
+        Box::new(ExecutorAction::new(
             ExecutorActionType::ScriptRequest(ScriptRequest {
                 script,
                 language: ScriptRequestLanguage::Bash,
                 context: ScriptContext::CleanupScript,
             }),
             None,
-        )))
-    } else {
-        None
-    };
+        ))
+    });
 
     let follow_up_action = ExecutorAction::new(
         ExecutorActionType::CodingAgentFollowUpRequest(CodingAgentFollowUpRequest {
@@ -404,7 +397,7 @@ pub async fn get_task_attempt_diff(
         .container()
         .get_diff(&task_attempt)
         .await
-        .map_err(|e| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|_e| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(Sse::new(stream.map_err(|e| -> BoxError { e.into() })).keep_alive(KeepAlive::default()))
 }
@@ -451,7 +444,7 @@ pub async fn merge_task_attempt(
 
     let merge_commit_id = GitService::new().merge_changes(
         &ctx.project.git_repo_path,
-        &worktree_path,
+        worktree_path,
         branch_name,
         &ctx.task_attempt.base_branch,
         &commit_message,
@@ -534,7 +527,7 @@ pub async fn create_github_pr(
     })?;
 
     // Push the branch to GitHub first
-    if let Err(e) = GitService::new().push_to_github(&worktree_path, branch_name, &github_token) {
+    if let Err(e) = GitService::new().push_to_github(worktree_path, branch_name, &github_token) {
         tracing::error!("Failed to push branch to GitHub: {}", e);
         let gh_e = GitHubServiceError::from(e);
         if gh_e.is_api_data() {
@@ -588,7 +581,7 @@ pub async fn create_github_pr(
                 e
             );
             if e.is_api_data() {
-                return Ok(ResponseJson(ApiResponse::error_with_data(e)));
+                Ok(ResponseJson(ApiResponse::error_with_data(e)))
             } else {
                 Ok(ResponseJson(ApiResponse::error("Failed to create PR")))
             }
@@ -661,7 +654,7 @@ pub async fn get_task_attempt_branch_status(
     let branch_status = GitService::new()
         .get_branch_status(
             &ctx.project.git_repo_path,
-            &ctx.task_attempt.branch.as_ref().ok_or_else(|| {
+            ctx.task_attempt.branch.as_ref().ok_or_else(|| {
                 ApiError::TaskAttempt(TaskAttemptError::ValidationError(
                     "No branch found for task attempt".to_string(),
                 ))
@@ -710,7 +703,7 @@ pub async fn rebase_task_attempt(
 
     let _new_base_commit = GitService::new().rebase_branch(
         &ctx.project.git_repo_path,
-        &worktree_path,
+        worktree_path,
         effective_base_branch.clone().as_deref(),
         &ctx.task_attempt.base_branch.clone(),
     )?;

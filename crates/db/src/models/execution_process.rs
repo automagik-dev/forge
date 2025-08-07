@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use executors::actions::{ExecutorAction, ExecutorActionKind};
-use serde::{Deserialize, Serialize, de::Error};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{FromRow, SqlitePool, Type};
 use ts_rs::TS;
@@ -11,7 +11,6 @@ use super::{task::Task, task_attempt::TaskAttempt};
 #[derive(Debug, Clone, Type, Serialize, Deserialize, PartialEq, TS)]
 #[sqlx(type_name = "execution_process_status", rename_all = "lowercase")]
 #[serde(rename_all = "lowercase")]
-#[ts(export)]
 pub enum ExecutionProcessStatus {
     Running,
     Completed,
@@ -22,7 +21,6 @@ pub enum ExecutionProcessStatus {
 #[derive(Debug, Clone, Type, Serialize, Deserialize, PartialEq, TS)]
 #[sqlx(type_name = "execution_process_run_reason", rename_all = "lowercase")]
 #[serde(rename_all = "lowercase")]
-#[ts(export)]
 pub enum ExecutionProcessRunReason {
     SetupScript,
     CleanupScript,
@@ -46,7 +44,6 @@ pub struct ExecutionProcess {
 }
 
 #[derive(Debug, Deserialize, TS)]
-#[ts(export)]
 pub struct CreateExecutionProcess {
     pub task_attempt_id: Uuid,
     pub executor_action: ExecutorAction,
@@ -54,7 +51,6 @@ pub struct CreateExecutionProcess {
 }
 
 #[derive(Debug, Deserialize, TS)]
-#[ts(export)]
 #[allow(dead_code)]
 pub struct UpdateExecutionProcess {
     pub status: Option<ExecutionProcessStatus>,
@@ -63,7 +59,6 @@ pub struct UpdateExecutionProcess {
 }
 
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize, TS)]
-#[ts(export)]
 pub struct ExecutionProcessSummary {
     pub id: Uuid,
     pub task_attempt_id: Uuid,
@@ -322,11 +317,10 @@ impl ExecutionProcess {
         .await
     }
     pub async fn was_killed(pool: &SqlitePool, id: Uuid) -> bool {
-        if let Ok(exp_process) = Self::find_by_id(pool, id).await {
-            if exp_process.is_some_and(|ep| ep.status == ExecutionProcessStatus::Killed) {
+        if let Ok(exp_process) = Self::find_by_id(pool, id).await
+            && exp_process.is_some_and(|ep| ep.status == ExecutionProcessStatus::Killed) {
                 return true;
             }
-        }
         false
     }
 

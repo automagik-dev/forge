@@ -33,7 +33,7 @@ interface OnboardingDialogProps {
 }
 
 export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
-  const [profile, setProfile] = useState<string>("claude-code")
+  const [profile, setProfile] = useState<string>('claude-code');
   const [editorType, setEditorType] = useState<EditorType>(EditorType.VS_CODE);
   const [customCommand, setCustomCommand] = useState<string>('');
 
@@ -44,7 +44,8 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
       profile,
       editor: {
         editor_type: editorType,
-        custom_command: editorType === EditorType.CUSTOM ? customCommand || null : null,
+        custom_command:
+          editorType === EditorType.CUSTOM ? customCommand || null : null,
       },
     });
   };
@@ -54,7 +55,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
     (editorType === EditorType.CUSTOM && customCommand.trim() !== '');
 
   return (
-    <Dialog open={open} onOpenChange={() => { }}>
+    <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <div className="flex items-center gap-3">

@@ -168,7 +168,7 @@ impl EventService {
 
                             let event_patch: EventPatch = EventPatch {
                                 op: "add".to_string(),
-                                path: format!("/entries/{}", next_entry_count),
+                                path: format!("/entries/{next_entry_count}"),
                                 value: EventPatchInner {
                                     db_op: db_op.to_string(),
                                     record: record_type,

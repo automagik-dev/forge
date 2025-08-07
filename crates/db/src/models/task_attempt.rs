@@ -32,11 +32,11 @@ impl PrInfo {
         let repo_name = caps.name("repo").unwrap().as_str().to_string();
 
         Ok(Self {
-            attempt_id: attempt_id,
-            task_id: task_id,
-            pr_number: pr_number,
+            attempt_id,
+            task_id,
+            pr_number,
             repo_owner: owner,
-            repo_name: repo_name,
+            repo_name,
         })
     }
 }
@@ -58,7 +58,6 @@ pub enum TaskAttemptError {
 #[derive(Debug, Clone, Type, Serialize, Deserialize, PartialEq, TS)]
 #[sqlx(type_name = "task_attempt_status", rename_all = "lowercase")]
 #[serde(rename_all = "lowercase")]
-#[ts(export)]
 pub enum TaskAttemptStatus {
     SetupRunning,
     SetupComplete,
@@ -69,7 +68,6 @@ pub enum TaskAttemptStatus {
 }
 
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize, TS)]
-#[ts(export)]
 pub struct TaskAttempt {
     pub id: Uuid,
     pub task_id: Uuid,                 // Foreign key to Task
@@ -101,13 +99,11 @@ pub struct CreatePrParams<'a> {
 }
 
 #[derive(Debug, Deserialize, TS)]
-#[ts(export)]
 pub struct CreateFollowUpAttempt {
     pub prompt: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
 pub enum ExecutionState {
     NotStarted,
     SetupRunning,
@@ -122,7 +118,6 @@ pub enum ExecutionState {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
 pub struct TaskAttemptState {
     pub execution_state: ExecutionState,
     pub has_changes: bool,
@@ -146,7 +141,6 @@ pub struct TaskAttemptContext {
 }
 
 #[derive(Debug, Deserialize, TS)]
-#[ts(export)]
 pub struct CreateTaskAttempt {
     pub base_coding_agent: String,
     pub base_branch: String,

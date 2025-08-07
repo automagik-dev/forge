@@ -23,7 +23,6 @@ use crate::{
 
 /// An executor that uses OpenCode to process tasks
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-#[ts(export)]
 pub struct Opencode {
     command_builder: CommandBuilder,
 }
@@ -149,7 +148,7 @@ impl StandardCodingAgentExecutor for Opencode {
         let agent_logs = stderr_lines
             .filter(|line| {
                 ready(
-                    !LogUtils::is_noise(&line)
+                    !LogUtils::is_noise(line)
                         && !OPENCODE_LOG_REGEX.is_match(line)
                         && !LogUtils::is_error_line(line),
                 )
@@ -190,12 +189,11 @@ impl Opencode {
                     entry,
                 );
                 msg_store.push_patch(patch);
-            } else if !session_id_extracted {
-                if let Some(session_id) = LogUtils::parse_session_id_from_line(&line) {
+            } else if !session_id_extracted
+                && let Some(session_id) = LogUtils::parse_session_id_from_line(&line) {
                     msg_store.push_session_id(session_id);
                     session_id_extracted = true;
                 }
-            }
         }
     }
 
@@ -355,7 +353,6 @@ pub enum Tool {
 
 /// TODO information structure
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-#[ts(export)]
 pub struct TodoInfo {
     pub content: String,
     pub status: String,
@@ -365,7 +362,6 @@ pub struct TodoInfo {
 
 /// Web fetch format options
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-#[ts(export)]
 #[serde(rename_all = "lowercase")]
 pub enum WebFetchFormat {
     Text,
@@ -606,13 +602,13 @@ impl ToolUtils {
                 query: pattern.clone(),
             },
             Tool::Glob { pattern, .. } => ActionType::Search {
-                query: format!("glob: {}", pattern),
+                query: format!("glob: {pattern}"),
             },
             Tool::List { .. } => ActionType::Other {
                 description: "Directory listing".to_string(),
             },
             Tool::WebFetch { url, .. } => ActionType::Other {
-                description: format!("Web fetch: {}", url),
+                description: format!("Web fetch: {url}"),
             },
             Tool::TodoWrite { .. } | Tool::TodoRead => ActionType::Other {
                 description: "TODO list management".to_string(),
@@ -621,11 +617,11 @@ impl ToolUtils {
                 // Handle MCP tools (format: client_name_tool_name)
                 if tool_name.contains('_') {
                     ActionType::Other {
-                        description: format!("MCP tool: {}", tool_name),
+                        description: format!("MCP tool: {tool_name}"),
                     }
                 } else {
                     ActionType::Other {
-                        description: format!("Tool: {}", tool_name),
+                        description: format!("Tool: {tool_name}"),
                     }
                 }
             }
@@ -642,7 +638,7 @@ impl ToolUtils {
                 format!("`{}`", make_path_relative(file_path, worktree_path))
             }
             Tool::Bash { command, .. } => {
-                format!("`{}`", command)
+                format!("`{command}`")
             }
             Tool::Grep {
                 pattern,
@@ -652,14 +648,14 @@ impl ToolUtils {
                 let search_path = path.as_deref().unwrap_or(".");
                 match include {
                     Some(include_pattern) => {
-                        format!("`{}` in `{}` ({})", pattern, search_path, include_pattern)
+                        format!("`{pattern}` in `{search_path}` ({include_pattern})")
                     }
-                    None => format!("`{}` in `{}`", pattern, search_path),
+                    None => format!("`{pattern}` in `{search_path}`"),
                 }
             }
             Tool::Glob { pattern, path } => {
                 let search_path = path.as_deref().unwrap_or(".");
-                format!("glob `{}` in `{}`", pattern, search_path)
+                format!("glob `{pattern}` in `{search_path}`")
             }
             Tool::List { path, .. } => {
                 if let Some(path) = path {
@@ -669,16 +665,16 @@ impl ToolUtils {
                 }
             }
             Tool::WebFetch { url, .. } => {
-                format!("fetch `{}`", url)
+                format!("fetch `{url}`")
             }
             Tool::TodoWrite { todos } => Self::generate_todo_content(todos),
             Tool::TodoRead => "Managing TODO list".to_string(),
             Tool::Other { tool_name, .. } => {
                 // Handle MCP tools (format: client_name_tool_name)
                 if tool_name.contains('_') {
-                    format!("MCP: `{}`", tool_name)
+                    format!("MCP: `{tool_name}`")
                 } else {
-                    format!("`{}`", tool_name)
+                    format!("`{tool_name}`")
                 }
             }
         }
@@ -815,11 +811,10 @@ impl LogUtils {
         }
 
         // Try regex for session ID extraction from service=session logs
-        if let Some(captures) = SESSION_ID_REGEX.captures(line) {
-            if let Some(id) = captures.get(2) {
+        if let Some(captures) = SESSION_ID_REGEX.captures(line)
+            && let Some(id) = captures.get(2) {
                 return Some(id.as_str().to_string());
             }
-        }
 
         None
     }

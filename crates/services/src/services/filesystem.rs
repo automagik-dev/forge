@@ -20,20 +20,24 @@ pub enum FilesystemError {
     Io(#[from] std::io::Error),
 }
 #[derive(Debug, Serialize, TS)]
-#[ts(export)]
 pub struct DirectoryListResponse {
     pub entries: Vec<DirectoryEntry>,
     pub current_path: String,
 }
 
 #[derive(Debug, Serialize, TS)]
-#[ts(export)]
 pub struct DirectoryEntry {
     pub name: String,
     pub path: String,
     pub is_directory: bool,
     pub is_git_repo: bool,
     pub last_modified: Option<u64>,
+}
+
+impl Default for FilesystemService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl FilesystemService {
@@ -74,7 +78,7 @@ impl FilesystemService {
                     path: entry.path().to_string_lossy().to_string(),
                     is_directory: true,
                     is_git_repo: true,
-                    last_modified: last_modified,
+                    last_modified,
                 })
             })
             .collect();

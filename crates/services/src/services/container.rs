@@ -341,7 +341,9 @@ pub trait ContainerService {
         let msg_stores = self.msg_stores().clone();
         let db = self.db().clone();
 
-        let handle = tokio::spawn(async move {
+        
+
+        tokio::spawn(async move {
             // Get the message store for this execution
             let store = {
                 let map = msg_stores.read().await;
@@ -357,7 +359,7 @@ pub trait ContainerService {
                             // Serialize this individual message as a JSONL line
                             match serde_json::to_string(&msg) {
                                 Ok(jsonl_line) => {
-                                    let jsonl_line_with_newline = format!("{}\n", jsonl_line);
+                                    let jsonl_line_with_newline = format!("{jsonl_line}\n");
 
                                     // Append this line to the database
                                     if let Err(e) = ExecutionProcessLogs::append_log_line(
@@ -407,9 +409,7 @@ pub trait ContainerService {
                     }
                 }
             }
-        });
-
-        handle
+        })
     }
 
     async fn start_attempt(
@@ -418,7 +418,7 @@ pub trait ContainerService {
         profile_label: String,
     ) -> Result<ExecutionProcess, ContainerError> {
         // Create container
-        self.create(&task_attempt).await?;
+        self.create(task_attempt).await?;
 
         // Get parent task
         let task = task_attempt
@@ -437,18 +437,14 @@ pub trait ContainerService {
             .await?
             .ok_or(SqlxError::RowNotFound)?;
 
-        let cleanup_action = if let Some(script) = project.cleanup_script {
-            Some(Box::new(ExecutorAction::new(
+        let cleanup_action = project.cleanup_script.map(|script| Box::new(ExecutorAction::new(
                 ExecutorActionType::ScriptRequest(ScriptRequest {
                     script,
                     language: ScriptRequestLanguage::Bash,
                     context: ScriptContext::CleanupScript,
                 }),
                 None,
-            )))
-        } else {
-            None
-        };
+            )));
 
         // Choose whether to execute the setup_script or coding agent first
         let execution_process = if let Some(setup_script) = project.setup_script {
@@ -586,18 +582,16 @@ pub trait ContainerService {
         let action = ctx.execution_process.executor_action()?;
         let next_action = if let Some(next_action) = action.next_action() {
             next_action
+        } else if matches!(
+            ctx.execution_process.run_reason,
+            ExecutionProcessRunReason::SetupScript
+        ) {
+            return Err(ContainerError::Other(anyhow::anyhow!(
+                "No next action configured for SetupScript"
+            )));
         } else {
-            if matches!(
-                ctx.execution_process.run_reason,
-                ExecutionProcessRunReason::SetupScript
-            ) {
-                return Err(ContainerError::Other(anyhow::anyhow!(
-                    "No next action configured for SetupScript"
-                )));
-            } else {
-                tracing::debug!("No next action configured");
-                return Ok(());
-            }
+            tracing::debug!("No next action configured");
+            return Ok(());
         };
 
         // Determine the run reason of the next action

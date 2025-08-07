@@ -28,8 +28,14 @@ import { GitHubLoginDialog } from '@/components/GitHubLoginDialog';
 import { TaskTemplateManager } from '@/components/TaskTemplateManager';
 
 export function Settings() {
-  const { config, updateConfig, saveConfig, loading, updateAndSaveConfig, profiles } =
-    useUserSystem();
+  const {
+    config,
+    updateConfig,
+    saveConfig,
+    loading,
+    updateAndSaveConfig,
+    profiles,
+  } = useUserSystem();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -85,7 +91,9 @@ export function Settings() {
     updateConfig({ onboarding_acknowledged: false });
   };
 
-  const isAuthenticated = !!(config?.github?.username && config?.github?.oauth_token);
+  const isAuthenticated = !!(
+    config?.github?.username && config?.github?.oauth_token
+  );
 
   const handleLogout = useCallback(async () => {
     if (!config) return;
@@ -208,7 +216,8 @@ export function Settings() {
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
-                  Choose the default profile to use when creating a task attempt.
+                  Choose the default profile to use when creating a task
+                  attempt.
                 </p>
               </div>
             </CardContent>
@@ -378,7 +387,12 @@ export function Settings() {
                   id="sound-alerts"
                   checked={config.notifications.sound_enabled}
                   onCheckedChange={(checked: boolean) =>
-                    updateConfig({ notifications: { ...config.notifications, sound_enabled: checked } })
+                    updateConfig({
+                      notifications: {
+                        ...config.notifications,
+                        sound_enabled: checked,
+                      },
+                    })
                   }
                 />
                 <div className="space-y-0.5">
@@ -398,7 +412,12 @@ export function Settings() {
                     <Select
                       value={config.notifications.sound_file}
                       onValueChange={(value: SoundFile) =>
-                        updateConfig({ notifications: { ...config.notifications, sound_file: value } })
+                        updateConfig({
+                          notifications: {
+                            ...config.notifications,
+                            sound_file: value,
+                          },
+                        })
                       }
                     >
                       <SelectTrigger id="sound-file" className="flex-1">
@@ -432,7 +451,12 @@ export function Settings() {
                   id="push-notifications"
                   checked={config.notifications.push_enabled}
                   onCheckedChange={(checked: boolean) =>
-                    updateConfig({ notifications: { ...config.notifications, push_enabled: checked } })
+                    updateConfig({
+                      notifications: {
+                        ...config.notifications,
+                        push_enabled: checked,
+                      },
+                    })
                   }
                 />
                 <div className="space-y-0.5">
@@ -596,6 +620,6 @@ export function Settings() {
         {/* Spacer to prevent content from being hidden behind sticky button */}
         <div className="h-20"></div>
       </div>
-    </div >
+    </div>
   );
 }

@@ -10,13 +10,11 @@ use utils::shell::get_shell_command;
 use crate::{actions::Executable, executors::ExecutorError};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-#[ts(export)]
 pub enum ScriptRequestLanguage {
     Bash,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-#[ts(export)]
 pub enum ScriptContext {
     SetupScript,
     CleanupScript,
@@ -24,7 +22,6 @@ pub enum ScriptContext {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-#[ts(export)]
 pub struct ScriptRequest {
     pub script: String,
     pub language: ScriptRequestLanguage,

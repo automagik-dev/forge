@@ -32,10 +32,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog.tsx';
 import BranchSelector from '@/components/tasks/BranchSelector.tsx';
-import {
-  attemptsApi,
-  executionProcessesApi,
-} from '@/lib/api.ts';
+import { attemptsApi, executionProcessesApi } from '@/lib/api.ts';
 import {
   Dispatch,
   SetStateAction,
@@ -165,9 +162,7 @@ function CurrentAttempt({
     setIsStartingDevServer(true);
 
     try {
-      await attemptsApi.startDevServer(
-        selectedAttempt.id
-      );
+      await attemptsApi.startDevServer(selectedAttempt.id);
       fetchAttemptData(selectedAttempt.id, selectedAttempt.task_id);
     } catch (err) {
       console.error('Failed to start dev server:', err);
@@ -196,9 +191,7 @@ function CurrentAttempt({
 
     try {
       setIsStopping(true);
-      await attemptsApi.stop(
-        selectedAttempt.id
-      );
+      await attemptsApi.stop(selectedAttempt.id);
       await fetchAttemptData(selectedAttempt.id, selectedAttempt.task_id);
       setTimeout(() => {
         fetchAttemptData(selectedAttempt.id, selectedAttempt.task_id);
@@ -219,7 +212,7 @@ function CurrentAttempt({
 
   useKeyboardShortcuts({
     stopExecution: () => setShowStopConfirmation(true),
-    newAttempt: !isAttemptRunning ? handleEnterCreateAttemptMode : () => { },
+    newAttempt: !isAttemptRunning ? handleEnterCreateAttemptMode : () => {},
     hasOpenDialog: showStopConfirmation,
     closeDialog: () => setShowStopConfirmation(false),
     onEnter: () => {
@@ -248,9 +241,7 @@ function CurrentAttempt({
 
     try {
       setBranchStatusLoading(true);
-      const result = await attemptsApi.getBranchStatus(
-        selectedAttempt.id
-      );
+      const result = await attemptsApi.getBranchStatus(selectedAttempt.id);
       setBranchStatus((prev) => {
         if (JSON.stringify(prev) === JSON.stringify(result)) return prev;
         return result;
@@ -274,9 +265,7 @@ function CurrentAttempt({
 
     try {
       setMerging(true);
-      await attemptsApi.merge(
-        selectedAttempt.id
-      );
+      await attemptsApi.merge(selectedAttempt.id);
       // Refetch branch status to show updated state
       fetchBranchStatus();
     } catch (error) {
@@ -293,10 +282,7 @@ function CurrentAttempt({
 
     try {
       setRebasing(true);
-      await attemptsApi.rebase(
-        selectedAttempt.id,
-        { new_base_branch: null }
-      );
+      await attemptsApi.rebase(selectedAttempt.id, { new_base_branch: null });
       // Refresh branch status after rebase
       fetchBranchStatus();
     } catch (err) {
@@ -311,10 +297,9 @@ function CurrentAttempt({
 
     try {
       setRebasing(true);
-      await attemptsApi.rebase(
-        selectedAttempt.id,
-        { new_base_branch: newBaseBranch }
-      );
+      await attemptsApi.rebase(selectedAttempt.id, {
+        new_base_branch: newBaseBranch,
+      });
       // Refresh branch status after rebase
       fetchBranchStatus();
       setShowRebaseDialog(false);
@@ -412,9 +397,7 @@ function CurrentAttempt({
                     size="sm"
                     onClick={handleRebaseDialogOpen}
                     disabled={
-                      rebasing ||
-                      branchStatusLoading ||
-                      isAttemptRunning
+                      rebasing || branchStatusLoading || isAttemptRunning
                     }
                     className="h-4 w-4 p-0 hover:bg-muted"
                   >
@@ -440,25 +423,24 @@ function CurrentAttempt({
             Merge Status
           </div>
           <div className="flex items-center gap-1.5">
-            {
-              selectedAttempt.merge_commit ? (
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2 w-2 bg-green-500 rounded-full" />
-                  <span className="text-sm font-medium text-green-700">
-                    Merged
-                  </span>
-                  <span className="text-xs font-mono text-muted-foreground">
-                    ({selectedAttempt.merge_commit.slice(0, 8)})
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2 w-2 bg-yellow-500 rounded-full" />
-                  <span className="text-sm font-medium text-yellow-700">
-                    Not merged
-                  </span>
-                </div>
-              )}
+            {selectedAttempt.merge_commit ? (
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 bg-green-500 rounded-full" />
+                <span className="text-sm font-medium text-green-700">
+                  Merged
+                </span>
+                <span className="text-xs font-mono text-muted-foreground">
+                  ({selectedAttempt.merge_commit.slice(0, 8)})
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-2 bg-yellow-500 rounded-full" />
+                <span className="text-sm font-medium text-yellow-700">
+                  Not merged
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -479,10 +461,11 @@ function CurrentAttempt({
           </Button>
         </div>
         <div
-          className={`text-xs font-mono px-2 py-1 rounded break-all cursor-pointer transition-all duration-300 flex items-center gap-2 ${copied
-            ? 'bg-green-100 text-green-800 border border-green-300'
-            : 'text-muted-foreground bg-muted hover:bg-muted/80'
-            }`}
+          className={`text-xs font-mono px-2 py-1 rounded break-all cursor-pointer transition-all duration-300 flex items-center gap-2 ${
+            copied
+              ? 'bg-green-100 text-green-800 border border-green-300'
+              : 'text-muted-foreground bg-muted hover:bg-muted/80'
+          }`}
           onClick={handleCopyWorktreePath}
           title={copied ? 'Copied!' : 'Click to copy worktree path'}
         >
@@ -602,13 +585,10 @@ function CurrentAttempt({
           {/* Git Operations */}
           {selectedAttempt && branchStatus && (
             <>
-              {branchStatus.is_behind &&
-                !branchStatus.merged &&
+              {branchStatus.is_behind && !branchStatus.merged && (
                 <Button
                   onClick={handleRebaseClick}
-                  disabled={
-                    rebasing || branchStatusLoading || isAttemptRunning
-                  }
+                  disabled={rebasing || branchStatusLoading || isAttemptRunning}
                   variant="outline"
                   size="sm"
                   className="border-orange-300 text-orange-700 hover:bg-orange-50 gap-1"
@@ -618,7 +598,7 @@ function CurrentAttempt({
                   />
                   {rebasing ? 'Rebasing...' : `Rebase`}
                 </Button>
-              }
+              )}
               {
                 // Normal merge and PR buttons for regular tasks
                 !branchStatus.merged && (

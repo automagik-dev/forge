@@ -15,7 +15,6 @@ use thiserror::Error;
 use utils::response::ApiResponse;
 
 #[derive(Debug, Error, ts_rs::TS)]
-#[ts(export)]
 #[ts(type = "string")]
 pub enum ApiError {
     #[error(transparent)]

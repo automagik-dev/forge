@@ -28,12 +28,17 @@ pub fn router() -> Router<DeploymentImpl> {
 }
 
 #[derive(Debug, Serialize, Deserialize, TS)]
-#[ts(export)]
 pub struct Environment {
     pub os_type: String,
     pub os_version: String,
     pub os_architecture: String,
     pub bitness: String,
+}
+
+impl Default for Environment {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Environment {
@@ -72,11 +77,6 @@ async fn get_user_system_info(
     ResponseJson(ApiResponse::success(user_system_info))
 }
 
-async fn get_config(State(deployment): State<DeploymentImpl>) -> ResponseJson<ApiResponse<Config>> {
-    let config = deployment.config().read().await;
-    ResponseJson(ApiResponse::success(config.clone()))
-}
-
 async fn update_config(
     State(deployment): State<DeploymentImpl>,
     Json(new_config): Json<Config>,
@@ -96,7 +96,7 @@ async fn update_config(
 }
 
 async fn get_sound(Path(sound): Path<SoundFile>) -> Result<Response, ApiError> {
-    let sound = sound.serve().await.map_err(|e| DeploymentError::Other(e))?;
+    let sound = sound.serve().await.map_err(DeploymentError::Other)?;
     let response = Response::builder()
         .status(http::StatusCode::OK)
         .header(
@@ -124,7 +124,7 @@ async fn get_mcp_servers(
             let profile = executors::command::AgentProfiles::get_cached()
                 .get_profile(&config.profile)
                 .expect("Corrupted config");
-            profile.agent.clone()
+            profile.agent
         }
     };
 
@@ -171,7 +171,7 @@ async fn update_mcp_servers(
             let profile = executors::command::AgentProfiles::get_cached()
                 .get_profile(&config.profile)
                 .expect("Corrupted config");
-            profile.agent.clone()
+            profile.agent
         }
     };
 
@@ -251,7 +251,7 @@ async fn read_mcp_servers_from_config(
         .unwrap_or_else(|_| "{}".to_string());
     let raw_config: Value = serde_json::from_str(&file_content)?;
     let mcp_path = agent.mcp_attribute_path().unwrap();
-    let servers = get_mcp_servers_from_config_path(&agent, &raw_config, &mcp_path);
+    let servers = get_mcp_servers_from_config_path(agent, &raw_config, &mcp_path);
     Ok(servers)
 }
 

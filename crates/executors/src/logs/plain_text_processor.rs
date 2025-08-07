@@ -136,11 +136,10 @@ impl PlainTextBuffer {
 
     /// Get the current parial line.
     pub fn partial_line(&self) -> Option<&str> {
-        if let Some(last) = self.lines.last() {
-            if !last.ends_with('\n') {
+        if let Some(last) = self.lines.last()
+            && !last.ends_with('\n') {
                 return Some(last);
             }
-        }
         None
     }
 
@@ -224,7 +223,7 @@ impl PlainTextLogProcessor {
             let message_boundary_predicate = self
                 .message_boundary_predicate
                 .as_ref()
-                .and_then(|predicate| predicate(&self.buffer.lines()));
+                .and_then(|predicate| predicate(self.buffer.lines()));
 
             match message_boundary_predicate {
                 // Predicate decided to conclude the current entry at `line_idx`
@@ -320,7 +319,7 @@ impl PlainTextLogProcessor {
     ) -> Self {
         Self {
             buffer: PlainTextBuffer::new(),
-            index_provider: index_provider,
+            index_provider,
             entry_size_threshold: if size_threshold.is_none() && time_gap.is_none() {
                 Some(8 * 1024) // Default 8KiB when neither is set
             } else {

@@ -12,7 +12,7 @@ pub trait LinesStreamExt: Stream<Item = Result<String, std::io::Error>> + Sized 
     where
         Self: Send + 'static,
     {
-        let reader = StreamReader::new(self.map(|result| result.map(|s| Bytes::from(s))));
+        let reader = StreamReader::new(self.map(|result| result.map(Bytes::from)));
         FramedRead::new(reader, LinesCodec::new())
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))
             .boxed()

@@ -100,7 +100,7 @@ pub trait Deployment: Clone + Send + Sync + 'static {
         let email = config.github.primary_email.as_deref();
 
         self.sentry()
-            .update_scope(user_id, username.as_deref(), email.as_deref())
+            .update_scope(user_id, username, email)
             .await;
 
         Ok(())
@@ -155,12 +155,11 @@ pub trait Deployment: Clone + Send + Sync + 'static {
                 ExecutionProcessRunReason::CodingAgent
                     | ExecutionProcessRunReason::SetupScript
                     | ExecutionProcessRunReason::CleanupScript
-            ) {
-                if let Ok(Some(task_attempt)) =
+            )
+                && let Ok(Some(task_attempt)) =
                     TaskAttempt::find_by_id(&self.db().pool, process.task_attempt_id).await
-                {
-                    if let Ok(Some(task)) = task_attempt.parent_task(&self.db().pool).await {
-                        if let Err(e) =
+                    && let Ok(Some(task)) = task_attempt.parent_task(&self.db().pool).await
+                        && let Err(e) =
                             Task::update_status(&self.db().pool, task.id, TaskStatus::InReview)
                                 .await
                         {
@@ -169,9 +168,6 @@ pub trait Deployment: Clone + Send + Sync + 'static {
                                 e
                             );
                         }
-                    }
-                }
-            }
         }
         Ok(())
     }

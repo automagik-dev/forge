@@ -1,14 +1,8 @@
-use std::{
-    str::FromStr,
-    sync::{Arc, PoisonError},
-};
 
 use anyhow::{self, Error as AnyhowError};
-use axum::Router;
 use deployment::{Deployment, DeploymentError};
 use server::{routes, DeploymentImpl};
-use services::services::config::Config;
-use sqlx::{sqlite::SqliteConnectOptions, Error as SqlxError, SqlitePool};
+use sqlx::Error as SqlxError;
 use strip_ansi_escapes::strip;
 use thiserror::Error;
 use tracing_subscriber::{prelude::*, EnvFilter};

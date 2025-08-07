@@ -11,7 +11,6 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-#[ts(export)]
 pub struct CodingAgentFollowUpRequest {
     pub prompt: String,
     pub session_id: String,

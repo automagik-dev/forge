@@ -40,9 +40,8 @@ pub fn duplicate_stdout(
 
     // Create a new file descriptor in a cross-platform way (using os_pipe crate)
     let (pipe_reader, pipe_writer) = os_pipe::pipe().map_err(|e| {
-        ExecutorError::Io(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("Failed to create pipe: {}", e),
+        ExecutorError::Io(std::io::Error::other(
+            format!("Failed to create pipe: {e}"),
         ))
     })?;
     // Use fd as new child stdout

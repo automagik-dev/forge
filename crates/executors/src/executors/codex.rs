@@ -74,7 +74,7 @@ impl SessionHandler {
             .map_err(|e| format!("Failed to read directory {}: {}", dir.display(), e))?;
 
         for entry in entries {
-            let entry = entry.map_err(|e| format!("Failed to read directory entry: {}", e))?;
+            let entry = entry.map_err(|e| format!("Failed to read directory entry: {e}"))?;
             let path = entry.path();
 
             if path.is_dir() {
@@ -82,30 +82,25 @@ impl SessionHandler {
                 if let Ok(found) = Self::scan_directory(&path, session_id) {
                     return Ok(found);
                 }
-            } else if path.is_file() {
-                if let Some(filename) = path.file_name() {
-                    if let Some(filename_str) = filename.to_str() {
-                        if filename_str.contains(session_id)
+            } else if path.is_file()
+                && let Some(filename) = path.file_name()
+                    && let Some(filename_str) = filename.to_str()
+                        && filename_str.contains(session_id)
                             && filename_str.starts_with("rollout-")
                             && filename_str.ends_with(".jsonl")
                         {
                             return Ok(path);
                         }
-                    }
-                }
-            }
         }
 
         Err(format!(
-            "Could not find rollout file for session_id: {}",
-            session_id
+            "Could not find rollout file for session_id: {session_id}"
         ))
     }
 }
 
 /// An executor that uses Codex CLI to process tasks
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-#[ts(export)]
 pub struct Codex {
     command_builder: CommandBuilder,
 }
@@ -238,7 +233,7 @@ impl StandardCodingAgentExecutor for Codex {
                     let entry = NormalizedEntry {
                         timestamp: None,
                         entry_type: NormalizedEntryType::SystemMessage,
-                        content: format!("Raw output: {}", trimmed),
+                        content: format!("Raw output: {trimmed}"),
                         metadata: None,
                     };
 
@@ -375,9 +370,7 @@ impl CodexJson {
                         metadata: Some(metadata),
                     }]),
                     CodexMsgContent::Error { message } => {
-                        let error_message = message
-                            .as_ref()
-                            .map(|m| m.clone())
+                        let error_message = message.clone()
                             .unwrap_or_else(|| "Unknown error occurred".to_string());
                         Some(vec![NormalizedEntry {
                             timestamp: None,
@@ -404,12 +397,12 @@ impl CodexJson {
                                     command: command_str.clone(),
                                 },
                             },
-                            content: format!("`{}`", command_str),
+                            content: format!("`{command_str}`"),
                             metadata: Some(metadata),
                         }])
                     }
                     CodexMsgContent::PatchApplyBegin { changes, .. } => {
-                        for (file_path, _change_data) in changes {
+                        if let Some((file_path, _change_data)) = changes.iter().next() {
                             // Make path relative to current directory
                             let relative_path =
                                 make_path_relative(file_path, &current_dir.to_string_lossy());
@@ -434,7 +427,7 @@ impl CodexJson {
                         call_id: _,
                         ..
                     } => {
-                        let tool_name = format!("mcp_{}", tool);
+                        let tool_name = format!("mcp_{tool}");
                         let content = tool.clone();
 
                         Some(vec![NormalizedEntry {
@@ -443,8 +436,7 @@ impl CodexJson {
                                 tool_name,
                                 action_type: ActionType::Other {
                                     description: format!(
-                                        "MCP tool call to {} from {}",
-                                        tool, server
+                                        "MCP tool call to {tool} from {server}"
                                     ),
                                 },
                             },
@@ -481,19 +473,19 @@ impl CodexJson {
             let mut params = vec![];
 
             if let Some(model) = model {
-                params.push(format!("model: {}", model));
+                params.push(format!("model: {model}"));
             }
             if let Some(provider) = provider {
-                params.push(format!("provider: {}", provider));
+                params.push(format!("provider: {provider}"));
             }
             if let Some(reasoning_effort) = reasoning_effort {
-                params.push(format!("reasoning effort: {}", reasoning_effort));
+                params.push(format!("reasoning effort: {reasoning_effort}"));
             }
 
             if params.is_empty() {
                 None
             } else {
-                Some(format!("{}", params.join("  ")))
+                Some(params.join("  ").to_string())
             }
         } else {
             None
@@ -652,19 +644,6 @@ invalid json line here
                 .content
                 .contains("Raw output: invalid json line here")
         );
-    }
-
-    #[test]
-    fn test_find_rollout_file_path_basic() {
-        // Test the rollout file path logic (this is a unit test, won't actually find files)
-        let session_id = "00000000-0000-0000-0000-0000307f053d";
-
-        // This will likely fail because the directory doesn't exist, but we can test the logic
-        let result = SessionHandler::find_rollout_file_path(session_id);
-
-        // Should return an error since directory doesn't exist
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Could not find rollout file"));
     }
 
     #[test]

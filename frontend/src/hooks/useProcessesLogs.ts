@@ -1,5 +1,9 @@
 import { useMemo, useCallback } from 'react';
-import type { ExecutionProcessSummary, NormalizedEntry, PatchType } from 'shared/types';
+import type {
+  ExecutionProcessSummary,
+  NormalizedEntry,
+  PatchType,
+} from 'shared/types';
 import type { UnifiedLogEntry, ProcessStartPayload } from '@/types/logs';
 import { useEventSourceManager } from './useEventSourceManager';
 
@@ -19,7 +23,7 @@ export const useProcessesLogs = (
     // Coding agents use normalized logs endpoint, scripts use raw logs endpoint
     // Both endpoints now return PatchType objects via JSON patches
     const isCodingAgent = process.run_reason === 'codingagent';
-    return isCodingAgent 
+    return isCodingAgent
       ? `/api/execution-processes/${process.id}/normalized-logs`
       : `/api/execution-processes/${process.id}/raw-logs`;
   }, []);
@@ -36,12 +40,12 @@ export const useProcessesLogs = (
   const entries = useMemo(() => {
     const allEntries: UnifiedLogEntry[] = [];
     let entryCounter = 0;
-    
+
     // Iterate through processes in order, adding process marker followed by logs
-    processes.forEach(process => {
+    processes.forEach((process) => {
       const data = processData[process.id];
       if (!data?.entries) return;
-      
+
       // Add process start marker first
       const processStartPayload: ProcessStartPayload = {
         processId: process.id,
@@ -60,40 +64,47 @@ export const useProcessesLogs = (
       });
 
       // Then add all logs for this process (skip the injected PROCESS_START entry)
-      data.entries.forEach((patchEntry: PatchType | { type: 'PROCESS_START'; content: ProcessStartPayload }, index: number) => {
-        // Skip the injected PROCESS_START entry since we handle it above
-        if (patchEntry.type === 'PROCESS_START') return;
+      data.entries.forEach(
+        (
+          patchEntry:
+            | PatchType
+            | { type: 'PROCESS_START'; content: ProcessStartPayload },
+          index: number
+        ) => {
+          // Skip the injected PROCESS_START entry since we handle it above
+          if (patchEntry.type === 'PROCESS_START') return;
 
-        let channel: UnifiedLogEntry['channel'];
-        let payload: string | NormalizedEntry;
+          let channel: UnifiedLogEntry['channel'];
+          let payload: string | NormalizedEntry;
 
-        switch (patchEntry.type) {
-          case 'STDOUT':
-            channel = 'stdout';
-            payload = patchEntry.content;
-            break;
-          case 'STDERR':
-            channel = 'stderr';
-            payload = patchEntry.content;
-            break;
-          case 'NORMALIZED_ENTRY':
-            channel = 'normalized';
-            payload = patchEntry.content;
-            break;
-          default:
-            // Skip unknown patch types
-            return;
+          switch (patchEntry.type) {
+            case 'STDOUT':
+              channel = 'stdout';
+              payload = patchEntry.content;
+              break;
+            case 'STDERR':
+              channel = 'stderr';
+              payload = patchEntry.content;
+              break;
+            case 'NORMALIZED_ENTRY':
+              channel = 'normalized';
+              payload = patchEntry.content;
+              break;
+            default:
+              // Skip unknown patch types
+              return;
+          }
+
+          allEntries.push({
+            id: `${process.id}-${index}`,
+            ts: entryCounter++,
+            processId: process.id,
+            processName: process.run_reason,
+            channel,
+            payload,
+          });
         }
-
-        allEntries.push({
-          id: `${process.id}-${index}`,
-          ts: entryCounter++,
-          processId: process.id,
-          processName: process.run_reason,
-          channel,
-          payload,
-        });
-      });
+      );
     });
 
     // Limit entries (no sorting needed since we build in order)

@@ -9,7 +9,12 @@ import {
   useState,
 } from 'react';
 import type { ExecutionProcess, ExecutionProcessSummary } from 'shared/types';
-import type { EditorType, TaskAttempt, TaskAttemptState, TaskWithAttemptStatus } from 'shared/types';
+import type {
+  EditorType,
+  TaskAttempt,
+  TaskAttemptState,
+  TaskWithAttemptStatus,
+} from 'shared/types';
 import { attemptsApi, executionProcessesApi } from '@/lib/api.ts';
 import {
   TaskAttemptDataContext,
@@ -35,231 +40,230 @@ const TaskDetailsProvider: FC<{
   setShowEditorDialog,
   projectHasDevScript,
 }) => {
-    const [loading, setLoading] = useState(false);
-    const [isStopping, setIsStopping] = useState(false);
-    const [selectedAttempt, setSelectedAttempt] = useState<TaskAttempt | null>(
-      null
-    );
-    const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set());
-    const [fileToDelete, setFileToDelete] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [isStopping, setIsStopping] = useState(false);
+  const [selectedAttempt, setSelectedAttempt] = useState<TaskAttempt | null>(
+    null
+  );
+  const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set());
+  const [fileToDelete, setFileToDelete] = useState<string | null>(null);
 
-    const [executionState, setExecutionState] = useState<TaskAttemptState | null>(
-      null
-    );
+  const [executionState, setExecutionState] = useState<TaskAttemptState | null>(
+    null
+  );
 
-    const [attemptData, setAttemptData] = useState<AttemptData>({
-      processes: [],
-      runningProcessDetails: {},
-    });
+  const [attemptData, setAttemptData] = useState<AttemptData>({
+    processes: [],
+    runningProcessDetails: {},
+  });
 
-    const fetchExecutionState = useCallback(
-      async (attemptId: string) => {
-        if (!task) return;
+  const fetchExecutionState = useCallback(
+    async (attemptId: string) => {
+      if (!task) return;
 
-        try {
-          const result = await attemptsApi.getState(attemptId);
+      try {
+        const result = await attemptsApi.getState(attemptId);
 
-          if (result !== undefined) {
-            setExecutionState((prev) => {
-              if (JSON.stringify(prev) === JSON.stringify(result)) return prev;
-              return result;
-            });
-          }
-        } catch (err) {
-          console.error('Failed to fetch execution state:', err);
+        if (result !== undefined) {
+          setExecutionState((prev) => {
+            if (JSON.stringify(prev) === JSON.stringify(result)) return prev;
+            return result;
+          });
         }
-      },
-      [task, projectId]
-    );
+      } catch (err) {
+        console.error('Failed to fetch execution state:', err);
+      }
+    },
+    [task, projectId]
+  );
 
-    const handleOpenInEditor = useCallback(
-      async (editorType?: EditorType) => {
-        if (!task || !selectedAttempt) return;
+  const handleOpenInEditor = useCallback(
+    async (editorType?: EditorType) => {
+      if (!task || !selectedAttempt) return;
 
-        try {
-          const result = await attemptsApi.openEditor(
-            selectedAttempt.id,
-            editorType
+      try {
+        const result = await attemptsApi.openEditor(
+          selectedAttempt.id,
+          editorType
+        );
+
+        if (result === undefined && !editorType) {
+          setShowEditorDialog(true);
+        }
+      } catch (err) {
+        console.error('Failed to open editor:', err);
+        if (!editorType) {
+          setShowEditorDialog(true);
+        }
+      }
+    },
+    [task, projectId, selectedAttempt, setShowEditorDialog]
+  );
+
+  const fetchAttemptData = useCallback(
+    async (attemptId: string) => {
+      if (!task) return;
+
+      try {
+        const processesResult =
+          await executionProcessesApi.getExecutionProcesses(attemptId);
+
+        if (processesResult !== undefined) {
+          const runningProcesses = processesResult.filter(
+            (process) => process.status === 'running'
           );
 
-          if (result === undefined && !editorType) {
-            setShowEditorDialog(true);
+          const runningProcessDetails: Record<string, ExecutionProcess> = {};
+
+          // Fetch details for running processes
+          for (const process of runningProcesses) {
+            const result = await executionProcessesApi.getDetails(process.id);
+
+            if (result !== undefined) {
+              runningProcessDetails[process.id] = result;
+            }
           }
-        } catch (err) {
-          console.error('Failed to open editor:', err);
-          if (!editorType) {
-            setShowEditorDialog(true);
-          }
-        }
-      },
-      [task, projectId, selectedAttempt, setShowEditorDialog]
-    );
 
-    const fetchAttemptData = useCallback(
-      async (attemptId: string) => {
-        if (!task) return;
-
-        try {
-          const processesResult = await executionProcessesApi.getExecutionProcesses(attemptId);
-
-          if (processesResult !== undefined) {
-            const runningProcesses = processesResult.filter(
-              (process) => process.status === 'running'
+          // Also fetch setup script process details if it exists in the processes
+          const setupProcess = processesResult.find(
+            (process) => process.run_reason === 'setupscript'
+          );
+          if (setupProcess && !runningProcessDetails[setupProcess.id]) {
+            const result = await executionProcessesApi.getDetails(
+              setupProcess.id
             );
 
-            const runningProcessDetails: Record<string, ExecutionProcess> = {};
-
-            // Fetch details for running processes
-            for (const process of runningProcesses) {
-              const result = await executionProcessesApi.getDetails(process.id);
-
-              if (result !== undefined) {
-                runningProcessDetails[process.id] = result;
-              }
+            if (result !== undefined) {
+              runningProcessDetails[setupProcess.id] = result;
             }
-
-            // Also fetch setup script process details if it exists in the processes
-            const setupProcess = processesResult.find(
-              (process) => process.run_reason === 'setupscript'
-            );
-            if (setupProcess && !runningProcessDetails[setupProcess.id]) {
-              const result = await executionProcessesApi.getDetails(
-                setupProcess.id
-              );
-
-              if (result !== undefined) {
-                runningProcessDetails[setupProcess.id] = result;
-              }
-            }
-
-            setAttemptData((prev: AttemptData) => {
-              const newData = {
-                processes: processesResult,
-                runningProcessDetails,
-              };
-              if (JSON.stringify(prev) === JSON.stringify(newData)) return prev;
-              return newData;
-            });
           }
-        } catch (err) {
-          console.error('Failed to fetch attempt data:', err);
-        }
-      },
-      [task, projectId]
-    );
 
-    useEffect(() => {
-      if (selectedAttempt && task) {
+          setAttemptData((prev: AttemptData) => {
+            const newData = {
+              processes: processesResult,
+              runningProcessDetails,
+            };
+            if (JSON.stringify(prev) === JSON.stringify(newData)) return prev;
+            return newData;
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch attempt data:', err);
+      }
+    },
+    [task, projectId]
+  );
+
+  useEffect(() => {
+    if (selectedAttempt && task) {
+      fetchAttemptData(selectedAttempt.id);
+      fetchExecutionState(selectedAttempt.id);
+    }
+  }, [selectedAttempt, task, fetchAttemptData, fetchExecutionState]);
+
+  const isAttemptRunning = useMemo(() => {
+    if (!selectedAttempt || isStopping) {
+      return false;
+    }
+
+    return attemptData.processes.some(
+      (process: ExecutionProcessSummary) =>
+        (process.run_reason === 'codingagent' ||
+          process.run_reason === 'setupscript' ||
+          process.run_reason === 'cleanupscript') &&
+        process.status === 'running'
+    );
+  }, [selectedAttempt, attemptData.processes, isStopping]);
+
+  useEffect(() => {
+    if (!isAttemptRunning || !task) return;
+
+    const interval = setInterval(() => {
+      if (selectedAttempt) {
         fetchAttemptData(selectedAttempt.id);
         fetchExecutionState(selectedAttempt.id);
       }
-    }, [selectedAttempt, task, fetchAttemptData, fetchExecutionState]);
+    }, 5000);
 
-    const isAttemptRunning = useMemo(() => {
-      if (!selectedAttempt || isStopping) {
-        return false;
-      }
+    return () => clearInterval(interval);
+  }, [
+    isAttemptRunning,
+    task,
+    selectedAttempt,
+    fetchAttemptData,
+    fetchExecutionState,
+  ]);
 
-      return attemptData.processes.some(
-        (process: ExecutionProcessSummary) =>
-          (process.run_reason === 'codingagent' ||
-            process.run_reason === 'setupscript' ||
-            process.run_reason === 'cleanupscript') &&
-          process.status === 'running'
-      );
-    }, [selectedAttempt, attemptData.processes, isStopping]);
-
-    useEffect(() => {
-      if (!isAttemptRunning || !task) return;
-
-      const interval = setInterval(() => {
-        if (selectedAttempt) {
-          fetchAttemptData(selectedAttempt.id);
-          fetchExecutionState(selectedAttempt.id);
-        }
-      }, 5000);
-
-      return () => clearInterval(interval);
-    }, [
-      isAttemptRunning,
+  const value = useMemo(
+    () => ({
       task,
-      selectedAttempt,
+      projectId,
+      handleOpenInEditor,
+      projectHasDevScript,
+    }),
+    [task, projectId, handleOpenInEditor, projectHasDevScript]
+  );
+
+  const taskAttemptLoadingValue = useMemo(
+    () => ({ loading, setLoading }),
+    [loading]
+  );
+
+  const selectedAttemptValue = useMemo(
+    () => ({ selectedAttempt, setSelectedAttempt }),
+    [selectedAttempt]
+  );
+
+  const attemptStoppingValue = useMemo(
+    () => ({ isStopping, setIsStopping }),
+    [isStopping]
+  );
+
+  const deletingFilesValue = useMemo(
+    () => ({
+      deletingFiles,
+      fileToDelete,
+      setFileToDelete,
+      setDeletingFiles,
+    }),
+    [deletingFiles, fileToDelete]
+  );
+
+  const attemptDataValue = useMemo(
+    () => ({
+      attemptData,
+      setAttemptData,
       fetchAttemptData,
+      isAttemptRunning,
+    }),
+    [attemptData, fetchAttemptData, isAttemptRunning]
+  );
+
+  const executionStateValue = useMemo(
+    () => ({
+      executionState,
       fetchExecutionState,
-    ]);
+    }),
+    [executionState, fetchExecutionState]
+  );
 
-    const value = useMemo(
-      () => ({
-        task,
-        projectId,
-        handleOpenInEditor,
-        projectHasDevScript,
-      }),
-      [task, projectId, handleOpenInEditor, projectHasDevScript]
-    );
-
-    const taskAttemptLoadingValue = useMemo(
-      () => ({ loading, setLoading }),
-      [loading]
-    );
-
-    const selectedAttemptValue = useMemo(
-      () => ({ selectedAttempt, setSelectedAttempt }),
-      [selectedAttempt]
-    );
-
-    const attemptStoppingValue = useMemo(
-      () => ({ isStopping, setIsStopping }),
-      [isStopping]
-    );
-
-    const deletingFilesValue = useMemo(
-      () => ({
-        deletingFiles,
-        fileToDelete,
-        setFileToDelete,
-        setDeletingFiles,
-      }),
-      [deletingFiles, fileToDelete]
-    );
-
-    const attemptDataValue = useMemo(
-      () => ({
-        attemptData,
-        setAttemptData,
-        fetchAttemptData,
-        isAttemptRunning,
-      }),
-      [attemptData, fetchAttemptData, isAttemptRunning]
-    );
-
-    const executionStateValue = useMemo(
-      () => ({
-        executionState,
-        fetchExecutionState,
-      }),
-      [executionState, fetchExecutionState]
-    );
-
-    return (
-      <TaskDetailsContext.Provider value={value}>
-        <TaskAttemptLoadingContext.Provider value={taskAttemptLoadingValue}>
-          <TaskSelectedAttemptContext.Provider value={selectedAttemptValue}>
-            <TaskAttemptStoppingContext.Provider value={attemptStoppingValue}>
-              <TaskDeletingFilesContext.Provider value={deletingFilesValue}>
-                <TaskAttemptDataContext.Provider value={attemptDataValue}>
-                  <TaskExecutionStateContext.Provider
-                    value={executionStateValue}
-                  >
-                    {children}
-                  </TaskExecutionStateContext.Provider>
-                </TaskAttemptDataContext.Provider>
-              </TaskDeletingFilesContext.Provider>
-            </TaskAttemptStoppingContext.Provider>
-          </TaskSelectedAttemptContext.Provider>
-        </TaskAttemptLoadingContext.Provider>
-      </TaskDetailsContext.Provider>
-    );
-  };
+  return (
+    <TaskDetailsContext.Provider value={value}>
+      <TaskAttemptLoadingContext.Provider value={taskAttemptLoadingValue}>
+        <TaskSelectedAttemptContext.Provider value={selectedAttemptValue}>
+          <TaskAttemptStoppingContext.Provider value={attemptStoppingValue}>
+            <TaskDeletingFilesContext.Provider value={deletingFilesValue}>
+              <TaskAttemptDataContext.Provider value={attemptDataValue}>
+                <TaskExecutionStateContext.Provider value={executionStateValue}>
+                  {children}
+                </TaskExecutionStateContext.Provider>
+              </TaskAttemptDataContext.Provider>
+            </TaskDeletingFilesContext.Provider>
+          </TaskAttemptStoppingContext.Provider>
+        </TaskSelectedAttemptContext.Provider>
+      </TaskAttemptLoadingContext.Provider>
+    </TaskDetailsContext.Provider>
+  );
+};
 
 export default TaskDetailsProvider;

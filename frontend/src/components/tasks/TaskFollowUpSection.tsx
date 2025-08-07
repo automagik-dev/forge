@@ -45,12 +45,9 @@ export function TaskFollowUpSection() {
     try {
       setIsSendingFollowUp(true);
       setFollowUpError(null);
-      await attemptsApi.followUp(
-        selectedAttempt.id,
-        {
-          prompt: followUpMessage.trim(),
-        }
-      );
+      await attemptsApi.followUp(selectedAttempt.id, {
+        prompt: followUpMessage.trim(),
+      });
       setFollowUpMessage('');
       fetchAttemptData(selectedAttempt.id, selectedAttempt.task_id);
     } catch (error: unknown) {

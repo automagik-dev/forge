@@ -38,9 +38,7 @@ import type {
   Project,
   TaskTemplate,
 } from 'shared/types';
-import type {
-  CreateTask,
-} from 'shared/types';
+import type { CreateTask } from 'shared/types';
 import type { DragEndEvent } from '@/components/ui/shadcn-io/kanban';
 
 type Task = TaskWithAttemptStatus;

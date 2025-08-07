@@ -25,7 +25,6 @@ use crate::{
 };
 
 #[derive(Debug, Deserialize, TS)]
-#[ts(export)]
 pub struct CreateProjectFromGitHub {
     pub repository_id: i64,
     pub name: String,

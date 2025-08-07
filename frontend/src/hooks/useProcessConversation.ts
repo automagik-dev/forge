@@ -21,38 +21,46 @@ export const useProcessConversation = (
   processId: string,
   enabled: boolean
 ): UseProcessConversationResult => {
-  const endpoint = processId ? `/api/execution-processes/${processId}/normalized-logs` : undefined;
+  const endpoint = processId
+    ? `/api/execution-processes/${processId}/normalized-logs`
+    : undefined;
 
-  const initialData = useCallback((): ProcessConversationData => ({
-    entries: [],
-    session_id: null,
-    executor_type: '',
-    prompt: null,
-    summary: null,
-  }), []);
+  const initialData = useCallback(
+    (): ProcessConversationData => ({
+      entries: [],
+      session_id: null,
+      executor_type: '',
+      prompt: null,
+      summary: null,
+    }),
+    []
+  );
 
-  const injectInitialEntry = useCallback((data: ProcessConversationData) => {
-    if (processId) {
-      // Inject process start marker as the first entry
-      const processStartPayload: ProcessStartPayload = {
-        processId: processId,
-        runReason: 'Manual', // Default value since we don't have process details here
-        startedAt: new Date().toISOString(),
-        status: 'running',
-      };
+  const injectInitialEntry = useCallback(
+    (data: ProcessConversationData) => {
+      if (processId) {
+        // Inject process start marker as the first entry
+        const processStartPayload: ProcessStartPayload = {
+          processId: processId,
+          runReason: 'Manual', // Default value since we don't have process details here
+          startedAt: new Date().toISOString(),
+          status: 'running',
+        };
 
-      const processStartEntry = {
-        type: 'PROCESS_START' as const,
-        content: processStartPayload,
-      };
+        const processStartEntry = {
+          type: 'PROCESS_START' as const,
+          content: processStartPayload,
+        };
 
-      data.entries.push(processStartEntry);
-    }
-  }, [processId]);
+        data.entries.push(processStartEntry);
+      }
+    },
+    [processId]
+  );
 
   const deduplicatePatches = useCallback((patches: Operation[]) => {
     const processedEntries = new Set<number>();
-    
+
     return patches.filter((patch: any) => {
       // Extract entry index from path like "/entries/123"
       const match = patch.path?.match(/^\/entries\/(\d+)$/);

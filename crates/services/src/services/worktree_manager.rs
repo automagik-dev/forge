@@ -82,7 +82,7 @@ impl WorktreeManager {
                 Ok::<(), GitError>(())
             })
             .await
-            .map_err(|e| WorktreeError::TaskJoin(format!("Task join error: {}", e)))??;
+            .map_err(|e| WorktreeError::TaskJoin(format!("Task join error: {e}")))??;
         }
 
         Self::ensure_worktree_exists(repo_path, branch_name, worktree_path).await
@@ -110,7 +110,7 @@ impl WorktreeManager {
         let _guard = lock.lock().await;
 
         // Check if worktree already exists and is properly set up
-        if Self::is_worktree_properly_set_up(&repo_path, &worktree_path).await? {
+        if Self::is_worktree_properly_set_up(repo_path, worktree_path).await? {
             debug!("Worktree already properly set up at path: {}", path_str);
             return Ok(());
         }
@@ -147,7 +147,7 @@ impl WorktreeManager {
 
         // Step 1: Comprehensive cleanup of existing worktree and metadata (non-blocking)
         Self::comprehensive_worktree_cleanup_async(
-            &git_repo_path,
+            git_repo_path,
             &worktree_path_owned,
             &worktree_name,
         )
@@ -158,13 +158,13 @@ impl WorktreeManager {
             let parent_path = parent.to_path_buf();
             tokio::task::spawn_blocking(move || std::fs::create_dir_all(&parent_path))
                 .await
-                .map_err(|e| WorktreeError::TaskJoin(format!("Task join error: {}", e)))?
-                .map_err(|e| WorktreeError::Io(e))?;
+                .map_err(|e| WorktreeError::TaskJoin(format!("Task join error: {e}")))?
+                .map_err(WorktreeError::Io)?;
         }
 
         // Step 3: Create the worktree with retry logic for metadata conflicts (non-blocking)
         Self::create_worktree_with_retry(
-            &git_repo_path,
+            git_repo_path,
             &branch_name_owned,
             &worktree_path_owned,
             &worktree_name,
@@ -188,7 +188,7 @@ impl WorktreeManager {
             }
 
             // Check 2: Worktree must be registered in git metadata using find_worktree
-            let repo = Repository::open(&repo_path).map_err(|e| WorktreeError::Git(e))?;
+            let repo = Repository::open(&repo_path).map_err(WorktreeError::Git)?;
             let worktree_name = worktree_path
                 .file_name()
                 .and_then(|n| n.to_str())
@@ -201,7 +201,7 @@ impl WorktreeManager {
             }
         })
         .await
-        .map_err(|e| WorktreeError::TaskJoin(format!("{}", e)))?
+        .map_err(|e| WorktreeError::TaskJoin(format!("{e}")))?
     }
 
     /// Try to remove a worktree registration from git
@@ -250,7 +250,7 @@ impl WorktreeManager {
                 "Removing existing worktree directory: {}",
                 worktree_path.display()
             );
-            std::fs::remove_dir_all(worktree_path).map_err(|e| WorktreeError::Io(e))?;
+            std::fs::remove_dir_all(worktree_path).map_err(WorktreeError::Io)?;
         }
 
         debug!(
@@ -288,7 +288,7 @@ impl WorktreeManager {
                     )
                 })
                 .await
-                .map_err(|e| WorktreeError::TaskJoin(format!("Task join error: {}", e)))?
+                .map_err(|e| WorktreeError::TaskJoin(format!("Task join error: {e}")))?
             }
             Ok(Err(e)) => {
                 // Repository doesn't exist (likely deleted project), fall back to simple cleanup
@@ -301,7 +301,7 @@ impl WorktreeManager {
                 Self::simple_worktree_cleanup(&worktree_path_owned).await?;
                 Ok(())
             }
-            Err(e) => Err(WorktreeError::TaskJoin(format!("{}", e))),
+            Err(e) => Err(WorktreeError::TaskJoin(format!("{e}"))),
         }
     }
 
@@ -321,12 +321,12 @@ impl WorktreeManager {
 
         tokio::task::spawn_blocking(move || -> Result<(), WorktreeError> {
             // Open repository in blocking context
-            let repo = Repository::open(&git_repo_path).map_err(|e| WorktreeError::Git(e))?;
+            let repo = Repository::open(&git_repo_path).map_err(WorktreeError::Git)?;
 
             // Find the branch reference using the branch name
             let branch_ref = repo
                 .find_branch(&branch_name, git2::BranchType::Local)
-                .map_err(|e| WorktreeError::Git(e))?
+                .map_err(WorktreeError::Git)?
                 .into_reference();
 
             // Create worktree options
@@ -338,8 +338,7 @@ impl WorktreeManager {
                     // Verify the worktree was actually created
                     if !worktree_path.exists() {
                         return Err(WorktreeError::Repository(format!(
-                            "Worktree creation reported success but path {} does not exist",
-                            path_str
+                            "Worktree creation reported success but path {path_str} does not exist"
                         )));
                     }
 
@@ -367,15 +366,14 @@ impl WorktreeManager {
 
                     // Force cleanup metadata and try one more time
                     Self::force_cleanup_worktree_metadata(&git_repo_path, &worktree_name)
-                        .map_err(|io_err| WorktreeError::Io(io_err))?;
+                        .map_err(WorktreeError::Io)?;
 
                     // Try again after cleanup
                     match repo.worktree(&branch_name, &worktree_path, Some(&worktree_opts)) {
                         Ok(_) => {
                             if !worktree_path.exists() {
                                 return Err(WorktreeError::Repository(format!(
-                                    "Worktree creation reported success but path {} does not exist",
-                                    path_str
+                                    "Worktree creation reported success but path {path_str} does not exist"
                                 )));
                             }
 
@@ -407,7 +405,7 @@ impl WorktreeManager {
             }
         })
         .await
-        .map_err(|e| WorktreeError::TaskJoin(format!("{}", e)))?
+        .map_err(|e| WorktreeError::TaskJoin(format!("{e}")))?
     }
 
     /// Get the git repository path
@@ -420,7 +418,7 @@ impl WorktreeManager {
             .ok_or_else(|| {
                 WorktreeError::InvalidPath("Repository path is not valid UTF-8".to_string())
             })
-            .map(|s| PathBuf::from(s))
+            .map(PathBuf::from)
     }
 
     /// Force cleanup worktree metadata directory
@@ -517,7 +515,7 @@ impl WorktreeManager {
                 // We need the working directory (parent of .git)
                 let git_dir_path = Path::new(&git_common_dir);
                 if git_dir_path.file_name() == Some(std::ffi::OsStr::new(".git")) {
-                    git_dir_path.parent()?.to_str().map(|s| PathBuf::from(s))
+                    git_dir_path.parent()?.to_str().map(PathBuf::from)
                 } else {
                     // In case of bare repo or unusual setup, use the git-common-dir as is
                     Some(PathBuf::from(git_common_dir))
@@ -537,7 +535,7 @@ impl WorktreeManager {
 
         tokio::task::spawn_blocking(move || -> Result<(), WorktreeError> {
             if worktree_path_owned.exists() {
-                std::fs::remove_dir_all(&worktree_path_owned).map_err(|e| WorktreeError::Io(e))?;
+                std::fs::remove_dir_all(&worktree_path_owned).map_err(WorktreeError::Io)?;
                 info!(
                     "Removed worktree directory: {}",
                     worktree_path_owned.display()
@@ -546,7 +544,7 @@ impl WorktreeManager {
             Ok(())
         })
         .await
-        .map_err(|e| WorktreeError::TaskJoin(format!("{}", e)))?
+        .map_err(|e| WorktreeError::TaskJoin(format!("{e}")))?
     }
 
     /// Rewrite worktree's commondir file to use relative paths for WSL compatibility
@@ -606,7 +604,7 @@ impl WorktreeManager {
             {
                 if resolved_canonical == target_canonical {
                     // Write the relative path
-                    std::fs::write(&commondir_path, format!("{}\n", relative_path_str))?;
+                    std::fs::write(&commondir_path, format!("{relative_path_str}\n"))?;
                     info!(
                         "Rewrote commondir to relative path: {} -> {}",
                         current_content, relative_path_str

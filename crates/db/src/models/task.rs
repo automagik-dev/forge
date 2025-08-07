@@ -9,7 +9,6 @@ use super::project::Project;
 #[derive(Debug, Clone, Type, Serialize, Deserialize, PartialEq, TS)]
 #[sqlx(type_name = "task_status", rename_all = "lowercase")]
 #[serde(rename_all = "lowercase")]
-#[ts(export)]
 pub enum TaskStatus {
     Todo,
     InProgress,
@@ -19,7 +18,6 @@ pub enum TaskStatus {
 }
 
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize, TS)]
-#[ts(export)]
 pub struct Task {
     pub id: Uuid,
     pub project_id: Uuid, // Foreign key to Project
@@ -32,7 +30,6 @@ pub struct Task {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
 pub struct TaskWithAttemptStatus {
     pub id: Uuid,
     pub project_id: Uuid,
@@ -49,7 +46,6 @@ pub struct TaskWithAttemptStatus {
 }
 
 #[derive(Debug, Deserialize, TS)]
-#[ts(export)]
 pub struct CreateTask {
     pub project_id: Uuid,
     pub title: String,
@@ -58,7 +54,6 @@ pub struct CreateTask {
 }
 
 #[derive(Debug, Deserialize, TS)]
-#[ts(export)]
 pub struct UpdateTask {
     pub title: Option<String>,
     pub description: Option<String>,

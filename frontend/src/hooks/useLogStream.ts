@@ -6,7 +6,10 @@ interface UseLogStreamResult {
   error: string | null;
 }
 
-export const useLogStream = (processId: string, enabled: boolean): UseLogStreamResult => {
+export const useLogStream = (
+  processId: string,
+  enabled: boolean
+): UseLogStreamResult => {
   const [logs, setLogs] = useState<string[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +20,9 @@ export const useLogStream = (processId: string, enabled: boolean): UseLogStreamR
       return;
     }
 
-    const eventSource = new EventSource(`/api/execution-processes/${processId}/raw-logs`);
+    const eventSource = new EventSource(
+      `/api/execution-processes/${processId}/raw-logs`
+    );
     eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
@@ -27,19 +32,19 @@ export const useLogStream = (processId: string, enabled: boolean): UseLogStreamR
 
     eventSource.onmessage = (event) => {
       // Handle default messages
-      setLogs(prev => [...prev, event.data]);
+      setLogs((prev) => [...prev, event.data]);
     };
 
     eventSource.addEventListener('stdout', (event) => {
-      setLogs(prev => [...prev, `stdout: ${event.data}`]);
+      setLogs((prev) => [...prev, `stdout: ${event.data}`]);
     });
 
     eventSource.addEventListener('stderr', (event) => {
-      setLogs(prev => [...prev, `stderr: ${event.data}`]);
+      setLogs((prev) => [...prev, `stderr: ${event.data}`]);
     });
 
     eventSource.addEventListener('finished', () => {
-      setLogs(prev => [...prev, '--- Stream finished ---']);
+      setLogs((prev) => [...prev, '--- Stream finished ---']);
       eventSource.close();
       setIsConnected(false);
     });

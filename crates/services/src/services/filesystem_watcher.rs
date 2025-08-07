@@ -86,7 +86,7 @@ fn path_allowed(path: &PathBuf, gi: &Gitignore, canonical_root: &Path) -> bool {
     // Heuristic: assume paths without extensions are directories
     // This works for most cases and avoids filesystem syscalls
     let is_dir = relative_path.extension().is_none();
-    let matched = gi.matched_path_or_any_parents(&relative_path, is_dir);
+    let matched = gi.matched_path_or_any_parents(relative_path, is_dir);
 
     !matched.is_ignore()
 }
@@ -159,8 +159,8 @@ async fn async_watch<P: AsRef<Path>>(path: P) -> Result<(), FilesystemWatcherErr
 
     while let Some(res) = rx.next().await {
         match res {
-            Ok(event) => println!("changed: {:?}", event),
-            Err(e) => println!("watch error: {:?}", e),
+            Ok(event) => println!("changed: {event:?}"),
+            Err(e) => println!("watch error: {e:?}"),
         }
     }
 
