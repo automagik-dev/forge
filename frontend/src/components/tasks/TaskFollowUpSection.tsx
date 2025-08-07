@@ -31,14 +31,7 @@ export function TaskFollowUpSection() {
     ) {
       return false;
     }
-
-    const completedOrKilledCodingAgentProcesses = attemptData.processes.filter(
-      (process) =>
-        process.run_reason === 'codingagent' &&
-        (process.status === 'completed' || process.status === 'killed')
-    );
-
-    return completedOrKilledCodingAgentProcesses.length > 0;
+    return true;
   }, [
     selectedAttempt,
     attemptData.processes,
