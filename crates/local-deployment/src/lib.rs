@@ -14,10 +14,7 @@ use services::services::{
     sentry::SentryService,
 };
 use tokio::sync::RwLock;
-use utils::{
-    assets::config_path,
-    msg_store::MsgStore,
-};
+use utils::{assets::config_path, msg_store::MsgStore};
 use uuid::Uuid;
 
 use crate::container::LocalContainerService;

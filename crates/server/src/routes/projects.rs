@@ -9,8 +9,7 @@ use axum::{
     Extension, Json, Router,
 };
 use db::models::project::{
-    CreateProject, Project, ProjectError, SearchMatchType, SearchResult,
-    UpdateProject,
+    CreateProject, Project, ProjectError, SearchMatchType, SearchResult, UpdateProject,
 };
 use deployment::Deployment;
 use ignore::WalkBuilder;
@@ -144,9 +143,7 @@ pub async fn create_project(
 
             Ok(ResponseJson(ApiResponse::success(project)))
         }
-        Err(e) => {
-            Err(ProjectError::CreateFailed(e.to_string()).into())
-        }
+        Err(e) => Err(ProjectError::CreateFailed(e.to_string()).into()),
     }
 }
 

@@ -28,10 +28,11 @@ pub fn is_wsl2() -> bool {
 
         // Check /proc/version for WSL2 signature
         if let Ok(version) = std::fs::read_to_string("/proc/version")
-            && (version.contains("WSL2") || version.contains("microsoft")) {
-                tracing::debug!("WSL2 detected via /proc/version");
-                return true;
-            }
+            && (version.contains("WSL2") || version.contains("microsoft"))
+        {
+            tracing::debug!("WSL2 detected via /proc/version");
+            return true;
+        }
 
         tracing::debug!("WSL2 not detected");
         false
@@ -65,9 +66,10 @@ pub async fn get_powershell_script()
     if script_path.exists() {
         // Verify file has content (basic validation)
         if let Ok(metadata) = std::fs::metadata(&script_path)
-            && metadata.len() > 0 {
-                return Ok(script_path);
-            }
+            && metadata.len() > 0
+        {
+            return Ok(script_path);
+        }
     }
 
     // File doesn't exist or is invalid, create it

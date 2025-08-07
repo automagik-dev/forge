@@ -238,10 +238,11 @@ impl ClaudeLogProcessor {
                         Ok(claude_json) => {
                             // Extract session ID if present
                             if !session_id_extracted
-                                && let Some(session_id) = Self::extract_session_id(&claude_json) {
-                                    msg_store.push_session_id(session_id);
-                                    session_id_extracted = true;
-                                }
+                                && let Some(session_id) = Self::extract_session_id(&claude_json)
+                            {
+                                msg_store.push_session_id(session_id);
+                                session_id_extracted = true;
+                            }
 
                             // Convert to normalized entries and create patches
                             for entry in
@@ -336,15 +337,16 @@ impl ClaudeLogProcessor {
                 let mut entries = Vec::new();
 
                 if self.model_name.is_none()
-                    && let Some(model) = message.model.as_ref() {
-                        self.model_name = Some(model.clone());
-                        entries.push(NormalizedEntry {
-                            timestamp: None,
-                            entry_type: NormalizedEntryType::SystemMessage,
-                            content: format!("System initialized with model: {model}"),
-                            metadata: None,
-                        });
-                    }
+                    && let Some(model) = message.model.as_ref()
+                {
+                    self.model_name = Some(model.clone());
+                    entries.push(NormalizedEntry {
+                        timestamp: None,
+                        entry_type: NormalizedEntryType::SystemMessage,
+                        content: format!("System initialized with model: {model}"),
+                        metadata: None,
+                    });
+                }
 
                 for content_item in &message.content {
                     if let Some(entry) = Self::content_item_to_normalized_entry(
@@ -593,8 +595,7 @@ impl ClaudeLogProcessor {
                                     .get("priority")
                                     .and_then(|p| p.as_str())
                                     .unwrap_or("medium");
-                                todo_items
-                                    .push(format!("{status_emoji} {content} ({priority})"));
+                                todo_items.push(format!("{status_emoji} {content} ({priority})"));
                             }
                         }
                         if !todo_items.is_empty() {

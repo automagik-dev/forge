@@ -137,9 +137,10 @@ impl PlainTextBuffer {
     /// Get the current parial line.
     pub fn partial_line(&self) -> Option<&str> {
         if let Some(last) = self.lines.last()
-            && !last.ends_with('\n') {
-                return Some(last);
-            }
+            && !last.ends_with('\n')
+        {
+            return Some(last);
+        }
         None
     }
 

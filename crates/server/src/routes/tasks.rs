@@ -17,11 +17,7 @@ use sqlx::Error as SqlxError;
 use utils::response::ApiResponse;
 use uuid::Uuid;
 
-use crate::{
-    error::ApiError,
-    middleware::load_task_middleware,
-    DeploymentImpl,
-};
+use crate::{error::ApiError, middleware::load_task_middleware, DeploymentImpl};
 
 #[derive(Debug, Deserialize)]
 pub struct TaskQuery {

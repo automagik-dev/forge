@@ -190,10 +190,11 @@ impl Opencode {
                 );
                 msg_store.push_patch(patch);
             } else if !session_id_extracted
-                && let Some(session_id) = LogUtils::parse_session_id_from_line(&line) {
-                    msg_store.push_session_id(session_id);
-                    session_id_extracted = true;
-                }
+                && let Some(session_id) = LogUtils::parse_session_id_from_line(&line)
+            {
+                msg_store.push_session_id(session_id);
+                session_id_extracted = true;
+            }
         }
     }
 
@@ -812,9 +813,10 @@ impl LogUtils {
 
         // Try regex for session ID extraction from service=session logs
         if let Some(captures) = SESSION_ID_REGEX.captures(line)
-            && let Some(id) = captures.get(2) {
-                return Some(id.as_str().to_string());
-            }
+            && let Some(id) = captures.get(2)
+        {
+            return Some(id.as_str().to_string());
+        }
 
         None
     }

@@ -341,8 +341,6 @@ pub trait ContainerService {
         let msg_stores = self.msg_stores().clone();
         let db = self.db().clone();
 
-        
-
         tokio::spawn(async move {
             // Get the message store for this execution
             let store = {
@@ -437,14 +435,16 @@ pub trait ContainerService {
             .await?
             .ok_or(SqlxError::RowNotFound)?;
 
-        let cleanup_action = project.cleanup_script.map(|script| Box::new(ExecutorAction::new(
+        let cleanup_action = project.cleanup_script.map(|script| {
+            Box::new(ExecutorAction::new(
                 ExecutorActionType::ScriptRequest(ScriptRequest {
                     script,
                     language: ScriptRequestLanguage::Bash,
                     context: ScriptContext::CleanupScript,
                 }),
                 None,
-            )));
+            ))
+        });
 
         // Choose whether to execute the setup_script or coding agent first
         let execution_process = if let Some(setup_script) = project.setup_script {

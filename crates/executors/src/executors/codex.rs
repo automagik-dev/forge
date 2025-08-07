@@ -84,13 +84,13 @@ impl SessionHandler {
                 }
             } else if path.is_file()
                 && let Some(filename) = path.file_name()
-                    && let Some(filename_str) = filename.to_str()
-                        && filename_str.contains(session_id)
-                            && filename_str.starts_with("rollout-")
-                            && filename_str.ends_with(".jsonl")
-                        {
-                            return Ok(path);
-                        }
+                && let Some(filename_str) = filename.to_str()
+                && filename_str.contains(session_id)
+                && filename_str.starts_with("rollout-")
+                && filename_str.ends_with(".jsonl")
+            {
+                return Ok(path);
+            }
         }
 
         Err(format!(
@@ -370,7 +370,8 @@ impl CodexJson {
                         metadata: Some(metadata),
                     }]),
                     CodexMsgContent::Error { message } => {
-                        let error_message = message.clone()
+                        let error_message = message
+                            .clone()
                             .unwrap_or_else(|| "Unknown error occurred".to_string());
                         Some(vec![NormalizedEntry {
                             timestamp: None,
@@ -435,9 +436,7 @@ impl CodexJson {
                             entry_type: NormalizedEntryType::ToolUse {
                                 tool_name,
                                 action_type: ActionType::Other {
-                                    description: format!(
-                                        "MCP tool call to {tool} from {server}"
-                                    ),
+                                    description: format!("MCP tool call to {tool} from {server}"),
                                 },
                             },
                             content,

@@ -2,8 +2,8 @@ use std::path::{Path, PathBuf};
 
 use chrono::{DateTime, Utc};
 use git2::{
-    BranchType, CherrypickOptions, Cred, Error as GitError, FetchOptions,
-    RemoteCallbacks, Repository, Status, StatusOptions, build::CheckoutBuilder,
+    BranchType, CherrypickOptions, Cred, Error as GitError, FetchOptions, RemoteCallbacks,
+    Repository, Status, StatusOptions, build::CheckoutBuilder,
 };
 use regex;
 use serde::{Deserialize, Serialize};
@@ -11,7 +11,6 @@ use thiserror::Error;
 use tracing::debug;
 use ts_rs::TS;
 use utils::diff::{DiffChunk, DiffChunkType, FileDiff, WorktreeDiff};
-
 
 // use crate::{
 //     models::task_attempt::{DiffChunk, DiffChunkType, FileDiff, WorktreeDiff},
@@ -441,13 +440,14 @@ impl GitService {
 
         if let Ok(main_head) = main_repo.head()
             && let Some(branch_name) = main_head.shorthand()
-                && branch_name == base_branch_name {
-                    // Only update main repo's HEAD if it's currently on the base branch
-                    main_repo.set_head(&refname)?;
-                    let mut co = CheckoutBuilder::new();
-                    co.force();
-                    main_repo.checkout_head(Some(&mut co))?;
-                }
+            && branch_name == base_branch_name
+        {
+            // Only update main repo's HEAD if it's currently on the base branch
+            main_repo.set_head(&refname)?;
+            let mut co = CheckoutBuilder::new();
+            co.force();
+            main_repo.checkout_head(Some(&mut co))?;
+        }
 
         Ok(squash_commit_id.to_string())
     }
@@ -470,11 +470,12 @@ impl GitService {
         // 1. prefer the branch’s configured upstream, if any
         if let Ok(local_branch) = repo.find_branch(branch_name, BranchType::Local)
             && let Ok(upstream) = local_branch.upstream()
-                && let Some(_name) = upstream.name()?
-                    && let Some(base_oid) = upstream.get().target() {
-                        let (_ahead, _behind) = repo.graph_ahead_behind(branch_oid, base_oid)?;
-                        // Ignore upstream since we use stored base branch
-                    }
+            && let Some(_name) = upstream.name()?
+            && let Some(base_oid) = upstream.get().target()
+        {
+            let (_ahead, _behind) = repo.graph_ahead_behind(branch_oid, base_oid)?;
+            // Ignore upstream since we use stored base branch
+        }
         // Calculate ahead/behind counts using the stored base branch
         let (commits_ahead, commits_behind) =
             if let Ok(base_branch) = repo.find_branch(base_branch_name, BranchType::Local) {
@@ -534,10 +535,10 @@ impl GitService {
                         | git2::Status::WT_DELETED
                         | git2::Status::WT_RENAMED
                         | git2::Status::WT_TYPECHANGE,
-                )
-                    && let Some(path) = entry.path() {
-                        dirty_files.push(path.to_string());
-                    }
+                ) && let Some(path) = entry.path()
+                {
+                    dirty_files.push(path.to_string());
+                }
             }
 
             if !dirty_files.is_empty() {
@@ -566,10 +567,11 @@ impl GitService {
         // Helper function to get last commit date for a branch
         let get_last_commit_date = |branch: &git2::Branch| -> Result<DateTime<Utc>, git2::Error> {
             if let Some(target) = branch.get().target()
-                && let Ok(commit) = repo.find_commit(target) {
-                    let timestamp = commit.time().seconds();
-                    return Ok(DateTime::from_timestamp(timestamp, 0).unwrap_or_else(Utc::now));
-                }
+                && let Ok(commit) = repo.find_commit(target)
+            {
+                let timestamp = commit.time().seconds();
+                return Ok(DateTime::from_timestamp(timestamp, 0).unwrap_or_else(Utc::now));
+            }
             Ok(Utc::now()) // Default to now if we can't get the commit date
         };
 
@@ -868,7 +870,6 @@ impl GitService {
     pub fn get_default_branch_name(&self, repo_path: &PathBuf) -> Result<String, GitServiceError> {
         let repo = self.open_repo(repo_path)?;
 
-        
         match repo.head() {
             Ok(head_ref) => Ok(head_ref.shorthand().unwrap_or("main").to_string()),
             Err(e)
@@ -982,9 +983,10 @@ impl GitService {
         callbacks.credentials(|_url, username_from_url, _| {
             // Try SSH agent first
             if let Some(username) = username_from_url
-                && let Ok(cred) = Cred::ssh_key_from_agent(username) {
-                    return Ok(cred);
-                }
+                && let Ok(cred) = Cred::ssh_key_from_agent(username)
+            {
+                return Ok(cred);
+            }
             // Fallback to key file (~/.ssh/id_rsa)
             let home = dirs::home_dir()
                 .ok_or_else(|| git2::Error::from_str("Could not find home directory"))?;

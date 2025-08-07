@@ -224,9 +224,10 @@ impl SoundFile {
         if cached_path.exists() {
             // Verify file has content (basic validation)
             if let Ok(metadata) = std::fs::metadata(&cached_path)
-                && metadata.len() > 0 {
-                    return Ok(cached_path);
-                }
+                && metadata.len() > 0
+            {
+                return Ok(cached_path);
+            }
         }
 
         // File doesn't exist or is invalid, create it
