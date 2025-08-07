@@ -19,6 +19,7 @@ use db::{
         },
         executor_session::ExecutorSession,
         project::Project,
+        task::{Task, TaskStatus},
         task_attempt::TaskAttempt,
     },
 };
@@ -94,23 +95,13 @@ impl LocalContainerService {
         map.remove(id);
     }
 
-    /// Notifications are sent when:
-    /// - A CodingAgent completes without a next_action
-    /// - A CleanupScript completes
-    fn should_notify(ctx: &ExecutionContext) -> bool {
-        (matches!(
-            ctx.execution_process.run_reason,
-            ExecutionProcessRunReason::CodingAgent
-        ) && ctx
-            .execution_process
+    /// A context is finalized when there are no more actions to execute.
+    fn should_finalize(ctx: &ExecutionContext) -> bool {
+        ctx.execution_process
             .executor_action()
             .unwrap()
             .next_action
-            .is_none())
-            || matches!(
-                ctx.execution_process.run_reason,
-                ExecutionProcessRunReason::CleanupScript
-            )
+            .is_none()
     }
 
     /// Defensively check for externally deleted worktrees and mark them as deleted in the database
@@ -339,7 +330,13 @@ impl LocalContainerService {
                             }
                         }
 
-                        if Self::should_notify(&ctx) {
+                        if Self::should_finalize(&ctx) {
+                            if let Err(e) =
+                                Task::update_status(&db.pool, ctx.task.id, TaskStatus::InReview)
+                                    .await
+                            {
+                                tracing::error!("Failed to update task status to InReview: {e}");
+                            }
                             let notify_cfg = config.read().await.notifications.clone();
                             NotificationService::notify_execution_halted(notify_cfg, &ctx).await;
                         }
@@ -602,6 +599,20 @@ impl ContainerService for LocalContainerService {
             None,
         )
         .await?;
+
+        // Update task status to InReview when execution is stopped
+        if let Ok(ctx) = ExecutionProcess::load_context(&self.db.pool, execution_process.id).await {
+            if matches!(
+                ctx.execution_process.run_reason,
+                ExecutionProcessRunReason::CodingAgent
+            ) {
+                if let Err(e) =
+                    Task::update_status(&self.db.pool, ctx.task.id, TaskStatus::InReview).await
+                {
+                    tracing::error!("Failed to update task status to InReview: {e}");
+                }
+            }
+        }
 
         tracing::debug!(
             "Execution process {} stopped successfully",
