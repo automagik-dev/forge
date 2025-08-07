@@ -12,6 +12,7 @@ function LogsTab() {
   const { attemptData } = useContext(TaskAttemptDataContext);
   const [autoScroll, setAutoScroll] = useState(true);
   const listRef = useRef<VariableSizeList>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const [containerRef, bounds] = useMeasure();
 
   const { entries } = useProcessesLogs(
@@ -41,7 +42,7 @@ function LogsTab() {
   // Handle scroll events to detect user scrolling
   const onScroll = useCallback(({ scrollOffset, scrollUpdateWasRequested }: any) => {
     if (!scrollUpdateWasRequested && bounds.height) {
-      const atBottom = bounds.height - (scrollOffset + bounds.height) < 50;
+      const atBottom = innerRef.current ? innerRef.current.offsetHeight - scrollOffset - bounds.height < 20 : false;
       setAutoScroll(atBottom);
     }
   }, [bounds.height]);
@@ -62,6 +63,7 @@ function LogsTab() {
       {bounds.height && bounds.width &&
         <VariableSizeList
           ref={listRef}
+          innerRef={innerRef}
           height={bounds.height}
           width={bounds.width}
           itemCount={entries.length}
@@ -69,14 +71,19 @@ function LogsTab() {
           onScroll={onScroll}
           itemData={entries}
         >
-          {({ index, style, data }: { index: number; style: React.CSSProperties; data: UnifiedLogEntry[] }) => (
-            <LogEntryRow
+          {({ index, style, data }: { index: number; style: React.CSSProperties; data: UnifiedLogEntry[] }) => {
+            let style_with_padding = { ...style };
+            if (index === entries.length - 1) {
+              style_with_padding.paddingBottom = "50px";
+            }
+
+            return (<LogEntryRow
               entry={data[index]}
               index={index}
-              style={style}
+              style={style_with_padding}
               setRowHeight={setRowHeight}
-            />
-          )}
+            />)
+          }}
         </VariableSizeList>
       }
     </div>
