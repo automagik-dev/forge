@@ -114,7 +114,6 @@ impl StandardCodingAgentExecutor for Amp {
             // 1 amp message id = multiple patch entry ids
             let mut seen_amp_message_ids: HashMap<usize, Vec<usize>> = HashMap::new();
             while let Some(Ok(m)) = s.next().await {
-                tracing::info!("Received message: {:?}", m);
                 let chunk = match m {
                     LogMsg::Stdout(x) => x,
                     LogMsg::JsonPatch(_) | LogMsg::SessionId(_) | LogMsg::Stderr(_) => {
