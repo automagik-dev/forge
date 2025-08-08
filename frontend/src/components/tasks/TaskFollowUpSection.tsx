@@ -31,14 +31,7 @@ export function TaskFollowUpSection() {
     ) {
       return false;
     }
-
-    const completedOrKilledCodingAgentProcesses = attemptData.processes.filter(
-      (process) =>
-        process.process_type === 'codingagent' &&
-        (process.status === 'completed' || process.status === 'killed')
-    );
-
-    return completedOrKilledCodingAgentProcesses.length > 0;
+    return true;
   }, [
     selectedAttempt,
     attemptData.processes,
@@ -52,14 +45,9 @@ export function TaskFollowUpSection() {
     try {
       setIsSendingFollowUp(true);
       setFollowUpError(null);
-      await attemptsApi.followUp(
-        projectId!,
-        selectedAttempt.task_id,
-        selectedAttempt.id,
-        {
-          prompt: followUpMessage.trim(),
-        }
-      );
+      await attemptsApi.followUp(selectedAttempt.id, {
+        prompt: followUpMessage.trim(),
+      });
       setFollowUpMessage('');
       fetchAttemptData(selectedAttempt.id, selectedAttempt.task_id);
     } catch (error: unknown) {

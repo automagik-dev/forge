@@ -95,7 +95,7 @@ jobs:
           npm version $new_version --no-git-tag-version --allow-same-version
           cd ..
 
-          cd backend && cargo set-version "$new_version"
+          cargo set-version --workspace "$new_version"
 
           echo "New version: $new_version"
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
@@ -105,7 +105,8 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add package.json package-lock.json npx-cli/package.json backend/Cargo.toml
+          git add package.json package-lock.json npx-cli/package.json 
+          git add $(find . -name Cargo.toml) 
           git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}"
           git tag -a ${{ steps.version.outputs.new_tag }} -m "Release ${{ steps.version.outputs.new_tag }}"
           git push
@@ -221,7 +222,7 @@ jobs:
 
       - name: Build backend for target
         run: |
-          cargo build --release --target ${{ matrix.target }} -p vibe-kanban
+          cargo build --release --target ${{ matrix.target }} -p server
           cargo build --release --target ${{ matrix.target }} --bin mcp_task_server
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: ${{ matrix.target == 'aarch64-unknown-linux-gnu' && 'aarch64-linux-gnu-gcc' || '' }}
@@ -245,10 +246,10 @@ jobs:
         run: |
           mkdir -p dist
           if [[ "${{ matrix.os }}" == "windows-latest-l" ]]; then
-            cp target/${{ matrix.target }}/release/vibe-kanban.exe dist/vibe-kanban-${{ matrix.name }}.exe
+            cp target/${{ matrix.target }}/release/server.exe dist/vibe-kanban-${{ matrix.name }}.exe
             cp target/${{ matrix.target }}/release/mcp_task_server.exe dist/vibe-kanban-mcp-${{ matrix.name }}.exe
           else
-            cp target/${{ matrix.target }}/release/vibe-kanban dist/vibe-kanban-${{ matrix.name }}
+            cp target/${{ matrix.target }}/release/server dist/vibe-kanban-${{ matrix.name }}
             cp target/${{ matrix.target }}/release/mcp_task_server dist/vibe-kanban-mcp-${{ matrix.name }}
           fi
 
@@ -268,7 +269,7 @@ jobs:
         if: runner.os == 'macOS'
         uses: indygreg/apple-code-sign-action@v1
         with:
-          input_path: target/${{ matrix.target }}/release/vibe-kanban
+          input_path: target/${{ matrix.target }}/release/server
           output_path: vibe-kanban
           p12_file: certificate.p12
           p12_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}

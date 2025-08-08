@@ -19,23 +19,23 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Key, Loader2, Volume2 } from 'lucide-react';
-import type { EditorType, SoundFile, ThemeMode } from 'shared/types';
-import {
-  EDITOR_LABELS,
-  EDITOR_TYPES,
-  EXECUTOR_LABELS,
-  EXECUTOR_TYPES,
-  SOUND_FILES,
-  SOUND_LABELS,
-} from 'shared/types';
+import { ThemeMode, EditorType, SoundFile } from 'shared/types';
+
+import { toPrettyCase } from '@/utils/string';
 import { useTheme } from '@/components/theme-provider';
-import { useConfig } from '@/components/config-provider';
+import { useUserSystem } from '@/components/config-provider';
 import { GitHubLoginDialog } from '@/components/GitHubLoginDialog';
 import { TaskTemplateManager } from '@/components/TaskTemplateManager';
 
 export function Settings() {
-  const { config, updateConfig, saveConfig, loading, updateAndSaveConfig } =
-    useConfig();
+  const {
+    config,
+    updateConfig,
+    saveConfig,
+    loading,
+    updateAndSaveConfig,
+    profiles,
+  } = useUserSystem();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -43,7 +43,7 @@ export function Settings() {
   const [showGitHubLogin, setShowGitHubLogin] = useState(false);
 
   const playSound = async (soundFile: SoundFile) => {
-    const audio = new Audio(`/api/sounds/${soundFile}.wav`);
+    const audio = new Audio(`/api/sounds/${soundFile}`);
     try {
       await audio.play();
     } catch (err) {
@@ -91,14 +91,16 @@ export function Settings() {
     updateConfig({ onboarding_acknowledged: false });
   };
 
-  const isAuthenticated = !!(config?.github?.username && config?.github?.token);
+  const isAuthenticated = !!(
+    config?.github?.username && config?.github?.oauth_token
+  );
 
   const handleLogout = useCallback(async () => {
     if (!config) return;
     updateAndSaveConfig({
       github: {
         ...config.github,
-        token: null,
+        oauth_token: null,
         username: null,
         primary_email: null,
       },
@@ -172,14 +174,11 @@ export function Settings() {
                     <SelectValue placeholder="Select theme" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                    <SelectItem value="purple">Purple</SelectItem>
-                    <SelectItem value="green">Green</SelectItem>
-                    <SelectItem value="blue">Blue</SelectItem>
-                    <SelectItem value="orange">Orange</SelectItem>
-                    <SelectItem value="red">Red</SelectItem>
+                    {Object.values(ThemeMode).map((theme) => (
+                      <SelectItem key={theme} value={theme}>
+                        {toPrettyCase(theme)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
@@ -198,26 +197,27 @@ export function Settings() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="executor">Default Executor</Label>
+                <Label htmlFor="executor">Default Profile</Label>
                 <Select
-                  value={config.executor.type}
-                  onValueChange={(value: 'echo' | 'claude' | 'amp') =>
-                    updateConfig({ executor: { type: value } })
+                  value={config.profile}
+                  onValueChange={(value: string) =>
+                    updateConfig({ profile: value })
                   }
                 >
                   <SelectTrigger id="executor">
                     <SelectValue placeholder="Select executor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {EXECUTOR_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {EXECUTOR_LABELS[type]}
+                    {profiles?.map((profile) => (
+                      <SelectItem key={profile.label} value={profile.label}>
+                        {profile.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
-                  Choose the default executor for running tasks.
+                  Choose the default profile to use when creating a task
+                  attempt.
                 </p>
               </div>
             </CardContent>
@@ -241,7 +241,7 @@ export function Settings() {
                         ...config.editor,
                         editor_type: value,
                         custom_command:
-                          value === 'custom'
+                          value === EditorType.CUSTOM
                             ? config.editor.custom_command
                             : null,
                       },
@@ -252,9 +252,9 @@ export function Settings() {
                     <SelectValue placeholder="Select editor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {EDITOR_TYPES.map((type) => (
+                    {Object.values(EditorType).map((type) => (
                       <SelectItem key={type} value={type}>
-                        {EDITOR_LABELS[type]}
+                        {toPrettyCase(type)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -264,7 +264,7 @@ export function Settings() {
                 </p>
               </div>
 
-              {config.editor.editor_type === 'custom' && (
+              {config.editor.editor_type === EditorType.CUSTOM && (
                 <div className="space-y-2">
                   <Label htmlFor="custom-command">Custom Command</Label>
                   <Input
@@ -385,9 +385,14 @@ export function Settings() {
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="sound-alerts"
-                  checked={config.sound_alerts}
+                  checked={config.notifications.sound_enabled}
                   onCheckedChange={(checked: boolean) =>
-                    updateConfig({ sound_alerts: checked })
+                    updateConfig({
+                      notifications: {
+                        ...config.notifications,
+                        sound_enabled: checked,
+                      },
+                    })
                   }
                 />
                 <div className="space-y-0.5">
@@ -400,23 +405,28 @@ export function Settings() {
                 </div>
               </div>
 
-              {config.sound_alerts && (
+              {config.notifications.sound_enabled && (
                 <div className="space-y-2 ml-6">
                   <Label htmlFor="sound-file">Sound</Label>
                   <div className="flex items-center gap-2">
                     <Select
-                      value={config.sound_file}
+                      value={config.notifications.sound_file}
                       onValueChange={(value: SoundFile) =>
-                        updateConfig({ sound_file: value })
+                        updateConfig({
+                          notifications: {
+                            ...config.notifications,
+                            sound_file: value,
+                          },
+                        })
                       }
                     >
                       <SelectTrigger id="sound-file" className="flex-1">
                         <SelectValue placeholder="Select sound" />
                       </SelectTrigger>
                       <SelectContent>
-                        {SOUND_FILES.map((soundFile) => (
+                        {Object.values(SoundFile).map((soundFile) => (
                           <SelectItem key={soundFile} value={soundFile}>
-                            {SOUND_LABELS[soundFile]}
+                            {toPrettyCase(soundFile)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -424,7 +434,7 @@ export function Settings() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => playSound(config.sound_file)}
+                      onClick={() => playSound(config.notifications.sound_file)}
                       className="px-3"
                     >
                       <Volume2 className="h-4 w-4" />
@@ -439,9 +449,14 @@ export function Settings() {
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="push-notifications"
-                  checked={config.push_notifications}
+                  checked={config.notifications.push_enabled}
                   onCheckedChange={(checked: boolean) =>
-                    updateConfig({ push_notifications: checked })
+                    updateConfig({
+                      notifications: {
+                        ...config.notifications,
+                        push_enabled: checked,
+                      },
+                    })
                   }
                 />
                 <div className="space-y-0.5">

@@ -4,6 +4,7 @@ import App from './App.tsx';
 import './index.css';
 import { ClickToComponent } from 'click-to-react-component';
 import * as Sentry from '@sentry/react';
+
 import {
   useLocation,
   useNavigationType,

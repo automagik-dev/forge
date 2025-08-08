@@ -6,34 +6,23 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
+import type { ExecutionProcess, ExecutionProcessSummary } from 'shared/types';
 import type {
   EditorType,
-  ExecutionProcess,
-  ExecutionProcessSummary,
-  Task,
   TaskAttempt,
-  TaskAttemptState,
   TaskWithAttemptStatus,
-  WorktreeDiff,
-} from 'shared/types.ts';
-import { attemptsApi, executionProcessesApi, tasksApi } from '@/lib/api.ts';
+} from 'shared/types';
+import { attemptsApi, executionProcessesApi } from '@/lib/api.ts';
 import {
   TaskAttemptDataContext,
   TaskAttemptLoadingContext,
   TaskAttemptStoppingContext,
-  TaskBackgroundRefreshContext,
   TaskDeletingFilesContext,
   TaskDetailsContext,
-  TaskDiffContext,
-  TaskExecutionStateContext,
-  TaskRelatedTasksContext,
   TaskSelectedAttemptContext,
 } from './taskDetailsContext.ts';
-import { TaskPlanContext } from './TaskPlanContext.ts';
-import { is_planning_executor_type } from '@/lib/utils.ts';
 import type { AttemptData } from '@/lib/types.ts';
 
 const TaskDetailsProvider: FC<{
@@ -57,136 +46,10 @@ const TaskDetailsProvider: FC<{
   const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set());
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
 
-  // Diff-related state
-  const [diff, setDiff] = useState<WorktreeDiff | null>(null);
-  const [diffLoading, setDiffLoading] = useState(true);
-  const [diffError, setDiffError] = useState<string | null>(null);
-  const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false);
-
-  // Related tasks state
-  const [relatedTasks, setRelatedTasks] = useState<Task[] | null>(null);
-  const [relatedTasksLoading, setRelatedTasksLoading] = useState(true);
-  const [relatedTasksError, setRelatedTasksError] = useState<string | null>(
-    null
-  );
-
-  const [executionState, setExecutionState] = useState<TaskAttemptState | null>(
-    null
-  );
-
   const [attemptData, setAttemptData] = useState<AttemptData>({
     processes: [],
     runningProcessDetails: {},
-    allLogs: [], // new field for all logs
   });
-
-  const relatedTasksLoadingRef = useRef(false);
-
-  const fetchRelatedTasks = useCallback(async () => {
-    if (!projectId || !task?.id || !selectedAttempt?.id) {
-      setRelatedTasks(null);
-      setRelatedTasksLoading(false);
-      return;
-    }
-
-    // Prevent multiple concurrent requests
-    if (relatedTasksLoadingRef.current) {
-      return;
-    }
-
-    relatedTasksLoadingRef.current = true;
-    setRelatedTasksLoading(true);
-    setRelatedTasksError(null);
-
-    try {
-      const children = await tasksApi.getChildren(
-        projectId,
-        task.id,
-        selectedAttempt.id
-      );
-      setRelatedTasks(children);
-    } catch (err) {
-      console.error('Failed to load related tasks:', err);
-      setRelatedTasksError('Failed to load related tasks');
-    } finally {
-      relatedTasksLoadingRef.current = false;
-      setRelatedTasksLoading(false);
-    }
-  }, [projectId, task?.id, selectedAttempt?.id]);
-
-  const fetchDiff = useCallback(
-    async (isBackgroundRefresh = false) => {
-      if (!projectId || !selectedAttempt?.id || !selectedAttempt?.task_id) {
-        setDiff(null);
-        setDiffLoading(false);
-        return;
-      }
-
-      if (isBackgroundRefresh) {
-        setIsBackgroundRefreshing(true);
-      } else {
-        setDiffLoading(true);
-      }
-      setDiffError(null);
-
-      try {
-        const result = await attemptsApi.getDiff(
-          projectId,
-          selectedAttempt.task_id,
-          selectedAttempt.id
-        );
-
-        if (result !== undefined) {
-          setDiff(result);
-        }
-      } catch (err) {
-        console.error('Failed to load diff:', err);
-        setDiffError('Failed to load diff');
-      } finally {
-        if (isBackgroundRefresh) {
-          setIsBackgroundRefreshing(false);
-        } else {
-          setDiffLoading(false);
-        }
-      }
-    },
-    [projectId, selectedAttempt?.id, selectedAttempt?.task_id]
-  );
-
-  useEffect(() => {
-    if (selectedAttempt && task) {
-      fetchRelatedTasks();
-    } else if (task && !selectedAttempt) {
-      // If we have a task but no selectedAttempt, wait a bit then clear loading state
-      // This happens when a task has no attempts yet
-      const timeout = setTimeout(() => {
-        setRelatedTasks(null);
-        setRelatedTasksLoading(false);
-      }, 1000); // Wait 1 second for attempts to load
-
-      return () => clearTimeout(timeout);
-    }
-  }, [selectedAttempt, task, fetchRelatedTasks]);
-
-  const fetchExecutionState = useCallback(
-    async (attemptId: string, taskId: string) => {
-      if (!task) return;
-
-      try {
-        const result = await attemptsApi.getState(projectId, taskId, attemptId);
-
-        if (result !== undefined) {
-          setExecutionState((prev) => {
-            if (JSON.stringify(prev) === JSON.stringify(result)) return prev;
-            return result;
-          });
-        }
-      } catch (err) {
-        console.error('Failed to fetch execution state:', err);
-      }
-    },
-    [task, projectId]
-  );
 
   const handleOpenInEditor = useCallback(
     async (editorType?: EditorType) => {
@@ -194,8 +57,6 @@ const TaskDetailsProvider: FC<{
 
       try {
         const result = await attemptsApi.openEditor(
-          projectId,
-          selectedAttempt.task_id,
           selectedAttempt.id,
           editorType
         );
@@ -214,16 +75,14 @@ const TaskDetailsProvider: FC<{
   );
 
   const fetchAttemptData = useCallback(
-    async (attemptId: string, taskId: string) => {
+    async (attemptId: string) => {
       if (!task) return;
 
       try {
-        const [processesResult, allLogsResult] = await Promise.all([
-          attemptsApi.getExecutionProcesses(projectId, taskId, attemptId),
-          attemptsApi.getAllLogs(projectId, taskId, attemptId),
-        ]);
+        const processesResult =
+          await executionProcessesApi.getExecutionProcesses(attemptId);
 
-        if (processesResult !== undefined && allLogsResult !== undefined) {
+        if (processesResult !== undefined) {
           const runningProcesses = processesResult.filter(
             (process) => process.status === 'running'
           );
@@ -241,7 +100,7 @@ const TaskDetailsProvider: FC<{
 
           // Also fetch setup script process details if it exists in the processes
           const setupProcess = processesResult.find(
-            (process) => process.process_type === 'setupscript'
+            (process) => process.run_reason === 'setupscript'
           );
           if (setupProcess && !runningProcessDetails[setupProcess.id]) {
             const result = await executionProcessesApi.getDetails(
@@ -257,7 +116,6 @@ const TaskDetailsProvider: FC<{
             const newData = {
               processes: processesResult,
               runningProcessDetails,
-              allLogs: allLogsResult,
             };
             if (JSON.stringify(prev) === JSON.stringify(newData)) return prev;
             return newData;
@@ -272,10 +130,9 @@ const TaskDetailsProvider: FC<{
 
   useEffect(() => {
     if (selectedAttempt && task) {
-      fetchAttemptData(selectedAttempt.id, selectedAttempt.task_id);
-      fetchExecutionState(selectedAttempt.id, selectedAttempt.task_id);
+      fetchAttemptData(selectedAttempt.id);
     }
-  }, [selectedAttempt, task, fetchAttemptData, fetchExecutionState]);
+  }, [selectedAttempt, task, fetchAttemptData]);
 
   const isAttemptRunning = useMemo(() => {
     if (!selectedAttempt || isStopping) {
@@ -284,9 +141,9 @@ const TaskDetailsProvider: FC<{
 
     return attemptData.processes.some(
       (process: ExecutionProcessSummary) =>
-        (process.process_type === 'codingagent' ||
-          process.process_type === 'setupscript' ||
-          process.process_type === 'cleanupscript') &&
+        (process.run_reason === 'codingagent' ||
+          process.run_reason === 'setupscript' ||
+          process.run_reason === 'cleanupscript') &&
         process.status === 'running'
     );
   }, [selectedAttempt, attemptData.processes, isStopping]);
@@ -296,53 +153,12 @@ const TaskDetailsProvider: FC<{
 
     const interval = setInterval(() => {
       if (selectedAttempt) {
-        fetchAttemptData(selectedAttempt.id, selectedAttempt.task_id);
-        fetchExecutionState(selectedAttempt.id, selectedAttempt.task_id);
+        fetchAttemptData(selectedAttempt.id);
       }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [
-    isAttemptRunning,
-    task,
-    selectedAttempt,
-    fetchAttemptData,
-    fetchExecutionState,
-  ]);
-
-  // Refresh diff when coding agent is running and making changes
-  useEffect(() => {
-    if (!executionState || !selectedAttempt) return;
-
-    const isCodingAgentRunning =
-      executionState.execution_state === 'CodingAgentRunning';
-
-    if (isCodingAgentRunning) {
-      // Immediately refresh diff when coding agent starts running
-      fetchDiff(true);
-
-      // Then refresh diff every 2 seconds while coding agent is active
-      const interval = setInterval(() => {
-        fetchDiff(true);
-      }, 2000);
-
-      return () => {
-        clearInterval(interval);
-      };
-    }
-  }, [executionState, selectedAttempt, fetchDiff]);
-
-  // Refresh diff when coding agent completes or changes state
-  useEffect(() => {
-    if (!executionState?.execution_state || !selectedAttempt) return;
-
-    fetchDiff();
-  }, [
-    executionState?.execution_state,
-    executionState?.has_changes,
-    selectedAttempt,
-    fetchDiff,
-  ]);
+  }, [isAttemptRunning, task, selectedAttempt, fetchAttemptData]);
 
   const value = useMemo(
     () => ({
@@ -379,26 +195,6 @@ const TaskDetailsProvider: FC<{
     [deletingFiles, fileToDelete]
   );
 
-  const diffValue = useMemo(
-    () => ({
-      setDiffError,
-      fetchDiff,
-      diff,
-      diffError,
-      diffLoading,
-      setDiff,
-      setDiffLoading,
-    }),
-    [fetchDiff, diff, diffError, diffLoading]
-  );
-
-  const backgroundRefreshingValue = useMemo(
-    () => ({
-      isBackgroundRefreshing,
-    }),
-    [isBackgroundRefreshing]
-  );
-
   const attemptDataValue = useMemo(
     () => ({
       attemptData,
@@ -409,110 +205,15 @@ const TaskDetailsProvider: FC<{
     [attemptData, fetchAttemptData, isAttemptRunning]
   );
 
-  const executionStateValue = useMemo(
-    () => ({
-      executionState,
-      fetchExecutionState,
-    }),
-    [executionState, fetchExecutionState]
-  );
-
-  const relatedTasksValue = useMemo(
-    () => ({
-      relatedTasks,
-      setRelatedTasks,
-      relatedTasksLoading,
-      setRelatedTasksLoading,
-      relatedTasksError,
-      setRelatedTasksError,
-      fetchRelatedTasks,
-      totalRelatedCount:
-        (task?.parent_task_attempt ? 1 : 0) + (relatedTasks?.length || 0),
-    }),
-    [
-      relatedTasks,
-      relatedTasksLoading,
-      relatedTasksError,
-      fetchRelatedTasks,
-      task?.parent_task_attempt,
-    ]
-  );
-
-  // Plan context value
-  const planValue = useMemo(() => {
-    const isPlanningMode =
-      attemptData.processes?.some(
-        (process) =>
-          process.executor_type &&
-          is_planning_executor_type(process.executor_type)
-      ) ?? false;
-
-    const planCount =
-      attemptData.allLogs?.reduce((count, processLog) => {
-        const planEntries =
-          processLog.normalized_conversation?.entries.filter(
-            (entry) =>
-              entry.entry_type.type === 'tool_use' &&
-              entry.entry_type.action_type.action === 'plan_presentation'
-          ) ?? [];
-        return count + planEntries.length;
-      }, 0) ?? 0;
-
-    const hasPlans = planCount > 0;
-
-    const latestProcessHasNoPlan = (() => {
-      if (!attemptData.allLogs || attemptData.allLogs.length === 0)
-        return false;
-      const latestProcessLog =
-        attemptData.allLogs[attemptData.allLogs.length - 1];
-      if (!latestProcessLog.normalized_conversation?.entries) return true;
-
-      return !latestProcessLog.normalized_conversation.entries.some(
-        (entry) =>
-          entry.entry_type.type === 'tool_use' &&
-          entry.entry_type.action_type.action === 'plan_presentation'
-      );
-    })();
-
-    // Can create task if not in planning mode, or if in planning mode and has plans
-    const canCreateTask =
-      !isPlanningMode ||
-      (isPlanningMode && hasPlans && !latestProcessHasNoPlan);
-
-    return {
-      isPlanningMode,
-      hasPlans,
-      planCount,
-      latestProcessHasNoPlan,
-      canCreateTask,
-    };
-  }, [attemptData.processes, attemptData.allLogs]);
-
   return (
     <TaskDetailsContext.Provider value={value}>
       <TaskAttemptLoadingContext.Provider value={taskAttemptLoadingValue}>
         <TaskSelectedAttemptContext.Provider value={selectedAttemptValue}>
           <TaskAttemptStoppingContext.Provider value={attemptStoppingValue}>
             <TaskDeletingFilesContext.Provider value={deletingFilesValue}>
-              <TaskDiffContext.Provider value={diffValue}>
-                <TaskAttemptDataContext.Provider value={attemptDataValue}>
-                  <TaskExecutionStateContext.Provider
-                    value={executionStateValue}
-                  >
-                    <TaskBackgroundRefreshContext.Provider
-                      value={backgroundRefreshingValue}
-                    >
-                      <TaskRelatedTasksContext.Provider
-                        value={relatedTasksValue}
-                      >
-                        <TaskPlanContext.Provider value={planValue}>
-                          {children}
-                        </TaskPlanContext.Provider>
-                      </TaskRelatedTasksContext.Provider>
-                    </TaskBackgroundRefreshContext.Provider>
-                  </TaskExecutionStateContext.Provider>
-                </TaskAttemptDataContext.Provider>
-              </TaskDiffContext.Provider>
+              <TaskAttemptDataContext.Provider value={attemptDataValue}>
+                {children}
+              </TaskAttemptDataContext.Provider>
             </TaskDeletingFilesContext.Provider>
           </TaskAttemptStoppingContext.Provider>
         </TaskSelectedAttemptContext.Provider>

@@ -1,0 +1,54 @@
+[package]
+name = "services"
+version = "0.0.56"
+edition = "2024"
+
+[dependencies]
+utils = { path = "../utils" }
+executors = { path = "../executors" }
+db = { path = "../db" }
+tokio = { workspace = true }
+tokio-util = { version = "0.7", features = ["io"] }
+axum = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+ts-rs = { workspace = true }
+dirs = "5.0"
+xdg = "3.0"
+git2 = "0.18"
+async-trait = "0.1"
+libc = "0.2"
+rust-embed = "8.2"
+directories = "6.0.0"
+open = "5.3.2"
+pathdiff = "0.2.1"
+ignore = "0.4"
+command-group = { version = "5.0", features = ["with-tokio"] }
+openssl-sys = { workspace = true }
+regex = "1.11.1"
+notify-rust = "4.11"
+octocrab = "0.44"
+os_info = "3.12.0"
+sentry = { version = "0.41.0", features = ["anyhow", "backtrace", "panic", "debug-images"] }
+sentry-tracing = { version = "0.41.0", features = ["backtrace"] }
+reqwest = { version = "0.12", features = ["json"] }
+lazy_static = "1.4"
+futures-util = "0.3"
+json-patch = "2.0"
+backon = "1.5.1"
+base64 = "0.22"
+thiserror = { workspace = true }
+futures = "0.3.31"
+tokio-stream = "0.1.17"
+secrecy = "0.10.3"
+strum_macros = "0.27.2"
+strum = "0.27.2"
+notify = "8.2.0"
+notify-debouncer-full = "0.5.0"
+dunce = "1.0"

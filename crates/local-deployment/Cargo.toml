@@ -1,0 +1,41 @@
+[package]
+name = "local-deployment"
+version = "0.0.56"
+edition = "2024"
+
+[dependencies]
+db = { path = "../db" }
+executors = { path="../executors" }
+deployment = { path = "../deployment" }
+services = { path = "../services" }
+utils = { path = "../utils" }
+tokio-util = { version = "0.7", features = ["io"] }
+bytes = "1.0"
+axum = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+ts-rs = { workspace = true }
+async-trait = "0.1"
+rust-embed = "8.2"
+pathdiff = "0.2.1"
+ignore = "0.4"
+command-group = { version = "5.0", features = ["with-tokio"] }
+nix = { version = "0.29", features = ["signal", "process"] }
+openssl-sys = { workspace = true }
+regex = "1.11.1"
+notify-rust = "4.11"
+notify = "8.2.0"
+sentry = { version = "0.41.0", features = ["anyhow", "backtrace", "panic", "debug-images"] }
+sentry-tracing = { version = "0.41.0", features = ["backtrace"] }
+reqwest = { version = "0.12", features = ["json"] }
+futures = "0.3"
+async-stream = "0.3"
+json-patch = "2.0"
+tokio = { workspace = true }
+tokio-stream = { version = "0.1.17", features = ["sync"] }

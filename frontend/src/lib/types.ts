@@ -1,14 +1,9 @@
-import {
-  DiffChunkType,
-  ExecutionProcess,
-  ExecutionProcessSummary,
-  ProcessLogsResponse,
-} from 'shared/types.ts';
+import { DiffChunkType } from 'shared/types';
+import { ExecutionProcess, ExecutionProcessSummary } from 'shared/types';
 
 export type AttemptData = {
   processes: ExecutionProcessSummary[];
   runningProcessDetails: Record<string, ExecutionProcess>;
-  allLogs: ProcessLogsResponse[];
 };
 
 export interface ProcessedLine {

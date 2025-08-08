@@ -12,7 +12,7 @@ import { useConfig } from './config-provider';
 import { Check, Clipboard, Github } from 'lucide-react';
 import { Loader } from './ui/loader';
 import { githubAuthApi } from '../lib/api';
-import { DeviceStartResponse } from 'shared/types.ts';
+import { DeviceFlowStartResponse, DevicePollStatus } from 'shared/types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 export function GitHubLoginDialog({
@@ -25,14 +25,13 @@ export function GitHubLoginDialog({
   const { config, loading, githubTokenInvalid } = useConfig();
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [deviceState, setDeviceState] = useState<null | DeviceStartResponse>(
-    null
-  );
+  const [deviceState, setDeviceState] =
+    useState<null | DeviceFlowStartResponse>(null);
   const [polling, setPolling] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const isAuthenticated =
-    !!(config?.github?.username && config?.github?.token) &&
+    !!(config?.github?.username && config?.github?.oauth_token) &&
     !githubTokenInvalid;
 
   const handleLogin = async () => {
@@ -53,21 +52,26 @@ export function GitHubLoginDialog({
 
   // Poll for completion
   useEffect(() => {
-    let timer: number;
+    let timer: ReturnType<typeof setTimeout> | null = null;
     if (polling && deviceState) {
       const poll = async () => {
         try {
-          await githubAuthApi.poll(deviceState.device_code);
-          setPolling(false);
-          setDeviceState(null);
-          setError(null);
-          onOpenChange(false);
+          const poll_status = await githubAuthApi.poll();
+          switch (poll_status) {
+            case DevicePollStatus.SUCCESS:
+              setPolling(false);
+              setDeviceState(null);
+              setError(null);
+              onOpenChange(false);
+              break;
+            case DevicePollStatus.AUTHORIZATION_PENDING:
+              timer = setTimeout(poll, deviceState.interval * 1000);
+              break;
+            case DevicePollStatus.SLOW_DOWN:
+              timer = setTimeout(poll, (deviceState.interval + 5) * 1000);
+          }
         } catch (e: any) {
-          if (e?.message === 'authorization_pending') {
-            timer = setTimeout(poll, (deviceState.interval || 5) * 1000);
-          } else if (e?.message === 'slow_down') {
-            timer = setTimeout(poll, (deviceState.interval + 5) * 1000);
-          } else if (e?.message === 'expired_token') {
+          if (e?.message === 'expired_token') {
             setPolling(false);
             setError('Device code expired. Please try again.');
             setDeviceState(null);
