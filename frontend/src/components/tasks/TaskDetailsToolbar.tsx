@@ -215,14 +215,17 @@ function TaskDetailsToolbar() {
   }, []);
 
   // Stub handlers for backward compatibility with CreateAttempt
-  const setCreateAttemptBranch = useCallback((branch: string | null | ((prev: string | null) => string | null)) => {
-    if (typeof branch === 'function') {
-      setSelectedBranch(prev => branch(prev));
-    } else {
-      setSelectedBranch(branch);
-    }
-    // This is now derived state, so no-op
-  }, []);
+  const setCreateAttemptBranch = useCallback(
+    (branch: string | null | ((prev: string | null) => string | null)) => {
+      if (typeof branch === 'function') {
+        setSelectedBranch((prev) => branch(prev));
+      } else {
+        setSelectedBranch(branch);
+      }
+      // This is now derived state, so no-op
+    },
+    []
+  );
 
   const setIsInCreateAttemptMode = useCallback(
     (value: boolean | ((prev: boolean) => boolean)) => {
