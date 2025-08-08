@@ -19,40 +19,40 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sparkles, Code } from 'lucide-react';
-import type { EditorType, ExecutorConfig } from 'shared/types';
-import {
-  EXECUTOR_TYPES,
-  EDITOR_TYPES,
-  EXECUTOR_LABELS,
-  EDITOR_LABELS,
-} from 'shared/types';
+import { EditorType } from 'shared/types';
+import { useUserSystem } from '@/components/config-provider';
+
+import { toPrettyCase } from '@/utils/string';
 
 interface OnboardingDialogProps {
   open: boolean;
   onComplete: (config: {
-    executor: ExecutorConfig;
+    profile: string;
     editor: { editor_type: EditorType; custom_command: string | null };
   }) => void;
 }
 
 export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
-  const [executor, setExecutor] = useState<ExecutorConfig>({ type: 'claude' });
-  const [editorType, setEditorType] = useState<EditorType>('vscode');
+  const [profile, setProfile] = useState<string>('claude-code');
+  const [editorType, setEditorType] = useState<EditorType>(EditorType.VS_CODE);
   const [customCommand, setCustomCommand] = useState<string>('');
+
+  const { profiles } = useUserSystem();
 
   const handleComplete = () => {
     onComplete({
-      executor,
+      profile,
       editor: {
         editor_type: editorType,
-        custom_command: editorType === 'custom' ? customCommand || null : null,
+        custom_command:
+          editorType === EditorType.CUSTOM ? customCommand || null : null,
       },
     });
   };
 
   const isValid =
-    editorType !== 'custom' ||
-    (editorType === 'custom' && customCommand.trim() !== '');
+    editorType !== EditorType.CUSTOM ||
+    (editorType === EditorType.CUSTOM && customCommand.trim() !== '');
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
@@ -78,33 +78,22 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="executor">Default Executor</Label>
+                <Label htmlFor="profile">Default Profile</Label>
                 <Select
-                  value={executor.type}
-                  onValueChange={(value) => setExecutor({ type: value as any })}
+                  value={profile}
+                  onValueChange={(value) => setProfile(value)}
                 >
-                  <SelectTrigger id="executor">
+                  <SelectTrigger id="profile">
                     <SelectValue placeholder="Select your preferred coding agent" />
                   </SelectTrigger>
                   <SelectContent>
-                    {EXECUTOR_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {EXECUTOR_LABELS[type]}
+                    {profiles?.map((profile) => (
+                      <SelectItem key={profile.label} value={profile.label}>
+                        {profile.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-sm text-muted-foreground">
-                  {executor.type === 'claude' && 'Claude Code from Anthropic'}
-                  {executor.type === 'amp' && 'From Sourcegraph'}
-                  {executor.type === 'gemini' && 'Google Gemini from Bloop'}
-                  {executor.type === 'charm-opencode' &&
-                    'Charm/Opencode AI assistant'}
-                  {executor.type === 'claude-code-router' &&
-                    'Claude Code Router'}
-                  {executor.type === 'echo' &&
-                    'This is just for debugging vibe-kanban itself'}
-                </p>
               </div>
             </CardContent>
           </Card>
@@ -127,9 +116,9 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
                     <SelectValue placeholder="Select your preferred editor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {EDITOR_TYPES.map((type) => (
+                    {Object.values(EditorType).map((type) => (
                       <SelectItem key={type} value={type}>
-                        {EDITOR_LABELS[type]}
+                        {toPrettyCase(type)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -140,7 +129,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
                 </p>
               </div>
 
-              {editorType === 'custom' && (
+              {editorType === EditorType.CUSTOM && (
                 <div className="space-y-2">
                   <Label htmlFor="custom-command">Custom Command</Label>
                   <Input

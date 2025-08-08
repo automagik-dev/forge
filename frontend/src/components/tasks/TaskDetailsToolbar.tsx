@@ -1,11 +1,18 @@
-import { useCallback, useContext, useEffect, useState } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+  useState,
+} from 'react';
 import { useLocation } from 'react-router-dom';
 import { Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useConfig } from '@/components/config-provider';
 import { attemptsApi, projectsApi } from '@/lib/api';
-import type { GitBranch, TaskAttempt } from 'shared/types';
-import { EXECUTOR_LABELS, EXECUTOR_TYPES } from 'shared/types';
+import type { GitBranch } from 'shared/types';
+import type { TaskAttempt } from 'shared/types';
+
 import {
   TaskAttemptDataContext,
   TaskAttemptLoadingContext,
@@ -16,11 +23,52 @@ import {
 import CreatePRDialog from '@/components/tasks/Toolbar/CreatePRDialog.tsx';
 import CreateAttempt from '@/components/tasks/Toolbar/CreateAttempt.tsx';
 import CurrentAttempt from '@/components/tasks/Toolbar/CurrentAttempt.tsx';
+import { useUserSystem } from '@/components/config-provider';
 
-const availableExecutors = EXECUTOR_TYPES.map((id) => ({
-  id,
-  name: EXECUTOR_LABELS[id] || id,
-}));
+// UI State Management
+type UiAction =
+  | { type: 'OPEN_CREATE_PR' }
+  | { type: 'CLOSE_CREATE_PR' }
+  | { type: 'CREATE_PR_START' }
+  | { type: 'CREATE_PR_DONE' }
+  | { type: 'ENTER_CREATE_MODE' }
+  | { type: 'LEAVE_CREATE_MODE' }
+  | { type: 'SET_ERROR'; payload: string | null };
+
+interface UiState {
+  showCreatePRDialog: boolean;
+  creatingPR: boolean;
+  userForcedCreateMode: boolean;
+  error: string | null;
+}
+
+const initialUi: UiState = {
+  showCreatePRDialog: false,
+  creatingPR: false,
+  userForcedCreateMode: false,
+  error: null,
+};
+
+function uiReducer(state: UiState, action: UiAction): UiState {
+  switch (action.type) {
+    case 'OPEN_CREATE_PR':
+      return { ...state, showCreatePRDialog: true };
+    case 'CLOSE_CREATE_PR':
+      return { ...state, showCreatePRDialog: false };
+    case 'CREATE_PR_START':
+      return { ...state, creatingPR: true };
+    case 'CREATE_PR_DONE':
+      return { ...state, creatingPR: false };
+    case 'ENTER_CREATE_MODE':
+      return { ...state, userForcedCreateMode: true };
+    case 'LEAVE_CREATE_MODE':
+      return { ...state, userForcedCreateMode: false };
+    case 'SET_ERROR':
+      return { ...state, error: action.payload };
+    default:
+      return state;
+  }
+}
 
 function TaskDetailsToolbar() {
   const { task, projectId } = useContext(TaskDetailsContext);
@@ -34,30 +82,44 @@ function TaskDetailsToolbar() {
     TaskAttemptDataContext
   );
 
+  // UI state using reducer
+  const [ui, dispatch] = useReducer(uiReducer, initialUi);
+
+  // Data state
   const [taskAttempts, setTaskAttempts] = useState<TaskAttempt[]>([]);
-  const location = useLocation();
-
-  const { config } = useConfig();
-
   const [branches, setBranches] = useState<GitBranch[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
 
-  const [selectedExecutor, setSelectedExecutor] = useState<string>(
-    config?.executor.type || 'claude'
-  );
+  const location = useLocation();
+  const { system, profiles } = useUserSystem();
 
-  // State for create attempt mode
-  const [isInCreateAttemptMode, setIsInCreateAttemptMode] = useState(false);
-  const [createAttemptBranch, setCreateAttemptBranch] = useState<string | null>(
-    selectedBranch
-  );
-  const [createAttemptExecutor, setCreateAttemptExecutor] =
-    useState<string>(selectedExecutor);
+  // Memoize latest attempt calculation
+  const latestAttempt = useMemo(() => {
+    if (taskAttempts.length === 0) return null;
+    return taskAttempts.reduce((latest, current) =>
+      new Date(current.created_at) > new Date(latest.created_at)
+        ? current
+        : latest
+    );
+  }, [taskAttempts]);
 
-  // Branch status and git operations state
-  const [creatingPR, setCreatingPR] = useState(false);
-  const [showCreatePRDialog, setShowCreatePRDialog] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Derived state
+  const isInCreateAttemptMode =
+    ui.userForcedCreateMode || taskAttempts.length === 0;
+
+  // Derive createAttemptBranch for backward compatibility
+  const createAttemptBranch = useMemo(() => {
+    if (selectedBranch) {
+      return selectedBranch;
+    } else if (
+      latestAttempt?.base_branch &&
+      branches.some((b: GitBranch) => b.name === latestAttempt.base_branch)
+    ) {
+      return latestAttempt.base_branch;
+    }
+    return selectedBranch;
+  }, [latestAttempt, branches, selectedBranch]);
 
   const fetchProjectBranches = useCallback(async () => {
     const result = await projectsApi.getBranches(projectId);
@@ -76,49 +138,17 @@ function TaskDetailsToolbar() {
 
   // Set default executor from config
   useEffect(() => {
-    if (config && config.executor.type !== selectedExecutor) {
-      setSelectedExecutor(config.executor.type);
+    if (system.config?.profile) {
+      setSelectedProfile(system.config.profile);
     }
-  }, [config, selectedExecutor]);
-
-  // Set create attempt mode when there are no attempts
-  useEffect(() => {
-    setIsInCreateAttemptMode(taskAttempts.length === 0);
-  }, [taskAttempts.length]);
-
-  // Update default values from latest attempt when taskAttempts change
-  useEffect(() => {
-    if (taskAttempts.length > 0) {
-      const latestAttempt = taskAttempts.reduce((latest, current) =>
-        new Date(current.created_at) > new Date(latest.created_at)
-          ? current
-          : latest
-      );
-
-      // Only update if branch still exists in available branches
-      if (
-        latestAttempt.base_branch &&
-        branches.some((b: GitBranch) => b.name === latestAttempt.base_branch)
-      ) {
-        setCreateAttemptBranch(latestAttempt.base_branch);
-      }
-
-      // Only update executor if it's different from default and exists in available executors
-      if (
-        latestAttempt.executor &&
-        availableExecutors.some((e) => e.id === latestAttempt.executor)
-      ) {
-        setCreateAttemptExecutor(latestAttempt.executor);
-      }
-    }
-  }, [taskAttempts, branches, availableExecutors]);
+  }, [system.config?.profile]);
 
   const fetchTaskAttempts = useCallback(async () => {
     if (!task) return;
 
     try {
       setLoading(true);
-      const result = await attemptsApi.getAll(projectId, task.id);
+      const result = await attemptsApi.getAll(task.id);
 
       setTaskAttempts((prev) => {
         if (JSON.stringify(prev) === JSON.stringify(result)) return prev;
@@ -166,7 +196,6 @@ function TaskDetailsToolbar() {
         setAttemptData({
           processes: [],
           runningProcessDetails: {},
-          allLogs: [],
         });
       }
     } catch (error) {
@@ -174,7 +203,7 @@ function TaskDetailsToolbar() {
     } finally {
       setLoading(false);
     }
-  }, [task, projectId, location.search]);
+  }, [task, location.search, setLoading, setSelectedAttempt, setAttemptData]);
 
   useEffect(() => {
     fetchTaskAttempts();
@@ -182,49 +211,69 @@ function TaskDetailsToolbar() {
 
   // Handle entering create attempt mode
   const handleEnterCreateAttemptMode = useCallback(() => {
-    setIsInCreateAttemptMode(true);
+    dispatch({ type: 'ENTER_CREATE_MODE' });
+  }, []);
 
-    // Use latest attempt's settings as defaults if available
-    if (taskAttempts.length > 0) {
-      const latestAttempt = taskAttempts.reduce((latest, current) =>
-        new Date(current.created_at) > new Date(latest.created_at)
-          ? current
-          : latest
-      );
-
-      // Use latest attempt's branch if it still exists, otherwise use current selected branch
-      if (
-        latestAttempt.base_branch &&
-        branches.some((b: GitBranch) => b.name === latestAttempt.base_branch)
-      ) {
-        setCreateAttemptBranch(latestAttempt.base_branch);
+  // Stub handlers for backward compatibility with CreateAttempt
+  const setCreateAttemptBranch = useCallback(
+    (branch: string | null | ((prev: string | null) => string | null)) => {
+      if (typeof branch === 'function') {
+        setSelectedBranch((prev) => branch(prev));
       } else {
-        setCreateAttemptBranch(selectedBranch);
+        setSelectedBranch(branch);
       }
+      // This is now derived state, so no-op
+    },
+    []
+  );
 
-      // Use latest attempt's executor if it exists, otherwise use current selected executor
-      if (
-        latestAttempt.executor &&
-        availableExecutors.some((e) => e.id === latestAttempt.executor)
-      ) {
-        setCreateAttemptExecutor(latestAttempt.executor);
+  const setIsInCreateAttemptMode = useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      const boolValue =
+        typeof value === 'function' ? value(isInCreateAttemptMode) : value;
+      if (boolValue) {
+        dispatch({ type: 'ENTER_CREATE_MODE' });
       } else {
-        setCreateAttemptExecutor(selectedExecutor);
+        dispatch({ type: 'LEAVE_CREATE_MODE' });
       }
-    } else {
-      // Fallback to current selected values if no attempts exist
-      setCreateAttemptBranch(selectedBranch);
-      setCreateAttemptExecutor(selectedExecutor);
-    }
-  }, [taskAttempts, branches, selectedBranch, selectedExecutor]);
+    },
+    [isInCreateAttemptMode]
+  );
+
+  // Wrapper functions for UI state dispatch
+  const setError = useCallback(
+    (value: string | null | ((prev: string | null) => string | null)) => {
+      const errorValue = typeof value === 'function' ? value(ui.error) : value;
+      dispatch({ type: 'SET_ERROR', payload: errorValue });
+    },
+    [ui.error]
+  );
+
+  const setShowCreatePRDialog = useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      const boolValue =
+        typeof value === 'function' ? value(ui.showCreatePRDialog) : value;
+      dispatch({ type: boolValue ? 'OPEN_CREATE_PR' : 'CLOSE_CREATE_PR' });
+    },
+    [ui.showCreatePRDialog]
+  );
+
+  const setCreatingPR = useCallback(
+    (value: boolean | ((prev: boolean) => boolean)) => {
+      const boolValue =
+        typeof value === 'function' ? value(ui.creatingPR) : value;
+      dispatch({ type: boolValue ? 'CREATE_PR_START' : 'CREATE_PR_DONE' });
+    },
+    [ui.creatingPR]
+  );
 
   return (
     <>
-      <div className="px-6 pb-4 border-b">
+      <div className="px-4 pb-4 border-b">
         {/* Error Display */}
-        {error && (
+        {ui.error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <div className="text-red-600 text-sm">{error}</div>
+            <div className="text-red-600 text-sm">{ui.error}</div>
           </div>
         )}
 
@@ -233,14 +282,13 @@ function TaskDetailsToolbar() {
             fetchTaskAttempts={fetchTaskAttempts}
             createAttemptBranch={createAttemptBranch}
             selectedBranch={selectedBranch}
-            createAttemptExecutor={createAttemptExecutor}
-            selectedExecutor={selectedExecutor}
+            selectedProfile={selectedProfile}
             taskAttempts={taskAttempts}
             branches={branches}
             setCreateAttemptBranch={setCreateAttemptBranch}
             setIsInCreateAttemptMode={setIsInCreateAttemptMode}
-            setCreateAttemptExecutor={setCreateAttemptExecutor}
-            availableExecutors={availableExecutors}
+            setSelectedProfile={setSelectedProfile}
+            availableProfiles={profiles}
           />
         ) : (
           <div className="space-y-3 p-3 bg-muted/20 rounded-lg border">
@@ -253,9 +301,8 @@ function TaskDetailsToolbar() {
                   selectedBranch={selectedBranch}
                   setError={setError}
                   setShowCreatePRDialog={setShowCreatePRDialog}
-                  creatingPR={creatingPR}
+                  creatingPR={ui.creatingPR}
                   handleEnterCreateAttemptMode={handleEnterCreateAttemptMode}
-                  availableExecutors={availableExecutors}
                   branches={branches}
                 />
               ) : (
@@ -288,9 +335,9 @@ function TaskDetailsToolbar() {
       </div>
 
       <CreatePRDialog
-        creatingPR={creatingPR}
+        creatingPR={ui.creatingPR}
         setShowCreatePRDialog={setShowCreatePRDialog}
-        showCreatePRDialog={showCreatePRDialog}
+        showCreatePRDialog={ui.showCreatePRDialog}
         setCreatingPR={setCreatingPR}
         setError={setError}
         branches={branches}

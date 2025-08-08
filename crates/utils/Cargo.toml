@@ -1,0 +1,29 @@
+[package]
+name = "utils"
+version = "0.0.56"
+edition = "2024"
+
+[dependencies]
+tokio-util = { version = "0.7", features = ["io", "codec"] }
+bytes = "1.0"
+axum = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+ts-rs = { workspace = true }
+libc = "0.2"
+rust-embed = "8.2"
+directories = "6.0.0"
+open = "5.3.2"
+regex = "1.11.1"
+sentry-tracing = { version = "0.41.0", features = ["backtrace"] }
+lazy_static = "1.4"
+futures-util = "0.3"
+json-patch = "2.0"
+base64 = "0.22"
+tokio = { workspace = true }
+futures = "0.3.31"
+tokio-stream = { version = "0.1.17", features = ["sync"] }

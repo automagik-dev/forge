@@ -8,24 +8,24 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@radix-ui/react-label';
 import { Textarea } from '@/components/ui/textarea.tsx';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@radix-ui/react-select';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+} from '@/components/ui/select';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import {
   TaskDetailsContext,
   TaskSelectedAttemptContext,
 } from '@/components/context/taskDetailsContext.ts';
-import { ApiError, attemptsApi } from '@/lib/api.ts';
+import { attemptsApi } from '@/lib/api.ts';
 import { ProvidePatDialog } from '@/components/ProvidePatDialog';
 import { GitHubLoginDialog } from '@/components/GitHubLoginDialog';
-import { GitBranch } from 'shared/types.ts';
+import { GitBranch, GitHubServiceError } from 'shared/types';
 
 type Props = {
   showCreatePRDialog: boolean;
@@ -75,58 +75,45 @@ function CreatePrDialog({
 
     setCreatingPR(true);
 
-    try {
-      const prUrl = await attemptsApi.createPR(
-        projectId!,
-        selectedAttempt.task_id,
-        selectedAttempt.id,
-        {
-          title: prTitle,
-          body: prBody || null,
-          base_branch: prBaseBranch || null,
-        }
-      );
-      // Open the PR URL in a new tab
-      window.open(prUrl, '_blank');
+    const result = await attemptsApi.createPR(selectedAttempt.id, {
+      title: prTitle,
+      body: prBody || null,
+      base_branch: prBaseBranch || null,
+    });
+
+    if (result.success) {
+      window.open(result.data, '_blank');
       setShowCreatePRDialog(false);
       // Reset form
       setPrTitle('');
       setPrBody('');
       setPrBaseBranch(selectedAttempt?.base_branch || 'main');
-    } catch (err) {
-      const error = err as ApiError;
-      if (
-        error.message ===
-        'GitHub authentication not configured. Please sign in with GitHub.'
-      ) {
+    } else {
+      if (result.error) {
         setShowCreatePRDialog(false);
-        setShowGitHubLoginDialog(true);
-      } else if (error.message === 'insufficient_github_permissions') {
-        setShowCreatePRDialog(false);
-        setPatDialogError(null);
-        setShowPatDialog(true);
-      } else if (error.message === 'github_repo_not_found_or_no_access') {
-        setShowCreatePRDialog(false);
-        setPatDialogError(
-          'Your token does not have access to this repository, or the repository does not exist. Please check the repository URL and/or provide a Personal Access Token with access.'
-        );
-        setShowPatDialog(true);
-      } else if (error.status === 403) {
-        setShowCreatePRDialog(false);
-        setPatDialogError(null);
-        setShowPatDialog(true);
-      } else if (error.status === 404) {
-        setShowCreatePRDialog(false);
-        setPatDialogError(
-          'Your token does not have access to this repository, or the repository does not exist. Please check the repository URL and/or provide a Personal Access Token with access.'
-        );
-        setShowPatDialog(true);
+        switch (result.error) {
+          case GitHubServiceError.TOKEN_INVALID:
+            setShowGitHubLoginDialog(true);
+            break;
+          case GitHubServiceError.INSUFFICIENT_PERMISSIONS:
+            setPatDialogError(null);
+            setShowPatDialog(true);
+            break;
+          case GitHubServiceError.REPO_NOT_FOUND_OR_NO_ACCESS:
+            setPatDialogError(
+              'Your token does not have access to this repository, or the repository does not exist. Please check the repository URL and/or provide a Personal Access Token with access.'
+            );
+            setShowPatDialog(true);
+            break;
+        }
+      } else if (result.message) {
+        setError(result.message);
       } else {
-        setError(error.message || 'Failed to create GitHub PR');
+        setError('Failed to create GitHub PR');
       }
-    } finally {
-      setCreatingPR(false);
     }
+
+    setCreatingPR(false);
   }, [
     projectId,
     selectedAttempt,

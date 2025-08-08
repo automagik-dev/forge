@@ -1,0 +1,37 @@
+[package]
+name = "executors"
+version = "0.0.56"
+edition = "2024"
+
+[dependencies]
+utils = { path = "../utils" }
+tokio = { workspace = true }
+tokio-util = { version = "0.7", features = ["io"] }
+bytes = "1.0"
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+ts-rs = { workspace = true }
+dirs = "5.0"
+xdg = "3.0"
+async-trait = "0.1"
+rust-embed = "8.2"
+directories = "6.0.0"
+command-group = { version = "5.0", features = ["with-tokio"] }
+regex = "1.11.1"
+sentry-tracing = { version = "0.41.0", features = ["backtrace"] }
+lazy_static = "1.4"
+json-patch = "2.0"
+strum_macros = "0.27.2"
+thiserror = { workspace = true }
+enum_dispatch = "0.3.13"
+futures-io = "0.3.31"
+tokio-stream = { version = "0.1.17", features = ["io-util"] }
+futures = "0.3.31"
+strum = "0.27.2"
+bon = "3.6"
+fork_stream = "0.1.0"
+os_pipe = "1.2"

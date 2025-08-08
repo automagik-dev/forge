@@ -10,7 +10,6 @@ import { TaskFormDialog } from '@/components/tasks/TaskFormDialog';
 import { ProjectForm } from '@/components/projects/project-form';
 import { TaskTemplateManager } from '@/components/TaskTemplateManager';
 import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts';
-import { useTaskPlan } from '@/components/context/TaskPlanContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,13 +33,12 @@ import {
 import TaskKanbanBoard from '@/components/tasks/TaskKanbanBoard';
 import { TaskDetailsPanel } from '@/components/tasks/TaskDetailsPanel';
 import type {
-  CreateTaskAndStart,
-  ExecutorConfig,
-  ProjectWithBranch,
   TaskStatus,
   TaskWithAttemptStatus,
+  Project,
   TaskTemplate,
 } from 'shared/types';
+import type { CreateTask } from 'shared/types';
 import type { DragEndEvent } from '@/components/ui/shadcn-io/kanban';
 
 type Task = TaskWithAttemptStatus;
@@ -52,7 +50,7 @@ export function ProjectTasks() {
   }>();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [project, setProject] = useState<ProjectWithBranch | null>(null);
+  const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
@@ -70,10 +68,6 @@ export function ProjectTasks() {
   // Panel state
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
-
-  // Plan context for task creation
-  const { isPlanningMode, canCreateTask, latestProcessHasNoPlan } =
-    useTaskPlan();
 
   // Define task creation handler
   const handleCreateNewTask = useCallback(() => {
@@ -102,7 +96,7 @@ export function ProjectTasks() {
 
   const fetchProject = useCallback(async () => {
     try {
-      const result = await projectsApi.getWithBranch(projectId!);
+      const result = await projectsApi.getById(projectId!);
       setProject(result);
     } catch (err) {
       setError('Failed to load project');
@@ -177,7 +171,7 @@ export function ProjectTasks() {
   const handleCreateTask = useCallback(
     async (title: string, description: string) => {
       try {
-        const createdTask = await tasksApi.create(projectId!, {
+        const createdTask = await tasksApi.create({
           project_id: projectId!,
           title,
           description: description || null,
@@ -196,16 +190,15 @@ export function ProjectTasks() {
   );
 
   const handleCreateAndStartTask = useCallback(
-    async (title: string, description: string, executor?: ExecutorConfig) => {
+    async (title: string, description: string) => {
       try {
-        const payload: CreateTaskAndStart = {
+        const payload: CreateTask = {
           project_id: projectId!,
           title,
           description: description || null,
           parent_task_attempt: null,
-          executor: executor || null,
         };
-        const result = await tasksApi.createAndStart(projectId!, payload);
+        const result = await tasksApi.createAndStart(payload);
         await fetchTasks();
         // Open the newly created task in the details panel
         handleViewTaskDetails(result);
@@ -221,7 +214,7 @@ export function ProjectTasks() {
       if (!editingTask) return;
 
       try {
-        await tasksApi.update(projectId!, editingTask.id, {
+        await tasksApi.update(editingTask.id, {
           title,
           description: description || null,
           status,
@@ -241,7 +234,7 @@ export function ProjectTasks() {
       if (!confirm('Are you sure you want to delete this task?')) return;
 
       try {
-        await tasksApi.delete(projectId!, taskId);
+        await tasksApi.delete(taskId);
         await fetchTasks();
       } catch (error) {
         setError('Failed to delete task');
@@ -296,7 +289,7 @@ export function ProjectTasks() {
       );
 
       try {
-        await tasksApi.update(projectId!, taskId, {
+        await tasksApi.update(taskId, {
           title: task.title,
           description: task.description,
           status: newStatus,
@@ -383,11 +376,6 @@ export function ProjectTasks() {
         <div className="px-8 my-12 flex flex-row">
           <div className="w-full flex items-center gap-3">
             <h1 className="text-2xl font-bold">{project?.name || 'Project'}</h1>
-            {project?.current_branch && (
-              <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded-md">
-                {project.current_branch}
-              </span>
-            )}
             <Button
               variant="ghost"
               size="sm"
@@ -545,11 +533,6 @@ export function ProjectTasks() {
         onCreateAndStartTask={handleCreateAndStartTask}
         onUpdateTask={handleUpdateTask}
         initialTemplate={selectedTemplate}
-        planContext={{
-          isPlanningMode,
-          canCreateTask,
-          latestProcessHasNoPlan,
-        }}
       />
 
       <ProjectForm

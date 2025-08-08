@@ -1,17 +1,19 @@
 [workspace]
 resolver = "2"
-members = ["backend"]
+members = ["crates/server", "crates/db", "crates/executors", "crates/services", "crates/utils", "crates/local-deployment", "crates/deployment"]
 
 [workspace.dependencies]
 tokio = { version = "1.0", features = ["full"] }
-axum = { version = "0.7", features = ["macros"] }
+axum = { version = "0.8.4", features = ["macros"] }
 tower-http = { version = "0.5", features = ["cors"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 anyhow = "1.0"
+thiserror = "2.0.12"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 openssl-sys = { version = "0.9", features = ["vendored"] }
+ts-rs = { git = "https://github.com/xazukx/ts-rs.git", branch = "use-ts-enum", features = ["uuid-impl", "chrono-impl", "no-serde-warnings"] }
 
 [profile.release]
 debug = true

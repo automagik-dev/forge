@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip.tsx';
 import { Input } from '@/components/ui/input.tsx';
-import type { GitBranch } from 'shared/types.ts';
+import type { GitBranch } from 'shared/types';
 
 type Props = {
   branches: GitBranch[];

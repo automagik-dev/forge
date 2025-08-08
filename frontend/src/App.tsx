@@ -11,7 +11,8 @@ import { OnboardingDialog } from '@/components/OnboardingDialog';
 import { PrivacyOptInDialog } from '@/components/PrivacyOptInDialog';
 import { ConfigProvider, useConfig } from '@/components/config-provider';
 import { ThemeProvider } from '@/components/theme-provider';
-import type { EditorType, ExecutorConfig } from 'shared/types';
+import type { EditorType } from 'shared/types';
+import { ThemeMode } from 'shared/types';
 import { configApi } from '@/lib/api';
 import * as Sentry from '@sentry/react';
 import { Loader } from '@/components/ui/loader';
@@ -58,7 +59,7 @@ function AppContent() {
   };
 
   const handleOnboardingComplete = async (onboardingConfig: {
-    executor: ExecutorConfig;
+    profile: string;
     editor: { editor_type: EditorType; custom_command: string | null };
   }) => {
     if (!config) return;
@@ -66,7 +67,7 @@ function AppContent() {
     const updatedConfig = {
       ...config,
       onboarding_acknowledged: true,
-      executor: onboardingConfig.executor,
+      profile: onboardingConfig.profile,
       editor: onboardingConfig.editor,
     };
 
@@ -102,14 +103,14 @@ function AppContent() {
   const handleGitHubLoginComplete = async () => {
     try {
       // Refresh the config to get the latest GitHub authentication state
-      const latestConfig = await configApi.getConfig();
-      updateConfig(latestConfig);
+      const latestUserSystem = await configApi.getConfig();
+      updateConfig(latestUserSystem.config);
       setShowGitHubLogin(false);
 
       // If user skipped (no GitHub token), we need to manually set the acknowledgment
 
       const updatedConfig = {
-        ...latestConfig,
+        ...latestUserSystem.config,
         github_login_acknowledged: true,
       };
       updateConfig(updatedConfig);
@@ -132,7 +133,7 @@ function AppContent() {
   }
 
   return (
-    <ThemeProvider initialTheme={config?.theme || 'system'}>
+    <ThemeProvider initialTheme={config?.theme || ThemeMode.SYSTEM}>
       <div className="h-screen flex flex-col bg-background">
         <GitHubLoginDialog
           open={showGitHubLogin}

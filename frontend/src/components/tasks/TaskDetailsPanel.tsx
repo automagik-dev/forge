@@ -7,11 +7,10 @@ import {
   getTaskPanelClasses,
 } from '@/lib/responsive-config';
 import type { TaskWithAttemptStatus } from 'shared/types';
+import type { TabType } from '@/types/tabs';
 import DiffTab from '@/components/tasks/TaskDetails/DiffTab.tsx';
 import LogsTab from '@/components/tasks/TaskDetails/LogsTab.tsx';
-import RelatedTasksTab from '@/components/tasks/TaskDetails/RelatedTasksTab.tsx';
 import ProcessesTab from '@/components/tasks/TaskDetails/ProcessesTab.tsx';
-import PlanTab from '@/components/tasks/TaskDetails/PlanTab.tsx';
 import DeleteFileConfirmationDialog from '@/components/tasks/DeleteFileConfirmationDialog.tsx';
 import TabNavigation from '@/components/tasks/TaskDetails/TabNavigation.tsx';
 import CollapsibleToolbar from '@/components/tasks/TaskDetails/CollapsibleToolbar.tsx';
@@ -39,9 +38,7 @@ export function TaskDetailsPanel({
   const [showEditorDialog, setShowEditorDialog] = useState(false);
 
   // Tab and collapsible state
-  const [activeTab, setActiveTab] = useState<
-    'logs' | 'diffs' | 'related' | 'processes' | 'plan'
-  >('logs');
+  const [activeTab, setActiveTab] = useState<TabType>('logs');
 
   // Reset to logs tab when task changes
   useEffect(() => {
@@ -96,17 +93,11 @@ export function TaskDetailsPanel({
               />
 
               {/* Tab Content */}
-              <div
-                className={`flex-1 flex flex-col min-h-0 ${activeTab === 'logs' ? 'p-4' : 'pt-4'}`}
-              >
+              <div className="flex-1 flex flex-col min-h-0">
                 {activeTab === 'diffs' ? (
                   <DiffTab />
-                ) : activeTab === 'related' ? (
-                  <RelatedTasksTab />
                 ) : activeTab === 'processes' ? (
                   <ProcessesTab />
-                ) : activeTab === 'plan' ? (
-                  <PlanTab />
                 ) : (
                   <LogsTab />
                 )}

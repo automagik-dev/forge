@@ -12,7 +12,6 @@ import { useContext } from 'react';
 import {
   TaskDeletingFilesContext,
   TaskDetailsContext,
-  TaskDiffContext,
   TaskSelectedAttemptContext,
 } from '@/components/context/taskDetailsContext.ts';
 
@@ -21,7 +20,6 @@ function DeleteFileConfirmationDialog() {
   const { selectedAttempt } = useContext(TaskSelectedAttemptContext);
   const { setDeletingFiles, fileToDelete, deletingFiles, setFileToDelete } =
     useContext(TaskDeletingFilesContext);
-  const { fetchDiff, setDiffError } = useContext(TaskDiffContext);
 
   const handleConfirmDelete = async () => {
     if (!fileToDelete || !projectId || !task?.id || !selectedAttempt?.id)
@@ -30,13 +28,7 @@ function DeleteFileConfirmationDialog() {
     setDeletingFiles((prev) => new Set(prev).add(fileToDelete));
 
     try {
-      await attemptsApi.deleteFile(
-        projectId!,
-        selectedAttempt.task_id,
-        selectedAttempt.id,
-        fileToDelete
-      );
-      await fetchDiff();
+      await attemptsApi.deleteFile(selectedAttempt.id, fileToDelete);
     } catch (error: unknown) {
       // @ts-expect-error it is type ApiError
       setDiffError(error.message || 'Failed to delete file');

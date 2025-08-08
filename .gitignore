@@ -37,10 +37,6 @@ yarn-error.log*
 ehthumbs.db
 Thumbs.db
 
-# Logs
-*.log
-logs/
-
 # Runtime data
 pids
 *.pid
@@ -74,6 +70,7 @@ backend/bindings
 build-npm-package-codesign.sh
 
 npx-cli/dist
+npx-cli/vibe-kanban-*
 backend/db.sqlite
 
 # Development ports file
@@ -82,3 +79,5 @@ backend/db.sqlite
 dev_assets
 /frontend/.env.sentry-build-plugin
 .ssh
+
+vibe-kanban-cloud/
