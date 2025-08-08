@@ -110,7 +110,9 @@ function TaskDetailsToolbar() {
 
   // Derive createAttemptBranch for backward compatibility
   const createAttemptBranch = useMemo(() => {
-    if (
+    if (selectedBranch) {
+      return selectedBranch;
+    } else if (
       latestAttempt?.base_branch &&
       branches.some((b: GitBranch) => b.name === latestAttempt.base_branch)
     ) {
@@ -213,7 +215,12 @@ function TaskDetailsToolbar() {
   }, []);
 
   // Stub handlers for backward compatibility with CreateAttempt
-  const setCreateAttemptBranch = useCallback(() => {
+  const setCreateAttemptBranch = useCallback((branch: string | null | ((prev: string | null) => string | null)) => {
+    if (typeof branch === 'function') {
+      setSelectedBranch(prev => branch(prev));
+    } else {
+      setSelectedBranch(branch);
+    }
     // This is now derived state, so no-op
   }, []);
 
