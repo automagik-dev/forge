@@ -62,6 +62,8 @@ pub struct AgentProfile {
     pub agent: BaseCodingAgent,
     /// Command builder configuration
     pub command: CommandBuilder,
+    /// Optional profile-specific MCP config file path (absolute; supports leading ~). Overrides the default `BaseCodingAgent` config path
+    pub mcp_config_path: Option<String>,
 }
 
 impl AgentProfile {
@@ -75,6 +77,7 @@ impl AgentProfile {
                 "--verbose",
                 "--output-format=stream-json",
             ]),
+            mcp_config_path: None,
         }
     }
 
@@ -88,6 +91,7 @@ impl AgentProfile {
                 "--verbose",
                 "--output-format=stream-json",
             ]),
+            mcp_config_path: None,
         }
     }
 
@@ -103,6 +107,7 @@ impl AgentProfile {
                     "--output-format=stream-json",
                 ],
             ),
+            mcp_config_path: None,
         }
     }
 
@@ -112,6 +117,7 @@ impl AgentProfile {
             agent: BaseCodingAgent::Amp,
             command: CommandBuilder::new("npx -y @sourcegraph/amp@0.0.1752148945-gd8844f")
                 .params(vec!["--format=jsonl"]),
+            mcp_config_path: None,
         }
     }
 
@@ -120,6 +126,7 @@ impl AgentProfile {
             label: "gemini".to_string(),
             agent: BaseCodingAgent::Gemini,
             command: CommandBuilder::new("npx -y @google/gemini-cli@latest").params(vec!["--yolo"]),
+            mcp_config_path: None,
         }
     }
 
@@ -132,6 +139,16 @@ impl AgentProfile {
                 "--dangerously-bypass-approvals-and-sandbox",
                 "--skip-git-repo-check",
             ]),
+            mcp_config_path: None,
+        }
+    }
+
+    pub fn qwen_code() -> Self {
+        Self {
+            label: "qwen-code".to_string(),
+            agent: BaseCodingAgent::Gemini,
+            command: CommandBuilder::new("npx -y @qwen-code/qwen-code@latest"),
+            mcp_config_path: Some("~/.qwen/settings.json".to_string()),
         }
     }
 
@@ -141,6 +158,7 @@ impl AgentProfile {
             agent: BaseCodingAgent::Opencode,
             command: CommandBuilder::new("npx -y opencode-ai@latest run")
                 .params(vec!["--print-logs"]),
+            mcp_config_path: None,
         }
     }
 }
@@ -179,6 +197,7 @@ impl AgentProfiles {
                 AgentProfile::gemini(),
                 AgentProfile::codex(),
                 AgentProfile::opencode(),
+                AgentProfile::qwen_code(),
             ],
         }
     }
@@ -252,7 +271,7 @@ mod tests {
     #[test]
     fn test_default_profiles() {
         let profiles = AgentProfiles::from_defaults();
-        assert!(profiles.profiles.len() == 7);
+        assert!(profiles.profiles.len() == 8);
 
         let claude_profile = profiles.get_profile("claude-code").unwrap();
         assert_eq!(claude_profile.agent, BaseCodingAgent::ClaudeCode);
@@ -283,6 +302,19 @@ mod tests {
         assert_eq!(gemini_profile.agent, BaseCodingAgent::Gemini);
         assert!(gemini_profile.command.build_initial().contains("gemini"));
         assert!(gemini_profile.command.build_initial().contains("--yolo"));
+
+        let qwen_profile = profiles.get_profile("qwen").unwrap();
+        assert_eq!(qwen_profile.agent, BaseCodingAgent::Gemini);
+        assert!(
+            qwen_profile
+                .command
+                .build_initial()
+                .contains("@qwen-code/qwen-code")
+        );
+        assert_eq!(
+            qwen_profile.mcp_config_path.as_deref(),
+            Some("~/.qwen/settings.json")
+        );
 
         let codex_profile = profiles.get_profile("codex").unwrap();
         assert_eq!(codex_profile.agent, BaseCodingAgent::Codex);
