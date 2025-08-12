@@ -366,7 +366,11 @@
   --diff-border--: var(--background);
   --diff-add-content--: hsl(var(--console-success) / 0.2);
   --diff-del-content--: hsl(var(--console-error) / 0.2);
-  --diff-add-lineNumber--: hsl(var(--console-success) / 0.2);
+  --diff-add-lineNumber--: color-mix(
+    in srgb,
+    hsl(var(--console-success)) 20%,
+    hsl(var(--background)) 80%
+  );
   --diff-del-lineNumber--: hsl(var(--console-error) / 0.2);
   --diff-plain-content--: hsl(var(--background));
   --diff-expand-content--: hsl(var(--background));
