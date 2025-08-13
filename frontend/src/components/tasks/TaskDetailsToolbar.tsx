@@ -6,7 +6,7 @@ import {
   useReducer,
   useState,
 } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { attemptsApi, projectsApi } from '@/lib/api';
@@ -92,6 +92,8 @@ function TaskDetailsToolbar() {
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
 
   const location = useLocation();
+  const navigate = useNavigate();
+  const { attemptId: urlAttemptId } = useParams<{ attemptId?: string }>();
   const { system, profiles } = useUserSystem();
 
   // Memoize latest attempt calculation
@@ -156,39 +158,68 @@ function TaskDetailsToolbar() {
       });
 
       if (result.length > 0) {
-        // Check if there's an attempt query parameter
+        // Check if we have a new latest attempt (newly created)
+        const currentLatest =
+          taskAttempts.length > 0
+            ? taskAttempts.reduce((latest, current) =>
+                new Date(current.created_at) > new Date(latest.created_at)
+                  ? current
+                  : latest
+              )
+            : null;
+
+        const newLatest = result.reduce((latest, current) =>
+          new Date(current.created_at) > new Date(latest.created_at)
+            ? current
+            : latest
+        );
+
+        // If we have a new attempt that wasn't there before, navigate to it immediately
+        const hasNewAttempt =
+          newLatest && (!currentLatest || newLatest.id !== currentLatest.id);
+
+        if (hasNewAttempt) {
+          // Always navigate to newly created attempts
+          handleAttemptSelect(newLatest);
+          return;
+        }
+
+        // Otherwise, follow existing logic for URL-based attempt selection
         const urlParams = new URLSearchParams(location.search);
-        const attemptParam = urlParams.get('attempt');
+        const queryAttemptParam = urlParams.get('attempt');
+        const attemptParam = urlAttemptId || queryAttemptParam;
 
         let selectedAttemptToUse: TaskAttempt;
 
         if (attemptParam) {
-          // Try to find the specific attempt
           const specificAttempt = result.find(
             (attempt) => attempt.id === attemptParam
           );
           if (specificAttempt) {
             selectedAttemptToUse = specificAttempt;
           } else {
-            // Fall back to latest if specific attempt not found
-            selectedAttemptToUse = result.reduce((latest, current) =>
-              new Date(current.created_at) > new Date(latest.created_at)
-                ? current
-                : latest
-            );
+            selectedAttemptToUse = newLatest;
           }
         } else {
-          // Use latest attempt if no specific attempt requested
-          selectedAttemptToUse = result.reduce((latest, current) =>
-            new Date(current.created_at) > new Date(latest.created_at)
-              ? current
-              : latest
-          );
+          selectedAttemptToUse = newLatest;
         }
 
         setSelectedAttempt((prev) => {
           if (JSON.stringify(prev) === JSON.stringify(selectedAttemptToUse))
             return prev;
+
+          // Only navigate if we're not already on the correct attempt URL
+          if (
+            selectedAttemptToUse &&
+            task &&
+            (!urlAttemptId || urlAttemptId !== selectedAttemptToUse.id)
+          ) {
+            navigate(
+              `/projects/${projectId}/tasks/${task.id}/attempts/${selectedAttemptToUse.id}`,
+              { replace: true }
+            );
+          }
+
           return selectedAttemptToUse;
         });
       } else {
@@ -203,7 +234,16 @@ function TaskDetailsToolbar() {
     } finally {
       setLoading(false);
     }
-  }, [task, location.search, setLoading, setSelectedAttempt, setAttemptData]);
+  }, [
+    task,
+    location.search,
+    urlAttemptId,
+    navigate,
+    projectId,
+    setLoading,
+    setSelectedAttempt,
+    setAttemptData,
+  ]);
 
   useEffect(() => {
     fetchTaskAttempts();
@@ -213,6 +253,20 @@ function TaskDetailsToolbar() {
   const handleEnterCreateAttemptMode = useCallback(() => {
     dispatch({ type: 'ENTER_CREATE_MODE' });
   }, []);
+
+  // Handle attempt selection with URL navigation
+  const handleAttemptSelect = useCallback(
+    (attempt: TaskAttempt | null) => {
+      setSelectedAttempt(attempt);
+      if (attempt && task) {
+        navigate(
+          `/projects/${projectId}/tasks/${task.id}/attempts/${attempt.id}`,
+          { replace: true }
+        );
+      }
+    },
+    [navigate, projectId, task, setSelectedAttempt]
+  );
 
   // Stub handlers for backward compatibility with CreateAttempt
   const setCreateAttemptBranch = useCallback(
@@ -303,6 +357,7 @@ function TaskDetailsToolbar() {
                   setShowCreatePRDialog={setShowCreatePRDialog}
                   creatingPR={ui.creatingPR}
                   handleEnterCreateAttemptMode={handleEnterCreateAttemptMode}
+                  handleAttemptSelect={handleAttemptSelect}
                   branches={branches}
                 />
               ) : (
