@@ -5,7 +5,9 @@ use sqlx::Error as SqlxError;
 use strip_ansi_escapes::strip;
 use thiserror::Error;
 use tracing_subscriber::{prelude::*, EnvFilter};
-use utils::{assets::asset_dir, browser::open_browser, sentry::sentry_layer};
+use utils::{
+    assets::asset_dir, browser::open_browser, port_file::write_port_file, sentry::sentry_layer,
+};
 
 #[derive(Debug, Error)]
 pub enum VibeKanbanError {
@@ -64,6 +66,9 @@ async fn main() -> Result<(), VibeKanbanError> {
     let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;
     let actual_port = listener.local_addr()?.port(); // get → 53427 (example)
+
+    // Write port file for discovery
+    write_port_file(actual_port).await?;
 
     tracing::info!("Server running on http://{host}:{actual_port}");
 
