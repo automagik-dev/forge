@@ -249,11 +249,14 @@ export function ProjectTasks() {
   }, []);
 
   const handleViewTaskDetails = useCallback(
-    (task: Task) => {
+    (task: Task, attemptIdToShow?: string) => {
       // setSelectedTask(task);
       // setIsPanelOpen(true);
-      // Update URL to include task ID
-      navigate(`/projects/${projectId}/tasks/${task.id}`, { replace: true });
+      // Update URL to include task ID and optionally attempt ID
+      const targetUrl = attemptIdToShow
+        ? `/projects/${projectId}/tasks/${task.id}/attempts/${attemptIdToShow}`
+        : `/projects/${projectId}/tasks/${task.id}`;
+      navigate(targetUrl, { replace: true });
     },
     [projectId, navigate]
   );
@@ -311,7 +314,7 @@ export function ProjectTasks() {
   // Setup keyboard shortcuts
   useKeyboardShortcuts({
     navigate,
-    currentPath: `/projects/${projectId}/tasks`,
+    currentPath: window.location.pathname,
     hasOpenDialog:
       isTaskDialogOpen || isTemplateManagerOpen || isProjectSettingsOpen,
     closeDialog: () => setIsTaskDialogOpen(false),
