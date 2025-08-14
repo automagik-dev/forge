@@ -116,7 +116,7 @@ impl AgentProfile {
             label: "amp".to_string(),
             agent: BaseCodingAgent::Amp,
             command: CommandBuilder::new("npx -y @sourcegraph/amp@0.0.1752148945-gd8844f")
-                .params(vec!["--format=jsonl"]),
+                .params(vec!["--format=jsonl", "--dangerously-allow-all"]),
             mcp_config_path: None,
         }
     }
