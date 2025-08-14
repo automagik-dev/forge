@@ -834,8 +834,7 @@ mod tests {
             .count();
         assert!(
             patch_count >= 2,
-            "Expected at least 2 patches, got {}",
-            patch_count
+            "Expected at least 2 patches, got {patch_count}"
         );
     }
 
