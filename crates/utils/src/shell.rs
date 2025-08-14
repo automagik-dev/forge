@@ -17,3 +17,10 @@ pub fn get_shell_command() -> (&'static str, &'static str) {
         }
     }
 }
+
+/// Resolves the full path of an executable using the system's PATH environment variable.
+pub fn resolve_executable_path(executable: &str) -> Option<String> {
+    which::which(executable)
+        .ok()
+        .map(|p| p.to_string_lossy().to_string())
+}
