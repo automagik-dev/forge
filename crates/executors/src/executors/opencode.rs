@@ -12,7 +12,7 @@ use ts_rs::TS;
 use utils::{msg_store::MsgStore, path::make_path_relative, shell::get_shell_command};
 
 use crate::{
-    command::{AgentProfiles, CommandBuilder},
+    command::CommandBuilder,
     executors::{ExecutorError, StandardCodingAgentExecutor},
     logs::{
         ActionType, EditDiff, NormalizedEntry, NormalizedEntryType,
@@ -24,27 +24,7 @@ use crate::{
 /// An executor that uses OpenCode to process tasks
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
 pub struct Opencode {
-    command_builder: CommandBuilder,
-}
-
-impl Default for Opencode {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Opencode {
-    pub fn new() -> Self {
-        let profile = AgentProfiles::get_cached()
-            .get_profile("opencode")
-            .expect("Default opencode profile should exist");
-
-        Self::with_command_builder(profile.command.clone())
-    }
-
-    pub fn with_command_builder(command_builder: CommandBuilder) -> Self {
-        Self { command_builder }
-    }
+    pub command: CommandBuilder,
 }
 
 #[async_trait]
@@ -55,7 +35,7 @@ impl StandardCodingAgentExecutor for Opencode {
         prompt: &str,
     ) -> Result<AsyncGroupChild, ExecutorError> {
         let (shell_cmd, shell_arg) = get_shell_command();
-        let opencode_command = self.command_builder.build_initial();
+        let opencode_command = self.command.build_initial();
 
         let mut command = Command::new(shell_cmd);
         command
@@ -87,7 +67,7 @@ impl StandardCodingAgentExecutor for Opencode {
     ) -> Result<AsyncGroupChild, ExecutorError> {
         let (shell_cmd, shell_arg) = get_shell_command();
         let opencode_command = self
-            .command_builder
+            .command
             .build_follow_up(&["--session".to_string(), session_id.to_string()]);
 
         let mut command = Command::new(shell_cmd);

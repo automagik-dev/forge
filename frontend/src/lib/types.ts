@@ -1,7 +1,7 @@
-import { ExecutionProcess, ExecutionProcessSummary } from 'shared/types';
+import { ExecutionProcess } from 'shared/types';
 
 export type AttemptData = {
-  processes: ExecutionProcessSummary[];
+  processes: ExecutionProcess[];
   runningProcessDetails: Record<string, ExecutionProcess>;
 };
 

@@ -10,7 +10,7 @@ use ts_rs::TS;
 use utils::{msg_store::MsgStore, path::make_path_relative, shell::get_shell_command};
 
 use crate::{
-    command::{AgentProfiles, CommandBuilder},
+    command::CommandBuilder,
     executors::{ExecutorError, StandardCodingAgentExecutor},
     logs::{
         ActionType, EditDiff, NormalizedEntry, NormalizedEntryType,
@@ -102,29 +102,7 @@ impl SessionHandler {
 /// An executor that uses Codex CLI to process tasks
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
 pub struct Codex {
-    command_builder: CommandBuilder,
-}
-
-impl Default for Codex {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Codex {
-    /// Create a new Codex executor with default settings
-    pub fn new() -> Self {
-        let profile = AgentProfiles::get_cached()
-            .get_profile("codex")
-            .expect("Default codex profile should exist");
-
-        Self::with_command_builder(profile.command.clone())
-    }
-
-    /// Create a new Codex executor with custom command builder
-    pub fn with_command_builder(command_builder: CommandBuilder) -> Self {
-        Self { command_builder }
-    }
+    pub command: CommandBuilder,
 }
 
 #[async_trait]
@@ -135,7 +113,7 @@ impl StandardCodingAgentExecutor for Codex {
         prompt: &str,
     ) -> Result<AsyncGroupChild, ExecutorError> {
         let (shell_cmd, shell_arg) = get_shell_command();
-        let codex_command = self.command_builder.build_initial();
+        let codex_command = self.command.build_initial();
 
         let mut command = Command::new(shell_cmd);
         command
@@ -173,7 +151,7 @@ impl StandardCodingAgentExecutor for Codex {
             })?;
 
         let (shell_cmd, shell_arg) = get_shell_command();
-        let codex_command = self.command_builder.build_follow_up(&[
+        let codex_command = self.command.build_follow_up(&[
             "-c".to_string(),
             format!("experimental_resume={}", rollout_file_path.display()),
         ]);

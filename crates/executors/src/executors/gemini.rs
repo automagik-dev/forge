@@ -6,14 +6,14 @@ use futures::{StreamExt, stream::BoxStream};
 use serde::{Deserialize, Serialize};
 use tokio::{
     fs::{self, OpenOptions},
-    io::{AsyncReadExt, AsyncWriteExt},
+    io::AsyncWriteExt,
     process::Command,
 };
 use ts_rs::TS;
 use utils::{msg_store::MsgStore, shell::get_shell_command};
 
 use crate::{
-    command::{AgentProfiles, CommandBuilder},
+    command::CommandBuilder,
     executors::{ExecutorError, StandardCodingAgentExecutor},
     logs::{
         NormalizedEntry, NormalizedEntryType, plain_text_processor::PlainTextLogProcessor,
@@ -25,13 +25,7 @@ use crate::{
 /// An executor that uses Gemini to process tasks
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
 pub struct Gemini {
-    command_builder: CommandBuilder,
-}
-
-impl Default for Gemini {
-    fn default() -> Self {
-        Self::new()
-    }
+    pub command: CommandBuilder,
 }
 
 #[async_trait]
@@ -42,7 +36,7 @@ impl StandardCodingAgentExecutor for Gemini {
         prompt: &str,
     ) -> Result<AsyncGroupChild, ExecutorError> {
         let (shell_cmd, shell_arg) = get_shell_command();
-        let gemini_command = self.command_builder.build_initial();
+        let gemini_command = self.command.build_initial();
 
         let mut command = Command::new(shell_cmd);
 
@@ -86,7 +80,7 @@ impl StandardCodingAgentExecutor for Gemini {
         let followup_prompt = Self::build_followup_prompt(current_dir, prompt).await?;
 
         let (shell_cmd, shell_arg) = get_shell_command();
-        let gemini_command = self.command_builder.build_follow_up(&[]);
+        let gemini_command = self.command.build_follow_up(&[]);
 
         let mut command = Command::new(shell_cmd);
 
@@ -311,21 +305,5 @@ You are continuing work on the above task. The execution history shows the previ
 
     fn get_sessions_base_dir() -> PathBuf {
         utils::path::get_vibe_kanban_temp_dir().join("gemini_sessions")
-    }
-}
-
-impl Gemini {
-    /// Create a new Gemini executor with default settings
-    pub fn new() -> Self {
-        let profile = AgentProfiles::get_cached()
-            .get_profile("gemini")
-            .expect("Default gemini profile should exist");
-
-        Self::with_command_builder(profile.command.clone())
-    }
-
-    /// Create a new Gemini executor with custom command builder
-    pub fn with_command_builder(command_builder: CommandBuilder) -> Self {
-        Self { command_builder }
     }
 }
