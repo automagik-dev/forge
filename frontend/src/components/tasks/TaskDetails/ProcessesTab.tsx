@@ -10,10 +10,8 @@ import {
 } from 'lucide-react';
 import { TaskAttemptDataContext } from '@/components/context/taskDetailsContext.ts';
 import { executionProcessesApi } from '@/lib/api.ts';
-import type {
-  ExecutionProcessStatus,
-  ExecutionProcessSummary,
-} from 'shared/types';
+import { ProfileVariantBadge } from '@/components/common/ProfileVariantBadge.tsx';
+import type { ExecutionProcessStatus, ExecutionProcess } from 'shared/types';
 
 function ProcessesTab() {
   const { attemptData, setAttemptData } = useContext(TaskAttemptDataContext);
@@ -78,7 +76,7 @@ function ProcessesTab() {
     }
   };
 
-  const handleProcessClick = async (process: ExecutionProcessSummary) => {
+  const handleProcessClick = async (process: ExecutionProcess) => {
     setSelectedProcessId(process.id);
 
     // If we don't have details for this process, fetch them
@@ -127,6 +125,22 @@ function ProcessesTab() {
                       <p className="text-sm text-muted-foreground mt-1">
                         Process ID: {process.id}
                       </p>
+                      {
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Profile:{' '}
+                          {process.executor_action.typ.type ===
+                            'CodingAgentInitialRequest' ||
+                          process.executor_action.typ.type ===
+                            'CodingAgentFollowUpRequest' ? (
+                            <ProfileVariantBadge
+                              profileVariant={
+                                process.executor_action.typ
+                                  .profile_variant_label
+                              }
+                            />
+                          ) : null}
+                        </p>
+                      }
                     </div>
                   </div>
                   <div className="text-right">
@@ -189,6 +203,20 @@ function ProcessesTab() {
                         <span className="font-medium">Exit Code:</span>{' '}
                         {selectedProcess.exit_code?.toString() ?? 'N/A'}
                       </p>
+                      {selectedProcess.executor_action.typ.type ===
+                        'CodingAgentInitialRequest' ||
+                      selectedProcess.executor_action.typ.type ===
+                        'CodingAgentFollowUpRequest' ? (
+                        <p>
+                          <span className="font-medium">Profile:</span>{' '}
+                          <ProfileVariantBadge
+                            profileVariant={
+                              selectedProcess.executor_action.typ
+                                .profile_variant_label
+                            }
+                          />
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                   <div>

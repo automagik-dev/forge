@@ -11,7 +11,7 @@ use utils::{
 };
 
 use crate::{
-    command::{AgentProfiles, CommandBuilder},
+    command::CommandBuilder,
     executors::{ExecutorError, StandardCodingAgentExecutor},
     logs::{
         ActionType, EditDiff, NormalizedEntry, NormalizedEntryType,
@@ -23,14 +23,8 @@ use crate::{
 /// An executor that uses Claude CLI to process tasks
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
 pub struct ClaudeCode {
-    executor_type: String,
-    command_builder: CommandBuilder,
-}
-
-impl Default for ClaudeCode {
-    fn default() -> Self {
-        Self::new()
-    }
+    pub command: CommandBuilder,
+    pub plan: bool,
 }
 
 #[async_trait]
@@ -41,7 +35,12 @@ impl StandardCodingAgentExecutor for ClaudeCode {
         prompt: &str,
     ) -> Result<AsyncGroupChild, ExecutorError> {
         let (shell_cmd, shell_arg) = get_shell_command();
-        let claude_command = self.command_builder.build_initial();
+        let claude_command = if self.plan {
+            let base_command = self.command.build_initial();
+            create_watchkill_script(&base_command)
+        } else {
+            self.command.build_initial()
+        };
 
         let mut command = Command::new(shell_cmd);
         command
@@ -72,9 +71,15 @@ impl StandardCodingAgentExecutor for ClaudeCode {
     ) -> Result<AsyncGroupChild, ExecutorError> {
         let (shell_cmd, shell_arg) = get_shell_command();
         // Build follow-up command with --resume {session_id}
-        let claude_command = self
-            .command_builder
-            .build_follow_up(&["--resume".to_string(), session_id.to_string()]);
+        let claude_command = if self.plan {
+            let base_command = self
+                .command
+                .build_follow_up(&["--resume".to_string(), session_id.to_string()]);
+            create_watchkill_script(&base_command)
+        } else {
+            self.command
+                .build_follow_up(&["--resume".to_string(), session_id.to_string()])
+        };
 
         let mut command = Command::new(shell_cmd);
         command
@@ -110,50 +115,6 @@ impl StandardCodingAgentExecutor for ClaudeCode {
 
         // Process stderr logs using the standard stderr processor
         normalize_stderr_logs(msg_store, entry_index_provider);
-    }
-}
-
-impl ClaudeCode {
-    /// Create a new Claude executor with default settings
-    pub fn new() -> Self {
-        let profile = AgentProfiles::get_cached()
-            .get_profile("claude-code")
-            .expect("Default claude-code profile should exist");
-
-        Self::with_command_builder(profile.label.clone(), profile.command.clone())
-    }
-
-    /// Create a new Claude executor in plan mode with watchkill script
-    pub fn new_plan_mode() -> Self {
-        let profile = AgentProfiles::get_cached()
-            .get_profile("claude-code-plan")
-            .expect("Default claude-code-plan profile should exist");
-
-        let base_command = profile.command.build_initial();
-        // Note: We'll need to update this to handle watchkill script properly
-        // For now, we'll create a custom command builder
-        let watchkill_command = create_watchkill_script(&base_command);
-        Self {
-            executor_type: "ClaudePlan".to_string(),
-            command_builder: CommandBuilder::new(watchkill_command),
-        }
-    }
-
-    /// Create a new Claude executor using claude-code-router
-    pub fn new_claude_code_router() -> Self {
-        let profile = AgentProfiles::get_cached()
-            .get_profile("claude-code-router")
-            .expect("Default claude-code-router profile should exist");
-
-        Self::with_command_builder(profile.label.clone(), profile.command.clone())
-    }
-
-    /// Create a new Claude executor with custom command builder
-    pub fn with_command_builder(executor_type: String, command_builder: CommandBuilder) -> Self {
-        Self {
-            executor_type,
-            command_builder,
-        }
     }
 }
 
@@ -1009,7 +970,10 @@ mod tests {
 
         use utils::msg_store::MsgStore;
 
-        let executor = ClaudeCode::new();
+        let executor = ClaudeCode {
+            command: CommandBuilder::new(""),
+            plan: false,
+        };
         let msg_store = Arc::new(MsgStore::new());
         let current_dir = std::path::PathBuf::from("/tmp/test-worktree");
 
@@ -1108,24 +1072,5 @@ mod tests {
         assert_eq!(entries[1].content, "I'll help you with that");
 
         // ToolResult entry is ignored - no third entry
-    }
-
-    #[test]
-    fn test_claude_executor_command_building() {
-        // Test default executor produces correct command
-        let executor = ClaudeCode::new();
-        let command = executor.command_builder.build_initial();
-        assert!(command.contains("npx -y @anthropic-ai/claude-code@latest"));
-        assert!(command.contains("-p"));
-        assert!(command.contains("--dangerously-skip-permissions"));
-        assert!(command.contains("--verbose"));
-        assert!(command.contains("--output-format=stream-json"));
-
-        // Test follow-up command
-        let follow_up = executor
-            .command_builder
-            .build_follow_up(&["--resume".to_string(), "test-session-123".to_string()]);
-        assert!(follow_up.contains("--resume test-session-123"));
-        assert!(follow_up.contains("-p")); // Still contains base params
     }
 }

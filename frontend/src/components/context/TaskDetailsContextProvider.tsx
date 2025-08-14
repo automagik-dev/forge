@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from 'react';
-import type { ExecutionProcess, ExecutionProcessSummary } from 'shared/types';
+import type { ExecutionProcess } from 'shared/types';
 import type {
   EditorType,
   TaskAttempt,
@@ -24,6 +24,7 @@ import {
   TaskSelectedAttemptContext,
 } from './taskDetailsContext.ts';
 import type { AttemptData } from '@/lib/types.ts';
+import { useUserSystem } from '@/components/config-provider';
 
 const TaskDetailsProvider: FC<{
   task: TaskWithAttemptStatus;
@@ -38,6 +39,7 @@ const TaskDetailsProvider: FC<{
   setShowEditorDialog,
   projectHasDevScript,
 }) => {
+  const { profiles } = useUserSystem();
   const [loading, setLoading] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [selectedAttempt, setSelectedAttempt] = useState<TaskAttempt | null>(
@@ -83,20 +85,7 @@ const TaskDetailsProvider: FC<{
           await executionProcessesApi.getExecutionProcesses(attemptId);
 
         if (processesResult !== undefined) {
-          const runningProcesses = processesResult.filter(
-            (process) => process.status === 'running'
-          );
-
           const runningProcessDetails: Record<string, ExecutionProcess> = {};
-
-          // Fetch details for running processes
-          for (const process of runningProcesses) {
-            const result = await executionProcessesApi.getDetails(process.id);
-
-            if (result !== undefined) {
-              runningProcessDetails[process.id] = result;
-            }
-          }
 
           // Also fetch setup script process details if it exists in the processes
           const setupProcess = processesResult.find(
@@ -109,6 +98,7 @@ const TaskDetailsProvider: FC<{
 
             if (result !== undefined) {
               runningProcessDetails[setupProcess.id] = result;
+              // Extract ProfileVariant from the executor_action
             }
           }
 
@@ -140,13 +130,39 @@ const TaskDetailsProvider: FC<{
     }
 
     return attemptData.processes.some(
-      (process: ExecutionProcessSummary) =>
+      (process: ExecutionProcess) =>
         (process.run_reason === 'codingagent' ||
           process.run_reason === 'setupscript' ||
           process.run_reason === 'cleanupscript') &&
         process.status === 'running'
     );
   }, [selectedAttempt, attemptData.processes, isStopping]);
+
+  const defaultFollowUpVariant = useMemo(() => {
+    // Find most recent coding agent process with variant
+    const latest_profile = attemptData.processes
+      .filter((p) => p.run_reason === 'codingagent')
+      .reverse()
+      .map((process) => {
+        if (
+          process.executor_action?.typ.type === 'CodingAgentInitialRequest' ||
+          process.executor_action?.typ.type === 'CodingAgentFollowUpRequest'
+        ) {
+          return process.executor_action?.typ.profile_variant_label;
+        }
+      })[0];
+    if (latest_profile) {
+      return latest_profile.variant;
+    }
+    if (selectedAttempt?.profile && profiles) {
+      // No processes yet, check if profile has default variant
+      const profile = profiles.find((p) => p.label === selectedAttempt.profile);
+      if (profile?.variants && profile.variants.length > 0) {
+        return profile.variants[0].label;
+      }
+    }
+    return null;
+  }, [attemptData.processes, selectedAttempt?.profile, profiles]);
 
   useEffect(() => {
     if (!isAttemptRunning || !task) return;
@@ -201,8 +217,9 @@ const TaskDetailsProvider: FC<{
       setAttemptData,
       fetchAttemptData,
       isAttemptRunning,
+      defaultFollowUpVariant,
     }),
-    [attemptData, fetchAttemptData, isAttemptRunning]
+    [attemptData, fetchAttemptData, isAttemptRunning, defaultFollowUpVariant]
   );
 
   return (

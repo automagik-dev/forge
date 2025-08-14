@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -14,18 +14,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Key, Loader2, Volume2 } from 'lucide-react';
-import { ThemeMode, EditorType, SoundFile } from 'shared/types';
+import { Textarea } from '@/components/ui/textarea';
+import { ChevronDown, Key, Loader2, Volume2 } from 'lucide-react';
+import {
+  ThemeMode,
+  EditorType,
+  SoundFile,
+  ProfileVariantLabel,
+} from 'shared/types';
 
 import { toPrettyCase } from '@/utils/string';
 import { useTheme } from '@/components/theme-provider';
 import { useUserSystem } from '@/components/config-provider';
 import { GitHubLoginDialog } from '@/components/GitHubLoginDialog';
 import { TaskTemplateManager } from '@/components/TaskTemplateManager';
+import { profilesApi } from '@/lib/api';
 
 export function Settings() {
   const {
@@ -35,6 +48,7 @@ export function Settings() {
     loading,
     updateAndSaveConfig,
     profiles,
+    reloadSystem,
   } = useUserSystem();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,12 +56,78 @@ export function Settings() {
   const { setTheme } = useTheme();
   const [showGitHubLogin, setShowGitHubLogin] = useState(false);
 
+  // Profiles editor state
+  const [profilesContent, setProfilesContent] = useState('');
+  const [profilesPath, setProfilesPath] = useState('');
+  const [profilesError, setProfilesError] = useState<string | null>(null);
+  const [profilesLoading, setProfilesLoading] = useState(false);
+  const [profilesSaving, setProfilesSaving] = useState(false);
+  const [profilesSuccess, setProfilesSuccess] = useState(false);
+
+  // Load profiles content on mount
+  useEffect(() => {
+    const loadProfiles = async () => {
+      setProfilesLoading(true);
+      try {
+        const result = await profilesApi.load();
+        setProfilesContent(result.content);
+        setProfilesPath(result.path);
+      } catch (err) {
+        console.error('Failed to load profiles:', err);
+        setProfilesError('Failed to load profiles');
+      } finally {
+        setProfilesLoading(false);
+      }
+    };
+    loadProfiles();
+  }, []);
+
   const playSound = async (soundFile: SoundFile) => {
     const audio = new Audio(`/api/sounds/${soundFile}`);
     try {
       await audio.play();
     } catch (err) {
       console.error('Failed to play sound:', err);
+    }
+  };
+
+  const handleProfilesChange = (value: string) => {
+    setProfilesContent(value);
+    setProfilesError(null);
+
+    // Validate JSON on change
+    if (value.trim()) {
+      try {
+        const parsed = JSON.parse(value);
+        // Basic structure validation
+        if (!parsed.profiles || !Array.isArray(parsed.profiles)) {
+          setProfilesError('Invalid structure: must have a "profiles" array');
+        }
+      } catch (err) {
+        if (err instanceof SyntaxError) {
+          setProfilesError('Invalid JSON format');
+        } else {
+          setProfilesError('Validation error');
+        }
+      }
+    }
+  };
+
+  const handleSaveProfiles = async () => {
+    setProfilesSaving(true);
+    setProfilesError(null);
+    setProfilesSuccess(false);
+
+    try {
+      await profilesApi.save(profilesContent);
+      // Reload the system to get the updated profiles
+      await reloadSystem();
+      setProfilesSuccess(true);
+      setTimeout(() => setProfilesSuccess(false), 3000);
+    } catch (err: any) {
+      setProfilesError(err.message || 'Failed to save profiles');
+    } finally {
+      setProfilesSaving(false);
     }
   };
 
@@ -198,23 +278,106 @@ export function Settings() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="executor">Default Profile</Label>
-                <Select
-                  value={config.profile}
-                  onValueChange={(value: string) =>
-                    updateConfig({ profile: value })
-                  }
-                >
-                  <SelectTrigger id="executor">
-                    <SelectValue placeholder="Select executor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {profiles?.map((profile) => (
-                      <SelectItem key={profile.label} value={profile.label}>
-                        {profile.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="grid grid-cols-2 gap-2">
+                  <Select
+                    value={config.profile?.profile || ''}
+                    onValueChange={(value: string) => {
+                      const newProfile: ProfileVariantLabel = {
+                        profile: value,
+                        variant: null,
+                      };
+                      updateConfig({ profile: newProfile });
+                    }}
+                  >
+                    <SelectTrigger id="executor">
+                      <SelectValue placeholder="Select profile" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {profiles?.map((profile) => (
+                        <SelectItem key={profile.label} value={profile.label}>
+                          {profile.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Show variant selector if selected profile has variants */}
+                  {(() => {
+                    const selectedProfile = profiles?.find(
+                      (p) => p.label === config.profile?.profile
+                    );
+                    const hasVariants =
+                      selectedProfile?.variants &&
+                      selectedProfile.variants.length > 0;
+
+                    if (hasVariants) {
+                      return (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full h-10 px-2 flex items-center justify-between"
+                            >
+                              <span className="text-sm truncate flex-1 text-left">
+                                {config.profile?.variant || 'Default'}
+                              </span>
+                              <ChevronDown className="h-4 w-4 ml-1 flex-shrink-0" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                const newProfile: ProfileVariantLabel = {
+                                  profile: config.profile?.profile || '',
+                                  variant: null,
+                                };
+                                updateConfig({ profile: newProfile });
+                              }}
+                              className={
+                                !config.profile?.variant ? 'bg-accent' : ''
+                              }
+                            >
+                              Default
+                            </DropdownMenuItem>
+                            {selectedProfile.variants.map((variant) => (
+                              <DropdownMenuItem
+                                key={variant.label}
+                                onClick={() => {
+                                  const newProfile: ProfileVariantLabel = {
+                                    profile: config.profile?.profile || '',
+                                    variant: variant.label,
+                                  };
+                                  updateConfig({ profile: newProfile });
+                                }}
+                                className={
+                                  config.profile?.variant === variant.label
+                                    ? 'bg-accent'
+                                    : ''
+                                }
+                              >
+                                {variant.label}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      );
+                    } else if (selectedProfile) {
+                      // Show disabled button when profile exists but has no variants
+                      return (
+                        <Button
+                          variant="outline"
+                          className="w-full h-10 px-2 flex items-center justify-between"
+                          disabled
+                        >
+                          <span className="text-sm truncate flex-1 text-left">
+                            Default
+                          </span>
+                        </Button>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Choose the default profile to use when creating a task
                   attempt.
@@ -514,6 +677,87 @@ export function Settings() {
             </CardHeader>
             <CardContent>
               <TaskTemplateManager isGlobal={true} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                Agent Profiles
+              </CardTitle>
+              <CardDescription>
+                Configure coding agent profiles with specific command-line
+                parameters.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {profilesError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{profilesError}</AlertDescription>
+                </Alert>
+              )}
+
+              {profilesSuccess && (
+                <Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+                  <AlertDescription className="font-medium">
+                    ✓ Profiles saved successfully!
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="profiles-editor">
+                    Profiles Configuration
+                  </Label>
+                  <Textarea
+                    id="profiles-editor"
+                    placeholder={
+                      profilesLoading
+                        ? 'Loading profiles...'
+                        : '{\n  "profiles": [\n    {\n      "label": "my-custom-profile",\n      "agent": "ClaudeCode",\n      "command": {...}\n    }\n  ]\n}'
+                    }
+                    value={profilesLoading ? 'Loading...' : profilesContent}
+                    onChange={(e) => handleProfilesChange(e.target.value)}
+                    disabled={profilesLoading}
+                    className="font-mono text-sm min-h-[300px]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  {!profilesError && profilesPath && (
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-medium">Configuration file:</span>{' '}
+                      <span className="font-mono text-xs">{profilesPath}</span>
+                    </p>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    Edit coding agent profiles. Each profile needs a unique
+                    label, agent type, and command configuration.
+                  </p>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={handleSaveProfiles}
+                    disabled={
+                      profilesSaving ||
+                      profilesLoading ||
+                      !!profilesError ||
+                      profilesSuccess
+                    }
+                    className={
+                      profilesSuccess ? 'bg-green-600 hover:bg-green-700' : ''
+                    }
+                  >
+                    {profilesSaving && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {profilesSuccess && <span className="mr-2">✓</span>}
+                    {profilesSuccess ? 'Profiles Saved!' : 'Save Profiles'}
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
 

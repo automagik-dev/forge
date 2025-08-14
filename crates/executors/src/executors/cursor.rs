@@ -10,7 +10,7 @@ use ts_rs::TS;
 use utils::{msg_store::MsgStore, path::make_path_relative, shell::get_shell_command};
 
 use crate::{
-    command::{AgentProfiles, CommandBuilder},
+    command::CommandBuilder,
     executors::{ExecutorError, StandardCodingAgentExecutor},
     logs::{
         ActionType, EditDiff, NormalizedEntry, NormalizedEntryType,
@@ -22,29 +22,7 @@ use crate::{
 /// Executor for running Cursor CLI and normalizing its JSONL stream
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
 pub struct Cursor {
-    command_builder: CommandBuilder,
-}
-
-impl Default for Cursor {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Cursor {
-    /// Create a new Cursor executor with default profile
-    pub fn new() -> Self {
-        let profile = AgentProfiles::get_cached()
-            .get_profile("cursor")
-            .expect("Default cursor profile should exist");
-
-        Self::with_command_builder(profile.command.clone())
-    }
-
-    /// Create a new Cursor executor with custom command builder
-    pub fn with_command_builder(command_builder: CommandBuilder) -> Self {
-        Self { command_builder }
-    }
+    pub command: CommandBuilder,
 }
 
 #[async_trait]
@@ -55,7 +33,7 @@ impl StandardCodingAgentExecutor for Cursor {
         prompt: &str,
     ) -> Result<AsyncGroupChild, ExecutorError> {
         let (shell_cmd, shell_arg) = get_shell_command();
-        let agent_cmd = self.command_builder.build_initial();
+        let agent_cmd = self.command.build_initial();
 
         let mut command = Command::new(shell_cmd);
         command
@@ -85,7 +63,7 @@ impl StandardCodingAgentExecutor for Cursor {
     ) -> Result<AsyncGroupChild, ExecutorError> {
         let (shell_cmd, shell_arg) = get_shell_command();
         let agent_cmd = self
-            .command_builder
+            .command
             .build_follow_up(&["--resume".to_string(), session_id.to_string()]);
 
         let mut command = Command::new(shell_cmd);
@@ -803,7 +781,9 @@ mod tests {
     #[tokio::test]
     async fn test_cursor_streaming_patch_generation() {
         // Avoid relying on feature flag in tests; construct with a dummy command
-        let executor = Cursor::with_command_builder(CommandBuilder::new("cursor-agent"));
+        let executor = Cursor {
+            command: CommandBuilder::new(""),
+        };
         let msg_store = Arc::new(MsgStore::new());
         let current_dir = std::path::PathBuf::from("/tmp/test-worktree");
 
