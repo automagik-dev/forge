@@ -1,0 +1,26 @@
+/**
+ * Custom Fonts for Automagik-Forge
+ */
+
+/* Blanka Font - Used for branding/logo */
+@font-face {
+  font-family: 'Blanka';
+  src: url('./Blanka-Regular.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap; /* Ensure text remains visible during font load */
+}
+
+/* Apply Blanka font to specific elements */
+.font-blanka {
+  font-family: 'Blanka', sans-serif !important;
+  letter-spacing: 0.05em;
+}
+
+/* Specific usage for project cards */
+.automagik-project-card .project-title {
+  font-family: 'Blanka', sans-serif;
+  font-size: 1.25rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

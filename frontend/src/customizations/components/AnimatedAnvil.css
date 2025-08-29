@@ -1,0 +1,87 @@
+/**
+ * Animated Anvil Styles
+ */
+
+.animated-anvil-container {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.animated-anvil {
+  color: var(--foreground);
+}
+
+/* Hammer animation */
+.hammer {
+  transform-origin: center;
+  animation: hammer-strike 1s ease-in-out infinite;
+}
+
+@keyframes hammer-strike {
+  0%, 100% {
+    transform: translate(50px, 30px) rotate(0deg);
+  }
+  40% {
+    transform: translate(50px, 20px) rotate(-30deg);
+  }
+  50% {
+    transform: translate(50px, 45px) rotate(0deg);
+  }
+  60% {
+    transform: translate(50px, 30px) rotate(0deg);
+  }
+}
+
+/* Spark animations */
+.sparks {
+  opacity: 0;
+}
+
+.spark {
+  animation: spark-fly 1s ease-out infinite;
+}
+
+.spark-1 {
+  animation-delay: 0.5s;
+}
+
+.spark-2 {
+  animation-delay: 0.52s;
+}
+
+.spark-3 {
+  animation-delay: 0.54s;
+}
+
+@keyframes spark-fly {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(0, -5px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, -15px) scale(0.5);
+  }
+}
+
+/* Text animation */
+.anvil-text {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
