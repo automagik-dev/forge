@@ -27,8 +27,6 @@ pub enum EventError {
 #[derive(Clone)]
 pub struct EventService {
     msg_store: Arc<MsgStore>,
-    db: DBService,
-    entry_count: Arc<RwLock<usize>>,
 }
 
 #[derive(EnumString, Display)]
@@ -67,11 +65,9 @@ pub struct EventPatch {
 
 impl EventService {
     /// Creates a new EventService that will work with a DBService configured with hooks
-    pub fn new(db: DBService, msg_store: Arc<MsgStore>, entry_count: Arc<RwLock<usize>>) -> Self {
+    pub fn new(_db: DBService, msg_store: Arc<MsgStore>, _entry_count: Arc<RwLock<usize>>) -> Self {
         Self {
             msg_store,
-            db,
-            entry_count,
         }
     }
 
