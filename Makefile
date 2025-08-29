@@ -61,7 +61,7 @@ build:
 	@cargo build --release --manifest-path crates/server/Cargo.toml
 	@cargo build --release --bin mcp_task_server --manifest-path crates/server/Cargo.toml
 	@echo "📦 Creating distribution package..."
-	@./build-npm-package.sh
+	@./local-build.sh
 	@echo "✅ Build complete!"
 
 # Clean build artifacts
