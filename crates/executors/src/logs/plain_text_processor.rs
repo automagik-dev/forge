@@ -119,10 +119,6 @@ impl PlainTextBuffer {
         result
     }
 
-    /// Return the total number of lines.
-    pub fn line_count(&self) -> usize {
-        self.lines.len()
-    }
 
     /// Return the total length of content.
     pub fn total_len(&self) -> usize {

@@ -50,19 +50,21 @@ bump: check-version
 	@echo "   - npx-cli/package.json"
 	@echo "   - crates/*/Cargo.toml"
 
-# Build the project
+# Build the project (current platform only)
 build:
-	@echo "🚀 Building Automagik Forge..."
+	@echo "🚀 Building Automagik Forge for current platform..."
 	@echo "🧹 Cleaning previous builds..."
 	@rm -rf npx-cli/dist
 	@echo "🔨 Building frontend..."
 	@cd frontend && npm run build
 	@echo "🔨 Building Rust binaries..."
-	@cargo build --release --manifest-path crates/server/Cargo.toml
-	@cargo build --release --bin mcp_task_server --manifest-path crates/server/Cargo.toml
+	@cargo build --release
+	@cargo build --release --bin mcp_task_server
 	@echo "📦 Creating distribution package..."
-	@./local-build.sh
-	@echo "✅ Build complete!"
+	@bash local-build.sh
+	@echo "✅ Build complete for current platform!"
+	@echo "⚠️  Note: This only builds for your current platform."
+	@echo "   For all platforms, use GitHub Actions or build on each platform."
 
 # Clean build artifacts
 clean:
@@ -74,9 +76,31 @@ clean:
 	@rm -f *.zip
 	@echo "✅ Clean complete!"
 
-# Build and publish to NPM
-publish: build
+# Build and publish to NPM (current platform only - NOT RECOMMENDED)
+publish-current: build
+	@echo "⚠️  WARNING: Publishing with only current platform binaries!"
 	@echo "📦 Publishing to NPM..."
+	@cd npx-cli && npm publish
+	@echo "🎉 Published to NPM (current platform only)"
+	@echo "⚠️  This package will only work on your current platform!"
+
+# Publish to NPM (requires all platform binaries)
+publish:
+	@echo "📦 Preparing to publish to NPM..."
+	@if [ ! -d "npx-cli/dist/linux-x64" ] || [ ! -d "npx-cli/dist/macos-arm64" ] || [ ! -d "npx-cli/dist/windows-x64" ]; then \
+		echo "❌ Missing platform binaries!"; \
+		echo "   Found:"; \
+		ls -la npx-cli/dist/ 2>/dev/null || echo "   No dist folder"; \
+		echo ""; \
+		echo "To publish with all platforms:"; \
+		echo "  1. Use GitHub Actions: git tag v$(shell grep '"version"' npx-cli/package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/') && git push --tags"; \
+		echo "  2. Or build manually on each platform and collect binaries"; \
+		echo ""; \
+		echo "To publish current platform only (NOT RECOMMENDED):"; \
+		echo "  make publish-current"; \
+		exit 1; \
+	fi
+	@echo "✅ All platforms found, publishing..."
 	@cd npx-cli && npm publish
 	@echo "🎉 Successfully published to NPM!"
 	@echo "📋 Users can now install with: npx automagik-forge"
