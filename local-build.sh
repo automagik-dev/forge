@@ -10,15 +10,15 @@ echo "🔨 Building frontend..."
 (cd frontend && npm run build)
 
 echo "🔨 Building Rust binaries..."
-cargo build --release --manifest-path Cargo.toml
-cargo build --release --bin mcp_task_server --manifest-path Cargo.toml
+cargo build --release
+cargo build --release --bin mcp_task_server
 
 echo "📦 Creating distribution package..."
 
 # Copy the main binary
 cp target/release/server vibe-kanban
 zip -q vibe-kanban.zip vibe-kanban
-rm -f vibe-kanban 
+rm -f vibe-kanban
 mv vibe-kanban.zip npx-cli/dist/macos-arm64/vibe-kanban.zip
 
 # Copy the MCP binary

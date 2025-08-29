@@ -26,7 +26,7 @@ export const isAutomagikForge = () => {
   // Check if package name is automagik-forge or if explicitly enabled
   return typeof window !== 'undefined' && 
     (window.location.hostname.includes('automagik') || 
-     process.env.REACT_APP_AUTOMAGIK === 'true' ||
+     (import.meta.env.VITE_AUTOMAGIK === 'true') ||
      AUTOMAGIK_FEATURES.showBranding);
 };
 
