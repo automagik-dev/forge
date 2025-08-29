@@ -45,7 +45,7 @@ export function ProjectTasks() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { openCreate, openEdit } = useTaskDialog();
+  const { openCreate, openEdit, openDuplicate } = useTaskDialog();
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false);
   const { query: searchQuery } = useSearch();
 
@@ -187,6 +187,13 @@ export function ProjectTasks() {
     [openEdit]
   );
 
+  const handleDuplicateTask = useCallback(
+    (task: Task) => {
+      openDuplicate(task);
+    },
+    [openDuplicate]
+  );
+
   const handleViewTaskDetails = useCallback(
     (task: Task, attemptIdToShow?: string) => {
       // setSelectedTask(task);
@@ -315,7 +322,7 @@ export function ProjectTasks() {
       {/* Left Column - Kanban Section */}
       <div className={getKanbanSectionClasses(isPanelOpen, isFullscreen)}>
         {tasks.length === 0 ? (
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-7xl mx-auto mt-8">
             <Card>
               <CardContent className="text-center py-8">
                 <p className="text-muted-foreground">
@@ -336,6 +343,7 @@ export function ProjectTasks() {
               onDragEnd={handleDragEnd}
               onEditTask={handleEditTask}
               onDeleteTask={handleDeleteTask}
+              onDuplicateTask={handleDuplicateTask}
               onViewTaskDetails={handleViewTaskDetails}
               isPanelOpen={isPanelOpen}
             />
