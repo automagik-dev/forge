@@ -1,0 +1,4 @@
+../migration-analysis-results/dev-files.txt
+../migration-analysis-results/workspace-migration-old-cargo.toml
+../migration-analysis-results/workspace-migration-old-frontend-package.json
+../migration-analysis-results/workspace-migration-old-root-package.json
