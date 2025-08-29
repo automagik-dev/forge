@@ -1,0 +1,63 @@
+name: Test
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  CARGO_TERM_COLOR: always
+  NODE_VERSION: 22
+  PNPM_VERSION: 10.8.1
+
+jobs:
+  test:
+    runs-on: buildjet-4vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-node
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Lint frontend
+        run: cd frontend && npm run lint
+
+      - name: Format check frontend
+        run: cd frontend && npm run format:check
+
+      - name: Type check frontend
+        run: cd frontend && npx tsc --noEmit
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly-2025-05-18
+          components: rustfmt, clippy
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        env:
+          RUST_CACHE_DEBUG: true
+        with:
+          workspaces: "."
+          cache-provider: "buildjet"
+          cache-on-failure: true
+          shared-key: "shared"
+          cache-all-crates: true
+
+      - name: Build frontend
+        run: cd frontend && npm run build
+
+      - name: Checks
+        run: |
+          cargo fmt --all -- --check
+          npm run generate-types:check
+          cargo test --workspace
+          cargo clippy --all --all-targets --all-features
