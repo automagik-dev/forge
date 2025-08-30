@@ -26,6 +26,7 @@ rust-embed = "8.2"
 ignore = "0.4"
 command-group = { version = "5.0", features = ["with-tokio"] }
 nix = { version = "0.29", features = ["signal", "process"] }
+openssl-sys = { workspace = true }
 regex = "1.11.1"
 notify-rust = "4.11"
 notify = "8.2.0"
