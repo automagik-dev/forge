@@ -13,8 +13,8 @@ pnpm run dev
 npm run frontend:dev    # Frontend only (port 3000)
 npm run backend:dev     # Backend only (port auto-assigned)
 
-# Build production version
-./build-npm-package.sh
+# Build production version (native platform)
+./local-build.sh
 ```
 
 ### Testing & Validation

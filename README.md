@@ -77,7 +77,7 @@ This will start the frontend and backend with live reloading. A blank DB will be
 
 ### Build from source
 
-1. Run `build-npm-package.sh`
+1. Run `local-build.sh`
 2. In the `npx-cli` folder run `npm pack`
 3. You can run your build with `npx [GENERATED FILE].tgz`
 
