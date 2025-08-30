@@ -1,0 +1,22 @@
+# Cross compilation configuration
+
+[target.x86_64-apple-darwin]
+# Use joseluisq's rust-linux-darwin-builder which has osxcross
+image = "joseluisq/rust-linux-darwin-builder:latest"
+
+[target.aarch64-apple-darwin] 
+# Use joseluisq's rust-linux-darwin-builder which has osxcross
+image = "joseluisq/rust-linux-darwin-builder:latest"
+
+[target.x86_64-pc-windows-gnu]
+# Use the standard cross image for Windows
+image = "ghcr.io/cross-rs/x86_64-pc-windows-gnu:edge"
+
+[target.aarch64-unknown-linux-gnu]
+# Use the standard cross image for Linux ARM64
+image = "ghcr.io/cross-rs/aarch64-unknown-linux-gnu:edge"
+
+# Build configuration for all targets
+[build]
+# Use vendored OpenSSL to avoid compilation issues
+env = { passthrough = ["OPENSSL_STATIC", "LIBSQLITE3_SYS_USE_PKG_CONFIG", "LIBZ_SYS_STATIC"] }

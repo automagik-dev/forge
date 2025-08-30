@@ -21,9 +21,10 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             platform: windows-x64
-          - os: windows-latest
-            target: aarch64-pc-windows-msvc
-            platform: windows-arm64
+          # Windows ARM64 is not well supported, commenting out for now
+          # - os: windows-latest
+          #   target: aarch64-pc-windows-msvc
+          #   platform: windows-arm64
           - os: macos-latest
             target: x86_64-apple-darwin
             platform: macos-x64
@@ -40,7 +41,28 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+          
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.target }}-
+            ${{ runner.os }}-cargo-
       
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+          
       - name: Install cross-compilation tools
         if: matrix.use-cross
         run: cargo install cross
@@ -52,6 +74,10 @@ jobs:
           npm run build
       
       - name: Build Rust binaries
+        env:
+          OPENSSL_STATIC: 1
+          LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
+          LIBZ_SYS_STATIC: 1
         run: |
           if [ "${{ matrix.use-cross }}" = "true" ]; then
             cross build --release --target ${{ matrix.target }}
@@ -72,16 +98,16 @@ jobs:
           fi
           
           # Package main binary
-          cp target/${{ matrix.target }}/release/server${EXT} vibe-kanban${EXT}
-          zip vibe-kanban.zip vibe-kanban${EXT}
-          mv vibe-kanban.zip npx-cli/dist/${{ matrix.platform }}/
-          rm vibe-kanban${EXT}
+          cp target/${{ matrix.target }}/release/server${EXT} automagik-forge${EXT}
+          zip automagik-forge.zip automagik-forge${EXT}
+          mv automagik-forge.zip npx-cli/dist/${{ matrix.platform }}/
+          rm automagik-forge${EXT}
           
           # Package MCP binary
-          cp target/${{ matrix.target }}/release/mcp_task_server${EXT} vibe-kanban-mcp${EXT}
-          zip vibe-kanban-mcp.zip vibe-kanban-mcp${EXT}
-          mv vibe-kanban-mcp.zip npx-cli/dist/${{ matrix.platform }}/
-          rm vibe-kanban-mcp${EXT}
+          cp target/${{ matrix.target }}/release/mcp_task_server${EXT} automagik-forge-mcp${EXT}
+          zip automagik-forge-mcp.zip automagik-forge-mcp${EXT}
+          mv automagik-forge-mcp.zip npx-cli/dist/${{ matrix.platform }}/
+          rm automagik-forge-mcp${EXT}
         shell: bash
       
       - name: Upload artifacts
