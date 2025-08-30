@@ -46,6 +46,7 @@ pub(super) enum ThemeMode {
     Blue,
     Orange,
     Red,
+    Dracula,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
