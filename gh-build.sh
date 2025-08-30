@@ -60,12 +60,26 @@ case "${1:-status}" in
                     case "$CONCLUSION" in
                         success)
                             echo "✅ Workflow completed successfully!"
+                            echo "🔗 View details: https://github.com/$REPO/actions/runs/$RUN_ID"
                             ;;
                         failure)
                             echo "❌ Workflow failed"
+                            echo "🔗 View details: https://github.com/$REPO/actions/runs/$RUN_ID"
                             echo ""
                             echo "Failed jobs:"
-                            gh run view "$RUN_ID" --repo "$REPO" --json jobs --jq '.jobs[] | select(.conclusion == "failure") | "  - \(.name): \(.conclusion)"'
+                            FAILED_JOBS=$(gh run view "$RUN_ID" --repo "$REPO" --json jobs --jq '.jobs[] | select(.conclusion == "failure") | .databaseId')
+                            
+                            for JOB_ID in $FAILED_JOBS; do
+                                JOB_NAME=$(gh run view "$RUN_ID" --repo "$REPO" --json jobs --jq ".jobs[] | select(.databaseId == $JOB_ID) | .name")
+                                echo ""
+                                echo "❌ $JOB_NAME"
+                                echo "View logs: gh run view $RUN_ID --job $JOB_ID --log-failed"
+                                
+                                # Show last 20 lines of error
+                                echo ""
+                                echo "Last error lines:"
+                                gh run view "$RUN_ID" --repo "$REPO" --job "$JOB_ID" --log-failed 2>/dev/null | tail -20 || echo "  (Could not fetch error details)"
+                            done
                             ;;
                         cancelled)
                             echo "🚫 Workflow cancelled"
