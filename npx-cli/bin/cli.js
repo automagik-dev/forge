@@ -99,7 +99,8 @@ function extractAndRun(baseName, launch) {
 
 if (isMcpMode) {
   extractAndRun("automagik-forge-mcp", (bin) => {
-    const proc = spawn(bin, [], { stdio: "inherit" });
+    const env = { ...process.env };
+    const proc = spawn(bin, [], { stdio: "inherit", env });
     proc.on("exit", (c) => process.exit(c || 0));
     proc.on("error", (e) => {
       console.error("❌ MCP server error:", e.message);
@@ -115,10 +116,17 @@ if (isMcpMode) {
   console.log(`📦 Extracting automagik-forge...`);
   extractAndRun("automagik-forge", (bin) => {
     console.log(`🚀 Launching automagik-forge...`);
+    
+    // Set default environment variables if not already set
+    const env = { ...process.env };
+    if (!env.BACKEND_PORT && !env.PORT) {
+      env.BACKEND_PORT = "8887";
+    }
+    
     if (platform === "win32") {
-      execSync(`"${bin}"`, { stdio: "inherit" });
+      execSync(`"${bin}"`, { stdio: "inherit", env });
     } else {
-      execSync(`"${bin}"`, { stdio: "inherit" });
+      execSync(`"${bin}"`, { stdio: "inherit", env });
     }
   });
 }
