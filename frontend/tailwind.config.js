@@ -122,7 +122,9 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        'chivo-mono': ['Chivo Mono', 'monospace'],
+        'alegreya': ['Alegreya Sans', 'sans-serif'],
+        'manrope': ['Manrope', 'sans-serif'],
+        'mono': ['ui-monospace', 'SFMono-Regular', 'SF Mono', 'Consolas', 'Liberation Mono', 'Menlo', 'monospace'],
       },
       keyframes: {
         "accordion-down": {

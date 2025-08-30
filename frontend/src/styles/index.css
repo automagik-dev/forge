@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Font definitions */
+@layer base {
+  :root {
+    --font-primary: 'Alegreya Sans', sans-serif;
+    --font-secondary: 'Manrope', sans-serif;
+  }
+}
+
 /* 1) THEME TOKENS (underscored): defaults + classes control these */
 @layer base {
   /* Light defaults */
@@ -170,7 +178,19 @@
   }
 
   body {
-    @apply bg-background text-foreground font-chivo-mono;
+    @apply bg-background text-foreground;
+    font-family: var(--font-secondary);
+  }
+  
+  /* Typography: Headers use Alegreya Sans, body text uses Manrope */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-primary);
+    @apply font-bold;
+  }
+  
+  /* Override for code/mono elements */
+  code, pre, .font-mono {
+    @apply font-mono;
   }
 
   *:focus {
