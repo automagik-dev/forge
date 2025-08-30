@@ -38,13 +38,9 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@nightly
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly-2024-05-18
-          components: rustfmt, rust-analyzer, rust-src, rust-std, cargo
-      
-      - name: Add target for cross-compilation
-        run: rustup target add ${{ matrix.target }}
+          targets: ${{ matrix.target }}
           
       - name: Cache Rust dependencies
         uses: actions/cache@v4
