@@ -1,4 +1,4 @@
-use directories::ProjectDirs;
+use directories::{BaseDirs, ProjectDirs};
 use rust_embed::RustEmbed;
 
 const PROJECT_ROOT: &str = env!("CARGO_MANIFEST_DIR");
@@ -8,13 +8,15 @@ pub fn asset_dir() -> std::path::PathBuf {
         std::path::PathBuf::from(PROJECT_ROOT).join("../../dev_assets")
     } else if cfg!(target_os = "linux") {
         // Linux: Use ~/.automagik-forge directly
-        dirs::home_dir()
+        BaseDirs::new()
             .expect("OS didn't give us a home directory")
+            .home_dir()
             .join(".automagik-forge")
     } else if cfg!(target_os = "windows") {
         // Windows: Use %APPDATA%\automagik-forge (without organization folder)
-        dirs::data_dir()
+        BaseDirs::new()
             .expect("OS didn't give us a data directory")
+            .data_dir()
             .join("automagik-forge")
     } else {
         // macOS: Use OS-specific directory
