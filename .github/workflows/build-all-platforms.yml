@@ -63,6 +63,13 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
           
+      - name: Install Windows build dependencies
+        if: runner.os == 'Windows'
+        run: |
+          choco install strawberryperl -y
+          echo "C:\strawberry\perl\bin" >> $GITHUB_PATH
+        shell: bash
+        
       - name: Install cross-compilation tools
         if: matrix.use-cross
         run: cargo install cross
