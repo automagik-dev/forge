@@ -98,7 +98,7 @@ function extractAndRun(baseName, launch) {
 }
 
 if (isMcpMode) {
-  extractAndRun("vibe-kanban-mcp", (bin) => {
+  extractAndRun("automagik-forge-mcp", (bin) => {
     const proc = spawn(bin, [], { stdio: "inherit" });
     proc.on("exit", (c) => process.exit(c || 0));
     proc.on("error", (e) => {
@@ -113,7 +113,7 @@ if (isMcpMode) {
   });
 } else {
   console.log(`📦 Extracting automagik-forge...`);
-  extractAndRun("vibe-kanban", (bin) => {
+  extractAndRun("automagik-forge", (bin) => {
     console.log(`🚀 Launching automagik-forge...`);
     if (platform === "win32") {
       execSync(`"${bin}"`, { stdio: "inherit" });

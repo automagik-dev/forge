@@ -28,7 +28,7 @@ import { configApi } from '@/lib/api';
 import * as Sentry from '@sentry/react';
 import { Loader } from '@/components/ui/loader';
 import { GitHubLoginDialog } from '@/components/GitHubLoginDialog';
-import { ReleaseNotesDialog } from '@/components/ReleaseNotesDialog';
+// import { ReleaseNotesDialog } from '@/components/ReleaseNotesDialog';
 import { AppWithStyleOverride } from '@/utils/style-override';
 import { WebviewContextMenu } from '@/vscode/ContextMenu';
 import { DevBanner } from '@/components/DevBanner';
@@ -47,7 +47,7 @@ function AppContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showPrivacyOptIn, setShowPrivacyOptIn] = useState(false);
   const [showGitHubLogin, setShowGitHubLogin] = useState(false);
-  const [showReleaseNotes, setShowReleaseNotes] = useState(false);
+  // const [showReleaseNotes, setShowReleaseNotes] = useState(false);
   const showNavbar = !location.pathname.endsWith('/full');
 
   useEffect(() => {
@@ -60,9 +60,9 @@ function AppContent() {
             setShowGitHubLogin(true);
           } else if (!config.telemetry_acknowledged) {
             setShowPrivacyOptIn(true);
-          } else if (config.show_release_notes) {
+          } /* else if (config.show_release_notes) {
             setShowReleaseNotes(true);
-          }
+          } */
         }
       }
     }
@@ -119,9 +119,9 @@ function AppContent() {
     try {
       await configApi.saveConfig(updatedConfig);
       setShowPrivacyOptIn(false);
-      if (updatedConfig.show_release_notes) {
+      /* if (updatedConfig.show_release_notes) {
         setShowReleaseNotes(true);
-      }
+      } */
     } catch (err) {
       console.error('Error saving config:', err);
     }
@@ -147,13 +147,13 @@ function AppContent() {
     } finally {
       if (!config?.telemetry_acknowledged) {
         setShowPrivacyOptIn(true);
-      } else if (config?.show_release_notes) {
+      } /* else if (config?.show_release_notes) {
         setShowReleaseNotes(true);
-      }
+      } */
     }
   };
 
-  const handleReleaseNotesClose = async () => {
+  /* const handleReleaseNotesClose = async () => {
     if (!config) return;
 
     const updatedConfig = {
@@ -169,7 +169,7 @@ function AppContent() {
     } catch (err) {
       console.error('Error saving config:', err);
     }
-  };
+  }; */
 
   if (loading) {
     return (
@@ -202,10 +202,10 @@ function AppContent() {
               open={showPrivacyOptIn}
               onComplete={handlePrivacyOptInComplete}
             />
-            <ReleaseNotesDialog
+            {/* <ReleaseNotesDialog
               open={showReleaseNotes}
               onClose={handleReleaseNotesClose}
-            />
+            /> */}
             <EditorSelectionDialog
               isOpen={editorDialogOpen}
               onClose={closeEditorDialog}
