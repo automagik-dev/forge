@@ -87,14 +87,14 @@
   .purple {
     --_background: 270 10% 12%;
     --_foreground: 270 5% 95%;
-    --_primary: var(--_muted);
-    --_primary-foreground: var(--_muted-foreground);
-    --_secondary: var(--_muted);
+    --_primary: 270 60% 50%;
+    --_primary-foreground: 270 5% 95%;
+    --_secondary: 270 10% 20%;
     --_secondary-foreground: 270 5% 70%;
     --_muted: 270 10% 18%;
     --_muted-foreground: var(--_foreground);
-    --_accent: var(--_background);
-    --_accent-foreground: 270 60% 70%;
+    --_accent: 270 60% 50%;
+    --_accent-foreground: 270 5% 95%;
     --_destructive: 0 62.8% 50.6%;
     --_destructive-foreground: 0 0% 98%;
     --_border: 270 10% 25%;
@@ -122,14 +122,14 @@
   .green {
     --_background: 120 10% 12%;
     --_foreground: 120 5% 95%;
-    --_primary: var(--_muted);
-    --_primary-foreground: var(--_muted-foreground);
-    --_secondary: var(--_muted);
+    --_primary: 120 60% 40%;
+    --_primary-foreground: 120 5% 95%;
+    --_secondary: 120 10% 20%;
     --_secondary-foreground: 120 5% 70%;
     --_muted: 120 10% 18%;
     --_muted-foreground: var(--_foreground);
-    --_accent: var(--_background);
-    --_accent-foreground: 120 60% 60%;
+    --_accent: 120 60% 40%;
+    --_accent-foreground: 120 5% 95%;
     --_destructive: 0 62.8% 50.6%;
     --_destructive-foreground: 0 0% 98%;
     --_border: 120 10% 25%;
@@ -157,14 +157,14 @@
   .blue {
     --_background: 210 15% 12%;
     --_foreground: 210 5% 95%;
-    --_primary: var(--_muted);
-    --_primary-foreground: var(--_muted-foreground);
-    --_secondary: var(--_muted);
+    --_primary: 210 70% 50%;
+    --_primary-foreground: 210 5% 95%;
+    --_secondary: 210 15% 20%;
     --_secondary-foreground: 210 5% 70%;
     --_muted: 210 15% 18%;
     --_muted-foreground: var(--_foreground);
-    --_accent: var(--_background);
-    --_accent-foreground: 210 70% 70%;
+    --_accent: 210 70% 50%;
+    --_accent-foreground: 210 5% 95%;
     --_destructive: 0 62.8% 50.6%;
     --_destructive-foreground: 0 0% 98%;
     --_border: 210 15% 25%;
@@ -192,14 +192,14 @@
   .orange {
     --_background: 30 10% 12%;
     --_foreground: 30 5% 95%;
-    --_primary: var(--_muted);
-    --_primary-foreground: var(--_muted-foreground);
-    --_secondary: var(--_muted);
+    --_primary: 30 80% 50%;
+    --_primary-foreground: 30 5% 95%;
+    --_secondary: 30 10% 20%;
     --_secondary-foreground: 30 5% 70%;
     --_muted: 30 10% 18%;
     --_muted-foreground: var(--_foreground);
-    --_accent: var(--_background);
-    --_accent-foreground: 30 80% 65%;
+    --_accent: 30 80% 50%;
+    --_accent-foreground: 30 5% 95%;
     --_destructive: 0 62.8% 50.6%;
     --_destructive-foreground: 0 0% 98%;
     --_border: 30 10% 25%;
@@ -227,14 +227,14 @@
   .red {
     --_background: 0 10% 12%;
     --_foreground: 0 5% 95%;
-    --_primary: var(--_muted);
-    --_primary-foreground: var(--_muted-foreground);
-    --_secondary: var(--_muted);
+    --_primary: 0 70% 50%;
+    --_primary-foreground: 0 5% 95%;
+    --_secondary: 0 10% 20%;
     --_secondary-foreground: 0 5% 70%;
     --_muted: 0 10% 18%;
     --_muted-foreground: var(--_foreground);
-    --_accent: var(--_background);
-    --_accent-foreground: 0 70% 65%;
+    --_accent: 0 70% 50%;
+    --_accent-foreground: 0 5% 95%;
     --_destructive: 0 70% 50%;
     --_destructive-foreground: 0 0% 98%;
     --_border: 0 10% 25%;
@@ -545,23 +545,56 @@
     border-color: hsl(265 89% 78%) !important; /* Purple border on hover */
   }
   
-  /* Dropdown options */
+  /* Dropdown options and menu items - consistent styling */
   option,
-  [role="option"] {
-    background-color: hsl(231 15% 18%) !important; /* Background color */
-    color: hsl(60 30% 96%) !important;
+  [role="option"],
+  [role="menuitem"],
+  [class*="menu-item"],
+  a[role="menuitem"],
+  .relative.flex.cursor-default {
+    background-color: transparent !important; /* Transparent by default */
+    color: hsl(60 30% 96%) !important; /* Foreground text */
   }
   
+  /* Consistent hover state for ALL dropdowns and menus - Purple */
   option:hover,
   [role="option"]:hover,
-  [data-highlighted] {
-    background-color: hsl(232 14% 31%) !important; /* Selection color on hover */
+  [role="menuitem"]:hover,
+  [class*="menu-item"]:hover,
+  a[role="menuitem"]:hover,
+  .relative.flex.cursor-default:hover,
+  [data-highlighted],
+  [data-state="open"] [role="menuitem"]:hover {
+    background-color: hsl(265 89% 78%) !important; /* Purple for ALL hovers */
+    color: hsl(231 15% 18%) !important; /* Dark text on purple */
   }
   
+  /* Selected/Active items - also Purple but with different opacity */
   option:checked,
-  [role="option"][aria-selected="true"] {
-    background-color: hsl(265 89% 78%) !important; /* Purple for selected */
-    color: hsl(231 15% 18%) !important; /* Dark text on purple */
+  option[selected],
+  [role="option"][aria-selected="true"],
+  [role="menuitem"][aria-current="page"],
+  [data-state="active"],
+  .relative.flex.cursor-default[aria-current="page"] {
+    background-color: hsla(265 89% 78% / 0.2) !important; /* Purple with opacity for selected */
+    color: hsl(265 89% 78%) !important; /* Purple text for selected */
+  }
+  
+  /* Fix focus states */
+  [role="menuitem"]:focus,
+  [role="option"]:focus {
+    outline: none !important;
+    background-color: hsl(265 89% 78%) !important; /* Purple on focus */
+    color: hsl(231 15% 18%) !important;
+  }
+  
+  /* Menu/Dropdown containers */
+  [role="menu"],
+  [data-radix-menu-content],
+  [data-state="open"][role="menu"],
+  .dropdown-menu {
+    background-color: hsl(231 15% 18%) !important; /* Background color */
+    border: 1px solid hsl(225 27% 51%) !important; /* Comment border */
   }
   
   /* Button hover states */
