@@ -62,6 +62,22 @@ jobs:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
+
+      - name: Install OpenSSL (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: choco install openssl.light -y
+
+      - name: Configure OpenSSL env (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $root = 'C:\\Program Files\\OpenSSL-Win64'
+          if (-not (Test-Path $root)) { throw "OpenSSL not found at $root" }
+          echo "OPENSSL_NO_VENDOR=1"               >> $env:GITHUB_ENV
+          echo "OPENSSL_DIR=$root"                 >> $env:GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=$root\\lib"       >> $env:GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=$root\\include" >> $env:GITHUB_ENV
           
       - name: Install cross-compilation tools
         if: matrix.use-cross
@@ -73,7 +89,22 @@ jobs:
           npm ci
           npm run build
       
-      - name: Build Rust binaries
+      - name: Build Rust binaries (Windows)
+        if: runner.os == 'Windows'
+        env:
+          LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
+          LIBZ_SYS_STATIC: 1
+          # OPENSSL_* are taken from GITHUB_ENV (OPENSSL_NO_VENDOR=1, DIR, LIB/INCLUDE)
+        run: |
+          if [ "${{ matrix.use-cross }}" = "true" ]; then
+            cross build --release --target ${{ matrix.target }}
+          else
+            cargo build --release --target ${{ matrix.target }}
+          fi
+        shell: bash
+
+      - name: Build Rust binaries (non-Windows)
+        if: runner.os != 'Windows'
         env:
           OPENSSL_STATIC: 1
           DEP_OPENSSL_VENDORED: 1
