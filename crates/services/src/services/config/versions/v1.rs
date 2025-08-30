@@ -47,6 +47,7 @@ pub(super) enum ThemeMode {
     Orange,
     Red,
     Dracula,
+    Alucard,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
