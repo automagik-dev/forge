@@ -40,8 +40,7 @@ export function ThemeProvider({
       'green',
       'blue',
       'orange',
-      'red',
-      'dracula'
+      'red'
     );
 
     if (theme === ThemeMode.SYSTEM) {

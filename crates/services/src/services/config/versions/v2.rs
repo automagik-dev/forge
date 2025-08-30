@@ -389,7 +389,6 @@ pub enum ThemeMode {
     Blue,
     Orange,
     Red,
-    Dracula,
 }
 
 impl From<v1::ThemeMode> for ThemeMode {
@@ -403,7 +402,6 @@ impl From<v1::ThemeMode> for ThemeMode {
             v1::ThemeMode::Blue => ThemeMode::Blue,
             v1::ThemeMode::Orange => ThemeMode::Orange,
             v1::ThemeMode::Red => ThemeMode::Red,
-            v1::ThemeMode::Dracula => ThemeMode::Dracula,
         }
     }
 }
