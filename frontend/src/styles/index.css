@@ -274,7 +274,7 @@
     --_destructive-foreground: 231 15% 18%; /* #282A36 - Background */
     --_border: 225 27% 51%; /* #6272A4 - Comment (visible borders) */
     --_input: 232 14% 31%; /* #44475A - Selection (better contrast) */
-    --_ring: 265 89% 78%; /* #BD93F9 - Purple */
+    --_ring: 225 27% 51%; /* #6272A4 - Comment color for neutral focus rings */
 
     /* Status (dracula) */
     --_success: 135 94% 65%; /* #50FA7B - Green */
@@ -512,20 +512,24 @@
 
 /* Dracula theme specific enhancements */
 .dracula {
-  /* Fix input visibility */
-  input,
-  textarea,
+  /* Fix input visibility - removed border from textarea to match dark theme */
+  input:not(.bg-muted),
   select {
     background-color: hsl(232 14% 31%) !important; /* Selection color for better visibility */
     border: 1px solid hsl(225 27% 51%) !important; /* Comment color border */
     color: hsl(60 30% 96%) !important; /* Foreground */
   }
   
-  input:focus,
-  textarea:focus,
+  /* Textarea with bg-muted class should not have border to match dark theme */
+  textarea.bg-muted {
+    border: none !important;
+    outline: none !important;
+  }
+  
+  input:not(.bg-muted):focus,
   select:focus {
-    border-color: hsl(265 89% 78%) !important; /* Purple on focus */
-    outline: 1px solid hsl(265 89% 78%) !important;
+    border-color: hsl(225 27% 51%) !important; /* Comment color on focus */
+    outline: 1px solid hsl(225 27% 51%) !important;
     outline-offset: -1px;
   }
   
