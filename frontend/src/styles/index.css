@@ -262,9 +262,9 @@
   .dracula {
     --_background: 231 15% 18%; /* #282A36 - Background */
     --_foreground: 60 30% 96%; /* #F8F8F2 - Foreground */
-    --_primary: 232 14% 31%; /* #44475A - Selection (for buttons/primary actions) */
-    --_primary-foreground: 60 30% 96%; /* #F8F8F2 - Foreground */
-    --_secondary: 231 14% 15%; /* #21222C - AnsiBlack (darker for inputs) */
+    --_primary: 265 89% 78%; /* #BD93F9 - Purple (primary actions) */
+    --_primary-foreground: 231 15% 18%; /* #282A36 - Background */
+    --_secondary: 232 14% 31%; /* #44475A - Selection (secondary elements) */
     --_secondary-foreground: 60 30% 96%; /* #F8F8F2 - Foreground */
     --_muted: 232 14% 31%; /* #44475A - Selection */
     --_muted-foreground: 60 30% 96%; /* #F8F8F2 - Foreground */
@@ -272,8 +272,8 @@
     --_accent-foreground: 231 15% 18%; /* #282A36 - Background */
     --_destructive: 0 100% 67%; /* #FF5555 - Red */
     --_destructive-foreground: 231 15% 18%; /* #282A36 - Background */
-    --_border: 232 14% 31%; /* #44475A - Selection */
-    --_input: 231 14% 15%; /* #21222C - AnsiBlack */
+    --_border: 225 27% 51%; /* #6272A4 - Comment (visible borders) */
+    --_input: 232 14% 31%; /* #44475A - Selection (better contrast) */
     --_ring: 265 89% 78%; /* #BD93F9 - Purple */
 
     /* Status (dracula) */
@@ -508,6 +508,218 @@
   --diff-add-widget-color--: hsl(232 14% 31%);
   --diff-empty-content--: hsl(231 15% 18%); /* Background */
   --diff-hunk-content-color--: hsl(225 27% 51%);
+}
+
+/* Dracula theme specific enhancements */
+.dracula {
+  /* Fix input visibility */
+  input,
+  textarea,
+  select {
+    background-color: hsl(232 14% 31%) !important; /* Selection color for better visibility */
+    border: 1px solid hsl(225 27% 51%) !important; /* Comment color border */
+    color: hsl(60 30% 96%) !important; /* Foreground */
+  }
+  
+  input:focus,
+  textarea:focus,
+  select:focus {
+    border-color: hsl(265 89% 78%) !important; /* Purple on focus */
+    outline: 1px solid hsl(265 89% 78%) !important;
+    outline-offset: -1px;
+  }
+  
+  /* Fix dropdown visibility */
+  select,
+  [role="combobox"],
+  [data-state="open"],
+  [role="listbox"] {
+    background-color: hsl(232 14% 31%) !important;
+    border: 1px solid hsl(225 27% 51%) !important;
+  }
+  
+  /* Dropdown hover states */
+  select:hover,
+  [role="combobox"]:hover {
+    background-color: hsl(232 14% 35%) !important; /* Lighter on hover */
+    border-color: hsl(265 89% 78%) !important; /* Purple border on hover */
+  }
+  
+  /* Dropdown options */
+  option,
+  [role="option"] {
+    background-color: hsl(231 15% 18%) !important; /* Background color */
+    color: hsl(60 30% 96%) !important;
+  }
+  
+  option:hover,
+  [role="option"]:hover,
+  [data-highlighted] {
+    background-color: hsl(232 14% 31%) !important; /* Selection color on hover */
+  }
+  
+  option:checked,
+  [role="option"][aria-selected="true"] {
+    background-color: hsl(265 89% 78%) !important; /* Purple for selected */
+    color: hsl(231 15% 18%) !important; /* Dark text on purple */
+  }
+  
+  /* Button hover states */
+  button:hover {
+    opacity: 0.9;
+    transition: all 0.2s;
+  }
+  
+  /* Primary button glow */
+  button[class*="primary"]:hover {
+    box-shadow: 0 0 10px hsla(265 89% 78% / 0.5); /* Purple glow */
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: hsl(232 14% 31%); /* Selection */
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: hsl(225 27% 51%); /* Comment */
+    border-radius: 6px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(265 89% 78%); /* Purple on hover */
+  }
+  
+  /* Code blocks - ensure proper background */
+  pre,
+  code {
+    background-color: hsl(231 15% 15%) !important; /* Slightly darker than background */
+    border: 1px solid hsl(232 14% 31%);
+  }
+  
+  /* Fix JSON/Code editor visibility */
+  .cm-editor,
+  [class*="CodeMirror"],
+  [class*="monaco-editor"],
+  [class*="ace_editor"] {
+    background-color: hsl(231 15% 15%) !important; /* Darker background for editors */
+    border: 1px solid hsl(225 27% 51%) !important; /* Comment border */
+  }
+  
+  /* CodeMirror specific fixes */
+  .cm-editor .cm-content,
+  .cm-editor .cm-gutters {
+    background-color: hsl(231 15% 15%) !important;
+    color: hsl(60 30% 96%) !important; /* Foreground */
+  }
+  
+  .cm-editor .cm-line {
+    color: hsl(60 30% 96%) !important;
+  }
+  
+  /* Line numbers */
+  .cm-editor .cm-lineNumbers,
+  .cm-editor .cm-gutterElement {
+    color: hsl(225 27% 51%) !important; /* Comment color */
+    background-color: hsl(231 14% 13%) !important; /* Even darker */
+    border-right: 1px solid hsl(232 14% 31%) !important;
+  }
+  
+  /* Active line */
+  .cm-editor .cm-activeLine {
+    background-color: hsla(232 14% 31% / 0.3) !important; /* Selection with opacity */
+  }
+  
+  /* Cursor */
+  .cm-editor .cm-cursor {
+    border-left-color: hsl(60 30% 96%) !important;
+  }
+  
+  /* Selection in editor */
+  .cm-editor .cm-selectionBackground,
+  .cm-editor.cm-focused .cm-selectionBackground {
+    background-color: hsl(232 14% 31%) !important; /* Selection color */
+  }
+  
+  /* Syntax highlighting for JSON editors - Dracula Spec Compliant */
+  /* According to spec section 11: Serializable/Configuration Languages */
+  
+  /* Keys in JSON should be Cyan (#8BE9FD) */
+  .cm-editor .cm-property,
+  .cm-editor .tok-property,
+  .cm-editor .cm-propertyName,
+  .cm-editor .tok-propertyName {
+    color: #8be9fd !important; /* Cyan for keys */
+  }
+  
+  /* String values should be Yellow (#F1FA8C) */
+  .cm-editor .cm-string,
+  .cm-editor .tok-string,
+  .cm-editor .cm-string-2 {
+    color: #f1fa8c !important; /* Yellow for strings */
+  }
+  
+  /* Numbers are Constants, should be Purple (#BD93F9) */
+  .cm-editor .cm-number,
+  .cm-editor .tok-number {
+    color: #bd93f9 !important; /* Purple for numbers */
+  }
+  
+  /* Boolean values (true/false/null) are Keywords, should be Pink (#FF79C6) */
+  .cm-editor .cm-keyword,
+  .cm-editor .tok-keyword,
+  .cm-editor .cm-bool,
+  .cm-editor .tok-bool,
+  .cm-editor .cm-null,
+  .cm-editor .tok-null {
+    color: #ff79c6 !important; /* Pink for keywords/booleans */
+  }
+  
+  /* Comments should be Comment color (#6272A4) */
+  .cm-editor .cm-comment,
+  .cm-editor .tok-comment {
+    color: #6272a4 !important; /* Comment color */
+    font-style: italic;
+  }
+  
+  /* Brackets and punctuation should be Foreground (#F8F8F2) */
+  .cm-editor .cm-bracket,
+  .cm-editor .tok-bracket,
+  .cm-editor .cm-punctuation,
+  .cm-editor .tok-punctuation,
+  .cm-editor .cm-brace {
+    color: #f8f8f2 !important; /* Foreground for brackets */
+  }
+  
+  /* Operators (colons, commas) */
+  .cm-editor .cm-operator,
+  .cm-editor .tok-operator {
+    color: #f8f8f2 !important; /* Foreground */
+  }
+  
+  /* Fix textarea fallbacks */
+  textarea[class*="font-mono"],
+  textarea[class*="code"] {
+    background-color: hsl(231 15% 15%) !important;
+    border: 1px solid hsl(225 27% 51%) !important;
+    color: hsl(60 30% 96%) !important;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  
+  /* Fix card borders */
+  [class*="card"] {
+    border: 1px solid hsl(232 14% 31%);
+  }
+  
+  /* Active tab indicator */
+  [role="tab"][aria-selected="true"] {
+    border-bottom: 2px solid hsl(265 89% 78%); /* Purple underline */
+    color: hsl(265 89% 78%); /* Purple text */
+  }
 }
 
 /* 3) Usage */
