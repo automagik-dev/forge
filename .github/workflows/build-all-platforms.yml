@@ -73,9 +73,18 @@ jobs:
           npm ci
           npm run build
       
+      - name: Setup Windows build environment
+        if: runner.os == 'Windows'
+        run: |
+          echo "OPENSSL_STATIC=1" >> $GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=C:\Program Files\OpenSSL-Win64\lib" >> $GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=C:\Program Files\OpenSSL-Win64\include" >> $GITHUB_ENV
+        shell: bash
+        
       - name: Build Rust binaries
         env:
           OPENSSL_STATIC: 1
+          OPENSSL_NO_VENDOR: 0
           LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
           LIBZ_SYS_STATIC: 1
         run: |
