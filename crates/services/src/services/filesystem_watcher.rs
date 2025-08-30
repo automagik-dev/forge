@@ -5,7 +5,7 @@ use std::{
 };
 
 use futures::{
-    SinkExt,
+    SinkExt, StreamExt,
     channel::mpsc::{Receiver, channel},
 };
 use ignore::{
@@ -152,3 +152,17 @@ pub fn async_watcher(
     Ok((debouncer, rx, canonical_root))
 }
 
+async fn async_watch<P: AsRef<Path>>(path: P) -> Result<(), FilesystemWatcherError> {
+    let (_debouncer, mut rx, _canonical_path) = async_watcher(path.as_ref().to_path_buf())?;
+
+    // The debouncer is already watching the path, no need to call watch() again
+
+    while let Some(res) = rx.next().await {
+        match res {
+            Ok(event) => println!("changed: {event:?}"),
+            Err(e) => println!("watch error: {e:?}"),
+        }
+    }
+
+    Ok(())
+}

@@ -469,6 +469,23 @@ impl LocalContainerService {
         map.insert(id, store);
     }
 
+    /// Get the worktree path for a task attempt
+    async fn get_worktree_path(
+        &self,
+        task_attempt: &TaskAttempt,
+    ) -> Result<PathBuf, ContainerError> {
+        let container_ref = self.ensure_container_exists(task_attempt).await?;
+        let worktree_dir = PathBuf::from(&container_ref);
+
+        if !worktree_dir.exists() {
+            return Err(ContainerError::Other(anyhow!(
+                "Worktree directory not found"
+            )));
+        }
+
+        Ok(worktree_dir)
+    }
+
     /// Get the project repository path for a task attempt
     async fn get_project_repo_path(
         &self,
@@ -618,7 +635,7 @@ impl LocalContainerService {
     /// Process file changes and generate diff events
     fn process_file_changes(
         git_service: &GitService,
-        _project_repo_path: &Path,
+        project_repo_path: &Path,
         worktree_path: &Path,
         task_branch: &str,
         base_branch: &str,
