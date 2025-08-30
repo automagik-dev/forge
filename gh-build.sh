@@ -45,6 +45,7 @@ case "${1:-status}" in
         fi
         
         echo "📊 Monitoring workflow run $RUN_ID..."
+        echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$RUN_ID"
         echo "Press Ctrl+C to stop monitoring"
         echo ""
         
