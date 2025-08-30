@@ -35,19 +35,34 @@ cargo build --release --bin mcp_task_server
 
 echo "📦 Creating distribution package..."
 
-# Copy the main binary
+PLATFORMS=("linux-x64" "linux-arm64" "windows-x64" "windows-arm64" "macos-x64" "macos-arm64")
+
+# Package binaries for current platform
+echo "📦 Packaging binaries for $PLATFORM_DIR..."
+mkdir -p npx-cli/dist/$PLATFORM_DIR
+
+# Copy and zip the main binary
 cp target/release/server automagik-forge
 zip -q automagik-forge.zip automagik-forge
 rm -f automagik-forge
 mv automagik-forge.zip npx-cli/dist/$PLATFORM_DIR/automagik-forge.zip
 
-# Copy the MCP binary
+# Copy and zip the MCP binary
 cp target/release/mcp_task_server automagik-forge-mcp
 zip -q automagik-forge-mcp.zip automagik-forge-mcp
 rm -f automagik-forge-mcp
 mv automagik-forge-mcp.zip npx-cli/dist/$PLATFORM_DIR/automagik-forge-mcp.zip
 
+# Create placeholder directories for other platforms
+for platform in "${PLATFORMS[@]}"; do
+  if [ "$platform" != "$PLATFORM_DIR" ]; then
+    mkdir -p npx-cli/dist/$platform
+    echo "Binaries for $platform need to be built on that platform" > npx-cli/dist/$platform/README.txt
+  fi
+done
+
 echo "✅ NPM package ready!"
 echo "📁 Files created:"
 echo "   - npx-cli/dist/$PLATFORM_DIR/automagik-forge.zip"
 echo "   - npx-cli/dist/$PLATFORM_DIR/automagik-forge-mcp.zip"
+echo "📋 Other platform placeholders created under npx-cli/dist/"
