@@ -63,15 +63,6 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
           
-      - name: Install Windows build dependencies
-        if: runner.os == 'Windows'
-        run: |
-          choco install strawberryperl -y
-          echo "C:\strawberry\perl\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          echo "C:\strawberry\perl\site\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          echo "C:\strawberry\c\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        shell: powershell
-        
       - name: Install cross-compilation tools
         if: matrix.use-cross
         run: cargo install cross
@@ -82,18 +73,10 @@ jobs:
           npm ci
           npm run build
       
-      - name: Setup Windows build environment
-        if: runner.os == 'Windows'
-        run: |
-          echo "OPENSSL_STATIC=1" >> $GITHUB_ENV
-          echo "OPENSSL_LIB_DIR=C:\Program Files\OpenSSL-Win64\lib" >> $GITHUB_ENV
-          echo "OPENSSL_INCLUDE_DIR=C:\Program Files\OpenSSL-Win64\include" >> $GITHUB_ENV
-        shell: bash
-        
       - name: Build Rust binaries
         env:
           OPENSSL_STATIC: 1
-          OPENSSL_NO_VENDOR: 0
+          DEP_OPENSSL_VENDORED: 1
           LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
           LIBZ_SYS_STATIC: 1
         run: |
