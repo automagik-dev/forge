@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Font definitions */
+@layer base {
+  :root {
+    --font-primary: 'Alegreya Sans', sans-serif;
+    --font-secondary: 'Manrope', sans-serif;
+  }
+}
+
 /* 1) THEME TOKENS (underscored): defaults + classes control these */
 @layer base {
   /* Light defaults */
@@ -73,6 +81,216 @@
     --_console-foreground: 210 40% 98%;
     --_console-success: 138.5 76.5% 47.7%;
     --_console-error: 0 84.2% 60.2%;
+  }
+
+  /* Purple theme */
+  .purple {
+    --_background: 270 10% 12%;
+    --_foreground: 270 5% 95%;
+    --_primary: 270 60% 50%;
+    --_primary-foreground: 270 5% 95%;
+    --_secondary: 270 10% 20%;
+    --_secondary-foreground: 270 5% 70%;
+    --_muted: 270 10% 18%;
+    --_muted-foreground: var(--_foreground);
+    --_accent: 270 60% 50%;
+    --_accent-foreground: 270 5% 95%;
+    --_destructive: 0 62.8% 50.6%;
+    --_destructive-foreground: 0 0% 98%;
+    --_border: 270 10% 25%;
+    --_input: var(--_border);
+    --_ring: 270 60% 70%;
+
+    /* Status (purple) */
+    --_success: 138.5 76.5% 47.7%;
+    --_success-foreground: 138.5 76.5% 96.7%;
+    --_warning: 32.2 95% 44.1%;
+    --_warning-foreground: 26 83.3% 14.1%;
+    --_info: 217.2 91.2% 59.8%;
+    --_info-foreground: 222.2 84% 4.9%;
+    --_neutral: 270 15% 20%;
+    --_neutral-foreground: 270 10% 95%;
+
+    /* Console (purple) */
+    --_console-background: 270 15% 8%;
+    --_console-foreground: 270 10% 95%;
+    --_console-success: 138.5 76.5% 47.7%;
+    --_console-error: 0 84.2% 60.2%;
+  }
+
+  /* Green theme */
+  .green {
+    --_background: 120 10% 12%;
+    --_foreground: 120 5% 95%;
+    --_primary: 120 60% 40%;
+    --_primary-foreground: 120 5% 95%;
+    --_secondary: 120 10% 20%;
+    --_secondary-foreground: 120 5% 70%;
+    --_muted: 120 10% 18%;
+    --_muted-foreground: var(--_foreground);
+    --_accent: 120 60% 40%;
+    --_accent-foreground: 120 5% 95%;
+    --_destructive: 0 62.8% 50.6%;
+    --_destructive-foreground: 0 0% 98%;
+    --_border: 120 10% 25%;
+    --_input: var(--_border);
+    --_ring: 120 60% 60%;
+
+    /* Status (green) */
+    --_success: 120 60% 40%;
+    --_success-foreground: 120 60% 95%;
+    --_warning: 32.2 95% 44.1%;
+    --_warning-foreground: 26 83.3% 14.1%;
+    --_info: 217.2 91.2% 59.8%;
+    --_info-foreground: 222.2 84% 4.9%;
+    --_neutral: 120 15% 20%;
+    --_neutral-foreground: 120 10% 95%;
+
+    /* Console (green) */
+    --_console-background: 120 15% 8%;
+    --_console-foreground: 120 10% 95%;
+    --_console-success: 120 60% 40%;
+    --_console-error: 0 84.2% 60.2%;
+  }
+
+  /* Blue theme */
+  .blue {
+    --_background: 210 15% 12%;
+    --_foreground: 210 5% 95%;
+    --_primary: 210 70% 50%;
+    --_primary-foreground: 210 5% 95%;
+    --_secondary: 210 15% 20%;
+    --_secondary-foreground: 210 5% 70%;
+    --_muted: 210 15% 18%;
+    --_muted-foreground: var(--_foreground);
+    --_accent: 210 70% 50%;
+    --_accent-foreground: 210 5% 95%;
+    --_destructive: 0 62.8% 50.6%;
+    --_destructive-foreground: 0 0% 98%;
+    --_border: 210 15% 25%;
+    --_input: var(--_border);
+    --_ring: 210 70% 70%;
+
+    /* Status (blue) */
+    --_success: 138.5 76.5% 47.7%;
+    --_success-foreground: 138.5 76.5% 96.7%;
+    --_warning: 32.2 95% 44.1%;
+    --_warning-foreground: 26 83.3% 14.1%;
+    --_info: 210 70% 50%;
+    --_info-foreground: 210 10% 95%;
+    --_neutral: 210 20% 20%;
+    --_neutral-foreground: 210 10% 95%;
+
+    /* Console (blue) */
+    --_console-background: 210 20% 8%;
+    --_console-foreground: 210 10% 95%;
+    --_console-success: 138.5 76.5% 47.7%;
+    --_console-error: 0 84.2% 60.2%;
+  }
+
+  /* Orange theme */
+  .orange {
+    --_background: 30 10% 12%;
+    --_foreground: 30 5% 95%;
+    --_primary: 30 80% 50%;
+    --_primary-foreground: 30 5% 95%;
+    --_secondary: 30 10% 20%;
+    --_secondary-foreground: 30 5% 70%;
+    --_muted: 30 10% 18%;
+    --_muted-foreground: var(--_foreground);
+    --_accent: 30 80% 50%;
+    --_accent-foreground: 30 5% 95%;
+    --_destructive: 0 62.8% 50.6%;
+    --_destructive-foreground: 0 0% 98%;
+    --_border: 30 10% 25%;
+    --_input: var(--_border);
+    --_ring: 30 80% 65%;
+
+    /* Status (orange) */
+    --_success: 138.5 76.5% 47.7%;
+    --_success-foreground: 138.5 76.5% 96.7%;
+    --_warning: 30 80% 50%;
+    --_warning-foreground: 30 80% 95%;
+    --_info: 217.2 91.2% 59.8%;
+    --_info-foreground: 222.2 84% 4.9%;
+    --_neutral: 30 20% 20%;
+    --_neutral-foreground: 30 10% 95%;
+
+    /* Console (orange) */
+    --_console-background: 30 20% 8%;
+    --_console-foreground: 30 10% 95%;
+    --_console-success: 138.5 76.5% 47.7%;
+    --_console-error: 0 84.2% 60.2%;
+  }
+
+  /* Red theme */
+  .red {
+    --_background: 0 10% 12%;
+    --_foreground: 0 5% 95%;
+    --_primary: 0 70% 50%;
+    --_primary-foreground: 0 5% 95%;
+    --_secondary: 0 10% 20%;
+    --_secondary-foreground: 0 5% 70%;
+    --_muted: 0 10% 18%;
+    --_muted-foreground: var(--_foreground);
+    --_accent: 0 70% 50%;
+    --_accent-foreground: 0 5% 95%;
+    --_destructive: 0 70% 50%;
+    --_destructive-foreground: 0 0% 98%;
+    --_border: 0 10% 25%;
+    --_input: var(--_border);
+    --_ring: 0 70% 65%;
+
+    /* Status (red) */
+    --_success: 138.5 76.5% 47.7%;
+    --_success-foreground: 138.5 76.5% 96.7%;
+    --_warning: 32.2 95% 44.1%;
+    --_warning-foreground: 26 83.3% 14.1%;
+    --_info: 217.2 91.2% 59.8%;
+    --_info-foreground: 222.2 84% 4.9%;
+    --_neutral: 0 20% 20%;
+    --_neutral-foreground: 0 10% 95%;
+
+    /* Console (red) */
+    --_console-background: 0 20% 8%;
+    --_console-foreground: 0 10% 95%;
+    --_console-success: 138.5 76.5% 47.7%;
+    --_console-error: 0 70% 50%;
+  }
+
+  /* Dracula theme - Official Dracula Spec */
+  .dracula {
+    --_background: 231 15% 18%; /* #282A36 - Background */
+    --_foreground: 60 30% 96%; /* #F8F8F2 - Foreground */
+    --_primary: 265 89% 78%; /* #BD93F9 - Purple (primary actions) */
+    --_primary-foreground: 231 15% 18%; /* #282A36 - Background */
+    --_secondary: 232 14% 31%; /* #44475A - Selection (secondary elements) */
+    --_secondary-foreground: 60 30% 96%; /* #F8F8F2 - Foreground */
+    --_muted: 232 14% 31%; /* #44475A - Selection */
+    --_muted-foreground: 60 30% 96%; /* #F8F8F2 - Foreground */
+    --_accent: 265 89% 78%; /* #BD93F9 - Purple (main accent) */
+    --_accent-foreground: 231 15% 18%; /* #282A36 - Background */
+    --_destructive: 0 100% 67%; /* #FF5555 - Red */
+    --_destructive-foreground: 231 15% 18%; /* #282A36 - Background */
+    --_border: 225 27% 51%; /* #6272A4 - Comment (visible borders) */
+    --_input: 232 14% 31%; /* #44475A - Selection (better contrast) */
+    --_ring: 225 27% 51%; /* #6272A4 - Comment color for neutral focus rings */
+
+    /* Status (dracula) */
+    --_success: 135 94% 65%; /* #50FA7B - Green */
+    --_success-foreground: 231 15% 18%; /* #282A36 - Background */
+    --_warning: 65 92% 76%; /* #F1FA8C - Yellow */
+    --_warning-foreground: 231 15% 18%; /* #282A36 - Background */
+    --_info: 191 97% 77%; /* #8BE9FD - Cyan */
+    --_info-foreground: 231 15% 18%; /* #282A36 - Background */
+    --_neutral: 225 27% 51%; /* #6272A4 - Comment */
+    --_neutral-foreground: 60 30% 96%; /* #F8F8F2 - Foreground */
+
+    /* Console (dracula) - ANSI colors */
+    --_console-background: 231 14% 15%; /* #21222C - AnsiBlack */
+    --_console-foreground: 60 30% 96%; /* #F8F8F2 - AnsiWhite */
+    --_console-success: 135 94% 65%; /* #50FA7B - AnsiGreen */
+    --_console-error: 0 100% 67%; /* #FF5555 - AnsiRed */
   }
 }
 
@@ -157,6 +375,390 @@
   }
 }
 
+/* Dracula Theme - Syntax Highlighting for Code/Diff */
+.dracula .diff-line-syntax-raw .hljs {
+  color: #f8f8f2; /* Foreground */
+  background: #282a36; /* Background */
+}
+
+/* Keywords - Pink */
+.dracula .diff-line-syntax-raw .hljs-keyword,
+.dracula .diff-line-syntax-raw .hljs-doctag,
+.dracula .diff-line-syntax-raw .hljs-meta .hljs-keyword,
+.dracula .diff-line-syntax-raw .hljs-template-tag,
+.dracula .diff-line-syntax-raw .hljs-template-variable,
+.dracula .diff-line-syntax-raw .hljs-type,
+.dracula .diff-line-syntax-raw .hljs-variable.language_ {
+  color: #ff79c6; /* Pink */
+}
+
+/* Functions/Methods - Green */
+.dracula .diff-line-syntax-raw .hljs-title,
+.dracula .diff-line-syntax-raw .hljs-title.function_,
+.dracula .diff-line-syntax-raw .hljs-built_in {
+  color: #50fa7b; /* Green */
+}
+
+/* Classes - Cyan */
+.dracula .diff-line-syntax-raw .hljs-title.class_,
+.dracula .diff-line-syntax-raw .hljs-title.class_.inherited__ {
+  color: #8be9fd; /* Cyan */
+}
+
+/* Strings - Yellow */
+.dracula .diff-line-syntax-raw .hljs-string,
+.dracula .diff-line-syntax-raw .hljs-meta .hljs-string,
+.dracula .diff-line-syntax-raw .hljs-regexp {
+  color: #f1fa8c; /* Yellow */
+}
+
+/* Numbers/Constants - Purple */
+.dracula .diff-line-syntax-raw .hljs-number,
+.dracula .diff-line-syntax-raw .hljs-literal,
+.dracula .diff-line-syntax-raw .hljs-meta {
+  color: #bd93f9; /* Purple */
+}
+
+/* Comments - Comment color */
+.dracula .diff-line-syntax-raw .hljs-comment,
+.dracula .diff-line-syntax-raw .hljs-code,
+.dracula .diff-line-syntax-raw .hljs-formula {
+  color: #6272a4; /* Comment */
+}
+
+/* Attributes - Green */
+.dracula .diff-line-syntax-raw .hljs-attr,
+.dracula .diff-line-syntax-raw .hljs-attribute {
+  color: #50fa7b; /* Green */
+}
+
+/* Variables/Parameters - Orange */
+.dracula .diff-line-syntax-raw .hljs-variable,
+.dracula .diff-line-syntax-raw .hljs-params {
+  color: #ffb86c; /* Orange */
+}
+
+/* Operators/Punctuation - Pink */
+.dracula .diff-line-syntax-raw .hljs-operator {
+  color: #ff79c6; /* Pink */
+}
+
+/* Tags/Selectors - Pink */
+.dracula .diff-line-syntax-raw .hljs-selector-tag,
+.dracula .diff-line-syntax-raw .hljs-name,
+.dracula .diff-line-syntax-raw .hljs-tag {
+  color: #ff79c6; /* Pink */
+}
+
+/* Selector classes/IDs - Cyan */
+.dracula .diff-line-syntax-raw .hljs-selector-class,
+.dracula .diff-line-syntax-raw .hljs-selector-id,
+.dracula .diff-line-syntax-raw .hljs-selector-attr {
+  color: #8be9fd; /* Cyan */
+}
+
+/* Additions (diff) */
+.dracula .diff-line-syntax-raw .hljs-addition {
+  color: #50fa7b; /* Green */
+  background-color: rgba(80, 250, 123, 0.1);
+}
+
+/* Deletions (diff) */
+.dracula .diff-line-syntax-raw .hljs-deletion {
+  color: #ff5555; /* Red */
+  background-color: rgba(255, 85, 85, 0.1);
+}
+
+/* Emphasis/Italic */
+.dracula .diff-line-syntax-raw .hljs-emphasis {
+  color: #f1fa8c; /* Yellow */
+  font-style: italic;
+}
+
+/* Strong/Bold */
+.dracula .diff-line-syntax-raw .hljs-strong {
+  color: #ffb86c; /* Orange */
+  font-weight: bold;
+}
+
+/* Links */
+.dracula .diff-line-syntax-raw .hljs-link {
+  color: #8be9fd; /* Cyan */
+}
+
+/* Dracula diff viewer colors override */
+.dracula .diff-style-root {
+  --diff-border--: hsl(232 14% 31%); /* Selection color */
+  --diff-add-content--: hsla(135 94% 65% / 0.15); /* Green with opacity */
+  --diff-del-content--: hsla(0 100% 67% / 0.15); /* Red with opacity */
+  --diff-add-lineNumber--: hsla(135 94% 65% / 0.3);
+  --diff-del-lineNumber--: hsla(0 100% 67% / 0.3);
+  --diff-plain-content--: hsl(232 14% 31%); /* Selection */
+  --diff-expand-content--: hsl(232 14% 31%);
+  --diff-plain-lineNumber--: hsl(232 14% 31%);
+  --diff-expand-lineNumber--: hsl(232 14% 31%);
+  --diff-plain-lineNumber-color--: hsl(225 27% 51%); /* Comment */
+  --diff-expand-lineNumber-color--: hsl(225 27% 51%);
+  --diff-hunk-content--: hsl(232 14% 31%);
+  --diff-hunk-lineNumber--: hsl(232 14% 31%);
+  --diff-hunk-lineNumber-hover--: hsl(265 89% 78%); /* Purple */
+  --diff-add-content-highlight--: hsla(135 94% 65% / 0.3);
+  --diff-del-content-highlight--: hsla(0 100% 67% / 0.3);
+  --diff-add-widget--: hsl(225 27% 51%);
+  --diff-add-widget-color--: hsl(232 14% 31%);
+  --diff-empty-content--: hsl(231 15% 18%); /* Background */
+  --diff-hunk-content-color--: hsl(225 27% 51%);
+}
+
+/* Dracula theme specific enhancements */
+.dracula {
+  /* Fix input visibility - removed border from textarea to match dark theme */
+  input:not(.bg-muted),
+  select {
+    background-color: hsl(232 14% 31%) !important; /* Selection color for better visibility */
+    border: 1px solid hsl(225 27% 51%) !important; /* Comment color border */
+    color: hsl(60 30% 96%) !important; /* Foreground */
+  }
+  
+  /* Textarea with bg-muted class should not have border to match dark theme */
+  textarea.bg-muted {
+    border: none !important;
+    outline: none !important;
+  }
+  
+  input:not(.bg-muted):focus,
+  select:focus {
+    border-color: hsl(225 27% 51%) !important; /* Comment color on focus */
+    outline: 1px solid hsl(225 27% 51%) !important;
+    outline-offset: -1px;
+  }
+  
+  /* Fix dropdown visibility */
+  select,
+  [role="combobox"],
+  [data-state="open"],
+  [role="listbox"] {
+    background-color: hsl(232 14% 31%) !important;
+    border: 1px solid hsl(225 27% 51%) !important;
+  }
+  
+  /* Dropdown hover states */
+  select:hover,
+  [role="combobox"]:hover {
+    background-color: hsl(232 14% 35%) !important; /* Lighter on hover */
+    border-color: hsl(265 89% 78%) !important; /* Purple border on hover */
+  }
+  
+  /* Dropdown options and menu items - consistent styling */
+  option,
+  [role="option"],
+  [role="menuitem"],
+  [class*="menu-item"],
+  a[role="menuitem"],
+  .relative.flex.cursor-default {
+    background-color: transparent !important; /* Transparent by default */
+    color: hsl(60 30% 96%) !important; /* Foreground text */
+  }
+  
+  /* Consistent hover state for ALL dropdowns and menus - Purple */
+  option:hover,
+  [role="option"]:hover,
+  [role="menuitem"]:hover,
+  [class*="menu-item"]:hover,
+  a[role="menuitem"]:hover,
+  .relative.flex.cursor-default:hover,
+  [data-highlighted],
+  [data-state="open"] [role="menuitem"]:hover {
+    background-color: hsl(265 89% 78%) !important; /* Purple for ALL hovers */
+    color: hsl(231 15% 18%) !important; /* Dark text on purple */
+  }
+  
+  /* Selected/Active items - also Purple but with different opacity */
+  option:checked,
+  option[selected],
+  [role="option"][aria-selected="true"],
+  [role="menuitem"][aria-current="page"],
+  [data-state="active"],
+  .relative.flex.cursor-default[aria-current="page"] {
+    background-color: hsla(265 89% 78% / 0.2) !important; /* Purple with opacity for selected */
+    color: hsl(265 89% 78%) !important; /* Purple text for selected */
+  }
+  
+  /* Fix focus states */
+  [role="menuitem"]:focus,
+  [role="option"]:focus {
+    outline: none !important;
+    background-color: hsl(265 89% 78%) !important; /* Purple on focus */
+    color: hsl(231 15% 18%) !important;
+  }
+  
+  /* Menu/Dropdown containers */
+  [role="menu"],
+  [data-radix-menu-content],
+  [data-state="open"][role="menu"],
+  .dropdown-menu {
+    background-color: hsl(231 15% 18%) !important; /* Background color */
+    border: 1px solid hsl(225 27% 51%) !important; /* Comment border */
+  }
+  
+  /* Button hover states */
+  button:hover {
+    opacity: 0.9;
+    transition: all 0.2s;
+  }
+  
+  /* Primary button glow */
+  button[class*="primary"]:hover {
+    box-shadow: 0 0 10px hsla(265 89% 78% / 0.5); /* Purple glow */
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: hsl(232 14% 31%); /* Selection */
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: hsl(225 27% 51%); /* Comment */
+    border-radius: 6px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(265 89% 78%); /* Purple on hover */
+  }
+  
+  /* Code blocks - ensure proper background */
+  pre,
+  code {
+    background-color: hsl(231 15% 15%) !important; /* Slightly darker than background */
+    border: 1px solid hsl(232 14% 31%);
+  }
+  
+  /* Fix JSON/Code editor visibility */
+  .cm-editor,
+  [class*="CodeMirror"],
+  [class*="monaco-editor"],
+  [class*="ace_editor"] {
+    background-color: hsl(231 15% 15%) !important; /* Darker background for editors */
+    border: 1px solid hsl(225 27% 51%) !important; /* Comment border */
+  }
+  
+  /* CodeMirror specific fixes */
+  .cm-editor .cm-content,
+  .cm-editor .cm-gutters {
+    background-color: hsl(231 15% 15%) !important;
+    color: hsl(60 30% 96%) !important; /* Foreground */
+  }
+  
+  .cm-editor .cm-line {
+    color: hsl(60 30% 96%) !important;
+  }
+  
+  /* Line numbers */
+  .cm-editor .cm-lineNumbers,
+  .cm-editor .cm-gutterElement {
+    color: hsl(225 27% 51%) !important; /* Comment color */
+    background-color: hsl(231 14% 13%) !important; /* Even darker */
+    border-right: 1px solid hsl(232 14% 31%) !important;
+  }
+  
+  /* Active line */
+  .cm-editor .cm-activeLine {
+    background-color: hsla(232 14% 31% / 0.3) !important; /* Selection with opacity */
+  }
+  
+  /* Cursor */
+  .cm-editor .cm-cursor {
+    border-left-color: hsl(60 30% 96%) !important;
+  }
+  
+  /* Selection in editor */
+  .cm-editor .cm-selectionBackground,
+  .cm-editor.cm-focused .cm-selectionBackground {
+    background-color: hsl(232 14% 31%) !important; /* Selection color */
+  }
+  
+  /* Syntax highlighting for JSON editors - Dracula Spec Compliant */
+  /* According to spec section 11: Serializable/Configuration Languages */
+  
+  /* Keys in JSON should be Cyan (#8BE9FD) */
+  .cm-editor .cm-property,
+  .cm-editor .tok-property,
+  .cm-editor .cm-propertyName,
+  .cm-editor .tok-propertyName {
+    color: #8be9fd !important; /* Cyan for keys */
+  }
+  
+  /* String values should be Yellow (#F1FA8C) */
+  .cm-editor .cm-string,
+  .cm-editor .tok-string,
+  .cm-editor .cm-string-2 {
+    color: #f1fa8c !important; /* Yellow for strings */
+  }
+  
+  /* Numbers are Constants, should be Purple (#BD93F9) */
+  .cm-editor .cm-number,
+  .cm-editor .tok-number {
+    color: #bd93f9 !important; /* Purple for numbers */
+  }
+  
+  /* Boolean values (true/false/null) are Keywords, should be Pink (#FF79C6) */
+  .cm-editor .cm-keyword,
+  .cm-editor .tok-keyword,
+  .cm-editor .cm-bool,
+  .cm-editor .tok-bool,
+  .cm-editor .cm-null,
+  .cm-editor .tok-null {
+    color: #ff79c6 !important; /* Pink for keywords/booleans */
+  }
+  
+  /* Comments should be Comment color (#6272A4) */
+  .cm-editor .cm-comment,
+  .cm-editor .tok-comment {
+    color: #6272a4 !important; /* Comment color */
+    font-style: italic;
+  }
+  
+  /* Brackets and punctuation should be Foreground (#F8F8F2) */
+  .cm-editor .cm-bracket,
+  .cm-editor .tok-bracket,
+  .cm-editor .cm-punctuation,
+  .cm-editor .tok-punctuation,
+  .cm-editor .cm-brace {
+    color: #f8f8f2 !important; /* Foreground for brackets */
+  }
+  
+  /* Operators (colons, commas) */
+  .cm-editor .cm-operator,
+  .cm-editor .tok-operator {
+    color: #f8f8f2 !important; /* Foreground */
+  }
+  
+  /* Fix textarea fallbacks */
+  textarea[class*="font-mono"],
+  textarea[class*="code"] {
+    background-color: hsl(231 15% 15%) !important;
+    border: 1px solid hsl(225 27% 51%) !important;
+    color: hsl(60 30% 96%) !important;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  
+  /* Fix card borders */
+  [class*="card"] {
+    border: 1px solid hsl(232 14% 31%);
+  }
+  
+  /* Active tab indicator */
+  [role="tab"][aria-selected="true"] {
+    border-bottom: 2px solid hsl(265 89% 78%); /* Purple underline */
+    color: hsl(265 89% 78%); /* Purple text */
+  }
+}
+
 /* 3) Usage */
 @layer base {
   * {
@@ -170,7 +772,19 @@
   }
 
   body {
-    @apply bg-background text-foreground font-chivo-mono;
+    @apply bg-background text-foreground;
+    font-family: var(--font-secondary);
+  }
+  
+  /* Typography: Headers use Alegreya Sans, body text uses Manrope */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-primary);
+    @apply font-bold;
+  }
+  
+  /* Override for code/mono elements */
+  code, pre, .font-mono {
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
   }
 
   *:focus {
