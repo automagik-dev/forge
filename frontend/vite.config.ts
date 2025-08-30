@@ -5,8 +5,8 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react(), sentryVitePlugin({
-    org: "namastex-labs",
-    project: "automagik-forge"
+    org: "bloop-ai",
+    project: "vibe-kanban"
   })],
 
   resolve: {
