@@ -192,7 +192,7 @@ export function TaskFollowUpSection({
 
   return (
     selectedAttemptId && (
-      <div className="border-t p-4 focus-within:ring ring-inset">
+      <div className="border-t p-4">
         <div className="space-y-2">
           {followUpError && (
             <Alert variant="destructive">
