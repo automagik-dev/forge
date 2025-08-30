@@ -17,7 +17,6 @@ ts-rs = { workspace = true }
 libc = "0.2"
 rust-embed = "8.2"
 directories = "6.0.0"
-dirs = "5.0"
 open = "5.3.2"
 regex = "1.11.1"
 sentry-tracing = { version = "0.41.0", features = ["backtrace"] }
