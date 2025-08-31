@@ -41,7 +41,8 @@ export function ThemeProvider({
       'blue',
       'orange',
       'red',
-      'dracula'
+      'dracula',
+      'alucard'
     );
 
     if (theme === ThemeMode.SYSTEM) {

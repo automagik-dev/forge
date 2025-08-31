@@ -1,9 +1,9 @@
 <p align="center">
   <a href="https://vibekanban.com">
     <picture>
-      <source srcset="frontend/public/vibe-kanban-logo-dark.svg" media="(prefers-color-scheme: dark)">
-      <source srcset="frontend/public/vibe-kanban-logo.svg" media="(prefers-color-scheme: light)">
-      <img src="frontend/public/vibe-kanban-logo.svg" alt="Vibe Kanban Logo">
+      <source srcset="frontend/public/forge-dark.svg" media="(prefers-color-scheme: dark)">
+      <source srcset="frontend/public/forge-clear.svg" media="(prefers-color-scheme: light)">
+      <img src="frontend/public/forge-clear.svg" alt="Automagik Forge Logo">
     </picture>
   </a>
 </p>
