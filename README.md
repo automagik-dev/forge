@@ -127,45 +127,6 @@ Task: "Implement user authentication"
 - No commits until YOU approve
 - Learn which agent works best for which task type
 
-### 🎯 Specialized Agents: Your Custom Experts
-
-Create specialized agents that enhance ANY coding agent:
-
-```yaml
-# These work with ANY AI coding agent above
-specialized_agents:
-  - name: "test-writer"
-    prompt: "You are an expert at writing comprehensive tests. Always include edge cases..."
-    # Can run on: Claude, Gemini, Cursor, or any other agent
-    
-  - name: "pr-reviewer" 
-    prompt: "Review code for security vulnerabilities, performance issues, and patterns..."
-    # Can run on: Claude, Gemini, Cursor, or any other agent
-    
-  - name: "automagik-forge-expert"
-    prompt: "You specialize in the Automagik Forge codebase. You know..."
-    # Can run on: Claude, Gemini, Cursor, or any other agent
-```
-
----
-
-## 📋 Vibe Coding Templates
-
-Pre-built workflows for common development patterns:
-
-```yaml
-# Example: Code Review Template
-name: "PR Review Workflow"
-steps:
-  - agent: claude
-    task: "Review code architecture and patterns"
-  - agent: gemini  
-    task: "Check for security vulnerabilities"
-  - agent: cursor
-    task: "Suggest performance optimizations"
-  - human: "Final review and merge decision"
-```
-
 **Available Templates:**
 - 🔍 **Code Review**: Multi-agent PR analysis
 - 🐛 **Bug Hunt**: Reproduce → Fix → Test → Document
@@ -510,24 +471,6 @@ We love contributions! However, to maintain project coherence:
 5. **Document Well**: Update docs with your changes
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
-
----
-
-## 🏢 Commercial Support
-
-### Automagik Pro
-Enterprise features coming soon:
-- Priority support
-- Custom agent integrations
-- Advanced analytics
-- Team management
-- SLA guarantees
-
-### Custom Development
-Need specific features? Contact us:
-- Email: enterprise@namastexlabs.com
-- Discord: [Join our server](https://discord.gg/automagik)
-
 ---
 
 ## 🙏 Acknowledgments
@@ -535,10 +478,8 @@ Need specific features? Contact us:
 Built with love by the team at [Namastex Labs](https://namastexlabs.com).
 
 Special thanks to:
-- The Rust community for amazing async tooling
-- React team for the fantastic framework
+- Vibe Kanban team, for inspiring us to build Forge.
 - All our early adopters and contributors
-- The AI coding agent developers who inspired this project
 
 ---
 
@@ -563,7 +504,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
   <strong>Vibe Coding++™ - Where Human Control Meets AI Power</strong><br><br>
   <a href="https://github.com/namastexlabs/automagik-forge">Star us on GitHub</a> • 
   <a href="https://discord.gg/automagik">Join our Discord</a> • 
-  <a href="https://twitter.com/automagikdev">Follow on Twitter</a>
 </p>
 
 <p align="center">
