@@ -14,7 +14,8 @@ interface ReleaseNotesDialogProps {
   onClose: () => void;
 }
 
-const RELEASE_NOTES_URL = 'https://vibekanban.com/release-notes';
+// const RELEASE_NOTES_URL = 'https://vibekanban.com/release-notes';
+const RELEASE_NOTES_URL = 'https://automagikforge.com/release-notes'; // TODO: Update when domain is ready
 
 export function ReleaseNotesDialog({ open, onClose }: ReleaseNotesDialogProps) {
   const [iframeError, setIframeError] = useState(false);
@@ -33,7 +34,7 @@ export function ReleaseNotesDialog({ open, onClose }: ReleaseNotesDialogProps) {
       <DialogContent className="flex flex-col w-full h-full max-w-7xl max-h-[calc(100dvh-1rem)] p-0">
         <DialogHeader className="p-4 border-b flex-shrink-0">
           <DialogTitle className="text-xl font-semibold">
-            We've updated Vibe Kanban! Check out what's new...
+            We've updated Automagik Forge! Check out what's new...
           </DialogTitle>
         </DialogHeader>
 
