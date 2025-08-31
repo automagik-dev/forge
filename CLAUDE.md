@@ -91,7 +91,7 @@ shared/types.ts    # Auto-generated TypeScript types from Rust
    - Each executor (Claude, Gemini, etc.) implements common interface
    - Actions: `coding_agent_initial`, `coding_agent_follow_up`, `script`
 
-4. **MCP Integration**: Vibe Kanban acts as MCP server
+4. **MCP Integration**: Automagik Forge acts as MCP server
    - Tools: `list_projects`, `list_tasks`, `create_task`, `update_task`, etc.
    - AI agents can manage tasks via MCP protocol
 

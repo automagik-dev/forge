@@ -149,7 +149,7 @@ impl GitService {
     pub fn create_initial_commit(&self, repo: &Repository) -> Result<(), GitServiceError> {
         let signature = repo.signature().unwrap_or_else(|_| {
             // Fallback if no Git config is set
-            git2::Signature::now("Vibe Kanban", "noreply@vibekanban.com")
+            git2::Signature::now("Automagik Genie", "genie@namastex.ai")
                 .expect("Failed to create fallback signature")
         });
 
