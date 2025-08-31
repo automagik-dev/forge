@@ -23,9 +23,9 @@
 <p align="center">
   <a href="#-key-features">Features</a> •
   <a href="#-quick-start">Quick Start</a> •
-  <a href="#-architecture">Architecture</a> •
-  <a href="#-documentation">Documentation</a> •
-  <a href="#-roadmap">Roadmap</a>
+  <a href="#-roadmap">Roadmap</a> •
+  <a href="#-development">Development</a> •
+  <a href="#-contributing">Contributing</a>
 </p>
 
 ![Automagik Forge Dashboard](frontend/public/vibe-kanban-screenshot-overview.png)
@@ -74,29 +74,18 @@ Forge elevates human potential - you orchestrate, AI executes:
 
 ## 🌟 Key Features
 
-### 🤖 **Multi-Agent Orchestration**
+- **8 AI Coding Agents**: Claude, Cursor CLI, Gemini, Codex, and more - including open-source options
+- **Specialized Agents**: Custom prompts that work with ANY coding agent (test-writer, pr-reviewer, etc.)
+- **Multiple Attempts Per Task**: Try different agents, compare results, choose the best
 - **Parallel Execution**: Run multiple agents simultaneously on different tasks
-- **Sequential Workflows**: Chain agent tasks with dependencies
-- **Agent Switching**: Seamlessly switch between Claude, Gemini, Codex, and more
-- **Load Balancing**: Distribute tasks based on agent strengths
-
-### 📋 **Smart Task Management**
-- **Persistent Kanban Board**: Visual task tracking that survives sessions
-- **Git Worktree Isolation**: Each task gets its own isolated Git worktree
-- **Automatic Cleanup**: Smart orphaned worktree management
-- **Task Templates**: Reusable task patterns for common workflows
-
-### 🔄 **Real-Time Collaboration**
-- **Live Progress Streaming**: Watch agents work in real-time via SSE
-- **Diff Visualization**: See exactly what code changes agents make
-- **Process Logs**: Full transparency into agent thinking and actions
-- **Collaborative Review**: Built-in tools for code review and merging
-
-### 🛡️ **Enterprise Ready**
+- **Git Worktree Isolation**: Every attempt in its own isolated environment
+- **Persistent Kanban Board**: Tasks live forever, not lost in chat history
+- **Task Templates**: Reusable patterns for common workflows
+- **MCP Server Built-in**: Control from any AI coding agent without leaving your flow
+- **Visual Context**: Attach screenshots and diagrams to tasks
+- **Real-time Progress**: Watch agents work, see diffs as they happen
 - **GitHub Integration**: OAuth authentication and repository management
-- **Security First**: Isolated execution environments for each task
-- **Audit Trail**: Complete history of all agent actions
-- **Self-Hostable**: Run on your infrastructure with custom GitHub OAuth
+- **100% Open Source**: Free forever, self-hostable, no vendor lock-in
 
 ---
 
@@ -481,240 +470,34 @@ automagik-forge
 
 ---
 
-## 🏗️ Architecture
-
-### Tech Stack
-
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| **Backend** | Rust + Axum + Tokio | High-performance async server |
-| **Frontend** | React 18 + TypeScript + Vite | Modern reactive UI |
-| **Database** | SQLite + SQLx | Lightweight persistent storage |
-| **Styling** | Tailwind CSS + shadcn/ui | Beautiful, consistent design |
-| **Type Safety** | ts-rs | Auto-generated TypeScript from Rust |
-| **Real-time** | Server-Sent Events | Live progress streaming |
-| **Protocol** | MCP (Model Context Protocol) | Agent communication standard |
-
-### System Architecture
-
-```
-┌─────────────────────────────────────────────────────┐
-│                   AI Coding Agents                   │
-│        (Claude Code, Gemini CLI, Codex, etc.)       │
-└─────────────────┬───────────────────────────────────┘
-                  │ MCP Protocol
-                  ▼
-┌─────────────────────────────────────────────────────┐
-│              Automagik Forge Server                  │
-│  ┌─────────────────────────────────────────────┐   │
-│  │            MCP Server Module                │   │
-│  └─────────────────────────────────────────────┘   │
-│  ┌─────────────────────────────────────────────┐   │
-│  │         Task Orchestration Engine           │   │
-│  └─────────────────────────────────────────────┘   │
-│  ┌─────────────────────────────────────────────┐   │
-│  │       Git Worktree Manager Service          │   │
-│  └─────────────────────────────────────────────┘   │
-└─────────────────┬───────────────────────────────────┘
-                  │ REST API + SSE
-                  ▼
-┌─────────────────────────────────────────────────────┐
-│               React Frontend (Vite)                  │
-│         Kanban Board + Real-time Updates            │
-└─────────────────────────────────────────────────────┘
-```
-
-### Project Structure
-
-```
-automagik-forge/
-├── crates/                    # Rust backend modules
-│   ├── server/               # HTTP server & MCP implementation
-│   ├── db/                   # Database models & migrations
-│   ├── executors/            # AI agent integrations
-│   ├── services/             # Business logic & git operations
-│   ├── local-deployment/     # Deployment configuration
-│   └── utils/                # Shared utilities
-│
-├── frontend/                  # React application
-│   ├── src/
-│   │   ├── components/       # UI components (TaskCard, etc.)
-│   │   ├── pages/           # Route pages
-│   │   ├── hooks/           # Custom React hooks
-│   │   └── lib/             # API client & utilities
-│   └── public/              # Static assets
-│
-├── npx-cli/                  # NPX CLI wrapper
-├── scripts/                  # Build & development scripts
-├── dev_assets_seed/          # Development database seed
-└── shared/types.ts           # Auto-generated TypeScript types
-```
-
----
-
-## 📚 Documentation
-
-### Core Concepts
-
-#### Tasks & Workflows
-Tasks are the fundamental unit of work in Forge. Each task:
-- Has a unique Git worktree for isolation
-- Can be assigned to specific agents
-- Supports parallel or sequential execution
-- Maintains full audit trail
-
-#### Agent Executors
-Executors are pluggable modules for different AI agents:
-- `coding_agent_initial`: First interaction with agent
-- `coding_agent_follow_up`: Continuation of conversation
-- `script`: Direct script execution
-
-#### MCP Tools
-Available MCP tools for agent integration:
-- `list_projects`: Get all projects
-- `list_tasks`: View task queue
-- `create_task`: Add new tasks
-- `update_task`: Modify existing tasks
-- `execute_task`: Run tasks with agents
-
-### API Reference
-
-#### REST Endpoints
-- `GET /api/projects` - List all projects
-- `GET /api/tasks` - List tasks with filtering
-- `POST /api/tasks` - Create new task
-- `PUT /api/tasks/:id` - Update task
-- `POST /api/tasks/:id/execute` - Execute task with agent
-
-#### Event Streams (SSE)
-- `/api/events/processes/:id/logs` - Real-time process logs
-- `/api/events/task-attempts/:id/diff` - Live diff updates
-
-### Configuration
-
-#### Environment Variables
-
-| Variable | Type | Default | Description |
-|----------|------|---------|-------------|
-| `GITHUB_CLIENT_ID` | Build | `Ov23li9bxz3kKfPOIsGm` | GitHub OAuth client ID |
-| `POSTHOG_API_KEY` | Build | Empty | Analytics API key |
-| `BACKEND_PORT` | Runtime | Auto | Backend server port |
-| `FRONTEND_PORT` | Runtime | `3000` | Frontend dev port |
-| `HOST` | Runtime | `127.0.0.1` | Backend host |
-| `DISABLE_WORKTREE_ORPHAN_CLEANUP` | Runtime | `false` | Debug flag |
-
-#### Custom GitHub OAuth App
-
-For self-hosting with custom branding:
-
-1. Create GitHub OAuth App at [GitHub Settings](https://github.com/settings/developers)
-2. Enable "Device Flow"
-3. Set scopes: `user:email,repo`
-4. Build with custom client ID:
-   ```bash
-   GITHUB_CLIENT_ID=your_id pnpm run build
-   ```
-
----
-
 ## 🛠️ Development
 
-### Prerequisites
-
-```bash
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-# Install Node.js 18+ and pnpm
-npm install -g pnpm
-
-# Install development tools
-cargo install cargo-watch sqlx-cli
-```
-
-### Setup
-
-```bash
-# Clone repository
-git clone https://github.com/namastexlabs/automagik-forge
-cd automagik-forge
-
-# Install dependencies
-pnpm install
-
-# Run development server
-pnpm run dev
-```
-
-### Building from Source
-
-```bash
-# Build production binary
-./local-build.sh
-
-# Package for NPM
-cd npx-cli && npm pack
-
-# Test locally
-npx ./automagik-forge-*.tgz
-```
-
-### Testing
-
-```bash
-# Run all checks
-npm run check
-
-# Frontend checks
-cd frontend && npm run lint
-cd frontend && npm run format:check
-cd frontend && npx tsc --noEmit
-
-# Backend checks
-cargo test --workspace
-cargo fmt --all -- --check
-cargo clippy --all --all-targets --all-features
-```
-
-### Database Migrations
-
-```bash
-# Create new migration
-sqlx migrate add <migration_name>
-
-# Run migrations
-sqlx migrate run
-
-# Revert migration
-sqlx migrate revert
-```
+Interested in contributing or building from source? Check out our [Developer Guide](DEVELOPER.md) for detailed instructions on:
+- Setting up the development environment
+- Building from source
+- Running tests
+- Database migrations
+- Architecture details
 
 ---
 
 ## 🗺️ Roadmap
 
-### Phase 1: Foundation (Q1 2025) ✅
 - [x] Multi-agent orchestration
 - [x] Kanban task management
 - [x] Git worktree isolation
 - [x] MCP server implementation
 - [x] Real-time progress streaming
-
-### Phase 2: Intelligence (Q2 2025) 🚧
 - [ ] Agent performance analytics
 - [ ] Smart task routing based on agent strengths
 - [ ] Automated code review with AI
 - [ ] Context preservation between sessions
 - [ ] Task dependency resolution
-
-### Phase 3: Scale (Q3 2025) 📋
 - [ ] Cloud deployment options
 - [ ] Team collaboration features
 - [ ] Custom agent integrations SDK
 - [ ] Advanced workflow templates
 - [ ] Enterprise SSO support
-
-### Phase 4: Ecosystem (Q4 2025) 🌐
 - [ ] Plugin marketplace
 - [ ] Community task templates
 - [ ] Integration with CI/CD pipelines
@@ -774,8 +557,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🔗 Links
 
-- **Website**: [automagik.dev](https://automagik.dev)
-- **Documentation**: [docs.automagik.dev](https://docs.automagik.dev)
+- **Website**: [forge.automag.ik](https://forge.automag.ik)
 - **NPM Package**: [npmjs.com/package/automagik-forge](https://www.npmjs.com/package/automagik-forge)
 - **GitHub**: [github.com/namastexlabs/automagik-forge](https://github.com/namastexlabs/automagik-forge)
 - **Discord**: [discord.gg/automagik](https://discord.gg/automagik)
@@ -792,5 +574,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 </p>
 
 <p align="center">
-  Made with ❤️ by <a href="https://namastexlabs.com">Namastex Labs</a>
+  Made with ❤️ by <a href="https://namastex.ai">Namastex Labs</a><br>
+  <em>AI that elevates human potential, not replaces it</em>
 </p>
