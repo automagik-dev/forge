@@ -66,18 +66,44 @@ jobs:
       - name: Install OpenSSL (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: choco install openssl.light -y
-
+        run: |
+          choco install openssl.light -y
+          # Wait a moment for installation to complete
+          Start-Sleep -Seconds 10
+          
       - name: Configure OpenSSL env (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $root = 'C:\\Program Files\\OpenSSL-Win64'
-          if (-not (Test-Path $root)) { throw "OpenSSL not found at $root" }
-          echo "OPENSSL_NO_VENDOR=1"               >> $env:GITHUB_ENV
-          echo "OPENSSL_DIR=$root"                 >> $env:GITHUB_ENV
-          echo "OPENSSL_LIB_DIR=$root\\lib"       >> $env:GITHUB_ENV
-          echo "OPENSSL_INCLUDE_DIR=$root\\include" >> $env:GITHUB_ENV
+          # Check multiple possible OpenSSL locations
+          $possiblePaths = @(
+            'C:\Program Files\OpenSSL-Win64',
+            'C:\Program Files\OpenSSL',
+            'C:\ProgramData\chocolatey\lib\openssl.light\tools\openssl-Win64',
+            'C:\tools\openssl',
+            'C:\OpenSSL-Win64'
+          )
+          
+          $root = $null
+          foreach ($path in $possiblePaths) {
+            if (Test-Path $path) {
+              $root = $path
+              Write-Host "Found OpenSSL at: $root"
+              break
+            }
+          }
+          
+          if (-not $root) {
+            # If none found, try to use vendored OpenSSL instead
+            Write-Host "OpenSSL not found in standard locations, will use vendored OpenSSL"
+            echo "OPENSSL_NO_VENDOR=0" >> $env:GITHUB_ENV
+            echo "OPENSSL_VENDORED=1" >> $env:GITHUB_ENV
+          } else {
+            echo "OPENSSL_NO_VENDOR=1" >> $env:GITHUB_ENV
+            echo "OPENSSL_DIR=$root" >> $env:GITHUB_ENV
+            echo "OPENSSL_LIB_DIR=$root\lib" >> $env:GITHUB_ENV
+            echo "OPENSSL_INCLUDE_DIR=$root\include" >> $env:GITHUB_ENV
+          }
           
       - name: Install cross-compilation tools
         if: matrix.use-cross
@@ -94,7 +120,8 @@ jobs:
         env:
           LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
           LIBZ_SYS_STATIC: 1
-          # OPENSSL_* are taken from GITHUB_ENV (OPENSSL_NO_VENDOR=1, DIR, LIB/INCLUDE)
+          OPENSSL_STATIC: 1
+          # OPENSSL_* vars are set from previous step (either system or vendored)
         run: |
           if [ "${{ matrix.use-cross }}" = "true" ]; then
             cross build --release --target ${{ matrix.target }}
