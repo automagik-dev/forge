@@ -1,10 +1,8 @@
 <p align="center">
-  <a href="https://automagik.dev">
+  <a href="https://forge.automag.ik">
     <img src="frontend/public/forge-clear.svg" alt="Automagik Forge Logo" width="400">
   </a>
 </p>
-
-<h1 align="center">Automagik Forge</h1>
 <h2 align="center">The Vibe Coding++™ Platform for Human-AI Development</h2>
 
 <p align="center">
