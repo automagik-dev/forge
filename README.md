@@ -28,7 +28,7 @@
   <a href="#-contributing">Contributing</a>
 </p>
 
-![Automagik Forge Dashboard](frontend/public/vibe-kanban-screenshot-overview.png)
+![Automagik Forge Dashboard](frontend/public/screenshot.png)
 
 ---
 
