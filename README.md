@@ -1,18 +1,16 @@
 <p align="center">
   <a href="https://automagik.dev">
-    <picture>
-      <source srcset="frontend/public/forge-dark.svg" media="(prefers-color-scheme: dark)">
-      <source srcset="frontend/public/forge-clear.svg" media="(prefers-color-scheme: light)">
-      <img src="frontend/public/forge-clear.svg" alt="Automagik Forge Logo" width="400">
-    </picture>
+    <img src="frontend/public/forge-clear.svg" alt="Automagik Forge Logo" width="400">
   </a>
 </p>
 
 <h1 align="center">Automagik Forge</h1>
+<h2 align="center">The Vibe Coding++™ Platform for Human-AI Development</h2>
 
 <p align="center">
-  <strong>🔨 The Ultimate AI Coding Agent Orchestrator</strong><br>
-  Supercharge your development workflow with Claude Code, Gemini CLI, Codex, and more
+  <strong>🎯 Where Vibe Coding Meets Structured Execution</strong><br>
+  Works with any AI coding tool through natural language, execute in isolated environments,<br>
+  ship confident code with complete control and visibility
 </p>
 
 <p align="center">
@@ -36,26 +34,41 @@
 
 ## 🚀 What is Automagik Forge?
 
-**Automagik Forge** is the central command center for orchestrating AI coding agents. As AI increasingly writes the world's code, human engineers now focus on planning, reviewing, and orchestrating tasks. Forge transforms this reality into a superpower.
+**Automagik Forge** is the vibe coding++ platform where humans stay in control. It's the structured home for your AI development tasks - plan them yourself or vibe with AI to create them, experiment with different agents to find what works, review everything before shipping. No more code that breaks in 2 weeks.
 
-Think of it as your **AI Development Operations Center** - a place where multiple AI agents work together on your codebase while you maintain strategic control.
+### 🎭 Vibe Coding++™ Philosophy
 
-### 🎯 The Problem We Solve
+**Regular vibe coding problem**: You chat with AI, get code, ship it. Two weeks later? Everything breaks and you can't fix it because you let AI do everything.
 
-- **Agent Fragmentation**: Different coding agents (Claude, Gemini, Codex) work in isolation
-- **Context Switching Hell**: Constantly jumping between different agent interfaces
-- **No Task Persistence**: Losing track of what agents are working on
-- **Review Bottlenecks**: Difficulty reviewing and integrating agent-generated code
-- **Configuration Chaos**: Managing MCP configs across multiple agents
+**Vibe Coding++™ solution**: Perfect human-AI integration where you:
 
-### 💡 Our Solution
+- 📋 **You Plan Tasks**: Break down work yourself or use AI to help plan
+- 🏠 **Forge is Home**: All tasks live in persistent kanban, not lost in chat history or random .md files scattered across your codebase
+- 🧪 **You Experiment**: Try different agents on same task - see what works best
+- 🎯 **You Choose Agents**: Pick which coding agent AND specialized agent for each task
+- 🔒 **Isolated Attempts**: Each attempt in its own Git worktree - no conflicts
+- 👀 **You Review**: Understand what changed before merging
+- 🚀 **Ship Confident Code**: Code that won't mysteriously break in 2 weeks
 
-Automagik Forge provides a unified orchestration layer that lets you:
-- Run multiple AI agents in parallel or sequence
-- Track all tasks in a persistent kanban board
-- Review and merge agent work with confidence
-- Maintain consistent project context across agents
-- Configure once, deploy everywhere
+### 🚫 Why Regular Vibe Coding Fails
+
+The "just let AI do it" approach creates a ticking time bomb:
+- **No Structure**: Random chat conversations, no task tracking
+- **No Control**: AI makes all decisions, you don't understand the code
+- **No Memory**: What did we build last week? Who knows! Lost in chat history or random .md files
+- **No Experimentation**: Stuck with one agent's approach
+- **The 2-Week Curse**: Code works today, breaks tomorrow, unfixable forever
+
+### ✅ The Vibe Coding++™ Solution
+
+Forge elevates human potential - you orchestrate, AI executes:
+- **You Own the Kanban**: Tasks you create, not AI's whims
+- **You Pick the Agent**: Try Claude, then Gemini, see what works
+- **You Choose Specialization**: Apply "test writer" or "PR reviewer" as needed
+- **Multiple Attempts**: Each task can have multiple attempts with different agents
+- **Git Worktree Isolation**: Every attempt isolated, no conflicts
+- **You Review & Understand**: Know exactly what's changing before merge
+- **MCP Control**: Create/update tasks from your coding agent without leaving your flow
 
 ---
 
@@ -87,24 +100,118 @@ Automagik Forge provides a unified orchestration layer that lets you:
 
 ---
 
-## 🔌 MCP Server Integration
+## 🤖 Two Types of Agents, Clear and Simple
 
-Automagik Forge acts as a **Model Context Protocol (MCP) server**, enabling AI coding agents to programmatically manage tasks. Use any MCP-compatible tool to orchestrate your work without context switching.
+> **The Key Distinction:**
+> - **AI Coding Agents** = The AI execution platforms (CLI tools that run AI models)
+> - **Specialized Agents** = Custom prompts that work with ANY coding agent
+> - Example: Your "test-writer" specialized agent can run on Claude today, Gemini tomorrow
+
+### 🛠️ AI Coding Agents Available in Forge
+
+Forge can execute tasks using these AI coding agents - including open-source and LLM-agnostic options:
+
+- **Claude Code** - Anthropic's Claude models
+- **Claude Code Router** - LLM-agnostic, use ANY model instead of Claude
+- **Cursor CLI** - Cursor's CLI agent (separate from their IDE)
+- **Gemini** - Google's Gemini models
+- **Codex** - OpenAI's code models
+- **Amp** - Sourcegraph's code intelligence
+- **OpenCode** - Open-source models, fully local execution
+- **Qwen Code** - Alibaba's open-source models
+
+**The Power:** Not locked to subscriptions - use open-source models, route to any LLM, or bring your own API keys
+
+### 🧪 Task Attempts: Experiment Until It Works
+
+Each task can have multiple attempts - try different approaches:
+
+```yaml
+Task: "Implement user authentication"
+├── Attempt 1: Claude + "security-expert" → Too complex
+├── Attempt 2: Gemini + default → Missing edge cases  
+├── Attempt 3: Cursor + "auth-specialist" → Perfect! ✅
+└── Result: You choose Attempt 3 to merge
+```
+
+**The Power of Attempts:**
+- Each attempt runs in isolated Git worktree
+- Compare different agent outputs side-by-side
+- No commits until YOU approve
+- Learn which agent works best for which task type
+
+### 🎯 Specialized Agents: Your Custom Experts
+
+Create specialized agents that enhance ANY coding agent:
+
+```yaml
+# These work with ANY AI coding agent above
+specialized_agents:
+  - name: "test-writer"
+    prompt: "You are an expert at writing comprehensive tests. Always include edge cases..."
+    # Can run on: Claude, Gemini, Cursor, or any other agent
+    
+  - name: "pr-reviewer" 
+    prompt: "Review code for security vulnerabilities, performance issues, and patterns..."
+    # Can run on: Claude, Gemini, Cursor, or any other agent
+    
+  - name: "automagik-forge-expert"
+    prompt: "You specialize in the Automagik Forge codebase. You know..."
+    # Can run on: Claude, Gemini, Cursor, or any other agent
+```
+
+---
+
+## 📋 Vibe Coding Templates
+
+Pre-built workflows for common development patterns:
+
+```yaml
+# Example: Code Review Template
+name: "PR Review Workflow"
+steps:
+  - agent: claude
+    task: "Review code architecture and patterns"
+  - agent: gemini  
+    task: "Check for security vulnerabilities"
+  - agent: cursor
+    task: "Suggest performance optimizations"
+  - human: "Final review and merge decision"
+```
+
+**Available Templates:**
+- 🔍 **Code Review**: Multi-agent PR analysis
+- 🐛 **Bug Hunt**: Reproduce → Fix → Test → Document
+- ✨ **Feature Dev**: Design → Implement → Test → Deploy
+- 🔧 **Refactor**: Analyze → Plan → Execute → Verify
+- 📚 **Documentation**: Code → Comments → README → Examples
+
+---
+
+## 📸 Visual Context
+
+Attach screenshots, diagrams, or mockups to any task - agents see the visual context and generate better solutions.
+
+---
+
+## 📡 MCP: Remote Control from Anywhere
+
+Automagik Forge acts as a **Model Context Protocol (MCP) server**, enabling AI coding agents to programmatically manage tasks. Control your Forge task board from your preferred AI coding agent without leaving your flow.
 
 ### Typical Workflow
 
-1. **Planning Phase**: Use your AI agent to brainstorm and create a development plan
-2. **Task Creation**: Agent breaks down the plan into actionable task cards via MCP
-3. **Bug Discovery**: Find issues while coding? Agent adds them to the backlog
-4. **Status Updates**: Agent updates task progress as work completes
-5. **Cross-Agent Collaboration**: Multiple agents coordinate on the same project board
+1. **Planning Phase**: Use your AI agent to help brainstorm and plan tasks
+2. **Task Creation**: You (or your agent) creates task cards via MCP
+3. **Bug Discovery**: Find issues while coding? Add them to the backlog via MCP
+4. **Status Updates**: Update task progress as work completes
+5. **Cross-Agent Access**: Any MCP-compatible agent can access your task board
 
 ### Example Use Cases
 
-- 🎯 **"Plan a complete authentication system with OAuth, JWT, and role-based access"** → Agent creates epic with subtasks
-- 🐛 **"Add bug: API returns 500 on malformed JSON input in /api/users endpoint"** → Agent creates detailed bug card
-- ✅ **"Mark all database migration tasks as complete and move API tasks to in-progress"** → Agent batch updates statuses
-- 📋 **"Show me all high-priority tasks that are blocked or have dependencies"** → Agent queries with filters
+- 🎯 **"Help me plan a complete authentication system with OAuth, JWT, and role-based access"** → You create epic with subtasks
+- 🐛 **"Add bug: API returns 500 on malformed JSON input in /api/users endpoint"** → Create detailed bug card via MCP
+- ✅ **"Mark all database migration tasks as complete and move API tasks to in-progress"** → Batch update statuses via MCP
+- 📋 **"Show me all high-priority tasks that are blocked or have dependencies"** → Query tasks with filters via MCP
 
 ### Available MCP Tools
 
@@ -281,6 +388,64 @@ For any MCP-compatible tool, use this standard configuration:
 - The configuration format is typically JSON or YAML
 
 </details>
+
+---
+
+## 🎭 Vibe Coding++™ Workflows
+
+### Human Orchestration, Not AI Automation
+
+```mermaid
+graph LR
+    A[You Plan Tasks] --> B[You Choose Agents]
+    B --> C[Try Multiple Attempts]
+    C --> D[Compare Results]
+    D --> E[You Review & Decide]
+    E --> F[Ship Clean PRs]
+```
+
+### Example: Building a Feature
+```bash
+You: "I need a user dashboard with charts and real-time updates"
+
+Your Process:
+1. YOU create tasks (or use AI to help plan):
+   ├── Task 1: Design dashboard layout
+   ├── Task 2: Create chart components  
+   ├── Task 3: Build WebSocket service
+   ├── Task 4: Write integration tests
+   └── Task 5: Generate documentation
+
+2. YOU experiment with different agents:
+   Task 2 - Chart Components:
+   ├── Attempt 1: Try Claude → Too abstract
+   ├── Attempt 2: Try Cursor → Good but verbose
+   └── Attempt 3: Try Gemini → Perfect! ✅
+   
+3. YOU review and choose what to merge
+
+The Power: You're in control, not hoping AI gets it right
+```
+
+---
+
+## 📊 Vibe Coding vs Vibe Coding++™
+
+| Feature | Forge (Vibe Coding++™) | Lovable (Regular Vibe Coding) |
+|---------|----------------------|-------------------------------|
+| **Human Control** | ✅ You orchestrate every decision | ❌ AI acts autonomously |
+| **Task Persistence** | ✅ Kanban board - tasks live forever | ❌ Lost in chat conversations |
+| **Multiple Attempts** | ✅ Try different agents per task | ❌ One AI, one approach |
+| **8 AI Coding Agents** | ✅ Claude, Cursor CLI, Gemini, etc. | ❌ Single AI model |
+| **Specialized Agents** | ✅ Custom prompts for any agent | ❌ Fixed behavior |
+| **Git Worktree Isolation** | ✅ Every attempt isolated | ❌ Direct code changes |
+| **MCP Server** | ✅ 6 tools for remote control | ❌ No external integration |
+| **2-Week Curse Protection** | ✅ You understand the code | ❌ AI black box magic |
+| **Code Review** | ✅ Review before merge | ❌ Auto-applies changes |
+| **Visual Context** | ✅ Attach screenshots to tasks | ✅ Can generate images |
+| **Open Source** | ✅ 100% open-source | ❌ Proprietary |
+| **Pricing Model** | ✅ Free forever | 💰 Usage-based credits |
+| **Self-Hostable** | ✅ Your infrastructure | ❌ Cloud-only |
 
 ---
 
@@ -619,7 +784,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ---
 
 <p align="center">
-  <strong>🚀 Ready to 10X your AI coding workflow?</strong><br>
+  <strong>🚀 Stop the 2-week curse. Start shipping code you actually understand.</strong><br>
+  <strong>Vibe Coding++™ - Where Human Control Meets AI Power</strong><br><br>
   <a href="https://github.com/namastexlabs/automagik-forge">Star us on GitHub</a> • 
   <a href="https://discord.gg/automagik">Join our Discord</a> • 
   <a href="https://twitter.com/automagikdev">Follow on Twitter</a>
