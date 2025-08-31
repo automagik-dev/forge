@@ -1,4 +1,4 @@
-use directories::ProjectDirs;
+use directories::{BaseDirs, ProjectDirs};
 use rust_embed::RustEmbed;
 
 const PROJECT_ROOT: &str = env!("CARGO_MANIFEST_DIR");
@@ -6,8 +6,21 @@ const PROJECT_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 pub fn asset_dir() -> std::path::PathBuf {
     let path = if cfg!(debug_assertions) {
         std::path::PathBuf::from(PROJECT_ROOT).join("../../dev_assets")
+    } else if cfg!(target_os = "linux") {
+        // Linux: Use ~/.automagik-forge directly
+        BaseDirs::new()
+            .expect("OS didn't give us a home directory")
+            .home_dir()
+            .join(".automagik-forge")
+    } else if cfg!(target_os = "windows") {
+        // Windows: Use %APPDATA%\automagik-forge (without organization folder)
+        BaseDirs::new()
+            .expect("OS didn't give us a data directory")
+            .data_dir()
+            .join("automagik-forge")
     } else {
-        ProjectDirs::from("ai", "bloop", "vibe-kanban")
+        // macOS: Use OS-specific directory
+        ProjectDirs::from("ai", "namastex", "automagik-forge")
             .expect("OS didn't give us a home directory")
             .data_dir()
             .to_path_buf()
@@ -19,9 +32,9 @@ pub fn asset_dir() -> std::path::PathBuf {
     }
 
     path
-    // ✔ macOS → ~/Library/Application Support/MyApp
-    // ✔ Linux → ~/.local/share/myapp   (respects XDG_DATA_HOME)
-    // ✔ Windows → %APPDATA%\Example\MyApp
+    // ✔ Linux → ~/.automagik-forge
+    // ✔ Windows → %APPDATA%\automagik-forge
+    // ✔ macOS → ~/Library/Application Support/automagik-forge
 }
 
 pub fn config_path() -> std::path::PathBuf {
