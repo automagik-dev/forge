@@ -483,26 +483,21 @@ Interested in contributing or building from source? Check out our [Developer Gui
 
 ## 🗺️ Roadmap
 
+### Completed ✅
 - [x] Multi-agent orchestration
 - [x] Kanban task management
 - [x] Git worktree isolation
 - [x] MCP server implementation
 - [x] Real-time progress streaming
+
+### Next Up 🚀
+- [ ] **Wish System & Genie** - Natural language wishes become epics with subtasks, interactive AI assistant navigates the UI
+- [ ] **Bilateral sync** - Two-way sync with GitHub Issues, Jira, Notion, Linear
+- [ ] **Epics & Subtasks** - Hierarchical task organization with dependency management
 - [ ] Agent performance analytics
-- [ ] Smart task routing based on agent strengths
-- [ ] Automated code review with AI
-- [ ] Context preservation between sessions
-- [ ] Task dependency resolution
-- [ ] Cloud deployment options
 - [ ] Team collaboration features
-- [ ] Custom agent integrations SDK
-- [ ] Advanced workflow templates
-- [ ] Enterprise SSO support
-- [ ] Plugin marketplace
-- [ ] Community task templates
+- [ ] Community templates
 - [ ] Integration with CI/CD pipelines
-- [ ] Advanced metrics and observability
-- [ ] Multi-repository orchestration
 
 ---
 
