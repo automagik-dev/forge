@@ -475,8 +475,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ## 🙏 Acknowledgments
 
-Built with love by the team at [Namastex Labs](https://namastexlabs.com).
-
 Special thanks to:
 - Vibe Kanban team, for inspiring us to build Forge.
 - All our early adopters and contributors
