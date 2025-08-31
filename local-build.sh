@@ -4,65 +4,30 @@ set -e  # Exit on any error
 
 echo "🧹 Cleaning previous builds..."
 rm -rf npx-cli/dist
-
-# Detect current platform
-PLATFORM=$(uname -s | tr '[:upper:]' '[:lower:]')
-ARCH=$(uname -m)
-
-# Map to NPM package platform names
-if [ "$PLATFORM" = "linux" ] && [ "$ARCH" = "x86_64" ]; then
-    PLATFORM_DIR="linux-x64"
-elif [ "$PLATFORM" = "linux" ] && [ "$ARCH" = "aarch64" ]; then
-    PLATFORM_DIR="linux-arm64"
-elif [ "$PLATFORM" = "darwin" ] && [ "$ARCH" = "x86_64" ]; then
-    PLATFORM_DIR="macos-x64"
-elif [ "$PLATFORM" = "darwin" ] && [ "$ARCH" = "arm64" ]; then
-    PLATFORM_DIR="macos-arm64"
-else
-    echo "⚠️  Unknown platform: $PLATFORM-$ARCH, defaulting to linux-x64"
-    PLATFORM_DIR="linux-x64"
-fi
-
-echo "📦 Building for platform: $PLATFORM_DIR"
-mkdir -p npx-cli/dist/$PLATFORM_DIR
+mkdir -p npx-cli/dist/macos-arm64
 
 echo "🔨 Building frontend..."
 (cd frontend && npm run build)
 
 echo "🔨 Building Rust binaries..."
-cargo build --release
-cargo build --release --bin mcp_task_server
+cargo build --release --manifest-path Cargo.toml
+cargo build --release --bin mcp_task_server --manifest-path Cargo.toml
 
 echo "📦 Creating distribution package..."
 
-PLATFORMS=("linux-x64" "linux-arm64" "windows-x64" "windows-arm64" "macos-x64" "macos-arm64")
+# Copy the main binary
+cp target/release/server vibe-kanban
+zip -q vibe-kanban.zip vibe-kanban
+rm -f vibe-kanban 
+mv vibe-kanban.zip npx-cli/dist/macos-arm64/vibe-kanban.zip
 
-# Package binaries for current platform
-echo "📦 Packaging binaries for $PLATFORM_DIR..."
-mkdir -p npx-cli/dist/$PLATFORM_DIR
-
-# Copy and zip the main binary
-cp target/release/server automagik-forge
-zip -q automagik-forge.zip automagik-forge
-rm -f automagik-forge
-mv automagik-forge.zip npx-cli/dist/$PLATFORM_DIR/automagik-forge.zip
-
-# Copy and zip the MCP binary
-cp target/release/mcp_task_server automagik-forge-mcp
-zip -q automagik-forge-mcp.zip automagik-forge-mcp
-rm -f automagik-forge-mcp
-mv automagik-forge-mcp.zip npx-cli/dist/$PLATFORM_DIR/automagik-forge-mcp.zip
-
-# Create placeholder directories for other platforms
-for platform in "${PLATFORMS[@]}"; do
-  if [ "$platform" != "$PLATFORM_DIR" ]; then
-    mkdir -p npx-cli/dist/$platform
-    echo "Binaries for $platform need to be built on that platform" > npx-cli/dist/$platform/README.txt
-  fi
-done
+# Copy the MCP binary
+cp target/release/mcp_task_server vibe-kanban-mcp
+zip -q vibe-kanban-mcp.zip vibe-kanban-mcp
+rm -f vibe-kanban-mcp
+mv vibe-kanban-mcp.zip npx-cli/dist/macos-arm64/vibe-kanban-mcp.zip
 
 echo "✅ NPM package ready!"
 echo "📁 Files created:"
-echo "   - npx-cli/dist/$PLATFORM_DIR/automagik-forge.zip"
-echo "   - npx-cli/dist/$PLATFORM_DIR/automagik-forge-mcp.zip"
-echo "📋 Other platform placeholders created under npx-cli/dist/"
+echo "   - npx-cli/dist/macos-arm64/vibe-kanban.zip"
+echo "   - npx-cli/dist/macos-arm64/vibe-kanban-mcp.zip"
