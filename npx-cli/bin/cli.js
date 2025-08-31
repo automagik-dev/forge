@@ -98,9 +98,8 @@ function extractAndRun(baseName, launch) {
 }
 
 if (isMcpMode) {
-  extractAndRun("automagik-forge-mcp", (bin) => {
-    const env = { ...process.env };
-    const proc = spawn(bin, [], { stdio: "inherit", env });
+  extractAndRun("vibe-kanban-mcp", (bin) => {
+    const proc = spawn(bin, [], { stdio: "inherit" });
     proc.on("exit", (c) => process.exit(c || 0));
     proc.on("error", (e) => {
       console.error("❌ MCP server error:", e.message);
@@ -113,20 +112,13 @@ if (isMcpMode) {
     process.on("SIGTERM", () => proc.kill("SIGTERM"));
   });
 } else {
-  console.log(`📦 Extracting automagik-forge...`);
-  extractAndRun("automagik-forge", (bin) => {
-    console.log(`🚀 Launching automagik-forge...`);
-    
-    // Set default environment variables if not already set
-    const env = { ...process.env };
-    if (!env.BACKEND_PORT && !env.PORT) {
-      env.BACKEND_PORT = "8887";
-    }
-    
+  console.log(`📦 Extracting vibe-kanban...`);
+  extractAndRun("vibe-kanban", (bin) => {
+    console.log(`🚀 Launching vibe-kanban...`);
     if (platform === "win32") {
-      execSync(`"${bin}"`, { stdio: "inherit", env });
+      execSync(`"${bin}"`, { stdio: "inherit" });
     } else {
-      execSync(`"${bin}"`, { stdio: "inherit", env });
+      execSync(`"${bin}"`, { stdio: "inherit" });
     }
   });
 }
