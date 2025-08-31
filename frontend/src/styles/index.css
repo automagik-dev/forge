@@ -292,6 +292,47 @@
     --_console-success: 135 94% 65%; /* #50FA7B - AnsiGreen */
     --_console-error: 0 100% 67%; /* #FF5555 - AnsiRed */
   }
+
+  /* Alucard theme - Official Alucard Classic (light version of Dracula) */
+  .alucard {
+    --_background: 48 100% 96%; /* #FFFBEB - Background (light cream) */
+    --_foreground: 0 0% 12%; /* #1F1F1F - Foreground (near black) */
+    --_primary: 54 37% 90%; /* #EFEDDC - Floating elements (light) */
+    --_primary-foreground: 0 0% 12%; /* #1F1F1F - Dark text */
+    --_secondary: 54 37% 90%; /* #EFEDDC - Secondary (light) */
+    --_secondary-foreground: 49 18% 36%; /* #6C664B - Comment color */
+    --_muted: 46 25% 90%; /* #ECE9DF - Background Lighter */
+    --_muted-foreground: 0 0% 12%; /* #1F1F1F - Dark text */
+    --_accent: 48 100% 96%; /* #FFFBEB - Background */
+    --_accent-foreground: 0 0% 12%; /* #1F1F1F - Dark text */
+    --_destructive: 6 66% 48%; /* #CB3A2A - Red */
+    --_destructive-foreground: 48 100% 96%; /* #FFFBEB - Light background */
+    --_border: 52 19% 84%; /* #DEDCCF - Background Light (subtle borders) */
+    --_input: 52 19% 84%; /* #DEDCCF - Background Light */
+    --_ring: 252 54% 54%; /* #644AC9 - Purple (focus rings) */
+
+    /* Status (alucard) */
+    --_success: 114 84% 24%; /* #14710A - Green */
+    --_success-foreground: 48 100% 96%; /* #FFFBEB - Light background */
+    --_warning: 48 73% 30%; /* #846E15 - Yellow */
+    --_warning-foreground: 48 100% 96%; /* #FFFBEB - Light background */
+    --_info: 198 96% 30%; /* #036A96 - Cyan */
+    --_info-foreground: 48 100% 96%; /* #FFFBEB - Light background */
+    --_neutral: 51 13% 78%; /* #CECCC0 - Background Dark */
+    --_neutral-foreground: 0 0% 12%; /* #1F1F1F - Dark text */
+
+    /* Console (alucard) */
+    --_console-background: 48 100% 98%; /* Even lighter for console */
+    --_console-foreground: 0 0% 12%; /* #1F1F1F - Dark text */
+    --_console-success: 114 84% 24%; /* #14710A - Green */
+    --_console-error: 6 66% 48%; /* #CB3A2A - Red */
+    
+    /* Additional Alucard syntax highlighting colors */
+    --alucard-pink: 336 78% 36%; /* #A3144D - Keywords, storage types */
+    --alucard-orange: 24 78% 36%; /* #A34D14 - Numbers, constants, booleans */
+    --alucard-comment: 49 18% 36%; /* #6C664B - Comments, current line */
+    --alucard-current-line: 49 18% 36%; /* #6C664B - Current line highlighting */
+  }
 }
 
 /* 2) PUBLIC TOKENS: prefer VS Code, else fall back to theme tokens */
