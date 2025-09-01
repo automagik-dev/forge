@@ -11,16 +11,31 @@ help:
 	@echo "Automagik Forge Build Automation"
 	@echo ""
 	@echo "Available targets:"
-	@echo "  bump VERSION=x.y.z  - Bump version across all package files"
-	@echo "  build               - Build frontend and Rust binaries"
-	@echo "  publish             - Build and publish to NPM"
+	@echo "  bump VERSION=x.y.z  - Bump version and auto-commit"
+	@echo "  build               - Build frontend and Rust binaries (current platform)"
+	@echo "  publish             - Interactive Claude-powered publishing pipeline"
+	@echo "  beta                - Auto-incremented beta release (no version bump needed)"
 	@echo "  clean               - Clean build artifacts"
 	@echo "  help                - Show this help message"
 	@echo ""
-	@echo "Examples:"
-	@echo "  make bump VERSION=0.3.1"
-	@echo "  make build"
-	@echo "  make publish"
+	@echo "🚀 Complete Release Workflows:"
+	@echo ""
+	@echo "📦 Full Release:"
+	@echo "  1. make bump VERSION=0.3.5    # Bump version and commit"
+	@echo "  2. make publish               # Interactive Claude release!"
+	@echo ""
+	@echo "🧪 Beta Testing:"
+	@echo "  1. make bump VERSION=0.3.5    # Set base version"
+	@echo "  2. [make changes and commit]"
+	@echo "  3. make beta                  # Auto-publishes 0.3.5-beta.1"
+	@echo "  4. [test, fix, commit more]"
+	@echo "  5. make beta                  # Auto-publishes 0.3.5-beta.2"
+	@echo "  6. make publish               # Final 0.3.5 release"
+	@echo ""
+	@echo "Beta releases:"
+	@echo "  • Auto-increment beta numbers (0.3.5-beta.1, 0.3.5-beta.2...)"
+	@echo "  • Create GitHub pre-releases"
+	@echo "  • Publish to NPM with 'beta' tag: npx automagik-forge@beta"
 
 # Check if VERSION is provided for bump target
 check-version:
@@ -49,6 +64,11 @@ bump: check-version
 	@echo "   - frontend/package.json"
 	@echo "   - npx-cli/package.json"
 	@echo "   - crates/*/Cargo.toml"
+	@echo ""
+	@echo "🔄 Committing version bump..."
+	@git add package.json frontend/package.json npx-cli/package.json crates/*/Cargo.toml
+	@git commit -m "chore: bump version to $(VERSION)"
+	@echo "✅ Version $(VERSION) committed successfully!"
 
 # Build the project (current platform only)
 build:
@@ -76,34 +96,13 @@ clean:
 	@rm -f *.zip
 	@echo "✅ Clean complete!"
 
-# Build and publish to NPM (current platform only - NOT RECOMMENDED)
-publish-current: build
-	@echo "⚠️  WARNING: Publishing with only current platform binaries!"
-	@echo "📦 Publishing to NPM..."
-	@cd npx-cli && npm publish
-	@echo "🎉 Published to NPM (current platform only)"
-	@echo "⚠️  This package will only work on your current platform!"
-
-# Publish to NPM (requires all platform binaries)
+# Interactive end-to-end publishing with Claude-generated release notes
 publish:
-	@echo "📦 Preparing to publish to NPM..."
-	@if [ ! -d "npx-cli/dist/linux-x64" ] || [ ! -d "npx-cli/dist/macos-arm64" ] || [ ! -d "npx-cli/dist/windows-x64" ]; then \
-		echo "❌ Missing platform binaries!"; \
-		echo "   Found:"; \
-		ls -la npx-cli/dist/ 2>/dev/null || echo "   No dist folder"; \
-		echo ""; \
-		echo "To publish with all platforms:"; \
-		echo "  1. Use GitHub Actions: git tag v$(shell grep '"version"' npx-cli/package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/') && git push --tags"; \
-		echo "  2. Or build manually on each platform and collect binaries"; \
-		echo ""; \
-		echo "To publish current platform only (NOT RECOMMENDED):"; \
-		echo "  make publish-current"; \
-		exit 1; \
-	fi
-	@echo "✅ All platforms found, publishing..."
-	@cd npx-cli && npm publish
-	@echo "🎉 Successfully published to NPM!"
-	@echo "📋 Users can now install with: npx automagik-forge"
+	@./gh-build.sh publish
+
+# Beta release with auto-incremented version
+beta:
+	@./gh-build.sh beta
 
 # Development helpers
 dev:
