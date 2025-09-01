@@ -41,6 +41,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+      
+      - name: Verify cargo
+        run: cargo -V || (source "$HOME/.cargo/env" && cargo -V)
           
       - name: Add Rust target (additional step for reliability)
         run: rustup target add ${{ matrix.target }}
@@ -49,7 +52,6 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo/bin/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
