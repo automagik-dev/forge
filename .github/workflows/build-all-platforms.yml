@@ -150,29 +150,37 @@ jobs:
           fi
         shell: bash
       
-      - name: Package binaries
+      - name: Package binaries (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "npx-cli/dist/${{ matrix.platform }}" | Out-Null
+
+          Copy-Item "target/${{ matrix.target }}/release/server.exe" "automagik-forge.exe"
+          Compress-Archive -Path "automagik-forge.exe" -DestinationPath "automagik-forge.zip" -Force
+          Move-Item "automagik-forge.zip" "npx-cli/dist/${{ matrix.platform }}/"
+          Remove-Item "automagik-forge.exe"
+
+          Copy-Item "target/${{ matrix.target }}/release/mcp_task_server.exe" "automagik-forge-mcp.exe"
+          Compress-Archive -Path "automagik-forge-mcp.exe" -DestinationPath "automagik-forge-mcp.zip" -Force
+          Move-Item "automagik-forge-mcp.zip" "npx-cli/dist/${{ matrix.platform }}/"
+          Remove-Item "automagik-forge-mcp.exe"
+
+      - name: Package binaries (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
         run: |
           mkdir -p npx-cli/dist/${{ matrix.platform }}
-          
-          # Determine binary extension
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            EXT=".exe"
-          else
-            EXT=""
-          fi
-          
-          # Package main binary
-          cp target/${{ matrix.target }}/release/server${EXT} automagik-forge${EXT}
-          zip automagik-forge.zip automagik-forge${EXT}
+
+          cp target/${{ matrix.target }}/release/server automagik-forge
+          zip -q automagik-forge.zip automagik-forge
           mv automagik-forge.zip npx-cli/dist/${{ matrix.platform }}/
-          rm automagik-forge${EXT}
-          
-          # Package MCP binary
-          cp target/${{ matrix.target }}/release/mcp_task_server${EXT} automagik-forge-mcp${EXT}
-          zip automagik-forge-mcp.zip automagik-forge-mcp${EXT}
+          rm automagik-forge
+
+          cp target/${{ matrix.target }}/release/mcp_task_server automagik-forge-mcp
+          zip -q automagik-forge-mcp.zip automagik-forge-mcp
           mv automagik-forge-mcp.zip npx-cli/dist/${{ matrix.platform }}/
-          rm automagik-forge-mcp${EXT}
-        shell: bash
+          rm automagik-forge-mcp
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
