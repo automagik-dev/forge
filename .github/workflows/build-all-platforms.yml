@@ -227,9 +227,20 @@ jobs:
           done
           ls -la *
       
+      - name: Determine NPM tag
+        id: npm-tag
+        run: |
+          if [[ ${{ github.ref_name }} =~ -beta\. ]]; then
+            echo "tag=beta" >> $GITHUB_OUTPUT
+            echo "Publishing as beta version"
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "Publishing as latest version"
+          fi
+          
       - name: Publish to NPM
         run: |
           cd npx-cli
-          npm publish
+          npm publish --tag ${{ steps.npm-tag.outputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

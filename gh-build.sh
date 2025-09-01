@@ -7,6 +7,8 @@
 #   monitor [run_id] - Monitor a workflow run
 #   download [run_id] - Download artifacts from a run
 #   publish [type] - Publish management (check|manual|auto)
+#   publish - Interactive Claude-powered release pipeline
+#   beta - Auto-incremented beta release pipeline
 #   status - Show latest workflow status
 
 set -e
@@ -124,6 +126,292 @@ case "${1:-status}" in
         esac
         ;;
         
+    publish)
+        echo "🚀 Starting interactive publishing pipeline..."
+        
+        # Get current version from package.json
+        VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
+        if [ -z "$VERSION" ]; then
+            echo "❌ Could not determine version from package.json"
+            exit 1
+        fi
+        
+        echo "📋 Publishing version: $VERSION"
+        
+        # Get commits since last tag for Claude
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s (%an)" -10)
+            echo "📝 No previous tags found, using last 10 commits"
+        else
+            COMMITS=$(git log $LAST_TAG..HEAD --pretty=format:"- %s (%an)")
+            echo "📝 Generating notes since $LAST_TAG"
+        fi
+        
+        if [ -z "$COMMITS" ]; then
+            echo "❌ No new commits found since last tag!"
+            echo "💡 Did you forget to commit your changes?"
+            exit 1
+        fi
+        
+        # Create Claude prompt with Agno-style template
+        CLAUDE_PROMPT="Generate professional GitHub release notes for automagik-forge version $VERSION using this Agno-style template:
+
+## New Features
+[List major new functionality and capabilities]
+
+## Improvements  
+[List enhancements, optimizations, and developer experience improvements]
+
+## Bug Fixes
+[List bug fixes and stability improvements]
+
+## What's Changed
+[List technical changes and implementation details]
+
+Based on these commits:
+$COMMITS
+
+Focus on:
+- User-facing benefits
+- Technical improvements
+- Developer workflow enhancements
+- Be concise but informative
+- Use bullet points with clear descriptions"
+
+        # Generate initial release notes with Claude
+        echo "🤖 Generating release notes with Claude..."
+        CLAUDE_OUTPUT=$(claude -p "$CLAUDE_PROMPT" --output-format json 2>/dev/null) || {
+            echo "❌ Claude command failed. Make sure 'claude' CLI is installed and working."
+            exit 1
+        }
+        
+        # Parse Claude response
+        CONTENT=$(echo "$CLAUDE_OUTPUT" | jq -r '.result')
+        SESSION_ID=$(echo "$CLAUDE_OUTPUT" | jq -r '.session_id')
+        
+        if [ -z "$CONTENT" ] || [ "$CONTENT" = "null" ]; then
+            echo "❌ Failed to generate release notes with Claude"
+            exit 1
+        fi
+        
+        # Save initial content
+        echo "$CONTENT" > .release-notes-draft.md
+        
+        # Interactive loop with keyboard selection
+        while true; do
+            clear
+            echo "═══════════════════════════════════════════════════════════════"
+            echo "📋 Generated Release Notes for v$VERSION"
+            echo "═══════════════════════════════════════════════════════════════"
+            echo ""
+            cat .release-notes-draft.md
+            echo ""
+            echo "═══════════════════════════════════════════════════════════════"
+            echo ""
+            
+            PS3="Choose an action: "
+            select choice in "✅ Accept and continue" "✏️  Edit manually" "🔄 Regenerate with feedback" "❌ Cancel release"; do
+                case $choice in
+                    "✅ Accept and continue")
+                        echo "✅ Release notes accepted!"
+                        break 2
+                        ;;
+                    "✏️  Edit manually")
+                        echo "🖊️  Opening release notes in editor..."
+                        ${EDITOR:-nano} .release-notes-draft.md
+                        break
+                        ;;
+                    "🔄 Regenerate with feedback")
+                        echo ""
+                        echo "Enter feedback for Claude (or press Enter for different style):"
+                        read -r feedback
+                        
+                        if [ -n "$feedback" ]; then
+                            FEEDBACK_PROMPT="$feedback"
+                        else
+                            FEEDBACK_PROMPT="Generate the release notes again but make them more technical and detailed, focusing on specific implementation changes and developer benefits."
+                        fi
+                        
+                        echo "🤖 Regenerating with feedback..."
+                        if [ "$SESSION_ID" != "null" ] && [ -n "$SESSION_ID" ]; then
+                            CLAUDE_OUTPUT=$(claude -p "$FEEDBACK_PROMPT" --resume "$SESSION_ID" --output-format json 2>/dev/null) || {
+                                echo "⚠️  Session continuation failed, generating fresh notes..."
+                                CLAUDE_OUTPUT=$(claude -p "$CLAUDE_PROMPT
+
+Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
+                            }
+                        else
+                            CLAUDE_OUTPUT=$(claude -p "$CLAUDE_PROMPT
+
+Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
+                        fi
+                        
+                        NEW_CONTENT=$(echo "$CLAUDE_OUTPUT" | jq -r '.result')
+                        if [ -n "$NEW_CONTENT" ] && [ "$NEW_CONTENT" != "null" ]; then
+                            echo "$NEW_CONTENT" > .release-notes-draft.md
+                            SESSION_ID=$(echo "$CLAUDE_OUTPUT" | jq -r '.session_id')
+                            echo "✅ Release notes regenerated!"
+                        else
+                            echo "❌ Failed to regenerate release notes"
+                        fi
+                        break
+                        ;;
+                    "❌ Cancel release")
+                        echo "❌ Release cancelled by user"
+                        rm -f .release-notes-draft.md
+                        exit 1
+                        ;;
+                    *)
+                        echo "❌ Invalid choice. Please select 1-4."
+                        ;;
+                esac
+            done
+        done
+        
+        # Create GitHub release
+        echo "🏗️  Creating GitHub release..."
+        gh release create "v$VERSION" --title "Release v$VERSION" --notes-file .release-notes-draft.md || {
+            echo "❌ Failed to create GitHub release"
+            echo "💡 Make sure you have 'gh' CLI installed and authenticated"
+            rm -f .release-notes-draft.md
+            exit 1
+        }
+        
+        echo "✅ GitHub release created: https://github.com/$REPO/releases/tag/v$VERSION"
+        
+        # Create and push git tag
+        echo "🏷️  Creating and pushing git tag..."
+        git tag "v$VERSION" 2>/dev/null || echo "⚠️  Tag v$VERSION already exists"
+        git push origin "v$VERSION"
+        
+        # Cleanup draft
+        rm -f .release-notes-draft.md
+        
+        # Trigger and monitor GitHub Actions build
+        echo ""
+        echo "⏳ Triggering and monitoring GitHub Actions build..."
+        
+        # Get the latest run ID after tag push
+        sleep 5  # Wait for workflow to start
+        RUN_ID=$(gh run list --workflow="$WORKFLOW_FILE" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')
+        
+        if [ -n "$RUN_ID" ]; then
+            echo "📋 Monitoring build run: $RUN_ID"
+            echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$RUN_ID"
+            echo ""
+            
+            # Monitor the build automatically
+            ./gh-build.sh monitor "$RUN_ID"
+        else
+            echo "⚠️  Could not find triggered build, monitoring latest..."
+            ./gh-build.sh monitor
+        fi
+        ;;
+        
+    beta)
+        echo "🧪 Starting beta release pipeline..."
+        
+        # Get current version from package.json (base version)
+        BASE_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
+        if [ -z "$BASE_VERSION" ]; then
+            echo "❌ Could not determine version from package.json"
+            exit 1
+        fi
+        
+        # Check NPM for existing beta versions and auto-increment
+        echo "🔍 Checking for existing beta versions..."
+        EXISTING_BETAS=$(npm view automagik-forge versions --json 2>/dev/null | jq -r ".[]" 2>/dev/null | grep "^$BASE_VERSION-beta\." || echo "")
+        
+        if [ -z "$EXISTING_BETAS" ]; then
+            BETA_NUMBER=1
+            echo "📝 No existing betas found, starting with beta.1"
+        else
+            LAST_BETA=$(echo "$EXISTING_BETAS" | sort -V | tail -1)
+            BETA_NUMBER=$(echo "$LAST_BETA" | sed "s/$BASE_VERSION-beta\.//" | awk '{print $1+1}')
+            echo "📝 Found existing betas, incrementing to beta.$BETA_NUMBER"
+        fi
+        
+        BETA_VERSION="$BASE_VERSION-beta.$BETA_NUMBER"
+        echo "🎯 Publishing beta version: $BETA_VERSION"
+        
+        # Get recent commits for simple release notes
+        COMMITS=$(git log --oneline -5 | sed 's/^/- /')
+        
+        # Create simple beta release notes
+        BETA_NOTES="# Beta Release $BETA_VERSION
+
+## 🧪 Pre-release for Testing
+
+This is a beta release for testing upcoming features in v$BASE_VERSION.
+
+## Recent Changes
+$COMMITS
+
+**⚠️ This is a pre-release version intended for testing. Use with caution in production.**
+
+Install with: \`npx automagik-forge@beta\`"
+        
+        # Save beta notes
+        echo "$BETA_NOTES" > .beta-release-notes.md
+        
+        echo "📋 Beta release notes:"
+        echo "═══════════════════════════════════════════════════════════════"
+        cat .beta-release-notes.md
+        echo "═══════════════════════════════════════════════════════════════"
+        echo ""
+        
+        # Confirm beta release
+        read -p "Proceed with beta release $BETA_VERSION? [Y/n]: " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Nn]$ ]]; then
+            echo "❌ Beta release cancelled"
+            rm -f .beta-release-notes.md
+            exit 1
+        fi
+        
+        # Create GitHub pre-release
+        echo "🏗️  Creating GitHub pre-release..."
+        gh release create "v$BETA_VERSION" --title "Beta v$BETA_VERSION" --notes-file .beta-release-notes.md --prerelease || {
+            echo "❌ Failed to create GitHub pre-release"
+            rm -f .beta-release-notes.md
+            exit 1
+        }
+        
+        echo "✅ GitHub pre-release created: https://github.com/$REPO/releases/tag/v$BETA_VERSION"
+        
+        # Create and push git tag
+        echo "🏷️  Creating and pushing git tag..."
+        git tag "v$BETA_VERSION" 2>/dev/null || echo "⚠️  Tag v$BETA_VERSION already exists"
+        git push origin "v$BETA_VERSION"
+        
+        # Cleanup
+        rm -f .beta-release-notes.md
+        
+        # Monitor GitHub Actions build
+        echo ""
+        echo "⏳ Triggering and monitoring GitHub Actions build..."
+        
+        # Wait for workflow to start
+        sleep 5
+        RUN_ID=$(gh run list --workflow="$WORKFLOW_FILE" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')
+        
+        if [ -n "$RUN_ID" ]; then
+            echo "📋 Monitoring build run: $RUN_ID"
+            echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$RUN_ID"
+            echo ""
+            echo "💡 Beta will be published to NPM with 'beta' tag after successful build"
+            echo "💡 Install with: npx automagik-forge@beta"
+            echo ""
+            
+            # Monitor the build automatically
+            ./gh-build.sh monitor "$RUN_ID"
+        else
+            echo "⚠️  Could not find triggered build, monitoring latest..."
+            ./gh-build.sh monitor
+        fi
+        ;;
+        
     monitor)
         RUN_ID="${2:-$(gh run list --workflow="$WORKFLOW_FILE" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')}"
         
@@ -228,6 +516,8 @@ case "${1:-status}" in
         echo "    - check   - Check current publish status"
         echo "    - manual  - Manually publish from artifacts"  
         echo "    - auto    - Monitor automatic tag-based publish"
+        echo "  ./gh-build.sh publish         - Interactive Claude-powered release"
+        echo "  ./gh-build.sh beta            - Auto-incremented beta release"
         echo "  ./gh-build.sh status          - Show this status"
         ;;
 esac
