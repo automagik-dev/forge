@@ -33,5 +33,30 @@
     "node": ">=18",
     "pnpm": ">=8"
   },
-  "packageManager": "pnpm@10.12.4+sha512.5ea8b0deed94ed68691c9bad4c955492705c5eeb8a87ef86bc62c74a26b037b08ff9570f108b2e4dbd1dd1a9186fea925e527f141c648e85af45631074680184"
+  "packageManager": "pnpm@10.12.4+sha512.5ea8b0deed94ed68691c9bad4c955492705c5eeb8a87ef86bc62c74a26b037b08ff9570f108b2e4dbd1dd1a9186fea925e527f141c648e85af45631074680184",
+  "description": "Vibe coding orchestrator for human-AI development. You create tasks, choose agents, experiment with approaches, ship code you understand.",
+  "keywords": [
+    "vibe-coding",
+    "ai-pair-programming",
+    "human-ai-collaboration",
+    "mcp-server",
+    "task-orchestration",
+    "agent-agnostic",
+    "git-worktree-isolation",
+    "kanban-for-ai",
+    "claude-code",
+    "cursor-cli",
+    "gemini",
+    "coding-agents"
+  ],
+  "author": "Genie <genie@namastex.ai>",
+  "homepage": "https://forge.automag.ik",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/namastexlabs/automagik-forge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/namastexlabs/automagik-forge/issues"
+  },
+  "license": "MIT"
 }
