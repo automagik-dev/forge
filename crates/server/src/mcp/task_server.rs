@@ -25,6 +25,8 @@ pub struct CreateTaskRequest {
     pub title: String,
     #[schemars(description = "Optional description of the task")]
     pub description: Option<String>,
+    #[schemars(description = "Optional branch naming template (e.g., 'fix/auth-bug', 'feat/new-feature'). If not provided, will use 'forge-{title}-{uuid}' pattern")]
+    pub branch_template: Option<String>,
 }
 
 #[derive(Debug, Serialize, schemars::JsonSchema)]
@@ -218,6 +220,7 @@ impl TaskServer {
             project_id,
             title,
             description,
+            branch_template,
         }): Parameters<CreateTaskRequest>,
     ) -> Result<CallToolResult, ErrorData> {
         // Parse project_id from string to UUID
@@ -269,6 +272,7 @@ impl TaskServer {
             project_id: project_uuid,
             title: title.clone(),
             description: description.clone(),
+            branch_template: branch_template.clone(),
             parent_task_attempt: None,
             image_ids: None,
         };
@@ -572,6 +576,7 @@ impl TaskServer {
         let new_title = title.unwrap_or(current_task.title);
         let new_description = description.or(current_task.description);
         let new_status = status_enum.unwrap_or(current_task.status);
+        let new_branch_template = current_task.branch_template;
         let new_parent_task_attempt = current_task.parent_task_attempt;
 
         match Task::update(
@@ -581,6 +586,7 @@ impl TaskServer {
             new_title,
             new_description,
             new_status,
+            new_branch_template,
             new_parent_task_attempt,
         )
         .await

@@ -57,7 +57,7 @@ bump: check-version
 	@echo ""
 	@echo "If you really need to manually bump the version, continue..."
 	@echo "Press Ctrl+C to cancel, or Enter to proceed with manual bump"
-	@read -r
+	@read -r dummy
 	@echo "📝 Manually updating version in all package files..."
 	@# Update root package.json
 	@sed -i 's/"version": "[^"]*"/"version": "$(VERSION)"/' package.json

@@ -41,17 +41,20 @@ interface TaskFormDialogProps {
   onCreateTask?: (
     title: string,
     description: string,
+    branchTemplate: string | undefined,
     imageIds?: string[]
   ) => Promise<void>;
   onCreateAndStartTask?: (
     title: string,
     description: string,
+    branchTemplate: string | undefined,
     imageIds?: string[]
   ) => Promise<void>;
   onUpdateTask?: (
     title: string,
     description: string,
     status: TaskStatus,
+    branchTemplate: string | undefined,
     imageIds?: string[]
   ) => Promise<void>;
 }
@@ -69,6 +72,7 @@ export function TaskFormDialog({
 }: TaskFormDialogProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [branchTemplate, setBranchTemplate] = useState('');
   const [status, setStatus] = useState<TaskStatus>('todo');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmittingAndStart, setIsSubmittingAndStart] = useState(false);
@@ -232,15 +236,16 @@ export function TaskFormDialog({
       }
 
       if (isEditMode && onUpdateTask) {
-        await onUpdateTask(title, description, status, imageIds);
+        await onUpdateTask(title, description, status, branchTemplate.trim() || undefined, imageIds);
       } else if (!isEditMode && onCreateTask) {
-        await onCreateTask(title, description, imageIds);
+        await onCreateTask(title, description, branchTemplate.trim() || undefined, imageIds);
       }
 
       // Reset form on successful creation
       if (!isEditMode) {
         setTitle('');
         setDescription('');
+        setBranchTemplate('');
         setStatus('todo');
         setImages([]);
         setNewlyUploadedImageIds([]);
@@ -253,6 +258,7 @@ export function TaskFormDialog({
   }, [
     title,
     description,
+    branchTemplate,
     status,
     isEditMode,
     onCreateTask,
@@ -270,12 +276,13 @@ export function TaskFormDialog({
       if (!isEditMode && onCreateAndStartTask) {
         const imageIds =
           newlyUploadedImageIds.length > 0 ? newlyUploadedImageIds : undefined;
-        await onCreateAndStartTask(title, description, imageIds);
+        await onCreateAndStartTask(title, description, branchTemplate.trim() || undefined, imageIds);
       }
 
       // Reset form on successful creation
       setTitle('');
       setDescription('');
+      setBranchTemplate('');
       setStatus('todo');
       setImages([]);
       setNewlyUploadedImageIds([]);
@@ -287,6 +294,7 @@ export function TaskFormDialog({
   }, [
     title,
     description,
+    branchTemplate,
     isEditMode,
     onCreateAndStartTask,
     onOpenChange,
@@ -408,6 +416,25 @@ export function TaskFormDialog({
                 projectId={projectId}
               />
             </div>
+
+            {!isEditMode && (
+              <div>
+                <Label htmlFor="branch-template" className="text-sm font-medium">
+                  Branch Name Template
+                </Label>
+                <Input
+                  id="branch-template"
+                  value={branchTemplate}
+                  onChange={(e) => setBranchTemplate(e.target.value)}
+                  placeholder="e.g., fix/auth-bug, feat/new-feature (optional)"
+                  className="mt-1.5"
+                  disabled={isSubmitting || isSubmittingAndStart}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  If not provided, will use 'forge-title-uuid' pattern
+                </p>
+              </div>
+            )}
 
             <ImageUploadSection
               images={images}

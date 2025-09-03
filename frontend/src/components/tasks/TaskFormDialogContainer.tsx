@@ -70,13 +70,14 @@ export function TaskFormDialogContainer() {
   });
 
   const handleCreateTask = useCallback(
-    async (title: string, description: string, imageIds?: string[]) => {
+    async (title: string, description: string, branchTemplate: string | undefined, imageIds?: string[]) => {
       if (!projectId) return;
 
       createTaskMutation.mutate({
         project_id: projectId,
         title,
         description: description || null,
+        branch_template: branchTemplate || null,
         parent_task_attempt: null,
         image_ids: imageIds || null,
       });
@@ -85,13 +86,14 @@ export function TaskFormDialogContainer() {
   );
 
   const handleCreateAndStartTask = useCallback(
-    async (title: string, description: string, imageIds?: string[]) => {
+    async (title: string, description: string, branchTemplate: string | undefined, imageIds?: string[]) => {
       if (!projectId) return;
 
       createAndStartTaskMutation.mutate({
         project_id: projectId,
         title,
         description: description || null,
+        branch_template: branchTemplate || null,
         parent_task_attempt: null,
         image_ids: imageIds || null,
       });
@@ -104,6 +106,7 @@ export function TaskFormDialogContainer() {
       title: string,
       description: string,
       status: TaskStatus,
+      branchTemplate: string | undefined,
       imageIds?: string[]
     ) => {
       if (!dialogState.task) return;
@@ -114,6 +117,7 @@ export function TaskFormDialogContainer() {
           title,
           description: description || null,
           status,
+          branch_template: branchTemplate || null,
           parent_task_attempt: null,
           image_ids: imageIds || null,
         },
