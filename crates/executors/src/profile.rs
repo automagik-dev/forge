@@ -1,8 +1,8 @@
-use std::{collections::HashMap, fs, sync::RwLock};
+use std::{collections::HashMap, fs, str::FromStr, sync::RwLock};
 
 use convert_case::{Case, Casing};
 use lazy_static::lazy_static;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, de::Error as DeError};
 use thiserror::Error;
 use ts_rs::TS;
 
@@ -54,12 +54,24 @@ const DEFAULT_PROFILES_JSON: &str = include_str!("../default_profiles.json");
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS, Hash, Eq)]
 pub struct ExecutorProfileId {
     /// The executor type (e.g., "CLAUDE_CODE", "AMP")
-    #[serde(alias = "profile")]
+    #[serde(alias = "profile", deserialize_with = "de_base_coding_agent_kebab")]
     // Backwards compatability with ProfileVariantIds, esp stored in DB under ExecutorAction
     pub executor: BaseCodingAgent,
     /// Optional variant name (e.g., "PLAN", "ROUTER")
     #[serde(skip_serializing_if = "Option::is_none")]
     pub variant: Option<String>,
+}
+
+// Convert legacy profile/executor names from kebab-case to SCREAMING_SNAKE_CASE, can be deleted 14 days from 3/9/25
+fn de_base_coding_agent_kebab<'de, D>(de: D) -> Result<BaseCodingAgent, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let raw = String::deserialize(de)?;
+    // kebab-case -> SCREAMING_SNAKE_CASE
+    let norm = raw.replace('-', "_").to_ascii_uppercase();
+    BaseCodingAgent::from_str(&norm)
+        .map_err(|_| D::Error::custom(format!("unknown executor '{raw}' (normalized to '{norm}')")))
 }
 
 impl ExecutorProfileId {
@@ -380,5 +392,18 @@ impl ExecutorConfigs {
                 )
             })
             .cloned()
+    }
+
+    pub fn get_coding_agent_or_default(
+        &self,
+        executor_profile_id: &ExecutorProfileId,
+    ) -> CodingAgent {
+        self.get_coding_agent(executor_profile_id)
+            .unwrap_or_else(|| {
+                let mut default_executor_profile_id = executor_profile_id.clone();
+                default_executor_profile_id.variant = Some("DEFAULT".to_string());
+                self.get_coding_agent(&default_executor_profile_id)
+                    .expect("No default variant found")
+            })
     }
 }

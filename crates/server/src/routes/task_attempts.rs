@@ -1,15 +1,15 @@
 use std::path::PathBuf;
 
 use axum::{
+    BoxError, Extension, Json, Router,
     extract::{Query, State},
     http::StatusCode,
     middleware::from_fn_with_state,
     response::{
-        sse::{Event, KeepAlive},
         Json as ResponseJson, Sse,
+        sse::{Event, KeepAlive},
     },
     routing::{get, post},
-    BoxError, Extension, Json, Router,
 };
 use db::models::{
     execution_process::{ExecutionProcess, ExecutionProcessRunReason},
@@ -22,9 +22,9 @@ use db::models::{
 use deployment::Deployment;
 use executors::{
     actions::{
+        ExecutorAction, ExecutorActionType,
         coding_agent_follow_up::CodingAgentFollowUpRequest,
         script::{ScriptContext, ScriptRequest, ScriptRequestLanguage},
-        ExecutorAction, ExecutorActionType,
     },
     profile::ExecutorProfileId,
 };
@@ -41,7 +41,7 @@ use ts_rs::TS;
 use utils::response::ApiResponse;
 use uuid::Uuid;
 
-use crate::{error::ApiError, middleware::load_task_attempt_middleware, DeploymentImpl};
+use crate::{DeploymentImpl, error::ApiError, middleware::load_task_attempt_middleware};
 
 #[derive(Debug, Deserialize, Serialize, TS)]
 pub struct RebaseTaskAttemptRequest {
@@ -164,7 +164,7 @@ pub async fn follow_up(
     )
     .await?
     .ok_or(ApiError::TaskAttempt(TaskAttemptError::ValidationError(
-        "Couldn't find a prior CodingAgent execution that already has a session_id".to_string(),
+        "Couldn't find a prior session_id, please create a new task attempt".to_string(),
     )))?;
 
     // Get ExecutionProcess for profile data
@@ -297,11 +297,11 @@ pub async fn merge_task_attempt(
     let mut commit_message = format!("{} (vibe-kanban {})", ctx.task.title, first_uuid_section);
 
     // Add description on next line if it exists
-    if let Some(description) = &ctx.task.description {
-        if !description.trim().is_empty() {
-            commit_message.push_str("\n\n");
-            commit_message.push_str(description);
-        }
+    if let Some(description) = &ctx.task.description
+        && !description.trim().is_empty()
+    {
+        commit_message.push_str("\n\n");
+        commit_message.push_str(description);
     }
 
     // Get branch name from task attempt
@@ -716,15 +716,11 @@ pub async fn rebase_task_attempt(
         github_config.token(),
     )?;
 
-    if let Some(new_base_branch) = &effective_base_branch {
-        if new_base_branch != &ctx.task_attempt.base_branch {
-            TaskAttempt::update_base_branch(
-                &deployment.db().pool,
-                task_attempt.id,
-                new_base_branch,
-            )
+    if let Some(new_base_branch) = &effective_base_branch
+        && new_base_branch != &ctx.task_attempt.base_branch
+    {
+        TaskAttempt::update_base_branch(&deployment.db().pool, task_attempt.id, new_base_branch)
             .await?;
-        }
     }
 
     Ok(ResponseJson(ApiResponse::success(())))

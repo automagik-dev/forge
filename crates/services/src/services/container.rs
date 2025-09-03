@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
@@ -128,8 +128,8 @@ pub trait ContainerService {
 
     async fn copy_project_files(
         &self,
-        source_dir: &PathBuf,
-        target_dir: &PathBuf,
+        source_dir: &Path,
+        target_dir: &Path,
         copy_files: &str,
     ) -> Result<(), ContainerError>;
 
@@ -320,39 +320,24 @@ pub trait ContainerService {
             // Spawn normalizer on populated store
             match executor_action.typ() {
                 ExecutorActionType::CodingAgentInitialRequest(request) => {
-                    let executor_profile = ExecutorConfigs::get_cached()
-                        .get_coding_agent(&request.executor_profile_id);
+                    let executor = ExecutorConfigs::get_cached()
+                        .get_coding_agent_or_default(&request.executor_profile_id);
 
-                    if let Some(executor) = executor_profile {
-                        // Inject the initial user prompt before normalization (DB fallback path)
-                        let user_entry = create_user_message(request.prompt.clone());
-                        temp_store
-                            .push_patch(ConversationPatch::add_normalized_entry(0, user_entry));
+                    // Inject the initial user prompt before normalization (DB fallback path)
+                    let user_entry = create_user_message(request.prompt.clone());
+                    temp_store.push_patch(ConversationPatch::add_normalized_entry(0, user_entry));
 
-                        executor.normalize_logs(temp_store.clone(), &current_dir);
-                    } else {
-                        tracing::error!(
-                            "Failed to resolve profile '{:?}' for normalization",
-                            request.executor_profile_id
-                        );
-                    }
+                    executor.normalize_logs(temp_store.clone(), &current_dir);
                 }
                 ExecutorActionType::CodingAgentFollowUpRequest(request) => {
-                    if let Some(executor) =
-                        ExecutorConfigs::get_cached().get_coding_agent(&request.executor_profile_id)
-                    {
-                        // Inject the follow-up user prompt before normalization (DB fallback path)
-                        let user_entry = create_user_message(request.prompt.clone());
-                        temp_store
-                            .push_patch(ConversationPatch::add_normalized_entry(0, user_entry));
+                    let executor = ExecutorConfigs::get_cached()
+                        .get_coding_agent_or_default(&request.executor_profile_id);
 
-                        executor.normalize_logs(temp_store.clone(), &current_dir);
-                    } else {
-                        tracing::error!(
-                            "Failed to resolve profile '{:?}' for normalization",
-                            request.executor_profile_id
-                        );
-                    }
+                    // Inject the follow-up user prompt before normalization (DB fallback path)
+                    let user_entry = create_user_message(request.prompt.clone());
+                    temp_store.push_patch(ConversationPatch::add_normalized_entry(0, user_entry));
+
+                    executor.normalize_logs(temp_store.clone(), &current_dir);
                 }
                 _ => {
                     tracing::debug!(
