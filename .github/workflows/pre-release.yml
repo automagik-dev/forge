@@ -276,7 +276,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-          if [[ "${{ matrix.os }}" == "windows-latest-l" ]]; then
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             cp target/${{ matrix.target }}/release/server.exe dist/automagik-forge-${{ matrix.name }}.exe
             cp target/${{ matrix.target }}/release/mcp_task_server.exe dist/automagik-forge-mcp-${{ matrix.name }}.exe
           else
