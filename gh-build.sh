@@ -132,7 +132,7 @@ case "${1:-status}" in
         
         # Check current version vs npm
         CURRENT_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
-        NPM_VERSION=$(npm view vibe-kanban version 2>/dev/null || echo "0.0.0")
+        NPM_VERSION=$(npm view automagik-forge version 2>/dev/null || echo "0.0.0")
         
         echo "📊 Version Status:"
         echo "  Current local:  $CURRENT_VERSION"
@@ -447,7 +447,7 @@ Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
         echo ""
         echo "🎉 Release complete!"
         echo "📦 Version $NEW_VERSION published"
-        echo "📦 NPM package: https://www.npmjs.com/package/vibe-kanban"
+        echo "📦 NPM package: https://www.npmjs.com/package/automagik-forge"
         echo "🏷️  GitHub release: https://github.com/$REPO/releases/tag/$NEW_TAG"
         ;;
         

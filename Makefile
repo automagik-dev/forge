@@ -33,7 +33,7 @@ help:
 	@echo "  • Auto-increments beta versions (0.3.5-beta.1, 0.3.5-beta.2...)"
 	@echo "  • Creates GitHub pre-releases"
 	@echo "  • Publishes to NPM with 'beta' tag"
-	@echo "  • Install with: npx vibe-kanban@beta"
+	@echo "  • Install with: npx automagik-forge@beta"
 	@echo ""
 	@echo "Note: 'make bump' is now deprecated - use 'make publish' instead"
 
