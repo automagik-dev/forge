@@ -139,28 +139,97 @@ case "${1:-status}" in
         echo "  Latest on npm:  $NPM_VERSION"
         echo ""
         
-        # Select version bump type
-        PS3="Select version bump type: "
-        select VERSION_TYPE in "patch (bug fixes)" "minor (new features)" "major (breaking changes)" "Cancel"; do
-            case $VERSION_TYPE in
-                "patch (bug fixes)")
-                    VERSION_TYPE="patch"
-                    break
-                    ;;
-                "minor (new features)")
-                    VERSION_TYPE="minor"
-                    break
-                    ;;
-                "major (breaking changes)")
-                    VERSION_TYPE="major"
-                    break
-                    ;;
-                "Cancel")
-                    echo "❌ Publishing cancelled"
-                    exit 1
-                    ;;
-            esac
-        done
+        # Check if version was already bumped but not published
+        if [ "$CURRENT_VERSION" != "$NPM_VERSION" ]; then
+            # Version comparison to check if local is newer
+            NEWER_VERSION=$(printf '%s\n' "$CURRENT_VERSION" "$NPM_VERSION" | sort -V | tail -n1)
+            if [ "$NEWER_VERSION" = "$CURRENT_VERSION" ]; then
+                echo "⚠️  Local version ($CURRENT_VERSION) is newer than npm ($NPM_VERSION)"
+                echo ""
+                
+                # Check for recent failed workflows
+                RECENT_FAILED=$(gh run list --workflow="Create GitHub Pre-Release" --repo "$REPO" --status failure --limit 1 --json databaseId,createdAt,headBranch --jq '.[0]')
+                if [ -n "$RECENT_FAILED" ] && [ "$RECENT_FAILED" != "null" ]; then
+                    FAILED_RUN_ID=$(echo "$RECENT_FAILED" | jq -r '.databaseId')
+                    FAILED_TIME=$(echo "$RECENT_FAILED" | jq -r '.createdAt')
+                    echo "❌ Found recent failed pre-release workflow:"
+                    echo "   Run ID: $FAILED_RUN_ID"
+                    echo "   Time: $FAILED_TIME"
+                    echo ""
+                fi
+                
+                # Check for existing tags with this version
+                EXISTING_TAGS=$(git tag -l "v$CURRENT_VERSION*" 2>/dev/null)
+                if [ -n "$EXISTING_TAGS" ]; then
+                    echo "📋 Found existing tags for version $CURRENT_VERSION:"
+                    echo "$EXISTING_TAGS" | sed 's/^/   /'
+                    echo ""
+                fi
+                
+                # Check for existing pre-releases
+                EXISTING_PRERELEASE=$(gh release list --repo "$REPO" --limit 10 --json tagName,isPrerelease,name | jq -r '.[] | select(.isPrerelease == true) | select(.tagName | startswith("v'$CURRENT_VERSION'"))')
+                if [ -n "$EXISTING_PRERELEASE" ]; then
+                    PRERELEASE_TAG=$(echo "$EXISTING_PRERELEASE" | jq -r '.tagName' | head -1)
+                    echo "📦 Found existing pre-release: $PRERELEASE_TAG"
+                    echo ""
+                fi
+                
+                echo "Choose how to proceed:"
+                PS3="Select action: "
+                select RESUME_ACTION in "Resume: Use existing version and continue" "Retry: Trigger new pre-release workflow" "Reset: Start fresh with new version bump" "Cancel"; do
+                    case $RESUME_ACTION in
+                        "Resume: Use existing version and continue")
+                            echo "✅ Resuming with version $CURRENT_VERSION"
+                            SKIP_VERSION_BUMP=true
+                            VERSION_TYPE="none"
+                            break
+                            ;;
+                        "Retry: Trigger new pre-release workflow")
+                            echo "🔄 Retrying pre-release workflow with existing version"
+                            VERSION_TYPE="patch"  # Will be ignored since version already bumped
+                            SKIP_VERSION_BUMP=false
+                            break
+                            ;;
+                        "Reset: Start fresh with new version bump")
+                            echo "🔄 Starting fresh - will select new version bump"
+                            SKIP_VERSION_BUMP=false
+                            # Continue to normal version selection
+                            break
+                            ;;
+                        "Cancel")
+                            echo "❌ Publishing cancelled"
+                            exit 1
+                            ;;
+                    esac
+                done
+                echo ""
+            fi
+        fi
+        
+        # Select version bump type (skip if resuming)
+        if [ "${SKIP_VERSION_BUMP:-false}" != "true" ] && [ -z "$VERSION_TYPE" ]; then
+            PS3="Select version bump type: "
+            select VERSION_TYPE in "patch (bug fixes)" "minor (new features)" "major (breaking changes)" "Cancel"; do
+                case $VERSION_TYPE in
+                    "patch (bug fixes)")
+                        VERSION_TYPE="patch"
+                        break
+                        ;;
+                    "minor (new features)")
+                        VERSION_TYPE="minor"
+                        break
+                        ;;
+                    "major (breaking changes)")
+                        VERSION_TYPE="major"
+                        break
+                        ;;
+                    "Cancel")
+                        echo "❌ Publishing cancelled"
+                        exit 1
+                        ;;
+                esac
+            done
+        fi
         
         echo ""
         echo "📈 Selected: $VERSION_TYPE version bump"
@@ -305,85 +374,97 @@ Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
             done
         done
         
-        # Step 1: Trigger pre-release workflow which handles version bumping and building
-        echo ""
-        echo "🏗️  Step 1: Triggering pre-release workflow..."
-        echo "This will:"
-        echo "  • Bump version ($VERSION_TYPE)"
-        echo "  • Build all platforms"
-        echo "  • Create pre-release with .tgz package"
-        echo ""
-        
-        # Trigger the pre-release workflow
-        gh workflow run "Create GitHub Pre-Release" --repo "$REPO" -f version_type="$VERSION_TYPE" || {
-            echo "❌ Failed to trigger pre-release workflow"
-            rm -f .release-notes-draft.md
-            exit 1
-        }
-        
-        echo "⏳ Waiting for pre-release workflow to start..."
-        sleep 10
-        
-        # Find the workflow run
-        PRERELEASE_RUN=$(gh run list --workflow="Create GitHub Pre-Release" --repo "$REPO" --limit 1 --json databaseId,status --jq '.[0] | select(.status != "completed") | .databaseId')
-        
-        if [ -z "$PRERELEASE_RUN" ]; then
-            echo "⚠️  Could not find the pre-release workflow run"
-            echo "Check manually at: https://github.com/$REPO/actions"
-            exit 1
-        fi
-        
-        echo "📋 Pre-release workflow started: Run ID $PRERELEASE_RUN"
-        echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$PRERELEASE_RUN"
-        echo ""
-        echo "⏳ Monitoring build (this will take ~30-45 minutes)..."
-        
-        # Monitor the pre-release build and get the new version
-        NEW_VERSION=""
-        NEW_TAG=""
-        while true; do
-            STATUS=$(gh run view "$PRERELEASE_RUN" --repo "$REPO" --json status --jq '.status')
+        # Step 1: Handle pre-release workflow or use existing pre-release
+        if [ "${SKIP_VERSION_BUMP:-false}" = "true" ] && [ -n "$PRERELEASE_TAG" ]; then
+            echo ""
+            echo "📦 Using existing pre-release: $PRERELEASE_TAG"
+            NEW_TAG="$PRERELEASE_TAG"
+            NEW_VERSION="$CURRENT_VERSION"
+            echo "✅ Skipping workflow, proceeding to release conversion"
+        else
+            echo ""
+            echo "🏗️  Step 1: Triggering pre-release workflow..."
+            echo "This will:"
+            if [ "${SKIP_VERSION_BUMP:-false}" != "true" ]; then
+                echo "  • Bump version ($VERSION_TYPE)"
+            else
+                echo "  • Use existing version $CURRENT_VERSION"
+            fi
+            echo "  • Build all platforms"
+            echo "  • Create pre-release with .tgz package"
+            echo ""
             
-            echo -n "[$(date +%H:%M:%S)] Status: $STATUS"
+            # Trigger the pre-release workflow
+            gh workflow run "Create GitHub Pre-Release" --repo "$REPO" -f version_type="$VERSION_TYPE" || {
+                echo "❌ Failed to trigger pre-release workflow"
+                rm -f .release-notes-draft.md
+                exit 1
+            }
             
-            case "$STATUS" in
-                completed)
-                    CONCLUSION=$(gh run view "$PRERELEASE_RUN" --repo "$REPO" --json conclusion --jq '.conclusion')
-                    if [ "$CONCLUSION" = "success" ]; then
-                        echo " ✅"
-                        
-                        # Get the new version/tag from the workflow output
-                        echo ""
-                        echo "🔍 Finding created pre-release..."
-                        
-                        # Get the most recent pre-release
-                        RELEASE_INFO=$(gh release list --repo "$REPO" --limit 1 --json tagName,isPrerelease,name --jq '.[] | select(.isPrerelease == true)')
-                        NEW_TAG=$(echo "$RELEASE_INFO" | jq -r '.tagName')
-                        
-                        if [ -z "$NEW_TAG" ]; then
-                            echo "❌ Could not find the created pre-release"
+            echo "⏳ Waiting for pre-release workflow to start..."
+            sleep 10
+            
+            # Find the workflow run
+            PRERELEASE_RUN=$(gh run list --workflow="Create GitHub Pre-Release" --repo "$REPO" --limit 1 --json databaseId,status --jq '.[0] | select(.status != "completed") | .databaseId')
+            
+            if [ -z "$PRERELEASE_RUN" ]; then
+                echo "⚠️  Could not find the pre-release workflow run"
+                echo "Check manually at: https://github.com/$REPO/actions"
+                exit 1
+            fi
+            
+            echo "📋 Pre-release workflow started: Run ID $PRERELEASE_RUN"
+            echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$PRERELEASE_RUN"
+            echo ""
+            echo "⏳ Monitoring build (this will take ~30-45 minutes)..."
+            
+            # Monitor the pre-release build and get the new version
+            NEW_VERSION=""
+            NEW_TAG=""
+            while true; do
+                STATUS=$(gh run view "$PRERELEASE_RUN" --repo "$REPO" --json status --jq '.status')
+                
+                echo -n "[$(date +%H:%M:%S)] Status: $STATUS"
+                
+                case "$STATUS" in
+                    completed)
+                        CONCLUSION=$(gh run view "$PRERELEASE_RUN" --repo "$REPO" --json conclusion --jq '.conclusion')
+                        if [ "$CONCLUSION" = "success" ]; then
+                            echo " ✅"
+                            
+                            # Get the new version/tag from the workflow output
+                            echo ""
+                            echo "🔍 Finding created pre-release..."
+                            
+                            # Get the most recent pre-release
+                            RELEASE_INFO=$(gh release list --repo "$REPO" --limit 1 --json tagName,isPrerelease,name --jq '.[] | select(.isPrerelease == true)')
+                            NEW_TAG=$(echo "$RELEASE_INFO" | jq -r '.tagName')
+                            
+                            if [ -z "$NEW_TAG" ]; then
+                                echo "❌ Could not find the created pre-release"
+                                exit 1
+                            fi
+                            
+                            # Extract version from tag (remove timestamp suffix)
+                            NEW_VERSION=$(echo "$NEW_TAG" | sed 's/^v//' | sed 's/-[0-9]*$//')
+                            
+                            echo "✅ Pre-release created: $NEW_TAG (version: $NEW_VERSION)"
+                            break
+                        else
+                            echo " ❌"
+                            echo "Pre-release workflow failed! Check the logs:"
+                            echo "https://github.com/$REPO/actions/runs/$PRERELEASE_RUN"
+                            rm -f .release-notes-draft.md
                             exit 1
                         fi
-                        
-                        # Extract version from tag (remove timestamp suffix)
-                        NEW_VERSION=$(echo "$NEW_TAG" | sed 's/^v//' | sed 's/-[0-9]*$//')
-                        
-                        echo "✅ Pre-release created: $NEW_TAG (version: $NEW_VERSION)"
-                        break
-                    else
-                        echo " ❌"
-                        echo "Pre-release workflow failed! Check the logs:"
-                        echo "https://github.com/$REPO/actions/runs/$PRERELEASE_RUN"
-                        rm -f .release-notes-draft.md
-                        exit 1
-                    fi
-                    ;;
-                *)
-                    echo " - waiting..."
-                    sleep 30
-                    ;;
-            esac
-        done
+                        ;;
+                    *)
+                        echo " - waiting..."
+                        sleep 30
+                        ;;
+                esac
+            done
+        fi
         
         echo ""
         echo "🔄 Step 2: Converting pre-release to full release..."
