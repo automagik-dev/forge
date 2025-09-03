@@ -176,7 +176,7 @@ impl GitService {
     }
 
     pub fn create_initial_commit(&self, repo: &Repository) -> Result<(), GitServiceError> {
-        let signature = self.signature_with_fallback(repo)?
+        let signature = self.signature_with_fallback(repo)?;
 
         let tree_id = {
             let tree_builder = repo.treebuilder(None)?;
