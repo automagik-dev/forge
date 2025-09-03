@@ -1,290 +1,384 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fs,
-    path::PathBuf,
-    sync::RwLock,
-};
+use std::{collections::HashMap, fs, sync::RwLock};
 
+use convert_case::{Case, Casing};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 use ts_rs::TS;
 
-use crate::executors::CodingAgent;
+use crate::executors::{BaseCodingAgent, CodingAgent};
+
+/// Return the canonical form for variant keys.
+/// – "DEFAULT" is kept as-is  
+/// – everything else is converted to SCREAMING_SNAKE_CASE
+pub fn canonical_variant_key<S: AsRef<str>>(raw: S) -> String {
+    let key = raw.as_ref();
+    if key.eq_ignore_ascii_case("DEFAULT") {
+        "DEFAULT".to_string()
+    } else {
+        // Convert to SCREAMING_SNAKE_CASE by first going to snake_case then uppercase
+        key.to_case(Case::Snake).to_case(Case::ScreamingSnake)
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum ProfileError {
+    #[error("Built-in executor '{executor}' cannot be deleted")]
+    CannotDeleteExecutor { executor: BaseCodingAgent },
+
+    #[error("Built-in configuration '{executor}:{variant}' cannot be deleted")]
+    CannotDeleteBuiltInConfig {
+        executor: BaseCodingAgent,
+        variant: String,
+    },
+
+    #[error("Validation error: {0}")]
+    Validation(String),
+
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+
+    #[error(transparent)]
+    Serde(#[from] serde_json::Error),
+}
 
 lazy_static! {
-    static ref PROFILES_CACHE: RwLock<ProfileConfigs> = RwLock::new(ProfileConfigs::load());
+    static ref EXECUTOR_PROFILES_CACHE: RwLock<ExecutorConfigs> =
+        RwLock::new(ExecutorConfigs::load());
 }
 
-// Default profiels embedded at compile time
+// New format default profiles (v3 - flattened)
 const DEFAULT_PROFILES_JSON: &str = include_str!("../default_profiles.json");
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-pub struct VariantAgentConfig {
-    /// Unique identifier for this profile (e.g., "MyClaudeCode", "FastAmp")
-    pub label: String,
-    /// The coding agent this profile is associated with
-    #[serde(flatten)]
-    pub agent: CodingAgent,
-    /// Optional profile-specific MCP config file path (absolute; supports leading ~). Overrides the default `BaseCodingAgent` config path
-    pub mcp_config_path: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-pub struct ProfileConfig {
-    #[serde(flatten)]
-    /// default profile variant
-    pub default: VariantAgentConfig,
-    /// additional variants for this profile, e.g. plan, review, subagent
-    pub variants: Vec<VariantAgentConfig>,
-}
-
-impl ProfileConfig {
-    pub fn get_variant(&self, variant: &str) -> Option<&VariantAgentConfig> {
-        self.variants.iter().find(|m| m.label == variant)
-    }
-
-    pub fn get_mcp_config_path(&self) -> Option<PathBuf> {
-        match self.default.mcp_config_path.as_ref() {
-            Some(path) => Some(PathBuf::from(path)),
-            None => self.default.agent.default_mcp_config_path(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-pub struct ProfileVariantLabel {
-    pub profile: String,
+// Executor-centric profile identifier
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS, Hash, Eq)]
+pub struct ExecutorProfileId {
+    /// The executor type (e.g., "CLAUDE_CODE", "AMP")
+    #[serde(alias = "profile")]
+    // Backwards compatability with ProfileVariantIds, esp stored in DB under ExecutorAction
+    pub executor: BaseCodingAgent,
+    /// Optional variant name (e.g., "PLAN", "ROUTER")
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub variant: Option<String>,
 }
 
-impl ProfileVariantLabel {
-    pub fn default(profile: String) -> Self {
+impl ExecutorProfileId {
+    /// Create a new executor profile ID with default variant
+    pub fn new(executor: BaseCodingAgent) -> Self {
         Self {
-            profile,
+            executor,
             variant: None,
         }
     }
-    pub fn with_variant(profile: String, mode: String) -> Self {
+
+    /// Create a new executor profile ID with specific variant
+    pub fn with_variant(executor: BaseCodingAgent, variant: String) -> Self {
         Self {
-            profile,
-            variant: Some(mode),
+            executor,
+            variant: Some(variant),
+        }
+    }
+
+    /// Get cache key for this executor profile
+    pub fn cache_key(&self) -> String {
+        match &self.variant {
+            Some(variant) => format!("{}:{}", self.executor, variant),
+            None => self.executor.clone().to_string(),
+        }
+    }
+}
+
+impl std::fmt::Display for ExecutorProfileId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.variant {
+            Some(variant) => write!(f, "{}:{}", self.executor, variant),
+            None => write!(f, "{}", self.executor),
         }
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
-pub struct ProfileConfigs {
-    pub profiles: Vec<ProfileConfig>,
+pub struct ExecutorConfig {
+    #[serde(flatten)]
+    pub configurations: HashMap<String, CodingAgent>,
 }
 
-impl ProfileConfigs {
-    pub fn get_cached() -> ProfileConfigs {
-        PROFILES_CACHE.read().unwrap().clone()
+impl ExecutorConfig {
+    /// Get variant configuration by name, or None if not found
+    pub fn get_variant(&self, variant: &str) -> Option<&CodingAgent> {
+        self.configurations.get(variant)
     }
 
-    pub fn reload() {
-        let mut cache = PROFILES_CACHE.write().unwrap();
-        *cache = Self::load();
+    /// Get the default configuration for this executor
+    pub fn get_default(&self) -> Option<&CodingAgent> {
+        self.configurations.get("DEFAULT")
     }
 
-    fn load() -> Self {
-        let profiles_path = utils::assets::profiles_path();
+    /// Create a new executor profile with just a default configuration
+    pub fn new_with_default(default_config: CodingAgent) -> Self {
+        let mut configurations = HashMap::new();
+        configurations.insert("DEFAULT".to_string(), default_config);
+        Self { configurations }
+    }
 
-        // load from profiles.json if it exists, otherwise use defaults
-        let content = match fs::read_to_string(&profiles_path) {
-            Ok(content) => content,
-            Err(e) => {
-                tracing::warn!("Failed to read profiles.json: {}, using defaults", e);
-                return Self::from_defaults();
-            }
-        };
-
-        match serde_json::from_str::<Self>(&content) {
-            Ok(profiles) => {
-                tracing::info!("Loaded all profiles from profiles.json");
-                profiles
-            }
-            Err(e) => {
-                tracing::warn!("Failed to parse profiles.json: {}, using defaults", e);
-                Self::from_defaults()
-            }
+    /// Add or update a variant configuration
+    pub fn set_variant(
+        &mut self,
+        variant_name: String,
+        config: CodingAgent,
+    ) -> Result<(), &'static str> {
+        let key = canonical_variant_key(&variant_name);
+        if key == "DEFAULT" {
+            return Err(
+                "Cannot override 'DEFAULT' variant using set_variant, use set_default instead",
+            );
         }
-    }
-
-    pub fn from_defaults() -> Self {
-        serde_json::from_str(DEFAULT_PROFILES_JSON).unwrap_or_else(|e| {
-            tracing::error!("Failed to parse embedded default_profiles.json: {}", e);
-            panic!("Default profiles JSON is invalid")
-        })
-    }
-
-    pub fn extend_from_file(&mut self) -> Result<(), std::io::Error> {
-        let profiles_path = utils::assets::profiles_path();
-        if !profiles_path.exists() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                format!("Profiles file not found at {profiles_path:?}"),
-            ));
-        }
-
-        let content = fs::read_to_string(&profiles_path)?;
-
-        let user_profiles: Self = serde_json::from_str(&content).map_err(|e| {
-            std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                format!("Failed to parse profiles.json: {e}"),
-            )
-        })?;
-
-        let default_labels: HashSet<String> = self
-            .profiles
-            .iter()
-            .map(|p| p.default.label.clone())
-            .collect();
-
-        // Only add user profiles with unique labels
-        for user_profile in user_profiles.profiles {
-            if !default_labels.contains(&user_profile.default.label) {
-                self.profiles.push(user_profile);
-            } else {
-                tracing::debug!(
-                    "Skipping user profile '{}' - default with same label exists",
-                    user_profile.default.label
-                );
-            }
-        }
-
+        self.configurations.insert(key, config);
         Ok(())
     }
 
-    pub fn get_profile(&self, label: &str) -> Option<&ProfileConfig> {
-        self.profiles.iter().find(|p| p.default.label == label)
+    /// Set the default configuration
+    pub fn set_default(&mut self, config: CodingAgent) {
+        self.configurations.insert("DEFAULT".to_string(), config);
     }
 
-    pub fn to_map(&self) -> HashMap<String, ProfileConfig> {
-        self.profiles
-            .iter()
-            .map(|p| (p.default.label.clone(), p.clone()))
+    /// Get all variant names (excluding "DEFAULT")
+    pub fn variant_names(&self) -> Vec<&String> {
+        self.configurations
+            .keys()
+            .filter(|k| *k != "DEFAULT")
             .collect()
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn default_profiles_have_expected_base_and_noninteractive_or_json_flags() {
-        // Build default profiles and make lookup by label easy
-        let profiles = ProfileConfigs::from_defaults().to_map();
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+pub struct ExecutorConfigs {
+    pub executors: HashMap<BaseCodingAgent, ExecutorConfig>,
+}
 
-        let get_profile_command = |label: &str| {
-            profiles
-                .get(label)
-                .map(|p| {
-                    use crate::executors::CodingAgent;
-                    match &p.default.agent {
-                        CodingAgent::ClaudeCode(claude) => claude.command.build_initial(),
-                        CodingAgent::Amp(amp) => amp.command.build_initial(),
-                        CodingAgent::Gemini(gemini) => gemini.command.build_initial(),
-                        CodingAgent::Codex(codex) => codex.command.build_initial(),
-                        CodingAgent::Opencode(opencode) => opencode.command.build_initial(),
-                        CodingAgent::Cursor(cursor) => cursor.command.build_initial(),
-                    }
-                })
-                .unwrap_or_else(|| panic!("Profile not found: {label}"))
-        };
-        let profiles = ProfileConfigs::from_defaults();
-        assert!(profiles.profiles.len() == 8);
-
-        let claude_code_command = get_profile_command("claude-code");
-        assert!(claude_code_command.contains("npx -y @anthropic-ai/claude-code@latest"));
-        assert!(claude_code_command.contains("-p"));
-        assert!(claude_code_command.contains("--dangerously-skip-permissions"));
-
-        let claude_code_router_command = get_profile_command("claude-code-router");
-        assert!(claude_code_router_command.contains("npx -y @musistudio/claude-code-router code"));
-        assert!(claude_code_router_command.contains("-p"));
-        assert!(claude_code_router_command.contains("--dangerously-skip-permissions"));
-
-        let amp_command = get_profile_command("amp");
-        assert!(amp_command.contains("npx -y @sourcegraph/amp@latest"));
-        assert!(amp_command.contains("--execute"));
-        assert!(amp_command.contains("--stream-json"));
-
-        let gemini_command = get_profile_command("gemini");
-        assert!(gemini_command.contains("npx -y @google/gemini-cli@latest"));
-        assert!(gemini_command.contains("--yolo"));
-
-        let codex_command = get_profile_command("codex");
-        assert!(codex_command.contains("npx -y @openai/codex exec"));
-        assert!(codex_command.contains("--json"));
-
-        let qwen_code_command = get_profile_command("qwen-code");
-        assert!(qwen_code_command.contains("npx -y @qwen-code/qwen-code@latest"));
-        assert!(qwen_code_command.contains("--yolo"));
-
-        let opencode_command = get_profile_command("opencode");
-        assert!(opencode_command.contains("npx -y opencode-ai@latest run"));
-        assert!(opencode_command.contains("--print-logs"));
-
-        let cursor_command = get_profile_command("cursor");
-        assert!(cursor_command.contains("cursor-agent"));
-        assert!(cursor_command.contains("-p"));
-        assert!(cursor_command.contains("--output-format=stream-json"));
+impl ExecutorConfigs {
+    /// Normalise all variant keys in-place
+    fn canonicalise(&mut self) {
+        for profile in self.executors.values_mut() {
+            let mut replacements = Vec::new();
+            for key in profile.configurations.keys().cloned().collect::<Vec<_>>() {
+                let canon = canonical_variant_key(&key);
+                if canon != key {
+                    replacements.push((key, canon));
+                }
+            }
+            for (old, new) in replacements {
+                if let Some(cfg) = profile.configurations.remove(&old) {
+                    // If both lowercase and canonical forms existed, keep canonical one
+                    profile.configurations.entry(new).or_insert(cfg);
+                }
+            }
+        }
     }
 
-    #[test]
-    fn test_flattened_agent_deserialization() {
-        let test_json = r#"{
-            "profiles": [
-                {
-                    "label": "test-claude",
-                    "mcp_config_path": null,
-                    "CLAUDE_CODE": {
-                        "command": {
-                            "base": "npx claude",
-                            "params": ["--test"]
-                        },
-                        "plan": true
-                    },
-                    "variants": []
-                },
-                {
-                    "label": "test-gemini",
-                    "mcp_config_path": null,
-                    "GEMINI": {
-                        "command": {
-                            "base": "npx gemini",
-                            "params": ["--test"]
-                        }
-                    },
-                    "variants": []
+    /// Get cached executor profiles
+    pub fn get_cached() -> ExecutorConfigs {
+        EXECUTOR_PROFILES_CACHE.read().unwrap().clone()
+    }
+
+    /// Reload executor profiles cache
+    pub fn reload() {
+        let mut cache = EXECUTOR_PROFILES_CACHE.write().unwrap();
+        *cache = Self::load();
+    }
+
+    /// Load executor profiles from file or defaults
+    pub fn load() -> Self {
+        let profiles_path = utils::assets::profiles_path();
+
+        // Load defaults first
+        let mut defaults = Self::from_defaults();
+        defaults.canonicalise();
+
+        // Try to load user overrides
+        let content = match fs::read_to_string(&profiles_path) {
+            Ok(content) => content,
+            Err(_) => {
+                tracing::info!("No user profiles.json found, using defaults only");
+                return defaults;
+            }
+        };
+
+        // Parse user overrides
+        match serde_json::from_str::<Self>(&content) {
+            Ok(mut user_overrides) => {
+                tracing::info!("Loaded user profile overrides from profiles.json");
+                user_overrides.canonicalise();
+                Self::merge_with_defaults(defaults, user_overrides)
+            }
+            Err(e) => {
+                tracing::warn!(
+                    "Failed to parse user profiles.json: {}, using defaults only",
+                    e
+                );
+                defaults
+            }
+        }
+    }
+
+    /// Save user profile overrides to file (only saves what differs from defaults)
+    pub fn save_overrides(&self) -> Result<(), ProfileError> {
+        let profiles_path = utils::assets::profiles_path();
+        let mut defaults = Self::from_defaults();
+        defaults.canonicalise();
+
+        // Canonicalise current config before computing overrides
+        let mut self_clone = self.clone();
+        self_clone.canonicalise();
+
+        // Compute differences from defaults
+        let overrides = Self::compute_overrides(&defaults, &self_clone)?;
+
+        // Validate the merged result would be valid
+        let merged = Self::merge_with_defaults(defaults, overrides.clone());
+        Self::validate_merged(&merged)?;
+
+        // Write overrides directly to file
+        let content = serde_json::to_string_pretty(&overrides)?;
+        fs::write(&profiles_path, content)?;
+
+        tracing::info!("Saved profile overrides to {:?}", profiles_path);
+        Ok(())
+    }
+
+    /// Deep merge defaults with user overrides
+    fn merge_with_defaults(mut defaults: Self, overrides: Self) -> Self {
+        for (executor_key, override_profile) in overrides.executors {
+            match defaults.executors.get_mut(&executor_key) {
+                Some(default_profile) => {
+                    // Merge configurations (user configs override defaults, new ones are added)
+                    for (config_name, config) in override_profile.configurations {
+                        default_profile.configurations.insert(config_name, config);
+                    }
                 }
-            ]
-        }"#;
-
-        let profiles: ProfileConfigs = serde_json::from_str(test_json).expect("Should deserialize");
-        assert_eq!(profiles.profiles.len(), 2);
-
-        // Test Claude profile
-        let claude_profile = profiles.get_profile("test-claude").unwrap();
-        match &claude_profile.default.agent {
-            crate::executors::CodingAgent::ClaudeCode(claude) => {
-                assert_eq!(claude.command.base, "npx claude");
-                assert_eq!(claude.command.params.as_ref().unwrap()[0], "--test");
-                assert!(claude.plan);
+                None => {
+                    // New executor, add completely
+                    defaults.executors.insert(executor_key, override_profile);
+                }
             }
-            _ => panic!("Expected ClaudeCode agent"),
+        }
+        defaults
+    }
+
+    /// Compute what overrides are needed to transform defaults into current config
+    fn compute_overrides(defaults: &Self, current: &Self) -> Result<Self, ProfileError> {
+        let mut overrides = Self {
+            executors: HashMap::new(),
+        };
+
+        // Fast scan for any illegal deletions BEFORE allocating/cloning
+        for (executor_key, default_profile) in &defaults.executors {
+            // Check if executor was removed entirely
+            if !current.executors.contains_key(executor_key) {
+                return Err(ProfileError::CannotDeleteExecutor {
+                    executor: *executor_key,
+                });
+            }
+
+            let current_profile = &current.executors[executor_key];
+
+            // Check if ANY built-in configuration was removed
+            for config_name in default_profile.configurations.keys() {
+                if !current_profile.configurations.contains_key(config_name) {
+                    return Err(ProfileError::CannotDeleteBuiltInConfig {
+                        executor: *executor_key,
+                        variant: config_name.clone(),
+                    });
+                }
+            }
         }
 
-        // Test Gemini profile
-        let gemini_profile = profiles.get_profile("test-gemini").unwrap();
-        match &gemini_profile.default.agent {
-            crate::executors::CodingAgent::Gemini(gemini) => {
-                assert_eq!(gemini.command.base, "npx gemini");
-                assert_eq!(gemini.command.params.as_ref().unwrap()[0], "--test");
+        for (executor_key, current_profile) in &current.executors {
+            if let Some(default_profile) = defaults.executors.get(executor_key) {
+                let mut override_configurations = HashMap::new();
+
+                // Check each configuration in current profile
+                for (config_name, current_config) in &current_profile.configurations {
+                    if let Some(default_config) = default_profile.configurations.get(config_name) {
+                        // Only include if different from default
+                        if current_config != default_config {
+                            override_configurations
+                                .insert(config_name.clone(), current_config.clone());
+                        }
+                    } else {
+                        // New configuration, always include
+                        override_configurations.insert(config_name.clone(), current_config.clone());
+                    }
+                }
+
+                // Only include executor if there are actual differences
+                if !override_configurations.is_empty() {
+                    overrides.executors.insert(
+                        *executor_key,
+                        ExecutorConfig {
+                            configurations: override_configurations,
+                        },
+                    );
+                }
+            } else {
+                // New executor, include completely
+                overrides
+                    .executors
+                    .insert(*executor_key, current_profile.clone());
             }
-            _ => panic!("Expected Gemini agent"),
         }
+
+        Ok(overrides)
+    }
+
+    /// Validate that merged profiles are consistent and valid
+    fn validate_merged(merged: &Self) -> Result<(), ProfileError> {
+        for (executor_key, profile) in &merged.executors {
+            // Ensure default configuration exists
+            let default_config = profile.configurations.get("DEFAULT").ok_or_else(|| {
+                ProfileError::Validation(format!(
+                    "Executor '{executor_key}' is missing required 'default' configuration"
+                ))
+            })?;
+
+            // Validate that the default agent type matches the executor key
+            if BaseCodingAgent::from(default_config) != *executor_key {
+                return Err(ProfileError::Validation(format!(
+                    "Executor key '{executor_key}' does not match the agent variant '{default_config}'"
+                )));
+            }
+
+            // Ensure configuration names don't conflict with reserved words
+            for config_name in profile.configurations.keys() {
+                if config_name.starts_with("__") {
+                    return Err(ProfileError::Validation(format!(
+                        "Configuration name '{config_name}' is reserved (starts with '__')"
+                    )));
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Load from the new v3 defaults
+    pub fn from_defaults() -> Self {
+        serde_json::from_str(DEFAULT_PROFILES_JSON).unwrap_or_else(|e| {
+            tracing::error!("Failed to parse embedded default_profiles.json: {}", e);
+            panic!("Default profiles v3 JSON is invalid")
+        })
+    }
+
+    pub fn get_coding_agent(&self, executor_profile_id: &ExecutorProfileId) -> Option<CodingAgent> {
+        self.executors
+            .get(&executor_profile_id.executor)
+            .and_then(|executor| {
+                executor.get_variant(
+                    &executor_profile_id
+                        .variant
+                        .clone()
+                        .unwrap_or("DEFAULT".to_string()),
+                )
+            })
+            .cloned()
     }
 }

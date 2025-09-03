@@ -32,6 +32,10 @@ export type ScriptRequest = { script: string, language: ScriptRequestLanguage, c
 
 export type ScriptRequestLanguage = "Bash";
 
+export enum BaseCodingAgent { CLAUDE_CODE = "CLAUDE_CODE", AMP = "AMP", GEMINI = "GEMINI", CODEX = "CODEX", OPENCODE = "OPENCODE", CURSOR = "CURSOR", QWEN_CODE = "QWEN_CODE" }
+
+export type CodingAgent = { "CLAUDE_CODE": ClaudeCode } | { "AMP": Amp } | { "GEMINI": Gemini } | { "CODEX": Codex } | { "OPENCODE": Opencode } | { "CURSOR": Cursor } | { "QWEN_CODE": QwenCode };
+
 export type TaskTemplate = { id: string, project_id: string | null, title: string, description: string | null, template_name: string, created_at: string, updated_at: string, };
 
 export type CreateTaskTemplate = { project_id: string | null, title: string, description: string | null, template_name: string, };
@@ -42,7 +46,7 @@ export type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelle
 
 export type Task = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, created_at: string, updated_at: string, };
 
-export type TaskWithAttemptStatus = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, created_at: string, updated_at: string, has_in_progress_attempt: boolean, has_merged_attempt: boolean, last_attempt_failed: boolean, profile: string, };
+export type TaskWithAttemptStatus = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, created_at: string, updated_at: string, has_in_progress_attempt: boolean, has_merged_attempt: boolean, last_attempt_failed: boolean, executor: string, };
 
 export type CreateTask = { project_id: string, title: string, description: string | null, parent_task_attempt: string | null, image_ids: Array<string> | null, };
 
@@ -54,11 +58,11 @@ export type CreateImage = { file_path: string, original_name: string, mime_type:
 
 export type ApiResponse<T, E = T> = { success: boolean, data: T | null, error_data: E | null, message: string | null, };
 
-export type UserSystemInfo = { config: Config, environment: Environment, profiles: Array<ProfileConfig>, };
+export type UserSystemInfo = { config: Config, environment: Environment, executors: { [key in BaseCodingAgent]?: ExecutorConfig }, };
 
 export type Environment = { os_type: string, os_version: string, os_architecture: string, bitness: string, };
 
-export type McpServerQuery = { profile: string, };
+export type McpServerQuery = { executor: BaseCodingAgent, };
 
 export type UpdateMcpServersBody = { servers: { [key in string]?: JsonValue }, };
 
@@ -72,7 +76,7 @@ export type ImageResponse = { id: string, file_path: string, original_name: stri
 
 export enum GitHubServiceError { TOKEN_INVALID = "TOKEN_INVALID", INSUFFICIENT_PERMISSIONS = "INSUFFICIENT_PERMISSIONS", REPO_NOT_FOUND_OR_NO_ACCESS = "REPO_NOT_FOUND_OR_NO_ACCESS" }
 
-export type Config = { config_version: string, theme: ThemeMode, profile: ProfileVariantLabel, disclaimer_acknowledged: boolean, onboarding_acknowledged: boolean, github_login_acknowledged: boolean, telemetry_acknowledged: boolean, notifications: NotificationConfig, editor: EditorConfig, github: GitHubConfig, analytics_enabled: boolean | null, workspace_dir: string | null, last_app_version: string | null, show_release_notes: boolean, };
+export type Config = { config_version: string, theme: ThemeMode, executor_profile: ExecutorProfileId, disclaimer_acknowledged: boolean, onboarding_acknowledged: boolean, github_login_acknowledged: boolean, telemetry_acknowledged: boolean, notifications: NotificationConfig, editor: EditorConfig, github: GitHubConfig, analytics_enabled: boolean | null, workspace_dir: string | null, last_app_version: string | null, show_release_notes: boolean, };
 
 export type NotificationConfig = { sound_enabled: boolean, push_enabled: boolean, sound_file: SoundFile, };
 
@@ -112,57 +116,59 @@ base: string,
  */
 params: Array<string> | null, };
 
-export type ProfileVariantLabel = { profile: string, variant: string | null, };
-
-export type ProfileConfig = { 
+export type ExecutorProfileId = { 
 /**
- * additional variants for this profile, e.g. plan, review, subagent
+ * The executor type (e.g., "CLAUDE_CODE", "AMP")
  */
-variants: Array<VariantAgentConfig>, 
+executor: BaseCodingAgent, 
 /**
- * Unique identifier for this profile (e.g., "MyClaudeCode", "FastAmp")
+ * Optional variant name (e.g., "PLAN", "ROUTER")
  */
-label: string, 
+variant: string | null, };
+
+export type ExecutorConfig = { [key in string]?: { "CLAUDE_CODE": ClaudeCode } | { "AMP": Amp } | { "GEMINI": Gemini } | { "CODEX": Codex } | { "OPENCODE": Opencode } | { "CURSOR": Cursor } | { "QWEN_CODE": QwenCode } };
+
+export type ClaudeCode = { claude_code_router?: boolean | null, append_prompt?: string | null, plan?: boolean | null, dangerously_skip_permissions?: boolean | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+
+export type Gemini = { model: GeminiModel, append_prompt?: string | null, yolo?: boolean | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+
+export type GeminiModel = "default" | "flash";
+
+export type Amp = { append_prompt?: string | null, dangerously_allow_all?: boolean | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+
+export type Codex = { append_prompt?: string | null, sandbox?: SandboxMode | null, oss?: boolean | null, model?: string | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+
+export type SandboxMode = "read-only" | "workspace-write" | "danger-full-access";
+
+export type Cursor = { append_prompt?: string | null, force?: boolean | null, model?: string | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+
+export type Opencode = { append_prompt?: string | null, model?: string | null, agent?: string | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+
+export type QwenCode = { append_prompt?: string | null, yolo?: boolean | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+
+export type CodingAgentInitialRequest = { prompt: string, 
 /**
- * Optional profile-specific MCP config file path (absolute; supports leading ~). Overrides the default `BaseCodingAgent` config path
+ * Executor profile specification
  */
-mcp_config_path: string | null, } & ({ "CLAUDE_CODE": ClaudeCode } | { "AMP": Amp } | { "GEMINI": Gemini } | { "CODEX": Codex } | { "OPENCODE": Opencode } | { "CURSOR": Cursor });
+executor_profile_id: ExecutorProfileId, };
 
-export type VariantAgentConfig = { 
+export type CodingAgentFollowUpRequest = { prompt: string, session_id: string, 
 /**
- * Unique identifier for this profile (e.g., "MyClaudeCode", "FastAmp")
+ * Executor profile specification
  */
-label: string, 
+executor_profile_id: ExecutorProfileId, };
+
+export type CreateTaskAttemptBody = { task_id: string, 
 /**
- * Optional profile-specific MCP config file path (absolute; supports leading ~). Overrides the default `BaseCodingAgent` config path
+ * Executor profile specification
  */
-mcp_config_path: string | null, } & ({ "CLAUDE_CODE": ClaudeCode } | { "AMP": Amp } | { "GEMINI": Gemini } | { "CODEX": Codex } | { "OPENCODE": Opencode } | { "CURSOR": Cursor });
-
-export type ProfileConfigs = { profiles: Array<ProfileConfig>, };
-
-export type ClaudeCode = { command: CommandBuilder, append_prompt: string | null, plan: boolean, };
-
-export type Gemini = { command: CommandBuilder, append_prompt: string | null, };
-
-export type Amp = { command: CommandBuilder, append_prompt: string | null, };
-
-export type Codex = { command: CommandBuilder, append_prompt: string | null, };
-
-export type Cursor = { command: CommandBuilder, append_prompt: string | null, };
-
-export type Opencode = { command: CommandBuilder, append_prompt: string | null, };
-
-export type CodingAgentInitialRequest = { prompt: string, profile_variant_label: ProfileVariantLabel, };
-
-export type CodingAgentFollowUpRequest = { prompt: string, session_id: string, profile_variant_label: ProfileVariantLabel, };
-
-export type CreateTaskAttemptBody = { task_id: string, profile_variant_label: ProfileVariantLabel | null, base_branch: string, };
+executor_profile_id: ExecutorProfileId, base_branch: string, };
 
 export type RebaseTaskAttemptRequest = { new_base_branch: string | null, };
 
 export type BranchStatus = { commits_behind: number | null, commits_ahead: number | null, has_uncommitted_changes: boolean | null, base_branch_name: string, remote_commits_behind: number | null, remote_commits_ahead: number | null, merges: Array<Merge>, };
 
-export type TaskAttempt = { id: string, task_id: string, container_ref: string | null, branch: string | null, base_branch: string, profile: string, worktree_deleted: boolean, setup_completed_at: string | null, created_at: string, updated_at: string, };
+export type TaskAttempt = { id: string, task_id: string, container_ref: string | null, branch: string | null, base_branch: string, executor: string, worktree_deleted: boolean, setup_completed_at: string | null, created_at: string, updated_at: string, };
 
 export type ExecutionProcess = { id: string, task_attempt_id: string, run_reason: ExecutionProcessRunReason, executor_action: ExecutorAction, status: ExecutionProcessStatus, exit_code: bigint | null, started_at: string, completed_at: string | null, created_at: string, updated_at: string, };
 
@@ -184,7 +190,7 @@ export type EventPatch = { op: string, path: string, value: EventPatchInner, };
 
 export type EventPatchInner = { db_op: string, record: RecordTypes, };
 
-export type RecordTypes = { "type": "TASK", "data": Task } | { "type": "TASK_ATTEMPT", "data": TaskAttempt } | { "type": "EXECUTION_PROCESS", "data": ExecutionProcess } | { "type": "DELETED_TASK", "data": { rowid: bigint, } } | { "type": "DELETED_TASK_ATTEMPT", "data": { rowid: bigint, } } | { "type": "DELETED_EXECUTION_PROCESS", "data": { rowid: bigint, } };
+export type RecordTypes = { "type": "TASK", "data": Task } | { "type": "TASK_ATTEMPT", "data": TaskAttempt } | { "type": "EXECUTION_PROCESS", "data": ExecutionProcess } | { "type": "DELETED_TASK", "data": { rowid: bigint, project_id: string | null, task_id: string | null, } } | { "type": "DELETED_TASK_ATTEMPT", "data": { rowid: bigint, task_id: string | null, } } | { "type": "DELETED_EXECUTION_PROCESS", "data": { rowid: bigint, task_attempt_id: string | null, } };
 
 export type CommandExitStatus = { "type": "exit_code", code: number, } | { "type": "success", success: boolean, };
 
