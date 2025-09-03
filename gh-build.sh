@@ -245,6 +245,9 @@ case "${1:-status}" in
             done
         fi
         
+        # Check for saved release notes from previous attempts
+        SAVED_NOTES_FILE=".release-notes-v${CURRENT_VERSION}.saved"
+        
         # Skip release notes generation if resuming with existing pre-release
         if [ "${SKIP_WORKFLOW:-false}" = "true" ] && [ -n "$PRERELEASE_TAG" ]; then
             echo ""
@@ -262,7 +265,26 @@ case "${1:-status}" in
                 echo "" >> .release-notes-draft.md
                 echo "Converting pre-release $PRERELEASE_TAG to full release" >> .release-notes-draft.md
             fi
+        elif [ -f "$SAVED_NOTES_FILE" ] && [ "${SKIP_VERSION_BUMP:-false}" = "false" ]; then
+            echo ""
+            echo "📋 Found saved release notes from previous attempt"
+            cp "$SAVED_NOTES_FILE" .release-notes-draft.md
+            cat .release-notes-draft.md
+            echo ""
+            echo "═══════════════════════════════════════════════════════════════"
+            read -p "Use these saved release notes? (y/n): " USE_SAVED
+            if [ "$USE_SAVED" = "y" ] || [ "$USE_SAVED" = "Y" ]; then
+                echo "✅ Using saved release notes"
+            else
+                rm -f "$SAVED_NOTES_FILE"
+                # Continue to generate new notes
+                GENERATE_NEW_NOTES=true
+            fi
         else
+            GENERATE_NEW_NOTES=true
+        fi
+        
+        if [ "${GENERATE_NEW_NOTES:-false}" = "true" ]; then
             echo ""
             echo "📈 Selected: $VERSION_TYPE version bump"
             
@@ -352,6 +374,8 @@ This release includes various improvements and bug fixes.
                 case $choice in
                     "✅ Accept and continue")
                         echo "✅ Release notes accepted!"
+                        # Save release notes for potential retry
+                        cp .release-notes-draft.md "$SAVED_NOTES_FILE"
                         break 2
                         ;;
                     "✏️  Edit manually")
@@ -522,6 +546,7 @@ Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
         }
         
         rm -f .release-notes-draft.md
+        rm -f "$SAVED_NOTES_FILE"  # Clean up saved notes after successful release
         
         echo "✅ Release v$NEW_VERSION published!"
         echo ""
