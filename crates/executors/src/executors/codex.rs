@@ -5,6 +5,7 @@ use command_group::{AsyncCommandGroup, AsyncGroupChild};
 use futures::StreamExt;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use strum_macros::AsRefStr;
 use tokio::{io::AsyncWriteExt, process::Command};
 use ts_rs::TS;
 use utils::{
@@ -15,13 +16,23 @@ use utils::{
 };
 
 use crate::{
-    command::CommandBuilder,
+    command::{CmdOverrides, CommandBuilder, apply_overrides},
     executors::{ExecutorError, StandardCodingAgentExecutor},
     logs::{
         ActionType, FileChange, NormalizedEntry, NormalizedEntryType,
         utils::{EntryIndexProvider, patch::ConversationPatch},
     },
 };
+
+/// Sandbox policy modes for Codex
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS, AsRefStr)]
+#[serde(rename_all = "kebab-case")]
+#[strum(serialize_all = "kebab-case")]
+pub enum SandboxMode {
+    ReadOnly,
+    WorkspaceWrite,
+    DangerFullAccess,
+}
 
 /// Handles session management for Codex executor
 pub struct SessionHandler;
@@ -107,8 +118,37 @@ impl SessionHandler {
 /// An executor that uses Codex CLI to process tasks
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
 pub struct Codex {
-    pub command: CommandBuilder,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub append_prompt: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sandbox: Option<SandboxMode>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub oss: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    #[serde(flatten)]
+    pub cmd: CmdOverrides,
+}
+
+impl Codex {
+    fn build_command_builder(&self) -> CommandBuilder {
+        let mut builder = CommandBuilder::new("npx -y @openai/codex exec")
+            .params(["--json", "--skip-git-repo-check"]);
+
+        if let Some(sandbox) = &self.sandbox {
+            builder = builder.extend_params(["--sandbox", sandbox.as_ref()]);
+        }
+
+        if self.oss.unwrap_or(false) {
+            builder = builder.extend_params(["--oss"]);
+        }
+
+        if let Some(model) = &self.model {
+            builder = builder.extend_params(["--model", model]);
+        }
+
+        apply_overrides(builder, &self.cmd)
+    }
 }
 
 #[async_trait]
@@ -119,7 +159,7 @@ impl StandardCodingAgentExecutor for Codex {
         prompt: &str,
     ) -> Result<AsyncGroupChild, ExecutorError> {
         let (shell_cmd, shell_arg) = get_shell_command();
-        let codex_command = self.command.build_initial();
+        let codex_command = self.build_command_builder().build_initial();
 
         let combined_prompt = utils::text::combine_prompt(&self.append_prompt, prompt);
 
@@ -159,7 +199,7 @@ impl StandardCodingAgentExecutor for Codex {
             })?;
 
         let (shell_cmd, shell_arg) = get_shell_command();
-        let codex_command = self.command.build_follow_up(&[
+        let codex_command = self.build_command_builder().build_follow_up(&[
             "-c".to_string(),
             format!("experimental_resume={}", rollout_file_path.display()),
         ]);
@@ -420,6 +460,11 @@ impl StandardCodingAgentExecutor for Codex {
                 }
             }
         });
+    }
+
+    // MCP configuration methods
+    fn default_mcp_config_path(&self) -> Option<std::path::PathBuf> {
+        dirs::home_dir().map(|home| home.join(".codex").join("config.toml"))
     }
 }
 

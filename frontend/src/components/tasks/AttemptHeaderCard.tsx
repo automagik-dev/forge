@@ -66,7 +66,7 @@ export function AttemptHeaderCard({
         </p>
         <p>
           <span className="text-secondary-foreground">Profile &middot; </span>
-          {selectedAttempt?.profile}
+          {selectedAttempt?.executor}
         </p>
         {selectedAttempt?.branch && (
           <p className="max-w-30 truncate">
@@ -104,7 +104,9 @@ export function AttemptHeaderCard({
             Open in IDE
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={runningDevServer ? stopDevServer : startDevServer}
+            onClick={() =>
+              runningDevServer ? stopDevServer() : startDevServer()
+            }
             disabled={!selectedAttempt}
             className={runningDevServer ? 'text-destructive' : ''}
           >

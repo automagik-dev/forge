@@ -1,19 +1,20 @@
 use axum::{
     extract::{Query, State},
     middleware::from_fn_with_state,
-    response::Json as ResponseJson,
+    response::{sse::KeepAlive, Json as ResponseJson, Sse},
     routing::{get, post},
-    Extension, Json, Router,
+    BoxError, Extension, Json, Router,
 };
 use db::models::{
     image::TaskImage,
     project::Project,
     task::{CreateTask, Task, TaskWithAttemptStatus, UpdateTask},
-    task_attempt::{CreateTaskAttempt, TaskAttempt, TaskAttemptError},
+    task_attempt::{CreateTaskAttempt, TaskAttempt},
 };
 use deployment::Deployment;
+use futures_util::TryStreamExt;
 use serde::Deserialize;
-use services::services::container::ContainerService;
+use services::services::{container::ContainerService, events::task_patch};
 use sqlx::Error as SqlxError;
 use utils::response::ApiResponse;
 use uuid::Uuid;
@@ -34,6 +35,22 @@ pub async fn get_tasks(
             .await?;
 
     Ok(ResponseJson(ApiResponse::success(tasks)))
+}
+
+pub async fn stream_tasks(
+    State(deployment): State<DeploymentImpl>,
+    Query(query): Query<TaskQuery>,
+) -> Result<
+    Sse<impl futures_util::Stream<Item = Result<axum::response::sse::Event, BoxError>>>,
+    axum::http::StatusCode,
+> {
+    let stream = deployment
+        .events()
+        .stream_tasks_for_project(query.project_id)
+        .await
+        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Sse::new(stream.map_err(|e| -> BoxError { e.into() })).keep_alive(KeepAlive::default()))
 }
 
 pub async fn get_task(
@@ -100,27 +117,18 @@ pub async fn create_task_and_start(
         .await;
 
     // use the default executor profile and the current branch for the task attempt
-    let default_profile_variant = deployment.config().read().await.profile.clone();
+    let executor_profile_id = deployment.config().read().await.executor_profile.clone();
     let project = Project::find_by_id(&deployment.db().pool, payload.project_id)
         .await?
         .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
     let branch = deployment
         .git()
         .get_current_branch(&project.git_repo_path)?;
-    let profile_label = executors::profile::ProfileConfigs::get_cached()
-        .get_profile(&default_profile_variant.profile)
-        .map(|profile| profile.default.label.clone())
-        .ok_or_else(|| {
-            ApiError::TaskAttempt(TaskAttemptError::ValidationError(format!(
-                "Profile not found: {:?}",
-                default_profile_variant
-            )))
-        })?;
 
     let task_attempt = TaskAttempt::create(
         &deployment.db().pool,
         &CreateTaskAttempt {
-            profile: profile_label.clone(),
+            executor: executor_profile_id.executor,
             base_branch: branch,
         },
         task.id,
@@ -128,15 +136,15 @@ pub async fn create_task_and_start(
     .await?;
     let execution_process = deployment
         .container()
-        .start_attempt(&task_attempt, default_profile_variant.clone())
+        .start_attempt(&task_attempt, executor_profile_id.clone())
         .await?;
     deployment
         .track_if_analytics_allowed(
             "task_attempt_started",
             serde_json::json!({
                 "task_id": task.id.to_string(),
-                "profile": &profile_label,
-                "variant": &default_profile_variant,
+                "executor": &executor_profile_id.executor,
+                "variant": &executor_profile_id.variant,
                 "attempt_id": task_attempt.id.to_string(),
             }),
         )
@@ -159,7 +167,7 @@ pub async fn create_task_and_start(
         has_in_progress_attempt: true,
         has_merged_attempt: false,
         last_attempt_failed: false,
-        profile: task_attempt.profile,
+        executor: task_attempt.executor,
     })))
 }
 
@@ -222,6 +230,9 @@ pub async fn delete_task(
     if rows_affected == 0 {
         Err(ApiError::Database(SqlxError::RowNotFound))
     } else {
+        // Emit remove patch so SSE task streams update immediately
+        let patch = task_patch::remove(task.id);
+        deployment.events().msg_store().push_patch(patch);
         Ok(ResponseJson(ApiResponse::success(())))
     }
 }
@@ -233,6 +244,7 @@ pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
 
     let inner = Router::new()
         .route("/", get(get_tasks).post(create_task))
+        .route("/stream", get(stream_tasks))
         .route("/create-and-start", post(create_task_and_start))
         .nest("/{task_id}", task_id_router);
 
