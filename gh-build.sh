@@ -456,18 +456,18 @@ Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
             echo "  • Create pre-release with .tgz package"
             echo ""
             
-            # Trigger the pre-release workflow
-            gh workflow run "Create GitHub Pre-Release" --repo "$REPO" -f version_type="$VERSION_TYPE" || {
-                echo "❌ Failed to trigger pre-release workflow"
+            # Trigger the version bump workflow
+            gh workflow run "Version Bump and Tag" --repo "$REPO" -f version_type="$VERSION_TYPE" || {
+                echo "❌ Failed to trigger version bump workflow"
                 rm -f .release-notes-draft.md
                 exit 1
             }
             
-            echo "⏳ Waiting for pre-release workflow to start..."
+            echo "⏳ Waiting for version bump workflow to start..."
             sleep 10
             
             # Find the workflow run
-            PRERELEASE_RUN=$(gh run list --workflow="Create GitHub Pre-Release" --repo "$REPO" --limit 1 --json databaseId,status --jq '.[0] | select(.status != "completed") | .databaseId')
+            PRERELEASE_RUN=$(gh run list --workflow="Version Bump and Tag" --repo "$REPO" --limit 1 --json databaseId,status --jq '.[0] | select(.status != "completed") | .databaseId')
             
             if [ -z "$PRERELEASE_RUN" ]; then
                 echo "⚠️  Could not find the pre-release workflow run"
@@ -475,10 +475,10 @@ Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
                 exit 1
             fi
             
-            echo "📋 Pre-release workflow started: Run ID $PRERELEASE_RUN"
+            echo "📋 Version bump workflow started: Run ID $PRERELEASE_RUN"
             echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$PRERELEASE_RUN"
             echo ""
-            echo "⏳ Monitoring build (this will take ~30-45 minutes)..."
+            echo "⏳ Monitoring version bump..."
             
             # Monitor the pre-release build and get the new version
             NEW_VERSION=""
@@ -511,6 +511,49 @@ Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
                             NEW_VERSION=$(echo "$NEW_TAG" | sed 's/^v//' | sed 's/-[0-9]*$//')
                             
                             echo "✅ Pre-release created: $NEW_TAG (version: $NEW_VERSION)"
+                            
+                            # Now wait for build-all-platforms workflow to start
+                            echo ""
+                            echo "⏳ Waiting for build workflow to start (triggered by tag)..."
+                            sleep 10
+                            
+                            BUILD_RUN=$(gh run list --workflow="Build All Platforms" --repo "$REPO" --limit 1 --json databaseId,headBranch --jq '.[] | select(.headBranch == "'$NEW_TAG'") | .databaseId' | head -1)
+                            
+                            if [ -n "$BUILD_RUN" ]; then
+                                echo "📋 Build workflow started: Run ID $BUILD_RUN"
+                                echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$BUILD_RUN"
+                                echo ""
+                                echo "⏳ Monitoring build (this will take ~30-45 minutes)..."
+                                
+                                # Monitor the build workflow
+                                while true; do
+                                    BUILD_STATUS=$(gh run view "$BUILD_RUN" --repo "$REPO" --json status --jq '.status')
+                                    echo -n "[$(date +%H:%M:%S)] Build status: $BUILD_STATUS"
+                                    
+                                    case "$BUILD_STATUS" in
+                                        completed)
+                                            BUILD_CONCLUSION=$(gh run view "$BUILD_RUN" --repo "$REPO" --json conclusion --jq '.conclusion')
+                                            if [ "$BUILD_CONCLUSION" = "success" ]; then
+                                                echo " ✅"
+                                                echo "Build completed successfully!"
+                                            else
+                                                echo " ❌"
+                                                echo "Build failed! Check the logs:"
+                                                echo "https://github.com/$REPO/actions/runs/$BUILD_RUN"
+                                            fi
+                                            break
+                                            ;;
+                                        *)
+                                            echo " - waiting..."
+                                            sleep 30
+                                            ;;
+                                    esac
+                                done
+                            else
+                                echo "⚠️  Build workflow didn't start automatically"
+                                echo "You may need to trigger it manually"
+                            fi
+                            
                             break
                         else
                             echo " ❌"
