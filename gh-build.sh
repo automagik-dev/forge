@@ -183,9 +183,17 @@ case "${1:-status}" in
                 case $RESUME_CHOICE in
                     1)
                         echo "✅ Resuming with version $CURRENT_VERSION"
-                        SKIP_VERSION_BUMP=true
-                        SKIP_WORKFLOW=true
-                        VERSION_TYPE="patch"  # Just for display, won't be used
+                        if [ -z "$PRERELEASE_TAG" ]; then
+                            echo "⚠️  No pre-release found. You need to retry the workflow to create one."
+                            echo "   Switching to retry mode..."
+                            VERSION_TYPE="patch"
+                            SKIP_VERSION_BUMP=false
+                            SKIP_WORKFLOW=false
+                        else
+                            SKIP_VERSION_BUMP=true
+                            SKIP_WORKFLOW=true
+                            VERSION_TYPE="patch"  # Just for display, won't be used
+                        fi
                         ;;
                     2)
                         echo "🔄 Retrying pre-release workflow with existing version"
