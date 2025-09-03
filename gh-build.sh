@@ -234,24 +234,42 @@ case "${1:-status}" in
             done
         fi
         
-        echo ""
-        echo "📈 Selected: $VERSION_TYPE version bump"
-        
-        # Get commits since last tag for Claude
-        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-        if [ -z "$LAST_TAG" ]; then
-            COMMITS=$(git log --pretty=format:"- %s (%an)" -10)
-            echo "📝 No previous tags found, using last 10 commits"
+        # Skip release notes generation if resuming with existing pre-release
+        if [ "${SKIP_WORKFLOW:-false}" = "true" ] && [ -n "$PRERELEASE_TAG" ]; then
+            echo ""
+            echo "📋 Using existing pre-release, fetching its release notes..."
+            
+            # Get the existing release notes from the pre-release
+            EXISTING_NOTES=$(gh release view "$PRERELEASE_TAG" --repo "$REPO" --json body --jq '.body' 2>/dev/null || echo "")
+            
+            if [ -n "$EXISTING_NOTES" ]; then
+                echo "$EXISTING_NOTES" > .release-notes-draft.md
+                echo "✅ Retrieved existing release notes"
+            else
+                # Fallback to simple notes if can't retrieve
+                echo "# Release v$CURRENT_VERSION" > .release-notes-draft.md
+                echo "" >> .release-notes-draft.md
+                echo "Converting pre-release $PRERELEASE_TAG to full release" >> .release-notes-draft.md
+            fi
         else
-            COMMITS=$(git log $LAST_TAG..HEAD --pretty=format:"- %s (%an)")
-            echo "📝 Generating notes since $LAST_TAG"
-        fi
-        
-        if [ -z "$COMMITS" ]; then
-            echo "❌ No new commits found since last tag!"
-            echo "💡 Did you forget to commit your changes?"
-            exit 1
-        fi
+            echo ""
+            echo "📈 Selected: $VERSION_TYPE version bump"
+            
+            # Get commits since last tag for Claude
+            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            if [ -z "$LAST_TAG" ]; then
+                COMMITS=$(git log --pretty=format:"- %s (%an)" -10)
+                echo "📝 No previous tags found, using last 10 commits"
+            else
+                COMMITS=$(git log $LAST_TAG..HEAD --pretty=format:"- %s (%an)")
+                echo "📝 Generating notes since $LAST_TAG"
+            fi
+            
+            if [ -z "$COMMITS" ]; then
+                echo "❌ No new commits found since last tag!"
+                echo "💡 Did you forget to commit your changes?"
+                exit 1
+            fi
         
         # Create Claude prompt with Agno-style template
         CLAUDE_PROMPT="Generate professional GitHub release notes for automagik-forge version $VERSION using this Agno-style template:
@@ -306,20 +324,20 @@ This release includes various improvements and bug fixes.
         # Save initial content
         echo "$CONTENT" > .release-notes-draft.md
         
-        # Interactive loop with keyboard selection
-        while true; do
-            clear
-            echo "═══════════════════════════════════════════════════════════════"
-            echo "📋 Generated Release Notes for v$VERSION"
-            echo "═══════════════════════════════════════════════════════════════"
-            echo ""
-            cat .release-notes-draft.md
-            echo ""
-            echo "═══════════════════════════════════════════════════════════════"
-            echo ""
-            
-            PS3="Choose an action: "
-            select choice in "✅ Accept and continue" "✏️  Edit manually" "🔄 Regenerate with feedback" "❌ Cancel release"; do
+            # Interactive loop with keyboard selection
+            while true; do
+                clear
+                echo "═══════════════════════════════════════════════════════════════"
+                echo "📋 Generated Release Notes for v$VERSION"
+                echo "═══════════════════════════════════════════════════════════════"
+                echo ""
+                cat .release-notes-draft.md
+                echo ""
+                echo "═══════════════════════════════════════════════════════════════"
+                echo ""
+                
+                PS3="Choose an action: "
+                select choice in "✅ Accept and continue" "✏️  Edit manually" "🔄 Regenerate with feedback" "❌ Cancel release"; do
                 case $choice in
                     "✅ Accept and continue")
                         echo "✅ Release notes accepted!"
@@ -376,6 +394,7 @@ Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
                 esac
             done
         done
+        fi
         
         # Step 1: Handle pre-release workflow or use existing pre-release
         if [ "${SKIP_WORKFLOW:-false}" = "true" ] && [ -n "$PRERELEASE_TAG" ]; then
