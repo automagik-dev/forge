@@ -167,44 +167,47 @@ case "${1:-status}" in
                 fi
                 
                 # Check for existing pre-releases
-                EXISTING_PRERELEASE=$(gh release list --repo "$REPO" --limit 10 --json tagName,isPrerelease,name | jq -r '.[] | select(.isPrerelease == true) | select(.tagName | startswith("v'$CURRENT_VERSION'"))')
-                if [ -n "$EXISTING_PRERELEASE" ]; then
-                    PRERELEASE_TAG=$(echo "$EXISTING_PRERELEASE" | jq -r '.tagName' | head -1)
+                PRERELEASE_TAG=$(gh release list --repo "$REPO" --limit 10 --json tagName,isPrerelease --jq '.[] | select(.isPrerelease == true) | select(.tagName | startswith("v'$CURRENT_VERSION'")) | .tagName' | head -1)
+                if [ -n "$PRERELEASE_TAG" ]; then
                     echo "📦 Found existing pre-release: $PRERELEASE_TAG"
                     echo ""
                 fi
                 
                 echo "Choose how to proceed:"
-                PS3="Select action: "
-                select RESUME_ACTION in "Resume: Use existing version and continue" "Retry: Trigger new pre-release workflow" "Reset: Start fresh with new version bump" "Cancel"; do
-                    case $RESUME_ACTION in
-                        "Resume: Use existing version and continue")
-                            echo "✅ Resuming with version $CURRENT_VERSION"
-                            SKIP_VERSION_BUMP=true
-                            SKIP_WORKFLOW=true
-                            VERSION_TYPE="patch"  # Just for display, won't be used
-                            break
-                            ;;
-                        "Retry: Trigger new pre-release workflow")
-                            echo "🔄 Retrying pre-release workflow with existing version"
-                            VERSION_TYPE="patch"  # This will work because version is already bumped
-                            SKIP_VERSION_BUMP=false
-                            SKIP_WORKFLOW=false
-                            break
-                            ;;
-                        "Reset: Start fresh with new version bump")
-                            echo "🔄 Starting fresh - will select new version bump"
-                            SKIP_VERSION_BUMP=false
-                            SKIP_WORKFLOW=false
-                            # Continue to normal version selection
-                            break
-                            ;;
-                        "Cancel")
-                            echo "❌ Publishing cancelled"
-                            exit 1
-                            ;;
-                    esac
-                done
+                echo "1) Resume: Use existing version and continue"
+                echo "2) Retry: Trigger new pre-release workflow"
+                echo "3) Reset: Start fresh with new version bump"
+                echo "4) Cancel"
+                read -p "Select action (1-4): " RESUME_CHOICE
+                
+                case $RESUME_CHOICE in
+                    1)
+                        echo "✅ Resuming with version $CURRENT_VERSION"
+                        SKIP_VERSION_BUMP=true
+                        SKIP_WORKFLOW=true
+                        VERSION_TYPE="patch"  # Just for display, won't be used
+                        ;;
+                    2)
+                        echo "🔄 Retrying pre-release workflow with existing version"
+                        VERSION_TYPE="patch"  # This will work because version is already bumped
+                        SKIP_VERSION_BUMP=false
+                        SKIP_WORKFLOW=false
+                        ;;
+                    3)
+                        echo "🔄 Starting fresh - will select new version bump"
+                        SKIP_VERSION_BUMP=false
+                        SKIP_WORKFLOW=false
+                        # Continue to normal version selection
+                        ;;
+                    4)
+                        echo "❌ Publishing cancelled"
+                        exit 1
+                        ;;
+                    *)
+                        echo "❌ Invalid choice"
+                        exit 1
+                        ;;
+                esac
                 echo ""
             fi
         fi
