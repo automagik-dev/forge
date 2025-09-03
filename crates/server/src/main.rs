@@ -1,10 +1,10 @@
 use anyhow::{self, Error as AnyhowError};
 use deployment::{Deployment, DeploymentError};
-use server::{routes, DeploymentImpl};
+use server::{DeploymentImpl, routes};
 use sqlx::Error as SqlxError;
 use strip_ansi_escapes::strip;
 use thiserror::Error;
-use tracing_subscriber::{prelude::*, EnvFilter};
+use tracing_subscriber::{EnvFilter, prelude::*};
 use utils::{
     assets::asset_dir, browser::open_browser, port_file::write_port_file, sentry::sentry_layer,
 };
@@ -68,10 +68,10 @@ async fn main() -> Result<(), VibeKanbanError> {
     let actual_port = listener.local_addr()?.port(); // get → 53427 (example)
 
     // Write port file for discovery if prod, warn on fail
-    if !cfg!(debug_assertions) {
-        if let Err(e) = write_port_file(actual_port).await {
-            tracing::warn!("Failed to write port file: {}", e);
-        }
+    if !cfg!(debug_assertions)
+        && let Err(e) = write_port_file(actual_port).await
+    {
+        tracing::warn!("Failed to write port file: {}", e);
     }
 
     tracing::info!("Server running on http://{host}:{actual_port}");
@@ -79,7 +79,11 @@ async fn main() -> Result<(), VibeKanbanError> {
     if !cfg!(debug_assertions) {
         tracing::info!("Opening browser...");
         if let Err(e) = open_browser(&format!("http://127.0.0.1:{actual_port}")).await {
-            tracing::warn!("Failed to open browser automatically: {}. Please open http://127.0.0.1:{} manually.", e, actual_port);
+            tracing::warn!(
+                "Failed to open browser automatically: {}. Please open http://127.0.0.1:{} manually.",
+                e,
+                actual_port
+            );
         }
     }
 
