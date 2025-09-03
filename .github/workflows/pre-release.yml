@@ -108,8 +108,8 @@ jobs:
 
       - name: Commit changes and create tag
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "genie@namastex.ai"
+          git config --local user.name "Automagik Genie"
           # Stage package.json files
           git add package.json npx-cli/package.json frontend/package.json
           # Stage pnpm lockfile if it exists (main lockfile)
