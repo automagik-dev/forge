@@ -226,8 +226,14 @@ jobs:
           cd npx-cli/dist
           for dir in binaries-*; do
             platform=${dir#binaries-}
-            mv $dir/* $platform/ 2>/dev/null || true
-            rmdir $dir
+            # Ensure target directory exists
+            mkdir -p $platform
+            # Move all files (if any)
+            if [ -d "$dir" ] && [ "$(ls -A $dir)" ]; then
+              mv $dir/* $platform/ 2>/dev/null || true
+            fi
+            # Remove the now-empty directory
+            rm -rf $dir
           done
           ls -la *
       

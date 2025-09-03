@@ -38,7 +38,7 @@ case "${1:-status}" in
         echo "Run './gh-build.sh monitor $RUN_ID' to monitor progress"
         ;;
         
-    publish)
+    publish-status)
         PUBLISH_TYPE="${2:-check}"
         
         case "$PUBLISH_TYPE" in
@@ -179,20 +179,29 @@ Focus on:
 - Be concise but informative
 - Use bullet points with clear descriptions"
 
-        # Generate initial release notes with Claude
-        echo "🤖 Generating release notes with Claude..."
-        CLAUDE_OUTPUT=$(claude -p "$CLAUDE_PROMPT" --output-format json 2>/dev/null) || {
-            echo "❌ Claude command failed. Make sure 'claude' CLI is installed and working."
-            exit 1
-        }
+        # Try to generate with Claude, fall back to template
+        echo "🤖 Generating release notes..."
+        if command -v claude >/dev/null 2>&1; then
+            CLAUDE_OUTPUT=$(claude -p "$CLAUDE_PROMPT" --output-format json 2>/dev/null) || true
+            if [ -n "$CLAUDE_OUTPUT" ]; then
+                CONTENT=$(echo "$CLAUDE_OUTPUT" | jq -r '.result' 2>/dev/null)
+                SESSION_ID=$(echo "$CLAUDE_OUTPUT" | jq -r '.session_id' 2>/dev/null)
+            fi
+        fi
         
-        # Parse Claude response
-        CONTENT=$(echo "$CLAUDE_OUTPUT" | jq -r '.result')
-        SESSION_ID=$(echo "$CLAUDE_OUTPUT" | jq -r '.session_id')
-        
+        # If Claude failed or isn't available, generate from template
         if [ -z "$CONTENT" ] || [ "$CONTENT" = "null" ]; then
-            echo "❌ Failed to generate release notes with Claude"
-            exit 1
+            echo "📝 Using template-based release notes..."
+            CONTENT="## Release v$VERSION
+
+## What's Changed
+$COMMITS
+
+## Summary
+This release includes various improvements and bug fixes.
+
+---
+*Full Changelog*: https://github.com/$REPO/compare/$LAST_TAG...v$VERSION"
         fi
         
         # Save initial content
