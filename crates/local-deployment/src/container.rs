@@ -442,7 +442,7 @@ impl LocalContainerService {
 
     pub fn dir_name_from_task_attempt(attempt_id: &Uuid, task_title: &str) -> String {
         let task_title_id = git_branch_id(task_title);
-        format!("vk-{}-{}", short_uuid(attempt_id), task_title_id)
+        format!("forge-{}-{}", task_title_id, short_uuid(attempt_id))
     }
 
     async fn track_child_msgs_in_store(&self, id: Uuid, child: &mut AsyncGroupChild) {
@@ -700,8 +700,11 @@ impl ContainerService for LocalContainerService {
             .await?
             .ok_or(sqlx::Error::RowNotFound)?;
 
-        let task_branch_name =
-            LocalContainerService::dir_name_from_task_attempt(&task_attempt.id, &task.title);
+        // Use the branch name from TaskAttempt (set during TaskAttempt creation)
+        let task_branch_name = task_attempt.branch
+            .as_ref()
+            .ok_or_else(|| ContainerError::Other(anyhow!("TaskAttempt branch name not set")))?
+            .clone();
         let worktree_path = WorktreeManager::get_worktree_base_dir().join(&task_branch_name);
 
         let project = task
@@ -746,7 +749,7 @@ impl ContainerService for LocalContainerService {
         )
         .await?;
 
-        TaskAttempt::update_branch(&self.db.pool, task_attempt.id, &task_branch_name).await?;
+        // Branch is already set during TaskAttempt creation, no need to update it here
 
         Ok(worktree_path.to_string_lossy().to_string())
     }

@@ -384,7 +384,27 @@ impl TaskAttempt {
         task_id: Uuid,
     ) -> Result<Self, TaskAttemptError> {
         let attempt_id = Uuid::new_v4();
-        // let prefixed_id = format!("vibe-kanban-{}", attempt_id);
+        
+        // Get the task to access branch_template and title
+        let task = Task::find_by_id(pool, task_id)
+            .await?
+            .ok_or(TaskAttemptError::TaskNotFound)?;
+        
+        // Generate branch name using template or fallback
+        let branch_name = if let Some(template) = &task.branch_template {
+            // User-provided template with short UUID suffix for uniqueness
+            format!("{}-{}", template, &attempt_id.to_string()[..4])
+        } else {
+            // Fallback to forge-{title}-{uuid} pattern
+            let task_title_id = utils::text::git_branch_id(&task.title);
+            format!("forge-{}-{}", 
+                task_title_id,
+                utils::text::short_uuid(&attempt_id)
+            )
+        };
+        
+        let branch_name_opt = Some(branch_name);
+        
         // Insert the record into the database
         Ok(sqlx::query_as!(
             TaskAttempt,
@@ -394,7 +414,7 @@ impl TaskAttempt {
             attempt_id,
             task_id,
             Option::<String>::None, // Container isn't known yet
-            Option::<String>::None, // branch name isn't known yet
+            branch_name_opt, // Use the generated branch name
             data.base_branch,
             data.executor,
             false, // worktree_deleted is false during creation
