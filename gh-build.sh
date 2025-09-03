@@ -138,6 +138,28 @@ case "${1:-status}" in
         
         echo "📋 Publishing version: $VERSION"
         
+        # Check if a release already exists for this version
+        EXISTING_RELEASE=$(gh release view "v$VERSION" --repo "$REPO" --json id 2>/dev/null || echo "")
+        if [ -n "$EXISTING_RELEASE" ]; then
+            echo "⚠️  Release v$VERSION already exists!"
+            echo ""
+            PS3="Choose an action: "
+            select choice in "Delete and recreate" "Cancel"; do
+                case $choice in
+                    "Delete and recreate")
+                        echo "🗑️  Deleting existing release and tag..."
+                        gh release delete "v$VERSION" --repo "$REPO" --yes 2>/dev/null || true
+                        git push origin ":v$VERSION" 2>/dev/null || true
+                        break
+                        ;;
+                    "Cancel")
+                        echo "❌ Publishing cancelled"
+                        exit 1
+                        ;;
+                esac
+            done
+        fi
+        
         # Get commits since last tag for Claude
         LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
         if [ -z "$LAST_TAG" ]; then
@@ -278,44 +300,91 @@ Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
             done
         done
         
-        # Create GitHub release
-        echo "🏗️  Creating GitHub release..."
-        gh release create "v$VERSION" --title "Release v$VERSION" --notes-file .release-notes-draft.md || {
-            echo "❌ Failed to create GitHub release"
-            echo "💡 Make sure you have 'gh' CLI installed and authenticated"
-            rm -f .release-notes-draft.md
-            exit 1
+        # First create and push the git tag to trigger build workflow
+        echo "🏷️  Creating and pushing git tag v$VERSION..."
+        git tag "v$VERSION" 2>/dev/null || {
+            echo "⚠️  Tag v$VERSION already exists locally, removing and recreating..."
+            git tag -d "v$VERSION"
+            git tag "v$VERSION"
+        }
+        git push origin "v$VERSION" --force
+        
+        echo "✅ Tag pushed, this will trigger the build workflow"
+        echo ""
+        echo "⏳ Waiting for build workflow to start..."
+        sleep 10
+        
+        # Find the workflow run triggered by our tag
+        BUILD_RUN=$(gh run list --workflow="build-all-platforms.yml" --repo "$REPO" --limit 3 --json databaseId,headBranch --jq ".[] | select(.headBranch == \"v$VERSION\") | .databaseId" | head -1)
+        
+        if [ -z "$BUILD_RUN" ]; then
+            echo "⚠️  Could not find the build workflow run for tag v$VERSION"
+            echo "It may take a moment to start. Checking again..."
+            sleep 10
+            BUILD_RUN=$(gh run list --workflow="build-all-platforms.yml" --repo "$REPO" --limit 3 --json databaseId,headBranch --jq ".[] | select(.headBranch == \"v$VERSION\") | .databaseId" | head -1)
+        fi
+        
+        if [ -n "$BUILD_RUN" ]; then
+            echo "📋 Build workflow started: Run ID $BUILD_RUN"
+            echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$BUILD_RUN"
+            echo ""
+            echo "⏳ Monitoring build (this will take ~20-30 minutes)..."
+            
+            # Monitor the build
+            while true; do
+                STATUS=$(gh run view "$BUILD_RUN" --repo "$REPO" --json status --jq '.status')
+                
+                echo -n "[$(date +%H:%M:%S)] Build status: $STATUS"
+                
+                case "$STATUS" in
+                    completed)
+                        CONCLUSION=$(gh run view "$BUILD_RUN" --repo "$REPO" --json conclusion --jq '.conclusion')
+                        if [ "$CONCLUSION" = "success" ]; then
+                            echo " ✅"
+                            echo ""
+                            echo "✅ Build completed successfully!"
+                            echo "📦 The workflow has automatically published to npm"
+                            break
+                        else
+                            echo " ❌"
+                            echo ""
+                            echo "❌ Build workflow failed! Check the logs:"
+                            echo "https://github.com/$REPO/actions/runs/$BUILD_RUN"
+                            rm -f .release-notes-draft.md
+                            exit 1
+                        fi
+                        ;;
+                    *)
+                        echo ""
+                        sleep 30
+                        ;;
+                esac
+            done
+        else
+            echo "⚠️  Could not find the build workflow run"
+            echo "Check manually at: https://github.com/$REPO/actions"
+            echo "The tag v$VERSION has been pushed and should trigger the build"
+        fi
+        
+        # Now create the GitHub release with our custom notes
+        echo ""
+        echo "📝 Creating GitHub release with custom release notes..."
+        gh release create "v$VERSION" \
+            --title "Release v$VERSION" \
+            --notes-file .release-notes-draft.md \
+            --verify-tag || {
+            echo "⚠️  Release may already exist, updating it..."
+            gh release edit "v$VERSION" \
+                --title "Release v$VERSION" \
+                --notes-file .release-notes-draft.md
         }
         
-        echo "✅ GitHub release created: https://github.com/$REPO/releases/tag/v$VERSION"
-        
-        # Create and push git tag
-        echo "🏷️  Creating and pushing git tag..."
-        git tag "v$VERSION" 2>/dev/null || echo "⚠️  Tag v$VERSION already exists"
-        git push origin "v$VERSION"
-        
-        # Cleanup draft
         rm -f .release-notes-draft.md
         
-        # Trigger and monitor GitHub Actions build
         echo ""
-        echo "⏳ Triggering and monitoring GitHub Actions build..."
-        
-        # Get the latest run ID after tag push
-        sleep 5  # Wait for workflow to start
-        RUN_ID=$(gh run list --workflow="$WORKFLOW_FILE" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')
-        
-        if [ -n "$RUN_ID" ]; then
-            echo "📋 Monitoring build run: $RUN_ID"
-            echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$RUN_ID"
-            echo ""
-            
-            # Monitor the build automatically
-            ./gh-build.sh monitor "$RUN_ID"
-        else
-            echo "⚠️  Could not find triggered build, monitoring latest..."
-            ./gh-build.sh monitor
-        fi
+        echo "🎉 Release complete!"
+        echo "📦 NPM package: https://www.npmjs.com/package/vibe-kanban"
+        echo "🏷️  GitHub release: https://github.com/$REPO/releases/tag/v$VERSION"
         ;;
         
     beta)
