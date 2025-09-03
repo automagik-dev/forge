@@ -181,18 +181,21 @@ case "${1:-status}" in
                         "Resume: Use existing version and continue")
                             echo "✅ Resuming with version $CURRENT_VERSION"
                             SKIP_VERSION_BUMP=true
-                            VERSION_TYPE="none"
+                            SKIP_WORKFLOW=true
+                            VERSION_TYPE="patch"  # Just for display, won't be used
                             break
                             ;;
                         "Retry: Trigger new pre-release workflow")
                             echo "🔄 Retrying pre-release workflow with existing version"
-                            VERSION_TYPE="patch"  # Will be ignored since version already bumped
+                            VERSION_TYPE="patch"  # This will work because version is already bumped
                             SKIP_VERSION_BUMP=false
+                            SKIP_WORKFLOW=false
                             break
                             ;;
                         "Reset: Start fresh with new version bump")
                             echo "🔄 Starting fresh - will select new version bump"
                             SKIP_VERSION_BUMP=false
+                            SKIP_WORKFLOW=false
                             # Continue to normal version selection
                             break
                             ;;
@@ -375,12 +378,17 @@ Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
         done
         
         # Step 1: Handle pre-release workflow or use existing pre-release
-        if [ "${SKIP_VERSION_BUMP:-false}" = "true" ] && [ -n "$PRERELEASE_TAG" ]; then
+        if [ "${SKIP_WORKFLOW:-false}" = "true" ] && [ -n "$PRERELEASE_TAG" ]; then
             echo ""
             echo "📦 Using existing pre-release: $PRERELEASE_TAG"
             NEW_TAG="$PRERELEASE_TAG"
             NEW_VERSION="$CURRENT_VERSION"
             echo "✅ Skipping workflow, proceeding to release conversion"
+        elif [ "${SKIP_WORKFLOW:-false}" = "true" ] && [ -z "$PRERELEASE_TAG" ]; then
+            echo ""
+            echo "❌ No existing pre-release found for version $CURRENT_VERSION"
+            echo "Please select 'Retry' option to build the release"
+            exit 1
         else
             echo ""
             echo "🏗️  Step 1: Triggering pre-release workflow..."
