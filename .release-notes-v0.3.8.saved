@@ -1,0 +1,24 @@
+# Release Notes v0.3.8
+
+## New Features
+- **User-Controlled Branch Naming Templates**: Added customizable branch naming templates for tasks, allowing developers to define their own branch naming conventions and patterns
+- **Release Workflow Resume Capability**: Added ability to resume interrupted release workflows, allowing developers to continue from where they left off instead of starting over
+
+## Improvements  
+- **Enhanced Release Notes Persistence**: Release notes are now preserved between retry attempts, ensuring no work is lost during workflow interruptions
+- **Robust Pre-release Management**: Improved handling of existing pre-releases when resuming workflows, preventing duplicate or conflicting releases
+- **Streamlined Package Lock Handling**: Optimized package-lock.json management during pre-release workflows for better consistency
+
+## Bug Fixes
+- **Fixed Resume Workflow Variable Scope**: Resolved variable scope issues that could cause failures when resuming release workflows
+- **Pre-release Workflow Stability**: Fixed handling of missing pre-releases and invalid version types during resume operations
+- **Release Notes Generation Logic**: Fixed unnecessary regeneration of release notes when resuming with existing pre-releases
+
+## What's Changed
+- Enhanced task management with customizable branch naming templates
+- Enhanced release workflow state management and error recovery
+- Improved workflow resume logic with better validation and error handling
+- Optimized pre-release detection and management during workflow resumption
+- Strengthened package management consistency across release operations
+
+**Full Changelog**: [View all changes in this release](https://github.com/username/automagik-forge/compare/v0.3.7...v0.3.8)
