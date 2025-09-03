@@ -1,0 +1,123 @@
+name: Version Bump and Tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: "Version bump type"
+        required: true
+        default: "patch"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: 22
+
+jobs:
+  version-and-tag:
+    runs-on: ubuntu-22.04
+    outputs:
+      new_tag: ${{ steps.version.outputs.new_tag }}
+      new_version: ${{ steps.version.outputs.new_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install cargo-edit
+        run: |
+          if ! command -v cargo-set-version &> /dev/null; then
+            cargo install cargo-edit
+          fi
+
+      - name: Determine and update versions
+        id: version
+        run: |
+          # Get the latest version from npm registry
+          latest_npm_version=$(npm view automagik-forge version 2>/dev/null || echo "0.0.0")
+          echo "Latest npm version: $latest_npm_version"
+
+          timestamp=$(date +%Y%m%d%H%M%S)
+
+          # For regular releases, use npm version and bump it
+          npm version $latest_npm_version --no-git-tag-version --allow-same-version
+          npm version ${{ github.event.inputs.version_type }} --no-git-tag-version
+
+          new_version=$(node -p "require('./package.json').version")
+          new_tag="v${new_version}-${timestamp}"
+
+          # Update npx-cli package.json to match
+          cd npx-cli
+          npm version $new_version --no-git-tag-version --allow-same-version --no-workspaces-update
+          cd ..
+          
+          # Update frontend package.json to match
+          cd frontend
+          node -e "const fs = require('fs'); const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')); pkg.version = '$new_version'; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\\n');"
+          cd ..
+
+          cargo set-version --workspace "$new_version"
+
+          echo "New version: $new_version"
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
+
+      - name: Commit changes and create tag
+        run: |
+          git config --local user.email "genie@namastex.ai"
+          git config --local user.name "Automagik Genie"
+          
+          # Stage package.json files
+          git add package.json npx-cli/package.json frontend/package.json
+          # Stage pnpm lockfile if it exists
+          if [ -f pnpm-lock.yaml ]; then git add pnpm-lock.yaml; fi
+          # Stage all Cargo.toml files
+          git add $(find . -name Cargo.toml)
+          
+          # Check if there are changes to commit
+          if git diff --cached --quiet; then
+            echo "No changes to commit - version already at ${{ steps.version.outputs.new_version }}"
+            # Check if tag already exists
+            if git rev-parse ${{ steps.version.outputs.new_tag }} >/dev/null 2>&1; then
+              echo "Tag ${{ steps.version.outputs.new_tag }} already exists - skipping"
+            else
+              echo "Creating new tag ${{ steps.version.outputs.new_tag }}"
+              git tag -a ${{ steps.version.outputs.new_tag }} -m "Release ${{ steps.version.outputs.new_tag }}"
+              git push --tags
+            fi
+          else
+            git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}"
+            git tag -a ${{ steps.version.outputs.new_tag }} -m "Release ${{ steps.version.outputs.new_tag }}"
+            git push
+            git push --tags
+          fi
+
+      - name: Create GitHub Pre-Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.new_tag }}
+          name: Pre-release ${{ steps.version.outputs.new_tag }}
+          prerelease: true
+          generate_release_notes: true
+          body: |
+            🚀 **Pre-release v${{ steps.version.outputs.new_version }}**
+            
+            This pre-release is being built. Artifacts will be uploaded once the build completes.
+            
+            The build workflow will automatically start after this pre-release is created.
