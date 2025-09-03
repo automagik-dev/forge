@@ -127,38 +127,43 @@ case "${1:-status}" in
         ;;
         
     publish)
-        echo "🚀 Starting interactive publishing pipeline..."
+        echo "🚀 Starting automated publishing pipeline..."
+        echo ""
         
-        # Get current version from package.json
-        VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
-        if [ -z "$VERSION" ]; then
-            echo "❌ Could not determine version from package.json"
-            exit 1
-        fi
+        # Check current version vs npm
+        CURRENT_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
+        NPM_VERSION=$(npm view vibe-kanban version 2>/dev/null || echo "0.0.0")
         
-        echo "📋 Publishing version: $VERSION"
+        echo "📊 Version Status:"
+        echo "  Current local:  $CURRENT_VERSION"
+        echo "  Latest on npm:  $NPM_VERSION"
+        echo ""
         
-        # Check if a release already exists for this version
-        EXISTING_RELEASE=$(gh release view "v$VERSION" --repo "$REPO" --json id 2>/dev/null || echo "")
-        if [ -n "$EXISTING_RELEASE" ]; then
-            echo "⚠️  Release v$VERSION already exists!"
-            echo ""
-            PS3="Choose an action: "
-            select choice in "Delete and recreate" "Cancel"; do
-                case $choice in
-                    "Delete and recreate")
-                        echo "🗑️  Deleting existing release and tag..."
-                        gh release delete "v$VERSION" --repo "$REPO" --yes 2>/dev/null || true
-                        git push origin ":v$VERSION" 2>/dev/null || true
-                        break
-                        ;;
-                    "Cancel")
-                        echo "❌ Publishing cancelled"
-                        exit 1
-                        ;;
-                esac
-            done
-        fi
+        # Select version bump type
+        PS3="Select version bump type: "
+        select VERSION_TYPE in "patch (bug fixes)" "minor (new features)" "major (breaking changes)" "Cancel"; do
+            case $VERSION_TYPE in
+                "patch (bug fixes)")
+                    VERSION_TYPE="patch"
+                    break
+                    ;;
+                "minor (new features)")
+                    VERSION_TYPE="minor"
+                    break
+                    ;;
+                "major (breaking changes)")
+                    VERSION_TYPE="major"
+                    break
+                    ;;
+                "Cancel")
+                    echo "❌ Publishing cancelled"
+                    exit 1
+                    ;;
+            esac
+        done
+        
+        echo ""
+        echo "📈 Selected: $VERSION_TYPE version bump"
         
         # Get commits since last tag for Claude
         LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
@@ -300,58 +305,135 @@ Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
             done
         done
         
-        # First create and push the git tag to trigger build workflow
-        echo "🏷️  Creating and pushing git tag v$VERSION..."
-        git tag "v$VERSION" 2>/dev/null || {
-            echo "⚠️  Tag v$VERSION already exists locally, removing and recreating..."
-            git tag -d "v$VERSION"
-            git tag "v$VERSION"
-        }
-        git push origin "v$VERSION" --force
-        
-        echo "✅ Tag pushed, this will trigger the build workflow"
+        # Step 1: Trigger pre-release workflow which handles version bumping and building
         echo ""
-        echo "⏳ Waiting for build workflow to start..."
+        echo "🏗️  Step 1: Triggering pre-release workflow..."
+        echo "This will:"
+        echo "  • Bump version ($VERSION_TYPE)"
+        echo "  • Build all platforms"
+        echo "  • Create pre-release with .tgz package"
+        echo ""
+        
+        # Trigger the pre-release workflow
+        gh workflow run "Create GitHub Pre-Release" --repo "$REPO" -f version_type="$VERSION_TYPE" || {
+            echo "❌ Failed to trigger pre-release workflow"
+            rm -f .release-notes-draft.md
+            exit 1
+        }
+        
+        echo "⏳ Waiting for pre-release workflow to start..."
         sleep 10
         
-        # Find the workflow run triggered by our tag
-        BUILD_RUN=$(gh run list --workflow="build-all-platforms.yml" --repo "$REPO" --limit 3 --json databaseId,headBranch --jq ".[] | select(.headBranch == \"v$VERSION\") | .databaseId" | head -1)
+        # Find the workflow run
+        PRERELEASE_RUN=$(gh run list --workflow="Create GitHub Pre-Release" --repo "$REPO" --limit 1 --json databaseId,status --jq '.[0] | select(.status != "completed") | .databaseId')
         
-        if [ -z "$BUILD_RUN" ]; then
-            echo "⚠️  Could not find the build workflow run for tag v$VERSION"
-            echo "It may take a moment to start. Checking again..."
-            sleep 10
-            BUILD_RUN=$(gh run list --workflow="build-all-platforms.yml" --repo "$REPO" --limit 3 --json databaseId,headBranch --jq ".[] | select(.headBranch == \"v$VERSION\") | .databaseId" | head -1)
+        if [ -z "$PRERELEASE_RUN" ]; then
+            echo "⚠️  Could not find the pre-release workflow run"
+            echo "Check manually at: https://github.com/$REPO/actions"
+            exit 1
         fi
         
-        if [ -n "$BUILD_RUN" ]; then
-            echo "📋 Build workflow started: Run ID $BUILD_RUN"
-            echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$BUILD_RUN"
-            echo ""
-            echo "⏳ Monitoring build (this will take ~20-30 minutes)..."
+        echo "📋 Pre-release workflow started: Run ID $PRERELEASE_RUN"
+        echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$PRERELEASE_RUN"
+        echo ""
+        echo "⏳ Monitoring build (this will take ~30-45 minutes)..."
+        
+        # Monitor the pre-release build and get the new version
+        NEW_VERSION=""
+        NEW_TAG=""
+        while true; do
+            STATUS=$(gh run view "$PRERELEASE_RUN" --repo "$REPO" --json status --jq '.status')
             
-            # Monitor the build
+            echo -n "[$(date +%H:%M:%S)] Status: $STATUS"
+            
+            case "$STATUS" in
+                completed)
+                    CONCLUSION=$(gh run view "$PRERELEASE_RUN" --repo "$REPO" --json conclusion --jq '.conclusion')
+                    if [ "$CONCLUSION" = "success" ]; then
+                        echo " ✅"
+                        
+                        # Get the new version/tag from the workflow output
+                        echo ""
+                        echo "🔍 Finding created pre-release..."
+                        
+                        # Get the most recent pre-release
+                        RELEASE_INFO=$(gh release list --repo "$REPO" --limit 1 --json tagName,isPrerelease,name --jq '.[] | select(.isPrerelease == true)')
+                        NEW_TAG=$(echo "$RELEASE_INFO" | jq -r '.tagName')
+                        
+                        if [ -z "$NEW_TAG" ]; then
+                            echo "❌ Could not find the created pre-release"
+                            exit 1
+                        fi
+                        
+                        # Extract version from tag (remove timestamp suffix)
+                        NEW_VERSION=$(echo "$NEW_TAG" | sed 's/^v//' | sed 's/-[0-9]*$//')
+                        
+                        echo "✅ Pre-release created: $NEW_TAG (version: $NEW_VERSION)"
+                        break
+                    else
+                        echo " ❌"
+                        echo "Pre-release workflow failed! Check the logs:"
+                        echo "https://github.com/$REPO/actions/runs/$PRERELEASE_RUN"
+                        rm -f .release-notes-draft.md
+                        exit 1
+                    fi
+                    ;;
+                *)
+                    echo " - waiting..."
+                    sleep 30
+                    ;;
+            esac
+        done
+        
+        echo ""
+        echo "🔄 Step 2: Converting pre-release to full release..."
+        echo "This will trigger the npm publish workflow."
+        echo ""
+        
+        # Update the pre-release with our release notes and convert to full release
+        echo "📝 Converting to full release with custom release notes..."
+        gh release edit "$NEW_TAG" --repo "$REPO" \
+            --title "Release v$NEW_VERSION" \
+            --notes-file .release-notes-draft.md \
+            --prerelease=false \
+            --latest || {
+            echo "❌ Failed to convert pre-release to full release"
+            rm -f .release-notes-draft.md
+            exit 1
+        }
+        
+        rm -f .release-notes-draft.md
+        
+        echo "✅ Release v$NEW_VERSION published!"
+        echo ""
+        
+        # Monitor the publish workflow (if it triggers)
+        echo "⏳ Checking for npm publish workflow..."
+        sleep 10
+        
+        PUBLISH_RUN=$(gh run list --workflow="Publish to npm" --repo "$REPO" --limit 1 --json databaseId,createdAt --jq '.[0].databaseId')
+        
+        if [ -n "$PUBLISH_RUN" ]; then
+            echo "📋 NPM publish workflow started: Run ID $PUBLISH_RUN"
+            echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$PUBLISH_RUN"
+            echo ""
+            echo "⏳ Monitoring npm publish..."
+            
+            # Monitor the publish workflow
             while true; do
-                STATUS=$(gh run view "$BUILD_RUN" --repo "$REPO" --json status --jq '.status')
-                
-                echo -n "[$(date +%H:%M:%S)] Build status: $STATUS"
+                STATUS=$(gh run view "$PUBLISH_RUN" --repo "$REPO" --json status --jq '.status')
+                echo -n "[$(date +%H:%M:%S)] Publish status: $STATUS"
                 
                 case "$STATUS" in
                     completed)
-                        CONCLUSION=$(gh run view "$BUILD_RUN" --repo "$REPO" --json conclusion --jq '.conclusion')
+                        CONCLUSION=$(gh run view "$PUBLISH_RUN" --repo "$REPO" --json conclusion --jq '.conclusion')
                         if [ "$CONCLUSION" = "success" ]; then
                             echo " ✅"
-                            echo ""
-                            echo "✅ Build completed successfully!"
-                            echo "📦 The workflow has automatically published to npm"
                             break
                         else
                             echo " ❌"
-                            echo ""
-                            echo "❌ Build workflow failed! Check the logs:"
-                            echo "https://github.com/$REPO/actions/runs/$BUILD_RUN"
-                            rm -f .release-notes-draft.md
-                            exit 1
+                            echo "NPM publish failed. Check the logs."
+                            break
                         fi
                         ;;
                     *)
@@ -360,31 +442,13 @@ Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
                         ;;
                 esac
             done
-        else
-            echo "⚠️  Could not find the build workflow run"
-            echo "Check manually at: https://github.com/$REPO/actions"
-            echo "The tag v$VERSION has been pushed and should trigger the build"
         fi
-        
-        # Now create the GitHub release with our custom notes
-        echo ""
-        echo "📝 Creating GitHub release with custom release notes..."
-        gh release create "v$VERSION" \
-            --title "Release v$VERSION" \
-            --notes-file .release-notes-draft.md \
-            --verify-tag || {
-            echo "⚠️  Release may already exist, updating it..."
-            gh release edit "v$VERSION" \
-                --title "Release v$VERSION" \
-                --notes-file .release-notes-draft.md
-        }
-        
-        rm -f .release-notes-draft.md
         
         echo ""
         echo "🎉 Release complete!"
+        echo "📦 Version $NEW_VERSION published"
         echo "📦 NPM package: https://www.npmjs.com/package/vibe-kanban"
-        echo "🏷️  GitHub release: https://github.com/$REPO/releases/tag/v$VERSION"
+        echo "🏷️  GitHub release: https://github.com/$REPO/releases/tag/$NEW_TAG"
         ;;
         
     beta)

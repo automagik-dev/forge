@@ -1,8 +1,8 @@
 # Automagik Forge - Build and Publishing Automation
 # Usage:
-#   make bump VERSION=0.3.1    # Bump version across all files
-#   make build                 # Build the project
-#   make publish               # Build and publish to NPM
+#   make publish               # Complete release pipeline (version bump + build + npm)
+#   make build                 # Build the project locally
+#   make beta                  # Create a beta release
 
 .PHONY: help bump build publish clean check-version version dev test
 
@@ -11,31 +11,31 @@ help:
 	@echo "Automagik Forge Build Automation"
 	@echo ""
 	@echo "Available targets:"
-	@echo "  bump VERSION=x.y.z  - Bump version and auto-commit"
-	@echo "  build               - Build frontend and Rust binaries (current platform)"
-	@echo "  publish             - Interactive Claude-powered publishing pipeline"
-	@echo "  beta                - Auto-incremented beta release (no version bump needed)"
+	@echo "  publish             - Complete release pipeline (auto version bump + build + npm)"
+	@echo "  beta                - Auto-incremented beta release"
+	@echo "  build               - Build frontend and Rust binaries (current platform only)"
 	@echo "  clean               - Clean build artifacts"
+	@echo "  version             - Show current version info"
 	@echo "  help                - Show this help message"
 	@echo ""
-	@echo "🚀 Complete Release Workflows:"
+	@echo "🚀 Release Workflows:"
 	@echo ""
-	@echo "📦 Full Release:"
-	@echo "  1. make bump VERSION=0.3.5    # Bump version and commit"
-	@echo "  2. make publish               # Interactive Claude release!"
+	@echo "📦 Full Release (NEW - All-in-one!):"
+	@echo "  make publish"
+	@echo "  • Automatically bumps version (patch/minor/major)"
+	@echo "  • Builds all platforms via GitHub Actions"
+	@echo "  • Generates release notes with Claude"
+	@echo "  • Publishes to npm registry"
+	@echo "  • Creates GitHub release"
 	@echo ""
 	@echo "🧪 Beta Testing:"
-	@echo "  1. make bump VERSION=0.3.5    # Set base version"
-	@echo "  2. [make changes and commit]"
-	@echo "  3. make beta                  # Auto-publishes 0.3.5-beta.1"
-	@echo "  4. [test, fix, commit more]"
-	@echo "  5. make beta                  # Auto-publishes 0.3.5-beta.2"
-	@echo "  6. make publish               # Final 0.3.5 release"
+	@echo "  make beta"
+	@echo "  • Auto-increments beta versions (0.3.5-beta.1, 0.3.5-beta.2...)"
+	@echo "  • Creates GitHub pre-releases"
+	@echo "  • Publishes to NPM with 'beta' tag"
+	@echo "  • Install with: npx vibe-kanban@beta"
 	@echo ""
-	@echo "Beta releases:"
-	@echo "  • Auto-increment beta numbers (0.3.5-beta.1, 0.3.5-beta.2...)"
-	@echo "  • Create GitHub pre-releases"
-	@echo "  • Publish to NPM with 'beta' tag: npx automagik-forge@beta"
+	@echo "Note: 'make bump' is now deprecated - use 'make publish' instead"
 
 # Check if VERSION is provided for bump target
 check-version:
@@ -45,9 +45,20 @@ check-version:
 	fi
 	@echo "🔄 Bumping version to $(VERSION)"
 
-# Bump version across all package files
+# Bump version across all package files (DEPRECATED - use 'make publish' instead)
 bump: check-version
-	@echo "📝 Updating version in all package files..."
+	@echo "⚠️  WARNING: 'make bump' is deprecated!"
+	@echo ""
+	@echo "🚀 Please use 'make publish' instead, which handles everything:"
+	@echo "   • Automatic version bumping (patch/minor/major)"
+	@echo "   • Building all platforms"
+	@echo "   • Publishing to npm"
+	@echo "   • Creating GitHub release"
+	@echo ""
+	@echo "If you really need to manually bump the version, continue..."
+	@echo "Press Ctrl+C to cancel, or Enter to proceed with manual bump"
+	@read -r
+	@echo "📝 Manually updating version in all package files..."
 	@# Update root package.json
 	@sed -i 's/"version": "[^"]*"/"version": "$(VERSION)"/' package.json
 	@# Update frontend package.json
@@ -69,6 +80,8 @@ bump: check-version
 	@git add package.json frontend/package.json npx-cli/package.json crates/*/Cargo.toml
 	@git commit -m "chore: bump version to $(VERSION)"
 	@echo "✅ Version $(VERSION) committed successfully!"
+	@echo ""
+	@echo "⚠️  Remember: Next time use 'make publish' for the complete workflow!"
 
 # Build the project (current platform only)
 build:
@@ -96,8 +109,15 @@ clean:
 	@rm -f *.zip
 	@echo "✅ Clean complete!"
 
-# Interactive end-to-end publishing with Claude-generated release notes
+# Complete release pipeline: version bump + build + publish + release notes
 publish:
+	@echo "🚀 Complete Release Pipeline"
+	@echo "This will:"
+	@echo "  1. Let you choose version bump type (patch/minor/major)"
+	@echo "  2. Trigger GitHub Actions to bump version and build all platforms"
+	@echo "  3. Generate release notes with Claude"
+	@echo "  4. Create GitHub release and publish to npm"
+	@echo ""
 	@./gh-build.sh publish
 
 # Beta release with auto-incremented version
