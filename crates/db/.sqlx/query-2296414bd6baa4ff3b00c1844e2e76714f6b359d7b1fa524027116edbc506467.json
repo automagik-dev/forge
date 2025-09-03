@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "UPDATE tasks \n               SET title = $3, description = $4, status = $5, parent_task_attempt = $6 \n               WHERE id = $1 AND project_id = $2 \n               RETURNING id as \"id!: Uuid\", project_id as \"project_id!: Uuid\", title, description, status as \"status!: TaskStatus\", parent_task_attempt as \"parent_task_attempt: Uuid\", created_at as \"created_at!: DateTime<Utc>\", updated_at as \"updated_at!: DateTime<Utc>\"",
+  "query": "SELECT id as \"id!: Uuid\", project_id as \"project_id!: Uuid\", title, description, status as \"status!: TaskStatus\", branch_template, parent_task_attempt as \"parent_task_attempt: Uuid\", created_at as \"created_at!: DateTime<Utc>\", updated_at as \"updated_at!: DateTime<Utc>\"\n               FROM tasks \n               WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -29,23 +29,28 @@
         "type_info": "Text"
       },
       {
-        "name": "parent_task_attempt: Uuid",
+        "name": "branch_template",
         "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "parent_task_attempt: Uuid",
+        "ordinal": 6,
         "type_info": "Blob"
       },
       {
         "name": "created_at!: DateTime<Utc>",
-        "ordinal": 6,
+        "ordinal": 7,
         "type_info": "Text"
       },
       {
         "name": "updated_at!: DateTime<Utc>",
-        "ordinal": 7,
+        "ordinal": 8,
         "type_info": "Text"
       }
     ],
     "parameters": {
-      "Right": 6
+      "Right": 1
     },
     "nullable": [
       true,
@@ -54,9 +59,10 @@
       true,
       false,
       true,
+      true,
       false,
       false
     ]
   },
-  "hash": "00aa2d8701f6b1ed2e84ad00b9b6aaf8d3cce788d2494ff283e2fad71df0a05d"
+  "hash": "2296414bd6baa4ff3b00c1844e2e76714f6b359d7b1fa524027116edbc506467"
 }
