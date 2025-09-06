@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus } from 'lucide-react';
+import { AlertTriangle, Plus } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import { projectsApi, tasksApi, attemptsApi } from '@/lib/api';
 import { useTaskDialog } from '@/contexts/task-dialog-context';
@@ -27,9 +27,11 @@ import {
 
 import TaskKanbanBoard from '@/components/tasks/TaskKanbanBoard';
 import { TaskDetailsPanel } from '@/components/tasks/TaskDetailsPanel';
+import DeleteTaskConfirmationDialog from '@/components/tasks/DeleteTaskConfirmationDialog';
 import type { TaskWithAttemptStatus, Project, TaskAttempt } from 'shared/types';
 import type { DragEndEvent } from '@/components/ui/shadcn-io/kanban';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type Task = TaskWithAttemptStatus;
 
@@ -55,6 +57,9 @@ export function ProjectTasks() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
+  // Task deletion state
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+
   // Fullscreen state from pathname
   const isFullscreen = location.pathname.endsWith('/full');
 
@@ -63,6 +68,7 @@ export function ProjectTasks() {
     queryKey: ['taskAttempts', selectedTask?.id],
     queryFn: () => attemptsApi.getAll(selectedTask!.id),
     enabled: !!selectedTask?.id,
+    refetchInterval: 5000,
   });
 
   // Selected attempt logic
@@ -133,15 +139,15 @@ export function ProjectTasks() {
     setIsTemplateManagerOpen(false);
   }, []);
 
-  const handleDeleteTask = useCallback(async (taskId: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
-
-    try {
-      await tasksApi.delete(taskId);
-    } catch (error) {
-      setError('Failed to delete task');
-    }
-  }, []);
+  const handleDeleteTask = useCallback(
+    (taskId: string) => {
+      const task = tasksById[taskId];
+      if (task) {
+        setTaskToDelete(task);
+      }
+    },
+    [tasksById]
+  );
 
   const handleEditTask = useCallback(
     (task: Task) => {
@@ -231,10 +237,16 @@ export function ProjectTasks() {
     return <Loader message="Loading tasks..." size={32} className="py-8" />;
   }
 
-  if (error || streamError) {
+  if (error) {
     return (
-      <div className="text-center py-8 text-destructive">
-        {error || streamError}
+      <div className="p-4">
+        <Alert>
+          <AlertTitle className="flex items-center gap-2">
+            <AlertTriangle size="16" />
+            Error
+          </AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -243,6 +255,17 @@ export function ProjectTasks() {
     <div
       className={`min-h-full ${getMainContainerClasses(isPanelOpen, isFullscreen)}`}
     >
+      {streamError && (
+        <div>
+          <Alert>
+            <AlertTitle className="flex items-center gap-2">
+              <AlertTriangle size="16" />
+              Reconnecting
+            </AlertTitle>
+            <AlertDescription>{streamError}</AlertDescription>
+          </Alert>
+        </div>
+      )}
       {/* Left Column - Kanban Section */}
       <div className={getKanbanSectionClasses(isPanelOpen, isFullscreen)}>
         {tasks.length === 0 ? (
@@ -302,6 +325,21 @@ export function ProjectTasks() {
       )}
 
       {/* Dialogs - rendered at main container level to avoid stacking issues */}
+
+      {taskToDelete && (
+        <DeleteTaskConfirmationDialog
+          key={taskToDelete.id}
+          task={taskToDelete}
+          projectId={projectId!}
+          onClose={() => setTaskToDelete(null)}
+          onDeleted={() => {
+            setTaskToDelete(null);
+            if (selectedTask?.id === taskToDelete.id) {
+              handleClosePanel();
+            }
+          }}
+        />
+      )}
 
       <ProjectForm
         open={isProjectSettingsOpen}

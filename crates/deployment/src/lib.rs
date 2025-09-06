@@ -21,6 +21,7 @@ use services::services::{
     config::{Config, ConfigError},
     container::{ContainerError, ContainerService},
     events::{EventError, EventService},
+    file_search_cache::FileSearchCache,
     filesystem::{FilesystemError, FilesystemService},
     filesystem_watcher::FilesystemWatcherError,
     git::{GitService, GitServiceError},
@@ -98,6 +99,8 @@ pub trait Deployment: Clone + Send + Sync + 'static {
 
     fn events(&self) -> &EventService;
 
+    fn file_search_cache(&self) -> &Arc<FileSearchCache>;
+
     async fn update_sentry_scope(&self) -> Result<(), DeploymentError> {
         let user_id = self.user_id();
         let config = self.config().read().await;
@@ -149,6 +152,21 @@ pub trait Deployment: Clone + Send + Sync + 'static {
                     e
                 );
                 continue;
+            }
+            // Capture after-head commit OID (best-effort)
+            if let Ok(Some(task_attempt)) =
+                TaskAttempt::find_by_id(&self.db().pool, process.task_attempt_id).await
+                && let Some(container_ref) = task_attempt.container_ref
+            {
+                let wt = std::path::PathBuf::from(container_ref);
+                if let Ok(head) = self.git().get_head_info(&wt) {
+                    let _ = ExecutionProcess::update_after_head_commit(
+                        &self.db().pool,
+                        process.id,
+                        &head.oid,
+                    )
+                    .await;
+                }
             }
             // Process marked as failed
             tracing::info!("Marked orphaned execution process {} as failed", process.id);

@@ -4,6 +4,7 @@ use std::{path::Path, process::Stdio, sync::Arc, time::Duration};
 use async_trait::async_trait;
 use command_group::{AsyncCommandGroup, AsyncGroupChild};
 use futures::StreamExt;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tokio::{io::AsyncWriteExt, process::Command};
 use ts_rs::TS;
@@ -14,12 +15,12 @@ use utils::{
     },
     msg_store::MsgStore,
     path::make_path_relative,
-    shell::get_shell_command,
+    shell::{get_shell_command, resolve_executable_path},
 };
 
 use crate::{
     command::{CmdOverrides, CommandBuilder, apply_overrides},
-    executors::{ExecutorError, StandardCodingAgentExecutor},
+    executors::{AppendPrompt, ExecutorError, StandardCodingAgentExecutor},
     logs::{
         ActionType, FileChange, NormalizedEntry, NormalizedEntryType, TodoItem,
         plain_text_processor::PlainTextLogProcessor,
@@ -27,11 +28,10 @@ use crate::{
     },
 };
 
-/// Executor for running Cursor CLI and normalizing its JSONL stream
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS, JsonSchema)]
 pub struct Cursor {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub append_prompt: Option<String>,
+    #[serde(default)]
+    pub append_prompt: AppendPrompt,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub force: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -67,7 +67,7 @@ impl StandardCodingAgentExecutor for Cursor {
         let (shell_cmd, shell_arg) = get_shell_command();
         let agent_cmd = self.build_command_builder().build_initial();
 
-        let combined_prompt = utils::text::combine_prompt(&self.append_prompt, prompt);
+        let combined_prompt = self.append_prompt.combine_prompt(prompt);
 
         let mut command = Command::new(shell_cmd);
         command
@@ -100,7 +100,7 @@ impl StandardCodingAgentExecutor for Cursor {
             .build_command_builder()
             .build_follow_up(&["--resume".to_string(), session_id.to_string()]);
 
-        let combined_prompt = utils::text::combine_prompt(&self.append_prompt, prompt);
+        let combined_prompt = self.append_prompt.combine_prompt(prompt);
 
         let mut command = Command::new(shell_cmd);
         command
@@ -390,7 +390,7 @@ impl StandardCodingAgentExecutor for Cursor {
                         let entry = NormalizedEntry {
                             timestamp: None,
                             entry_type: NormalizedEntryType::SystemMessage,
-                            content: format!("Raw output: `{line}`"),
+                            content: line,
                             metadata: None,
                         };
                         let id = entry_index_provider.next();
@@ -404,6 +404,10 @@ impl StandardCodingAgentExecutor for Cursor {
     // MCP configuration methods
     fn default_mcp_config_path(&self) -> Option<std::path::PathBuf> {
         dirs::home_dir().map(|home| home.join(".cursor").join("mcp.json"))
+    }
+
+    async fn check_availability(&self) -> bool {
+        resolve_executable_path("cursor-agent").is_some()
     }
 }
 
@@ -1068,7 +1072,7 @@ mod tests {
         // Avoid relying on feature flag in tests; construct with a dummy command
         let executor = Cursor {
             // No command field needed anymore
-            append_prompt: None,
+            append_prompt: AppendPrompt::default(),
             force: None,
             model: None,
             cmd: Default::default(),

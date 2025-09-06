@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use command_group::AsyncGroupChild;
 use enum_dispatch::enum_dispatch;
 use futures_io::Error as FuturesIoError;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use sqlx::Type;
 use strum_macros::{Display, EnumDiscriminants, EnumString, VariantNames};
@@ -26,6 +27,12 @@ pub mod cursor;
 pub mod gemini;
 pub mod opencode;
 pub mod qwen;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, TS)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum BaseAgentCapability {
+    RestoreCheckpoint,
+}
 
 #[derive(Debug, Error)]
 pub enum ExecutorError {
@@ -125,6 +132,15 @@ impl CodingAgent {
     pub fn supports_mcp(&self) -> bool {
         self.default_mcp_config_path().is_some()
     }
+
+    pub fn capabilities(&self) -> Vec<BaseAgentCapability> {
+        match self {
+            Self::ClaudeCode(_) => vec![BaseAgentCapability::RestoreCheckpoint],
+            Self::Amp(_) => vec![BaseAgentCapability::RestoreCheckpoint],
+            Self::Codex(_) => vec![BaseAgentCapability::RestoreCheckpoint],
+            Self::Gemini(_) | Self::Opencode(_) | Self::Cursor(_) | Self::QwenCode(_) => vec![],
+        }
+    }
 }
 
 #[async_trait]
@@ -145,4 +161,33 @@ pub trait StandardCodingAgentExecutor {
 
     // MCP configuration methods
     fn default_mcp_config_path(&self) -> Option<std::path::PathBuf>;
+
+    async fn check_availability(&self) -> bool {
+        self.default_mcp_config_path()
+            .map(|path| path.exists())
+            .unwrap_or(false)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS, JsonSchema)]
+#[serde(transparent)]
+#[schemars(
+    title = "Append Prompt",
+    description = "Extra text appended to the prompt",
+    extend("format" = "textarea")
+)]
+#[derive(Default)]
+pub struct AppendPrompt(pub Option<String>);
+
+impl AppendPrompt {
+    pub fn get(&self) -> Option<String> {
+        self.0.clone()
+    }
+
+    pub fn combine_prompt(&self, prompt: &str) -> String {
+        match self {
+            AppendPrompt(Some(value)) => format!("{prompt}{value}"),
+            AppendPrompt(None) => prompt.to_string(),
+        }
+    }
 }

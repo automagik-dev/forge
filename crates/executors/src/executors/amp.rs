@@ -2,6 +2,7 @@ use std::{path::Path, process::Stdio, sync::Arc};
 
 use async_trait::async_trait;
 use command_group::{AsyncCommandGroup, AsyncGroupChild};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tokio::{io::AsyncWriteExt, process::Command};
 use ts_rs::TS;
@@ -10,18 +11,21 @@ use utils::{msg_store::MsgStore, shell::get_shell_command};
 use crate::{
     command::{CmdOverrides, CommandBuilder, apply_overrides},
     executors::{
-        ExecutorError, StandardCodingAgentExecutor,
+        AppendPrompt, ExecutorError, StandardCodingAgentExecutor,
         claude::{ClaudeLogProcessor, HistoryStrategy},
     },
     logs::{stderr_processor::normalize_stderr_logs, utils::EntryIndexProvider},
 };
 
-/// An executor that uses Amp to process tasks
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS, JsonSchema)]
 pub struct Amp {
+    #[serde(default)]
+    pub append_prompt: AppendPrompt,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub append_prompt: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schemars(
+        title = "Dangerously Allow All",
+        description = "Allow all commands to be executed, even if they are not safe."
+    )]
     pub dangerously_allow_all: Option<bool>,
     #[serde(flatten)]
     pub cmd: CmdOverrides,
@@ -48,7 +52,7 @@ impl StandardCodingAgentExecutor for Amp {
         let (shell_cmd, shell_arg) = get_shell_command();
         let amp_command = self.build_command_builder().build_initial();
 
-        let combined_prompt = utils::text::combine_prompt(&self.append_prompt, prompt);
+        let combined_prompt = self.append_prompt.combine_prompt(prompt);
 
         let mut command = Command::new(shell_cmd);
         command
@@ -79,13 +83,46 @@ impl StandardCodingAgentExecutor for Amp {
     ) -> Result<AsyncGroupChild, ExecutorError> {
         // Use shell command for cross-platform compatibility
         let (shell_cmd, shell_arg) = get_shell_command();
-        let amp_command = self.build_command_builder().build_follow_up(&[
+
+        // 1) Fork the thread synchronously to obtain new thread id
+        let fork_cmd = self.build_command_builder().build_follow_up(&[
             "threads".to_string(),
-            "continue".to_string(),
+            "fork".to_string(),
             session_id.to_string(),
         ]);
+        let fork_output = Command::new(shell_cmd)
+            .kill_on_drop(true)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .current_dir(current_dir)
+            .arg(shell_arg)
+            .arg(&fork_cmd)
+            .output()
+            .await?;
+        let stdout_str = String::from_utf8_lossy(&fork_output.stdout);
+        let new_thread_id = stdout_str
+            .lines()
+            .rev()
+            .find(|l| !l.trim().is_empty())
+            .unwrap_or("")
+            .trim()
+            .to_string();
+        if new_thread_id.is_empty() {
+            return Err(ExecutorError::Io(std::io::Error::other(
+                "AMP threads fork did not return a thread id",
+            )));
+        }
 
-        let combined_prompt = utils::text::combine_prompt(&self.append_prompt, prompt);
+        tracing::debug!("AMP threads fork -> new thread id: {}", new_thread_id);
+
+        // 2) Continue using the new thread id
+        let continue_cmd = self.build_command_builder().build_follow_up(&[
+            "threads".to_string(),
+            "continue".to_string(),
+            new_thread_id.clone(),
+        ]);
+
+        let combined_prompt = self.append_prompt.combine_prompt(prompt);
 
         let mut command = Command::new(shell_cmd);
         command
@@ -95,7 +132,7 @@ impl StandardCodingAgentExecutor for Amp {
             .stderr(Stdio::piped())
             .current_dir(current_dir)
             .arg(shell_arg)
-            .arg(&amp_command);
+            .arg(&continue_cmd);
 
         let mut child = command.group_spawn()?;
 
@@ -125,6 +162,6 @@ impl StandardCodingAgentExecutor for Amp {
 
     // MCP configuration methods
     fn default_mcp_config_path(&self) -> Option<std::path::PathBuf> {
-        dirs::config_dir().map(|config| config.join("amp").join("settings.json"))
+        dirs::home_dir().map(|home| home.join(".config").join("amp").join("settings.json"))
     }
 }

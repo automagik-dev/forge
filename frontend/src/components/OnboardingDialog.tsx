@@ -39,14 +39,16 @@ interface OnboardingDialogProps {
 }
 
 export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
-  const [profile, setProfile] = useState<ExecutorProfileId>({
-    executor: BaseCodingAgent.CLAUDE_CODE,
-    variant: null,
-  });
+  const { profiles, config } = useUserSystem();
+
+  const [profile, setProfile] = useState<ExecutorProfileId>(
+    config?.executor_profile || {
+      executor: BaseCodingAgent.CLAUDE_CODE,
+      variant: null,
+    }
+  );
   const [editorType, setEditorType] = useState<EditorType>(EditorType.VS_CODE);
   const [customCommand, setCustomCommand] = useState<string>('');
-
-  const { profiles } = useUserSystem();
 
   const handleComplete = () => {
     onComplete({
@@ -82,7 +84,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
             Choose Your Coding Agent
           </h2>
           <div className="space-y-2">
-            <Label htmlFor="profile">Default Profile</Label>
+            <Label htmlFor="profile">Default Agent</Label>
             <div className="flex gap-2">
               <Select
                 value={profile.executor}
