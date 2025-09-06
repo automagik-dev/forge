@@ -20,6 +20,8 @@ export type SearchResult = { path: string, is_file: boolean, match_type: SearchM
 
 export type SearchMatchType = "FileName" | "DirectoryName" | "FullPath";
 
+export type SearchMode = "taskform" | "settings";
+
 export type ExecutorAction = { typ: ExecutorActionType, next_action: ExecutorAction | null, };
 
 export type McpConfig = { servers: { [key in string]?: JsonValue }, servers_path: Array<string>, template: JsonValue, vibe_kanban: JsonValue, is_toml_config: boolean, };
@@ -58,7 +60,11 @@ export type CreateImage = { file_path: string, original_name: string, mime_type:
 
 export type ApiResponse<T, E = T> = { success: boolean, data: T | null, error_data: E | null, message: string | null, };
 
-export type UserSystemInfo = { config: Config, environment: Environment, executors: { [key in BaseCodingAgent]?: ExecutorConfig }, };
+export type UserSystemInfo = { config: Config, environment: Environment, 
+/**
+ * Capabilities supported per executor (e.g., { "CLAUDE_CODE": ["RESTORE_CHECKPOINT"] })
+ */
+capabilities: { [key in string]?: Array<BaseAgentCapability> }, executors: { [key in BaseCodingAgent]?: ExecutorConfig }, };
 
 export type Environment = { os_type: string, os_version: string, os_architecture: string, bitness: string, };
 
@@ -128,23 +134,29 @@ variant: string | null, };
 
 export type ExecutorConfig = { [key in string]?: { "CLAUDE_CODE": ClaudeCode } | { "AMP": Amp } | { "GEMINI": Gemini } | { "CODEX": Codex } | { "OPENCODE": Opencode } | { "CURSOR": Cursor } | { "QWEN_CODE": QwenCode } };
 
-export type ClaudeCode = { claude_code_router?: boolean | null, append_prompt?: string | null, plan?: boolean | null, dangerously_skip_permissions?: boolean | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+export type BaseAgentCapability = "RESTORE_CHECKPOINT";
 
-export type Gemini = { model: GeminiModel, append_prompt?: string | null, yolo?: boolean | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+export type ClaudeCode = { append_prompt: AppendPrompt, claude_code_router?: boolean | null, plan?: boolean | null, dangerously_skip_permissions?: boolean | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+
+export type Gemini = { append_prompt: AppendPrompt, model: GeminiModel, yolo?: boolean | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
 
 export type GeminiModel = "default" | "flash";
 
-export type Amp = { append_prompt?: string | null, dangerously_allow_all?: boolean | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+export type Amp = { append_prompt: AppendPrompt, dangerously_allow_all?: boolean | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
 
-export type Codex = { append_prompt?: string | null, sandbox?: SandboxMode | null, oss?: boolean | null, model?: string | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+export type Codex = { append_prompt: AppendPrompt, sandbox?: SandboxMode | null, approval?: ApprovalPolicy | null, oss?: boolean | null, model?: string | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
 
 export type SandboxMode = "read-only" | "workspace-write" | "danger-full-access";
 
-export type Cursor = { append_prompt?: string | null, force?: boolean | null, model?: string | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+export type ApprovalPolicy = "untrusted" | "on-failure" | "on-request" | "never";
 
-export type Opencode = { append_prompt?: string | null, model?: string | null, agent?: string | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+export type Cursor = { append_prompt: AppendPrompt, force?: boolean | null, model?: string | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
 
-export type QwenCode = { append_prompt?: string | null, yolo?: boolean | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+export type Opencode = { append_prompt: AppendPrompt, model?: string | null, agent?: string | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+
+export type QwenCode = { append_prompt: AppendPrompt, yolo?: boolean | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+
+export type AppendPrompt = string | null;
 
 export type CodingAgentInitialRequest = { prompt: string, 
 /**
@@ -166,11 +178,41 @@ executor_profile_id: ExecutorProfileId, base_branch: string, };
 
 export type RebaseTaskAttemptRequest = { new_base_branch: string | null, };
 
-export type BranchStatus = { commits_behind: number | null, commits_ahead: number | null, has_uncommitted_changes: boolean | null, base_branch_name: string, remote_commits_behind: number | null, remote_commits_ahead: number | null, merges: Array<Merge>, };
+export type RestoreAttemptRequest = { 
+/**
+ * Process to restore to (target = its after_head_commit)
+ */
+process_id: string, 
+/**
+ * If true, allow resetting Git even when uncommitted changes exist
+ */
+force_when_dirty: boolean | null, 
+/**
+ * If false, skip performing the Git reset step (history drop still applies)
+ */
+perform_git_reset: boolean | null, };
+
+export type RestoreAttemptResult = { had_later_processes: boolean, git_reset_needed: boolean, git_reset_applied: boolean, target_after_oid: string | null, };
+
+export type CommitInfo = { sha: string, subject: string, };
+
+export type CommitCompareResult = { head_oid: string, target_oid: string, ahead_from_head: number, behind_from_head: number, is_linear: boolean, };
+
+export type BranchStatus = { commits_behind: number | null, commits_ahead: number | null, has_uncommitted_changes: boolean | null, head_oid: string | null, uncommitted_count: number | null, untracked_count: number | null, base_branch_name: string, remote_commits_behind: number | null, remote_commits_ahead: number | null, merges: Array<Merge>, };
 
 export type TaskAttempt = { id: string, task_id: string, container_ref: string | null, branch: string | null, base_branch: string, executor: string, worktree_deleted: boolean, setup_completed_at: string | null, created_at: string, updated_at: string, };
 
-export type ExecutionProcess = { id: string, task_attempt_id: string, run_reason: ExecutionProcessRunReason, executor_action: ExecutorAction, status: ExecutionProcessStatus, exit_code: bigint | null, started_at: string, completed_at: string | null, created_at: string, updated_at: string, };
+export type ExecutionProcess = { id: string, task_attempt_id: string, run_reason: ExecutionProcessRunReason, executor_action: ExecutorAction, 
+/**
+ * Git HEAD commit OID captured after the process ends
+ */
+after_head_commit: string | null, status: ExecutionProcessStatus, exit_code: bigint | null, 
+/**
+ * dropped: true if this process is excluded from the current
+ * history view (due to restore/trimming). Hidden from logs/timeline;
+ * still listed in the Processes tab.
+ */
+dropped: boolean, started_at: string, completed_at: string | null, created_at: string, updated_at: string, };
 
 export type ExecutionProcessStatus = "running" | "completed" | "failed" | "killed";
 

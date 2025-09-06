@@ -10,7 +10,7 @@ use axum::{
 };
 use deployment::{Deployment, DeploymentError};
 use executors::{
-    executors::{BaseCodingAgent, StandardCodingAgentExecutor},
+    executors::{BaseAgentCapability, BaseCodingAgent, StandardCodingAgentExecutor},
     mcp_config::{McpConfig, read_agent_config, write_agent_config},
     profile::{ExecutorConfigs, ExecutorProfileId},
 };
@@ -64,6 +64,8 @@ pub struct UserSystemInfo {
     #[serde(flatten)]
     pub profiles: ExecutorConfigs,
     pub environment: Environment,
+    /// Capabilities supported per executor (e.g., { "CLAUDE_CODE": ["RESTORE_CHECKPOINT"] })
+    pub capabilities: HashMap<String, Vec<BaseAgentCapability>>,
 }
 
 // TODO: update frontend, BE schema has changed, this replaces GET /config and /config/constants
@@ -77,6 +79,16 @@ async fn get_user_system_info(
         config: config.clone(),
         profiles: ExecutorConfigs::get_cached(),
         environment: Environment::new(),
+        capabilities: {
+            let mut caps: HashMap<String, Vec<BaseAgentCapability>> = HashMap::new();
+            let profs = ExecutorConfigs::get_cached();
+            for key in profs.executors.keys() {
+                if let Some(agent) = profs.get_coding_agent(&ExecutorProfileId::new(*key)) {
+                    caps.insert(key.to_string(), agent.capabilities());
+                }
+            }
+            caps
+        },
     };
 
     ResponseJson(ApiResponse::success(user_system_info))
@@ -88,11 +100,24 @@ async fn update_config(
 ) -> ResponseJson<ApiResponse<Config>> {
     let config_path = config_path();
 
+    // Get the current analytics_enabled state before updating
+    let old_analytics_enabled = {
+        let config = deployment.config().read().await;
+        config.analytics_enabled
+    };
+
     match save_config_to_file(&new_config, &config_path).await {
         Ok(_) => {
             let mut config = deployment.config().write().await;
             *config = new_config.clone();
             drop(config);
+
+            // If analytics was just enabled (changed from None/false to true), track session_start
+            if new_config.analytics_enabled == Some(true) && old_analytics_enabled != Some(true) {
+                deployment
+                    .track_if_analytics_allowed("session_start", serde_json::json!({}))
+                    .await;
+            }
 
             ResponseJson(ApiResponse::success(new_config))
         }

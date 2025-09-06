@@ -344,6 +344,8 @@ impl LocalContainerService {
                             tracing::warn!("Failed to update executor session summary: {}", e);
                         }
 
+                        // (moved) capture after-head commit occurs later, after commit/next-action handling
+
                         if matches!(
                             ctx.execution_process.status,
                             ExecutionProcessStatus::Completed
@@ -415,6 +417,24 @@ impl LocalContainerService {
                         }
                     }
 
+                    // Now that commit/next-action/finalization steps for this process are complete,
+                    // capture the HEAD OID as the definitive "after" state (best-effort).
+                    if let Ok(ctx) = ExecutionProcess::load_context(&db.pool, exec_id).await {
+                        let worktree_dir = container.task_attempt_to_current_dir(&ctx.task_attempt);
+                        if let Ok(head) = container.git().get_head_info(&worktree_dir)
+                            && let Err(e) = ExecutionProcess::update_after_head_commit(
+                                &db.pool, exec_id, &head.oid,
+                            )
+                            .await
+                        {
+                            tracing::warn!(
+                                "Failed to update after_head_commit for {}: {}",
+                                exec_id,
+                                e
+                            );
+                        }
+                    }
+
                     // Cleanup msg store
                     if let Some(msg_arc) = msg_stores.write().await.remove(&exec_id) {
                         msg_arc.push_finished();
@@ -443,6 +463,11 @@ impl LocalContainerService {
     pub fn dir_name_from_task_attempt(attempt_id: &Uuid, task_title: &str) -> String {
         let task_title_id = git_branch_id(task_title);
         format!("forge-{}-{}", task_title_id, short_uuid(attempt_id))
+    }
+
+    pub fn git_branch_from_task_attempt(attempt_id: &Uuid, task_title: &str) -> String {
+        let task_title_id = git_branch_id(task_title);
+        format!("forge/{}-{}", short_uuid(attempt_id), task_title_id)
     }
 
     async fn track_child_msgs_in_store(&self, id: Uuid, child: &mut AsyncGroupChild) {
@@ -700,12 +725,19 @@ impl ContainerService for LocalContainerService {
             .await?
             .ok_or(sqlx::Error::RowNotFound)?;
 
-        // Use the branch name from TaskAttempt (set during TaskAttempt creation)
-        let task_branch_name = task_attempt.branch
-            .as_ref()
-            .ok_or_else(|| ContainerError::Other(anyhow!("TaskAttempt branch name not set")))?
-            .clone();
-        let worktree_path = WorktreeManager::get_worktree_base_dir().join(&task_branch_name);
+        // Use manual branch name if set, otherwise auto-generate
+        let git_branch_name = if let Some(ref branch) = task_attempt.branch {
+            // Manual branch name was provided
+            branch.clone()
+        } else {
+            // Auto-generate branch name using forge/ prefix
+            LocalContainerService::git_branch_from_task_attempt(&task_attempt.id, &task.title)
+        };
+        
+        // Always use the standard directory naming for worktree
+        let worktree_dir_name =
+            LocalContainerService::dir_name_from_task_attempt(&task_attempt.id, &task.title);
+        let worktree_path = WorktreeManager::get_worktree_base_dir().join(&worktree_dir_name);
 
         let project = task
             .parent_project(&self.db.pool)
@@ -714,7 +746,7 @@ impl ContainerService for LocalContainerService {
 
         WorktreeManager::create_worktree(
             &project.git_repo_path,
-            &task_branch_name,
+            &git_branch_name,
             &worktree_path,
             &task_attempt.base_branch,
             true, // create new branch
@@ -749,7 +781,10 @@ impl ContainerService for LocalContainerService {
         )
         .await?;
 
-        // Branch is already set during TaskAttempt creation, no need to update it here
+        // Update branch only if it wasn't manually set
+        if task_attempt.branch.is_none() {
+            TaskAttempt::update_branch(&self.db.pool, task_attempt.id, &git_branch_name).await?;
+        }
 
         Ok(worktree_path.to_string_lossy().to_string())
     }
@@ -914,6 +949,19 @@ impl ContainerService for LocalContainerService {
             "Execution process {} stopped successfully",
             execution_process.id
         );
+
+        // Record after-head commit OID (best-effort)
+        if let Ok(ctx) = ExecutionProcess::load_context(&self.db.pool, execution_process.id).await {
+            let worktree = self.task_attempt_to_current_dir(&ctx.task_attempt);
+            if let Ok(head) = self.git().get_head_info(&worktree) {
+                let _ = ExecutionProcess::update_after_head_commit(
+                    &self.db.pool,
+                    execution_process.id,
+                    &head.oid,
+                )
+                .await;
+            }
+        }
 
         Ok(())
     }
