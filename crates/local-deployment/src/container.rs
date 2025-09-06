@@ -124,8 +124,10 @@ impl LocalContainerService {
         if let Err(e) = Task::update_status(&db.pool, ctx.task.id, TaskStatus::InReview).await {
             tracing::error!("Failed to update task status to InReview: {e}");
         }
-        let notify_cfg = config.read().await.notifications.clone();
-        NotificationService::notify_execution_halted(notify_cfg, ctx).await;
+        let config_guard = config.read().await;
+        let notify_cfg = config_guard.notifications.clone();
+        let omni_cfg = &config_guard.omni;
+        NotificationService::notify_execution_halted(notify_cfg, ctx, omni_cfg).await;
     }
 
     /// Defensively check for externally deleted worktrees and mark them as deleted in the database
