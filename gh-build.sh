@@ -512,12 +512,30 @@ Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
                             
                             echo "✅ Pre-release created: $NEW_TAG (version: $NEW_VERSION)"
                             
-                            # Now wait for build-all-platforms workflow to start
+                            # IMPORTANT: Tags pushed with GITHUB_TOKEN don't trigger workflows
+                            # We need to explicitly trigger the build workflow
                             echo ""
-                            echo "⏳ Waiting for build workflow to start (triggered by tag)..."
-                            sleep 10
+                            echo "🚀 Explicitly triggering build workflow for tag $NEW_TAG..."
+                            echo "(GitHub Actions security prevents tag-triggered workflows from GITHUB_TOKEN)"
                             
-                            BUILD_RUN=$(gh run list --workflow="Build All Platforms" --repo "$REPO" --limit 1 --json databaseId,headBranch --jq '.[] | select(.headBranch == "'$NEW_TAG'") | .databaseId' | head -1)
+                            # Trigger build-all-platforms.yml with the specific tag
+                            gh workflow run "Build All Platforms" --repo "$REPO" --field tag="$NEW_TAG" || {
+                                echo "❌ Failed to trigger build workflow"
+                                echo "You can manually trigger it at: https://github.com/$REPO/actions/workflows/build-all-platforms.yml"
+                                exit 1
+                            }
+                            
+                            echo "⏳ Waiting for build workflow to start..."
+                            sleep 15
+                            
+                            # Find the workflow run we just triggered (by tag name in headBranch)
+                            BUILD_RUN=$(gh run list --workflow="Build All Platforms" --repo "$REPO" --limit 3 --json databaseId,headBranch,createdAt --jq '.[] | select(.headBranch == "'"$NEW_TAG"'") | .databaseId' | head -1)
+                            
+                            if [ -z "$BUILD_RUN" ]; then
+                                # Fallback: get the most recent run  
+                                echo "⚠️  Could not find run by tag, using most recent run..."
+                                BUILD_RUN=$(gh run list --workflow="Build All Platforms" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')
+                            fi
                             
                             if [ -n "$BUILD_RUN" ]; then
                                 echo "📋 Build workflow started: Run ID $BUILD_RUN"
@@ -535,11 +553,25 @@ Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
                                             BUILD_CONCLUSION=$(gh run view "$BUILD_RUN" --repo "$REPO" --json conclusion --jq '.conclusion')
                                             if [ "$BUILD_CONCLUSION" = "success" ]; then
                                                 echo " ✅"
-                                                echo "Build completed successfully!"
+                                                echo "✅ Build completed successfully! NPM package should be published."
+                                                
+                                                # Verify NPM publication
+                                                echo ""
+                                                echo "🔍 Verifying NPM publication..."
+                                                sleep 30  # Give npm registry time to update
+                                                
+                                                NPM_VERSION=$(npm view automagik-forge version 2>/dev/null || echo "")
+                                                if [ "$NPM_VERSION" = "$NEW_VERSION" ]; then
+                                                    echo "✅ Version $NEW_VERSION successfully published to NPM!"
+                                                else
+                                                    echo "⚠️  NPM version check shows: $NPM_VERSION (expected $NEW_VERSION)"
+                                                    echo "   It may take a few minutes for NPM to update."
+                                                fi
                                             else
                                                 echo " ❌"
-                                                echo "Build failed! Check the logs:"
+                                                echo "❌ Build failed! Check the logs:"
                                                 echo "https://github.com/$REPO/actions/runs/$BUILD_RUN"
+                                                exit 1
                                             fi
                                             break
                                             ;;
@@ -550,8 +582,9 @@ Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
                                     esac
                                 done
                             else
-                                echo "⚠️  Build workflow didn't start automatically"
-                                echo "You may need to trigger it manually"
+                                echo "❌ Could not find build workflow run"
+                                echo "You can manually trigger it at: https://github.com/$REPO/actions/workflows/build-all-platforms.yml"
+                                exit 1
                             fi
                             
                             break

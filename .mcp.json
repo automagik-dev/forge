@@ -1,5 +1,13 @@
 {
   "mcpServers": {
+    "forge": {
+      "args": [
+        "-y",
+        "automagik-forge",
+        "--mcp"
+      ],
+      "command": "npx"
+    },
     "ask-repo-agent": {
       "type": "sse",
       "url": "https://mcp.deepwiki.com/sse"
