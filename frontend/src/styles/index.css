@@ -555,6 +555,14 @@
 
 /* Dracula theme specific enhancements */
 .dracula {
+  /* Fix modal/dialog backgrounds - use proper Dracula background */
+  [role="dialog"],
+  .DialogContent,
+  [class*="dialog"] {
+    background-color: hsl(231 15% 18%) !important; /* Dracula Background */
+    border: 1px solid hsl(232 14% 31%) !important; /* Selection border */
+  }
+  
   /* Fix input visibility - removed border from textarea to match dark theme */
   input:not(.bg-muted),
   select {
@@ -644,6 +652,22 @@
     border: 1px solid hsl(225 27% 51%) !important; /* Comment border */
   }
   
+  /* Fix header icon hover invisibility - ensure icons stay visible */
+  header button:hover,
+  nav button:hover,
+  [class*="navbar"] button:hover,
+  button[class*="ghost"]:hover {
+    background-color: hsla(265 89% 78% / 0.1) !important; /* Purple with low opacity */
+    color: hsl(265 89% 78%) !important; /* Purple text */
+  }
+  
+  /* Fix header icons specifically */
+  header svg:hover,
+  nav svg:hover,
+  [class*="navbar"] svg:hover {
+    color: hsl(265 89% 78%) !important; /* Purple on hover */
+  }
+  
   /* Button hover states */
   button:hover {
     opacity: 0.9;
@@ -653,6 +677,44 @@
   /* Primary button glow */
   button[class*="primary"]:hover {
     box-shadow: 0 0 10px hsla(265 89% 78% / 0.5); /* Purple glow */
+  }
+  
+  /* Fix Create PR button - use Green for better visibility */
+  button[class*="blue-600"],
+  button[class*="blue-700"],
+  .bg-blue-600,
+  .hover\:bg-blue-700:hover {
+    background-color: hsl(135 94% 65%) !important; /* Dracula Green */
+    color: hsl(231 15% 18%) !important; /* Dark text on green */
+    border: none !important;
+  }
+  
+  button[class*="blue-600"]:hover,
+  button[class*="blue-700"]:hover,
+  .bg-blue-600:hover,
+  .hover\:bg-blue-700 {
+    background-color: hsl(135 94% 60%) !important; /* Slightly darker green on hover */
+    box-shadow: 0 0 15px hsla(135 94% 65% / 0.5) !important; /* Green glow */
+  }
+  
+  /* Fix left menu navigation links in settings */
+  nav a:hover,
+  [role="navigation"] a:hover,
+  aside a:hover,
+  .sidebar a:hover,
+  [class*="settings"] nav a:hover {
+    background-color: hsla(265 89% 78% / 0.15) !important; /* Purple with low opacity */
+    color: hsl(265 89% 78%) !important; /* Purple text */
+  }
+  
+  /* Ensure active/current page links are visible */
+  nav a[aria-current="page"],
+  [role="navigation"] a[aria-current="page"],
+  aside a[aria-current="page"],
+  .sidebar a[aria-current="page"] {
+    background-color: hsla(265 89% 78% / 0.2) !important;
+    color: hsl(265 89% 78%) !important;
+    border-left: 3px solid hsl(265 89% 78%);
   }
   
   /* Scrollbar styling */
