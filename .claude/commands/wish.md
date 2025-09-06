@@ -56,6 +56,8 @@ Create `/genie/wishes/{feature-name}-wish.md` with this structure:
 ```markdown
 # 🧞 {FEATURE NAME} WISH
 
+**Status:** [DRAFT|READY_FOR_REVIEW|APPROVED|IN_PROGRESS|COMPLETED]
+
 ## Executive Summary
 [One sentence: what this wish accomplishes]
 
@@ -293,7 +295,7 @@ pnpm run lint
 - [ ] Feature can be completely disabled
 ```
 
-### Phase 3: Interactive Refinement
+### Phase 3: Interactive Refinement & Status Management
 
 <persistence>
 - Continue refining until user approves
@@ -301,6 +303,13 @@ pnpm run lint
 - Decompose until tasks are atomic
 - Ensure agent synchronization is explicit
 </persistence>
+
+**Status Lifecycle:**
+1. **DRAFT** - Initial creation, still being refined
+2. **READY_FOR_REVIEW** - Complete specification awaiting user review
+3. **APPROVED** - User approved, ready for execution
+4. **IN_PROGRESS** - Currently being implemented by agents
+5. **COMPLETED** - Successfully implemented and tested
 
 **Present to user:**
 ```markdown
@@ -319,12 +328,15 @@ pnpm run lint
 1. {Specific question if needed}
 2. {Alternative approach to consider}
 
-Is this wish specification ready for execution? [Review/Approve/Revise]
+**Current Status:** READY_FOR_REVIEW
+**Next Actions:** 
+- Review the wish specification above
+- Respond with: APPROVE (to proceed) | REVISE (to modify)
 ```
 
-### Phase 4: Task Generation for Agents
+### Phase 4: Execution Ready
 
-Once approved, generate the final executable tasks:
+Once approved (Status: APPROVED), the wish document contains all the task breakdowns and is ready for execution using `/forge` command:
 
 <task_breakdown>
 Each task MUST include:
