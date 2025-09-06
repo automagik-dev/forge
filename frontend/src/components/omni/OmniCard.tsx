@@ -39,6 +39,7 @@ export function OmniCard() {
         api_key: null,
         instance: null,
         recipient: null,
+        recipient_type: null,
       },
     });
   }, [config, updateAndSaveConfig]);

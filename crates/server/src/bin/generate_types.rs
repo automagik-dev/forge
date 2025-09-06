@@ -53,6 +53,8 @@ fn generate_types_content() -> String {
         services::services::config::EditorConfig::decl(),
         services::services::config::EditorType::decl(),
         services::services::config::GitHubConfig::decl(),
+        services::services::config::OmniConfig::decl(),
+        services::services::config::RecipientType::decl(),
         services::services::config::SoundFile::decl(),
         services::services::auth::DeviceFlowStartResponse::decl(),
         server::routes::auth::DevicePollStatus::decl(),

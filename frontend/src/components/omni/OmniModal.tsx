@@ -35,6 +35,7 @@ export function OmniModal({ open, onOpenChange }: OmniModalProps) {
           api_key: apiKey || null,
           instance: instance || null,
           recipient: recipient || null,
+          recipient_type: config?.omni?.recipient_type ?? null,
         },
       });
       onOpenChange(false);

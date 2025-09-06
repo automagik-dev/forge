@@ -48,33 +48,33 @@ impl NotificationService {
         };
         Self::notify(config, &title, &message).await;
         
-        // Send Omni notification if enabled - B3-hook integration
+        // Send Omni notification if enabled
         if omni_config.enabled {
-            // Check required fields
-            if omni_config.host.is_none() || omni_config.api_key.is_none() {
-                tracing::debug!("Omni enabled but missing host or api_key configuration");
-                return;
-            }
+            // Convert v7 OmniConfig to omni::types::OmniConfig
+            let omni_config_converted = crate::services::omni::types::OmniConfig {
+                enabled: omni_config.enabled,
+                host: omni_config.host.clone(),
+                api_key: omni_config.api_key.clone(),
+                instance: omni_config.instance.clone(),
+                recipient: omni_config.recipient.clone(),
+                recipient_type: omni_config.recipient_type.clone().map(|rt| match rt {
+                    crate::services::config::RecipientType::PhoneNumber => 
+                        crate::services::omni::types::RecipientType::PhoneNumber,
+                    crate::services::config::RecipientType::UserId => 
+                        crate::services::omni::types::RecipientType::UserId,
+                }),
+            };
             
-            // Create OmniService with simplified config
-            // Note: The actual OmniService expects a different structure than v7's OmniConfig
-            // This is a known mismatch between the wish specification and implementation
-            // TODO: Align omni::types::OmniConfig with v7::OmniConfig structure
+            let omni_service = crate::services::omni::OmniService::new(omni_config_converted);
+            // Use task ID as a simple URL reference since we don't have project ID in context
+            let task_url = format!("http://localhost:8887/tasks/{}", ctx.task.id);
             
-            // For now, we'll try to send if we have the minimal required fields
-            if let (Some(_host), Some(_api_key), Some(instance), Some(recipient)) = 
-                (&omni_config.host, &omni_config.api_key, &omni_config.instance, &omni_config.recipient) {
-                
-                tracing::info!(
-                    "Attempting to send Omni notification to {} via instance {}", 
-                    recipient, instance
-                );
-                
-                // The actual integration would need proper type conversion here
-                // Currently blocked by type mismatch between v7 and omni::types
-                tracing::warn!(
-                    "Omni notification integration pending: type conversion between v7::OmniConfig and omni::types::OmniConfig not yet implemented"
-                );
+            if let Err(e) = omni_service.send_task_notification(
+                &ctx.task.title,
+                &message,
+                Some(&task_url),
+            ).await {
+                tracing::error!("Failed to send Omni notification: {}", e);
             }
         }
     }

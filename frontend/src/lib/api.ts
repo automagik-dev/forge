@@ -183,6 +183,9 @@ const handleApiResponse = async <T, E = T>(response: Response): Promise<T> => {
   return result.data as T;
 };
 
+// Export handleApiResponse for use in other modules
+export { handleApiResponse };
+
 // Project Management APIs
 export const projectsApi = {
   getAll: async (): Promise<Project[]> => {

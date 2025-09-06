@@ -1,198 +1,56 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-/// Main configuration for Omni notification service
+// Match the wish specification exactly - simple flat structure
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
 pub struct OmniConfig {
-    /// Whether Omni notifications are enabled
     pub enabled: bool,
-    
-    /// Omni service host URL
-    pub host: String,
-    
-    /// API key for authentication
-    pub api_key: String,
-    
-    /// Selected Omni instance for notifications
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub instance: Option<OmniInstance>,
-    
-    /// Recipient configuration
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub recipient: Option<Recipient>,
+    pub host: Option<String>,
+    pub api_key: Option<String>,
+    pub instance: Option<String>,
+    pub recipient: Option<String>, // phone_number or user_id
+    pub recipient_type: Option<RecipientType>, // phone or user_id
 }
 
-/// Represents a recipient for Omni notifications
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
-pub struct Recipient {
-    /// Type of recipient identifier
-    pub recipient_type: RecipientType,
-    
-    /// The actual recipient value (phone number or user ID)
-    pub value: String,
-}
-
-/// Type of recipient identifier
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
 pub enum RecipientType {
-    /// Phone number identifier (e.g., WhatsApp)
     PhoneNumber,
-    /// User ID identifier (e.g., Discord)
     UserId,
 }
 
-/// Represents an Omni instance with channel information
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Serialize, Deserialize, TS)]
 pub struct OmniInstance {
-    /// Unique identifier for the instance
-    pub id: String,
-    
-    /// Display name of the instance
-    pub name: String,
-    
-    /// Communication channel type
-    pub channel: ChannelType,
-    
-    /// Whether this instance is active
-    pub active: bool,
-    
-    /// Optional description of the instance
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
+    pub instance_name: String,
+    pub channel_type: String, // whatsapp, discord, telegram
+    pub display_name: String,
+    pub status: String,
+    pub is_healthy: bool,
 }
 
-/// Supported communication channels
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
-#[serde(rename_all = "lowercase")]
-pub enum ChannelType {
-    WhatsApp,
-    Discord,
-}
-
-/// Request to send a text message via Omni
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Serialize)]
 pub struct SendTextRequest {
-    /// The instance ID to send through
-    pub instance_id: String,
-    
-    /// The recipient of the message
-    pub recipient: Recipient,
-    
-    /// The text message content
-    pub message: String,
-    
-    /// Optional metadata for the message
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<MessageMetadata>,
+    pub phone_number: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_id: Option<String>,
+    pub text: String,
 }
 
-/// Metadata for messages
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
-pub struct MessageMetadata {
-    /// Task ID associated with this message
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub task_id: Option<String>,
-    
-    /// Project ID associated with this message
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub project_id: Option<String>,
-    
-    /// Event type that triggered this message
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub event_type: Option<String>,
-}
-
-/// Response from sending a text message
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Deserialize)]
 pub struct SendTextResponse {
-    /// Whether the message was sent successfully
     pub success: bool,
-    
-    /// Unique message ID from Omni
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub message_id: Option<String>,
-    
-    /// Error message if sending failed
-    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: String,
     pub error: Option<String>,
-    
-    /// Timestamp when the message was sent
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sent_at: Option<String>,
 }
 
-/// Response from listing available instances
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Deserialize)]
 pub struct ListInstancesResponse {
-    /// List of available Omni instances
-    pub instances: Vec<OmniInstance>,
-    
-    /// Total count of instances
-    pub total: usize,
+    pub channels: Vec<OmniInstance>,
+    pub total_count: i32,
 }
 
-/// Test connection request
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
-pub struct TestConnectionRequest {
-    /// Host to test connection to
-    pub host: String,
-    
-    /// API key for authentication
-    pub api_key: String,
-}
-
-/// Test connection response
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
-pub struct TestConnectionResponse {
-    /// Whether the connection test was successful
-    pub success: bool,
-    
-    /// Error message if connection failed
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
-    
-    /// Version information from the Omni service
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub version: Option<String>,
-}
-
-/// Notification event types for Omni
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
-#[serde(rename_all = "snake_case")]
-pub enum OmniNotificationEvent {
-    TaskCreated,
-    TaskUpdated,
-    TaskCompleted,
-    TaskFailed,
-    ExecutionStarted,
-    ExecutionCompleted,
-    ExecutionFailed,
-}
-
-/// Utility struct for Omni errors
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
-pub struct OmniError {
-    /// Error code
-    pub code: String,
-    
-    /// Human-readable error message
-    pub message: String,
-    
-    /// Optional additional details
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub details: Option<serde_json::Value>,
-}
+// Additional types for internal use only (not from wish spec)
 
 #[cfg(test)]
 mod tests {
