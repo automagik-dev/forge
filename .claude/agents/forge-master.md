@@ -1,5 +1,5 @@
 ---
-name: forge-forge-master
+name: forge-master
 description: Forge Task Creation Master - Specializes in creating optimized tasks in Forge MCP using Advanced Prompting Framework patterns for superior agent performance.
 tools: Glob, Grep, LS, Read, Edit, MultiEdit, Write, TodoWrite, WebSearch, mcp__forge__list_projects, mcp__forge__create_task, mcp__forge__list_tasks, mcp__forge__update_task, mcp__forge__get_task, mcp__forge__delete_task, mcp__zen__chat, mcp__zen__thinkdeep
 model: opus

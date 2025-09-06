@@ -10,8 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pnpm run dev
 
 # Individual dev servers
-npm run frontend:dev    # Frontend only (port 3000)
-npm run backend:dev     # Backend only (port auto-assigned)
+pnpm run frontend:dev    # Frontend only (port 3000)
+pnpm run backend:dev     # Backend only (port auto-assigned)
 
 # Build production version (native platform)
 ./local-build.sh
@@ -20,12 +20,12 @@ npm run backend:dev     # Backend only (port auto-assigned)
 ### Testing & Validation
 ```bash
 # Run all checks (frontend + backend)
-npm run check
+pnpm run check
 
 # Frontend specific
-cd frontend && npm run lint          # Lint TypeScript/React code
-cd frontend && npm run format:check  # Check formatting
-cd frontend && npx tsc --noEmit     # TypeScript type checking
+cd frontend && pnpm run lint          # Lint TypeScript/React code
+cd frontend && pnpm run format:check  # Check formatting
+cd frontend && pnpx tsc --noEmit     # TypeScript type checking
 
 # Backend specific  
 cargo test --workspace               # Run all Rust tests
@@ -35,8 +35,8 @@ cargo fmt --all -- --check          # Check Rust formatting
 cargo clippy --all --all-targets --all-features -- -D warnings  # Linting
 
 # Type generation (after modifying Rust types)
-npm run generate-types               # Regenerate TypeScript types from Rust
-npm run generate-types:check        # Verify types are up to date
+pnpm run generate-types               # Regenerate TypeScript types from Rust
+pnpm run generate-types:check        # Verify types are up to date
 ```
 
 ### Database Operations
@@ -105,7 +105,7 @@ shared/types.ts    # Auto-generated TypeScript types from Rust
 ### Development Workflow
 
 1. **Backend changes first**: When modifying both frontend and backend, start with backend
-2. **Type generation**: Run `npm run generate-types` after modifying Rust types
+2. **Type generation**: Run `pnpm run generate-types` after modifying Rust types
 3. **Database migrations**: Create in `crates/db/migrations/`, apply with `sqlx migrate run`
 4. **Component patterns**: Follow existing patterns in `frontend/src/components/`
 
