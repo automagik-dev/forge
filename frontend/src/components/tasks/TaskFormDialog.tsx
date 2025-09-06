@@ -417,24 +417,24 @@ export function TaskFormDialog({
               />
             </div>
 
-            {!isEditMode && (
-              <div>
-                <Label htmlFor="branch-template" className="text-sm font-medium">
-                  Branch Name Template
-                </Label>
-                <Input
-                  id="branch-template"
-                  value={branchTemplate}
-                  onChange={(e) => setBranchTemplate(e.target.value)}
-                  placeholder="e.g., fix/auth-bug, feat/new-feature (optional)"
-                  className="mt-1.5"
-                  disabled={isSubmitting || isSubmittingAndStart}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  If not provided, will use 'forge-title-uuid' pattern
-                </p>
-              </div>
-            )}
+            <div>
+              <Label htmlFor="branch-template" className="text-sm font-medium">
+                Branch Name Template
+              </Label>
+              <Input
+                id="branch-template"
+                value={branchTemplate}
+                onChange={(e) => setBranchTemplate(e.target.value)}
+                placeholder="e.g., fix/auth-bug, feat/new-feature (optional)"
+                className="mt-1.5"
+                disabled={isSubmitting || isSubmittingAndStart}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {isEditMode 
+                  ? "Changes will only affect new task attempts. Existing attempts keep their branches."
+                  : "If not provided, will use 'forge-title-uuid' pattern"}
+              </p>
+            </div>
 
             <ImageUploadSection
               images={images}
