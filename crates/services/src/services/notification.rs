@@ -4,6 +4,7 @@ use db::models::execution_process::{ExecutionContext, ExecutionProcessStatus};
 use utils;
 
 use crate::services::config::SoundFile;
+use crate::services::omni::OmniService;
 
 /// Service for handling cross-platform notifications including sound alerts and push notifications
 #[derive(Debug, Clone)]
@@ -14,7 +15,11 @@ use crate::services::config::NotificationConfig;
 static WSL_ROOT_PATH_CACHE: OnceLock<Option<String>> = OnceLock::new();
 
 impl NotificationService {
-    pub async fn notify_execution_halted(mut config: NotificationConfig, ctx: &ExecutionContext) {
+    pub async fn notify_execution_halted(
+        mut config: NotificationConfig, 
+        ctx: &ExecutionContext,
+        omni_config: &crate::services::config::OmniConfig
+    ) {
         // If the process was intentionally killed by user, suppress sound
         if matches!(ctx.execution_process.status, ExecutionProcessStatus::Killed) {
             config.sound_enabled = false;
@@ -43,6 +48,21 @@ impl NotificationService {
             }
         };
         Self::notify(config, &title, &message).await;
+        
+        // Send Omni notification if enabled
+        if omni_config.enabled {
+            let omni_service = OmniService::new(omni_config.clone());
+            let task_url = format!("http://localhost:8887/projects/{}/tasks/{}", 
+                ctx.project.id, ctx.task.id);
+            
+            if let Err(e) = omni_service.send_task_notification(
+                &ctx.task.title,
+                &message,
+                Some(&task_url),
+            ).await {
+                tracing::error!("Failed to send Omni notification: {}", e);
+            }
+        }
     }
 
     /// Send both sound and push notifications if enabled
