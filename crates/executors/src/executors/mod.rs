@@ -87,7 +87,7 @@ impl CodingAgent {
                 }),
                 serde_json::json!({
                     "command": "npx",
-                    "args": ["-y", "vibe-kanban", "--mcp"],
+                    "args": ["-y", "automagik-forge", "--mcp"],
                 }),
                 true,
             ),
@@ -98,7 +98,7 @@ impl CodingAgent {
                 }),
                 serde_json::json!({
                     "command": "npx",
-                    "args": ["-y", "vibe-kanban", "--mcp"],
+                    "args": ["-y", "automagik-forge", "--mcp"],
                 }),
                 false,
             ),
@@ -110,7 +110,7 @@ impl CodingAgent {
                 }),
                 serde_json::json!({
                     "type": "local",
-                    "command": ["npx", "-y", "vibe-kanban", "--mcp"],
+                    "command": ["npx", "-y", "automagik-forge", "--mcp"],
                     "enabled": true
                 }),
                 false,
@@ -122,7 +122,7 @@ impl CodingAgent {
                 }),
                 serde_json::json!({
                     "command": "npx",
-                    "args": ["-y", "vibe-kanban", "--mcp"],
+                    "args": ["-y", "automagik-forge", "--mcp"],
                 }),
                 false,
             ),

@@ -484,7 +484,7 @@ impl WorktreeManager {
         .map_err(|e| WorktreeError::TaskJoin(format!("{e}")))?
     }
 
-    /// Get the base directory for vibe-kanban worktrees
+    /// Get the base directory for automagik-forge worktrees
     pub fn get_worktree_base_dir() -> std::path::PathBuf {
         utils::path::get_vibe_kanban_temp_dir().join("worktrees")
     }

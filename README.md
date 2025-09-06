@@ -476,7 +476,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 ## 🙏 Acknowledgments
 
 Special thanks to:
-- Vibe Kanban team, for inspiring us to build Forge.
+- Vibe Kanban team, whose original vision inspired Automagik Forge's evolution.
 - All our early adopters and contributors
 
 ---

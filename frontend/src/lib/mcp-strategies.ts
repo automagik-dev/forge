@@ -76,8 +76,8 @@ export class McpConfigStrategyGeneral {
       current[lastKey] = {};
     }
 
-    // Add vibe_kanban server with the config from the schema
-    current[lastKey]['vibe_kanban'] = mcp_config.vibe_kanban;
+    // Add automagik_forge server with the config from the schema
+    current[lastKey]['automagik_forge'] = mcp_config.automagik_forge;
 
     return updatedConfig;
   }

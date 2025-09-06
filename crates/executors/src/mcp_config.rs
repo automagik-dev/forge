@@ -16,7 +16,7 @@ pub struct McpConfig {
     servers: HashMap<String, serde_json::Value>,
     pub servers_path: Vec<String>,
     pub template: serde_json::Value,
-    pub vibe_kanban: serde_json::Value,
+    pub automagik_forge: serde_json::Value,
     pub is_toml_config: bool,
 }
 
@@ -24,14 +24,14 @@ impl McpConfig {
     pub fn new(
         servers_path: Vec<String>,
         template: serde_json::Value,
-        vibe_kanban: serde_json::Value,
+        automagik_forge: serde_json::Value,
         is_toml_config: bool,
     ) -> Self {
         Self {
             servers: HashMap::new(),
             servers_path,
             template,
-            vibe_kanban,
+            automagik_forge,
             is_toml_config,
         }
     }

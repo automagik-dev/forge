@@ -42,7 +42,7 @@ function CreatePrDialog() {
 
   useEffect(() => {
     if (isOpen && data) {
-      setPrTitle(`${data.task.title} (vibe-kanban)`);
+      setPrTitle(`${data.task.title} (automagik-forge)`);
       setPrBody(data.task.description || '');
       setError(null); // Reset error when opening
     }

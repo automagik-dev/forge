@@ -60,10 +60,11 @@ impl Default for AuthService {
 
 impl AuthService {
     pub fn new() -> Self {
-        let client_id_str = option_env!("GITHUB_CLIENT_ID").unwrap_or("Ov23li9bxz3kKfPOIsGm");
+        let client_id_str = option_env!("GITHUB_CLIENT_ID")
+            .unwrap_or("Ov23li2nd1KF5nCPbgoj");
         AuthService {
             client_id: client_id_str.to_string(),
-            device_codes: Arc::new(RwLock::new(None)), // Initially no device codes
+            device_codes: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -112,7 +113,7 @@ impl AuthService {
         let client = OctocrabBuilder::new()
             .add_header(
                 HeaderName::try_from("User-Agent").unwrap(),
-                "vibe-kanban-app".to_string(),
+                "automagik-forge-app".to_string(),
             )
             .personal_token(access_token.clone())
             .build()?;

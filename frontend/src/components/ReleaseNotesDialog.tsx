@@ -14,8 +14,7 @@ interface ReleaseNotesDialogProps {
   onClose: () => void;
 }
 
-// const RELEASE_NOTES_URL = 'https://vibekanban.com/release-notes';
-const RELEASE_NOTES_URL = 'https://automagikforge.com/release-notes'; // TODO: Update when domain is ready
+const RELEASE_NOTES_URL = 'https://forge.automag.ik/release-notes';
 
 export function ReleaseNotesDialog({ open, onClose }: ReleaseNotesDialogProps) {
   const [iframeError, setIframeError] = useState(false);

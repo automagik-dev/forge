@@ -371,16 +371,16 @@ You are continuing work on the above task. The execution history shows the previ
         // Determine base directory under user's home
         let home = dirs::home_dir().unwrap_or_else(std::env::temp_dir);
         if cfg!(debug_assertions) {
-            home.join(".vibe-kanban")
+            home.join(".automagik-forge")
                 .join("dev")
                 .join("gemini_sessions")
         } else {
-            home.join(".vibe-kanban").join("gemini_sessions")
+            home.join(".automagik-forge").join("gemini_sessions")
         }
     }
 
     fn get_legacy_sessions_base_dir() -> PathBuf {
-        // Previous location was under the temp-based vibe-kanban dir
+        // Previous location was under the temp-based automagik-forge dir
         utils::path::get_vibe_kanban_temp_dir().join("gemini_sessions")
     }
 

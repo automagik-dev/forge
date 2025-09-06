@@ -126,7 +126,7 @@ export function McpSettings() {
       // Parse existing configuration
       const existingConfig = mcpServers.trim() ? JSON.parse(mcpServers) : {};
 
-      // Add vibe_kanban to the existing configuration using the schema
+      // Add automagik_forge to the existing configuration using the schema
       const updatedConfig = McpConfigStrategyGeneral.addVibeKanbanToConfig(
         mcpConfig,
         existingConfig
@@ -137,8 +137,8 @@ export function McpSettings() {
       setMcpServers(configJson);
       setMcpError(null);
     } catch (err) {
-      setMcpError('Failed to configure vibe-kanban MCP server');
-      console.error('Error configuring vibe-kanban:', err);
+      setMcpError('Failed to configure automagik-forge MCP server');
+      console.error('Error configuring automagik-forge:', err);
     }
   };
 
@@ -330,10 +330,10 @@ export function McpSettings() {
                   disabled={mcpApplying || mcpLoading || !selectedProfile}
                   className="w-64"
                 >
-                  Add Vibe-Kanban MCP
+                  Add Automagik Forge MCP
                 </Button>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Automatically adds the Vibe-Kanban MCP server configuration.
+                  Automatically adds the Automagik Forge MCP server configuration.
                 </p>
               </div>
             </div>
