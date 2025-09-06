@@ -36,6 +36,7 @@ import { toPrettyCase } from '@/utils/string';
 import { useTheme } from '@/components/theme-provider';
 import { useUserSystem } from '@/components/config-provider';
 import { GitHubLoginDialog } from '@/components/GitHubLoginDialog';
+import { OmniCard } from '@/components/omni/OmniCard';
 import { TaskTemplateManager } from '@/components/TaskTemplateManager';
 
 export function GeneralSettings() {
@@ -387,6 +388,8 @@ export function GeneralSettings() {
           )}
         </CardContent>
       </Card>
+
+      <OmniCard />
 
       <Card>
         <CardHeader>
