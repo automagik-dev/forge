@@ -33,12 +33,12 @@ const EXTERNAL_LINKS = [
   {
     label: 'Docs',
     icon: BookOpen,
-    href: 'https://vibekanban.com/',
+    href: 'https://forge.automag.ik/',
   },
   {
     label: 'Support',
     icon: MessageCircleQuestion,
-    href: 'https://github.com/BloopAI/vibe-kanban/issues',
+    href: 'https://github.com/namastexlabs/automagik-forge/issues',
   },
 ];
 

@@ -183,7 +183,7 @@ Available MCP tools for agent integration:
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `GITHUB_CLIENT_ID` | Build | `Ov23li9bxz3kKfPOIsGm` | GitHub OAuth client ID |
+| `GITHUB_CLIENT_ID` | Build | `Ov23li2nd1KF5nCPbgoj` | GitHub OAuth client ID |
 | `POSTHOG_API_KEY` | Build | Empty | Analytics API key |
 | `BACKEND_PORT` | Runtime | Auto | Backend server port |
 | `FRONTEND_PORT` | Runtime | `3000` | Frontend dev port |
