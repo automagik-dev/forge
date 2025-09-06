@@ -6,12 +6,22 @@ pub use v6::{EditorConfig, EditorType, GitHubConfig, NotificationConfig, SoundFi
 
 use crate::services::config::versions::v6;
 
+// Define a simplified OmniConfig for v7 that matches the wish specification
+// This is separate from the full omni::types::OmniConfig used by OmniService
 #[derive(Clone, Debug, Default, Serialize, Deserialize, TS)]
 pub struct OmniConfig {
     pub enabled: bool,
+    pub host: Option<String>,
     pub api_key: Option<String>,
-    pub endpoint: Option<String>,
-    pub model: Option<String>,
+    pub instance: Option<String>,
+    pub recipient: Option<String>, // phone_number or user_id
+    pub recipient_type: Option<RecipientType>, // phone or user_id
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+pub enum RecipientType {
+    PhoneNumber,
+    UserId,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -59,7 +69,14 @@ impl Config {
             workspace_dir: old_config.workspace_dir,
             last_app_version: old_config.last_app_version,
             show_release_notes: old_config.show_release_notes,
-            omni: OmniConfig::default(),
+            omni: OmniConfig {
+                enabled: false,
+                host: None,
+                api_key: None,
+                instance: None,
+                recipient: None,
+                recipient_type: None,
+            },
         })
     }
 }
@@ -102,7 +119,14 @@ impl Default for Config {
             workspace_dir: None,
             last_app_version: None,
             show_release_notes: false,
-            omni: OmniConfig::default(),
+            omni: OmniConfig {
+                enabled: false,
+                host: None,
+                api_key: None,
+                instance: None,
+                recipient: None,
+                recipient_type: None,
+            },
         }
     }
 }
