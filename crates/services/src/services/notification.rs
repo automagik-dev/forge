@@ -17,7 +17,7 @@ impl NotificationService {
     pub async fn notify_execution_halted(
         mut config: NotificationConfig, 
         ctx: &ExecutionContext,
-        omni_config: &crate::services::config::OmniConfig
+        omni_config: &crate::services::omni::types::OmniConfig
     ) {
         // If the process was intentionally killed by user, suppress sound
         if matches!(ctx.execution_process.status, ExecutionProcessStatus::Killed) {
@@ -50,24 +50,10 @@ impl NotificationService {
         
         // Send Omni notification if enabled
         if omni_config.enabled {
-            // Convert v7 OmniConfig to omni::types::OmniConfig
-            let omni_config_converted = crate::services::omni::types::OmniConfig {
-                enabled: omni_config.enabled,
-                host: omni_config.host.clone(),
-                api_key: omni_config.api_key.clone(),
-                instance: omni_config.instance.clone(),
-                recipient: omni_config.recipient.clone(),
-                recipient_type: omni_config.recipient_type.clone().map(|rt| match rt {
-                    crate::services::config::RecipientType::PhoneNumber => 
-                        crate::services::omni::types::RecipientType::PhoneNumber,
-                    crate::services::config::RecipientType::UserId => 
-                        crate::services::omni::types::RecipientType::UserId,
-                }),
-            };
-            
-            let omni_service = crate::services::omni::OmniService::new(omni_config_converted);
-            // Use task ID as a simple URL reference since we don't have project ID in context
-            let task_url = format!("http://localhost:8887/tasks/{}", ctx.task.id);
+            let omni_service = crate::services::omni::OmniService::new(omni_config.clone());
+            // Build proper task URL with project ID from task
+            let task_url = format!("http://localhost:8887/projects/{}/tasks/{}", 
+                ctx.task.project_id, ctx.task.id);
             
             if let Err(e) = omni_service.send_task_notification(
                 &ctx.task.title,

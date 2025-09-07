@@ -98,6 +98,8 @@ export type OmniConfig = { enabled: boolean, host: string | null, api_key: strin
 
 export type RecipientType = "PhoneNumber" | "UserId";
 
+export type OmniInstance = { instance_name: string, channel_type: string, display_name: string, status: string, is_healthy: boolean, };
+
 export enum SoundFile { ABSTRACT_SOUND1 = "ABSTRACT_SOUND1", ABSTRACT_SOUND2 = "ABSTRACT_SOUND2", ABSTRACT_SOUND3 = "ABSTRACT_SOUND3", ABSTRACT_SOUND4 = "ABSTRACT_SOUND4", COW_MOOING = "COW_MOOING", PHONE_VIBRATION = "PHONE_VIBRATION", ROOSTER = "ROOSTER" }
 
 export type DeviceFlowStartResponse = { user_code: string, verification_uri: string, expires_in: number, interval: number, };
