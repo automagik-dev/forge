@@ -5,24 +5,8 @@ use ts_rs::TS;
 pub use v6::{EditorConfig, EditorType, GitHubConfig, NotificationConfig, SoundFile, ThemeMode};
 
 use crate::services::config::versions::v6;
-
-// Define a simplified OmniConfig for v7 that matches the wish specification
-// This is separate from the full omni::types::OmniConfig used by OmniService
-#[derive(Clone, Debug, Default, Serialize, Deserialize, TS)]
-pub struct OmniConfig {
-    pub enabled: bool,
-    pub host: Option<String>,
-    pub api_key: Option<String>,
-    pub instance: Option<String>,
-    pub recipient: Option<String>, // phone_number or user_id
-    pub recipient_type: Option<RecipientType>, // phone or user_id
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
-pub enum RecipientType {
-    PhoneNumber,
-    UserId,
-}
+// Import OmniConfig directly from the omni module - single source of truth
+pub use crate::services::omni::types::{OmniConfig, RecipientType};
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 pub struct Config {

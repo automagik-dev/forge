@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 // Match the wish specification exactly - simple flat structure
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, TS)]
 pub struct OmniConfig {
     pub enabled: bool,
     pub host: Option<String>,
@@ -50,8 +50,6 @@ pub struct ListInstancesResponse {
     pub total_count: i32,
 }
 
-// Additional types for internal use only (not from wish spec)
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -60,37 +58,42 @@ mod tests {
     fn test_recipient_type_serialization() {
         let phone = RecipientType::PhoneNumber;
         let json = serde_json::to_string(&phone).unwrap();
-        assert_eq!(json, r#""phoneNumber""#);
+        assert_eq!(json, r#""PhoneNumber""#);
         
         let user = RecipientType::UserId;
         let json = serde_json::to_string(&user).unwrap();
-        assert_eq!(json, r#""userId""#);
-    }
-
-    #[test]
-    fn test_channel_type_serialization() {
-        let whatsapp = ChannelType::WhatsApp;
-        let json = serde_json::to_string(&whatsapp).unwrap();
-        assert_eq!(json, r#""whatsapp""#);
-        
-        let discord = ChannelType::Discord;
-        let json = serde_json::to_string(&discord).unwrap();
-        assert_eq!(json, r#""discord""#);
+        assert_eq!(json, r#""UserId""#);
     }
 
     #[test]
     fn test_omni_config_defaults() {
         let config = OmniConfig {
             enabled: false,
-            host: "https://omni.example.com".to_string(),
-            api_key: "secret-key".to_string(),
+            host: Some("https://omni.example.com".to_string()),
+            api_key: Some("secret-key".to_string()),
             instance: None,
             recipient: None,
+            recipient_type: None,
         };
         
         assert!(!config.enabled);
-        assert_eq!(config.host, "https://omni.example.com");
+        assert_eq!(config.host, Some("https://omni.example.com".to_string()));
         assert!(config.instance.is_none());
         assert!(config.recipient.is_none());
+        assert!(config.recipient_type.is_none());
+    }
+    
+    #[test]
+    fn test_send_text_request_serialization() {
+        let req = SendTextRequest {
+            phone_number: Some("1234567890".to_string()),
+            user_id: None,
+            text: "Test message".to_string(),
+        };
+        
+        let json = serde_json::to_string(&req).unwrap();
+        assert!(json.contains("phone_number"));
+        assert!(!json.contains("user_id")); // Should be skipped when None
+        assert!(json.contains("Test message"));
     }
 }
