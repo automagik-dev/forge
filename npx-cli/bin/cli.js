@@ -116,9 +116,31 @@ if (isMcpMode) {
   console.log(`📦 Extracting automagik-forge...`);
   extractAndRun("automagik-forge", (bin) => {
     console.log(`🚀 Launching automagik-forge...`);
+    // Load .env from current working directory (best-effort), then set defaults
+    const env = { ...process.env };
+    try {
+      const dotenvPath = path.join(process.cwd(), ".env");
+      if (fs.existsSync(dotenvPath)) {
+        const raw = fs.readFileSync(dotenvPath, "utf8");
+        for (const line of raw.split(/\r?\n/)) {
+          if (!line || /^\s*#/.test(line)) continue;
+          const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+          if (!m) continue;
+          const key = m[1];
+          let val = m[2];
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          // Only set if not already provided in the process environment
+          if (env[key] === undefined) env[key] = val;
+        }
+        console.log(`🔧 Loaded environment from .env in ${process.cwd()}`);
+      }
+    } catch (e) {
+      console.warn(`⚠️  Failed to load .env: ${e.message}`);
+    }
     
     // Set default environment variables if not already set
-    const env = { ...process.env };
     if (!env.BACKEND_PORT && !env.PORT) {
       env.BACKEND_PORT = "8887";
     }

@@ -17,7 +17,6 @@ impl NotificationService {
     pub async fn notify_execution_halted(
         mut config: NotificationConfig, 
         ctx: &ExecutionContext,
-        omni_config: &crate::services::omni::types::OmniConfig
     ) {
         // If the process was intentionally killed by user, suppress sound
         if matches!(ctx.execution_process.status, ExecutionProcessStatus::Killed) {
@@ -47,22 +46,6 @@ impl NotificationService {
             }
         };
         Self::notify(config, &title, &message).await;
-        
-        // Send Omni notification if enabled
-        if omni_config.enabled {
-            let omni_service = crate::services::omni::OmniService::new(omni_config.clone());
-            // Build proper task URL with project ID from task
-            let task_url = format!("http://localhost:8887/projects/{}/tasks/{}", 
-                ctx.task.project_id, ctx.task.id);
-            
-            if let Err(e) = omni_service.send_task_notification(
-                &ctx.task.title,
-                &message,
-                Some(&task_url),
-            ).await {
-                tracing::error!("Failed to send Omni notification: {}", e);
-            }
-        }
     }
 
     /// Send both sound and push notifications if enabled
