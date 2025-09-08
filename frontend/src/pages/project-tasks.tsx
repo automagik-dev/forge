@@ -102,7 +102,7 @@ export function ProjectTasks() {
     tasksById,
     isLoading,
     error: streamError,
-  } = useProjectTasks(projectId);
+  } = useProjectTasks(projectId || '');
 
   // Sync selectedTask with URL params and live task updates
   useEffect(() => {
@@ -221,7 +221,7 @@ export function ProjectTasks() {
     navigate,
     currentPath: window.location.pathname,
     hasOpenDialog: false,
-    closeDialog: () => {},
+    closeDialog: () => { },
     onC: handleCreateNewTask,
   });
 
@@ -319,10 +319,10 @@ export function ProjectTasks() {
             setFullScreen={
               selectedAttempt
                 ? (fullscreen) => {
-                    const baseUrl = `/projects/${projectId}/tasks/${selectedTask!.id}/attempts/${selectedAttempt.id}`;
-                    const fullUrl = fullscreen ? `${baseUrl}/full` : baseUrl;
-                    navigate(fullUrl, { replace: true });
-                  }
+                  const baseUrl = `/projects/${projectId}/tasks/${selectedTask!.id}/attempts/${selectedAttempt.id}`;
+                  const fullUrl = fullscreen ? `${baseUrl}/full` : baseUrl;
+                  navigate(fullUrl, { replace: true });
+                }
                 : undefined
             }
             selectedAttempt={selectedAttempt}

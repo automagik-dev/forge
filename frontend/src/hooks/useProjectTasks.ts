@@ -20,11 +20,9 @@ interface UseProjectTasksResult {
  * Live updates arrive at /tasks/<id> via add/replace/remove operations.
  */
 export const useProjectTasks = (
-  projectId: string | undefined
+  projectId: string
 ): UseProjectTasksResult => {
-  const endpoint = projectId
-    ? `/api/tasks/stream?project_id=${encodeURIComponent(projectId)}`
-    : undefined;
+  const endpoint = `/api/tasks/stream?project_id=${encodeURIComponent(projectId)}`;
 
   const initialData = useCallback((): TasksState => ({ tasks: {} }), []);
 

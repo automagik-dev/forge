@@ -9,7 +9,7 @@ interface VirtualizedListProps {
     entries: PatchType[]
 };
 
-export default function VirtualizedList({ entries }: VirtualizedListProps) {
+const VirtualizedList = ({ entries }: VirtualizedListProps) => {
     const [displayedEntries, setDisplayedEntries] = useState<PatchType[]>([]);
     const entriesRef = useRef<PatchType[]>([]);
 
@@ -72,3 +72,5 @@ export default function VirtualizedList({ entries }: VirtualizedListProps) {
         />
     );
 }
+
+export default VirtualizedList;
