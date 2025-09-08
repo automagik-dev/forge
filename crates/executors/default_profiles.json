@@ -10,12 +10,6 @@
         "CLAUDE_CODE": {
           "plan": true
         }
-      },
-      "ROUTER": {
-        "CLAUDE_CODE": {
-          "claude_code_router": true,
-          "dangerously_skip_permissions": true
-        }
       }
     },
     "AMP": {
@@ -43,6 +37,12 @@
       "DEFAULT": {
         "CODEX": {
           "sandbox": "danger-full-access"
+        }
+      },
+      "HIGH": {
+        "CODEX": {
+          "sandbox": "danger-full-access",
+          "model_reasoning_effort": "high"
         }
       }
     },
