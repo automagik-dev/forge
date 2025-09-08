@@ -1,6 +1,7 @@
 use axum::{
     Json, Router,
     extract::State,
+    http::{HeaderMap, header},
     response::Json as ResponseJson,
     routing::{get, post},
 };
@@ -90,6 +91,7 @@ async fn validate_config(
 
 async fn test_notification(
     State(deployment): State<DeploymentImpl>,
+    headers: HeaderMap,
 ) -> ResponseJson<ApiResponse<String>> {
     let config = deployment.config().read().await;
     
@@ -113,11 +115,20 @@ async fn test_notification(
     };
     
     let service = OmniService::new(omni_config);
-    match service.send_task_notification(
-        "Test Task",
-        "✅ Completed",
-        Some("http://localhost:8887/projects/test/tasks/test"),
-    ).await {
+    // Build a base URL from the incoming request host header (e.g., 127.0.0.1:PORT)
+    let host = headers
+        .get(header::HOST)
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("127.0.0.1");
+    let base_url = format!("http://{}", host);
+    match service
+        .send_task_notification(
+            "Test Task",
+            "✅ Completed",
+            Some(&format!("{}/projects/test/tasks/test", base_url)),
+        )
+        .await
+    {
         Ok(_) => ResponseJson(ApiResponse::success("Test notification sent successfully".to_string())),
         Err(e) => ResponseJson(ApiResponse::error(&format!("Failed to send notification: {}", e))),
     }
