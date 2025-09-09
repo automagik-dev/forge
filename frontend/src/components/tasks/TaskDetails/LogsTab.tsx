@@ -2,7 +2,7 @@ import type {
   TaskAttempt,
 } from 'shared/types';
 // import VirtualizedList from '@/components/logs/VirtualizedList';
-import { useExecutionProcesses } from '@/hooks/useExecutionProcesses';
+// import { useExecutionProcesses } from '@/hooks/useExecutionProcesses';
 
 type Props = {
   selectedAttempt: TaskAttempt | null;
@@ -13,9 +13,9 @@ function LogsTab({ selectedAttempt }: Props) {
     return null;
   }
 
-  const { executionProcesses } = useExecutionProcesses(selectedAttempt.id);
+  // const { executionProcesses } = useExecutionProcesses(selectedAttempt.id);
 
-  console.log(executionProcesses);
+  // console.log(executionProcesses);
 
   return (
     <div className="w-full h-full flex flex-col">
