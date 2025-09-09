@@ -15,9 +15,7 @@ function LogsTab({ selectedAttempt }: Props) {
 
   const { executionProcesses } = useExecutionProcesses(selectedAttempt.id);
 
-  const
-
-    console.log(executionProcesses);
+  console.log(executionProcesses);
 
   return (
     <div className="w-full h-full flex flex-col">
