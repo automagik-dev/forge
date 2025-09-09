@@ -1,7 +1,7 @@
 import type {
   TaskAttempt,
 } from 'shared/types';
-import VirtualizedList from '@/components/logs/VirtualizedList';
+// import VirtualizedList from '@/components/logs/VirtualizedList';
 import { useExecutionProcesses } from '@/hooks/useExecutionProcesses';
 
 type Props = {
