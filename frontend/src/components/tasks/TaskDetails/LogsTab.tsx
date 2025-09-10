@@ -14,7 +14,6 @@ type Props = {
 function LogsTab({ selectedAttempt }: Props) {
   const { loadPreviousExecutionProcess, entries } = useConversationHistory(selectedAttempt);
 
-
   // const { executionProcesses } = useExecutionProcesses(selectedAttempt.id);
 
   // console.log("DEBUG1", shownExecutionProcesses);
@@ -24,10 +23,7 @@ function LogsTab({ selectedAttempt }: Props) {
   // ))}  
 
   return (
-    <>
-      <button onClick={loadPreviousExecutionProcess}>Load Previous</button>
-      <VirtualizedList entries={entries} startReached={loadPreviousExecutionProcess} />
-    </>
+    <VirtualizedList entries={entries} startReached={loadPreviousExecutionProcess} />
   );
 }
 

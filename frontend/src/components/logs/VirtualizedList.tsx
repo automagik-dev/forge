@@ -21,13 +21,17 @@ interface VirtualizedListProps {
 };
 
 // use this shape to start channels at the bottom of the list
+// const InitialDataScrollModifier: ScrollModifier = {
+//     type: 'items-change',
+//     behavior: 'instant',
+// }
+
 const InitialDataScrollModifier: ScrollModifier = {
     type: 'item-location',
     location: {
         index: 'LAST',
-        align: 'end',
-    },
-    purgeItemSizes: true,
+        align: 'end', // start with the message at the bottom of the viewport
+    }
 }
 
 type ChannelData = DataWithScrollModifier<PatchTypeWithKey> | null
@@ -36,12 +40,9 @@ type ChannelsData = Record<string, ChannelData>
 
 const VirtualizedList = ({ entries, startReached }: VirtualizedListProps) => {
     const entriesRef = useRef<PatchTypeWithKey[]>([]);
-    const [isAtBottom, setIsAtBottom] = useState(true);
-    const [channelsData, setChannelsData] = useState<ChannelsData>(() => ({
-        general: null,
-    }))
-    const [currentChannel, setCurrentChannel] = useState<string>('general')
-
+    const [channelData, setChannelData] = useState<ChannelData>(null)
+    const initialLoading = useRef(true)
+    const messageListRef = useRef<VirtuosoMessageListMethods | null>(null)
 
     // Throttle updates
     const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -50,14 +51,9 @@ const VirtualizedList = ({ entries, startReached }: VirtualizedListProps) => {
 
     const setMessageListData = useCallback(
         (cb: (current: ChannelData) => ChannelData) => {
-            setChannelsData((current) => {
-                return {
-                    ...current,
-                    [currentChannel]: cb(current[currentChannel] ?? null),
-                }
-            })
+            setChannelData(cb(channelData ?? null));
         },
-        [currentChannel]
+        [channelData]
     )
 
     const clearTimer = () => {
@@ -77,7 +73,7 @@ const VirtualizedList = ({ entries, startReached }: VirtualizedListProps) => {
             setMessageListData((current) => {
                 return {
                     data: snapshot,
-                    scrollModifier: InitialDataScrollModifier,
+                    scrollModifier: 'prepend',
                 }
             })
         });
@@ -102,26 +98,6 @@ const VirtualizedList = ({ entries, startReached }: VirtualizedListProps) => {
         };
     }, [entries]);
 
-    // return (
-    //     <Virtuoso
-    //         style={{ height: "100%" }}
-    //         data={displayedEntries}
-    //         followOutput={isAtBottom}
-    //         itemContent={(_, item) => {
-    //             if (item.type === 'STDOUT') {
-    //                 return <p>{item.content}</p>
-    //             } else if (item.type === 'STDERR') {
-    //                 return <p>{item.content}</p>
-    //             } else if (item.type === 'NORMALIZED_ENTRY') {
-    //                 return <DisplayConversationEntry key={item.patchKey} expansionKey={item.patchKey} entry={item.content} />
-    //             }
-    //         }}
-    //         firstItemIndex={entries.length}
-    //         startReached={startReached}
-    //     // atBottomStateChange={(isAtBottom) => setIsAtBottom(isAtBottom)}
-    //     />
-    // );
-
     const ItemContent: VirtuosoMessageListProps<PatchTypeWithKey, null>['ItemContent'] = ({ data }) => {
         if (data.type === 'STDOUT') {
             return <p>{data.content}</p>
@@ -136,22 +112,55 @@ const VirtualizedList = ({ entries, startReached }: VirtualizedListProps) => {
         return `l-${data.patchKey}`;
     }
 
-
-    const messageListData = useMemo(() => {
-        return channelsData[currentChannel] ?? null
-    }, [channelsData, currentChannel])
-
     return (
         <VirtuosoMessageListLicense>
             <VirtuosoMessageList<PatchTypeWithKey, null>
+                ref={messageListRef}
                 style={{ flex: 1 }}
-                data={messageListData}
+                data={channelData}
                 computeItemKey={computeItemKey}
                 ItemContent={ItemContent}
+                // onScroll={({ isAtBottom, listOffset }) => {
+                //     if (listOffset > -10) {
+                //         debounce(() => {
+                //             startReached?.();
+                //         }, 1000)();
+                //     }
+                // }}
+                initialLocation={{
+                    index: 'LAST',
+                    align: 'end',
+                }}
+            // onRenderedDataChange={(range) => {
+            //     setTimeout(() => {
+            //         console.log("DEBUG");
+            //         if (initialLoading.current) {
+            //             const containerHeight = messageListRef.current?.scrollerElement()?.clientHeight;
+            //             const scrollHeight = messageListRef.current?.getScrollLocation().scrollHeight;
+            //             console.log("DEBUG1", scrollHeight, containerHeight)
+            //             if (scrollHeight && containerHeight && scrollHeight - 10 < containerHeight) {
+            //                 debounce(() => {
+            //                     startReached?.();
+            //                 }, 100)();
+            //             } else {
+            //                 initialLoading.current = false;
+            //             }
+            //         }
+            //     }, 1000);
+            // }}
             />
         </VirtuosoMessageListLicense>
 
     )
+}
+
+
+function debounce<F extends (...args: any[]) => void>(fn: F, delay: number) {
+    let timer: ReturnType<typeof setTimeout>;
+    return (...args: Parameters<F>) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), delay);
+    };
 }
 
 export default VirtualizedList;

@@ -10,7 +10,10 @@ export interface StreamOptions<E = unknown> {
     onEntries?: (entries: E[]) => void;
     onConnect?: () => void;
     onError?: (err: unknown) => void;
+    /** called once when a "finished" event is received */
+    onFinished?: (entries: E[]) => void;
 }
+
 
 /**
  * Connect to an SSE endpoint that emits:
@@ -66,8 +69,10 @@ export function streamSseJsonPatchEntries<E = unknown>(
     es.addEventListener("json_patch", handlePatchEvent);
 
     es.addEventListener("finished", () => {
+        opts.onFinished?.(snapshot.entries);
         es.close();
     });
+
 
     es.addEventListener("error", (err) => {
         connected = false; // EventSource will auto-retry; this just reflects current state
@@ -99,7 +104,7 @@ export function streamSseJsonPatchEntries<E = unknown>(
             es.close();
             subscribers.clear();
             connected = false;
-        },
+        }
     };
 }
 
