@@ -23,7 +23,7 @@ export type RebaseDialogResult = {
 };
 
 export const RebaseDialog = NiceModal.create<RebaseDialogProps>(
-  ({ branches, isRebasing = false }) => {
+  ({ branches, isRebasing = false }: RebaseDialogProps) => {
     const modal = useModal();
     const [selectedBranch, setSelectedBranch] = useState<string>('');
 

@@ -24,7 +24,7 @@ export interface EditorSelectionDialogProps {
 }
 
 export const EditorSelectionDialog =
-  NiceModal.create<EditorSelectionDialogProps>(({ selectedAttempt }) => {
+  NiceModal.create<EditorSelectionDialogProps>(({ selectedAttempt }: EditorSelectionDialogProps) => {
     const modal = useModal();
     const handleOpenInEditor = useOpenInEditor(selectedAttempt, () =>
       modal.hide()

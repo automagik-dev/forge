@@ -63,9 +63,10 @@ function AppContent() {
       });
     };
 
-    const handleReleaseNotesClose = async () => {
-      await updateAndSaveConfig({ show_release_notes: false });
-    };
+    // Release Notes modal is temporarily disabled
+    // const handleReleaseNotesClose = async () => {
+    //   await updateAndSaveConfig({ show_release_notes: false });
+    // };
 
     const checkOnboardingSteps = async () => {
       if (!config) return;
@@ -96,11 +97,11 @@ function AppContent() {
         await NiceModal.hide('privacy-opt-in');
       }
 
-      if (config.show_release_notes) {
-        await NiceModal.show('release-notes');
-        await handleReleaseNotesClose();
-        await NiceModal.hide('release-notes');
-      }
+      // if (config.show_release_notes) {
+      //   await NiceModal.show('release-notes');
+      //   await handleReleaseNotesClose();
+      //   await NiceModal.hide('release-notes');
+      // }
     };
 
     checkOnboardingSteps();
@@ -179,4 +180,3 @@ function App() {
 }
 
 export default App;
-

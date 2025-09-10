@@ -29,7 +29,7 @@ export type TaskTemplateEditResult = 'saved' | 'canceled';
 
 export const TaskTemplateEditDialog =
   NiceModal.create<TaskTemplateEditDialogProps>(
-    ({ template, projectId, isGlobal = false }) => {
+    ({ template, projectId, isGlobal = false }: TaskTemplateEditDialogProps) => {
       const modal = useModal();
       const [formData, setFormData] = useState({
         template_name: '',

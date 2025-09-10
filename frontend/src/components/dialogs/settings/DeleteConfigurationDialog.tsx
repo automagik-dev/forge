@@ -21,7 +21,7 @@ export type DeleteConfigurationResult = 'deleted' | 'canceled';
 
 export const DeleteConfigurationDialog =
   NiceModal.create<DeleteConfigurationDialogProps>(
-    ({ configName, executorType }) => {
+    ({ configName, executorType }: DeleteConfigurationDialogProps) => {
       const modal = useModal();
       const [isDeleting, setIsDeleting] = useState(false);
       const [error, setError] = useState<string | null>(null);

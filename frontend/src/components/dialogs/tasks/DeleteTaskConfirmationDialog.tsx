@@ -19,7 +19,7 @@ export interface DeleteTaskConfirmationDialogProps {
 }
 
 const DeleteTaskConfirmationDialog =
-  NiceModal.create<DeleteTaskConfirmationDialogProps>(({ task }) => {
+  NiceModal.create<DeleteTaskConfirmationDialogProps>(({ task }: DeleteTaskConfirmationDialogProps) => {
     const modal = useModal();
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);

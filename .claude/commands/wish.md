@@ -572,13 +572,13 @@ impl From<String> for Config {
 After wish approval, provide:
 ```bash
 # Execute this wish with:
-/execute-wish /genie/wishes/{feature-name}-wish.md
+/forge /genie/wishes/{feature-name}-wish.md
 
 # This will:
-# 1. Spawn parallel agents for each group
-# 2. Synchronize outputs between groups
-# 3. Validate success criteria
-# 4. Report completion status
+# 1. Analyze wish and generate task breakdown plan
+# 2. Present plan for user approval
+# 3. Create forge tasks (one per approved group)
+# 4. Report task IDs and branches ready for execution
 ```
 
 ## 🔍 Common Patterns to Follow
