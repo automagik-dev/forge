@@ -23,7 +23,7 @@ export interface ProjectFormDialogProps {
 export type ProjectFormDialogResult = 'saved' | 'canceled';
 
 export const ProjectFormDialog = NiceModal.create<ProjectFormDialogProps>(
-  ({ project }) => {
+  ({ project }: ProjectFormDialogProps) => {
     const modal = useModal();
     const [name, setName] = useState(project?.name || '');
     const [gitRepoPath, setGitRepoPath] = useState(

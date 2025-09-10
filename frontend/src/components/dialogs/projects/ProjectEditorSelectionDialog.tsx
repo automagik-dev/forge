@@ -24,7 +24,7 @@ export interface ProjectEditorSelectionDialogProps {
 }
 
 export const ProjectEditorSelectionDialog =
-  NiceModal.create<ProjectEditorSelectionDialogProps>(({ selectedProject }) => {
+  NiceModal.create<ProjectEditorSelectionDialogProps>(({ selectedProject }: ProjectEditorSelectionDialogProps) => {
     const modal = useModal();
     const handleOpenInEditor = useOpenProjectInEditor(selectedProject, () =>
       modal.hide()

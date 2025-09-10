@@ -1,339 +1,163 @@
 # /forge - Execute Wish via Forge Task Creation
 
 ---
-description: 🎯 Transform approved wishes into optimized Forge tasks using the Advanced Prompting Framework, then execute them through the forge-master agent
+description: 🎯 Analyze wish, generate task breakdown plan, get user approval, then execute via forge-master agent
 ---
 
 ## 🚀 FORGE EXECUTION WORKFLOW
 
-When a user invokes `/forge`, you orchestrate the transformation of a wish specification into actionable Forge tasks through the specialized forge-master agent.
+<task_breakdown>
+1. [Discovery] Rapid wish analysis and logical grouping
+2. [Planning] User approval workflow for task breakdown
+3. [Creation] Parallel agent deployment via forge-master
+</task_breakdown>
 
-### Phase 1: Wish Validation
+### Phase 1: Wish Analysis & Planning (You Handle This)
 
 <context_gathering>
-Goal: Verify wish is ready for execution
+Goal: Rapidly analyze wish and generate logical task breakdown
 
 Method:
-- Check wish file exists and is complete
-- Validate wish status is APPROVED
-- Ensure all task groups are defined
-- Confirm success criteria are measurable
+- Read and parse wish specification
+- Group related work for single agents
+- Map dependencies clearly
+- Present concise plan for approval
 
 Early stop criteria:
-- Wish file found and readable
-- Status confirmed as APPROVED
-- Task decomposition complete
+- 3-5 logical groups identified
+- Dependencies clear
+- Ready for user approval
 </context_gathering>
 
-**1.1 Pre-Flight Checklist**
-```
-[VALIDATION]
-✅ Wish file exists at specified path
-✅ Wish status = APPROVED
-✅ Task groups A-E defined
-✅ Dependencies mapped
-✅ Success criteria measurable
-```
+**1.1 Wish Analysis**
+You directly:
+- Read the wish file
+- Validate status is APPROVED  
+- Parse task groups and dependencies
+- Identify logical agent groupings
 
-**1.2 Extract Task Groups**
-Parse the wish for:
-- Group dependencies
-- Parallel execution opportunities  
-- File creation/modification paths
-- Success validation steps
+**1.2 Generate Breakdown Plan**
+Create concise plan with:
+- Single agent per logical group (A1+A2+A3 handled together)
+- Clear group descriptions
+- Dependency chain
+- Complexity estimates
 
-### Phase 2: Forge Task Generation
+**1.3 Present for Approval**
+Show user:
 
-**2.1 Trigger forge-master Agent**
+Feature: [name]
+Strategy: One agent per logical group
 
-<task_breakdown>
-1. [Preparation] Ready the wish for agent consumption
-   - Format wish path with @ prefix for auto-loading
-   - Identify task complexity levels
-   - Map to reasoning_effort settings
+Group A (Foundation): Agent handles A1+A2 together
+  - Transform OmniModal to NiceModal pattern
+  - Update OmniCard state management
 
-2. [Invocation] Call forge-master with structured prompt
-   - Pass wish specification
-   - Include project context
-   - Set appropriate complexity flags
+Group B (Integration): Agent handles B1+B2 together  
+  - Register modal in main.tsx
+  - Export from dialogs index
 
-3. [Verification] Confirm task creation
-   - Validate all groups processed
-   - Check task IDs generated
-   - Verify branch names created
-</task_breakdown>
+Group C (Validation): Agent handles all testing
+  - Add typed helper
+  - Run linting/typecheck validation
 
-**2.2 Agent Invocation Template**
+Dependencies: A → B → C
+Estimated: 3 agents, ~45min total
 
-```markdown
-/agent forge-master
+❓ Approve this breakdown? (y/n)
+
+### Phase 2: Task Creation (Post-Approval Only)
+
+<persistence>
+Only after user approves the breakdown plan, proceed with forge-master agent deployment
+Complete task creation before ending turn
+Document each task creation decision
+</persistence>
+
+**2.1 Call forge-master with Approved Plan**
+
+Only after user approves, call forge-master with:
 
 ## Mission
-Transform the approved wish into Forge tasks with Advanced Prompting Framework optimization.
+Create Forge tasks for approved plan with minimal context fragmentation.
 
-## Context
-@{wish-file-path}
-@.claude/commands/prompt.md [framework reference]
+## Approved Plan
+[Copy the exact approved breakdown here]
 
-## Project Configuration
+## Project Configuration  
 - Project ID: 9ac59f5a-2d01-4800-83cd-491f638d2f38
 - Repository: automagik-forge
+- Feature: [name]
 
-## Task Creation Instructions
+## Task Creation Rules
 
-<persistence>
-- Create all task groups from the wish
-- Never skip dependencies or success criteria
-- Document every framework pattern applied
-- Complete all tasks before yielding
-</persistence>
+<task_creation_rules>
+- ONE task per approved group (not multiple subtasks)
+- Group everything a single agent should handle together
+- Concise descriptions with essential framework patterns only
+- Branch: {type}/{feature}-{group}
+- Title: {type}: {group-description}
+</task_creation_rules>
 
-### Group Processing Order
+## Expected Output
+Create exactly [N] tasks matching approved groups. No extra tasks, no fragmentation.
 
-For each task group in the wish (A through E):
+Group A → Task ID + Branch
+Group B → Task ID + Branch  
+Group C → Task ID + Branch
 
-1. **Analyze Complexity**
-   - Simple fix: minimal/think
-   - Feature: medium/think hard  
-   - Architecture: high/think harder
-   - Multi-step: max/ultrathink
+Done.
 
-2. **Apply Framework Patterns**
-
-For Group A (Foundation):
-<context_gathering>
-- Search depth: low (files are specified)
-- Parallelize all A tasks
-- reasoning_effort: {appropriate level}
-</context_gathering>
-
-For Group B-C (Core/UI):
-<task_breakdown>
-1. [Discovery] Components from A
-2. [Implementation] Create services/components
-3. [Verification] Test endpoints/rendering
-</task_breakdown>
-
-For Group D (Integration):
-<persistence>
-- Ensure all B & C outputs available
-- Never proceed without dependencies
-- Document integration points
-</persistence>
-
-For Group E (Testing):
-<self_reflection>
-Rubric: Functionality, Performance, Security
-Iterate until all criteria met
-</self_reflection>
-
-3. **Generate Forge Tasks**
-
-Create tasks with:
-- Title format: {type}: {clear description}
-- Branch: {type}/{kebab-feature}-{group}{number}
-- Description: Include all @ references from wish
-
-## Success Validation
+### Phase 3: Execution Ready
 
 <success_criteria>
-✅ All task groups have Forge task IDs
-✅ Dependencies properly linked
-✅ Branch names follow conventions
-✅ Framework patterns embedded
-✅ Success metrics defined
+✅ User approved breakdown plan
+✅ Exactly one task created per logical group
+✅ Clear dependency chain established
+✅ Tasks executable by single agents
+✅ No context fragmentation
+✅ All tasks confirmed with IDs and branches
 </success_criteria>
 
-Report created tasks:
-- Group A: [task IDs and branches]
-- Group B: [task IDs and branches]
-- Group C: [task IDs and branches]
-- Group D: [task IDs and branches]
-- Group E: [task IDs and branches]
-```
+**3.1 Final Status Report**
 
-### Phase 3: Execution Orchestration
+Feature: {feature-name}
+Tasks Created: {N} tasks (one per group)
 
-**3.1 Task Execution Strategy**
+✅ Group A: task-id-xxx (branch: refactor/omni-modal-foundation)
+✅ Group B: task-id-yyy (branch: feat/omni-modal-integration)  
+✅ Group C: task-id-zzz (branch: test/omni-modal-validation)
 
-```mermaid
-graph LR
-    W[Wish] --> FM[forge-master]
-    FM --> A1[Task A1]
-    FM --> A2[Task A2]
-    FM --> A3[Task A3]
-    A1 & A2 & A3 --> B[Group B Tasks]
-    A1 & A2 & A3 --> C[Group C Tasks]
-    B & C --> D[Group D Tasks]
-    D --> E[Group E Tasks]
-```
-
-**3.2 Parallel Execution Rules**
-- Groups with no dependencies execute simultaneously
-- Within groups, tasks marked parallel run concurrently
-- Integration points require synchronization
-- Testing waits for all implementation
-
-### Phase 4: Progress Tracking
-
-<tool_preambles>
-- Report each task creation with ID and branch
-- Update on group completion
-- Flag any creation failures immediately
-- Summarize final task tree structure
-</tool_preambles>
-
-**4.1 Status Reporting Format**
-```
-📋 Forge Execution Status
-
-Wish: {feature-name}
-Tasks Created: {N} tasks in {M} groups
-
-Group A (Foundation): ✅ 3 tasks created
-- A1-types: task-id-xxx (branch: feat/omni-types-a1)
-- A2-config: task-id-yyy (branch: feat/omni-config-a2)
-- A3-frontend: task-id-zzz (branch: feat/omni-frontend-a3)
-
-[Continue for all groups...]
-
-Execution Ready: All tasks queued for agent processing
-```
-
-## 🎨 Framework Pattern Application
-
-### Complexity Mapping
-| Wish Complexity | Reasoning Effort | Context Gathering | Persistence |
-|-----------------|------------------|-------------------|-------------|
-| Simple fix | minimal/think | very low, 2 tools | not needed |
-| Feature add | medium/think hard | moderate, targeted | on integration |
-| Refactor | high/think harder | thorough, systematic | throughout |
-| Architecture | max/ultrathink | comprehensive | every step |
-
-### Pattern Injection Examples
-
-**For Simple Tasks:**
-```xml
-<context_gathering>
-- Search depth: very low
-- Max 2 tool calls
-- Bias for quick response
-- reasoning_effort: minimal/think
-</context_gathering>
-```
-
-**For Complex Features:**
-```xml
-<persistence>
-- Continue until all subtasks complete
-- Document every decision
-- Never stop at uncertainty
-- reasoning_effort: high/think harder
-</persistence>
-<self_reflection>
-Internal rubric for quality checks
-Iterate until standards met
-</self_reflection>
-```
-
-**For UI Components:**
-```xml
-<code_editing_rules>
-<frontend_stack_defaults>
-- Framework: React + TypeScript
-- Styling: Tailwind CSS
-- Components: shadcn/ui
-- Icons: Lucide
-</frontend_stack_defaults>
-</code_editing_rules>
-```
+All tasks ready for agent execution in dependency order.
 
 ## 🔧 Command Usage
 
-### Basic Invocation
-```bash
-/forge /genie/wishes/{feature-name}-wish.md
-```
+/forge [wish-file-path]
 
-### With Options
-```bash
-/forge /genie/wishes/{feature-name}-wish.md --complexity=high --parallel=true
-```
+Example:
+/forge /genie/wishes/omni-modal-migration.md
 
-### Batch Execution
-```bash
-/forge /genie/wishes/*.md --approved-only
-```
+## 📊 Success Flow
 
-## 📊 Success Metrics
-
-<success_criteria>
-✅ Wish successfully parsed and validated
-✅ forge-master agent invoked with proper context
-✅ All task groups converted to Forge tasks
-✅ Task IDs and branches reported
-✅ Dependencies properly mapped
-✅ Framework patterns applied appropriately
-✅ Execution can proceed without manual intervention
-</success_criteria>
-
-## ❌ Failure Handling
+<task_breakdown>
+1. [Analysis] Parse wish, generate logical groupings  
+2. [Approval] Present plan, wait for user confirmation
+3. [Creation] Call forge-master to create exactly N tasks (one per group)
+4. [Execution] Tasks ready for agent processing in dependency order
+</task_breakdown>
 
 <never_do>
-❌ Execute unapproved wishes
-❌ Skip dependency validation
-❌ Create tasks without framework patterns
-❌ Ignore success criteria
-❌ Proceed with incomplete task groups
+❌ Create tasks without user approval
+❌ Fragment single agent work across multiple tasks
+❌ Use verbose descriptions or unnecessary context
+❌ Create more tasks than approved groups
+❌ Skip dependency mapping
 </never_do>
 
-## 🎯 Integration with Wish Workflow
+## 🚨 Branch Naming
 
-```mermaid
-graph TD
-    U[User Request] -->|/wish| W[Wish Creation]
-    W -->|Iterate| R[Refinement]
-    R -->|Approve| A[APPROVED Status]
-    A -->|/forge| F[Forge Execution]
-    F -->|forge-master| T[Task Creation]
-    T -->|Agents| E[Execution]
-    E -->|Complete| S[Success]
-```
-
-## 💡 Key Principles
-
-1. **Wish Validation First**: Never execute incomplete wishes
-2. **Framework Optimization**: Every task gets appropriate patterns
-3. **Dependency Respect**: Groups execute in proper order
-4. **Parallel Maximization**: Run everything possible simultaneously
-5. **Clear Reporting**: User knows exactly what was created
-6. **Agent Autonomy**: Tasks are self-contained for agent execution
-
-## 🚨 Quick Reference
-
-### Task Title Formats
-- `feat:` - New features
-- `fix:` - Bug fixes
-- `refactor:` - Code improvements
-- `docs:` - Documentation
-- `test:` - Testing additions
-- `perf:` - Performance improvements
-
-### Branch Naming
-- Format: `{type}/{feature}-{group}{number}`
-- Example: `feat/omni-integration-a1`
-- Max 48 characters
-- Kebab-case only
-
-### Reasoning Configurations
-```yaml
-minimal/think: Quick fixes, simple changes
-low/think: Small features, minor refactors
-medium/think hard: Standard features, moderate complexity
-high/think harder: Architecture changes, complex logic
-max/ultrathink: Multi-system integration, critical paths
-```
-
----
-
-**Remember:** The `/forge` command is the bridge between wish specification and actual implementation. It transforms human-readable wishes into agent-optimized Forge tasks using the Advanced Prompting Framework for maximum execution efficiency.
+Format: {type}/{feature}-{group}
+Examples: 
+  - refactor/omni-modal-foundation
+  - feat/omni-modal-integration  
+  - test/omni-modal-validation

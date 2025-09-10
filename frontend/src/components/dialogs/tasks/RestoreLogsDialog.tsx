@@ -52,7 +52,7 @@ export const RestoreLogsDialog = NiceModal.create<RestoreLogsDialogProps>(
     untrackedCount,
     initialWorktreeResetOn,
     initialForceReset,
-  }) => {
+  }: RestoreLogsDialogProps) => {
     const modal = useModal();
     const [worktreeResetOn, setWorktreeResetOn] = useState(
       initialWorktreeResetOn

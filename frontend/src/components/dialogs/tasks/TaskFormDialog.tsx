@@ -29,6 +29,7 @@ interface Task {
   title: string;
   description: string | null;
   status: TaskStatus;
+  branch_template: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -41,13 +42,14 @@ export interface TaskFormDialogProps {
 }
 
 export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
-  ({ task, projectId, initialTemplate, initialTask }) => {
+  ({ task, projectId, initialTemplate, initialTask }: TaskFormDialogProps) => {
     const modal = useModal();
     const { createTask, createAndStart, updateTask } =
       useTaskMutations(projectId);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState<TaskStatus>('todo');
+    const [branchTemplate, setBranchTemplate] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmittingAndStart, setIsSubmittingAndStart] = useState(false);
     const [templates, setTemplates] = useState<TaskTemplate[]>([]);
@@ -102,6 +104,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
         setTitle(task.title);
         setDescription(task.description || '');
         setStatus(task.status);
+        setBranchTemplate(task.branch_template || '');
 
         // Load existing images for the task
         if (modal.visible) {
@@ -121,12 +124,14 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
         setSelectedTemplate('');
         setImages([]);
         setNewlyUploadedImageIds([]);
+        setBranchTemplate('');
       } else if (initialTemplate) {
         // Create mode with template - pre-fill from template
         setTitle(initialTemplate.title);
         setDescription(initialTemplate.description || '');
         setStatus('todo');
         setSelectedTemplate('');
+        setBranchTemplate('');
       } else {
         // Create mode - reset to defaults
         setTitle('');
@@ -135,6 +140,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
         setSelectedTemplate('');
         setImages([]);
         setNewlyUploadedImageIds([]);
+        setBranchTemplate('');
       }
     }, [task, initialTask, initialTemplate, modal.visible]);
 
@@ -221,6 +227,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                 title,
                 description: description || null,
                 status,
+                branch_template: branchTemplate || null,
                 parent_task_attempt: null,
                 image_ids: imageIds || null,
               },
@@ -237,6 +244,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
               project_id: projectId,
               title,
               description: description || null,
+              branch_template: branchTemplate || null,
               parent_task_attempt: null,
               image_ids: imageIds || null,
             },
@@ -280,6 +288,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
               project_id: projectId,
               title,
               description: description || null,
+              branch_template: branchTemplate || null,
               parent_task_attempt: null,
               image_ids: imageIds || null,
             },
@@ -419,6 +428,27 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                   disabled={isSubmitting || isSubmittingAndStart}
                   projectId={projectId}
                 />
+              </div>
+
+              <div>
+                <Label
+                  htmlFor="task-branch-template"
+                  className="text-sm font-medium"
+                >
+                  Branch Template (optional)
+                </Label>
+                <Input
+                  id="task-branch-template"
+                  value={branchTemplate}
+                  onChange={(e) => setBranchTemplate(e.target.value)}
+                  placeholder="e.g., feature/amazing-change"
+                  className="mt-1.5"
+                  disabled={isSubmitting || isSubmittingAndStart}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Set a default branch name for attempts created from this
+                  task. Leave blank to use the default.
+                </p>
               </div>
 
               <ImageUploadSection

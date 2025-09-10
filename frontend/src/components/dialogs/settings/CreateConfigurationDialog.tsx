@@ -33,7 +33,7 @@ export type CreateConfigurationResult = {
 
 export const CreateConfigurationDialog =
   NiceModal.create<CreateConfigurationDialogProps>(
-    ({ executorType, existingConfigs }) => {
+    ({ executorType, existingConfigs }: CreateConfigurationDialogProps) => {
       const modal = useModal();
       const [configName, setConfigName] = useState('');
       const [cloneFrom, setCloneFrom] = useState<string | null>(null);

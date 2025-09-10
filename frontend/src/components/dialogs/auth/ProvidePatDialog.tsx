@@ -17,7 +17,7 @@ export interface ProvidePatDialogProps {
 }
 
 export const ProvidePatDialog = NiceModal.create<ProvidePatDialogProps>(
-  ({ errorMessage }) => {
+  ({ errorMessage }: ProvidePatDialogProps) => {
     const modal = useModal();
     const { config, updateAndSaveConfig } = useUserSystem();
     const [pat, setPat] = useState('');
