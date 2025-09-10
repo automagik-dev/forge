@@ -104,13 +104,16 @@ jobs:
           }
           
           if (-not $root) {
-            throw "OpenSSL not found in any of the expected locations"
+            # If none found, try to use vendored OpenSSL instead
+            Write-Host "OpenSSL not found in standard locations, will use vendored OpenSSL"
+            echo "OPENSSL_NO_VENDOR=0" >> $env:GITHUB_ENV
+            echo "OPENSSL_VENDORED=1" >> $env:GITHUB_ENV
+          } else {
+            echo "OPENSSL_NO_VENDOR=1" >> $env:GITHUB_ENV
+            echo "OPENSSL_DIR=$root" >> $env:GITHUB_ENV
+            echo "OPENSSL_LIB_DIR=$root\lib" >> $env:GITHUB_ENV
+            echo "OPENSSL_INCLUDE_DIR=$root\include" >> $env:GITHUB_ENV
           }
-          
-          echo "OPENSSL_NO_VENDOR=1" >> $env:GITHUB_ENV
-          echo "OPENSSL_DIR=$root" >> $env:GITHUB_ENV
-          echo "OPENSSL_LIB_DIR=$root\lib" >> $env:GITHUB_ENV
-          echo "OPENSSL_INCLUDE_DIR=$root\include" >> $env:GITHUB_ENV
           
       - name: Install cross-compilation tools
         if: matrix.use-cross
@@ -134,7 +137,7 @@ jobs:
           LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
           LIBZ_SYS_STATIC: 1
           OPENSSL_STATIC: 1
-          # Use system OpenSSL on Windows (paths set from previous step)
+          # OPENSSL_* vars are set from previous step (either system or vendored)
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |
@@ -149,8 +152,9 @@ jobs:
         if: runner.os != 'Windows'
         env:
           OPENSSL_STATIC: 1
-          # Use vendored OpenSSL on non-Windows platforms
+          DEP_OPENSSL_VENDORED: 1
           OPENSSL_VENDORED: 1
+          OPENSSL_NO_VENDOR: 0
           LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
           LIBZ_SYS_STATIC: 1
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
