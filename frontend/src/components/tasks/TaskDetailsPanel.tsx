@@ -177,29 +177,32 @@ export function TaskDetailsPanel({
 
                       {/* Main content */}
                       <main className="flex-1 min-h-0 min-w-0 flex flex-col">
-                        <TabNavigation
-                          activeTab={activeTab}
-                          setActiveTab={setActiveTab}
-                          selectedAttempt={selectedAttempt}
-                        />
+                        {selectedAttempt &&
+                          <>
+                            <TabNavigation
+                              activeTab={activeTab}
+                              setActiveTab={setActiveTab}
+                              selectedAttempt={selectedAttempt}
+                            />
 
-                        <div className="flex-1 flex flex-col min-h-0">
-                          {activeTab === 'diffs' ? (
-                            <DiffTab selectedAttempt={selectedAttempt} />
-                          ) : activeTab === 'processes' ? (
-                            <ProcessesTab attemptId={selectedAttempt?.id} />
-                          ) : (
-                            <LogsTab selectedAttempt={selectedAttempt} />
-                          )}
-                        </div>
+                            <div className="flex-1 flex flex-col min-h-0">
+                              {activeTab === 'diffs' ? (
+                                <DiffTab selectedAttempt={selectedAttempt} />
+                              ) : activeTab === 'processes' ? (
+                                <ProcessesTab attemptId={selectedAttempt?.id} />
+                              ) : (
+                                <LogsTab selectedAttempt={selectedAttempt} />
+                              )}
+                            </div>
 
-                        <TaskFollowUpSection
-                          task={task}
-                          projectId={projectId}
-                          selectedAttemptId={selectedAttempt?.id}
-                          selectedAttemptProfile={selectedAttempt?.executor}
-                          jumpToLogsTab={jumpToLogsTab}
-                        />
+                            <TaskFollowUpSection
+                              task={task}
+                              projectId={projectId}
+                              selectedAttemptId={selectedAttempt?.id}
+                              selectedAttemptProfile={selectedAttempt?.executor}
+                              jumpToLogsTab={jumpToLogsTab}
+                            />
+                          </>}
                       </main>
                     </div>
                   ) : (

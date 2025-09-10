@@ -92,7 +92,7 @@ const getEntryIcon = (entryType: NormalizedEntryType) => {
 const getStatusIndicator = (entryType: NormalizedEntryType) => {
   const result =
     entryType.type === 'tool_use' &&
-    entryType.action_type.action === 'command_run'
+      entryType.action_type.action === 'command_run'
       ? entryType.action_type.result?.exit_status
       : null;
 
@@ -186,9 +186,8 @@ const MessageCard: React.FC<{
 
   return (
     <div
-      className={`${frameBase} ${
-        variant === 'system' ? systemTheme : errorTheme
-      }`}
+      className={`${frameBase} ${variant === 'system' ? systemTheme : errorTheme
+        }`}
       onClick={onToggle}
     >
       <div className="flex items-center gap-1.5">
@@ -224,9 +223,8 @@ const ExpandChevron: React.FC<{
   return (
     <ChevronDown
       onClick={onClick}
-      className={`h-4 w-4 cursor-pointer transition-transform ${color} ${
-        expanded ? '' : '-rotate-90'
-      }`}
+      className={`h-4 w-4 cursor-pointer transition-transform ${color} ${expanded ? '' : '-rotate-90'
+        }`}
     />
   );
 };
@@ -377,12 +375,12 @@ const ToolCallCard: React.FC<{
     : 'div';
   const headerProps = hasExpandableDetails
     ? {
-        onClick: (e: React.MouseEvent) => {
-          e.preventDefault();
-          toggle();
-        },
-        title: expanded ? 'Hide details' : 'Show details',
-      }
+      onClick: (e: React.MouseEvent) => {
+        e.preventDefault();
+        toggle();
+      },
+      title: expanded ? 'Hide details' : 'Show details',
+    }
     : {};
 
   return (
@@ -495,7 +493,7 @@ function DisplayConversationEntry({ entry, expansionKey }: Props) {
   const isFileEdit = (a: ActionType): a is FileEditAction =>
     a.action === 'file_edit';
   return (
-    <>
+    <div className="px-4 py-2 text-sm">
       {isSystem || isError ? (
         <CollapsibleEntry
           content={isNormalizedEntry(entry) ? entry.content : ''}
@@ -543,7 +541,7 @@ function DisplayConversationEntry({ entry, expansionKey }: Props) {
           )}
         </div>
       )}
-    </>
+    </div>
   );
 }
 

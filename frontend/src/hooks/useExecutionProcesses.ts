@@ -35,8 +35,8 @@ export const useExecutionProcesses = (
     const executionProcessesById = data?.execution_processes ?? {};
     const executionProcesses = Object.values(executionProcessesById).sort(
         (a, b) =>
-            new Date(b.created_at as unknown as string).getTime() -
-            new Date(a.created_at as unknown as string).getTime()
+            new Date(a.created_at as unknown as string).getTime() -
+            new Date(b.created_at as unknown as string).getTime()
     );
     const isLoading = !data && !error; // until first snapshot
 

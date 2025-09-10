@@ -3,26 +3,31 @@ import type {
 } from 'shared/types';
 // import VirtualizedList from '@/components/logs/VirtualizedList';
 // import { useExecutionProcesses } from '@/hooks/useExecutionProcesses';
+import { useConversationHistory } from '@/hooks/useConversationHistory';
+import ConversationExecutionLogs from './ConversationExecutionLogs';
+import VirtualizedList from '@/components/logs/VirtualizedList';
 
 type Props = {
-  selectedAttempt: TaskAttempt | null;
+  selectedAttempt: TaskAttempt;
 };
 
 function LogsTab({ selectedAttempt }: Props) {
-  if (!selectedAttempt) {
-    return null;
-  }
+  const { loadPreviousExecutionProcess, entries } = useConversationHistory(selectedAttempt);
+
 
   // const { executionProcesses } = useExecutionProcesses(selectedAttempt.id);
 
-  // console.log(executionProcesses);
+  // console.log("DEBUG1", shownExecutionProcesses);
+
+  // {shownExecutionProcesses.map((executionProcess) => (
+  //   <ConversationExecutionLogs key={executionProcess.id} executionProcess={executionProcess} />
+  // ))}  
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex-1">
-        {/* <VirtualizedList entries={groups} /> */}
-      </div>
-    </div>
+    <>
+      <button onClick={loadPreviousExecutionProcess}>Load Previous</button>
+      <VirtualizedList entries={entries} startReached={loadPreviousExecutionProcess} />
+    </>
   );
 }
 
