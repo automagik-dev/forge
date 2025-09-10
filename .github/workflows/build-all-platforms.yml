@@ -128,14 +128,24 @@ jobs:
           npm ci
           npm run build
       
+      - name: Override OpenSSL for Windows build
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          # Create temporary patch to override vendored OpenSSL for Windows only
+          cat >> Cargo.toml << 'EOF'
+          
+          [patch.crates-io]
+          openssl-sys = { version = "0.9", default-features = false }
+          EOF
+          
       - name: Build Rust binaries (Windows)
         if: runner.os == 'Windows'
         env:
           LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
           LIBZ_SYS_STATIC: 1
           OPENSSL_STATIC: 1
-          # Override workspace vendored setting - use system OpenSSL on Windows
-          # OPENSSL_* vars are set from previous step
+          # Use system OpenSSL on Windows (paths set from previous step)
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |
