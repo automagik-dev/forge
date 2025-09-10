@@ -73,8 +73,44 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      # Note: OpenSSL is configured to use vendored build in workspace Cargo.toml
-      # No system OpenSSL installation needed - built from source
+      - name: Install OpenSSL (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install openssl.light -y
+          # Wait a moment for installation to complete
+          Start-Sleep -Seconds 10
+          
+      - name: Configure OpenSSL env (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Check multiple possible OpenSSL locations
+          $possiblePaths = @(
+            'C:\Program Files\OpenSSL-Win64',
+            'C:\Program Files\OpenSSL',
+            'C:\ProgramData\chocolatey\lib\openssl.light\tools\openssl-Win64',
+            'C:\tools\openssl',
+            'C:\OpenSSL-Win64'
+          )
+          
+          $root = $null
+          foreach ($path in $possiblePaths) {
+            if (Test-Path $path) {
+              $root = $path
+              Write-Host "Found OpenSSL at: $root"
+              break
+            }
+          }
+          
+          if (-not $root) {
+            throw "OpenSSL not found in any of the expected locations"
+          }
+          
+          echo "OPENSSL_NO_VENDOR=1" >> $env:GITHUB_ENV
+          echo "OPENSSL_DIR=$root" >> $env:GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=$root\lib" >> $env:GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=$root\include" >> $env:GITHUB_ENV
           
       - name: Install cross-compilation tools
         if: matrix.use-cross
@@ -98,7 +134,8 @@ jobs:
           LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
           LIBZ_SYS_STATIC: 1
           OPENSSL_STATIC: 1
-          # Using vendored OpenSSL as configured in workspace Cargo.toml
+          # Override workspace vendored setting - use system OpenSSL on Windows
+          # OPENSSL_* vars are set from previous step
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |
