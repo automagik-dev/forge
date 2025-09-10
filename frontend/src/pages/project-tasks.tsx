@@ -310,6 +310,12 @@ export function ProjectTasks() {
             onClose={handleClosePanel}
             onEditTask={handleEditTaskCallback}
             onDeleteTask={handleDeleteTask}
+            onNavigateToTask={(taskId) => {
+              const task = tasksById[taskId];
+              if (task) {
+                handleViewTaskDetails(task);
+              }
+            }}
             isFullScreen={isFullscreen}
             setFullScreen={
               selectedAttempt

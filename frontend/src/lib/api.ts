@@ -9,6 +9,7 @@ import {
   CreateFollowUpAttempt,
   CreateGitHubPrRequest,
   CreateTask,
+  CreateAndStartTaskRequest,
   CreateTaskAttemptBody,
   CreateTaskTemplate,
   DeviceFlowStartResponse,
@@ -25,6 +26,7 @@ import {
   SearchResult,
   Task,
   TaskAttempt,
+  TaskRelationships,
   TaskTemplate,
   TaskWithAttemptStatus,
   UpdateProject,
@@ -38,10 +40,16 @@ import {
   ImageResponse,
   RestoreAttemptRequest,
   RestoreAttemptResult,
+  FollowUpDraftResponse,
+  UpdateFollowUpDraftRequest,
 } from 'shared/types';
 
 // Re-export types for convenience
 export type { RepositoryInfo } from 'shared/types';
+export type {
+  FollowUpDraftResponse,
+  UpdateFollowUpDraftRequest,
+} from 'shared/types';
 
 export class ApiError<E = unknown> extends Error {
   public status?: number;
@@ -274,7 +282,9 @@ export const tasksApi = {
     return handleApiResponse<Task>(response);
   },
 
-  createAndStart: async (data: CreateTask): Promise<TaskWithAttemptStatus> => {
+  createAndStart: async (
+    data: CreateAndStartTaskRequest
+  ): Promise<TaskWithAttemptStatus> => {
     const response = await makeRequest(`/api/tasks/create-and-start`, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -300,16 +310,21 @@ export const tasksApi = {
 
 // Task Attempts APIs
 export const attemptsApi = {
-  getChildren: async (attemptId: string): Promise<Task[]> => {
+  getChildren: async (attemptId: string): Promise<TaskRelationships> => {
     const response = await makeRequest(
       `/api/task-attempts/${attemptId}/children`
     );
-    return handleApiResponse<Task[]>(response);
+    return handleApiResponse<TaskRelationships>(response);
   },
 
   getAll: async (taskId: string): Promise<TaskAttempt[]> => {
     const response = await makeRequest(`/api/task-attempts?task_id=${taskId}`);
     return handleApiResponse<TaskAttempt[]>(response);
+  },
+
+  get: async (attemptId: string): Promise<TaskAttempt> => {
+    const response = await makeRequest(`/api/task-attempts/${attemptId}`);
+    return handleApiResponse<TaskAttempt>(response);
   },
 
   create: async (data: CreateTaskAttemptBody): Promise<TaskAttempt> => {
@@ -359,6 +374,50 @@ export const attemptsApi = {
       }
     );
     return handleApiResponse<void>(response);
+  },
+
+  getFollowUpDraft: async (
+    attemptId: string
+  ): Promise<FollowUpDraftResponse> => {
+    const response = await makeRequest(
+      `/api/task-attempts/${attemptId}/follow-up-draft`
+    );
+    return handleApiResponse<FollowUpDraftResponse>(response);
+  },
+
+  saveFollowUpDraft: async (
+    attemptId: string,
+    data: UpdateFollowUpDraftRequest
+  ): Promise<FollowUpDraftResponse> => {
+    const response = await makeRequest(
+      `/api/task-attempts/${attemptId}/follow-up-draft`,
+      {
+        // Server expects PUT for saving/updating the draft
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
+    return handleApiResponse<FollowUpDraftResponse>(response);
+  },
+
+  setFollowUpQueue: async (
+    attemptId: string,
+    queued: boolean,
+    expectedQueued?: boolean,
+    expectedVersion?: number
+  ): Promise<FollowUpDraftResponse> => {
+    const response = await makeRequest(
+      `/api/task-attempts/${attemptId}/follow-up-draft/queue`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          queued,
+          expected_queued: expectedQueued,
+          expected_version: expectedVersion,
+        }),
+      }
+    );
+    return handleApiResponse<FollowUpDraftResponse>(response);
   },
 
   deleteFile: async (

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Globe2 } from 'lucide-react';
+import { Globe2, Settings2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ImageUploadSection } from '@/components/ui/ImageUploadSection';
 import {
@@ -18,9 +18,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { templatesApi, imagesApi } from '@/lib/api';
+import { templatesApi, imagesApi, projectsApi, attemptsApi } from '@/lib/api';
 import { useTaskMutations } from '@/hooks/useTaskMutations';
-import type { TaskStatus, TaskTemplate, ImageResponse } from 'shared/types';
+import { useUserSystem } from '@/components/config-provider';
+import { ExecutorProfileSelector } from '@/components/settings';
+import BranchSelector from '@/components/tasks/BranchSelector';
+import type {
+  TaskStatus,
+  TaskTemplate,
+  ImageResponse,
+  GitBranch,
+  ExecutorProfileId,
+} from 'shared/types';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 
 interface Task {
@@ -39,13 +48,23 @@ export interface TaskFormDialogProps {
   projectId?: string; // For file search functionality
   initialTemplate?: TaskTemplate | null; // For pre-filling from template
   initialTask?: Task | null; // For duplicating an existing task
+  initialBaseBranch?: string; // For pre-selecting base branch in spinoff
+  parentTaskAttemptId?: string; // For linking to parent task attempt
 }
 
 export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
-  ({ task, projectId, initialTemplate, initialTask }: TaskFormDialogProps) => {
+  ({
+    task,
+    projectId,
+    initialTemplate,
+    initialTask,
+    initialBaseBranch,
+    parentTaskAttemptId,
+  }) => {
     const modal = useModal();
     const { createTask, createAndStart, updateTask } =
       useTaskMutations(projectId);
+    const { system, profiles } = useUserSystem();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState<TaskStatus>('todo');
@@ -59,6 +78,12 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     const [newlyUploadedImageIds, setNewlyUploadedImageIds] = useState<
       string[]
     >([]);
+    const [branches, setBranches] = useState<GitBranch[]>([]);
+    const [selectedBranch, setSelectedBranch] = useState<string>('');
+    const [selectedExecutorProfile, setSelectedExecutorProfile] =
+      useState<ExecutorProfileId | null>(null);
+    const [quickstartExpanded, setQuickstartExpanded] =
+      useState<boolean>(false);
 
     const isEditMode = Boolean(task);
 
@@ -140,25 +165,97 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
         setSelectedTemplate('');
         setImages([]);
         setNewlyUploadedImageIds([]);
+        // Reset both our branch template and upstream quickstart fields
         setBranchTemplate('');
+        setSelectedBranch('');
+        setSelectedExecutorProfile(system.config?.executor_profile || null);
+        setQuickstartExpanded(false);
       }
-    }, [task, initialTask, initialTemplate, modal.visible]);
+    }, [
+      task,
+      initialTask,
+      initialTemplate,
+      modal.visible,
+      system.config?.executor_profile,
+    ]);
 
-    // Fetch templates when dialog opens in create mode
+    // Fetch templates and branches when dialog opens in create mode
     useEffect(() => {
       if (modal.visible && !isEditMode && projectId) {
-        // Fetch both project and global templates
+        // Fetch templates and branches
         Promise.all([
           templatesApi.listByProject(projectId),
           templatesApi.listGlobal(),
+          projectsApi.getBranches(projectId),
         ])
-          .then(([projectTemplates, globalTemplates]) => {
+          .then(([projectTemplates, globalTemplates, projectBranches]) => {
             // Combine templates with project templates first
             setTemplates([...projectTemplates, ...globalTemplates]);
+
+            // Set branches and default to initialBaseBranch if provided, otherwise current branch
+            setBranches(projectBranches);
+
+            if (
+              initialBaseBranch &&
+              projectBranches.some((b) => b.name === initialBaseBranch)
+            ) {
+              // Use initialBaseBranch if it exists in the project branches (for spinoff)
+              setSelectedBranch(initialBaseBranch);
+            } else {
+              // Default behavior: use current branch or first available
+              const currentBranch = projectBranches.find((b) => b.is_current);
+              const defaultBranch = currentBranch || projectBranches[0];
+              if (defaultBranch) {
+                setSelectedBranch(defaultBranch.name);
+              }
+            }
           })
           .catch(console.error);
       }
-    }, [modal.visible, isEditMode, projectId]);
+    }, [modal.visible, isEditMode, projectId, initialBaseBranch]);
+
+    // Fetch parent base branch when parentTaskAttemptId is provided
+    useEffect(() => {
+      if (
+        modal.visible &&
+        !isEditMode &&
+        parentTaskAttemptId &&
+        !initialBaseBranch &&
+        branches.length > 0
+      ) {
+        attemptsApi
+          .get(parentTaskAttemptId)
+          .then((attempt) => {
+            const parentBranch = attempt.branch || attempt.base_branch;
+            if (parentBranch && branches.some((b) => b.name === parentBranch)) {
+              setSelectedBranch(parentBranch);
+            }
+          })
+          .catch(() => {
+            // Silently fail, will use current branch fallback
+          });
+      }
+    }, [
+      modal.visible,
+      isEditMode,
+      parentTaskAttemptId,
+      initialBaseBranch,
+      branches,
+    ]);
+
+    // Set default executor from config (following TaskDetailsToolbar pattern)
+    useEffect(() => {
+      if (system.config?.executor_profile) {
+        setSelectedExecutorProfile(system.config.executor_profile);
+      }
+    }, [system.config?.executor_profile]);
+
+    // Set default executor from config (following TaskDetailsToolbar pattern)
+    useEffect(() => {
+      if (system.config?.executor_profile) {
+        setSelectedExecutorProfile(system.config.executor_profile);
+      }
+    }, [system.config?.executor_profile]);
 
     // Handle template selection
     const handleTemplateChange = (templateId: string) => {
@@ -228,7 +325,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                 description: description || null,
                 status,
                 branch_template: branchTemplate || null,
-                parent_task_attempt: null,
+                parent_task_attempt: parentTaskAttemptId || null,
                 image_ids: imageIds || null,
               },
             },
@@ -245,7 +342,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
               title,
               description: description || null,
               branch_template: branchTemplate || null,
-              parent_task_attempt: null,
+              parent_task_attempt: parentTaskAttemptId || null,
               image_ids: imageIds || null,
             },
             {
@@ -283,14 +380,28 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
               ? newlyUploadedImageIds
               : undefined;
 
+          // Use selected executor profile or fallback to config default
+          const finalExecutorProfile =
+            selectedExecutorProfile || system.config?.executor_profile;
+          if (!finalExecutorProfile || !selectedBranch) {
+            console.warn(
+              `Missing ${!finalExecutorProfile ? 'executor profile' : 'branch'} for Create & Start`
+            );
+            return;
+          }
+
           createAndStart.mutate(
             {
-              project_id: projectId,
-              title,
-              description: description || null,
-              branch_template: branchTemplate || null,
-              parent_task_attempt: null,
-              image_ids: imageIds || null,
+              task: {
+                project_id: projectId,
+                title,
+                description: description || null,
+                branch_template: branchTemplate || null,
+                parent_task_attempt: parentTaskAttemptId || null,
+                image_ids: imageIds || null,
+              },
+              executor_profile_id: finalExecutorProfile,
+              base_branch: selectedBranch,
             },
             {
               onSuccess: () => {
@@ -310,6 +421,9 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       modal,
       newlyUploadedImageIds,
       createAndStart,
+      selectedExecutorProfile,
+      selectedBranch,
+      system.config?.executor_profile,
     ]);
 
     const handleCancel = useCallback(() => {
@@ -534,6 +648,70 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                   </Select>
                 </div>
               )}
+
+              {!isEditMode &&
+                (() => {
+                  const quickstartSection = (
+                    <div className="pt-2">
+                      <details
+                        className="group"
+                        open={quickstartExpanded}
+                        onToggle={(e) =>
+                          setQuickstartExpanded(
+                            (e.target as HTMLDetailsElement).open
+                          )
+                        }
+                      >
+                        <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors list-none flex items-center gap-2">
+                          <ChevronRight className="h-3 w-3 transition-transform group-open:rotate-90" />
+                          <Settings2 className="h-3 w-3" />
+                          Quickstart
+                        </summary>
+                        <div className="mt-3 space-y-3">
+                          <p className="text-xs text-muted-foreground">
+                            Configuration for "Create & Start" workflow
+                          </p>
+
+                          {/* Executor Profile Selector */}
+                          {profiles && selectedExecutorProfile && (
+                            <ExecutorProfileSelector
+                              profiles={profiles}
+                              selectedProfile={selectedExecutorProfile}
+                              onProfileSelect={setSelectedExecutorProfile}
+                              disabled={isSubmitting || isSubmittingAndStart}
+                            />
+                          )}
+
+                          {/* Branch Selector */}
+                          {branches.length > 0 && (
+                            <div>
+                              <Label
+                                htmlFor="base-branch"
+                                className="text-sm font-medium"
+                              >
+                                Branch
+                              </Label>
+                              <div className="mt-1.5">
+                                <BranchSelector
+                                  branches={branches}
+                                  selectedBranch={selectedBranch}
+                                  onBranchSelect={setSelectedBranch}
+                                  placeholder="Select branch"
+                                  className={
+                                    isSubmitting || isSubmittingAndStart
+                                      ? 'opacity-50 cursor-not-allowed'
+                                      : ''
+                                  }
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </details>
+                    </div>
+                  );
+                  return quickstartSection;
+                })()}
 
               <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
                 <Button
