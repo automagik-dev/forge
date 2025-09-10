@@ -30,6 +30,7 @@ import {
   ProjectEditorSelectionDialog,
   RestoreLogsDialog,
 } from './components/dialogs';
+import { OmniModal } from './components/omni/OmniModal';
 
 // Register modals
 NiceModal.register('github-login', GitHubLoginDialog);
@@ -51,6 +52,7 @@ NiceModal.register('delete-configuration', DeleteConfigurationDialog);
 NiceModal.register('project-form', ProjectFormDialog);
 NiceModal.register('project-editor-selection', ProjectEditorSelectionDialog);
 NiceModal.register('restore-logs', RestoreLogsDialog);
+NiceModal.register('omni-modal', OmniModal);
 // Install VS Code iframe keyboard bridge when running inside an iframe
 import './vscode/bridge';
 

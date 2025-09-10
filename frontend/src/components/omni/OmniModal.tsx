@@ -20,15 +20,12 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, MessageSquare } from 'lucide-react';
 import { useUserSystem } from '@/components/config-provider';
+import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import { omniApi } from './api';
 import { OmniInstance } from './types';
 
-interface OmniModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-export function OmniModal({ open, onOpenChange }: OmniModalProps) {
+const OmniModalImpl = () => {
+  const modal = useModal();
   const { config, updateAndSaveConfig } = useUserSystem();
   const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState(false);
@@ -89,7 +86,7 @@ export function OmniModal({ open, onOpenChange }: OmniModalProps) {
           recipient_type: formData.recipient_type as any,
         },
       });
-      onOpenChange(false);
+      modal.hide();
     } catch (e: any) {
       setError(e.message || 'Failed to save configuration');
     } finally {
@@ -101,7 +98,7 @@ export function OmniModal({ open, onOpenChange }: OmniModalProps) {
   const isDiscord = selectedInstance?.channel_type === 'discord';
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={modal.visible} onOpenChange={() => modal.hide()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
@@ -207,7 +204,7 @@ export function OmniModal({ open, onOpenChange }: OmniModalProps) {
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => modal.hide()}>
             Cancel
           </Button>
           <Button 
@@ -227,4 +224,7 @@ export function OmniModal({ open, onOpenChange }: OmniModalProps) {
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+export const OmniModal = NiceModal.create(OmniModalImpl);
+export default OmniModal;

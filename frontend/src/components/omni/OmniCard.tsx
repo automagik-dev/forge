@@ -1,4 +1,4 @@
-import { useState } from 'react';
+// no local state needed
 import {
   Card,
   CardContent,
@@ -16,12 +16,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { OmniModal } from './OmniModal';
+import NiceModal from '@ebay/nice-modal-react';
 import { useUserSystem } from '@/components/config-provider';
 
 export function OmniCard() {
   const { config, updateConfig } = useUserSystem();
-  const [showModal, setShowModal] = useState(false);
+  // NiceModal controls the OmniModal; no local state needed
   
   const isConfigured = !!(
     config?.omni?.host && 
@@ -50,8 +50,12 @@ export function OmniCard() {
               onCheckedChange={(checked: boolean) =>
                 updateConfig({
                   omni: {
-                    ...config?.omni!,
                     enabled: checked,
+                    host: config?.omni?.host ?? null,
+                    api_key: config?.omni?.api_key ?? null,
+                    instance: config?.omni?.instance ?? null,
+                    recipient: config?.omni?.recipient ?? null,
+                    recipient_type: config?.omni?.recipient_type ?? null,
                   },
                 })
               }
@@ -84,7 +88,7 @@ export function OmniCard() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setShowModal(true)}>
+                  <DropdownMenuItem onClick={() => NiceModal.show('omni-modal')}>
                     Configure
                   </DropdownMenuItem>
                   <DropdownMenuItem 
@@ -111,7 +115,7 @@ export function OmniCard() {
               <p className="text-sm text-muted-foreground">
                 Connect your Omni server to send notifications to WhatsApp, Discord, or Telegram.
               </p>
-              <Button onClick={() => setShowModal(true)}>
+              <Button onClick={() => NiceModal.show('omni-modal')}>
                 Configure Omni
               </Button>
             </div>
@@ -119,12 +123,6 @@ export function OmniCard() {
         </CardContent>
       </Card>
       
-      {showModal && (
-        <OmniModal 
-          open={showModal}
-          onOpenChange={setShowModal}
-        />
-      )}
     </>
   );
 }

@@ -1,0 +1,68 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT \n                 id as \"id!: Uuid\",\n                 project_id as \"project_id!: Uuid\",\n                 title,\n                 description,\n                 status as \"status!: TaskStatus\",\n                 branch_template,\n                 parent_task_attempt as \"parent_task_attempt: Uuid\",\n                 created_at as \"created_at!: DateTime<Utc>\",\n                 updated_at as \"updated_at!: DateTime<Utc>\"\n               FROM tasks \n               WHERE parent_task_attempt = $1\n               ORDER BY created_at DESC",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!: Uuid",
+        "ordinal": 0,
+        "type_info": "Blob"
+      },
+      {
+        "name": "project_id!: Uuid",
+        "ordinal": 1,
+        "type_info": "Blob"
+      },
+      {
+        "name": "title",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "description",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "status!: TaskStatus",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "branch_template",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "parent_task_attempt: Uuid",
+        "ordinal": 6,
+        "type_info": "Blob"
+      },
+      {
+        "name": "created_at!: DateTime<Utc>",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at!: DateTime<Utc>",
+        "ordinal": 8,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "be2c9141eb8405c6590397adbda54f2b6b918f298934c7a34645ca5c834268fd"
+}
