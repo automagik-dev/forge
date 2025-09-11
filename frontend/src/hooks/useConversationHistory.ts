@@ -50,7 +50,10 @@ export const useConversationHistory = ({
                 `/api/execution-processes/${executionProcess.id}/normalized-logs`,
                 {
                     onFinished: (allEntries) => resolve(allEntries),
-                    onError: (err) => reject(err),
+                    onError: (err) => {
+                        console.warn!(`Error loading entries for historic execution process ${executionProcess.id}`, err);
+                        resolve([])
+                    },
                 }
             );
             // optional: controller.close() if your util exposes one after finish
