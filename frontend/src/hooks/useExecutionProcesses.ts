@@ -3,15 +3,15 @@ import { useJsonPatchStream } from './useJsonPatchStream';
 import type { ExecutionProcess } from 'shared/types';
 
 type ExecutionProcessState = {
-    execution_processes: Record<string, ExecutionProcess>;
+  execution_processes: Record<string, ExecutionProcess>;
 };
 
 interface UseExecutionProcessesResult {
-    executionProcesses: ExecutionProcess[];
-    executionProcessesById: Record<string, ExecutionProcess>;
-    isLoading: boolean;
-    isConnected: boolean;
-    error: string | null;
+  executionProcesses: ExecutionProcess[];
+  executionProcessesById: Record<string, ExecutionProcess>;
+  isLoading: boolean;
+  isConnected: boolean;
+  error: string | null;
 }
 
 /**
@@ -20,25 +20,35 @@ interface UseExecutionProcessesResult {
  * Live updates arrive at /tasks/<id> via add/replace/remove operations.
  */
 export const useExecutionProcesses = (
-    taskAttemptId: string
+  taskAttemptId: string
 ): UseExecutionProcessesResult => {
-    const endpoint = `/api/execution-processes/stream?task_attempt_id=${encodeURIComponent(taskAttemptId)}`;
+  const endpoint = `/api/execution-processes/stream?task_attempt_id=${encodeURIComponent(taskAttemptId)}`;
 
-    const initialData = useCallback((): ExecutionProcessState => ({ execution_processes: {} }), []);
+  const initialData = useCallback(
+    (): ExecutionProcessState => ({ execution_processes: {} }),
+    []
+  );
 
-    const { data, isConnected, error } = useJsonPatchStream<ExecutionProcessState>(
-        endpoint,
-        !!taskAttemptId,
-        initialData
+  const { data, isConnected, error } =
+    useJsonPatchStream<ExecutionProcessState>(
+      endpoint,
+      !!taskAttemptId,
+      initialData
     );
 
-    const executionProcessesById = data?.execution_processes ?? {};
-    const executionProcesses = Object.values(executionProcessesById).sort(
-        (a, b) =>
-            new Date(a.created_at as unknown as string).getTime() -
-            new Date(b.created_at as unknown as string).getTime()
-    );
-    const isLoading = !data && !error; // until first snapshot
+  const executionProcessesById = data?.execution_processes ?? {};
+  const executionProcesses = Object.values(executionProcessesById).sort(
+    (a, b) =>
+      new Date(a.created_at as unknown as string).getTime() -
+      new Date(b.created_at as unknown as string).getTime()
+  );
+  const isLoading = !data && !error; // until first snapshot
 
-    return { executionProcesses, executionProcessesById, isLoading, isConnected, error };
+  return {
+    executionProcesses,
+    executionProcessesById,
+    isLoading,
+    isConnected,
+    error,
+  };
 };

@@ -19,9 +19,7 @@ interface UseProjectTasksResult {
  * Server sends initial snapshot: replace /tasks with an object keyed by id.
  * Live updates arrive at /tasks/<id> via add/replace/remove operations.
  */
-export const useProjectTasks = (
-  projectId: string
-): UseProjectTasksResult => {
+export const useProjectTasks = (projectId: string): UseProjectTasksResult => {
   const endpoint = `/api/tasks/stream?project_id=${encodeURIComponent(projectId)}`;
 
   const initialData = useCallback((): TasksState => ({ tasks: {} }), []);

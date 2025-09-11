@@ -33,6 +33,7 @@ import { WebviewContextMenu } from '@/vscode/ContextMenu';
 import { DevBanner } from '@/components/DevBanner';
 import NiceModal from '@ebay/nice-modal-react';
 import { OnboardingResult } from './components/dialogs/global/OnboardingDialog';
+import { MessageEditProvider } from './hooks/useEditUserMessage';
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
@@ -194,9 +195,11 @@ function App() {
     <BrowserRouter>
       <UserSystemProvider>
         <ProjectProvider>
-          <NiceModal.Provider>
-            <AppContent />
-          </NiceModal.Provider>
+          <MessageEditProvider>
+            <NiceModal.Provider>
+              <AppContent />
+            </NiceModal.Provider>
+          </MessageEditProvider>
         </ProjectProvider>
       </UserSystemProvider>
     </BrowserRouter>

@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ImageIcon,
   StopCircle,
+  Edit,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ImageUploadSection } from '@/components/ui/ImageUploadSection';
@@ -38,6 +39,7 @@ import { useVariantCyclingShortcut } from '@/lib/keyboard-shortcuts';
 import { useReview } from '@/contexts/ReviewProvider';
 import { useJsonPatchStream } from '@/hooks/useJsonPatchStream';
 import { inIframe } from '@/vscode/bridge';
+import { useMessageEdit } from '@/hooks/useEditUserMessage';
 
 interface TaskFollowUpSectionProps {
   task: TaskWithAttemptStatus;
@@ -61,9 +63,21 @@ export function TaskFollowUpSection({
     isStopping,
     processes,
   } = useAttemptExecution(selectedAttemptId, task.id);
+  const {
+    isEditing,
+    draft: editDraft,
+    messageId,
+    cancelEdit,
+  } = useMessageEdit();
   const { data: branchStatus } = useBranchStatus(selectedAttemptId);
   const { profiles } = useUserSystem();
   const { comments, generateReviewMarkdown, clearComments } = useReview();
+
+  useEffect(() => {
+    if (isEditing) {
+      setFollowUpMessage(editDraft);
+    }
+  }, [isEditing, messageId]);
 
   // Generate review markdown when comments change
   const reviewMarkdown = useMemo(() => {
@@ -782,7 +796,9 @@ export function TaskFollowUpSection({
                       ? 'Type your follow-up… It will auto-send when ready.'
                       : reviewMarkdown
                         ? '(Optional) Add additional instructions... Type @ to search files.'
-                        : 'Continue working on this task attempt... Type @ to search files.'
+                        : isEditing
+                          ? 'Edit the message...'
+                          : 'Continue working on this task attempt... Type @ to search files.'
                   }
                   value={followUpMessage}
                   onChange={(value) => {
@@ -993,6 +1009,15 @@ export function TaskFollowUpSection({
                   </Button>
                 ) : (
                   <div className="flex items-center gap-2">
+                    {isEditing && (
+                      <Button
+                        onClick={cancelEdit}
+                        size="sm"
+                        variant="destructive"
+                      >
+                        Cancel
+                      </Button>
+                    )}
                     {comments.length > 0 && (
                       <Button
                         onClick={clearComments}
@@ -1017,8 +1042,15 @@ export function TaskFollowUpSection({
                         <Loader2 className="animate-spin h-4 w-4 mr-2" />
                       ) : (
                         <>
-                          <Send className="h-4 w-4 mr-2" />
-                          Send
+                          {isEditing ? (
+                            <>
+                              <Edit className="h-4 w-4 mr-2" /> Edit
+                            </>
+                          ) : (
+                            <>
+                              <Send className="h-4 w-4 mr-2" /> Send
+                            </>
+                          )}
                         </>
                       )}
                     </Button>

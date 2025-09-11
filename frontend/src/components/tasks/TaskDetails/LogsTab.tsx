@@ -1,7 +1,4 @@
-import type {
-  TaskAttempt,
-} from 'shared/types';
-import { useConversationHistory } from '@/hooks/useConversationHistoryOld';
+import type { TaskAttempt } from 'shared/types';
 import VirtualizedList from '@/components/logs/VirtualizedList';
 
 type Props = {
@@ -9,9 +6,7 @@ type Props = {
 };
 
 function LogsTab({ selectedAttempt }: Props) {
-  return (
-    <VirtualizedList attempt={selectedAttempt} />
-  );
+  return <VirtualizedList attempt={selectedAttempt} />;
 }
 
 export default LogsTab;

@@ -93,7 +93,7 @@ const getEntryIcon = (entryType: NormalizedEntryType) => {
 const getStatusIndicator = (entryType: NormalizedEntryType) => {
   const result =
     entryType.type === 'tool_use' &&
-      entryType.action_type.action === 'command_run'
+    entryType.action_type.action === 'command_run'
       ? entryType.action_type.result?.exit_status
       : null;
 
@@ -187,8 +187,9 @@ const MessageCard: React.FC<{
 
   return (
     <div
-      className={`${frameBase} ${variant === 'system' ? systemTheme : errorTheme
-        }`}
+      className={`${frameBase} ${
+        variant === 'system' ? systemTheme : errorTheme
+      }`}
       onClick={onToggle}
     >
       <div className="flex items-center gap-1.5">
@@ -224,8 +225,9 @@ const ExpandChevron: React.FC<{
   return (
     <ChevronDown
       onClick={onClick}
-      className={`h-4 w-4 cursor-pointer transition-transform ${color} ${expanded ? '' : '-rotate-90'
-        }`}
+      className={`h-4 w-4 cursor-pointer transition-transform ${color} ${
+        expanded ? '' : '-rotate-90'
+      }`}
     />
   );
 };
@@ -376,12 +378,12 @@ const ToolCallCard: React.FC<{
     : 'div';
   const headerProps = hasExpandableDetails
     ? {
-      onClick: (e: React.MouseEvent) => {
-        e.preventDefault();
-        toggle();
-      },
-      title: expanded ? 'Hide details' : 'Show details',
-    }
+        onClick: (e: React.MouseEvent) => {
+          e.preventDefault();
+          toggle();
+        },
+        title: expanded ? 'Hide details' : 'Show details',
+      }
     : {};
 
   return (

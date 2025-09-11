@@ -162,7 +162,7 @@ export function TaskDetailsPanel({
                           attempts={attempts}
                           selectedAttempt={selectedAttempt}
                           setSelectedAttempt={setSelectedAttempt}
-                        // hide actions in sidebar; moved to header in fullscreen
+                          // hide actions in sidebar; moved to header in fullscreen
                         />
 
                         {/* Task Breakdown (TODOs) */}
@@ -177,7 +177,7 @@ export function TaskDetailsPanel({
 
                       {/* Main content */}
                       <main className="flex-1 min-h-0 min-w-0 flex flex-col">
-                        {selectedAttempt &&
+                        {selectedAttempt && (
                           <>
                             <TabNavigation
                               activeTab={activeTab}
@@ -202,7 +202,8 @@ export function TaskDetailsPanel({
                               selectedAttemptProfile={selectedAttempt?.executor}
                               jumpToLogsTab={jumpToLogsTab}
                             />
-                          </>}
+                          </>
+                        )}
                       </main>
                     </div>
                   ) : (
@@ -217,7 +218,7 @@ export function TaskDetailsPanel({
                           attempts={attempts}
                           selectedAttempt={selectedAttempt}
                           setSelectedAttempt={setSelectedAttempt}
-                        // hide actions in sidebar; moved to header in fullscreen
+                          // hide actions in sidebar; moved to header in fullscreen
                         />
                       ) : (
                         <>
@@ -234,7 +235,9 @@ export function TaskDetailsPanel({
                             onJumpToDiffFullScreen={jumpToDiffFullScreen}
                           />
 
-                          {selectedAttempt && <LogsTab selectedAttempt={selectedAttempt} />}
+                          {selectedAttempt && (
+                            <LogsTab selectedAttempt={selectedAttempt} />
+                          )}
 
                           <TaskFollowUpSection
                             task={task}

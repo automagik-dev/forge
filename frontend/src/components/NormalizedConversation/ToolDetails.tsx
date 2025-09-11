@@ -14,9 +14,9 @@ type Props = {
   result?: ToolResult | null;
   commandOutput?: string | null; // presence => command mode
   commandExit?:
-  | { type: 'success'; success: boolean }
-  | { type: 'exit_code'; code: number }
-  | null;
+    | { type: 'success'; success: boolean }
+    | { type: 'exit_code'; code: number }
+    | null;
 };
 
 export const renderJson = (v: JsonValue) => (
