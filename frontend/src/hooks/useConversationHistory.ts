@@ -1,5 +1,5 @@
 // useConversationHistory.ts
-import { ExecutionProcess, PatchType, TaskAttempt } from "shared/types";
+import { ExecutionProcess, NormalizedEntry, PatchType, TaskAttempt } from "shared/types";
 import { useExecutionProcesses } from "./useExecutionProcesses";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { streamSseJsonPatchEntries } from "@/utils/streamSseJsonPatchEntries";
@@ -115,7 +115,7 @@ export const useConversationHistory = ({
     }
 
 
-    const flattenEntries = (executionProcessState: ExecutionProcessStateStore) => {
+    const flattenEntries = (executionProcessState: ExecutionProcessStateStore): PatchTypeWithKey[] => {
         return Object.values(executionProcessState)
             .sort(
                 (a, b) =>
@@ -125,7 +125,43 @@ export const useConversationHistory = ({
             .flatMap(p => p.entries);
     };
 
-    const patchWithKey = (patch: PatchType, executionProcessId: string, index: number) => {
+    const flattenEntriesForEmit = (executionProcessState: ExecutionProcessStateStore): PatchTypeWithKey[] => {
+        // Create user messages + tool calls for setup/cleanup scripts
+        return Object.values(executionProcessState)
+            .sort(
+                (a, b) =>
+                    new Date(a.executionProcess.created_at as unknown as string).getTime() -
+                    new Date(b.executionProcess.created_at as unknown as string).getTime()
+            )
+            .flatMap(p => {
+                let entries = [];
+                if (p.executionProcess.executor_action.typ.type === 'CodingAgentInitialRequest' || p.executionProcess.executor_action.typ.type === 'CodingAgentFollowUpRequest') {
+                    // entries.push(p.executionProcess.executor_action.typ.prompt)
+                    const userNormalizedEntry: NormalizedEntry = {
+                        entry_type: {
+                            type: 'user_message'
+                        },
+                        content: p.executionProcess.executor_action.typ.prompt,
+                        timestamp: null
+                    }
+                    const userPatch: PatchType = {
+                        type: 'NORMALIZED_ENTRY',
+                        content: userNormalizedEntry
+                    }
+                    const userPatchTypeWithKey = patchWithKey(userPatch, p.executionProcess.id, 'user')
+                    entries.push(userPatchTypeWithKey)
+                }
+
+                const entriesExcludingUser = p.entries.filter(e => e.type !== 'NORMALIZED_ENTRY' || e.content.entry_type.type !== 'user_message')
+
+                entries.push(...entriesExcludingUser)
+
+                return entries
+            });
+    };
+
+
+    const patchWithKey = (patch: PatchType, executionProcessId: string, index: number | 'user') => {
         return { ...patch, patchKey: `${executionProcessId}:${index}` };
     };
 
@@ -166,7 +202,7 @@ export const useConversationHistory = ({
 
     const emitEntries = (executionProcessState: ExecutionProcessStateStore, addEntryType: AddEntryType) => {
         // Flatten entries in chronological order of process start
-        const entries = flattenEntries(executionProcessState);
+        const entries = flattenEntriesForEmit(executionProcessState);
         onEntriesUpdatedRef.current?.(entries, addEntryType, false);
     };
 
