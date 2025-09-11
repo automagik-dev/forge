@@ -25,6 +25,7 @@ import {
   User,
 } from 'lucide-react';
 import RawLogText from '../common/RawLogText';
+import UserMessage from './UserMessage';
 
 type Props = {
   entry: NormalizedEntry | ProcessStartPayload;
@@ -490,8 +491,14 @@ function DisplayConversationEntry({ entry, expansionKey }: Props) {
   const isSystem = entryType.type === 'system_message';
   const isError = entryType.type === 'error_message';
   const isToolUse = entryType.type === 'tool_use';
+  const isUserMessage = entryType.type === 'user_message';
   const isFileEdit = (a: ActionType): a is FileEditAction =>
     a.action === 'file_edit';
+
+  if (isUserMessage) {
+    return <UserMessage content={entry.content} />;
+  }
+
   return (
     <div className="px-4 py-2 text-sm">
       {isSystem || isError ? (
