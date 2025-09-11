@@ -1,159 +1,109 @@
-import { useExecutionProcesses } from '@/hooks/useExecutionProcesses';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ExecutionProcess, PatchType, TaskAttempt } from 'shared/types';
+// useConversationHistory.ts
+import { ExecutionProcess, PatchType, TaskAttempt } from "shared/types";
+import { useExecutionProcesses } from "./useExecutionProcesses";
+import { useEffect, useMemo, useRef } from "react";
 import { streamSseJsonPatchEntries } from "@/utils/streamSseJsonPatchEntries";
-import { get, set } from "@/utils/keyValueStore";
 
 export type PatchTypeWithKey = PatchType & { patchKey: string };
+
+export type AddEntryType = "initial" | "livestream" | "historic";
+
+export type OnEntriesUpdated = (newEntries: PatchTypeWithKey[], addType: AddEntryType) => void;
 
 type ExecutionProcessState = {
     executionProcess: ExecutionProcess;
     entries: PatchTypeWithKey[];
 };
 
-export const useConversationHistory = (attempt: TaskAttempt) => {
+type ExecutionProcessStateStore = Record<string, ExecutionProcessState>;
+
+
+interface UseConversationHistoryParams {
+    attempt: TaskAttempt;
+    onEntriesUpdated: OnEntriesUpdated;
+}
+
+interface UseConversationHistoryResult {
+    // expose anything you actually need; placeholder here
+}
+
+const MIN_INITIAL_ENTRIES = 5;
+
+export const useConversationHistory = ({
+    attempt,
+    onEntriesUpdated,
+}: UseConversationHistoryParams): UseConversationHistoryResult => {
     const { executionProcesses } = useExecutionProcesses(attempt.id);
-    const [executionProcessesToShow, setExecutionProcessesToShow] = useState<Record<string, ExecutionProcessState>>({});
+    const displayedExecutionProcesses = useRef<ExecutionProcessStateStore>({});
+    const loadedInitialEntries = useRef(false);
 
-    // Track live streams so we can close them when attempt changes
-    const streamControllersRef = useRef<Record<string, { close?: () => void }>>({});
+    // ✅ must provide an initial value; type as nullable
+    const onEntriesAddedRef = useRef<OnEntriesUpdated | null>(null);
+    useEffect(() => {
+        onEntriesAddedRef.current = onEntriesUpdated;
+    }, [onEntriesUpdated]);
 
-    const processById = useMemo(() => {
-        const map: Record<string, ExecutionProcess> = {};
-        for (const p of executionProcesses) map[p.id] = p;
-        return map;
-    }, [executionProcesses]);
+    const loadEntriesForHistoricExecutionProcess = (executionProcess: ExecutionProcess) => {
+        return new Promise<PatchType[]>((resolve, reject) => {
+            const controller = streamSseJsonPatchEntries<PatchType>(
+                `/api/execution-processes/${executionProcess.id}/normalized-logs`,
+                {
+                    onFinished: (allEntries) => resolve(allEntries),
+                    onError: (err) => reject(err),
+                }
+            );
+            // optional: controller.close() if your util exposes one after finish
+        });
+    };
 
+    const flattenEntries = (executionProcessState: ExecutionProcessStateStore) => {
+        return Object.values(executionProcessState).flatMap(p => p.entries);
+    };
+
+    const loadInitialEntries = async (): Promise<ExecutionProcessStateStore> => {
+        const localDisplayedExecutionProcesses: ExecutionProcessStateStore = {};
+        for (const executionProcess of executionProcesses.reverse()) {
+            const entries = await loadEntriesForHistoricExecutionProcess(executionProcess);
+            // add a stable key per entry (example: combine process id + index)
+            const entriesWithKey = entries.map((e, idx) => ({ ...e, patchKey: `${executionProcess.id}:${idx}` }));
+            localDisplayedExecutionProcesses[executionProcess.id] = { executionProcess, entries: entriesWithKey };
+            // Initial load should show 
+            if (flattenEntries(localDisplayedExecutionProcesses).length > MIN_INITIAL_ENTRIES) {
+                break;
+            }
+        }
+        return localDisplayedExecutionProcesses;
+    };
+
+    const emitEntries = (executionProcessState: ExecutionProcessStateStore, addEntryType: AddEntryType) => {
+        // Flatten entries in chronological order of process start
+        const entries = flattenEntries(executionProcessState);
+
+        onEntriesAddedRef.current?.(entries, addEntryType);
+    };
+
+    // Stable key for dependency arrays when process list changes
     const idListKey = useMemo(
-        () => executionProcesses.map(p => p.id).join(','),
+        () => executionProcesses.map((p) => p.id).join(","),
         [executionProcesses]
     );
 
-    const mapEntries = (executionProcessId: string, entries: PatchType[]): PatchTypeWithKey[] =>
-        entries.map((entry, index) => ({
-            ...entry,
-            patchKey: `${executionProcessId}-${index}`
-        }));
-
-    const getFinishedStreamCached = async (executionProcessId: string) => {
-        const cached: PatchTypeWithKey[] | undefined = await get(`execution-process-${executionProcessId}`);
-        if (cached && processById[executionProcessId]) {
-            setExecutionProcessesToShow(prev => ({
-                ...prev,
-                [executionProcessId]: {
-                    executionProcess: processById[executionProcessId], // <-- correct process
-                    entries: cached
-                }
-            }));
-            return;
-        }
-        getFinishedStream(executionProcessId);
-    };
-
-    const getFinishedStream = (executionProcessId: string) => {
-        // If util returns a controller, keep it so we can close later
-        const controller = streamSseJsonPatchEntries<PatchType>(
-            `/api/execution-processes/${executionProcessId}/normalized-logs`,
-            {
-                onEntries: (entries) => {
-                    setExecutionProcessesToShow(prev => ({
-                        ...prev,
-                        [executionProcessId]: {
-                            ...(prev[executionProcessId] ?? { executionProcess: processById[executionProcessId] }),
-                            executionProcess: processById[executionProcessId],
-                            entries: mapEntries(executionProcessId, entries)
-                        }
-                    }));
-                },
-                onFinished: (entries) => {
-                    const mapped = mapEntries(executionProcessId, entries);
-                    set(`execution-process-${executionProcessId}`, mapped);
-                }
-            }
-        );
-
-        if (controller) {
-            streamControllersRef.current[executionProcessId] = controller;
-        }
-    };
-
-    const loadPreviousExecutionProcess = () => {
-        if (executionProcesses.length === 0) return;
-
-        // If nothing shown yet, load the newest execution process
-        if (Object.keys(executionProcessesToShow).length === 0) {
-            const latest = executionProcesses[executionProcesses.length - 1];
-            if (!latest) return;
-            setExecutionProcessesToShow({ [latest.id]: { executionProcess: latest, entries: [] } });
-            getFinishedStreamCached(latest.id);
-            return;
-        }
-
-        // Otherwise, find the earliest shown and then load the one just before it (older)
-        const earliestShownProcessId = Object.keys(executionProcessesToShow).sort((a, b) => {
-            const ta = new Date(executionProcessesToShow[a].executionProcess.created_at as unknown as string).getTime();
-            const tb = new Date(executionProcessesToShow[b].executionProcess.created_at as unknown as string).getTime();
-            return ta - tb;
-        })[0];
-
-        const earliestShownProcessIndex = executionProcesses.findIndex(p => p.id === earliestShownProcessId);
-
-        if (earliestShownProcessIndex === -1) {
-            // The shown IDs belong to a previous attempt. Reset and load newest for this attempt.
-            setExecutionProcessesToShow({});
-            const latest = executionProcesses[executionProcesses.length - 1];
-            if (!latest) return;
-            setExecutionProcessesToShow({ [latest.id]: { executionProcess: latest, entries: [] } });
-            getFinishedStreamCached(latest.id);
-            return;
-        }
-
-        const previous = executionProcesses[earliestShownProcessIndex - 1];
-        if (previous) {
-            setExecutionProcessesToShow(prev => ({
-                ...prev,
-                [previous.id]: { executionProcess: previous, entries: [] }
-            }));
-            getFinishedStreamCached(previous.id);
-        }
-    };
-
-    // When attempt changes: clear state, close any streams, then load the newest process for the new attempt
+    // Initial load when attempt changes
     useEffect(() => {
-        // close old streams
-        for (const c of Object.values(streamControllersRef.current)) {
-            try { c.close?.(); } catch { }
-        }
-        streamControllersRef.current = {};
+        (async () => {
+            // Waiting for execution processes to load
+            if (executionProcesses.length === 0 || loadedInitialEntries.current) return;
+            const allInitialEntries = await loadInitialEntries();
+            displayedExecutionProcesses.current = allInitialEntries;
+            emitEntries(allInitialEntries, "initial");
+            loadedInitialEntries.current = true;
+        })();
+    }, [attempt.id, idListKey]); // include idListKey so new processes trigger reload
 
-        setExecutionProcessesToShow({});
-        // If processes already present for the new attempt, load one immediately
-        if (executionProcesses.length > 0) {
-            const latest = executionProcesses[executionProcesses.length - 1];
-            setExecutionProcessesToShow({ [latest.id]: { executionProcess: latest, entries: [] } });
-            getFinishedStreamCached(latest.id);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [attempt.id]); // <-- critical
-
-    // Also react to process list changes within the same attempt
+    // Reset loadedInitialEntries when attempt changes
     useEffect(() => {
-        loadPreviousExecutionProcess(); // ensures at least one is loaded
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [idListKey]);
+        loadedInitialEntries.current = false;
+    }, [attempt.id]);
 
-    // Flatten entries in chronological order of process start
-    const entries = useMemo(
-        () =>
-            Object.values(executionProcessesToShow)
-                .sort(
-                    (a, b) =>
-                        new Date(a.executionProcess.created_at as unknown as string).getTime() -
-                        new Date(b.executionProcess.created_at as unknown as string).getTime()
-                )
-                .flatMap(p => p.entries),
-        [executionProcessesToShow]
-    );
-
-    return { loadPreviousExecutionProcess, entries };
+    return {};
 };

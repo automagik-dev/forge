@@ -1,10 +1,7 @@
 import type {
   TaskAttempt,
 } from 'shared/types';
-// import VirtualizedList from '@/components/logs/VirtualizedList';
-// import { useExecutionProcesses } from '@/hooks/useExecutionProcesses';
-import { useConversationHistory } from '@/hooks/useConversationHistory';
-import ConversationExecutionLogs from './ConversationExecutionLogs';
+import { useConversationHistory } from '@/hooks/useConversationHistoryOld';
 import VirtualizedList from '@/components/logs/VirtualizedList';
 
 type Props = {
@@ -12,19 +9,9 @@ type Props = {
 };
 
 function LogsTab({ selectedAttempt }: Props) {
-  const { loadPreviousExecutionProcess, entries } = useConversationHistory(selectedAttempt);
-
-  // const { executionProcesses } = useExecutionProcesses(selectedAttempt.id);
-
-  // console.log("DEBUG1", shownExecutionProcesses);
-
-  // {shownExecutionProcesses.map((executionProcess) => (
-  //   <ConversationExecutionLogs key={executionProcess.id} executionProcess={executionProcess} />
-  // ))}  
-
   return (
-    <VirtualizedList entries={entries} startReached={loadPreviousExecutionProcess} />
+    <VirtualizedList attempt={selectedAttempt} />
   );
 }
 
-export default LogsTab; // Filter entries to hide logs from collapsed processes
+export default LogsTab;
