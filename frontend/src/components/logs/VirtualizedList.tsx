@@ -26,14 +26,25 @@ const InitialDataScrollModifier: ScrollModifier = {
     purgeItemSizes: true,
 }
 
+const AutoScrollToBottom: ScrollModifier = {
+    type: 'auto-scroll-to-bottom',
+    autoScroll: ({ atBottom, scrollInProgress }) => {
+        if (atBottom || scrollInProgress) {
+            return 'smooth'
+        }
+        return false
+    }
+}
+
 const VirtualizedList = ({ attempt }: VirtualizedListProps) => {
     const [channelData, setChannelData] = useState<ChannelData>(null)
 
     const onEntriesUpdated = (newEntries: PatchTypeWithKey[], addType: AddEntryType) => {
+        // initial defaults to scrolling to the latest
         let scrollModifier: ScrollModifier = InitialDataScrollModifier;
 
-        if (addType === "historic") {
-            scrollModifier = 'prepend';
+        if (addType === "running") {
+            scrollModifier = AutoScrollToBottom;
         }
 
         setChannelData({ data: newEntries, scrollModifier });

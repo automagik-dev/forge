@@ -6,7 +6,7 @@ import { streamSseJsonPatchEntries } from "@/utils/streamSseJsonPatchEntries";
 
 export type PatchTypeWithKey = PatchType & { patchKey: string };
 
-export type AddEntryType = "initial" | "livestream" | "historic";
+export type AddEntryType = "initial" | "running" | "historic";
 
 export type OnEntriesUpdated = (newEntries: PatchTypeWithKey[], addType: AddEntryType) => void;
 
@@ -37,6 +37,7 @@ export const useConversationHistory = ({
     const { executionProcesses } = useExecutionProcesses(attempt.id);
     const displayedExecutionProcesses = useRef<ExecutionProcessStateStore>({});
     const loadedInitialEntries = useRef(false);
+    const lastRunningProcessId = useRef<string | null>(null);
 
     // ✅ must provide an initial value; type as nullable
     const onEntriesUpdatedRef = useRef<OnEntriesUpdated | null>(null);
@@ -49,16 +50,71 @@ export const useConversationHistory = ({
             const controller = streamSseJsonPatchEntries<PatchType>(
                 `/api/execution-processes/${executionProcess.id}/normalized-logs`,
                 {
-                    onFinished: (allEntries) => resolve(allEntries),
+                    onFinished: (allEntries) => {
+                        controller.close();
+                        resolve(allEntries)
+                    },
                     onError: (err) => {
                         console.warn!(`Error loading entries for historic execution process ${executionProcess.id}`, err);
+                        controller.close();
                         resolve([])
                     },
                 }
             );
-            // optional: controller.close() if your util exposes one after finish
         });
     };
+
+    // This emits its own events as they are streamed
+    const loadRunningAndEmit = (
+        executionProcess: ExecutionProcess
+    ): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            const controller = streamSseJsonPatchEntries<PatchType>(
+                `/api/execution-processes/${executionProcess.id}/normalized-logs`,
+                {
+                    onEntries(entries) {
+                        let patchesWithKey = entries.map(
+                            (entry, index) => patchWithKey(entry, executionProcess.id, index)
+                        );
+                        let localEntries = displayedExecutionProcesses.current;
+                        localEntries[executionProcess.id] = { executionProcess, entries: patchesWithKey };
+                        displayedExecutionProcesses.current = localEntries;
+                        emitEntries(localEntries, "running");
+                    },
+                    onFinished: (_) => {
+                        controller.close();
+                        resolve()
+                    },
+                    onError: (_) => {
+                        controller.close();
+                        reject()
+                    },
+                }
+            );
+        });
+    };
+
+    // Sometimes it can take a few seconds for the stream to start, wrap the loadRunningAndEmit method
+    const loadRunningAndEmitWithBackoff = async (executionProcess: ExecutionProcess) => {
+        for (let i = 0; i < 20; i++) {
+            try {
+                await loadRunningAndEmit(executionProcess);
+                break;
+            } catch (_) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+    }
+
+    const getRunningExecutionProcesses = (): ExecutionProcess | null => {
+        // If more than one, throw an error
+        const runningProcesses = executionProcesses.filter(p => p.status === 'running');
+        if (runningProcesses.length > 1) {
+            throw new Error('More than one running execution process found');
+        }
+        return runningProcesses[0] || null;
+    }
+
 
     const flattenEntries = (executionProcessState: ExecutionProcessStateStore) => {
         return Object.values(executionProcessState)
@@ -77,6 +133,8 @@ export const useConversationHistory = ({
     const loadInitialEntries = async (): Promise<ExecutionProcessStateStore> => {
         const localDisplayedExecutionProcesses: ExecutionProcessStateStore = {};
         for (const executionProcess of executionProcesses.reverse()) {
+            // Skip if execution process is in progress
+            if (executionProcess.status === 'running') continue;
             const entries = await loadEntriesForHistoricExecutionProcess(executionProcess);
             // add a stable key per entry (example: combine process id + index)
             const entriesWithKey = entries.map((e, idx) => patchWithKey(e, executionProcess.id, idx));
@@ -93,8 +151,8 @@ export const useConversationHistory = ({
         const localDisplayedExecutionProcesses: ExecutionProcessStateStore = displayedExecutionProcesses.current;
         let anyUpdated = false;
         for (const executionProcess of executionProcesses.reverse()) {
-            // Skip if already loaded
-            if (localDisplayedExecutionProcesses[executionProcess.id]) continue;
+            // Skip if already loaded or running
+            if (localDisplayedExecutionProcesses[executionProcess.id] || executionProcess.status === 'running') continue;
             const entries = await loadEntriesForHistoricExecutionProcess(executionProcess);
             // add a stable key per entry (example: combine process id + index)
             const entriesWithKey = entries.map((e, idx) => patchWithKey(e, executionProcess.id, idx));
@@ -142,6 +200,21 @@ export const useConversationHistory = ({
             }
         })();
     }, [attempt.id, idListKey]); // include idListKey so new processes trigger reload
+
+    useEffect(() => {
+        const runningProcess = getRunningExecutionProcesses();
+        if (runningProcess && lastRunningProcessId.current !== runningProcess.id) {
+            lastRunningProcessId.current = runningProcess.id;
+            loadRunningAndEmitWithBackoff(runningProcess);
+        }
+    }, [attempt.id, idListKey]);
+
+    // Reset state when attempt changes
+    useEffect(() => {
+        displayedExecutionProcesses.current = {};
+        loadedInitialEntries.current = false;
+        lastRunningProcessId.current = null;
+    }, [attempt.id]);
 
     // Reset loadedInitialEntries when attempt changes
     useEffect(() => {
