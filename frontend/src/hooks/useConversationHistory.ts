@@ -1,5 +1,5 @@
 // useConversationHistory.ts
-import { ExecutionProcess, NormalizedEntry, PatchType, TaskAttempt } from "shared/types";
+import { CommandExitStatus, ExecutionProcess, NormalizedEntry, PatchType, TaskAttempt } from "shared/types";
 import { useExecutionProcesses } from "./useExecutionProcesses";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { streamSseJsonPatchEntries } from "@/utils/streamSseJsonPatchEntries";
@@ -45,9 +45,16 @@ export const useConversationHistory = ({
     }, [onEntriesUpdated]);
 
     const loadEntriesForHistoricExecutionProcess = (executionProcess: ExecutionProcess) => {
+        let url = '';
+        if (executionProcess.executor_action.typ.type === 'ScriptRequest') {
+            url = `/api/execution-processes/${executionProcess.id}/raw-logs`;
+        } else {
+            url = `/api/execution-processes/${executionProcess.id}/normalized-logs`;
+        }
+
         return new Promise<PatchType[]>((resolve, reject) => {
             const controller = streamSseJsonPatchEntries<PatchType>(
-                `/api/execution-processes/${executionProcess.id}/normalized-logs`,
+                url,
                 {
                     onFinished: (allEntries) => {
                         controller.close();
@@ -68,8 +75,14 @@ export const useConversationHistory = ({
         executionProcess: ExecutionProcess
     ): Promise<void> => {
         return new Promise((resolve, reject) => {
+            let url = '';
+            if (executionProcess.executor_action.typ.type === 'ScriptRequest') {
+                url = `/api/execution-processes/${executionProcess.id}/raw-logs`;
+            } else {
+                url = `/api/execution-processes/${executionProcess.id}/normalized-logs`;
+            }
             const controller = streamSseJsonPatchEntries<PatchType>(
-                `/api/execution-processes/${executionProcess.id}/normalized-logs`,
+                url,
                 {
                     onEntries(entries) {
                         let patchesWithKey = entries.map(
@@ -134,7 +147,7 @@ export const useConversationHistory = ({
                     new Date(b.executionProcess.created_at as unknown as string).getTime()
             )
             .flatMap(p => {
-                let entries = [];
+                let entries: PatchTypeWithKey[] = [];
                 if (p.executionProcess.executor_action.typ.type === 'CodingAgentInitialRequest' || p.executionProcess.executor_action.typ.type === 'CodingAgentFollowUpRequest') {
                     // entries.push(p.executionProcess.executor_action.typ.prompt)
                     const userNormalizedEntry: NormalizedEntry = {
@@ -150,11 +163,53 @@ export const useConversationHistory = ({
                     }
                     const userPatchTypeWithKey = patchWithKey(userPatch, p.executionProcess.id, 'user')
                     entries.push(userPatchTypeWithKey)
+
+                    // Remove all coding agent added user messages, replace with our custom one
+                    const entriesExcludingUser = p.entries.filter(e => e.type !== 'NORMALIZED_ENTRY' || e.content.entry_type.type !== 'user_message')
+                    entries.push(...entriesExcludingUser)
+                } else if (p.executionProcess.executor_action.typ.type === 'ScriptRequest') {
+                    let toolName = "";
+                    switch (p.executionProcess.executor_action.typ.context) {
+                        case 'SetupScript':
+                            toolName = 'Setup Script';
+                            break;
+                        case 'CleanupScript':
+                            toolName = 'Cleanup Script';
+                            break;
+                        default:
+                            return [];
+                    }
+
+                    const exit_status: CommandExitStatus = {
+                        type: 'exit_code',
+                        code: Number(p.executionProcess.exit_code) || 0,
+                    };
+                    const output = p.entries.map(line => line.content).join('\n');
+
+                    const toolNormalizedEntry: NormalizedEntry = {
+                        entry_type: {
+                            type: 'tool_use',
+                            tool_name: toolName,
+                            action_type: {
+                                action: 'command_run',
+                                command: p.executionProcess.executor_action.typ.script,
+                                result: {
+                                    output,
+                                    exit_status
+                                }
+                            },
+                        },
+                        content: toolName,
+                        timestamp: null
+                    }
+                    const toolPatch: PatchType = {
+                        type: 'NORMALIZED_ENTRY',
+                        content: toolNormalizedEntry
+                    };
+                    const toolPatchWithKey: PatchTypeWithKey = patchWithKey(toolPatch, p.executionProcess.id, 0);
+
+                    entries.push(toolPatchWithKey)
                 }
-
-                const entriesExcludingUser = p.entries.filter(e => e.type !== 'NORMALIZED_ENTRY' || e.content.entry_type.type !== 'user_message')
-
-                entries.push(...entriesExcludingUser)
 
                 return entries
             });
