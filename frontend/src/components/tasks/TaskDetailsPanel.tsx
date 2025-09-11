@@ -234,7 +234,7 @@ export function TaskDetailsPanel({
                             onJumpToDiffFullScreen={jumpToDiffFullScreen}
                           />
 
-                          <LogsTab selectedAttempt={selectedAttempt} />
+                          {selectedAttempt && <LogsTab selectedAttempt={selectedAttempt} />}
 
                           <TaskFollowUpSection
                             task={task}

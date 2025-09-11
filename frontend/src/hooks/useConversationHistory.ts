@@ -1,14 +1,14 @@
 // useConversationHistory.ts
 import { ExecutionProcess, PatchType, TaskAttempt } from "shared/types";
 import { useExecutionProcesses } from "./useExecutionProcesses";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { streamSseJsonPatchEntries } from "@/utils/streamSseJsonPatchEntries";
 
 export type PatchTypeWithKey = PatchType & { patchKey: string };
 
 export type AddEntryType = "initial" | "running" | "historic";
 
-export type OnEntriesUpdated = (newEntries: PatchTypeWithKey[], addType: AddEntryType) => void;
+export type OnEntriesUpdated = (newEntries: PatchTypeWithKey[], addType: AddEntryType, loading: boolean) => void;
 
 type ExecutionProcessState = {
     executionProcess: ExecutionProcess;
@@ -24,7 +24,6 @@ interface UseConversationHistoryParams {
 }
 
 interface UseConversationHistoryResult {
-    // expose anything you actually need; placeholder here
 }
 
 const MIN_INITIAL_ENTRIES = 10;
@@ -168,7 +167,7 @@ export const useConversationHistory = ({
     const emitEntries = (executionProcessState: ExecutionProcessStateStore, addEntryType: AddEntryType) => {
         // Flatten entries in chronological order of process start
         const entries = flattenEntries(executionProcessState);
-        onEntriesUpdatedRef.current?.(entries, addEntryType);
+        onEntriesUpdatedRef.current?.(entries, addEntryType, false);
     };
 
     // Stable key for dependency arrays when process list changes
@@ -214,6 +213,7 @@ export const useConversationHistory = ({
         displayedExecutionProcesses.current = {};
         loadedInitialEntries.current = false;
         lastRunningProcessId.current = null;
+        // setLoading(true);
     }, [attempt.id]);
 
     // Reset loadedInitialEntries when attempt changes
@@ -221,5 +221,6 @@ export const useConversationHistory = ({
         loadedInitialEntries.current = false;
     }, [attempt.id]);
 
-    return {};
+    return {
+    };
 };

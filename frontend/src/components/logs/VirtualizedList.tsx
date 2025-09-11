@@ -6,10 +6,11 @@ import {
     DataWithScrollModifier,
     ScrollModifier,
 } from '@virtuoso.dev/message-list'
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import DisplayConversationEntry from "../NormalizedConversation/DisplayConversationEntry";
 import { useConversationHistory, PatchTypeWithKey, AddEntryType } from "@/hooks/useConversationHistory";
 import { TaskAttempt } from 'shared/types';
+import { Loader2 } from 'lucide-react';
 
 interface VirtualizedListProps {
     attempt: TaskAttempt;
@@ -38,18 +39,21 @@ const AutoScrollToBottom: ScrollModifier = {
 
 const VirtualizedList = ({ attempt }: VirtualizedListProps) => {
     const [channelData, setChannelData] = useState<ChannelData>(null)
+    const [loading, setLoading] = useState(true)
 
-    const onEntriesUpdated = (newEntries: PatchTypeWithKey[], addType: AddEntryType) => {
+    const onEntriesUpdated = (newEntries: PatchTypeWithKey[], addType: AddEntryType, newLoading: boolean) => {
         // initial defaults to scrolling to the latest
         let scrollModifier: ScrollModifier = InitialDataScrollModifier;
 
-        if (addType === "running") {
+        if (addType === "running" && !loading) {
             scrollModifier = AutoScrollToBottom;
         }
 
         setChannelData({ data: newEntries, scrollModifier });
+        if (loading) {
+            setLoading(newLoading);
+        }
     };
-
     useConversationHistory({ attempt, onEntriesUpdated });
 
     const messageListRef = useRef<VirtuosoMessageListMethods | null>(null)
@@ -69,40 +73,46 @@ const VirtualizedList = ({ attempt }: VirtualizedListProps) => {
     }
 
     return (
-        <VirtuosoMessageListLicense>
-            <VirtuosoMessageList<PatchTypeWithKey, null>
-                ref={messageListRef}
-                style={{ flex: 1 }}
-                data={channelData}
-                computeItemKey={computeItemKey}
-                ItemContent={ItemContent}
-            // onScroll={({ listOffset }) => {
-            //     if (listOffset > -10) {
-            //         debounce(() => {
-            //             startReached?.();
-            //         }, 1000)();
-            //     }
-            // }}
-            // initialLocation={{
-            //     index: 'LAST',
-            //     align: 'end',
-            // }}
-            // onRenderedDataChange={(range) => {
-            //     setTimeout(() => {
-            //         if (initialLoading.current) {
-            //             const containerHeight = messageListRef.current?.scrollerElement()?.clientHeight;
-            //             const scrollHeight = messageListRef.current?.getScrollLocation().scrollHeight;
-            //             if (scrollHeight && containerHeight && scrollHeight - 100 < containerHeight) {
-            //                 startReached?.();
-            //             } else {
-            //                 initialLoading.current = false;
-            //             }
-            //         }
-            //     }, 1000);
-            // }}
-            />
-        </VirtuosoMessageListLicense>
+        <>
+            <VirtuosoMessageListLicense>
+                <VirtuosoMessageList<PatchTypeWithKey, null>
+                    ref={messageListRef}
+                    style={{ flex: 1 }}
+                    data={channelData}
+                    computeItemKey={computeItemKey}
+                    ItemContent={ItemContent}
+                // onScroll={({ listOffset }) => {
+                //     if (listOffset > -10) {
+                //         debounce(() => {
+                //             startReached?.();
+                //         }, 1000)();
+                //     }
+                // }}
+                // initialLocation={{
+                //     index: 'LAST',
+                //     align: 'end',
+                // }}
+                // onRenderedDataChange={(range) => {
+                //     setTimeout(() => {
+                //         if (initialLoading.current) {
+                //             const containerHeight = messageListRef.current?.scrollerElement()?.clientHeight;
+                //             const scrollHeight = messageListRef.current?.getScrollLocation().scrollHeight;
+                //             if (scrollHeight && containerHeight && scrollHeight - 100 < containerHeight) {
+                //                 startReached?.();
+                //             } else {
+                //                 initialLoading.current = false;
+                //             }
+                //         }
+                //     }, 1000);
+                // }}
+                />
+            </VirtuosoMessageListLicense>
+            {loading && <div className="float-left top-0 left-0 w-full h-full bg-primary flex flex-col gap-2 justify-center items-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+                <p>Loading History</p>
+            </div>}
 
+        </>
     )
 }
 
