@@ -390,6 +390,7 @@ export const useConversationHistory = ({
 
     // Initial load when attempt changes
     useEffect(() => {
+        let cancelled = false;
         (async () => {
             // Waiting for execution processes to load
             if (
@@ -400,6 +401,7 @@ export const useConversationHistory = ({
 
             // Initial entries
             const allInitialEntries = await loadInitialEntries();
+            if (cancelled) return;
             displayedExecutionProcesses.current = allInitialEntries;
             emitEntries(allInitialEntries, 'initial', false);
             loadedInitialEntries.current = true;
@@ -407,14 +409,19 @@ export const useConversationHistory = ({
             // Then load the remaining in batches
             let updatedEntries;
             while (
+                !cancelled &&
                 (updatedEntries =
                     await loadRemainingEntriesInBatches(REMAINING_BATCH_SIZE))
             ) {
+                if (cancelled) return;
                 displayedExecutionProcesses.current = updatedEntries;
                 emitEntries(updatedEntries, 'historic', false);
                 await new Promise((resolve) => setTimeout(resolve, 1000));
             }
         })();
+        return () => {
+            cancelled = true;
+        };
     }, [attempt.id, idListKey]); // include idListKey so new processes trigger reload
 
     // Running processes

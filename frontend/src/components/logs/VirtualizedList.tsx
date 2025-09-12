@@ -6,7 +6,7 @@ import {
   DataWithScrollModifier,
   ScrollModifier,
 } from '@virtuoso.dev/message-list';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import DisplayConversationEntry from '../NormalizedConversation/DisplayConversationEntry';
 import {
   useConversationHistory,
@@ -44,6 +44,11 @@ const AutoScrollToBottom: ScrollModifier = {
 const VirtualizedList = ({ attempt }: VirtualizedListProps) => {
   const [channelData, setChannelData] = useState<ChannelData>(null);
   const [loading, setLoading] = useState(true);
+
+  // When attempt changes, set loading
+  useEffect(() => {
+    setLoading(true);
+  }, [attempt.id]);
 
   const onEntriesUpdated = (
     newEntries: PatchTypeWithKey[],
