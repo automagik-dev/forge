@@ -441,6 +441,19 @@ export const useConversationHistory = ({
     }
   }, [attempt.id, idListKey]);
 
+  // If an execution process is removed, remove it from the state
+  useEffect(() => {
+    if (!executionProcessesRaw) return;
+
+    const removedProcessIds = Object.keys(displayedExecutionProcesses.current).filter(
+      (id) => !executionProcessesRaw.some((p) => p.id === id)
+    );
+
+    removedProcessIds.forEach((id) => {
+      delete displayedExecutionProcesses.current[id];
+    });
+  }, [attempt.id, idListKey]);
+
   // Reset state when attempt changes
   useEffect(() => {
     displayedExecutionProcesses.current = {};

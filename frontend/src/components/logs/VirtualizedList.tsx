@@ -34,10 +34,8 @@ const InitialDataScrollModifier: ScrollModifier = {
 const AutoScrollToBottom: ScrollModifier = {
   type: 'auto-scroll-to-bottom',
   autoScroll: ({ atBottom, scrollInProgress }) => {
-    console.log('DEBUG3', { atBottom, scrollInProgress });
 
     if (atBottom || scrollInProgress) {
-      console.log('DEBUG2');
       return 'smooth';
     }
     return false;
@@ -89,6 +87,7 @@ const VirtualizedList = ({ attempt }: VirtualizedListProps) => {
           expansionKey={data.patchKey}
           entry={data.content}
           executionProcessId={data.executionProcessId}
+          taskAttempt={attempt}
         />
       );
     }

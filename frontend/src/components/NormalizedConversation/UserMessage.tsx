@@ -1,12 +1,26 @@
-import MarkdownRenderer from '../ui/markdown-renderer';
-import { Button } from '../ui/button';
+import MarkdownRenderer from '@/components/ui/markdown-renderer';
+import { Button } from '@/components/ui/button';
 import { Mail, Pencil, Send, X } from 'lucide-react';
 import { useState } from 'react';
-import { Textarea } from '../ui/textarea';
+import { Textarea } from '@/components/ui/textarea';
+import { useProcessRetry } from '@/hooks/useProcessRetry';
+import { TaskAttempt } from 'shared/types';
 
-const UserMessage = ({ content, executionProcessId }: { content: string; executionProcessId?: string }) => {
+const UserMessage = ({ content, executionProcessId, taskAttempt }: { content: string; executionProcessId?: string, taskAttempt?: TaskAttempt }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(content);
+  const retryHook = useProcessRetry(taskAttempt);
+
+  const handleEdit = () => {
+    if (!executionProcessId) return;
+    retryHook?.retryProcess(
+      executionProcessId,
+      editContent
+    ).then(() => {
+      setIsEditing(false);
+    });
+  }
+
   return (
     <div className="py-2">
       <div className="bg-background px-4 py-2 text-sm border-y border-dashed flex gap-2">
@@ -34,6 +48,7 @@ const UserMessage = ({ content, executionProcessId }: { content: string; executi
             </Button>
             {isEditing && (
               <Button
+                onClick={handleEdit}
                 variant="ghost"
                 className="p-2"
               >

@@ -2,6 +2,7 @@ import MarkdownRenderer from '@/components/ui/markdown-renderer.tsx';
 import {
   ActionType,
   NormalizedEntry,
+  TaskAttempt,
   type NormalizedEntryType,
 } from 'shared/types.ts';
 import type { ProcessStartPayload } from '@/types/logs';
@@ -32,6 +33,7 @@ type Props = {
   expansionKey: string;
   diffDeletable?: boolean;
   executionProcessId?: string;
+  taskAttempt?: TaskAttempt;
 };
 
 type FileEditAction = Extract<ActionType, { action: 'file_edit' }>;
@@ -493,7 +495,7 @@ const LoadingCard = () => {
  * Main component  *
  *******************/
 
-function DisplayConversationEntry({ entry, expansionKey, executionProcessId }: Props) {
+function DisplayConversationEntry({ entry, expansionKey, executionProcessId, taskAttempt }: Props) {
   const isNormalizedEntry = (
     entry: NormalizedEntry | ProcessStartPayload
   ): entry is NormalizedEntry => 'entry_type' in entry;
@@ -524,7 +526,7 @@ function DisplayConversationEntry({ entry, expansionKey, executionProcessId }: P
     a.action === 'file_edit';
 
   if (isUserMessage) {
-    return <UserMessage content={entry.content} executionProcessId={executionProcessId} />;
+    return <UserMessage content={entry.content} executionProcessId={executionProcessId} taskAttempt={taskAttempt} />;
   }
 
   return (
