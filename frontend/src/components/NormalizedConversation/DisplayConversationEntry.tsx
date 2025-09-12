@@ -94,7 +94,10 @@ type ExitStatusVisualisation = 'success' | 'error' | 'pending';
 
 const getStatusIndicator = (entryType: NormalizedEntryType) => {
   let status_visualisation: ExitStatusVisualisation | null = null;
-  if (entryType.type === 'tool_use' && entryType.action_type.action === 'command_run') {
+  if (
+    entryType.type === 'tool_use' &&
+    entryType.action_type.action === 'command_run'
+  ) {
     status_visualisation = 'pending';
     if (entryType.action_type.result?.exit_status?.type === 'success') {
       if (entryType.action_type.result?.exit_status?.success) {
@@ -102,7 +105,9 @@ const getStatusIndicator = (entryType: NormalizedEntryType) => {
       } else {
         status_visualisation = 'error';
       }
-    } else if (entryType.action_type.result?.exit_status?.type === 'exit_code') {
+    } else if (
+      entryType.action_type.result?.exit_status?.type === 'exit_code'
+    ) {
       if (entryType.action_type.result?.exit_status?.code === 0) {
         status_visualisation = 'success';
       } else {
@@ -113,9 +118,9 @@ const getStatusIndicator = (entryType: NormalizedEntryType) => {
 
   // If pending, should be a pulsing primary-foreground
   const colorMap: Record<ExitStatusVisualisation, string> = {
-    success: "bg-green-300",
-    error: "bg-red-300",
-    pending: "bg-primary-foreground/50",
+    success: 'bg-green-300',
+    error: 'bg-red-300',
+    pending: 'bg-primary-foreground/50',
   };
 
   if (!status_visualisation) return null;
@@ -197,8 +202,9 @@ const MessageCard: React.FC<{
 
   return (
     <div
-      className={`${frameBase} ${variant === 'system' ? systemTheme : errorTheme
-        }`}
+      className={`${frameBase} ${
+        variant === 'system' ? systemTheme : errorTheme
+      }`}
       onClick={onToggle}
     >
       <div className="flex items-center gap-1.5">
@@ -234,8 +240,9 @@ const ExpandChevron: React.FC<{
   return (
     <ChevronDown
       onClick={onClick}
-      className={`h-4 w-4 cursor-pointer transition-transform ${color} ${expanded ? '' : '-rotate-90'
-        }`}
+      className={`h-4 w-4 cursor-pointer transition-transform ${color} ${
+        expanded ? '' : '-rotate-90'
+      }`}
     />
   );
 };
@@ -386,12 +393,12 @@ const ToolCallCard: React.FC<{
     : 'div';
   const headerProps = hasExpandableDetails
     ? {
-      onClick: (e: React.MouseEvent) => {
-        e.preventDefault();
-        toggle();
-      },
-      title: expanded ? 'Hide details' : 'Show details',
-    }
+        onClick: (e: React.MouseEvent) => {
+          e.preventDefault();
+          toggle();
+        },
+        title: expanded ? 'Hide details' : 'Show details',
+      }
     : {};
 
   return (
@@ -479,7 +486,7 @@ const LoadingCard = () => {
       <div className="flex-1 h-4 bg-foreground/10"></div>
       <div className="flex-1 h-4"></div>
       <div className="flex-1 h-4"></div>
-    </div >
+    </div>
   );
 };
 
