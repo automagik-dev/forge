@@ -34,7 +34,6 @@ const InitialDataScrollModifier: ScrollModifier = {
 const AutoScrollToBottom: ScrollModifier = {
   type: 'auto-scroll-to-bottom',
   autoScroll: ({ atBottom, scrollInProgress }) => {
-
     if (atBottom || scrollInProgress) {
       return 'smooth';
     }

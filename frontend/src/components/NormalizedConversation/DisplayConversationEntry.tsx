@@ -205,8 +205,9 @@ const MessageCard: React.FC<{
 
   return (
     <div
-      className={`${frameBase} ${variant === 'system' ? systemTheme : errorTheme
-        }`}
+      className={`${frameBase} ${
+        variant === 'system' ? systemTheme : errorTheme
+      }`}
       onClick={onToggle}
     >
       <div className="flex items-center gap-1.5">
@@ -242,8 +243,9 @@ const ExpandChevron: React.FC<{
   return (
     <ChevronDown
       onClick={onClick}
-      className={`h-4 w-4 cursor-pointer transition-transform ${color} ${expanded ? '' : '-rotate-90'
-        }`}
+      className={`h-4 w-4 cursor-pointer transition-transform ${color} ${
+        expanded ? '' : '-rotate-90'
+      }`}
     />
   );
 };
@@ -394,12 +396,12 @@ const ToolCallCard: React.FC<{
     : 'div';
   const headerProps = hasExpandableDetails
     ? {
-      onClick: (e: React.MouseEvent) => {
-        e.preventDefault();
-        toggle();
-      },
-      title: expanded ? 'Hide details' : 'Show details',
-    }
+        onClick: (e: React.MouseEvent) => {
+          e.preventDefault();
+          toggle();
+        },
+        title: expanded ? 'Hide details' : 'Show details',
+      }
     : {};
 
   return (
@@ -495,7 +497,12 @@ const LoadingCard = () => {
  * Main component  *
  *******************/
 
-function DisplayConversationEntry({ entry, expansionKey, executionProcessId, taskAttempt }: Props) {
+function DisplayConversationEntry({
+  entry,
+  expansionKey,
+  executionProcessId,
+  taskAttempt,
+}: Props) {
   const isNormalizedEntry = (
     entry: NormalizedEntry | ProcessStartPayload
   ): entry is NormalizedEntry => 'entry_type' in entry;
@@ -526,7 +533,13 @@ function DisplayConversationEntry({ entry, expansionKey, executionProcessId, tas
     a.action === 'file_edit';
 
   if (isUserMessage) {
-    return <UserMessage content={entry.content} executionProcessId={executionProcessId} taskAttempt={taskAttempt} />;
+    return (
+      <UserMessage
+        content={entry.content}
+        executionProcessId={executionProcessId}
+        taskAttempt={taskAttempt}
+      />
+    );
   }
 
   return (
