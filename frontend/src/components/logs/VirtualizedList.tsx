@@ -92,9 +92,10 @@ const VirtualizedList = ({ attempt }: VirtualizedListProps) => {
     return `l-${data.patchKey}`;
   };
 
+  //REACT_VIRTUOSO_LICENSE_KEY
   return (
     <>
-      <VirtuosoMessageListLicense>
+      <VirtuosoMessageListLicense licenseKey={import.meta.env.PUBLIC_REACT_VIRTUOSO_LICENSE_KEY}>
         <VirtuosoMessageList<PatchTypeWithKey, null>
           ref={messageListRef}
           style={{ flex: 1 }}
