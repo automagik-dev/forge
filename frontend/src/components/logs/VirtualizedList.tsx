@@ -34,7 +34,10 @@ const InitialDataScrollModifier: ScrollModifier = {
 const AutoScrollToBottom: ScrollModifier = {
   type: 'auto-scroll-to-bottom',
   autoScroll: ({ atBottom, scrollInProgress }) => {
+    console.log('DEBUG3', { atBottom, scrollInProgress });
+
     if (atBottom || scrollInProgress) {
+      console.log('DEBUG2');
       return 'smooth';
     }
     return false;
@@ -97,7 +100,6 @@ const VirtualizedList = ({ attempt }: VirtualizedListProps) => {
     return `l-${data.patchKey}`;
   };
 
-  //REACT_VIRTUOSO_LICENSE_KEY
   return (
     <>
       <VirtuosoMessageListLicense
@@ -105,10 +107,12 @@ const VirtualizedList = ({ attempt }: VirtualizedListProps) => {
       >
         <VirtuosoMessageList<PatchTypeWithKey, null>
           ref={messageListRef}
-          className="flex-1 py-2"
+          className="flex-1"
           data={channelData}
           computeItemKey={computeItemKey}
           ItemContent={ItemContent}
+          Header={() => <div className="h-2"></div>} // Padding
+          Footer={() => <div className="h-2"></div>} // Padding
         />
       </VirtuosoMessageListLicense>
       {loading && (
