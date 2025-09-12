@@ -167,6 +167,13 @@ export const useConversationHistory = ({
     executionProcessState: ExecutionProcessStateStore
   ): PatchTypeWithKey[] => {
     return Object.values(executionProcessState)
+      .filter(
+        (p) =>
+          p.executionProcess.executor_action.typ.type ===
+            'CodingAgentFollowUpRequest' ||
+          p.executionProcess.executor_action.typ.type ===
+            'CodingAgentInitialRequest'
+      )
       .sort(
         (a, b) =>
           new Date(
@@ -403,7 +410,7 @@ export const useConversationHistory = ({
       const allInitialEntries = await loadInitialEntries();
       if (cancelled) return;
       displayedExecutionProcesses.current = allInitialEntries;
-      emitEntries(allInitialEntries, 'initial', true);
+      emitEntries(allInitialEntries, 'initial', false);
       loadedInitialEntries.current = true;
 
       // Then load the remaining in batches
@@ -415,9 +422,8 @@ export const useConversationHistory = ({
       ) {
         if (cancelled) return;
         displayedExecutionProcesses.current = updatedEntries;
-        emitEntries(updatedEntries, 'historic', true);
-        await new Promise((resolve) => setTimeout(resolve, 100));
       }
+      await new Promise((resolve) => setTimeout(resolve, 100));
       emitEntries(displayedExecutionProcesses.current, 'historic', false);
     })();
     return () => {
