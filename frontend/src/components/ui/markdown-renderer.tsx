@@ -100,7 +100,7 @@ function MarkdownRenderer({
   return (
     <div className={`relative group`}>
       {enableCopyButton && (
-        <div className="absolute top-2 right-2 z-10 pointer-events-none">
+        <div className="sticky top-2 right-2 z-10 pointer-events-none h-0">
           <div className="flex justify-end pr-1">
             <TooltipProvider>
               <Tooltip>
