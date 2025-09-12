@@ -268,7 +268,7 @@ export type NormalizedConversation = { entries: Array<NormalizedEntry>, session_
 
 export type NormalizedEntry = { timestamp: string | null, entry_type: NormalizedEntryType, content: string, };
 
-export type NormalizedEntryType = { "type": "user_message" } | { "type": "assistant_message" } | { "type": "tool_use", tool_name: string, action_type: ActionType, } | { "type": "system_message" } | { "type": "error_message" } | { "type": "thinking" };
+export type NormalizedEntryType = { "type": "user_message" } | { "type": "assistant_message" } | { "type": "tool_use", tool_name: string, action_type: ActionType, } | { "type": "system_message" } | { "type": "error_message" } | { "type": "thinking" } | { "type": "loading" };
 
 export type FileChange = { "action": "write", content: string, } | { "action": "delete" } | { "action": "rename", new_path: string, } | { "action": "edit", 
 /**

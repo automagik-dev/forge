@@ -2,6 +2,7 @@
 import {
     CommandExitStatus,
     ExecutionProcess,
+    ExecutorAction,
     NormalizedEntry,
     PatchType,
     TaskAttempt,
@@ -20,8 +21,15 @@ export type OnEntriesUpdated = (
     loading: boolean
 ) => void;
 
+type ExecutionProcessStaticInfo = {
+    id: string;
+    created_at: string;
+    updated_at: string;
+    executor_action: ExecutorAction;
+}
+
 type ExecutionProcessState = {
-    executionProcess: ExecutionProcess;
+    executionProcess: ExecutionProcessStaticInfo;
     entries: PatchTypeWithKey[];
 };
 
@@ -41,16 +49,20 @@ export const useConversationHistory = ({
     attempt,
     onEntriesUpdated,
 }: UseConversationHistoryParams): UseConversationHistoryResult => {
-    const { executionProcesses } = useExecutionProcesses(attempt.id);
+    const { executionProcesses: executionProcessesRaw } = useExecutionProcesses(attempt.id);
+    const executionProcesses = useRef<ExecutionProcess[]>(executionProcessesRaw);
     const displayedExecutionProcesses = useRef<ExecutionProcessStateStore>({});
     const loadedInitialEntries = useRef(false);
     const lastRunningProcessId = useRef<string | null>(null);
-
-    // ✅ must provide an initial value; type as nullable
     const onEntriesUpdatedRef = useRef<OnEntriesUpdated | null>(null);
     useEffect(() => {
         onEntriesUpdatedRef.current = onEntriesUpdated;
     }, [onEntriesUpdated]);
+
+    // Keep executionProcesses up to date with executionProcessesRaw
+    useEffect(() => {
+        executionProcesses.current = executionProcessesRaw;
+    }, [executionProcessesRaw]);
 
     const loadEntriesForHistoricExecutionProcess = (
         executionProcess: ExecutionProcess
@@ -78,6 +90,10 @@ export const useConversationHistory = ({
                 },
             });
         });
+    };
+
+    const getLiveExecutionProcess = (executionProcessId: string): ExecutionProcess | undefined => {
+        return executionProcesses?.current.find((executionProcess) => executionProcess.id === executionProcessId);
     };
 
     // This emits its own events as they are streamed
@@ -132,7 +148,7 @@ export const useConversationHistory = ({
 
     const getRunningExecutionProcesses = (): ExecutionProcess | null => {
         // If more than one, throw an error
-        const runningProcesses = executionProcesses.filter(
+        const runningProcesses = executionProcesses?.current.filter(
             (p) => p.status === 'running'
         );
         if (runningProcesses.length > 1) {
@@ -155,11 +171,23 @@ export const useConversationHistory = ({
             .flatMap((p) => p.entries);
     };
 
+    const loadingPatch: PatchTypeWithKey = {
+        type: 'NORMALIZED_ENTRY',
+        content: {
+            entry_type: {
+                type: 'loading',
+            },
+            content: '',
+            timestamp: null,
+        },
+        patchKey: 'loading'
+    };
+
     const flattenEntriesForEmit = (
         executionProcessState: ExecutionProcessStateStore
     ): PatchTypeWithKey[] => {
         // Create user messages + tool calls for setup/cleanup scripts
-        return Object.values(executionProcessState)
+        const allEntries = Object.values(executionProcessState)
             .sort(
                 (a, b) =>
                     new Date(
@@ -201,6 +229,9 @@ export const useConversationHistory = ({
                             e.content.entry_type.type !== 'user_message'
                     );
                     entries.push(...entriesExcludingUser);
+                    if (getLiveExecutionProcess(p.executionProcess.id)?.status === 'running') {
+                        entries.push(loadingPatch);
+                    }
                 } else if (
                     p.executionProcess.executor_action.typ.type === 'ScriptRequest'
                 ) {
@@ -217,15 +248,11 @@ export const useConversationHistory = ({
                             return [];
                     }
 
-                    // Get current state of execution process
-                    const currentStateEp = executionProcesses.find(
-                        (ep) => ep.id === p.executionProcess.id
-                    );
-                    if (!currentStateEp) return [];
+                    const executionProcess = getLiveExecutionProcess(p.executionProcess.id);
 
-                    const exit_status: CommandExitStatus | null = currentStateEp.status === 'running' ? null : {
+                    const exit_status: CommandExitStatus | null = executionProcess?.status === 'running' ? null : {
                         type: 'exit_code',
-                        code: Number(p.executionProcess.exit_code) || 0,
+                        code: Number(executionProcess?.exit_code) || 0,
                     };
                     const output = p.entries.map((line) => line.content).join('\n');
 
@@ -260,6 +287,8 @@ export const useConversationHistory = ({
 
                 return entries;
             });
+
+        return allEntries;
     };
 
     const patchWithKey = (
@@ -272,7 +301,7 @@ export const useConversationHistory = ({
 
     const loadInitialEntries = async (): Promise<ExecutionProcessStateStore> => {
         const localDisplayedExecutionProcesses: ExecutionProcessStateStore = {};
-        for (const executionProcess of executionProcesses.reverse()) {
+        for (const executionProcess of executionProcesses?.current.reverse()) {
             // Skip if execution process is in progress
             if (executionProcess.status === 'running') continue;
             const entries =
@@ -302,7 +331,7 @@ export const useConversationHistory = ({
         const localDisplayedExecutionProcesses: ExecutionProcessStateStore =
             displayedExecutionProcesses.current;
         let anyUpdated = false;
-        for (const executionProcess of executionProcesses.reverse()) {
+        for (const executionProcess of executionProcesses?.current.reverse()) {
             // Skip if already loaded or running
             if (
                 localDisplayedExecutionProcesses[executionProcess.id] ||
@@ -338,15 +367,15 @@ export const useConversationHistory = ({
 
     // Stable key for dependency arrays when process list changes
     const idListKey = useMemo(
-        () => executionProcesses.map((p) => p.id).join(','),
-        [executionProcesses]
+        () => executionProcessesRaw?.map((p) => p.id).join(','),
+        [executionProcessesRaw]
     );
 
     // Initial load when attempt changes
     useEffect(() => {
         (async () => {
             // Waiting for execution processes to load
-            if (executionProcesses.length === 0 || loadedInitialEntries.current)
+            if (executionProcesses?.current.length === 0 || loadedInitialEntries.current)
                 return;
 
             // Initial entries
@@ -368,6 +397,7 @@ export const useConversationHistory = ({
         })();
     }, [attempt.id, idListKey]); // include idListKey so new processes trigger reload
 
+    // Running processes
     useEffect(() => {
         const runningProcess = getRunningExecutionProcesses();
         if (runningProcess && lastRunningProcessId.current !== runningProcess.id) {

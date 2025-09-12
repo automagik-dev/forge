@@ -472,6 +472,17 @@ const ToolCallCard: React.FC<{
   );
 };
 
+const LoadingCard = () => {
+  return (
+    <div className="flex animate-pulse space-x-2 items-center">
+      <div className="size-4 bg-foreground/10"></div>
+      <div className="flex-1 h-4 bg-foreground/10"></div>
+      <div className="flex-1 h-4"></div>
+      <div className="flex-1 h-4"></div>
+    </div >
+  );
+};
+
 /*******************
  * Main component  *
  *******************/
@@ -502,6 +513,7 @@ function DisplayConversationEntry({ entry, expansionKey }: Props) {
   const isError = entryType.type === 'error_message';
   const isToolUse = entryType.type === 'tool_use';
   const isUserMessage = entryType.type === 'user_message';
+  const isLoading = entryType.type === 'loading';
   const isFileEdit = (a: ActionType): a is FileEditAction =>
     a.action === 'file_edit';
 
@@ -543,6 +555,8 @@ function DisplayConversationEntry({ entry, expansionKey }: Props) {
           expansionKey={expansionKey}
           entryContent={isNormalizedEntry(entry) ? entry.content : ''}
         />
+      ) : isLoading ? (
+        <LoadingCard />
       ) : (
         <div className={getContentClassName(entryType)}>
           {shouldRenderMarkdown(entryType) ? (
