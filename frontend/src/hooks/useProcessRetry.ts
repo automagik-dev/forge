@@ -35,7 +35,6 @@ function isCodingAgentActionType(
  *  - Refetching attempt + branch data after replace
  */
 export function useProcessRetry(attempt: TaskAttempt | undefined) {
-  if (!attempt) return null;
   const attemptId = attempt?.id;
 
   // Fetch attempt + branch state the same way your component did
