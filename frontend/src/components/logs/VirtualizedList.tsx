@@ -105,7 +105,7 @@ const VirtualizedList = ({ attempt }: VirtualizedListProps) => {
       >
         <VirtuosoMessageList<PatchTypeWithKey, null>
           ref={messageListRef}
-          style={{ flex: 1 }}
+          className="flex-1 py-2"
           data={channelData}
           computeItemKey={computeItemKey}
           ItemContent={ItemContent}

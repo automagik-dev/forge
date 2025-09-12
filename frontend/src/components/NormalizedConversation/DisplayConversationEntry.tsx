@@ -482,10 +482,10 @@ const ToolCallCard: React.FC<{
 const LoadingCard = () => {
   return (
     <div className="flex animate-pulse space-x-2 items-center">
-      <div className="size-4 bg-foreground/10"></div>
-      <div className="flex-1 h-4 bg-foreground/10"></div>
-      <div className="flex-1 h-4"></div>
-      <div className="flex-1 h-4"></div>
+      <div className="size-3 bg-foreground/10"></div>
+      <div className="flex-1 h-3 bg-foreground/10"></div>
+      <div className="flex-1 h-3"></div>
+      <div className="flex-1 h-3"></div>
     </div>
   );
 };
