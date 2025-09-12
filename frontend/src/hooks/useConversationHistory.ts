@@ -403,7 +403,7 @@ export const useConversationHistory = ({
       const allInitialEntries = await loadInitialEntries();
       if (cancelled) return;
       displayedExecutionProcesses.current = allInitialEntries;
-      emitEntries(allInitialEntries, 'initial', false);
+      emitEntries(allInitialEntries, 'initial', true);
       loadedInitialEntries.current = true;
 
       // Then load the remaining in batches
@@ -415,9 +415,10 @@ export const useConversationHistory = ({
       ) {
         if (cancelled) return;
         displayedExecutionProcesses.current = updatedEntries;
-        emitEntries(updatedEntries, 'historic', false);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        emitEntries(updatedEntries, 'historic', true);
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
+      emitEntries(displayedExecutionProcesses.current, 'historic', false);
     })();
     return () => {
       cancelled = true;
