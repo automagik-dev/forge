@@ -88,6 +88,7 @@ const VirtualizedList = ({ attempt }: VirtualizedListProps) => {
           key={data.patchKey}
           expansionKey={data.patchKey}
           entry={data.content}
+          executionProcessId={data.executionProcessId}
         />
       );
     }

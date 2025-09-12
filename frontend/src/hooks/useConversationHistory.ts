@@ -11,7 +11,7 @@ import { useExecutionProcesses } from './useExecutionProcesses';
 import { useEffect, useMemo, useRef } from 'react';
 import { streamSseJsonPatchEntries } from '@/utils/streamSseJsonPatchEntries';
 
-export type PatchTypeWithKey = PatchType & { patchKey: string };
+export type PatchTypeWithKey = PatchType & { patchKey: string, executionProcessId: string };
 
 export type AddEntryType = 'initial' | 'running' | 'historic';
 
@@ -40,7 +40,7 @@ interface UseConversationHistoryParams {
   onEntriesUpdated: OnEntriesUpdated;
 }
 
-interface UseConversationHistoryResult {}
+interface UseConversationHistoryResult { }
 
 const MIN_INITIAL_ENTRIES = 10;
 const REMAINING_BATCH_SIZE = 50;
@@ -170,9 +170,9 @@ export const useConversationHistory = ({
       .filter(
         (p) =>
           p.executionProcess.executor_action.typ.type ===
-            'CodingAgentFollowUpRequest' ||
+          'CodingAgentFollowUpRequest' ||
           p.executionProcess.executor_action.typ.type ===
-            'CodingAgentInitialRequest'
+          'CodingAgentInitialRequest'
       )
       .sort(
         (a, b) =>
@@ -194,6 +194,7 @@ export const useConversationHistory = ({
       timestamp: null,
     },
     patchKey: 'loading',
+    executionProcessId: '',
   };
 
   const flattenEntriesForEmit = (
@@ -212,9 +213,9 @@ export const useConversationHistory = ({
         const entries: PatchTypeWithKey[] = [];
         if (
           p.executionProcess.executor_action.typ.type ===
-            'CodingAgentInitialRequest' ||
+          'CodingAgentInitialRequest' ||
           p.executionProcess.executor_action.typ.type ===
-            'CodingAgentFollowUpRequest'
+          'CodingAgentFollowUpRequest'
         ) {
           // New user message
           const userNormalizedEntry: NormalizedEntry = {
@@ -271,9 +272,9 @@ export const useConversationHistory = ({
             executionProcess?.status === 'running'
               ? null
               : {
-                  type: 'exit_code',
-                  code: Number(executionProcess?.exit_code) || 0,
-                };
+                type: 'exit_code',
+                code: Number(executionProcess?.exit_code) || 0,
+              };
           const output = p.entries.map((line) => line.content).join('\n');
 
           const toolNormalizedEntry: NormalizedEntry = {
@@ -316,7 +317,7 @@ export const useConversationHistory = ({
     executionProcessId: string,
     index: number | 'user'
   ) => {
-    return { ...patch, patchKey: `${executionProcessId}:${index}` };
+    return { ...patch, patchKey: `${executionProcessId}:${index}`, executionProcessId };
   };
 
   const loadInitialEntries = async (): Promise<ExecutionProcessStateStore> => {
