@@ -90,36 +90,46 @@ const getEntryIcon = (entryType: NormalizedEntryType) => {
   return <Settings className={iconSize} />;
 };
 
+type ExitStatusVisualisation = 'success' | 'error' | 'pending';
+
 const getStatusIndicator = (entryType: NormalizedEntryType) => {
-  const result =
-    entryType.type === 'tool_use' &&
-    entryType.action_type.action === 'command_run'
-      ? entryType.action_type.result?.exit_status
-      : null;
+  let status_visualisation: ExitStatusVisualisation | null = null;
+  if (entryType.type === 'tool_use' && entryType.action_type.action === 'command_run') {
+    status_visualisation = 'pending';
+    if (entryType.action_type.result?.exit_status?.type === 'success') {
+      if (entryType.action_type.result?.exit_status?.success) {
+        status_visualisation = 'success';
+      } else {
+        status_visualisation = 'error';
+      }
+    } else if (entryType.action_type.result?.exit_status?.type === 'exit_code') {
+      if (entryType.action_type.result?.exit_status?.code === 0) {
+        status_visualisation = 'success';
+      } else {
+        status_visualisation = 'error';
+      }
+    }
+  }
 
-  const status =
-    result?.type === 'success'
-      ? result.success
-        ? 'success'
-        : 'error'
-      : result?.type === 'exit_code'
-        ? result.code === 0
-          ? 'success'
-          : 'error'
-        : 'unknown';
-
-  if (status === 'unknown') return null;
-
-  const colorMap: Record<typeof status, string> = {
-    success: 'bg-green-300',
-    error: 'bg-red-300',
+  // If pending, should be a pulsing primary-foreground
+  const colorMap: Record<ExitStatusVisualisation, string> = {
+    success: "bg-green-300",
+    error: "bg-red-300",
+    pending: "bg-primary-foreground/50",
   };
+
+  if (!status_visualisation) return null;
 
   return (
     <div className="relative">
       <div
-        className={`${colorMap[status]} h-1.5 w-1.5 rounded-full absolute -left-1 -bottom-4`}
+        className={`${colorMap[status_visualisation]} h-1.5 w-1.5 rounded-full absolute -left-1 -bottom-4`}
       />
+      {status_visualisation === 'pending' && (
+        <div
+          className={`${colorMap[status_visualisation]} h-1.5 w-1.5 rounded-full absolute -left-1 -bottom-4 animate-ping`}
+        />
+      )}
     </div>
   );
 };
@@ -187,9 +197,8 @@ const MessageCard: React.FC<{
 
   return (
     <div
-      className={`${frameBase} ${
-        variant === 'system' ? systemTheme : errorTheme
-      }`}
+      className={`${frameBase} ${variant === 'system' ? systemTheme : errorTheme
+        }`}
       onClick={onToggle}
     >
       <div className="flex items-center gap-1.5">
@@ -225,9 +234,8 @@ const ExpandChevron: React.FC<{
   return (
     <ChevronDown
       onClick={onClick}
-      className={`h-4 w-4 cursor-pointer transition-transform ${color} ${
-        expanded ? '' : '-rotate-90'
-      }`}
+      className={`h-4 w-4 cursor-pointer transition-transform ${color} ${expanded ? '' : '-rotate-90'
+        }`}
     />
   );
 };
@@ -378,12 +386,12 @@ const ToolCallCard: React.FC<{
     : 'div';
   const headerProps = hasExpandableDetails
     ? {
-        onClick: (e: React.MouseEvent) => {
-          e.preventDefault();
-          toggle();
-        },
-        title: expanded ? 'Hide details' : 'Show details',
-      }
+      onClick: (e: React.MouseEvent) => {
+        e.preventDefault();
+        toggle();
+      },
+      title: expanded ? 'Hide details' : 'Show details',
+    }
     : {};
 
   return (
