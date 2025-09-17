@@ -4,7 +4,9 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use db::models::{project::ProjectError, task_attempt::TaskAttemptError};
+use db::models::{
+    execution_process::ExecutionProcessError, project::ProjectError, task_attempt::TaskAttemptError,
+};
 use deployment::DeploymentError;
 use executors::executors::ExecutorError;
 use git2::Error as Git2Error;
@@ -22,6 +24,8 @@ pub enum ApiError {
     Project(#[from] ProjectError),
     #[error(transparent)]
     TaskAttempt(#[from] TaskAttemptError),
+    #[error(transparent)]
+    ExecutionProcess(#[from] ExecutionProcessError),
     #[error(transparent)]
     GitService(#[from] GitServiceError),
     #[error(transparent)]
@@ -61,7 +65,22 @@ impl IntoResponse for ApiError {
         let (status_code, error_type) = match &self {
             ApiError::Project(_) => (StatusCode::INTERNAL_SERVER_ERROR, "ProjectError"),
             ApiError::TaskAttempt(_) => (StatusCode::INTERNAL_SERVER_ERROR, "TaskAttemptError"),
-            ApiError::GitService(_) => (StatusCode::INTERNAL_SERVER_ERROR, "GitServiceError"),
+            ApiError::ExecutionProcess(err) => match err {
+                ExecutionProcessError::ExecutionProcessNotFound => {
+                    (StatusCode::NOT_FOUND, "ExecutionProcessError")
+                }
+                _ => (StatusCode::INTERNAL_SERVER_ERROR, "ExecutionProcessError"),
+            },
+            // Promote certain GitService errors to conflict status with concise messages
+            ApiError::GitService(git_err) => match git_err {
+                services::services::git::GitServiceError::MergeConflicts(_) => {
+                    (StatusCode::CONFLICT, "GitServiceError")
+                }
+                services::services::git::GitServiceError::RebaseInProgress => {
+                    (StatusCode::CONFLICT, "GitServiceError")
+                }
+                _ => (StatusCode::INTERNAL_SERVER_ERROR, "GitServiceError"),
+            },
             ApiError::GitHubService(_) => (StatusCode::INTERNAL_SERVER_ERROR, "GitHubServiceError"),
             ApiError::Auth(_) => (StatusCode::INTERNAL_SERVER_ERROR, "AuthError"),
             ApiError::Deployment(_) => (StatusCode::INTERNAL_SERVER_ERROR, "DeploymentError"),
@@ -93,6 +112,13 @@ impl IntoResponse for ApiError {
                 _ => {
                     "Failed to process image. Please try again.".to_string()
                 }
+            },
+            ApiError::GitService(git_err) => match git_err {
+                services::services::git::GitServiceError::MergeConflicts(msg) => msg.clone(),
+                services::services::git::GitServiceError::RebaseInProgress => {
+                    "A rebase is already in progress. Resolve conflicts or abort the rebase, then retry.".to_string()
+                }
+                _ => format!("{}: {}", error_type, self),
             },
             ApiError::Multipart(_) => "Failed to upload file. Please ensure the file is valid and try again.".to_string(),
             ApiError::Conflict(msg) => msg.clone(),

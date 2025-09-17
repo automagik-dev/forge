@@ -58,6 +58,14 @@ pub struct StatusDiffEntry {
     pub old_path: Option<String>,
 }
 
+/// Parsed worktree entry from `git worktree list --porcelain`
+#[derive(Debug, Clone)]
+pub struct WorktreeEntry {
+    pub path: String,
+    pub head_sha: String,
+    pub branch: Option<String>,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct StatusDiffOptions {
     pub path_filter: Option<Vec<String>>, // pathspecs to limit diff
@@ -235,6 +243,49 @@ impl GitCli {
         Ok(())
     }
 
+    pub fn list_worktrees(&self, repo_path: &Path) -> Result<Vec<WorktreeEntry>, GitCliError> {
+        let out = self.git(repo_path, ["worktree", "list", "--porcelain"])?;
+        let mut entries = Vec::new();
+        let mut current_path: Option<String> = None;
+        let mut current_head: Option<String> = None;
+        let mut current_branch: Option<String> = None;
+
+        for line in out.lines() {
+            let line = line.trim();
+
+            if line.is_empty() {
+                // End of current worktree entry, save it if we have required data
+                if let (Some(path), Some(head)) = (current_path.take(), current_head.take()) {
+                    entries.push(WorktreeEntry {
+                        path,
+                        head_sha: head,
+                        branch: current_branch.take(),
+                    });
+                }
+            } else if let Some(path) = line.strip_prefix("worktree ") {
+                current_path = Some(path.to_string());
+            } else if let Some(head) = line.strip_prefix("HEAD ") {
+                current_head = Some(head.to_string());
+            } else if let Some(branch_ref) = line.strip_prefix("branch ") {
+                // Extract branch name from refs/heads/branch-name
+                current_branch = branch_ref
+                    .strip_prefix("refs/heads/")
+                    .map(|name| name.to_string());
+            }
+        }
+
+        // Handle the last entry if no trailing empty line
+        if let (Some(path), Some(head)) = (current_path, current_head) {
+            entries.push(WorktreeEntry {
+                path,
+                head_sha: head,
+                branch: current_branch,
+            });
+        }
+
+        Ok(entries)
+    }
+
     /// Commit staged changes with the given message.
     pub fn commit(&self, worktree_path: &Path, message: &str) -> Result<(), GitCliError> {
         self.git(worktree_path, ["commit", "-m", message])?;
@@ -304,12 +355,62 @@ impl GitCli {
     }
 
     /// Return true if there is a rebase in progress in this worktree.
+    /// We treat this as true when either of Git's rebase state directories exists:
+    /// - rebase-merge (interactive rebase)
+    /// - rebase-apply (am-based rebase)
     pub fn is_rebase_in_progress(&self, worktree_path: &Path) -> Result<bool, GitCliError> {
-        match self.git(worktree_path, ["rev-parse", "--verify", "REBASE_HEAD"]) {
+        let rebase_merge = self.git(worktree_path, ["rev-parse", "--git-path", "rebase-merge"])?;
+        let rebase_apply = self.git(worktree_path, ["rev-parse", "--git-path", "rebase-apply"])?;
+        let rm_exists = std::path::Path::new(rebase_merge.trim()).exists();
+        let ra_exists = std::path::Path::new(rebase_apply.trim()).exists();
+        Ok(rm_exists || ra_exists)
+    }
+
+    /// Return true if a merge is in progress (MERGE_HEAD exists).
+    pub fn is_merge_in_progress(&self, worktree_path: &Path) -> Result<bool, GitCliError> {
+        match self.git(worktree_path, ["rev-parse", "--verify", "MERGE_HEAD"]) {
             Ok(_) => Ok(true),
             Err(GitCliError::CommandFailed(_)) => Ok(false),
             Err(e) => Err(e),
         }
+    }
+
+    /// Return true if a cherry-pick is in progress (CHERRY_PICK_HEAD exists).
+    pub fn is_cherry_pick_in_progress(&self, worktree_path: &Path) -> Result<bool, GitCliError> {
+        match self.git(worktree_path, ["rev-parse", "--verify", "CHERRY_PICK_HEAD"]) {
+            Ok(_) => Ok(true),
+            Err(GitCliError::CommandFailed(_)) => Ok(false),
+            Err(e) => Err(e),
+        }
+    }
+
+    /// Return true if a revert is in progress (REVERT_HEAD exists).
+    pub fn is_revert_in_progress(&self, worktree_path: &Path) -> Result<bool, GitCliError> {
+        match self.git(worktree_path, ["rev-parse", "--verify", "REVERT_HEAD"]) {
+            Ok(_) => Ok(true),
+            Err(GitCliError::CommandFailed(_)) => Ok(false),
+            Err(e) => Err(e),
+        }
+    }
+
+    /// Abort an in-progress rebase in this worktree. If no rebase is in progress,
+    /// this is a no-op and returns Ok(()).
+    pub fn abort_rebase(&self, worktree_path: &Path) -> Result<(), GitCliError> {
+        // If nothing to abort, return success
+        if !self.is_rebase_in_progress(worktree_path)? {
+            return Ok(());
+        }
+        // Best-effort: if `git rebase --abort` fails, surface the error message
+        self.git(worktree_path, ["rebase", "--abort"]).map(|_| ())
+    }
+
+    /// Quit an in-progress rebase (cleanup metadata without modifying commits).
+    /// If no rebase is in progress, it's a no-op.
+    pub fn quit_rebase(&self, worktree_path: &Path) -> Result<(), GitCliError> {
+        if !self.is_rebase_in_progress(worktree_path)? {
+            return Ok(());
+        }
+        self.git(worktree_path, ["rebase", "--quit"]).map(|_| ())
     }
 
     /// Return true if there are staged changes (index differs from HEAD)
@@ -365,6 +466,42 @@ impl GitCli {
     ) -> Result<(), GitCliError> {
         self.git(repo_path, ["update-ref", refname, sha])
             .map(|_| ())
+    }
+
+    pub fn abort_merge(&self, worktree_path: &Path) -> Result<(), GitCliError> {
+        if !self.is_merge_in_progress(worktree_path)? {
+            return Ok(());
+        }
+        self.git(worktree_path, ["merge", "--abort"]).map(|_| ())
+    }
+
+    pub fn abort_cherry_pick(&self, worktree_path: &Path) -> Result<(), GitCliError> {
+        if !self.is_cherry_pick_in_progress(worktree_path)? {
+            return Ok(());
+        }
+        self.git(worktree_path, ["cherry-pick", "--abort"])
+            .map(|_| ())
+    }
+
+    pub fn abort_revert(&self, worktree_path: &Path) -> Result<(), GitCliError> {
+        if !self.is_revert_in_progress(worktree_path)? {
+            return Ok(());
+        }
+        self.git(worktree_path, ["revert", "--abort"]).map(|_| ())
+    }
+
+    /// List files currently in a conflicted (unmerged) state in the worktree.
+    pub fn get_conflicted_files(&self, worktree_path: &Path) -> Result<Vec<String>, GitCliError> {
+        // `--diff-filter=U` lists paths with unresolved conflicts
+        let out = self.git(worktree_path, ["diff", "--name-only", "--diff-filter=U"])?;
+        let mut files = Vec::new();
+        for line in out.lines() {
+            let p = line.trim();
+            if !p.is_empty() {
+                files.push(p.to_string());
+            }
+        }
+        Ok(files)
     }
 }
 

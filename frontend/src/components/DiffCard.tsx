@@ -1,10 +1,11 @@
 import { Diff } from 'shared/types';
 import { DiffModeEnum, DiffView, SplitSide } from '@git-diff-view/react';
-import { generateDiffFile } from '@git-diff-view/file';
+import { generateDiffFile, type DiffFile } from '@git-diff-view/file';
 import { useMemo } from 'react';
 import { useUserSystem } from '@/components/config-provider';
 import { getHighLightLanguageFromPath } from '@/utils/extToLanguage';
 import { getActualTheme } from '@/utils/theme';
+import { stripLineEnding } from '@/utils/string';
 import { Button } from '@/components/ui/button';
 import {
   ChevronRight,
@@ -25,6 +26,7 @@ import { useReview, type ReviewDraft } from '@/contexts/ReviewProvider';
 import { CommentWidgetLine } from '@/components/diff/CommentWidgetLine';
 import { ReviewCommentRenderer } from '@/components/diff/ReviewCommentRenderer';
 import { useDiffViewMode } from '@/stores/useDiffViewStore';
+import { useProject } from '@/contexts/project-context';
 
 type Props = {
   diff: Diff;
@@ -45,6 +47,25 @@ function labelAndIcon(diff: Diff) {
   return { label: undefined as string | undefined, Icon: PencilLine };
 }
 
+function readPlainLine(
+  diffFile: DiffFile | null,
+  lineNumber: number,
+  side: SplitSide
+) {
+  if (!diffFile) return undefined;
+  try {
+    const rawLine =
+      side === SplitSide.old
+        ? diffFile.getOldPlainLine(lineNumber)
+        : diffFile.getNewPlainLine(lineNumber);
+    if (rawLine?.value === undefined) return undefined;
+    return stripLineEnding(rawLine.value);
+  } catch (error) {
+    console.error('Failed to read line content for review comment', error);
+    return undefined;
+  }
+}
+
 export default function DiffCard({
   diff,
   expanded,
@@ -55,6 +76,7 @@ export default function DiffCard({
   const theme = getActualTheme(config?.theme);
   const { comments, drafts, setDraft } = useReview();
   const globalMode = useDiffViewMode();
+  const { projectId } = useProject();
 
   const oldName = diff.oldPath || undefined;
   const newName = diff.newPath || oldName || 'unknown';
@@ -131,11 +153,13 @@ export default function DiffCard({
 
   const handleAddWidgetClick = (lineNumber: number, side: SplitSide) => {
     const widgetKey = `${filePath}-${side}-${lineNumber}`;
+    const codeLine = readPlainLine(diffFile, lineNumber, side);
     const draft: ReviewDraft = {
       filePath,
       side,
       lineNumber,
       text: '',
+      ...(codeLine !== undefined ? { codeLine } : {}),
     };
     setDraft(widgetKey, draft);
   };
@@ -151,12 +175,15 @@ export default function DiffCard({
         widgetKey={widgetKey}
         onSave={props.onClose}
         onCancel={props.onClose}
+        projectId={projectId}
       />
     );
   };
 
   const renderExtendLine = (lineData: any) => {
-    return <ReviewCommentRenderer comment={lineData.data} />;
+    return (
+      <ReviewCommentRenderer comment={lineData.data} projectId={projectId} />
+    );
   };
 
   // Title row

@@ -22,6 +22,7 @@ import { ReviewProvider } from '@/contexts/ReviewProvider';
 import { AttemptHeaderCard } from './AttemptHeaderCard';
 import { inIframe } from '@/vscode/bridge';
 import { TaskRelationshipViewer } from './TaskRelationshipViewer';
+import { useTaskViewManager } from '@/hooks/useTaskViewManager.ts';
 
 interface TaskDetailsPanelProps {
   task: TaskWithAttemptStatus | null;
@@ -36,13 +37,13 @@ interface TaskDetailsPanelProps {
   className?: string;
   hideHeader?: boolean;
   isFullScreen?: boolean;
-  setFullScreen?: (value: boolean) => void;
   forceCreateAttempt?: boolean;
   onLeaveForceCreateAttempt?: () => void;
   onNewAttempt?: () => void;
   selectedAttempt: TaskAttempt | null;
   attempts: TaskAttempt[];
   setSelectedAttempt: (attempt: TaskAttempt | null) => void;
+  tasksById?: Record<string, TaskWithAttemptStatus>;
 }
 
 export function TaskDetailsPanel({
@@ -57,12 +58,12 @@ export function TaskDetailsPanel({
   hideBackdrop = false,
   className,
   isFullScreen,
-  setFullScreen,
   forceCreateAttempt,
   onLeaveForceCreateAttempt,
   selectedAttempt,
   attempts,
   setSelectedAttempt,
+  tasksById,
 }: TaskDetailsPanelProps) {
   // Attempt number, find the current attempt number
   const attemptNumber =
@@ -73,8 +74,10 @@ export function TaskDetailsPanel({
   const [activeTab, setActiveTab] = useState<TabType>('logs');
 
   // Handler for jumping to diff tab in full screen
+  const { toggleFullscreen } = useTaskViewManager();
+
   const jumpToDiffFullScreen = () => {
-    setFullScreen?.(true);
+    toggleFullscreen(true);
     setActiveTab('diffs');
   };
 
@@ -137,7 +140,6 @@ export function TaskDetailsPanel({
                       onDeleteTask={onDeleteTask}
                       hideCloseButton={hideBackdrop}
                       isFullScreen={isFullScreen}
-                      setFullScreen={setFullScreen}
                     />
                   )}
 
@@ -172,34 +174,39 @@ export function TaskDetailsPanel({
                         <TaskRelationshipViewer
                           selectedAttempt={selectedAttempt}
                           onNavigateToTask={onNavigateToTask}
+                          task={task}
+                          tasksById={tasksById}
                         />
                       </aside>
 
                       {/* Main content */}
                       <main className="flex-1 min-h-0 min-w-0 flex flex-col">
-                        <TabNavigation
-                          activeTab={activeTab}
-                          setActiveTab={setActiveTab}
-                          selectedAttempt={selectedAttempt}
-                        />
+                        {selectedAttempt && (
+                          <>
+                            <TabNavigation
+                              activeTab={activeTab}
+                              setActiveTab={setActiveTab}
+                              selectedAttempt={selectedAttempt}
+                            />
 
-                        <div className="flex-1 flex flex-col min-h-0">
-                          {activeTab === 'diffs' ? (
-                            <DiffTab selectedAttempt={selectedAttempt} />
-                          ) : activeTab === 'processes' ? (
-                            <ProcessesTab attemptId={selectedAttempt?.id} />
-                          ) : (
-                            <LogsTab selectedAttempt={selectedAttempt} />
-                          )}
-                        </div>
+                            <div className="flex-1 flex flex-col min-h-0">
+                              {activeTab === 'diffs' ? (
+                                <DiffTab selectedAttempt={selectedAttempt} />
+                              ) : activeTab === 'processes' ? (
+                                <ProcessesTab attemptId={selectedAttempt?.id} />
+                              ) : (
+                                <LogsTab selectedAttempt={selectedAttempt} />
+                              )}
+                            </div>
 
-                        <TaskFollowUpSection
-                          task={task}
-                          projectId={projectId}
-                          selectedAttemptId={selectedAttempt?.id}
-                          selectedAttemptProfile={selectedAttempt?.executor}
-                          jumpToLogsTab={jumpToLogsTab}
-                        />
+                            <TaskFollowUpSection
+                              task={task}
+                              projectId={projectId}
+                              selectedAttemptId={selectedAttempt?.id}
+                              jumpToLogsTab={jumpToLogsTab}
+                            />
+                          </>
+                        )}
                       </main>
                     </div>
                   ) : (
@@ -231,13 +238,14 @@ export function TaskDetailsPanel({
                             onJumpToDiffFullScreen={jumpToDiffFullScreen}
                           />
 
-                          <LogsTab selectedAttempt={selectedAttempt} />
+                          {selectedAttempt && (
+                            <LogsTab selectedAttempt={selectedAttempt} />
+                          )}
 
                           <TaskFollowUpSection
                             task={task}
                             projectId={projectId}
                             selectedAttemptId={selectedAttempt?.id}
-                            selectedAttemptProfile={selectedAttempt?.executor}
                             jumpToLogsTab={jumpToLogsTab}
                           />
                         </>
