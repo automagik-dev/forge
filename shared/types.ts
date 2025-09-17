@@ -10,8 +10,6 @@ export type DirectoryListResponse = { entries: Array<DirectoryEntry>, current_pa
 
 export type Project = { id: string, name: string, git_repo_path: string, setup_script: string | null, dev_script: string | null, cleanup_script: string | null, copy_files: string | null, created_at: Date, updated_at: Date, };
 
-export type ProjectWithBranch = { id: string, name: string, git_repo_path: string, setup_script: string | null, dev_script: string | null, cleanup_script: string | null, copy_files: string | null, current_branch: string | null, created_at: Date, updated_at: Date, };
-
 export type CreateProject = { name: string, git_repo_path: string, use_existing_repo: boolean, setup_script: string | null, dev_script: string | null, cleanup_script: string | null, copy_files: string | null, };
 
 export type UpdateProject = { name: string | null, git_repo_path: string | null, setup_script: string | null, dev_script: string | null, cleanup_script: string | null, copy_files: string | null, };
@@ -20,11 +18,9 @@ export type SearchResult = { path: string, is_file: boolean, match_type: SearchM
 
 export type SearchMatchType = "FileName" | "DirectoryName" | "FullPath";
 
-export type SearchMode = "taskform" | "settings";
-
 export type ExecutorAction = { typ: ExecutorActionType, next_action: ExecutorAction | null, };
 
-export type McpConfig = { servers: { [key in string]?: JsonValue }, servers_path: Array<string>, template: JsonValue, automagik_forge: JsonValue, is_toml_config: boolean, };
+export type McpConfig = { servers: { [key in string]?: JsonValue }, servers_path: Array<string>, template: JsonValue, preconfigured: JsonValue, is_toml_config: boolean, };
 
 export type ExecutorActionType = { "type": "CodingAgentInitialRequest" } & CodingAgentInitialRequest | { "type": "CodingAgentFollowUpRequest" } & CodingAgentFollowUpRequest | { "type": "ScriptRequest" } & ScriptRequest;
 
@@ -64,7 +60,7 @@ export type ApiResponse<T, E = T> = { success: boolean, data: T | null, error_da
 
 export type UserSystemInfo = { config: Config, environment: Environment, 
 /**
- * Capabilities supported per executor (e.g., { "CLAUDE_CODE": ["RESTORE_CHECKPOINT"] })
+ * Capabilities supported per executor (e.g., { "CLAUDE_CODE": ["SESSION_FORK"] })
  */
 capabilities: { [key in string]?: Array<BaseAgentCapability> }, executors: { [key in BaseCodingAgent]?: ExecutorConfig }, };
 
@@ -122,8 +118,6 @@ export type Diff = { change: DiffChangeKind, oldPath: string | null, newPath: st
 
 export type DiffChangeKind = "added" | "deleted" | "modified" | "renamed" | "copied" | "permissionChange";
 
-export type FileDiffDetails = { fileName: string | null, content: string | null, };
-
 export type RepositoryInfo = { id: bigint, name: string, full_name: string, owner: string, description: string | null, clone_url: string, ssh_url: string, default_branch: string, private: boolean, };
 
 export type CommandBuilder = { 
@@ -148,9 +142,9 @@ variant: string | null, };
 
 export type ExecutorConfig = { [key in string]?: { "CLAUDE_CODE": ClaudeCode } | { "AMP": Amp } | { "GEMINI": Gemini } | { "CODEX": Codex } | { "OPENCODE": Opencode } | { "CURSOR": Cursor } | { "QWEN_CODE": QwenCode } };
 
-export type BaseAgentCapability = "RESTORE_CHECKPOINT";
+export type BaseAgentCapability = "SESSION_FORK";
 
-export type ClaudeCode = { append_prompt: AppendPrompt, claude_code_router?: boolean | null, plan?: boolean | null, dangerously_skip_permissions?: boolean | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
+export type ClaudeCode = { append_prompt: AppendPrompt, claude_code_router?: boolean | null, plan?: boolean | null, model?: string | null, dangerously_skip_permissions?: boolean | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
 
 export type Gemini = { append_prompt: AppendPrompt, model: GeminiModel, yolo?: boolean | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
 
@@ -160,7 +154,7 @@ export type Amp = { append_prompt: AppendPrompt, dangerously_allow_all?: boolean
 
 export type Codex = { append_prompt: AppendPrompt, sandbox?: SandboxMode | null, approval?: ApprovalPolicy | null, oss?: boolean | null, model?: string | null, model_reasoning_effort?: ReasoningEffort | null, model_reasoning_summary?: ReasoningSummary | null, base_command_override?: string | null, additional_params?: Array<string> | null, };
 
-export type SandboxMode = "read-only" | "workspace-write" | "danger-full-access";
+export type SandboxMode = "auto" | "read-only" | "workspace-write" | "danger-full-access";
 
 export type ApprovalPolicy = "untrusted" | "on-failure" | "on-request" | "never";
 
@@ -196,11 +190,21 @@ executor_profile_id: ExecutorProfileId, base_branch: string, };
 
 export type RebaseTaskAttemptRequest = { new_base_branch: string | null, };
 
-export type RestoreAttemptRequest = { 
+export type GitOperationError = { "type": "merge_conflicts", message: string, op: ConflictOp, } | { "type": "rebase_in_progress" };
+
+export type ReplaceProcessRequest = { 
 /**
- * Process to restore to (target = its after_head_commit)
+ * Process to replace (delete this and later ones)
  */
 process_id: string, 
+/**
+ * New prompt to use for the replacement follow-up
+ */
+prompt: string, 
+/**
+ * Optional variant override
+ */
+variant: string | null, 
 /**
  * If true, allow resetting Git even when uncommitted changes exist
  */
@@ -210,17 +214,31 @@ force_when_dirty: boolean | null,
  */
 perform_git_reset: boolean | null, };
 
-export type RestoreAttemptResult = { had_later_processes: boolean, git_reset_needed: boolean, git_reset_applied: boolean, target_after_oid: string | null, };
-
 export type CommitInfo = { sha: string, subject: string, };
 
-export type CommitCompareResult = { head_oid: string, target_oid: string, ahead_from_head: number, behind_from_head: number, is_linear: boolean, };
+export type BranchStatus = { commits_behind: number | null, commits_ahead: number | null, has_uncommitted_changes: boolean | null, head_oid: string | null, uncommitted_count: number | null, untracked_count: number | null, base_branch_name: string, remote_commits_behind: number | null, remote_commits_ahead: number | null, merges: Array<Merge>, 
+/**
+ * True if a `git rebase` is currently in progress in this worktree
+ */
+is_rebase_in_progress: boolean, 
+/**
+ * Current conflict operation if any
+ */
+conflict_op: ConflictOp | null, 
+/**
+ * List of files currently in conflicted (unmerged) state
+ */
+conflicted_files: Array<string>, };
 
-export type BranchStatus = { commits_behind: number | null, commits_ahead: number | null, has_uncommitted_changes: boolean | null, head_oid: string | null, uncommitted_count: number | null, untracked_count: number | null, base_branch_name: string, remote_commits_behind: number | null, remote_commits_ahead: number | null, merges: Array<Merge>, };
+export type ConflictOp = "rebase" | "merge" | "cherry_pick" | "revert";
 
 export type TaskAttempt = { id: string, task_id: string, container_ref: string | null, branch: string | null, base_branch: string, executor: string, worktree_deleted: boolean, setup_completed_at: string | null, created_at: string, updated_at: string, };
 
 export type ExecutionProcess = { id: string, task_attempt_id: string, run_reason: ExecutionProcessRunReason, executor_action: ExecutorAction, 
+/**
+ * Git HEAD commit OID captured before the process starts
+ */
+before_head_commit: string | null, 
 /**
  * Git HEAD commit OID captured after the process ends
  */
@@ -246,23 +264,15 @@ export type MergeStatus = "open" | "merged" | "closed" | "unknown";
 
 export type PullRequestInfo = { number: bigint, url: string, status: MergeStatus, merged_at: string | null, merge_commit_sha: string | null, };
 
-export type EventPatch = { op: string, path: string, value: EventPatchInner, };
-
-export type EventPatchInner = { db_op: string, record: RecordTypes, };
-
-export type RecordTypes = { "type": "TASK", "data": Task } | { "type": "TASK_ATTEMPT", "data": TaskAttempt } | { "type": "EXECUTION_PROCESS", "data": ExecutionProcess } | { "type": "FOLLOW_UP_DRAFT", "data": FollowUpDraft } | { "type": "DELETED_TASK", "data": { rowid: bigint, project_id: string | null, task_id: string | null, } } | { "type": "DELETED_TASK_ATTEMPT", "data": { rowid: bigint, task_id: string | null, } } | { "type": "DELETED_EXECUTION_PROCESS", "data": { rowid: bigint, task_attempt_id: string | null, } } | { "type": "DELETED_FOLLOW_UP_DRAFT", "data": { rowid: bigint, task_attempt_id: string | null, } };
-
 export type FollowUpDraft = { id: string, task_attempt_id: string, prompt: string, queued: boolean, sending: boolean, variant: string | null, image_ids: Array<string> | null, created_at: string, updated_at: string, version: bigint, };
 
 export type CommandExitStatus = { "type": "exit_code", code: number, } | { "type": "success", success: boolean, };
 
 export type CommandRunResult = { exit_status: CommandExitStatus | null, output: string | null, };
 
-export type NormalizedConversation = { entries: Array<NormalizedEntry>, session_id: string | null, executor_type: string, prompt: string | null, summary: string | null, };
-
 export type NormalizedEntry = { timestamp: string | null, entry_type: NormalizedEntryType, content: string, };
 
-export type NormalizedEntryType = { "type": "user_message" } | { "type": "assistant_message" } | { "type": "tool_use", tool_name: string, action_type: ActionType, } | { "type": "system_message" } | { "type": "error_message" } | { "type": "thinking" };
+export type NormalizedEntryType = { "type": "user_message" } | { "type": "assistant_message" } | { "type": "tool_use", tool_name: string, action_type: ActionType, } | { "type": "system_message" } | { "type": "error_message" } | { "type": "thinking" } | { "type": "loading" };
 
 export type FileChange = { "action": "write", content: string, } | { "action": "delete" } | { "action": "rename", new_path: string, } | { "action": "edit", 
 /**

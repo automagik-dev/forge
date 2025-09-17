@@ -1,27 +1,28 @@
 import { useEffect } from 'react';
-import {
-  BrowserRouter,
-  Navigate,
-  Route,
-  Routes,
-  useLocation,
-} from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Navbar } from '@/components/layout/navbar';
 import { Projects } from '@/pages/projects';
 import { ProjectTasks } from '@/pages/project-tasks';
+import { useTaskViewManager } from '@/hooks/useTaskViewManager';
+
 import {
   AgentSettings,
   GeneralSettings,
   McpSettings,
   SettingsLayout,
 } from '@/pages/settings/';
-import { UserSystemProvider, useUserSystem } from '@/components/config-provider';
+import {
+  UserSystemProvider,
+  useUserSystem,
+} from '@/components/config-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { SearchProvider } from '@/contexts/search-context';
+
 import { ProjectProvider } from '@/contexts/project-context';
 import { ThemeMode } from 'shared/types';
 import * as Sentry from '@sentry/react';
 import { Loader } from '@/components/ui/loader';
+
 import { AppWithStyleOverride } from '@/utils/style-override';
 import { WebviewContextMenu } from '@/vscode/ContextMenu';
 import { DevBanner } from '@/components/DevBanner';
@@ -32,44 +33,52 @@ const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 function AppContent() {
   const { config, updateAndSaveConfig, loading } = useUserSystem();
-  const location = useLocation();
-  const showNavbar = !location.pathname.endsWith('/full');
+  const { isFullscreen } = useTaskViewManager();
+
+  const showNavbar = !isFullscreen;
 
   useEffect(() => {
-    if (!config) return;
-
-    const handleDisclaimerAccept = async () => {
-      await updateAndSaveConfig({ disclaimer_acknowledged: true });
-    };
+    let cancelled = false;
 
     const handleOnboardingComplete = async (
       onboardingConfig: OnboardingResult
     ) => {
-      await updateAndSaveConfig({
+      if (cancelled) return;
+      const updatedConfig = {
+        ...config,
         onboarding_acknowledged: true,
         executor_profile: onboardingConfig.profile,
         editor: onboardingConfig.editor,
-      });
+      };
+
+      updateAndSaveConfig(updatedConfig);
+    };
+
+    const handleDisclaimerAccept = async () => {
+      if (cancelled) return;
+      await updateAndSaveConfig({ disclaimer_acknowledged: true });
     };
 
     const handleGitHubLoginComplete = async () => {
+      if (cancelled) return;
       await updateAndSaveConfig({ github_login_acknowledged: true });
     };
 
     const handleTelemetryOptIn = async (analyticsEnabled: boolean) => {
+      if (cancelled) return;
       await updateAndSaveConfig({
         telemetry_acknowledged: true,
         analytics_enabled: analyticsEnabled,
       });
     };
 
-    // Release Notes modal is temporarily disabled
-    // const handleReleaseNotesClose = async () => {
-    //   await updateAndSaveConfig({ show_release_notes: false });
-    // };
+    const handleReleaseNotesClose = async () => {
+      if (cancelled) return;
+      await updateAndSaveConfig({ show_release_notes: false });
+    };
 
     const checkOnboardingSteps = async () => {
-      if (!config) return;
+      if (!config || cancelled) return;
 
       if (!config.disclaimer_acknowledged) {
         await NiceModal.show('disclaimer');
@@ -97,15 +106,24 @@ function AppContent() {
         await NiceModal.hide('privacy-opt-in');
       }
 
-      // if (config.show_release_notes) {
-      //   await NiceModal.show('release-notes');
-      //   await handleReleaseNotesClose();
-      //   await NiceModal.hide('release-notes');
-      // }
+      if (config.show_release_notes) {
+        await NiceModal.show('release-notes');
+        await handleReleaseNotesClose();
+        await NiceModal.hide('release-notes');
+      }
     };
 
-    checkOnboardingSteps();
-  }, [config, updateAndSaveConfig]);
+    const runOnboarding = async () => {
+      if (!config || cancelled) return;
+      await checkOnboardingSteps();
+    };
+
+    runOnboarding();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [config]);
 
   if (loading) {
     return (
@@ -122,9 +140,10 @@ function AppContent() {
           <div className="h-screen flex flex-col bg-background">
             {/* Custom context menu and VS Code-friendly interactions when embedded in iframe */}
             <WebviewContextMenu />
+
             {showNavbar && <DevBanner />}
             {showNavbar && <Navbar />}
-            <div className="flex-1 h-full overflow-y-scroll flex">
+            <div className="flex-1 h-full overflow-y-scroll">
               <SentryRoutes>
                 <Route path="/" element={<Projects />} />
                 <Route path="/projects" element={<Projects />} />
@@ -139,6 +158,10 @@ function AppContent() {
                 />
                 <Route
                   path="/projects/:projectId/tasks/:taskId/attempts/:attemptId/full"
+                  element={<ProjectTasks />}
+                />
+                <Route
+                  path="/projects/:projectId/tasks/:taskId/full"
                   element={<ProjectTasks />}
                 />
                 <Route

@@ -31,7 +31,6 @@ export function AttemptHeaderCard({
   selectedAttempt,
   task,
   projectId,
-  // onCreateNewAttempt,
   onJumpToDiffFullScreen,
 }: AttemptHeaderCardProps) {
   const {
@@ -57,7 +56,7 @@ export function AttemptHeaderCard({
 
   return (
     <Card className="border-b border-dashed bg-background flex items-center text-sm">
-      <div className="flex-1 flex gap-6 p-3">
+      <div className="flex-1 flex gap-6 p-3 flex-wrap md:flex-nowrap">
         <p>
           <span className="text-secondary-foreground">Attempt &middot; </span>
           {attemptNumber}/{totalAttempts}

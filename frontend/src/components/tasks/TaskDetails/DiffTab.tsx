@@ -14,10 +14,20 @@ interface DiffTabProps {
 function DiffTab({ selectedAttempt }: DiffTabProps) {
   const [loading, setLoading] = useState(true);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+  const [hasInitialized, setHasInitialized] = useState(false);
   const { diffs, error } = useDiffEntries(selectedAttempt?.id ?? null, true);
   const { fileCount, added, deleted } = useDiffSummary(
     selectedAttempt?.id ?? null
   );
+
+  useEffect(() => {
+    setLoading(true);
+    setHasInitialized(false);
+  }, [selectedAttempt?.id]);
+
+  useEffect(() => {
+    setLoading(true);
+  }, [selectedAttempt?.id]);
 
   useEffect(() => {
     if (diffs.length > 0 && loading) {
@@ -25,10 +35,21 @@ function DiffTab({ selectedAttempt }: DiffTabProps) {
     }
   }, [diffs, loading]);
 
-  // Default-collapse certain change kinds on first load
+  // If no diffs arrive within 7 seconds, stop showing the spinner
+  useEffect(() => {
+    if (!loading) return;
+    const timer = setTimeout(() => {
+      if (diffs.length === 0) {
+        setLoading(false);
+      }
+    }, 7000);
+    return () => clearTimeout(timer);
+  }, [loading, diffs.length]);
+
+  // Default-collapse certain change kinds on first load only
   useEffect(() => {
     if (diffs.length === 0) return;
-    if (collapsedIds.size > 0) return; // preserve user toggles if any
+    if (hasInitialized) return; // only run once per attempt
     const kindsToCollapse = new Set([
       'deleted',
       'renamed',
@@ -41,7 +62,8 @@ function DiffTab({ selectedAttempt }: DiffTabProps) {
         .map((d, i) => d.newPath || d.oldPath || String(i))
     );
     if (initial.size > 0) setCollapsedIds(initial);
-  }, [diffs, collapsedIds.size]);
+    setHasInitialized(true);
+  }, [diffs, hasInitialized]);
 
   const ids = useMemo(() => {
     return diffs.map((d, i) => d.newPath || d.oldPath || String(i));
@@ -72,6 +94,14 @@ function DiffTab({ selectedAttempt }: DiffTabProps) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader />
+      </div>
+    );
+  }
+
+  if (!loading && diffs.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+        No changes have been made yet
       </div>
     );
   }

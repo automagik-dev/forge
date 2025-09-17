@@ -1,10 +1,7 @@
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
-    sync::{
-        Arc,
-        atomic::{AtomicUsize, Ordering},
-    },
+    sync::Arc,
 };
 
 use anyhow::{Error as AnyhowError, anyhow};
@@ -30,10 +27,9 @@ use executors::{
         script::{ScriptContext, ScriptRequest, ScriptRequestLanguage},
     },
     executors::{ExecutorError, StandardCodingAgentExecutor},
-    logs::utils::patch::ConversationPatch,
     profile::{ExecutorConfigs, ExecutorProfileId},
 };
-use futures::{StreamExt, TryStreamExt, future};
+use futures::{StreamExt, future};
 use sqlx::Error as SqlxError;
 use thiserror::Error;
 use tokio::{sync::RwLock, task::JoinHandle};
@@ -211,32 +207,17 @@ pub trait ContainerService {
     async fn stream_raw_logs(
         &self,
         id: &Uuid,
-    ) -> Option<futures::stream::BoxStream<'static, Result<Event, std::io::Error>>> {
+    ) -> Option<futures::stream::BoxStream<'static, Result<LogMsg, std::io::Error>>> {
         if let Some(store) = self.get_msg_store_by_id(id).await {
             // First try in-memory store
-            let counter = Arc::new(AtomicUsize::new(0));
             return Some(
                 store
                     .history_plus_stream()
                     .filter(|msg| {
-                        future::ready(matches!(msg, Ok(LogMsg::Stdout(..) | LogMsg::Stderr(..))))
-                    })
-                    .map_ok({
-                        let counter = counter.clone();
-                        move |m| {
-                            let index = counter.fetch_add(1, Ordering::SeqCst);
-                            match m {
-                                LogMsg::Stdout(content) => {
-                                    let patch = ConversationPatch::add_stdout(index, content);
-                                    LogMsg::JsonPatch(patch).to_sse_event()
-                                }
-                                LogMsg::Stderr(content) => {
-                                    let patch = ConversationPatch::add_stderr(index, content);
-                                    LogMsg::JsonPatch(patch).to_sse_event()
-                                }
-                                _ => unreachable!("Filter should only pass Stdout/Stderr"),
-                            }
-                        }
+                        future::ready(matches!(
+                            msg,
+                            Ok(LogMsg::Stdout(..) | LogMsg::Stderr(..) | LogMsg::Finished)
+                        ))
                     })
                     .boxed(),
             );
@@ -260,30 +241,14 @@ pub trait ContainerService {
                 }
             };
 
-            // Direct stream from parsed messages converted to JSON patches
+            // Direct stream from parsed messages
             let stream = futures::stream::iter(
                 messages
                     .into_iter()
                     .filter(|m| matches!(m, LogMsg::Stdout(_) | LogMsg::Stderr(_)))
-                    .enumerate()
-                    .map(|(index, m)| {
-                        let event = match m {
-                            LogMsg::Stdout(content) => {
-                                let patch = ConversationPatch::add_stdout(index, content);
-                                LogMsg::JsonPatch(patch).to_sse_event()
-                            }
-                            LogMsg::Stderr(content) => {
-                                let patch = ConversationPatch::add_stderr(index, content);
-                                LogMsg::JsonPatch(patch).to_sse_event()
-                            }
-                            _ => unreachable!("Filter should only pass Stdout/Stderr"),
-                        };
-                        Ok::<_, std::io::Error>(event)
-                    }),
+                    .chain(std::iter::once(LogMsg::Finished))
+                    .map(Ok::<_, std::io::Error>),
             )
-            .chain(futures::stream::once(async {
-                Ok::<_, std::io::Error>(LogMsg::Finished.to_sse_event())
-            }))
             .boxed();
 
             Some(stream)
@@ -293,14 +258,16 @@ pub trait ContainerService {
     async fn stream_normalized_logs(
         &self,
         id: &Uuid,
-    ) -> Option<futures::stream::BoxStream<'static, Result<Event, std::io::Error>>> {
+    ) -> Option<futures::stream::BoxStream<'static, Result<LogMsg, std::io::Error>>> {
         // First try in-memory store (existing behavior)
         if let Some(store) = self.get_msg_store_by_id(id).await {
             Some(
                 store
                     .history_plus_stream() // BoxStream<Result<LogMsg, io::Error>>
                     .filter(|msg| future::ready(matches!(msg, Ok(LogMsg::JsonPatch(..)))))
-                    .map_ok(|m| m.to_sse_event()) // LogMsg -> Event
+                    .chain(futures::stream::once(async {
+                        Ok::<_, std::io::Error>(LogMsg::Finished)
+                    }))
                     .boxed(),
             )
         } else {
@@ -405,9 +372,8 @@ pub trait ContainerService {
                 temp_store
                     .history_plus_stream()
                     .filter(|msg| future::ready(matches!(msg, Ok(LogMsg::JsonPatch(..)))))
-                    .map_ok(|m| m.to_sse_event())
                     .chain(futures::stream::once(async {
-                        Ok::<_, std::io::Error>(LogMsg::Finished.to_sse_event())
+                        Ok::<_, std::io::Error>(LogMsg::Finished)
                     }))
                     .boxed(),
             )
@@ -593,15 +559,28 @@ pub trait ContainerService {
             Task::update_status(&self.db().pool, task.id, TaskStatus::InProgress).await?;
         }
         // Create new execution process record
+        // Capture current HEAD as the "before" commit for this execution
+        let before_head_commit = {
+            if let Some(container_ref) = &task_attempt.container_ref {
+                let wt = std::path::Path::new(container_ref);
+                self.git().get_head_info(wt).ok().map(|h| h.oid)
+            } else {
+                None
+            }
+        };
         let create_execution_process = CreateExecutionProcess {
             task_attempt_id: task_attempt.id,
             executor_action: executor_action.clone(),
             run_reason: run_reason.clone(),
         };
 
-        let execution_process =
-            ExecutionProcess::create(&self.db().pool, &create_execution_process, Uuid::new_v4())
-                .await?;
+        let execution_process = ExecutionProcess::create(
+            &self.db().pool,
+            &create_execution_process,
+            Uuid::new_v4(),
+            before_head_commit.as_deref(),
+        )
+        .await?;
 
         if let Some(prompt) = match executor_action.typ() {
             ExecutorActionType::CodingAgentInitialRequest(coding_agent_request) => {
