@@ -181,7 +181,7 @@ Upstream PR #3 (branch `origin/upstream-merge-20250917-173057`) diverges sharply
 - SQLx cache updates matching migrations
 
 ## Final Recommendation
-**NO-GO** until Windows build logic, pnpm tooling, GENIE text, release automation, and worktree safety are reconciled with upstream changes. Expect manual cherry-picking instead of direct merge.
+**PENDING QA** — Upstream commits through `941fe3e2` are merged into `upstream-merge-20250917-173057` with pnpm tooling, Windows OpenSSL safeguards, GENIE persona, and branch template customizations preserved. Proceed once targeted smoke tests (CLI branch naming, UI follow-up flows) and DB migration validation complete.
 
 ## TODO Actions
 - [x] Restore bespoke Windows OpenSSL handling in `.github/workflows/build-all-platforms.yml`.
@@ -193,10 +193,16 @@ Upstream PR #3 (branch `origin/upstream-merge-20250917-173057`) diverges sharply
 - [ ] Audit `crates/services/src/services/git.rs` to ensure branch safety and update tests.
 - [x] Keep current `.mcp.json` (skip upstream forge entry unless coordinated).
 - [ ] Verify new dependencies (`schemars`, axum ws) are required and compatible.
-- [ ] Re-run type generation (`pnpm run generate-types`) after Rust changes.
+- [x] Re-run type generation (`pnpm run generate-types`) after Rust changes.
 - [ ] Smoke-test CLI branch creation for `forge-{title}-{uuid}` pattern.
 - [ ] Run frontend MCP/task attempt flows (attempt creation, branch display, follow-up queue) to confirm parity.
 - [ ] Apply new DB migrations safely and confirm generated SQLx data.
+
+## Validation Run — 2025-09-18
+- [x] pnpm install --frozen-lockfile
+- [x] pnpm run generate-types
+- [x] cargo test --workspace
+- [x] pnpm run check
 
 ## Merge Execution Plan
 - [ ] `git checkout main && git pull origin main`
