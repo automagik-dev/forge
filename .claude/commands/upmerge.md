@@ -52,6 +52,8 @@ NEW_BRANCH=upmerge-$(date +%Y%m%d-%H%M)
 git checkout -b "$NEW_BRANCH"
 ```
 
+> ℹ️ **Continuing a prior merge?** If a branch such as `upstream-merge-<date>` already holds the in-flight work, skip the new branch creation above and `git checkout` that branch instead. Reuse its analysis/report artifacts rather than starting fresh.
+
 **Snapshot key files (optional but recommended)**
 ```
 mkdir -p backup/upmerge
@@ -63,6 +65,8 @@ for path in .github/workflows/build-all-platforms.yml \
   git show HEAD:"$path" > "backup/upmerge/${path//\//__}"
 done
 ```
+
+> ✅ Clean up `backup/upmerge/` once the merge is committed so the worktree returns to a tidy state.
 
 ---
 ### Phase 2 – Merge Execution
@@ -113,12 +117,12 @@ git commit -m "Merge $TARGET_REF into $NEW_BRANCH honoring fork customizations"
 
 **3.2 Validation suite**
 ```bash
-pnpm install --frozen-lockfile --yes
+pnpm install --frozen-lockfile
 pnpm run generate-types
 cargo test --workspace
 pnpm run check
 ```
-Document outcomes (pass/fail) in both report and PR description.
+Document outcomes (pass/fail) in both report and PR description. When `pnpm install` prompts to reinstall modules, answer `Y` to confirm.
 
 **3.3 PR authoring**
 Use `/forge` if large, else manual. PR template:
@@ -149,7 +153,7 @@ If final release:
 ✅ `UPSTREAM_MERGE_ANALYSIS_PR3_REPORT.md` updated with checkboxes + notes
 ✅ Tests and type generation executed (or failures documented with follow-ups)
 ✅ PR created with clear summary of preserved customizations
-✅ Release checklist complete or explicitly deferred
+✅ Release checklist complete or explicitly deferred (manual QA items tracked in analysis report)
 </success_criteria>
 
 ## 🚫 NEVER DO
