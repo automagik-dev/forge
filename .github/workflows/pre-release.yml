@@ -245,18 +245,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pkg-config libssl-dev
 
-      - name: Install Windows build tools for vendored OpenSSL
+      - name: Install OpenSSL (Windows)
         if: startsWith(matrix.os, 'windows')
         shell: pwsh
-        run: choco install strawberryperl nasm -y
+        run: choco install openssl.light -y
 
-      - name: Configure vendored OpenSSL (Windows)
+      - name: Configure OpenSSL env (Windows)
         if: startsWith(matrix.os, 'windows')
         shell: pwsh
         run: |
-          echo "OPENSSL_STATIC=1"        >> $env:GITHUB_ENV
-          echo "OPENSSL_VENDORED=1"      >> $env:GITHUB_ENV
-          echo "OPENSSL_NO_VENDOR=0"     >> $env:GITHUB_ENV
+          $root = 'C:\\Program Files\\OpenSSL-Win64'
+          if (-not (Test-Path $root)) { throw "OpenSSL not found at $root" }
+          echo "OPENSSL_NO_VENDOR=1"               >> $env:GITHUB_ENV
+          echo "OPENSSL_DIR=$root"                 >> $env:GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=$root\\lib"       >> $env:GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=$root\\include" >> $env:GITHUB_ENV
 
       - name: Install ARM64 cross-compilation dependencies (Linux)
         if: matrix.os == 'ubuntu-22.04' && matrix.target == 'aarch64-unknown-linux-gnu'

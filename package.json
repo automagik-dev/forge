@@ -10,20 +10,20 @@
     "npx-cli/dist/**"
   ],
   "scripts": {
-    "format": "cargo fmt --all && cd frontend && npm run format",
-    "check": "npm run frontend:check && npm run backend:check",
-    "dev": "export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend) && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && concurrently \"npm run backend:dev:watch\" \"npm run frontend:dev\"",
+    "format": "cargo fmt --all && cd frontend && pnpm run format",
+    "check": "pnpm run frontend:check && pnpm run backend:check",
+    "dev": "export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend) && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && concurrently \"pnpm run backend:dev:watch\" \"pnpm run frontend:dev\"",
     "test:npm": "./test-npm-package.sh",
-    "frontend:dev": "cd frontend && npm run dev -- --port ${FRONTEND_PORT:-3000} --host",
-    "frontend:check": "cd frontend && npm run check",
-    "backend:dev": "BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) npm run backend:dev:watch",
+    "frontend:dev": "cd frontend && pnpm run dev -- --port ${FRONTEND_PORT:-3000} --host",
+    "frontend:check": "cd frontend && pnpm run check",
+    "backend:dev": "BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) pnpm run backend:dev:watch",
     "backend:check": "cargo check",
     "backend:dev:watch": "DISABLE_WORKTREE_ORPHAN_CLEANUP=1 RUST_LOG=debug cargo watch -w crates -x 'run --bin server'",
     "generate-types": "cargo run --bin generate_types",
     "generate-types:check": "cargo run --bin generate_types -- --check",
     "prepare-db": "node scripts/prepare-db.js",
     "build:npx": "bash ./local-build.sh",
-    "prepack": "npm run build:npx"
+    "prepack": "pnpm run build:npx"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
