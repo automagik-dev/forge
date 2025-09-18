@@ -54,4 +54,3 @@ tower = { version = "0.4", features = ["util"] }
 
 [build-dependencies]
 dotenv = "0.15"
-

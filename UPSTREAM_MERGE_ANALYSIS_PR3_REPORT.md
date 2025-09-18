@@ -3,6 +3,21 @@
 ## Executive Summary
 Upstream PR #3 (branch `origin/upstream-merge-20250917-173057`) diverges sharply from our last v0.3.8 tag (`v0.3.8-20250903203030`). The branch rebrands the product, replaces our Windows OpenSSL build flow, rewires Docker packaging, and overhauls major frontend areas. These edits collide with fork-critical customizations—GENIE personality, pnpm-first tooling, release automation, and worktree safety—so a direct merge would likely break CI and product workflows.
 
+**Latest upstream synced:** `023e52e5` (fix: codex session forking regression)
+
+**Outstanding upstream/main commits to integrate:**
+- [x] `941fe3e2` — refactoring: Filter soft-deleted processes in the backend (#773)
+- [x] `9810de7d` — Codex: remove ask-for-approval flag (#771)
+- [x] `c60c1a8f` — Alex/refactor create pr (#746)
+- [x] `9c0743e9` — truncate the middle rather than the end (#751)
+- [x] `4c7e3589` — Fix dropdown (vibe-kanban) (#764)
+- [x] `a069304f` — Fix todos and delete useProcessesLogs (vibe-kanban) (#755)
+- [x] `cc66eb96` — update mintlify creds (#774)
+- [x] `75205c06` — docs: remove all references to /user-guide (vibe-kanban) (#747)
+- [x] `c44edf33` — open the frontend by default when running the dev command (#717)
+- [x] `73bc2396` — chore: bump version to 0.0.91
+- [x] `904827e4` — refactor: TaskfollowupSection followup (#762)
+
 ## Changed Files Analysis
 ### [x] .github/workflows/build-all-platforms.yml
 - **Change Type:** Modified
@@ -51,6 +66,7 @@ Upstream PR #3 (branch `origin/upstream-merge-20250917-173057`) diverges sharply
 - **Conflict Analysis:** branch naming NO · GENIE NO · Windows NO · MCP YES (via new deps)
 - **Specific Concerns:** New dependencies (`schemars`, `axum` websocket feature) support upstream APIs we intend to adopt.
 - **Recommendation:** Accept additions and ensure type generation/tests cover the new features.
+- [x] 2025-09-18 merge: retained fork versioning (`0.3.9`) across crate manifests while keeping upstream dependency bumps for conflict-handling work.
 
 ### [x] Dockerfile
 - **Change Type:** Modified
@@ -67,6 +83,7 @@ Upstream PR #3 (branch `origin/upstream-merge-20250917-173057`) diverges sharply
 - **Conflict Analysis:** branch naming NO · GENIE NO · Windows NO · MCP INDIRECT
 - **Specific Concerns:** Upstream added useful scripts/dependencies but reintroduced `npm` command usage.
 - **Recommendation:** Preserve new package additions while converting scripts to `pnpm` equivalents and coordinating versioning with our release cadence.
+- [x] 2025-09-18 merge: kept `automagik-forge` metadata & `0.3.9` versioning, while porting upstream `@ebay/nice-modal-react` dependency and retaining pnpm scripts.
 
 ### pnpm-lock.yaml
 - **Change Type:** Modified
@@ -99,6 +116,16 @@ Upstream PR #3 (branch `origin/upstream-merge-20250917-173057`) diverges sharply
 - **Conflict Analysis:** branch naming YES · others NO
 - **Specific Concerns:** Need to ensure upstream updates retain our `forge-{title}-{uuid}` branch template while adopting any CLI improvements.
 - **Recommendation:** Merge upstream logic, then smoke-test CLI branch creation to confirm naming pattern.
+- [x] 2025-09-18 merge: preserved CLI naming (`automagik-forge`) and kept version `0.3.9` while absorbing upstream CLI fixes.
+
+### [x] frontend/vite.config.ts
+- **Change Type:** Modified
+- **Custom Modifications Present:** Yes
+- **Risk Level:** NEEDS_MANUAL_REVIEW (resolved)
+- **Conflict Analysis:** branch naming NO · GENIE NO · Windows NO · MCP NO
+- **Specific Concerns:** Upstream opens the browser by default via npm dev workflow; we must expose the opt-in while keeping pnpm-friendly config and sourcemaps.
+- **Recommendation:** Adopt the `VITE_OPEN` toggle but keep ports/env resolution intact.
+- [x] 2025-09-18 merge: added `open: process.env.VITE_OPEN === "true"` alongside existing server config and retained our `pnpm`-oriented build block.
 
 ### [x] Frontend task & hook modules (multiple)
 - **Change Type:** Added/Modified/Deleted
@@ -110,6 +137,7 @@ Upstream PR #3 (branch `origin/upstream-merge-20250917-173057`) diverges sharply
   - Follow-up editor overhaul introduces autosave/variant queues—retain feature but verify MCP-driven follow ups behave under our workflows.
   - Removed dialogs replaced by modernised components; ensure no fork-specific UI (e.g., branch selection, attempt creation) disappeared.
 - **Recommendation:** Adopt upstream UX improvements and run targeted UI smoke tests covering attempt creation, branch display, and follow-up submission to confirm parity with our custom flows.
+- [x] 2025-09-18 merge: pulled in follow-up autosave context + modal refactor, flagged need to rerun attempt creation & follow-up queue smoke tests under fork branch template.
 
 ### [x] shared/types.ts
 - **Change Type:** Modified

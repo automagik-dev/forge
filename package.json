@@ -30,6 +30,9 @@
     "concurrently": "^8.2.2",
     "vite": "^6.3.5"
   },
+  "dependencies": {
+    "@ebay/nice-modal-react": "^1.2.13"
+  },
   "engines": {
     "node": ">=18",
     "pnpm": ">=8"
