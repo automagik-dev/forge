@@ -155,13 +155,13 @@ jobs:
         run: pnpm install
 
       - name: Lint frontend
-        run: cd frontend && npm run lint
+        run: cd frontend && pnpm run lint
 
       - name: Type check frontend
         run: cd frontend && npx tsc --noEmit
 
       - name: Build frontend
-        run: cd frontend && npm run build
+        run: cd frontend && pnpm run build
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 

@@ -34,6 +34,7 @@ Method:
 - Determine target: prefer tag (e.g., latest `v*`) else branch/PR specified by user argument.
 - Capture current release tag (`git describe --tags --abbrev=0`).
 - Read existing customization inventory from analysis/review docs.
+- Confirm CI guardrails: scan `.github/workflows/**/*` for accidental `npm` fallbacks and queue pnpm replacements before merging.
 
 Early stop criteria:
 - Upstream ref identified
@@ -67,6 +68,7 @@ done
 ```
 
 > ✅ Clean up `backup/upmerge/` once the merge is committed so the worktree returns to a tidy state.
+> ✅ When updating CI, standardize on `pnpm` (`pnpm/action-setup`, `pnpm install --frozen-lockfile`, `pnpm --filter frontend run build`) so merges remain reproducible.
 
 ---
 ### Phase 2 – Merge Execution

@@ -26,9 +26,9 @@ Your primary goal is to perform a systematic, file-by-file analysis of upstream 
 @Cargo.toml
 
 ## Status Update — 2025-09-18
-- [x] Pulled upstream/main through commit `941fe3e2` into `upstream-merge-20250917-173057`, preserving pnpm workflows, Windows OpenSSL guards, GENIE persona, and `forge-{title}-{uuid}` branch templates.
-- [x] Validated merge locally: `pnpm install --frozen-lockfile`, `pnpm run generate-types`, `cargo test --workspace`, `pnpm run check`.
-- [ ] Pending manual QA: CLI branch creation naming smoke test, UI attempt/follow-up flows, DB migration dry-run.
+- [x] Pulled upstream/main through commit `46d3f3c7` into `upstream-merge-20250917-173057`, keeping pnpm workflows, Windows OpenSSL safeguards, GENIE persona, and branch template logic intact.
+- [x] Validation passes: `pnpm install --frozen-lockfile`, `pnpm run generate-types`, `cargo test --workspace`, `pnpm run check`, `pnpm run prepare-db`.
+- [x] Follow-ups closed: branch naming tests added (`generate_branch_name_*`), WebSocket follow-up stream reviewed, migrations applied.
 
 
 ### CUSTOM MODIFICATIONS INVENTORY

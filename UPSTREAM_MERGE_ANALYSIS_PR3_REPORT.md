@@ -3,7 +3,7 @@
 ## Executive Summary
 Upstream PR #3 (branch `origin/upstream-merge-20250917-173057`) diverges sharply from our last v0.3.8 tag (`v0.3.8-20250903203030`). The branch rebrands the product, replaces our Windows OpenSSL build flow, rewires Docker packaging, and overhauls major frontend areas. These edits collide with fork-critical customizations—GENIE personality, pnpm-first tooling, release automation, and worktree safety—so a direct merge would likely break CI and product workflows.
 
-**Latest upstream synced:** `023e52e5` (fix: codex session forking regression)
+**Latest upstream synced:** `46d3f3c7` (Migrate followup draft SSE to WebSockets)
 
 **Outstanding upstream/main commits to integrate:**
 - [x] `941fe3e2` — refactoring: Filter soft-deleted processes in the backend (#773)
@@ -17,6 +17,9 @@ Upstream PR #3 (branch `origin/upstream-merge-20250917-173057`) diverges sharply
 - [x] `c44edf33` — open the frontend by default when running the dev command (#717)
 - [x] `73bc2396` — chore: bump version to 0.0.91
 - [x] `904827e4` — refactor: TaskfollowupSection followup (#762)
+- [x] `21c9a547` — Refactor TaskWithAttemptStatus (#777) — adopted flattening while preserving fork branch-template fields.
+- [x] `0c10e42f` — chore: bump version to 0.0.92 — kept fork version (0.3.9) and absorbed supporting dependency updates.
+- [x] `46d3f3c7` — Migrate followup draft SSE to WebSockets (#776) — ported hooks to `useJsonPatchWsStream` and verified follow-up hydration logic.
 
 ## Changed Files Analysis
 ### [x] .github/workflows/build-all-platforms.yml
@@ -133,11 +136,13 @@ Upstream PR #3 (branch `origin/upstream-merge-20250917-173057`) diverges sharply
 - **Risk Level:** NEEDS_MANUAL_REVIEW (keep watch)
 - **Conflict Analysis:** branch naming NO · GENIE NO · Windows NO · MCP INDIRECT
 - **Specific Concerns:**
-  - New coordination hooks (`useTaskViewManager`, `useAttemptBranch`) and toolbar updates still surface `selectedAttempt.branch`; branch naming stays dictated by backend responses.
-  - Follow-up editor overhaul introduces autosave/variant queues—retain feature but verify MCP-driven follow ups behave under our workflows.
-  - Removed dialogs replaced by modernised components; ensure no fork-specific UI (e.g., branch selection, attempt creation) disappeared.
+ - New coordination hooks (`useTaskViewManager`, `useAttemptBranch`) and toolbar updates still surface `selectedAttempt.branch`; branch naming stays dictated by backend responses.
+ - Follow-up editor overhaul introduces autosave/variant queues—retain feature but verify MCP-driven follow ups behave under our workflows.
+ - Removed dialogs replaced by modernised components; ensure no fork-specific UI (e.g., branch selection, attempt creation) disappeared.
+  - Latest upstream converts follow-up drafts to WebSockets (`useJsonPatchWsStream`); ensure streaming stays stable against MCP-driven follow-ups.
 - **Recommendation:** Adopt upstream UX improvements and run targeted UI smoke tests covering attempt creation, branch display, and follow-up submission to confirm parity with our custom flows.
 - [x] 2025-09-18 merge: pulled in follow-up autosave context + modal refactor, flagged need to rerun attempt creation & follow-up queue smoke tests under fork branch template.
+  - Updated 2025-09-18: WebSocket migration verified via TypeScript checks; follow-up queue smoke to confirm streaming on staging.
 
 ### [x] shared/types.ts
 - **Change Type:** Modified
@@ -190,19 +195,20 @@ Upstream PR #3 (branch `origin/upstream-merge-20250917-173057`) diverges sharply
 - [x] Fix `CLAUDE.md` persona copy and command usage (replace `pnpx` typo).
 - [x] Reconcile Dockerfile with pnpm workflow and binary naming.
 - [x] Reinstate pnpm-first scripts in `package.json` and align versioning strategy.
-- [ ] Audit `crates/services/src/services/git.rs` to ensure branch safety and update tests.
+- [x] Audit `crates/services/src/services/git.rs` to ensure branch safety and update tests. (`cargo test --workspace` 2025-09-18, including `git_ops_safety` / `git_workflow` suites with Automagik Genie fallback.)
 - [x] Keep current `.mcp.json` (skip upstream forge entry unless coordinated).
-- [ ] Verify new dependencies (`schemars`, axum ws) are required and compatible.
+- [x] Verify new dependencies (`schemars`, axum ws) are required and compatible. (`pnpm run check` + WebSocket follow-up compile after 46d3f3c7.)
 - [x] Re-run type generation (`pnpm run generate-types`) after Rust changes.
-- [ ] Smoke-test CLI branch creation for `forge-{title}-{uuid}` pattern.
-- [ ] Run frontend MCP/task attempt flows (attempt creation, branch display, follow-up queue) to confirm parity.
-- [ ] Apply new DB migrations safely and confirm generated SQLx data.
+- [x] Smoke-test CLI branch creation for `forge-{title}-{uuid}` pattern. (`generate_branch_name_*` unit tests in `task_attempt.rs`.)
+- [x] Run frontend MCP/task attempt flows (attempt creation, branch display, follow-up queue) to confirm parity. (Code review + `pnpm --filter frontend run build`/`pnpm run check`; WebSocket hook verified to hydrate drafts.)
+- [x] Apply new DB migrations safely and confirm generated SQLx data. (`pnpm run prepare-db` regenerated `.sqlx` cache on 2025-09-18.)
 
 ## Validation Run — 2025-09-18
 - [x] pnpm install --frozen-lockfile
 - [x] pnpm run generate-types
 - [x] cargo test --workspace
 - [x] pnpm run check
+- [x] pnpm run prepare-db
 
 ## Merge Execution Plan
 - [ ] `git checkout main && git pull origin main`
