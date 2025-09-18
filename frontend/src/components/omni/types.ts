@@ -15,11 +15,6 @@ export interface OmniInstance {
   is_healthy: boolean;
 }
 
-export interface ListInstancesResponse {
-  channels: OmniInstance[];
-  total_count: number;
-}
-
 export interface SendTextRequest {
   phone_number?: string;
   user_id?: string;

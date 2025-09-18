@@ -384,16 +384,16 @@ impl TaskAttempt {
         task_id: Uuid,
     ) -> Result<Self, TaskAttemptError> {
         let attempt_id = Uuid::new_v4();
-        
+
         // Get the task to access branch_template and title
         let task = Task::find_by_id(pool, task_id)
             .await?
             .ok_or(TaskAttemptError::TaskNotFound)?;
-        
+
         let branch_name = generate_branch_name(&task, &attempt_id);
-        
+
         let branch_name_opt = Some(branch_name);
-        
+
         // Insert the record into the database
         Ok(sqlx::query_as!(
             TaskAttempt,

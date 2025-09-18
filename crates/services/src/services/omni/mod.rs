@@ -2,8 +2,8 @@ pub mod client;
 pub mod types;
 
 use anyhow::Result;
-pub use types::*;
 use client::OmniClient;
+pub use types::*;
 
 pub struct OmniService {
     config: OmniConfig,
@@ -28,12 +28,18 @@ impl OmniService {
         if !self.config.enabled {
             return Ok(());
         }
-        
-        let instance = self.config.instance.as_ref()
+
+        let instance = self
+            .config
+            .instance
+            .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No Omni instance configured"))?;
-        let recipient = self.config.recipient.as_ref()
+        let recipient = self
+            .config
+            .recipient
+            .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No recipient configured"))?;
-        
+
         let message = format!(
             "🎯 Task Complete: {}\n\n\
              Status: {}\n\
@@ -42,7 +48,7 @@ impl OmniService {
             task_status,
             task_url.map(|u| format!("URL: {}", u)).unwrap_or_default()
         );
-        
+
         let request = match self.config.recipient_type {
             Some(RecipientType::PhoneNumber) => SendTextRequest {
                 phone_number: Some(recipient.clone()),
@@ -60,10 +66,8 @@ impl OmniService {
                 text: message,
             },
         };
-        
+
         self.client.send_text(instance, request).await?;
         Ok(())
     }
-
 }
-

@@ -6,7 +6,7 @@ description: 🔄 Automate upstream syncs end to end — branch prep, diff analy
 
 ## 🧭 OVERVIEW
 
-Use `/upmerge` whenever upstream publishes new changes (tag, branch, or PR) that we must fold into our fork. This command encodes the proven process from `UPSTREAM_MERGE_ANALYSIS_PR3_REPORT.md` and `UPSTREAM_MERGE_REVIEW_PR3.md`, combining them with the prompting patterns from `.claude/commands/prompt.md`.
+Use `/upmerge` whenever upstream publishes new changes (tag, branch, or PR) that we must fold into our fork. This command encodes the proven process from `UPSTREAM_MERGE_ANALYSIS_PR3_REPORT.md` and `UPSTREAM_MERGE_REVIEW_PR3.md`, combining them with the prompting patterns from `.claude/commands/prompt.md`. `/upmerge` handles the merge execution; once the branch is ready, trigger `/review-merge-pr` for a separate, file-by-file review pass.
 
 ### Required Auto-Context
 ```
@@ -20,7 +20,8 @@ Use `/upmerge` whenever upstream publishes new changes (tag, branch, or PR) that
 <task_breakdown>
 1. [Preparation] Align branches, identify targets, snapshot customizations
 2. [Merge Execution] Fetch upstream, merge safely, resolve conflicts with guardrails
-3. [Review & Release] Regenerate reports, validate, craft PR, prep release
+3. [Post-Merge Checks] Update reports, run validations, capture per-file notes
+4. [Review & Release] Hand off to `/review-merge-pr`, craft PR, prep release
 </task_breakdown>
 
 ---
@@ -117,7 +118,12 @@ git commit -m "Merge $TARGET_REF into $NEW_BRANCH honoring fork customizations"
 - Mirror findings in `UPSTREAM_MERGE_REVIEW_PR3.md` for PR narration.
 - Record outstanding TODOs (tests, type generation, follow-up UI checks).
 
-**3.2 Validation suite**
+**3.2 Prepare manual review inputs**
+- Export touched files: `git diff --name-only $(git merge-base HEAD "$TARGET_REF")..HEAD > /tmp/upmerge_files.txt`
+- In the analysis log, flag high-risk files and annotate why they need deep inspection.
+- Capture any external payload expectations (e.g., API response samples) so `/review-merge-pr` can verify assumptions file by file.
+
+**3.3 Validation suite**
 ```bash
 pnpm install --frozen-lockfile
 pnpm run generate-types
@@ -126,7 +132,7 @@ pnpm run check
 ```
 Document outcomes (pass/fail) in both report and PR description. When `pnpm install` prompts to reinstall modules, answer `Y` to confirm.
 
-**3.3 PR authoring**
+**3.4 PR authoring**
 Use `/forge` if large, else manual. PR template:
 ```
 Title: chore: upstream merge {tag-or-branch}
@@ -142,7 +148,7 @@ Validation:
 ```
 Link to updated analysis/review docs.
 
-**3.4 Release readiness**
+**3.5 Release readiness**
 If final release:
 - Tag candidate (`git tag -a vX.Y.Z-<timestamp> -m "Upstream merge"`)
 - Push branch + tags (`git push origin "$NEW_BRANCH" --tags`)
@@ -154,6 +160,7 @@ If final release:
 ✅ Upstream ref merged into dedicated branch without breaking custom features
 ✅ `UPSTREAM_MERGE_ANALYSIS_PR3_REPORT.md` updated with checkboxes + notes
 ✅ Tests and type generation executed (or failures documented with follow-ups)
+✅ Manual file-by-file review queued via `/review-merge-pr` with notes ready
 ✅ PR created with clear summary of preserved customizations
 ✅ Release checklist complete or explicitly deferred (manual QA items tracked in analysis report)
 </success_criteria>
@@ -165,7 +172,11 @@ If final release:
 ❌ Remove GENIE persona sections
 ❌ Disable Windows OpenSSL safeguards without validation
 ❌ Ship without updating analysis/review docs
+❌ Skip the dedicated `/review-merge-pr` pass after merging
 </never_do>
+
+## 📓 New Learnings (Living Log)
+- **2025-09-18 · Omni API schema drift:** Upstream changed `/api/v1/instances` from an envelope to a bare array. Record real payload samples during merges and document mapping assumptions so downstream validation stays aligned.
 
 ## 🧪 COMMAND USAGE
 ```
