@@ -186,7 +186,7 @@ Upstream PR #3 (branch `origin/upstream-merge-20250917-173057`) diverges sharply
 - SQLx cache updates matching migrations
 
 ## Final Recommendation
-**PENDING QA** — Upstream commits through `941fe3e2` are merged into `upstream-merge-20250917-173057` with pnpm tooling, Windows OpenSSL safeguards, GENIE persona, and branch template customizations preserved. Proceed once targeted smoke tests (CLI branch naming, UI follow-up flows) and DB migration validation complete.
+**PENDING QA** — Upstream commits through `46d3f3c7` are merged into `upstream-merge-20250917-173057` with pnpm tooling, Windows OpenSSL safeguards, GENIE persona, and branch template customizations preserved. Proceed once final UI smoke passes on staging.
 
 ## TODO Actions
 - [x] Restore bespoke Windows OpenSSL handling in `.github/workflows/build-all-platforms.yml`.
