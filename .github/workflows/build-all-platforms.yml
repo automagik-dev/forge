@@ -73,26 +73,47 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install Windows build tools for vendored OpenSSL
+      - name: Install OpenSSL (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          choco install strawberryperl nasm -y
-          Start-Sleep -Seconds 5
-          # Install missing Perl modules required by OpenSSL build
-          cpan -T Locale::Maketext::Simple
-          cpan -T IPC::Cmd
-          cpan -T Params::Check
+          choco install openssl.light -y
+          # Wait a moment for installation to complete
+          Start-Sleep -Seconds 10
           
-      - name: Configure vendored OpenSSL (Windows)
+      - name: Configure OpenSSL env (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          echo "OPENSSL_STATIC=1"        >> $env:GITHUB_ENV
-          echo "OPENSSL_VENDORED=1"      >> $env:GITHUB_ENV
-          echo "OPENSSL_NO_VENDOR=0"     >> $env:GITHUB_ENV
-          # Additional env vars to help with vendored build
-          echo "PERL=$((Get-Command perl).Path)" >> $env:GITHUB_ENV
+          # Check multiple possible OpenSSL locations
+          $possiblePaths = @(
+            'C:\\Program Files\\OpenSSL-Win64',
+            'C:\\Program Files\\OpenSSL',
+            'C:\\ProgramData\\chocolatey\\lib\\openssl.light\\tools\\openssl-Win64',
+            'C:\\tools\\openssl',
+            'C:\\OpenSSL-Win64'
+          )
+          
+          $root = $null
+          foreach ($path in $possiblePaths) {
+            if (Test-Path $path) {
+              $root = $path
+              Write-Host "Found OpenSSL at: $root"
+              break
+            }
+          }
+          
+          if (-not $root) {
+            # If none found, try to use vendored OpenSSL instead
+            Write-Host "OpenSSL not found in standard locations, will use vendored OpenSSL"
+            echo "OPENSSL_NO_VENDOR=0" >> $env:GITHUB_ENV
+            echo "OPENSSL_VENDORED=1" >> $env:GITHUB_ENV
+          } else {
+            echo "OPENSSL_NO_VENDOR=1" >> $env:GITHUB_ENV
+            echo "OPENSSL_DIR=$root" >> $env:GITHUB_ENV
+            echo "OPENSSL_LIB_DIR=$root\\lib" >> $env:GITHUB_ENV
+            echo "OPENSSL_INCLUDE_DIR=$root\\include" >> $env:GITHUB_ENV
+          }
           
       - name: Install cross-compilation tools
         if: matrix.use-cross
@@ -110,16 +131,12 @@ jobs:
           npm ci
           npm run build
       
-      # Use vendored OpenSSL on Windows; remove ad-hoc openssl-sys patching
-
       - name: Build Rust binaries (Windows)
         if: runner.os == 'Windows'
         env:
           LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
           LIBZ_SYS_STATIC: 1
           OPENSSL_STATIC: 1
-          OPENSSL_VENDORED: 1
-          OPENSSL_NO_VENDOR: 0
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |

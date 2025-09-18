@@ -25,7 +25,7 @@ pnpm run check
 # Frontend specific
 cd frontend && pnpm run lint          # Lint TypeScript/React code
 cd frontend && pnpm run format:check  # Check formatting
-cd frontend && pnpx tsc --noEmit     # TypeScript type checking
+cd frontend && pnpm exec tsc --noEmit     # TypeScript type checking
 
 # Backend specific  
 cargo test --workspace               # Run all Rust tests
