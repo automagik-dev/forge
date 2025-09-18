@@ -81,47 +81,26 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Install OpenSSL (Windows)
+      - name: Install Windows build tools for vendored OpenSSL
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          choco install openssl.light -y
-          # Wait a moment for installation to complete
-          Start-Sleep -Seconds 10
-          
-      - name: Configure OpenSSL env (Windows)
+          choco install strawberryperl nasm -y
+          Start-Sleep -Seconds 5
+          # Install missing Perl modules required by OpenSSL build
+          cpan -T Locale::Maketext::Simple
+          cpan -T IPC::Cmd
+          cpan -T Params::Check
+
+      - name: Configure vendored OpenSSL (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          # Check multiple possible OpenSSL locations
-          $possiblePaths = @(
-            'C:\\Program Files\\OpenSSL-Win64',
-            'C:\\Program Files\\OpenSSL',
-            'C:\\ProgramData\\chocolatey\\lib\\openssl.light\\tools\\openssl-Win64',
-            'C:\\tools\\openssl',
-            'C:\\OpenSSL-Win64'
-          )
-          
-          $root = $null
-          foreach ($path in $possiblePaths) {
-            if (Test-Path $path) {
-              $root = $path
-              Write-Host "Found OpenSSL at: $root"
-              break
-            }
-          }
-          
-          if (-not $root) {
-            # If none found, try to use vendored OpenSSL instead
-            Write-Host "OpenSSL not found in standard locations, will use vendored OpenSSL"
-            echo "OPENSSL_NO_VENDOR=0" >> $env:GITHUB_ENV
-            echo "OPENSSL_VENDORED=1" >> $env:GITHUB_ENV
-          } else {
-            echo "OPENSSL_NO_VENDOR=1" >> $env:GITHUB_ENV
-            echo "OPENSSL_DIR=$root" >> $env:GITHUB_ENV
-            echo "OPENSSL_LIB_DIR=$root\\lib" >> $env:GITHUB_ENV
-            echo "OPENSSL_INCLUDE_DIR=$root\\include" >> $env:GITHUB_ENV
-          }
+          echo "OPENSSL_STATIC=1"        >> $env:GITHUB_ENV
+          echo "OPENSSL_VENDORED=1"      >> $env:GITHUB_ENV
+          echo "OPENSSL_NO_VENDOR=0"     >> $env:GITHUB_ENV
+          # Additional env vars to help with vendored build
+          echo "PERL=$((Get-Command perl).Path)" >> $env:GITHUB_ENV
           
       - name: Install cross-compilation tools
         if: matrix.use-cross
