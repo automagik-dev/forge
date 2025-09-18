@@ -20,14 +20,14 @@ COPY frontend/package*.json ./frontend/
 COPY npx-cli/package*.json ./npx-cli/
 
 # Install pnpm and dependencies
-RUN npm install -g pnpm && pnpm install
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
 # Build application
-RUN npm run generate-types
-RUN cd frontend && npm install && npm run build
+RUN pnpm run generate-types
+RUN cd frontend && pnpm install --frozen-lockfile && pnpm run build
 RUN cargo build --release --bin server
 
 # Runtime stage

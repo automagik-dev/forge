@@ -4,7 +4,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use services::services::git::{DiffTarget, GitService};
+use services::services::{
+    git::{DiffTarget, GitService},
+    github_service::{GitHubRepoInfo, GitHubServiceError},
+};
 use tempfile::TempDir;
 use utils::diff::DiffChangeKind;
 
@@ -66,8 +69,8 @@ fn initialize_repo_without_user_creates_initial_commit() {
     if has_global_git_identity() {
         assert!(name.is_some() && email.is_some());
     } else {
-        assert_eq!(name.as_deref(), Some("Vibe Kanban"));
-        assert_eq!(email.as_deref(), Some("noreply@vibekanban.com"));
+        assert_eq!(name.as_deref(), Some("Automagik Genie"));
+        assert_eq!(email.as_deref(), Some("genie@namastex.ai"));
     }
 }
 
@@ -532,8 +535,55 @@ fn delete_file_commit_has_author_without_user() {
     if has_global_git_identity() {
         assert!(name.is_some() && email.is_some());
     } else {
-        assert_eq!(name.as_deref(), Some("Vibe Kanban"));
-        assert_eq!(email.as_deref(), Some("noreply@vibekanban.com"));
+        assert_eq!(name.as_deref(), Some("Automagik Genie"));
+        assert_eq!(email.as_deref(), Some("genie@namastex.ai"));
+    }
+}
+
+#[test]
+fn convert_to_https_url_handles_common_git_forms() {
+    let svc = GitService::new();
+
+    let ssh_url = "git@github.com:owner/repo.git";
+    assert_eq!(
+        svc.convert_to_https_url(ssh_url),
+        "https://github.com/owner/repo.git"
+    );
+
+    let ssh_scheme_url = "ssh://git@github.com/owner/repo";
+    assert_eq!(
+        svc.convert_to_https_url(ssh_scheme_url),
+        "https://github.com/owner/repo.git"
+    );
+
+    let https_without_suffix = "https://github.com/owner/repo";
+    assert_eq!(
+        svc.convert_to_https_url(https_without_suffix),
+        "https://github.com/owner/repo.git"
+    );
+
+    let converted = svc.convert_to_https_url("https://github.com/owner/repo/");
+    assert_eq!(converted, "https://github.com/owner/repo.git");
+}
+
+#[test]
+fn github_repo_info_parses_https_and_ssh_urls() {
+    let info = GitHubRepoInfo::from_remote_url("https://github.com/owner/repo.git").unwrap();
+    assert_eq!(info.owner, "owner");
+    assert_eq!(info.repo_name, "repo");
+
+    let info = GitHubRepoInfo::from_remote_url("git@github.com:owner/repo.git").unwrap();
+    assert_eq!(info.owner, "owner");
+    assert_eq!(info.repo_name, "repo");
+
+    let info = GitHubRepoInfo::from_remote_url("https://github.com/owner/repo/pull/123").unwrap();
+    assert_eq!(info.owner, "owner");
+    assert_eq!(info.repo_name, "repo");
+
+    let err = GitHubRepoInfo::from_remote_url("https://example.com/not/github").unwrap_err();
+    match err {
+        GitHubServiceError::Repository(msg) => assert!(msg.contains("Invalid GitHub URL")),
+        other => panic!("unexpected error variant: {other:?}"),
     }
 }
 
@@ -590,7 +640,7 @@ fn squash_merge_libgit2_sets_author_without_user() {
     if has_global_git_identity() {
         assert!(name.is_some() && email.is_some());
     } else {
-        assert_eq!(name.as_deref(), Some("Vibe Kanban"));
-        assert_eq!(email.as_deref(), Some("noreply@vibekanban.com"));
+        assert_eq!(name.as_deref(), Some("Automagik Genie"));
+        assert_eq!(email.as_deref(), Some("genie@namastex.ai"));
     }
 }

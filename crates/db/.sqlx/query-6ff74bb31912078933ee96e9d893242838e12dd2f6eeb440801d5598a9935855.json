@@ -51,12 +51,12 @@
       {
         "name": "has_in_progress_attempt!: i64",
         "ordinal": 9,
-        "type_info": "Integer"
+        "type_info": "Null"
       },
       {
         "name": "last_attempt_failed!: i64",
         "ordinal": 10,
-        "type_info": "Integer"
+        "type_info": "Null"
       },
       {
         "name": "executor!: String",
@@ -77,8 +77,8 @@
       true,
       false,
       false,
-      false,
-      false,
+      null,
+      null,
       true
     ]
   },

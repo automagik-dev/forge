@@ -21,10 +21,72 @@ pub enum RecipientType {
 #[derive(Debug, Serialize, Deserialize, TS)]
 pub struct OmniInstance {
     pub instance_name: String,
-    pub channel_type: String, // whatsapp, discord, telegram
+    pub channel_type: String,
     pub display_name: String,
     pub status: String,
     pub is_healthy: bool,
+}
+
+impl From<RawOmniInstance> for OmniInstance {
+    fn from(raw: RawOmniInstance) -> Self {
+        let channel_type = if raw.channel_type.trim().is_empty() {
+            "unknown".to_string()
+        } else {
+            raw.channel_type
+        };
+
+        let display_name = raw
+            .profile_name
+            .clone()
+            .filter(|name| !name.trim().is_empty())
+            .unwrap_or_else(|| raw.name.clone());
+
+        let status = raw
+            .evolution_status
+            .as_ref()
+            .and_then(|status| status.state.clone())
+            .unwrap_or_else(|| {
+                if raw.is_active.unwrap_or(false) {
+                    "active".to_string()
+                } else {
+                    "inactive".to_string()
+                }
+            });
+
+        let is_healthy = raw
+            .evolution_status
+            .as_ref()
+            .map(|status| status.error.is_none())
+            .unwrap_or_else(|| raw.is_active.unwrap_or(false));
+
+        OmniInstance {
+            instance_name: raw.name,
+            channel_type,
+            display_name,
+            status,
+            is_healthy,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct RawOmniInstance {
+    pub name: String,
+    #[serde(default)]
+    pub channel_type: String,
+    #[serde(default)]
+    pub profile_name: Option<String>,
+    #[serde(default)]
+    pub is_active: Option<bool>,
+    #[serde(default)]
+    pub evolution_status: Option<RawEvolutionStatus>,
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct RawEvolutionStatus {
+    pub state: Option<String>,
+    #[serde(default)]
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -44,12 +106,6 @@ pub struct SendTextResponse {
     pub error: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct ListInstancesResponse {
-    pub channels: Vec<OmniInstance>,
-    pub total_count: i32,
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -59,7 +115,7 @@ mod tests {
         let phone = RecipientType::PhoneNumber;
         let json = serde_json::to_string(&phone).unwrap();
         assert_eq!(json, r#""PhoneNumber""#);
-        
+
         let user = RecipientType::UserId;
         let json = serde_json::to_string(&user).unwrap();
         assert_eq!(json, r#""UserId""#);
@@ -75,14 +131,14 @@ mod tests {
             recipient: None,
             recipient_type: None,
         };
-        
+
         assert!(!config.enabled);
         assert_eq!(config.host, Some("https://omni.example.com".to_string()));
         assert!(config.instance.is_none());
         assert!(config.recipient.is_none());
         assert!(config.recipient_type.is_none());
     }
-    
+
     #[test]
     fn test_send_text_request_serialization() {
         let req = SendTextRequest {
@@ -90,10 +146,44 @@ mod tests {
             user_id: None,
             text: "Test message".to_string(),
         };
-        
+
         let json = serde_json::to_string(&req).unwrap();
         assert!(json.contains("phone_number"));
         assert!(!json.contains("user_id")); // Should be skipped when None
         assert!(json.contains("Test message"));
+    }
+
+    #[test]
+    fn test_raw_instance_conversion() {
+        let raw = RawOmniInstance {
+            name: "felipe0008".to_string(),
+            channel_type: "".to_string(),
+            profile_name: Some("Namastex Labs".to_string()),
+            is_active: Some(true),
+            evolution_status: Some(RawEvolutionStatus {
+                state: Some("open".to_string()),
+                error: None,
+            }),
+        };
+
+        let instance: OmniInstance = raw.into();
+        assert_eq!(instance.instance_name, "felipe0008");
+        assert_eq!(instance.channel_type, "unknown");
+        assert_eq!(instance.display_name, "Namastex Labs");
+        assert_eq!(instance.status, "open");
+        assert!(instance.is_healthy);
+
+        let raw = RawOmniInstance {
+            name: "discord-bot".to_string(),
+            channel_type: "discord".to_string(),
+            profile_name: None,
+            is_active: Some(false),
+            evolution_status: None,
+        };
+
+        let instance: OmniInstance = raw.into();
+        assert_eq!(instance.display_name, "discord-bot");
+        assert_eq!(instance.status, "inactive");
+        assert!(!instance.is_healthy);
     }
 }

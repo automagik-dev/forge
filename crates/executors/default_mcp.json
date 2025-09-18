@@ -1,0 +1,43 @@
+{
+  "vibe_kanban": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "automagik-forge",
+      "--mcp"
+    ]
+  },
+  "context7": {
+    "type": "http",
+    "url": "https://mcp.context7.com/mcp",
+    "headers": {
+      "CONTEXT7_API_KEY": "YOUR_API_KEY"
+    }
+  },
+  "playwright": {
+    "command": "npx",
+    "args": [
+      "@playwright/mcp@latest"
+    ]
+  },
+  "meta": {
+    "vibe_kanban": {
+      "name": "Automagik Forge",
+      "description": "Create, update and delete Automagik Forge tasks",
+      "url": "https://forge.automag.ik/docs/integrations/automagik-forge-mcp-server",
+      "icon": "forge-clear.svg"
+    },
+    "context7": {
+      "name": "Context7",
+      "description": "Fetch up-to-date documentation and code examples",
+      "url": "https://github.com/upstash/context7",
+      "icon": "mcp/context7logo.png"
+    },
+    "playwright": {
+      "name": "Playwright",
+      "description": "Browser automation with Playwright",
+      "url": "https://github.com/microsoft/playwright-mcp",
+      "icon": "mcp/playwright_logo_icon.svg"
+    }
+  }
+}

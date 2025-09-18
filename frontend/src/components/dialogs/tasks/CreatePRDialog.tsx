@@ -10,22 +10,18 @@ import { Label } from '@radix-ui/react-label';
 import { Textarea } from '@/components/ui/textarea.tsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import BranchSelector from '@/components/tasks/BranchSelector';
 import { useCallback, useEffect, useState } from 'react';
 import { attemptsApi } from '@/lib/api.ts';
 
 import {
+  GitBranch,
   GitHubServiceError,
   TaskAttempt,
   TaskWithAttemptStatus,
 } from 'shared/types';
 import { projectsApi } from '@/lib/api.ts';
+import { Loader2 } from 'lucide-react';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 const CreatePrDialog = NiceModal.create(() => {
   const modal = useModal();
@@ -37,9 +33,7 @@ const CreatePrDialog = NiceModal.create(() => {
   const [prBaseBranch, setPrBaseBranch] = useState('');
   const [creatingPR, setCreatingPR] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [branches, setBranches] = useState<
-    Array<{ name: string; is_current: boolean; is_remote: boolean }>
-  >([]);
+  const [branches, setBranches] = useState<GitBranch[]>([]);
   const [branchesLoading, setBranchesLoading] = useState(false);
 
   useEffect(() => {
@@ -86,7 +80,6 @@ const CreatePrDialog = NiceModal.create(() => {
 
     if (result.success) {
       setError(null); // Clear any previous errors on success
-      window.open(result.data, '_blank');
       // Reset form and close dialog
       setPrTitle('');
       setPrBody('');
@@ -161,29 +154,17 @@ const CreatePrDialog = NiceModal.create(() => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="pr-base">Base Branch</Label>
-              <Select
-                value={prBaseBranch}
-                onValueChange={setPrBaseBranch}
-                disabled={branchesLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      branchesLoading
-                        ? 'Loading branches...'
-                        : 'Select base branch'
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {branches.map((branch) => (
-                    <SelectItem key={branch.name} value={branch.name}>
-                      {branch.name}
-                      {branch.is_current && ' (current)'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <BranchSelector
+                branches={branches}
+                selectedBranch={prBaseBranch}
+                onBranchSelect={setPrBaseBranch}
+                placeholder={
+                  branchesLoading ? 'Loading branches...' : 'Select base branch'
+                }
+                className={
+                  branchesLoading ? 'opacity-50 cursor-not-allowed' : ''
+                }
+              />
             </div>
             {error && (
               <div className="text-sm text-destructive bg-red-50 p-2 rounded">
@@ -200,7 +181,14 @@ const CreatePrDialog = NiceModal.create(() => {
               disabled={creatingPR || !prTitle.trim()}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {creatingPR ? 'Creating...' : 'Create PR'}
+              {creatingPR ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create PR'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

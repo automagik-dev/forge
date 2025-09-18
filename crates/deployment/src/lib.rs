@@ -119,12 +119,13 @@ pub trait Deployment: Clone + Send + Sync + 'static {
     }
 
     async fn track_if_analytics_allowed(&self, event_name: &str, properties: Value) {
-        if let Some(true) = self.config().read().await.analytics_enabled {
-            // Does the user allow analytics?
-            if let Some(analytics) = self.analytics() {
-                // Is analytics setup?
-                analytics.track_event(self.user_id(), event_name, Some(properties.clone()));
-            }
+        let analytics_enabled = self.config().read().await.analytics_enabled;
+        // Only skip tracking if user explicitly opted out (Some(false))
+        // Send for None (undecided) and Some(true) (opted in)
+        if analytics_enabled != Some(false)
+            && let Some(analytics) = self.analytics()
+        {
+            analytics.track_event(self.user_id(), event_name, Some(properties.clone()));
         }
     }
 
@@ -188,6 +189,54 @@ pub trait Deployment: Clone + Send + Sync + 'static {
                 );
             }
         }
+        Ok(())
+    }
+
+    /// Backfill before_head_commit for legacy execution processes.
+    /// Rules:
+    /// - If a process has after_head_commit and missing before_head_commit,
+    ///   then set before_head_commit to the previous process's after_head_commit.
+    /// - If there is no previous process, set before_head_commit to the base branch commit.
+    async fn backfill_before_head_commits(&self) -> Result<(), DeploymentError> {
+        let pool = &self.db().pool;
+        let rows = ExecutionProcess::list_missing_before_context(pool).await?;
+        for row in rows {
+            // Skip if no after commit at all (shouldn't happen due to WHERE)
+            // Prefer previous process after-commit if present
+            let mut before = row.prev_after_head_commit.clone();
+
+            // Fallback to base branch commit OID
+            if before.is_none() {
+                let repo_path =
+                    std::path::Path::new(row.git_repo_path.as_deref().unwrap_or_default());
+                match self
+                    .git()
+                    .get_branch_oid(repo_path, row.base_branch.as_str())
+                {
+                    Ok(oid) => before = Some(oid),
+                    Err(e) => {
+                        tracing::warn!(
+                            "Backfill: Failed to resolve base branch OID for attempt {} (branch {}): {}",
+                            row.task_attempt_id,
+                            row.base_branch,
+                            e
+                        );
+                    }
+                }
+            }
+
+            if let Some(before_oid) = before
+                && let Err(e) =
+                    ExecutionProcess::update_before_head_commit(pool, row.id, &before_oid).await
+            {
+                tracing::warn!(
+                    "Backfill: Failed to update before_head_commit for process {}: {}",
+                    row.id,
+                    e
+                );
+            }
+        }
+
         Ok(())
     }
 
