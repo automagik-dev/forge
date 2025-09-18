@@ -129,7 +129,10 @@ impl LocalContainerService {
         // Clone configs and drop the lock before awaiting
         let (notify_cfg, omni_cfg) = {
             let config_guard = config.read().await;
-            (config_guard.notifications.clone(), config_guard.omni.clone())
+            (
+                config_guard.notifications.clone(),
+                config_guard.omni.clone(),
+            )
         };
         NotificationService::notify_execution_halted(notify_cfg, ctx).await;
 
@@ -166,7 +169,10 @@ impl LocalContainerService {
                     .unwrap_or_else(|_| "8887".to_string());
                 format!("http://{}:{}", host, port)
             });
-            let task_url = format!("{}/projects/{}/tasks/{}", base_url, ctx.task.project_id, ctx.task.id);
+            let task_url = format!(
+                "{}/projects/{}/tasks/{}",
+                base_url, ctx.task.project_id, ctx.task.id
+            );
 
             if let Err(e) = omni_service
                 .send_task_notification(&ctx.task.title, &status_message, Some(&task_url))
@@ -798,7 +804,7 @@ impl ContainerService for LocalContainerService {
             // Auto-generate branch name using forge/ prefix
             LocalContainerService::git_branch_from_task_attempt(&task_attempt.id, &task.title)
         };
-        
+
         // Always use the standard directory naming for worktree
         let worktree_dir_name =
             LocalContainerService::dir_name_from_task_attempt(&task_attempt.id, &task.title);

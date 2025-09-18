@@ -11,7 +11,7 @@ description: 🔍 Perform risk-first review of upstream merge PRs, focusing on f
 @.claude/commands/upmerge.md
 ```
 
-Add the PR diff or branch refs explicitly when invoking the command, e.g. `@origin/upstream-merge-20250917-173057...upstream/main`.
+Add the PR diff or branch refs explicitly when invoking the command, e.g. `@origin/upstream-merge-20250917-173057...upstream/main`. Treat `/review-merge-pr` as the companion to `/upmerge`: the merge branch should already exist, and this command performs the dedicated, manual review pass.
 
 ## 🔁 REVIEW WORKFLOW
 
@@ -43,6 +43,8 @@ If review resumes mid-stream, ensure the branch under review already contains th
 
 ### Phase 2 – Diff Inspection (Risk-Ordered)
 
+Work through the diff **file by file**. Use the path list exported during `/upmerge` (`/tmp/upmerge_files.txt` or analysis doc) and review sequentially; avoid aggregated summaries or blanket approvals.
+
 **2.1 Critical Customizations**
 - `.github/workflows/*build-all-platforms*.yml` – ensure Windows OpenSSL safeguards intact
 - `package.json`, `frontend/package.json`, `npx-cli/package.json` – confirm pnpm-first scripts, fork metadata (`automagik-forge`, `0.3.9`) and new deps make sense
@@ -60,6 +62,7 @@ If review resumes mid-stream, ensure the branch under review already contains th
 - Search for reintroduced `npm` commands in scripts
 - Verify branch template strings (`forge-{title}-{uuid}`) remain unchanged
 - Confirm `.mcp.json` additions align with fork rollout decisions
+- Capture real payload examples for any external integrations touched (e.g., Omni, GitHub); validate serde/TS types against the live shape to prevent silent schema mismatches.
 
 Use inline notes referencing `file:path:line` and capture specific upstream commit IDs when raising concerns.
 
@@ -102,6 +105,7 @@ Reference analysis/review doc sections when citing evidence (e.g., `UPSTREAM_MER
 <success_criteria>
 ✅ Scope confirmed (commit range, upstream coverage)
 ✅ High-risk customizations reviewed with file references
+✅ Each touched file inspected manually in the order exported by `/upmerge`
 ✅ Validation evidence audited; gaps called out
 ✅ Findings prioritized by severity with actionable guidance
 ✅ Review ties back to analysis/report docs for continuity
@@ -114,7 +118,11 @@ Reference analysis/review doc sections when citing evidence (e.g., `UPSTREAM_MER
 ❌ Assume tests ran without evidence
 ❌ Reduce severity to “nit” if regression risk exists
 ❌ Rewrite merge history or force new branches mid-review
+❌ Rely on automated summarizers instead of inspecting the raw diff
 </never_do>
+
+## 📓 New Learnings (Living Log)
+- **2025-09-18 · Omni API schema drift:** Manual review must verify actual API responses when serde/TS contracts are involved. If upstream formats change, document the sample payload and ensure both Rust and TypeScript layers map it correctly before sign-off.
 
 ## 🧪 Command Usage
 

@@ -25,7 +25,9 @@ pub struct CreateTaskRequest {
     pub title: String,
     #[schemars(description = "Optional description of the task")]
     pub description: Option<String>,
-    #[schemars(description = "Optional branch naming template (e.g., 'fix/auth-bug', 'feat/new-feature'). If not provided, will use 'forge-{title}-{uuid}' pattern")]
+    #[schemars(
+        description = "Optional branch naming template (e.g., 'fix/auth-bug', 'feat/new-feature'). If not provided, will use 'forge-{title}-{uuid}' pattern"
+    )]
     pub branch_template: Option<String>,
 }
 

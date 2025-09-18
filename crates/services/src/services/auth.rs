@@ -60,8 +60,7 @@ impl Default for AuthService {
 
 impl AuthService {
     pub fn new() -> Self {
-        let client_id_str = option_env!("GITHUB_CLIENT_ID")
-            .unwrap_or("Ov23li2nd1KF5nCPbgoj");
+        let client_id_str = option_env!("GITHUB_CLIENT_ID").unwrap_or("Ov23li2nd1KF5nCPbgoj");
         AuthService {
             client_id: client_id_str.to_string(),
             device_codes: Arc::new(RwLock::new(None)),
