@@ -328,7 +328,7 @@ async fn has_running_processes_for_attempt(
     pool: &sqlx::SqlitePool,
     attempt_id: Uuid,
 ) -> Result<bool, ApiError> {
-    let processes = ExecutionProcess::find_by_task_attempt_id(pool, attempt_id).await?;
+    let processes = ExecutionProcess::find_by_task_attempt_id(pool, attempt_id, false).await?;
     Ok(processes.into_iter().any(|p| {
         matches!(
             p.status,
@@ -602,18 +602,21 @@ pub async fn set_follow_up_queue(
                 tokio::time::sleep(Duration::from_millis(1200)).await;
                 let pool = &deployment_clone.db().pool;
                 // Still no running process?
-                let running =
-                    match ExecutionProcess::find_by_task_attempt_id(pool, task_attempt_clone.id)
-                        .await
-                    {
-                        Ok(procs) => procs.into_iter().any(|p| {
-                            matches!(
-                                p.status,
-                                db::models::execution_process::ExecutionProcessStatus::Running
-                            )
-                        }),
-                        Err(_) => true, // assume running on error to avoid duplicate starts
-                    };
+                let running = match ExecutionProcess::find_by_task_attempt_id(
+                    pool,
+                    task_attempt_clone.id,
+                    false,
+                )
+                .await
+                {
+                    Ok(procs) => procs.into_iter().any(|p| {
+                        matches!(
+                            p.status,
+                            db::models::execution_process::ExecutionProcessStatus::Running
+                        )
+                    }),
+                    Err(_) => true, // assume running on error to avoid duplicate starts
+                };
                 if running {
                     return;
                 }
@@ -1117,13 +1120,6 @@ pub async fn create_github_pr(
     };
     // Create GitHub service instance
     let github_service = GitHubService::new(&github_token)?;
-    if let Err(e) = github_service.check_token().await {
-        if e.is_api_data() {
-            return Ok(ResponseJson(ApiResponse::error_with_data(e)));
-        } else {
-            return Err(ApiError::GitHubService(e));
-        }
-    }
     // Get the task attempt to access the stored base branch
     let base_branch = request.base_branch.unwrap_or_else(|| {
         // Use the stored base branch from the task attempt as the default
@@ -1146,11 +1142,6 @@ pub async fn create_github_pr(
     let project = Project::find_by_id(pool, task.project_id)
         .await?
         .ok_or(ApiError::Project(ProjectError::ProjectNotFound))?;
-
-    // Use GitService to get the remote URL, then create GitHubRepoInfo
-    let repo_info = deployment
-        .git()
-        .get_github_repo_info(&project.git_repo_path)?;
 
     // Get branch name from task attempt
     let branch_name = task_attempt.branch.as_ref().ok_or_else(|| {
@@ -1207,6 +1198,10 @@ pub async fn create_github_pr(
         head_branch: branch_name.clone(),
         base_branch: norm_base_branch_name.clone(),
     };
+    // Use GitService to get the remote URL, then create GitHubRepoInfo
+    let repo_info = deployment
+        .git()
+        .get_github_repo_info(&project.git_repo_path)?;
 
     match github_service.create_pr(&repo_info, &pr_request).await {
         Ok(pr_info) => {
@@ -1223,6 +1218,10 @@ pub async fn create_github_pr(
                 tracing::error!("Failed to update task attempt PR status: {}", e);
             }
 
+            // Auto-open PR in browser
+            if let Err(e) = utils::browser::open_browser(&pr_info.url).await {
+                tracing::warn!("Failed to open PR in browser: {}", e);
+            }
             deployment
                 .track_if_analytics_allowed(
                     "github_pr_created",

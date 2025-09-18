@@ -18,4 +18,3 @@ tracing = { workspace = true }
 git2 = "^0.18.1"
 futures = "0.3.31"
 axum = { workspace = true }
-
