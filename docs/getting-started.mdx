@@ -1,0 +1,64 @@
+---
+title: "Install & Run Vibe Kanban"
+description: "Complete installation guide for Vibe Kanban on macOS, Linux, and Windows"
+sidebarTitle: "Installation"
+---
+
+## Supported Systems
+
+We build and test Vibe Kanban on the following systems:
+
+- macOS (Intel and Apple Silicon)
+- Linux
+- Windows
+
+## Prerequisites
+
+Before installing Vibe Kanban, ensure you have:
+
+- **Node.js**: Latest LTS version recommended
+- **Coding agent authentication**: Authenticate with your preferred coding agents outside of Vibe Kanban
+
+<Info>
+All supported coding agents can be used via npx without separate installation. You can find authentication instructions for each coding agent on their respective [websites](./supported-coding-agents).
+</Info>
+
+## Installation & Setup
+
+<Steps>
+<Step title="Install and launch Vibe Kanban">
+  Open a terminal and run:
+
+  ```bash
+  npx vibe-kanban
+  ```
+
+  <Check>
+  The application will bind to a random free port, print the URL in the terminal, and automatically open in your default browser.
+  </Check>
+</Step>
+
+<Step title="Complete initial setup">
+  Complete the setup dialogs to configure your coding agent and editor preferences. GitHub authentication is optional and can be configured later.
+</Step>
+
+<Step title="Create your first project">
+  You'll land on an empty Projects page. Click "Create your first project" to set up your initial project.
+</Step>
+
+<Step title="Add tasks">
+  Start tracking your work by [creating tasks](/core-features/creating-tasks) within your project.
+</Step>
+
+<Step title="Optional: Configure GitHub integration">
+  Connect to GitHub in [Settings](/configuration-customisation/global-settings) to enable branch management and pull request creation.
+</Step>
+
+<Step title="Optional: Set up MCP integration">
+  Streamline task creation with coding agents by [setting up MCP integration](/integrations/vibe-kanban-mcp-server).
+</Step>
+</Steps>
+
+<Tip>
+To use a fixed port, specify the `PORT` environment variable: `PORT=8080 npx vibe-kanban`
+</Tip>

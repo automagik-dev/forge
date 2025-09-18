@@ -14,10 +14,7 @@ use crate::services::config::NotificationConfig;
 static WSL_ROOT_PATH_CACHE: OnceLock<Option<String>> = OnceLock::new();
 
 impl NotificationService {
-    pub async fn notify_execution_halted(
-        mut config: NotificationConfig, 
-        ctx: &ExecutionContext,
-    ) {
+    pub async fn notify_execution_halted(mut config: NotificationConfig, ctx: &ExecutionContext) {
         // If the process was intentionally killed by user, suppress sound
         if matches!(ctx.execution_process.status, ExecutionProcessStatus::Killed) {
             config.sound_enabled = false;

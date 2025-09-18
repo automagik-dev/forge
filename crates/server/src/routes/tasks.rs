@@ -1,11 +1,15 @@
 use std::path::PathBuf;
 
+use anyhow;
 use axum::{
-    BoxError, Extension, Json, Router,
-    extract::{Query, State},
+    Extension, Json, Router,
+    extract::{
+        Query, State,
+        ws::{WebSocket, WebSocketUpgrade},
+    },
     http::StatusCode,
     middleware::from_fn_with_state,
-    response::{Json as ResponseJson, Sse, sse::KeepAlive},
+    response::{IntoResponse, Json as ResponseJson},
     routing::{get, post},
 };
 use db::models::{
@@ -15,7 +19,7 @@ use db::models::{
 };
 use deployment::Deployment;
 use executors::profile::ExecutorProfileId;
-use futures_util::TryStreamExt;
+use futures_util::{SinkExt, StreamExt, TryStreamExt};
 use serde::Deserialize;
 use services::services::container::{
     ContainerService, WorktreeCleanupData, cleanup_worktrees_direct,
@@ -43,20 +47,51 @@ pub async fn get_tasks(
     Ok(ResponseJson(ApiResponse::success(tasks)))
 }
 
-pub async fn stream_tasks(
+pub async fn stream_tasks_ws(
+    ws: WebSocketUpgrade,
     State(deployment): State<DeploymentImpl>,
     Query(query): Query<TaskQuery>,
-) -> Result<
-    Sse<impl futures_util::Stream<Item = Result<axum::response::sse::Event, BoxError>>>,
-    axum::http::StatusCode,
-> {
-    let stream = deployment
-        .events()
-        .stream_tasks_for_project(query.project_id)
-        .await
-        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
+) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| async move {
+        if let Err(e) = handle_tasks_ws(socket, deployment, query.project_id).await {
+            tracing::warn!("tasks WS closed: {}", e);
+        }
+    })
+}
 
-    Ok(Sse::new(stream.map_err(|e| -> BoxError { e.into() })).keep_alive(KeepAlive::default()))
+async fn handle_tasks_ws(
+    socket: WebSocket,
+    deployment: DeploymentImpl,
+    project_id: Uuid,
+) -> anyhow::Result<()> {
+    // Get the raw stream and convert LogMsg to WebSocket messages
+    let mut stream = deployment
+        .events()
+        .stream_tasks_raw(project_id)
+        .await?
+        .map_ok(|msg| msg.to_ws_message_unchecked());
+
+    // Split socket into sender and receiver
+    let (mut sender, mut receiver) = socket.split();
+
+    // Drain (and ignore) any client->server messages so pings/pongs work
+    tokio::spawn(async move { while let Some(Ok(_)) = receiver.next().await {} });
+
+    // Forward server messages
+    while let Some(item) = stream.next().await {
+        match item {
+            Ok(msg) => {
+                if sender.send(msg).await.is_err() {
+                    break; // client disconnected
+                }
+            }
+            Err(e) => {
+                tracing::error!("stream error: {}", e);
+                break;
+            }
+        }
+    }
+    Ok(())
 }
 
 pub async fn get_task(
@@ -160,15 +195,7 @@ pub async fn create_task_and_start(
 
     tracing::info!("Started execution process {}", execution_process.id);
     Ok(ResponseJson(ApiResponse::success(TaskWithAttemptStatus {
-        id: task.id,
-        title: task.title,
-        description: task.description,
-        project_id: task.project_id,
-        status: task.status,
-        branch_template: task.branch_template,
-        parent_task_attempt: task.parent_task_attempt,
-        created_at: task.created_at,
-        updated_at: task.updated_at,
+        task,
         has_in_progress_attempt: true,
         has_merged_attempt: false,
         last_attempt_failed: false,
@@ -292,7 +319,7 @@ pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
 
     let inner = Router::new()
         .route("/", get(get_tasks).post(create_task))
-        .route("/stream", get(stream_tasks))
+        .route("/stream/ws", get(stream_tasks_ws))
         .route("/create-and-start", post(create_task_and_start))
         .nest("/{task_id}", task_id_router);
 

@@ -38,10 +38,9 @@ import {
   UpdateMcpServersBody,
   GetMcpServerResponse,
   ImageResponse,
-  RestoreAttemptRequest,
-  RestoreAttemptResult,
   FollowUpDraftResponse,
   UpdateFollowUpDraftRequest,
+  GitOperationError,
 } from 'shared/types';
 
 // Re-export types for convenience
@@ -86,10 +85,11 @@ export interface FollowUpResponse {
   created_new_attempt: boolean;
 }
 
+export type Ok<T> = { success: true; data: T };
+export type Err<E> = { success: false; error: E | undefined; message?: string };
+
 // Result type for endpoints that need typed errors
-export type Result<T, E> =
-  | { success: true; data: T }
-  | { success: false; error: E | undefined; message?: string };
+export type Result<T, E> = Ok<T> | Err<E>;
 
 // Special handler for Result-returning endpoints
 const handleApiResponseAsResult = async <T, E>(
@@ -342,24 +342,24 @@ export const attemptsApi = {
     return handleApiResponse<void>(response);
   },
 
-  restore: async (
+  replaceProcess: async (
     attemptId: string,
-    processId: string,
-    opts?: { forceWhenDirty?: boolean; performGitReset?: boolean }
-  ): Promise<RestoreAttemptResult> => {
-    const body: RestoreAttemptRequest = {
-      process_id: processId,
-      force_when_dirty: opts?.forceWhenDirty ?? false,
-      perform_git_reset: opts?.performGitReset ?? true,
-    } as any;
+    data: {
+      process_id: string;
+      prompt: string;
+      variant?: string | null;
+      force_when_dirty?: boolean;
+      perform_git_reset?: boolean;
+    }
+  ): Promise<unknown> => {
     const response = await makeRequest(
-      `/api/task-attempts/${attemptId}/restore`,
+      `/api/task-attempts/${attemptId}/replace-process`,
       {
         method: 'POST',
-        body: JSON.stringify(body),
+        body: JSON.stringify(data),
       }
     );
-    return handleApiResponse<RestoreAttemptResult>(response);
+    return handleApiResponse(response);
   },
 
   followUp: async (
@@ -440,7 +440,7 @@ export const attemptsApi = {
     editorType?: EditorType,
     filePath?: string
   ): Promise<void> => {
-    const requestBody: any = {};
+    const requestBody: { editor_type?: EditorType; file_path?: string } = {};
     if (editorType) requestBody.editor_type = editorType;
     if (filePath) requestBody.file_path = filePath;
 
@@ -483,12 +483,22 @@ export const attemptsApi = {
   rebase: async (
     attemptId: string,
     data: RebaseTaskAttemptRequest
-  ): Promise<void> => {
+  ): Promise<Result<void, GitOperationError>> => {
     const response = await makeRequest(
       `/api/task-attempts/${attemptId}/rebase`,
       {
         method: 'POST',
         body: JSON.stringify(data),
+      }
+    );
+    return handleApiResponseAsResult<void, GitOperationError>(response);
+  },
+
+  abortConflicts: async (attemptId: string): Promise<void> => {
+    const response = await makeRequest(
+      `/api/task-attempts/${attemptId}/conflicts/abort`,
+      {
+        method: 'POST',
       }
     );
     return handleApiResponse<void>(response);

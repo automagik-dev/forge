@@ -1,3 +1,4 @@
+use crate::DeploymentImpl;
 use axum::{
     Json, Router,
     extract::State,
@@ -7,9 +8,11 @@ use axum::{
 };
 use deployment::Deployment;
 use serde::{Deserialize, Serialize};
-use services::services::omni::{OmniService, types::{OmniConfig, OmniInstance}};
+use services::services::omni::{
+    OmniService,
+    types::{OmniConfig, OmniInstance},
+};
 use utils::response::ApiResponse;
-use crate::DeploymentImpl;
 
 pub fn router() -> Router<DeploymentImpl> {
     Router::new()
@@ -22,11 +25,11 @@ async fn list_instances(
     State(deployment): State<DeploymentImpl>,
 ) -> ResponseJson<ApiResponse<Vec<OmniInstance>>> {
     let config = deployment.config().read().await;
-    
+
     if config.omni.host.is_none() || config.omni.api_key.is_none() {
         return ResponseJson(ApiResponse::error("Omni not configured"));
     }
-    
+
     // Convert v7 OmniConfig to omni::types::OmniConfig
     let omni_config = OmniConfig {
         enabled: config.omni.enabled,
@@ -35,17 +38,22 @@ async fn list_instances(
         instance: config.omni.instance.clone(),
         recipient: config.omni.recipient.clone(),
         recipient_type: config.omni.recipient_type.clone().map(|rt| match rt {
-            services::services::config::RecipientType::PhoneNumber => 
-                services::services::omni::types::RecipientType::PhoneNumber,
-            services::services::config::RecipientType::UserId => 
-                services::services::omni::types::RecipientType::UserId,
+            services::services::config::RecipientType::PhoneNumber => {
+                services::services::omni::types::RecipientType::PhoneNumber
+            }
+            services::services::config::RecipientType::UserId => {
+                services::services::omni::types::RecipientType::UserId
+            }
         }),
     };
-    
+
     let service = OmniService::new(omni_config);
     match service.client.list_instances().await {
         Ok(instances) => ResponseJson(ApiResponse::success(instances)),
-        Err(e) => ResponseJson(ApiResponse::error(&format!("Failed to list instances: {}", e))),
+        Err(e) => ResponseJson(ApiResponse::error(&format!(
+            "Failed to list instances: {}",
+            e
+        ))),
     }
 }
 
@@ -73,7 +81,7 @@ async fn validate_config(
         recipient: None,
         recipient_type: None,
     };
-    
+
     let service = OmniService::new(temp_config);
     match service.client.list_instances().await {
         Ok(instances) => ResponseJson(ApiResponse::success(ValidateConfigResponse {
@@ -94,11 +102,11 @@ async fn test_notification(
     headers: HeaderMap,
 ) -> ResponseJson<ApiResponse<String>> {
     let config = deployment.config().read().await;
-    
+
     if !config.omni.enabled {
         return ResponseJson(ApiResponse::error("Omni notifications not enabled"));
     }
-    
+
     // Convert v7 OmniConfig to omni::types::OmniConfig
     let omni_config = OmniConfig {
         enabled: config.omni.enabled,
@@ -107,13 +115,15 @@ async fn test_notification(
         instance: config.omni.instance.clone(),
         recipient: config.omni.recipient.clone(),
         recipient_type: config.omni.recipient_type.clone().map(|rt| match rt {
-            services::services::config::RecipientType::PhoneNumber => 
-                services::services::omni::types::RecipientType::PhoneNumber,
-            services::services::config::RecipientType::UserId => 
-                services::services::omni::types::RecipientType::UserId,
+            services::services::config::RecipientType::PhoneNumber => {
+                services::services::omni::types::RecipientType::PhoneNumber
+            }
+            services::services::config::RecipientType::UserId => {
+                services::services::omni::types::RecipientType::UserId
+            }
         }),
     };
-    
+
     let service = OmniService::new(omni_config);
     // Build a base URL from the incoming request host header (e.g., 127.0.0.1:PORT)
     let host = headers
@@ -129,7 +139,12 @@ async fn test_notification(
         )
         .await
     {
-        Ok(_) => ResponseJson(ApiResponse::success("Test notification sent successfully".to_string())),
-        Err(e) => ResponseJson(ApiResponse::error(&format!("Failed to send notification: {}", e))),
+        Ok(_) => ResponseJson(ApiResponse::success(
+            "Test notification sent successfully".to_string(),
+        )),
+        Err(e) => ResponseJson(ApiResponse::error(&format!(
+            "Failed to send notification: {}",
+            e
+        ))),
     }
 }

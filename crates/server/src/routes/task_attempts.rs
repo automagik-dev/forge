@@ -2,11 +2,14 @@ use std::path::PathBuf;
 
 use axum::{
     BoxError, Extension, Json, Router,
-    extract::{Query, State},
+    extract::{
+        Query, State,
+        ws::{WebSocket, WebSocketUpgrade},
+    },
     http::StatusCode,
     middleware::from_fn_with_state,
     response::{
-        Json as ResponseJson, Sse,
+        IntoResponse, Json as ResponseJson, Sse,
         sse::{Event, KeepAlive},
     },
     routing::{get, post},
@@ -34,6 +37,7 @@ use git2::BranchType;
 use serde::{Deserialize, Serialize};
 use services::services::{
     container::ContainerService,
+    git::ConflictOp,
     github_service::{CreatePrRequest, GitHubService, GitHubServiceError},
     image::ImageService,
 };
@@ -49,10 +53,22 @@ pub struct RebaseTaskAttemptRequest {
     pub new_base_branch: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, TS)]
+#[serde(tag = "type", rename_all = "snake_case")]
+#[ts(tag = "type", rename_all = "snake_case")]
+pub enum GitOperationError {
+    MergeConflicts { message: String, op: ConflictOp },
+    RebaseInProgress,
+}
+
 #[derive(Debug, Deserialize, Serialize, TS)]
-pub struct RestoreAttemptRequest {
-    /// Process to restore to (target = its after_head_commit)
+pub struct ReplaceProcessRequest {
+    /// Process to replace (delete this and later ones)
     pub process_id: Uuid,
+    /// New prompt to use for the replacement follow-up
+    pub prompt: String,
+    /// Optional variant override
+    pub variant: Option<String>,
     /// If true, allow resetting Git even when uncommitted changes exist
     pub force_when_dirty: Option<bool>,
     /// If false, skip performing the Git reset step (history drop still applies)
@@ -60,11 +76,12 @@ pub struct RestoreAttemptRequest {
 }
 
 #[derive(Debug, Serialize, TS)]
-pub struct RestoreAttemptResult {
-    pub had_later_processes: bool,
+pub struct ReplaceProcessResult {
+    pub deleted_count: i64,
     pub git_reset_needed: bool,
     pub git_reset_applied: bool,
-    pub target_after_oid: Option<String>,
+    pub target_before_oid: Option<String>,
+    pub new_execution_id: Option<Uuid>,
 }
 
 #[derive(Debug, Deserialize, Serialize, TS)]
@@ -283,6 +300,7 @@ pub async fn follow_up(
     Ok(ResponseJson(ApiResponse::success(execution_process)))
 }
 
+// Follow-up draft APIs and queueing
 #[derive(Debug, Serialize, TS)]
 pub struct FollowUpDraftResponse {
     pub task_attempt_id: Uuid,
@@ -313,7 +331,7 @@ async fn has_running_processes_for_attempt(
     pool: &sqlx::SqlitePool,
     attempt_id: Uuid,
 ) -> Result<bool, ApiError> {
-    let processes = ExecutionProcess::find_by_task_attempt_id(pool, attempt_id).await?;
+    let processes = ExecutionProcess::find_by_task_attempt_id(pool, attempt_id, false).await?;
     Ok(processes.into_iter().any(|p| {
         matches!(
             p.status,
@@ -498,22 +516,52 @@ pub async fn save_follow_up_draft(
 }
 
 #[axum::debug_handler]
-pub async fn stream_follow_up_draft(
+pub async fn stream_follow_up_draft_ws(
+    ws: WebSocketUpgrade,
     Extension(task_attempt): Extension<TaskAttempt>,
     State(deployment): State<DeploymentImpl>,
-) -> Result<
-    Sse<impl futures_util::Stream<Item = Result<Event, Box<dyn std::error::Error + Send + Sync>>>>,
-    ApiError,
-> {
-    let stream = deployment
+) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| async move {
+        if let Err(e) = handle_follow_up_draft_ws(socket, deployment, task_attempt.id).await {
+            tracing::warn!("follow-up draft WS closed: {}", e);
+        }
+    })
+}
+
+async fn handle_follow_up_draft_ws(
+    socket: WebSocket,
+    deployment: DeploymentImpl,
+    task_attempt_id: uuid::Uuid,
+) -> anyhow::Result<()> {
+    use futures_util::{SinkExt, StreamExt, TryStreamExt};
+
+    let mut stream = deployment
         .events()
-        .stream_follow_up_draft_for_attempt(task_attempt.id)
-        .await
-        .map_err(|e| ApiError::from(deployment::DeploymentError::from(e)))?;
-    Ok(
-        Sse::new(stream.map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) }))
-            .keep_alive(KeepAlive::default()),
-    )
+        .stream_follow_up_draft_for_attempt_raw(task_attempt_id)
+        .await?
+        .map_ok(|msg| msg.to_ws_message_unchecked());
+
+    // Split socket into sender and receiver
+    let (mut sender, mut receiver) = socket.split();
+
+    // Drain (and ignore) any client->server messages so pings/pongs work
+    tokio::spawn(async move { while let Some(Ok(_)) = receiver.next().await {} });
+
+    // Forward server messages
+    while let Some(item) = stream.next().await {
+        match item {
+            Ok(msg) => {
+                if sender.send(msg).await.is_err() {
+                    break;
+                }
+            }
+            Err(e) => {
+                tracing::error!("stream error: {}", e);
+                break;
+            }
+        }
+    }
+    Ok(())
 }
 
 #[axum::debug_handler]
@@ -587,18 +635,21 @@ pub async fn set_follow_up_queue(
                 tokio::time::sleep(Duration::from_millis(1200)).await;
                 let pool = &deployment_clone.db().pool;
                 // Still no running process?
-                let running =
-                    match ExecutionProcess::find_by_task_attempt_id(pool, task_attempt_clone.id)
-                        .await
-                    {
-                        Ok(procs) => procs.into_iter().any(|p| {
-                            matches!(
-                                p.status,
-                                db::models::execution_process::ExecutionProcessStatus::Running
-                            )
-                        }),
-                        Err(_) => true, // assume running on error to avoid duplicate starts
-                    };
+                let running = match ExecutionProcess::find_by_task_attempt_id(
+                    pool,
+                    task_attempt_clone.id,
+                    false,
+                )
+                .await
+                {
+                    Ok(procs) => procs.into_iter().any(|p| {
+                        matches!(
+                            p.status,
+                            db::models::execution_process::ExecutionProcessStatus::Running
+                        )
+                    }),
+                    Err(_) => true, // assume running on error to avoid duplicate starts
+                };
                 if running {
                     return;
                 }
@@ -751,11 +802,11 @@ async fn start_follow_up_from_draft(
 }
 
 #[axum::debug_handler]
-pub async fn restore_task_attempt(
+pub async fn replace_process(
     Extension(task_attempt): Extension<TaskAttempt>,
     State(deployment): State<DeploymentImpl>,
-    Json(payload): Json<RestoreAttemptRequest>,
-) -> Result<ResponseJson<ApiResponse<RestoreAttemptResult>>, ApiError> {
+    Json(payload): Json<ReplaceProcessRequest>,
+) -> Result<ResponseJson<ApiResponse<ReplaceProcessResult>>, ApiError> {
     let pool = &deployment.db().pool;
     let proc_id = payload.process_id;
     let force_when_dirty = payload.force_when_dirty.unwrap_or(false);
@@ -774,21 +825,19 @@ pub async fn restore_task_attempt(
         )));
     }
 
-    // Determine if there are later processes
-    let later = ExecutionProcess::count_later_than(pool, task_attempt.id, proc_id).await?;
-    let had_later_processes = later > 0;
-
-    // Mark later processes as dropped
-    if had_later_processes {
-        ExecutionProcess::set_restore_boundary(pool, task_attempt.id, proc_id).await?;
+    // Determine target reset OID: before the target process
+    let mut target_before_oid = process.before_head_commit.clone();
+    if target_before_oid.is_none() {
+        // Fallback: previous process's after_head_commit
+        target_before_oid =
+            ExecutionProcess::find_prev_after_head_commit(pool, task_attempt.id, proc_id).await?;
     }
 
-    // Attempt Git reset to this process's after_head_commit if needed
+    // Decide if Git reset is needed and apply it
     let mut git_reset_needed = false;
     let mut git_reset_applied = false;
-    let target_after_oid = process.after_head_commit.clone();
     if perform_git_reset {
-        if let Some(target_oid) = &target_after_oid {
+        if let Some(target_oid) = &target_before_oid {
             let container_ref = deployment
                 .container()
                 .ensure_container_exists(&task_attempt)
@@ -818,8 +867,8 @@ pub async fn restore_task_attempt(
             }
         }
     } else {
-        // Skipped git reset; still compute if it would be needed for informational result
-        if let Some(target_oid) = &target_after_oid {
+        // Only compute necessity
+        if let Some(target_oid) = &target_before_oid {
             let container_ref = deployment
                 .container()
                 .ensure_container_exists(&task_attempt)
@@ -835,15 +884,81 @@ pub async fn restore_task_attempt(
             if head_oid.as_deref() != Some(target_oid.as_str()) || is_dirty {
                 git_reset_needed = true;
             }
-            git_reset_applied = false;
         }
     }
 
-    Ok(ResponseJson(ApiResponse::success(RestoreAttemptResult {
-        had_later_processes,
+    // Stop any running processes for this attempt
+    deployment.container().try_stop(&task_attempt).await;
+
+    // Soft-drop the target process and all later processes
+    let deleted_count = ExecutionProcess::drop_at_and_after(pool, task_attempt.id, proc_id).await?;
+
+    // Build follow-up executor action using the original process profile
+    let initial_executor_profile_id = match &process
+        .executor_action()
+        .map_err(|e| ApiError::TaskAttempt(TaskAttemptError::ValidationError(e.to_string())))?
+        .typ
+    {
+        ExecutorActionType::CodingAgentInitialRequest(request) => {
+            Ok(request.executor_profile_id.clone())
+        }
+        ExecutorActionType::CodingAgentFollowUpRequest(request) => {
+            Ok(request.executor_profile_id.clone())
+        }
+        _ => Err(ApiError::TaskAttempt(TaskAttemptError::ValidationError(
+            "Couldn't find profile from executor action".to_string(),
+        ))),
+    }?;
+
+    let executor_profile_id = ExecutorProfileId {
+        executor: initial_executor_profile_id.executor,
+        variant: payload
+            .variant
+            .or(initial_executor_profile_id.variant.clone()),
+    };
+
+    // Use latest session_id from remaining (earlier) processes; if none exists, start a fresh initial request
+    let latest_session_id =
+        ExecutionProcess::find_latest_session_id_by_task_attempt(pool, task_attempt.id).await?;
+
+    let action = if let Some(session_id) = latest_session_id {
+        let follow_up_request = CodingAgentFollowUpRequest {
+            prompt: payload.prompt.clone(),
+            session_id,
+            executor_profile_id,
+        };
+        ExecutorAction::new(
+            ExecutorActionType::CodingAgentFollowUpRequest(follow_up_request),
+            None,
+        )
+    } else {
+        // No prior session (e.g., replacing the first run) → start a fresh initial request
+        ExecutorAction::new(
+            ExecutorActionType::CodingAgentInitialRequest(
+                executors::actions::coding_agent_initial::CodingAgentInitialRequest {
+                    prompt: payload.prompt.clone(),
+                    executor_profile_id,
+                },
+            ),
+            None,
+        )
+    };
+
+    let execution_process = deployment
+        .container()
+        .start_execution(
+            &task_attempt,
+            &action,
+            &ExecutionProcessRunReason::CodingAgent,
+        )
+        .await?;
+
+    Ok(ResponseJson(ApiResponse::success(ReplaceProcessResult {
+        deleted_count,
         git_reset_needed,
         git_reset_applied,
-        target_after_oid,
+        target_before_oid,
+        new_execution_id: Some(execution_process.id),
     })))
 }
 
@@ -947,7 +1062,10 @@ pub async fn merge_task_attempt(
     let first_uuid_section = task_uuid_str.split('-').next().unwrap_or(&task_uuid_str);
 
     // Create commit message with task title and description
-    let mut commit_message = format!("{} (automagik-forge {})", ctx.task.title, first_uuid_section);
+    let mut commit_message = format!(
+        "{} (automagik-forge {})",
+        ctx.task.title, first_uuid_section
+    );
 
     // Add description on next line if it exists
     if let Some(description) = &ctx.task.description
@@ -1038,13 +1156,6 @@ pub async fn create_github_pr(
     };
     // Create GitHub service instance
     let github_service = GitHubService::new(&github_token)?;
-    if let Err(e) = github_service.check_token().await {
-        if e.is_api_data() {
-            return Ok(ResponseJson(ApiResponse::error_with_data(e)));
-        } else {
-            return Err(ApiError::GitHubService(e));
-        }
-    }
     // Get the task attempt to access the stored base branch
     let base_branch = request.base_branch.unwrap_or_else(|| {
         // Use the stored base branch from the task attempt as the default
@@ -1067,11 +1178,6 @@ pub async fn create_github_pr(
     let project = Project::find_by_id(pool, task.project_id)
         .await?
         .ok_or(ApiError::Project(ProjectError::ProjectNotFound))?;
-
-    // Use GitService to get the remote URL, then create GitHubRepoInfo
-    let repo_info = deployment
-        .git()
-        .get_github_repo_info(&project.git_repo_path)?;
 
     // Get branch name from task attempt
     let branch_name = task_attempt.branch.as_ref().ok_or_else(|| {
@@ -1128,6 +1234,10 @@ pub async fn create_github_pr(
         head_branch: branch_name.clone(),
         base_branch: norm_base_branch_name.clone(),
     };
+    // Use GitService to get the remote URL, then create GitHubRepoInfo
+    let repo_info = deployment
+        .git()
+        .get_github_repo_info(&project.git_repo_path)?;
 
     match github_service.create_pr(&repo_info, &pr_request).await {
         Ok(pr_info) => {
@@ -1144,6 +1254,10 @@ pub async fn create_github_pr(
                 tracing::error!("Failed to update task attempt PR status: {}", e);
             }
 
+            // Auto-open PR in browser
+            if let Err(e) = utils::browser::open_browser(&pr_info.url).await {
+                tracing::warn!("Failed to open PR in browser: {}", e);
+            }
             deployment
                 .track_if_analytics_allowed(
                     "github_pr_created",
@@ -1244,6 +1358,12 @@ pub struct BranchStatus {
     pub remote_commits_behind: Option<usize>,
     pub remote_commits_ahead: Option<usize>,
     pub merges: Vec<Merge>,
+    /// True if a `git rebase` is currently in progress in this worktree
+    pub is_rebase_in_progress: bool,
+    /// Current conflict operation if any
+    pub conflict_op: Option<ConflictOp>,
+    /// List of files currently in conflicted (unmerged) state
+    pub conflicted_files: Vec<String>,
 }
 
 pub async fn get_task_attempt_branch_status(
@@ -1270,6 +1390,25 @@ pub async fn get_task_attempt_branch_status(
             .await?;
         let wt = std::path::Path::new(&container_ref);
         deployment.git().get_head_info(wt).ok().map(|h| h.oid)
+    };
+    // Detect conflicts and operation in progress (best-effort)
+    let (is_rebase_in_progress, conflicted_files, conflict_op) = {
+        let container_ref = deployment
+            .container()
+            .ensure_container_exists(&task_attempt)
+            .await?;
+        let wt = std::path::Path::new(&container_ref);
+        let in_rebase = deployment.git().is_rebase_in_progress(wt).unwrap_or(false);
+        let conflicts = deployment
+            .git()
+            .get_conflicted_files(wt)
+            .unwrap_or_default();
+        let op = if conflicts.is_empty() {
+            None
+        } else {
+            deployment.git().detect_conflict_op(wt).unwrap_or(None)
+        };
+        (in_rebase, conflicts, op)
     };
     let (uncommitted_count, untracked_count) = {
         let container_ref = deployment
@@ -1316,6 +1455,9 @@ pub async fn get_task_attempt_branch_status(
         remote_commits_behind: None,
         merges,
         base_branch_name: task_attempt.base_branch.clone(),
+        is_rebase_in_progress,
+        conflict_op,
+        conflicted_files,
     };
     let has_open_pr = branch_status.merges.first().is_some_and(|m| {
         matches!(
@@ -1362,7 +1504,7 @@ pub async fn rebase_task_attempt(
     Extension(task_attempt): Extension<TaskAttempt>,
     State(deployment): State<DeploymentImpl>,
     request_body: Option<Json<RebaseTaskAttemptRequest>>,
-) -> Result<ResponseJson<ApiResponse<()>>, ApiError> {
+) -> Result<ResponseJson<ApiResponse<(), GitOperationError>>, ApiError> {
     // Extract new base branch from request body if provided
     let new_base_branch = request_body.and_then(|body| body.new_base_branch.clone());
 
@@ -1386,13 +1528,34 @@ pub async fn rebase_task_attempt(
         .await?;
     let worktree_path = std::path::Path::new(&container_ref);
 
-    let _new_base_commit = deployment.git().rebase_branch(
+    let result = deployment.git().rebase_branch(
         &ctx.project.git_repo_path,
         worktree_path,
         effective_base_branch.clone().as_deref(),
         &ctx.task_attempt.base_branch.clone(),
         github_config.token(),
-    )?;
+    );
+    if let Err(e) = result {
+        use services::services::git::GitServiceError;
+        return match e {
+            GitServiceError::MergeConflicts(msg) => Ok(ResponseJson(ApiResponse::<
+                (),
+                GitOperationError,
+            >::error_with_data(
+                GitOperationError::MergeConflicts {
+                    message: msg,
+                    op: ConflictOp::Rebase,
+                },
+            ))),
+            GitServiceError::RebaseInProgress => Ok(ResponseJson(ApiResponse::<
+                (),
+                GitOperationError,
+            >::error_with_data(
+                GitOperationError::RebaseInProgress,
+            ))),
+            other => Err(ApiError::GitService(other)),
+        };
+    }
 
     if let Some(new_base_branch) = &effective_base_branch
         && new_base_branch != &ctx.task_attempt.base_branch
@@ -1400,6 +1563,23 @@ pub async fn rebase_task_attempt(
         TaskAttempt::update_base_branch(&deployment.db().pool, task_attempt.id, new_base_branch)
             .await?;
     }
+
+    Ok(ResponseJson(ApiResponse::success(())))
+}
+
+#[axum::debug_handler]
+pub async fn abort_conflicts_task_attempt(
+    Extension(task_attempt): Extension<TaskAttempt>,
+    State(deployment): State<DeploymentImpl>,
+) -> Result<ResponseJson<ApiResponse<()>>, ApiError> {
+    // Resolve worktree path for this attempt
+    let container_ref = deployment
+        .container()
+        .ensure_container_exists(&task_attempt)
+        .await?;
+    let worktree_path = std::path::Path::new(&container_ref);
+
+    deployment.git().abort_conflicts(worktree_path)?;
 
     Ok(ResponseJson(ApiResponse::success(())))
 }
@@ -1546,9 +1726,9 @@ pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
             "/follow-up-draft",
             get(get_follow_up_draft).put(save_follow_up_draft),
         )
-        .route("/follow-up-draft/stream", get(stream_follow_up_draft))
+        .route("/follow-up-draft/stream/ws", get(stream_follow_up_draft_ws))
         .route("/follow-up-draft/queue", post(set_follow_up_queue))
-        .route("/restore", post(restore_task_attempt))
+        .route("/replace-process", post(replace_process))
         .route("/commit-info", get(get_commit_info))
         .route("/commit-compare", get(compare_commit_to_head))
         .route("/start-dev-server", post(start_dev_server))
@@ -1557,6 +1737,7 @@ pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
         .route("/merge", post(merge_task_attempt))
         .route("/push", post(push_task_attempt_branch))
         .route("/rebase", post(rebase_task_attempt))
+        .route("/conflicts/abort", post(abort_conflicts_task_attempt))
         .route("/pr", post(create_github_pr))
         .route("/open-editor", post(open_task_attempt_in_editor))
         .route("/delete-file", post(delete_task_attempt_file))

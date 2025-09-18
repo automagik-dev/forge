@@ -31,7 +31,7 @@ pub mod qwen;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, TS)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum BaseAgentCapability {
-    RestoreCheckpoint,
+    SessionFork,
 }
 
 #[derive(Debug, Error)]
@@ -85,10 +85,7 @@ impl CodingAgent {
                 serde_json::json!({
                     "mcp_servers": {}
                 }),
-                serde_json::json!({
-                    "command": "npx",
-                    "args": ["-y", "automagik-forge", "--mcp"],
-                }),
+                self.preconfigured_mcp(),
                 true,
             ),
             Self::Amp(_) => McpConfig::new(
@@ -96,10 +93,7 @@ impl CodingAgent {
                 serde_json::json!({
                     "amp.mcpServers": {}
                 }),
-                serde_json::json!({
-                    "command": "npx",
-                    "args": ["-y", "automagik-forge", "--mcp"],
-                }),
+                self.preconfigured_mcp(),
                 false,
             ),
             Self::Opencode(_) => McpConfig::new(
@@ -108,11 +102,7 @@ impl CodingAgent {
                     "mcp": {},
                     "$schema": "https://opencode.ai/config.json"
                 }),
-                serde_json::json!({
-                    "type": "local",
-                    "command": ["npx", "-y", "automagik-forge", "--mcp"],
-                    "enabled": true
-                }),
+                self.preconfigured_mcp(),
                 false,
             ),
             _ => McpConfig::new(
@@ -120,10 +110,7 @@ impl CodingAgent {
                 serde_json::json!({
                     "mcpServers": {}
                 }),
-                serde_json::json!({
-                    "command": "npx",
-                    "args": ["-y", "automagik-forge", "--mcp"],
-                }),
+                self.preconfigured_mcp(),
                 false,
             ),
         }
@@ -135,9 +122,9 @@ impl CodingAgent {
 
     pub fn capabilities(&self) -> Vec<BaseAgentCapability> {
         match self {
-            Self::ClaudeCode(_) => vec![BaseAgentCapability::RestoreCheckpoint],
-            Self::Amp(_) => vec![BaseAgentCapability::RestoreCheckpoint],
-            Self::Codex(_) => vec![BaseAgentCapability::RestoreCheckpoint],
+            Self::ClaudeCode(_) => vec![BaseAgentCapability::SessionFork],
+            Self::Amp(_) => vec![BaseAgentCapability::SessionFork],
+            Self::Codex(_) => vec![BaseAgentCapability::SessionFork],
             Self::Gemini(_) | Self::Opencode(_) | Self::Cursor(_) | Self::QwenCode(_) => vec![],
         }
     }

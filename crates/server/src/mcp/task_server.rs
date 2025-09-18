@@ -25,7 +25,9 @@ pub struct CreateTaskRequest {
     pub title: String,
     #[schemars(description = "Optional description of the task")]
     pub description: Option<String>,
-    #[schemars(description = "Optional branch naming template (e.g., 'fix/auth-bug', 'feat/new-feature'). If not provided, will use 'forge-{title}-{uuid}' pattern")]
+    #[schemars(
+        description = "Optional branch naming template (e.g., 'fix/auth-bug', 'feat/new-feature'). If not provided, will use 'forge-{title}-{uuid}' pattern"
+    )]
     pub branch_template: Option<String>,
 }
 
@@ -444,8 +446,8 @@ impl TaskServer {
                     .into_iter()
                     .map(|task| TaskSummary {
                         id: task.id.to_string(),
-                        title: task.title,
-                        description: task.description,
+                        title: task.title.clone(),
+                        description: task.description.clone(),
                         status: task_status_to_string(&task.status),
                         created_at: task.created_at.to_rfc3339(),
                         updated_at: task.updated_at.to_rfc3339(),

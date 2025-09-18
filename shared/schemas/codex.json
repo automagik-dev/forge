@@ -18,23 +18,10 @@
         "null"
       ],
       "enum": [
+        "auto",
         "read-only",
         "workspace-write",
         "danger-full-access",
-        null
-      ]
-    },
-    "approval": {
-      "description": "Approval policy for Codex",
-      "type": [
-        "string",
-        "null"
-      ],
-      "enum": [
-        "untrusted",
-        "on-failure",
-        "on-request",
-        "never",
         null
       ]
     },

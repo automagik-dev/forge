@@ -1,7 +1,6 @@
 use std::{str::FromStr, sync::Arc};
 
 use anyhow::Error as AnyhowError;
-use axum::response::sse::Event;
 use db::{
     DBService,
     models::{
@@ -10,11 +9,11 @@ use db::{
         task_attempt::TaskAttempt,
     },
 };
-use futures::{StreamExt, TryStreamExt};
+use futures::StreamExt;
 use json_patch::{AddOperation, Patch, PatchOperation, RemoveOperation, ReplaceOperation};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use sqlx::{Error as SqlxError, sqlite::SqliteOperation};
+use sqlx::{Error as SqlxError, SqlitePool, sqlite::SqliteOperation};
 use strum_macros::{Display, EnumString};
 use thiserror::Error;
 use tokio::sync::RwLock;
@@ -77,6 +76,57 @@ pub mod task_patch {
     }
 }
 
+/// Helper functions for creating execution process-specific patches
+pub mod execution_process_patch {
+    use db::models::execution_process::ExecutionProcess;
+
+    use super::*;
+
+    /// Escape JSON Pointer special characters
+    fn escape_pointer_segment(s: &str) -> String {
+        s.replace('~', "~0").replace('/', "~1")
+    }
+
+    /// Create path for execution process operation
+    fn execution_process_path(process_id: Uuid) -> String {
+        format!(
+            "/execution_processes/{}",
+            escape_pointer_segment(&process_id.to_string())
+        )
+    }
+
+    /// Create patch for adding a new execution process
+    pub fn add(process: &ExecutionProcess) -> Patch {
+        Patch(vec![PatchOperation::Add(AddOperation {
+            path: execution_process_path(process.id)
+                .try_into()
+                .expect("Execution process path should be valid"),
+            value: serde_json::to_value(process)
+                .expect("Execution process serialization should not fail"),
+        })])
+    }
+
+    /// Create patch for updating an existing execution process
+    pub fn replace(process: &ExecutionProcess) -> Patch {
+        Patch(vec![PatchOperation::Replace(ReplaceOperation {
+            path: execution_process_path(process.id)
+                .try_into()
+                .expect("Execution process path should be valid"),
+            value: serde_json::to_value(process)
+                .expect("Execution process serialization should not fail"),
+        })])
+    }
+
+    /// Create patch for removing an execution process
+    pub fn remove(process_id: Uuid) -> Patch {
+        Patch(vec![PatchOperation::Remove(RemoveOperation {
+            path: execution_process_path(process_id)
+                .try_into()
+                .expect("Execution process path should be valid"),
+        })])
+    }
+}
+
 #[derive(Clone)]
 pub struct EventService {
     msg_store: Arc<MsgStore>,
@@ -116,6 +166,7 @@ pub enum RecordTypes {
     DeletedExecutionProcess {
         rowid: i64,
         task_attempt_id: Option<Uuid>,
+        process_id: Option<Uuid>,
     },
     DeletedFollowUpDraft {
         rowid: i64,
@@ -144,6 +195,37 @@ impl EventService {
             db,
             entry_count,
         }
+    }
+
+    async fn push_task_update_for_task(
+        pool: &SqlitePool,
+        msg_store: Arc<MsgStore>,
+        task_id: Uuid,
+    ) -> Result<(), SqlxError> {
+        if let Some(task) = Task::find_by_id(pool, task_id).await? {
+            let tasks = Task::find_by_project_id_with_attempt_status(pool, task.project_id).await?;
+
+            if let Some(task_with_status) = tasks
+                .into_iter()
+                .find(|task_with_status| task_with_status.id == task_id)
+            {
+                msg_store.push_patch(task_patch::replace(&task_with_status));
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn push_task_update_for_attempt(
+        pool: &SqlitePool,
+        msg_store: Arc<MsgStore>,
+        attempt_id: Uuid,
+    ) -> Result<(), SqlxError> {
+        if let Some(attempt) = TaskAttempt::find_by_id(pool, attempt_id).await? {
+            Self::push_task_update_for_task(pool, msg_store, attempt.task_id).await?;
+        }
+
+        Ok(())
     }
 
     /// Creates the hook function that should be used with DBService::new_with_after_connect
@@ -196,16 +278,21 @@ impl EventService {
                                     RecordTypes::DeletedTaskAttempt { rowid, task_id }
                                 }
                                 (HookTables::ExecutionProcesses, SqliteOperation::Delete) => {
-                                    // Try to get execution_process before deletion to capture task_attempt_id
-                                    let task_attempt_id =
-                                        ExecutionProcess::find_by_rowid(&db.pool, rowid)
-                                            .await
-                                            .ok()
-                                            .flatten()
-                                            .map(|process| process.task_attempt_id);
-                                    RecordTypes::DeletedExecutionProcess {
-                                        rowid,
-                                        task_attempt_id,
+                                    // Try to get execution_process before deletion to capture full process data
+                                    if let Ok(Some(process)) =
+                                        ExecutionProcess::find_by_rowid(&db.pool, rowid).await
+                                    {
+                                        RecordTypes::DeletedExecutionProcess {
+                                            rowid,
+                                            task_attempt_id: Some(process.task_attempt_id),
+                                            process_id: Some(process.id),
+                                        }
+                                    } else {
+                                        RecordTypes::DeletedExecutionProcess {
+                                            rowid,
+                                            task_attempt_id: None,
+                                            process_id: None,
+                                        }
                                     }
                                 }
                                 (HookTables::Tasks, _) => {
@@ -244,6 +331,7 @@ impl EventService {
                                         Ok(None) => RecordTypes::DeletedExecutionProcess {
                                             rowid,
                                             task_attempt_id: None,
+                                            process_id: None,
                                         },
                                         Err(e) => {
                                             tracing::error!(
@@ -371,6 +459,58 @@ impl EventService {
                                         return;
                                     }
                                 }
+                                RecordTypes::ExecutionProcess(process) => {
+                                    let patch = match hook.operation {
+                                        SqliteOperation::Insert => {
+                                            execution_process_patch::add(process)
+                                        }
+                                        SqliteOperation::Update => {
+                                            execution_process_patch::replace(process)
+                                        }
+                                        _ => execution_process_patch::replace(process), // fallback
+                                    };
+                                    msg_store_for_hook.push_patch(patch);
+
+                                    if let Err(err) = EventService::push_task_update_for_attempt(
+                                        &db.pool,
+                                        msg_store_for_hook.clone(),
+                                        process.task_attempt_id,
+                                    )
+                                    .await
+                                    {
+                                        tracing::error!(
+                                            "Failed to push task update after execution process change: {:?}",
+                                            err
+                                        );
+                                    }
+
+                                    return;
+                                }
+                                RecordTypes::DeletedExecutionProcess {
+                                    process_id: Some(process_id),
+                                    task_attempt_id,
+                                    ..
+                                } => {
+                                    let patch = execution_process_patch::remove(*process_id);
+                                    msg_store_for_hook.push_patch(patch);
+
+                                    if let Some(task_attempt_id) = task_attempt_id
+                                        && let Err(err) =
+                                            EventService::push_task_update_for_attempt(
+                                                &db.pool,
+                                                msg_store_for_hook.clone(),
+                                                *task_attempt_id,
+                                            )
+                                            .await
+                                        {
+                                            tracing::error!(
+                                                "Failed to push task update after execution process removal: {:?}",
+                                                err
+                                            );
+                                        }
+
+                                    return;
+                                }
                                 _ => {}
                             }
 
@@ -410,11 +550,11 @@ impl EventService {
         &self.msg_store
     }
 
-    /// Stream tasks for a specific project with initial snapshot
-    pub async fn stream_tasks_for_project(
+    /// Stream raw task messages for a specific project with initial snapshot
+    pub async fn stream_tasks_raw(
         &self,
         project_id: Uuid,
-    ) -> Result<futures::stream::BoxStream<'static, Result<Event, std::io::Error>>, EventError>
+    ) -> Result<futures::stream::BoxStream<'static, Result<LogMsg, std::io::Error>>, EventError>
     {
         // Get initial snapshot of tasks
         let tasks = Task::find_by_project_id_with_attempt_status(&self.db.pool, project_id).await?;
@@ -532,27 +672,41 @@ impl EventService {
 
         // Start with initial snapshot, then live updates
         let initial_stream = futures::stream::once(async move { Ok(initial_msg) });
-        let combined_stream = initial_stream
-            .chain(filtered_stream)
-            .map_ok(|msg| msg.to_sse_event())
-            .boxed();
+        let combined_stream = initial_stream.chain(filtered_stream).boxed();
 
         Ok(combined_stream)
     }
 
-    /// Stream execution processes for a specific task attempt with initial snapshot  
-    pub async fn stream_execution_processes_for_attempt(
+    /// Stream execution processes for a specific task attempt with initial snapshot (raw LogMsg format for WebSocket)
+    pub async fn stream_execution_processes_for_attempt_raw(
         &self,
         task_attempt_id: Uuid,
-    ) -> Result<futures::stream::BoxStream<'static, Result<Event, std::io::Error>>, EventError>
+        show_soft_deleted: bool,
+    ) -> Result<futures::stream::BoxStream<'static, Result<LogMsg, std::io::Error>>, EventError>
     {
-        // Get initial snapshot of execution processes
-        let processes =
-            ExecutionProcess::find_by_task_attempt_id(&self.db.pool, task_attempt_id).await?;
+        // Get initial snapshot of execution processes (filtering at SQL level)
+        let processes = ExecutionProcess::find_by_task_attempt_id(
+            &self.db.pool,
+            task_attempt_id,
+            show_soft_deleted,
+        )
+        .await?;
+
+        // Convert processes array to object keyed by process ID
+        let processes_map: serde_json::Map<String, serde_json::Value> = processes
+            .into_iter()
+            .map(|process| {
+                (
+                    process.id.to_string(),
+                    serde_json::to_value(process).unwrap(),
+                )
+            })
+            .collect();
+
         let initial_patch = json!([{
             "op": "replace",
-            "path": "/",
-            "value": { "execution_processes": processes }
+            "path": "/execution_processes",
+            "value": processes_map
         }]);
         let initial_msg = LogMsg::JsonPatch(serde_json::from_value(initial_patch).unwrap());
 
@@ -562,26 +716,74 @@ impl EventService {
                 match msg_result {
                     Ok(LogMsg::JsonPatch(patch)) => {
                         // Filter events based on task_attempt_id
-                        if let Some(event_patch_op) = patch.0.first()
-                            && let Ok(event_patch_value) = serde_json::to_value(event_patch_op)
-                            && let Ok(event_patch) =
-                                serde_json::from_value::<EventPatch>(event_patch_value)
-                        {
-                            match &event_patch.value.record {
-                                RecordTypes::ExecutionProcess(process) => {
-                                    if process.task_attempt_id == task_attempt_id {
+                        if let Some(patch_op) = patch.0.first() {
+                            // Check if this is a modern execution process patch
+                            if patch_op.path().starts_with("/execution_processes/") {
+                                match patch_op {
+                                    json_patch::PatchOperation::Add(op) => {
+                                        // Parse execution process data directly from value
+                                        if let Ok(process) =
+                                            serde_json::from_value::<ExecutionProcess>(
+                                                op.value.clone(),
+                                            )
+                                            && process.task_attempt_id == task_attempt_id
+                                        {
+                                            if !show_soft_deleted && process.dropped {
+                                                return None;
+                                            }
+                                            return Some(Ok(LogMsg::JsonPatch(patch)));
+                                        }
+                                    }
+                                    json_patch::PatchOperation::Replace(op) => {
+                                        // Parse execution process data directly from value
+                                        if let Ok(process) =
+                                            serde_json::from_value::<ExecutionProcess>(
+                                                op.value.clone(),
+                                            )
+                                            && process.task_attempt_id == task_attempt_id
+                                        {
+                                            if !show_soft_deleted && process.dropped {
+                                                let remove_patch =
+                                                    execution_process_patch::remove(process.id);
+                                                return Some(Ok(LogMsg::JsonPatch(remove_patch)));
+                                            }
+                                            return Some(Ok(LogMsg::JsonPatch(patch)));
+                                        }
+                                    }
+                                    json_patch::PatchOperation::Remove(_) => {
+                                        // For remove operations, we can't verify task_attempt_id
+                                        // so we allow all removals and let the client handle filtering
                                         return Some(Ok(LogMsg::JsonPatch(patch)));
                                     }
+                                    _ => {}
                                 }
-                                RecordTypes::DeletedExecutionProcess {
-                                    task_attempt_id: Some(deleted_attempt_id),
-                                    ..
-                                } => {
-                                    if *deleted_attempt_id == task_attempt_id {
-                                        return Some(Ok(LogMsg::JsonPatch(patch)));
+                            }
+                            // Fallback to legacy EventPatch format for backward compatibility
+                            else if let Ok(event_patch_value) = serde_json::to_value(patch_op)
+                                && let Ok(event_patch) =
+                                    serde_json::from_value::<EventPatch>(event_patch_value)
+                            {
+                                match &event_patch.value.record {
+                                    RecordTypes::ExecutionProcess(process) => {
+                                        if process.task_attempt_id == task_attempt_id {
+                                            if !show_soft_deleted && process.dropped {
+                                                let remove_patch =
+                                                    execution_process_patch::remove(process.id);
+                                                return Some(Ok(LogMsg::JsonPatch(remove_patch)));
+                                            }
+                                            return Some(Ok(LogMsg::JsonPatch(patch)));
+                                        }
                                     }
+                                    RecordTypes::DeletedExecutionProcess {
+                                        task_attempt_id: Some(deleted_attempt_id),
+                                        ..
+                                    } => {
+                                        if *deleted_attempt_id == task_attempt_id {
+                                            return Some(Ok(LogMsg::JsonPatch(patch)));
+                                        }
+                                    }
+                                    _ => {}
                                 }
-                                _ => {}
                             }
                         }
                         None
@@ -594,19 +796,16 @@ impl EventService {
 
         // Start with initial snapshot, then live updates
         let initial_stream = futures::stream::once(async move { Ok(initial_msg) });
-        let combined_stream = initial_stream
-            .chain(filtered_stream)
-            .map_ok(|msg| msg.to_sse_event())
-            .boxed();
+        let combined_stream = initial_stream.chain(filtered_stream).boxed();
 
         Ok(combined_stream)
     }
 
-    /// Stream follow-up draft for a specific task attempt with initial snapshot
-    pub async fn stream_follow_up_draft_for_attempt(
+    /// Stream follow-up draft for a specific task attempt (raw LogMsg format for WebSocket)
+    pub async fn stream_follow_up_draft_for_attempt_raw(
         &self,
         task_attempt_id: Uuid,
-    ) -> Result<futures::stream::BoxStream<'static, Result<Event, std::io::Error>>, EventError>
+    ) -> Result<futures::stream::BoxStream<'static, Result<LogMsg, std::io::Error>>, EventError>
     {
         // Get initial snapshot of follow-up draft
         let draft = db::models::follow_up_draft::FollowUpDraft::find_by_task_attempt_id(
@@ -627,11 +826,13 @@ impl EventService {
             version: 0,
         });
 
-        let initial_patch = json!([{
-            "op": "replace",
-            "path": "/",
-            "value": { "follow_up_draft": draft }
-        }]);
+        let initial_patch = json!([
+            {
+                "op": "replace",
+                "path": "/",
+                "value": { "follow_up_draft": draft }
+            }
+        ]);
         let initial_msg = LogMsg::JsonPatch(serde_json::from_value(initial_patch).unwrap());
 
         // Filtered live stream, mapped into direct JSON patches that update /follow_up_draft
@@ -648,11 +849,13 @@ impl EventService {
                                 RecordTypes::FollowUpDraft(draft) => {
                                     if draft.task_attempt_id == task_attempt_id {
                                         // Build a direct patch to replace /follow_up_draft
-                                        let direct = json!([{
-                                            "op": "replace",
-                                            "path": "/follow_up_draft",
-                                            "value": draft
-                                        }]);
+                                        let direct = json!([
+                                            {
+                                                "op": "replace",
+                                                "path": "/follow_up_draft",
+                                                "value": draft
+                                            }
+                                        ]);
                                         let direct_patch = serde_json::from_value(direct).unwrap();
                                         return Some(Ok(LogMsg::JsonPatch(direct_patch)));
                                     }
@@ -675,11 +878,13 @@ impl EventService {
                                             "updated_at": chrono::Utc::now(),
                                             "version": 0
                                         });
-                                        let direct = json!([{
-                                            "op": "replace",
-                                            "path": "/follow_up_draft",
-                                            "value": empty
-                                        }]);
+                                        let direct = json!([
+                                            {
+                                                "op": "replace",
+                                                "path": "/follow_up_draft",
+                                                "value": empty
+                                            }
+                                        ]);
                                         let direct_patch = serde_json::from_value(direct).unwrap();
                                         return Some(Ok(LogMsg::JsonPatch(direct_patch)));
                                     }
@@ -696,10 +901,7 @@ impl EventService {
         );
 
         let initial_stream = futures::stream::once(async move { Ok(initial_msg) });
-        let combined_stream = initial_stream
-            .chain(filtered_stream)
-            .map_ok(|msg| msg.to_sse_event())
-            .boxed();
+        let combined_stream = initial_stream.chain(filtered_stream).boxed();
 
         Ok(combined_stream)
     }
