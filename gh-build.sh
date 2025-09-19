@@ -222,22 +222,46 @@ case "${1:-status}" in
         
         # Select version bump type (skip if resuming)
         if [ "${SKIP_VERSION_BUMP:-false}" != "true" ] && [ -z "$VERSION_TYPE" ]; then
-            PS3="Select version bump type: "
-            select VERSION_TYPE in "patch (bug fixes)" "minor (new features)" "major (breaking changes)" "Cancel"; do
+            clear
+            echo "╔═══════════════════════════════════════════════════════════════╗"
+            echo "║                   🏷️  Version Bump Selection                   ║"
+            echo "╚═══════════════════════════════════════════════════════════════╝"
+            echo ""
+            echo "📦 Current Version: $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')"
+            echo ""
+            echo "🎯 Choose the type of release based on your changes:"
+            echo ""
+            echo "   🐛 patch   - Bug fixes, security patches, minor improvements"
+            echo "              → $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/' | awk -F. '{print $1"."$2"."($3+1)}')"
+            echo ""
+            echo "   ✨ minor   - New features, significant improvements, API additions"
+            echo "              → $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/' | awk -F. '{print $1"."($2+1)".0"}')"
+            echo ""
+            echo "   🚨 major   - Breaking changes, API changes, major overhauls"
+            echo "              → $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/' | awk -F. '{print ($1+1)".0.0"}')"
+            echo ""
+            echo "═══════════════════════════════════════════════════════════════"
+            echo ""
+
+            PS3="Choose version bump type: "
+            select VERSION_TYPE in "🐛 patch (bug fixes & improvements)" "✨ minor (new features & enhancements)" "🚨 major (breaking changes)" "❌ Cancel"; do
                 case $VERSION_TYPE in
-                    "patch (bug fixes)")
+                    "🐛 patch (bug fixes & improvements)")
                         VERSION_TYPE="patch"
+                        echo "✅ Selected: patch version bump"
                         break
                         ;;
-                    "minor (new features)")
+                    "✨ minor (new features & enhancements)")
                         VERSION_TYPE="minor"
+                        echo "✅ Selected: minor version bump"
                         break
                         ;;
-                    "major (breaking changes)")
+                    "🚨 major (breaking changes)")
                         VERSION_TYPE="major"
+                        echo "✅ Selected: major version bump"
                         break
                         ;;
-                    "Cancel")
+                    "❌ Cancel")
                         echo "❌ Publishing cancelled"
                         exit 1
                         ;;
@@ -287,90 +311,122 @@ case "${1:-status}" in
         if [ "${GENERATE_NEW_NOTES:-false}" = "true" ]; then
             echo ""
             echo "📈 Selected: $VERSION_TYPE version bump"
-            
-            # Get commits since last tag for Claude
+
+            # Get last tag for analysis
             LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
             if [ -z "$LAST_TAG" ]; then
-                COMMITS=$(git log --pretty=format:"- %s (%an)" -10)
-                echo "📝 No previous tags found, using last 10 commits"
+                echo "📝 No previous tags found, analyzing last 20 commits"
+                ANALYSIS_FROM=""
             else
-                COMMITS=$(git log $LAST_TAG..HEAD --pretty=format:"- %s (%an)")
-                echo "📝 Generating notes since $LAST_TAG"
+                echo "📝 Analyzing code changes since $LAST_TAG"
+                ANALYSIS_FROM="$LAST_TAG"
             fi
-            
-            if [ -z "$COMMITS" ]; then
-                echo "❌ No new commits found since last tag!"
-                echo "💡 Did you forget to commit your changes?"
-                exit 1
-            fi
-        
-        # Create Claude prompt with Agno-style template
-        CLAUDE_PROMPT="Generate professional GitHub release notes for automagik-forge version $VERSION using this Agno-style template:
 
-## New Features
-[List major new functionality and capabilities]
+            # Use intelligent release analyzer instead of commit messages
+            echo "🧠 Generating intelligent release notes from code analysis..."
 
-## Improvements  
-[List enhancements, optimizations, and developer experience improvements]
+            # Check if release analyzer exists
+            if [ ! -f "scripts/release-analyzer.sh" ]; then
+                echo "❌ Release analyzer not found at scripts/release-analyzer.sh"
+                echo "💡 Falling back to basic release notes"
 
-## Bug Fixes
-[List bug fixes and stability improvements]
+                # Fallback to basic notes
+                echo "# Release v$VERSION
 
 ## What's Changed
-[List technical changes and implementation details]
 
-Based on these commits:
-$COMMITS
-
-Focus on:
-- User-facing benefits
-- Technical improvements
-- Developer workflow enhancements
-- Be concise but informative
-- Use bullet points with clear descriptions"
-
-        # Try to generate with Claude, fall back to template
-        echo "🤖 Generating release notes..."
-        if command -v claude >/dev/null 2>&1; then
-            CLAUDE_OUTPUT=$(claude -p "$CLAUDE_PROMPT" --output-format json 2>/dev/null) || true
-            if [ -n "$CLAUDE_OUTPUT" ]; then
-                CONTENT=$(echo "$CLAUDE_OUTPUT" | jq -r '.result' 2>/dev/null)
-                SESSION_ID=$(echo "$CLAUDE_OUTPUT" | jq -r '.session_id' 2>/dev/null)
-            fi
-        fi
-        
-        # If Claude failed or isn't available, generate from template
-        if [ -z "$CONTENT" ] || [ "$CONTENT" = "null" ]; then
-            echo "📝 Using template-based release notes..."
-            CONTENT="## Release v$VERSION
-
-## What's Changed
-$COMMITS
-
-## Summary
 This release includes various improvements and bug fixes.
 
 ---
-*Full Changelog*: https://github.com/$REPO/compare/$LAST_TAG...v$VERSION"
-        fi
+*Full Changelog*: https://github.com/$REPO/compare/$LAST_TAG...v$VERSION" > .release-notes-draft.md
+            else
+                # Run intelligent analysis
+                chmod +x scripts/release-analyzer.sh
+                if [ -n "$ANALYSIS_FROM" ]; then
+                    ./scripts/release-analyzer.sh full "$VERSION" "$ANALYSIS_FROM" || {
+                        echo "❌ Release analyzer failed, creating basic notes"
+                        echo "# Release v$VERSION
+
+## What's Changed
+
+This release includes various improvements and bug fixes.
+
+---
+*Full Changelog*: https://github.com/$REPO/compare/$LAST_TAG...v$VERSION" > .release-notes-draft.md
+                    }
+                else
+                    ./scripts/release-analyzer.sh full "$VERSION" || {
+                        echo "❌ Release analyzer failed, creating basic notes"
+                        echo "# Release v$VERSION
+
+## What's Changed
+
+This release includes various improvements and bug fixes.
+
+---
+*Full Changelog*: https://github.com/$REPO/compare/$LAST_TAG...v$VERSION" > .release-notes-draft.md
+                    }
+                fi
+
+                if [ -f ".release-notes-draft.md" ]; then
+                    echo "✅ Intelligent release notes generated successfully!"
+                else
+                    echo "❌ Release notes file not created, using fallback"
+                    echo "# Release v$VERSION
+
+## What's Changed
+
+This release includes various improvements and bug fixes." > .release-notes-draft.md
+                fi
+            fi
         
-        # Save initial content
-        echo "$CONTENT" > .release-notes-draft.md
-        
-            # Interactive loop with keyboard selection
+            # Interactive loop with enhanced review flow
             while true; do
                 clear
-                echo "═══════════════════════════════════════════════════════════════"
-                echo "📋 Generated Release Notes for v$VERSION"
+                echo "╔═══════════════════════════════════════════════════════════════╗"
+                echo "║                🚀 Release Notes Review - v$VERSION                ║"
+                echo "╚═══════════════════════════════════════════════════════════════╝"
+                echo ""
+
+                # Show quick stats if analysis file exists
+                if [ -f ".release-analysis.json" ]; then
+                    echo "📊 Quick Stats:"
+                    echo "   • Files Changed: $(grep '"files_changed"' .release-analysis.json | sed 's/.*"files_changed": \([0-9]*\).*/\1/' 2>/dev/null || echo 'N/A')"
+                    echo "   • Lines Added: $(grep '"lines_added"' .release-analysis.json | sed 's/.*"lines_added": \([0-9]*\).*/\1/' 2>/dev/null || echo 'N/A')"
+                    echo "   • Lines Removed: $(grep '"lines_removed"' .release-analysis.json | sed 's/.*"lines_removed": \([0-9]*\).*/\1/' 2>/dev/null || echo 'N/A')"
+                    echo ""
+                fi
+
                 echo "═══════════════════════════════════════════════════════════════"
                 echo ""
-                cat .release-notes-draft.md
+
+                # Display release notes with line numbers for easier reference
+                if [ -f ".release-notes-draft.md" ]; then
+                    # Get line count for better display control
+                    LINE_COUNT=$(wc -l < .release-notes-draft.md)
+                    if [ "$LINE_COUNT" -gt 50 ]; then
+                        echo "📄 Release Notes Preview (first 50 lines, total: $LINE_COUNT):"
+                        echo "───────────────────────────────────────────────────────────────"
+                        head -50 .release-notes-draft.md | nl -w3 -s'│ '
+                        echo "..."
+                        echo "───────────────────────────────────────────────────────────────"
+                        echo "💡 Use 'View full notes' to see complete release notes"
+                    else
+                        echo "📄 Release Notes ($LINE_COUNT lines):"
+                        echo "───────────────────────────────────────────────────────────────"
+                        cat .release-notes-draft.md
+                        echo "───────────────────────────────────────────────────────────────"
+                    fi
+                else
+                    echo "❌ No release notes found!"
+                fi
+
                 echo ""
                 echo "═══════════════════════════════════════════════════════════════"
                 echo ""
-                
+
                 PS3="Choose an action: "
-                select choice in "✅ Accept and continue" "✏️  Edit manually" "🔄 Regenerate with feedback" "❌ Cancel release"; do
+                select choice in "✅ Accept and continue" "✏️  Edit manually" "📄 View full notes" "🔄 Regenerate notes" "📊 View analysis details" "❌ Cancel release"; do
                 case $choice in
                     "✅ Accept and continue")
                         echo "✅ Release notes accepted!"
@@ -383,39 +439,85 @@ This release includes various improvements and bug fixes.
                         ${EDITOR:-nano} .release-notes-draft.md
                         break
                         ;;
-                    "🔄 Regenerate with feedback")
+                    "📄 View full notes")
+                        clear
+                        echo "╔═══════════════════════════════════════════════════════════════╗"
+                        echo "║                   📄 Complete Release Notes                    ║"
+                        echo "╚═══════════════════════════════════════════════════════════════╝"
                         echo ""
-                        echo "Enter feedback for Claude (or press Enter for different style):"
-                        read -r feedback
-                        
-                        if [ -n "$feedback" ]; then
-                            FEEDBACK_PROMPT="$feedback"
+                        if [ -f ".release-notes-draft.md" ]; then
+                            cat .release-notes-draft.md | nl -w3 -s'│ '
                         else
-                            FEEDBACK_PROMPT="Generate the release notes again but make them more technical and detailed, focusing on specific implementation changes and developer benefits."
+                            echo "❌ No release notes found!"
                         fi
-                        
-                        echo "🤖 Regenerating with feedback..."
-                        if [ "$SESSION_ID" != "null" ] && [ -n "$SESSION_ID" ]; then
-                            CLAUDE_OUTPUT=$(claude -p "$FEEDBACK_PROMPT" --resume "$SESSION_ID" --output-format json 2>/dev/null) || {
-                                echo "⚠️  Session continuation failed, generating fresh notes..."
-                                CLAUDE_OUTPUT=$(claude -p "$CLAUDE_PROMPT
+                        echo ""
+                        echo "═══════════════════════════════════════════════════════════════"
+                        read -p "Press Enter to return to menu..."
+                        break
+                        ;;
+                    "🔄 Regenerate notes")
+                        echo ""
+                        echo "🧠 Regenerating release notes using intelligent analyzer..."
 
-Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
-                            }
-                        else
-                            CLAUDE_OUTPUT=$(claude -p "$CLAUDE_PROMPT
+                        # Re-run the intelligent analysis
+                        if [ -f "scripts/release-analyzer.sh" ]; then
+                            if [ -n "$ANALYSIS_FROM" ]; then
+                                ./scripts/release-analyzer.sh full "$VERSION" "$ANALYSIS_FROM" || {
+                                    echo "❌ Release analyzer failed during regeneration"
+                                }
+                            else
+                                ./scripts/release-analyzer.sh full "$VERSION" || {
+                                    echo "❌ Release analyzer failed during regeneration"
+                                }
+                            fi
 
-Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
-                        fi
-                        
-                        NEW_CONTENT=$(echo "$CLAUDE_OUTPUT" | jq -r '.result')
-                        if [ -n "$NEW_CONTENT" ] && [ "$NEW_CONTENT" != "null" ]; then
-                            echo "$NEW_CONTENT" > .release-notes-draft.md
-                            SESSION_ID=$(echo "$CLAUDE_OUTPUT" | jq -r '.session_id')
-                            echo "✅ Release notes regenerated!"
+                            if [ -f ".release-notes-draft.md" ]; then
+                                echo "✅ Release notes regenerated successfully!"
+                                sleep 2
+                            else
+                                echo "❌ Failed to regenerate release notes"
+                                sleep 2
+                            fi
                         else
-                            echo "❌ Failed to regenerate release notes"
+                            echo "❌ Release analyzer not available for regeneration"
+                            sleep 2
                         fi
+                        break
+                        ;;
+                    "📊 View analysis details")
+                        clear
+                        echo "╔═══════════════════════════════════════════════════════════════╗"
+                        echo "║                   📊 Code Analysis Details                     ║"
+                        echo "╚═══════════════════════════════════════════════════════════════╝"
+                        echo ""
+                        if [ -f ".release-analysis.json" ]; then
+                            echo "🔍 Detailed Analysis Results:"
+                            echo ""
+
+                            # Parse and display analysis details nicely
+                            echo "📈 Statistics:"
+                            echo "   • Files Changed: $(grep '"files_changed"' .release-analysis.json | sed 's/.*"files_changed": \([0-9]*\).*/\1/' 2>/dev/null || echo 'N/A')"
+                            echo "   • Lines Added: $(grep '"lines_added"' .release-analysis.json | sed 's/.*"lines_added": \([0-9]*\).*/\1/' 2>/dev/null || echo 'N/A')"
+                            echo "   • Lines Removed: $(grep '"lines_removed"' .release-analysis.json | sed 's/.*"lines_removed": \([0-9]*\).*/\1/' 2>/dev/null || echo 'N/A')"
+                            echo ""
+
+                            echo "🚀 Features Found: $(grep '"features"' .release-analysis.json | sed 's/.*"features": \[\([^]]*\)\].*/\1/' | tr ',' '\n' | wc -l 2>/dev/null || echo 'N/A')"
+                            echo "🔧 Improvements Found: $(grep '"improvements"' .release-analysis.json | sed 's/.*"improvements": \[\([^]]*\)\].*/\1/' | tr ',' '\n' | wc -l 2>/dev/null || echo 'N/A')"
+                            echo "🐛 Bug Fixes Found: $(grep '"fixes"' .release-analysis.json | sed 's/.*"fixes": \[\([^]]*\)\].*/\1/' | tr ',' '\n' | wc -l 2>/dev/null || echo 'N/A')"
+                            echo "📈 Performance Items: $(grep '"performance"' .release-analysis.json | sed 's/.*"performance": \[\([^]]*\)\].*/\1/' | tr ',' '\n' | wc -l 2>/dev/null || echo 'N/A')"
+                            echo "🔒 Security Items: $(grep '"security"' .release-analysis.json | sed 's/.*"security": \[\([^]]*\)\].*/\1/' | tr ',' '\n' | wc -l 2>/dev/null || echo 'N/A')"
+                            echo ""
+
+                            echo "💾 Raw Analysis Data:"
+                            echo "───────────────────────────────────────────────────────────────"
+                            cat .release-analysis.json | jq . 2>/dev/null || cat .release-analysis.json
+                        else
+                            echo "❌ No analysis data found (.release-analysis.json missing)"
+                            echo "💡 Run regenerate to create analysis data"
+                        fi
+                        echo ""
+                        echo "═══════════════════════════════════════════════════════════════"
+                        read -p "Press Enter to return to menu..."
                         break
                         ;;
                     "❌ Cancel release")
@@ -631,7 +733,7 @@ Additional context: $FEEDBACK_PROMPT" --output-format json 2>/dev/null)
         echo "⏳ Checking for npm publish workflow..."
         sleep 10
         
-        PUBLISH_RUN=$(gh run list --workflow="Publish to npm" --repo "$REPO" --limit 1 --json databaseId,createdAt --jq '.[0].databaseId')
+        PUBLISH_RUN=$(gh run list --workflow="Build All Platforms" --repo "$REPO" --limit 1 --json databaseId,createdAt --jq '.[0].databaseId')
         
         if [ -n "$PUBLISH_RUN" ]; then
             echo "📋 NPM publish workflow started: Run ID $PUBLISH_RUN"
@@ -783,16 +885,35 @@ Install with: \`npx automagik-forge@beta\`"
             exit 1
         fi
         
-        echo "📊 Monitoring workflow run $RUN_ID..."
+        echo "╔═══════════════════════════════════════════════════════════════╗"
+        echo "║              📊 Monitoring Workflow Run $RUN_ID              ║"
+        echo "╚═══════════════════════════════════════════════════════════════╝"
         echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$RUN_ID"
-        echo "Press Ctrl+C to stop monitoring"
+        echo "📋 Press Ctrl+C to stop monitoring"
         echo ""
-        
+
+        LAST_STATUS=""
+        START_TIME=$(date +%s)
+
         while true; do
-            STATUS=$(gh run view "$RUN_ID" --repo "$REPO" --json status --jq '.status')
-            
-            # Get job statuses
-            echo -n "[$(date +%H:%M:%S)] "
+            # Get workflow details
+            WORKFLOW_DATA=$(gh run view "$RUN_ID" --repo "$REPO" --json status,conclusion,jobs 2>/dev/null)
+
+            if [ -z "$WORKFLOW_DATA" ] || [ "$WORKFLOW_DATA" = "null" ]; then
+                echo "[$(date +%H:%M:%S)] ❌ Failed to fetch workflow data"
+                sleep 10
+                continue
+            fi
+
+            STATUS=$(echo "$WORKFLOW_DATA" | jq -r '.status')
+            CURRENT_TIME=$(date +%s)
+            ELAPSED=$((CURRENT_TIME - START_TIME))
+            ELAPSED_MIN=$((ELAPSED / 60))
+            ELAPSED_SEC=$((ELAPSED % 60))
+
+            # Only show status updates when it changes or every 30 seconds
+            if [ "$STATUS" != "$LAST_STATUS" ] || [ $((ELAPSED % 30)) -eq 0 ]; then
+                echo -n "[$(date +%H:%M:%S)] [${ELAPSED_MIN}m${ELAPSED_SEC}s] "
             
             case "$STATUS" in
                 completed)
@@ -832,14 +953,36 @@ Install with: \`npx automagik-forge@beta\`"
                     ;;
                 in_progress|queued|pending)
                     echo "🔄 Status: $STATUS"
-                    gh run view "$RUN_ID" --repo "$REPO" --json jobs --jq '.jobs[] | "    \(.name): \(.status)"'
-                    sleep 60
+
+                    # Show job statuses with better formatting
+                    JOBS_INFO=$(echo "$WORKFLOW_DATA" | jq -r '.jobs[] | "    \(.name): \(.status) \(if .conclusion then "(\(.conclusion))" else "" end)"')
+                    if [ -n "$JOBS_INFO" ]; then
+                        echo "$JOBS_INFO" | while read -r line; do
+                            if echo "$line" | grep -q "completed"; then
+                                if echo "$line" | grep -q "success"; then
+                                    echo "    ✅ $(echo "$line" | sed 's/: completed (success)//')"
+                                elif echo "$line" | grep -q "failure"; then
+                                    echo "    ❌ $(echo "$line" | sed 's/: completed (failure)//')"
+                                else
+                                    echo "    ⚠️  $line"
+                                fi
+                            elif echo "$line" | grep -q "in_progress"; then
+                                echo "    🔄 $(echo "$line" | sed 's/: in_progress//')"
+                            else
+                                echo "    ⏳ $line"
+                            fi
+                        done
+                    fi
+
+                    LAST_STATUS="$STATUS"
+                    sleep 15
                     ;;
                 *)
                     echo "❓ Unknown status: $STATUS"
                     break
                     ;;
             esac
+            fi
         done
         ;;
         
