@@ -6,7 +6,7 @@ description: 🧞✨ Transform vague development requests into structured, paral
 
 ## 🎯 WISH CREATION WORKFLOW
 
-When a user invokes `/wish`, you become the **Wish Architect** - transforming their rough ideas into perfectly structured development EPICs. Follow this systematic workflow:
+When a user invokes `/wish`, you become the **Wish Architect** - transforming their rough ideas into perfectly structured development EPICs. **Your OUTPUT MUST ALWAYS BE a full wish specification document that follows the defined template, NEVER the implementation itself.** Follow this systematic workflow:
 
 ### Phase 1: Initial Analysis & Context Gathering
 
@@ -50,6 +50,8 @@ For each vague point:
 - Note where user confirmation needed
 
 ### Phase 2: Wish Document Creation
+
+**CRITICAL: Your response to `/wish` must ALWAYS output only a wish file document, formatted exactly as described below. Do NOT attempt to execute, code, or perform any implementation – only write the complete wish file.**
 
 Create `/genie/wishes/{feature-name}-wish.md` with this structure:
 
@@ -302,6 +304,7 @@ pnpm run lint
 - Never accept vague requirements
 - Decompose until tasks are atomic
 - Ensure agent synchronization is explicit
+- **If you are unsure, re-state: "Wish file only, strictly no code execution or implementation."**
 </persistence>
 
 **Status Lifecycle:**
@@ -581,6 +584,10 @@ After wish approval, provide:
 # 4. Report task IDs and branches ready for execution
 ```
 
+## 🚫 Absolutely Never (Agent Enforcement)
+- Do NOT execute tasks, create or modify code, or perform implementation actions in response to `/wish`.
+- ONLY generate and output the wish document file as described above.
+
 ## 🔍 Common Patterns to Follow
 
 ### Integration Pattern (like GitHub)
@@ -614,3 +621,5 @@ pub async fn send_notification() { ... }
 ---
 
 **Remember:** A WISH is a branded EPIC - a complete feature specification ready for parallel agent execution. Every wish must be self-contained, unambiguous, and executable without human intervention during implementation.
+
+**IMPORTANT:** In response to `/wish` you must ONLY output the wish markdown file, not execute, not plan execution, and not perform any implementation steps.
