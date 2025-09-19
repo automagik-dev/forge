@@ -18,6 +18,14 @@ yarn-error.log*
 .env
 .env.local
 .env.development.local
+
+# Release pipeline temporary files
+.release-analysis.json
+.release-notes-draft.md
+.release-notes-*.saved
+*.analysis.json
+*-draft.md
+*-temp.md
 .env.test.local
 .env.production.local
 
