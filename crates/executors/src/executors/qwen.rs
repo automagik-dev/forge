@@ -12,6 +12,7 @@ use crate::{
     command::{CmdOverrides, CommandBuilder, apply_overrides},
     executors::{AppendPrompt, ExecutorError, StandardCodingAgentExecutor, gemini::Gemini},
     logs::{stderr_processor::normalize_stderr_logs, utils::EntryIndexProvider},
+    mcp_config::apply_allowed_tools_env,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS, JsonSchema)]
@@ -22,6 +23,8 @@ pub struct QwenCode {
     pub yolo: Option<bool>,
     #[serde(flatten)]
     pub cmd: CmdOverrides,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_tools: Option<Vec<String>>,
 }
 
 impl QwenCode {
@@ -58,6 +61,8 @@ impl StandardCodingAgentExecutor for QwenCode {
             .arg(shell_arg)
             .arg(&qwen_command);
 
+        apply_allowed_tools_env(&mut command, self.mcp_tools.as_ref());
+
         let mut child = command.group_spawn()?;
 
         // Feed the prompt in, then close the pipe
@@ -91,6 +96,8 @@ impl StandardCodingAgentExecutor for QwenCode {
             .current_dir(current_dir)
             .arg(shell_arg)
             .arg(&qwen_command);
+
+        apply_allowed_tools_env(&mut command, self.mcp_tools.as_ref());
 
         let mut child = command.group_spawn()?;
 

@@ -21,7 +21,11 @@ use tokio::fs;
 use ts_rs::TS;
 use utils::{assets::config_path, response::ApiResponse};
 
-use crate::{DeploymentImpl, error::ApiError};
+use crate::{
+    DeploymentImpl,
+    error::ApiError,
+    mcp::task_server::{McpToolInfo, tool_catalogue},
+};
 
 pub fn router() -> Router<DeploymentImpl> {
     Router::new()
@@ -29,6 +33,7 @@ pub fn router() -> Router<DeploymentImpl> {
         .route("/config", put(update_config))
         .route("/sounds/{sound}", get(get_sound))
         .route("/mcp-config", get(get_mcp_servers).post(update_mcp_servers))
+        .route("/mcp-tools", get(list_mcp_tools))
         .route("/profiles", get(get_profiles).put(update_profiles))
 }
 
@@ -179,6 +184,10 @@ async fn get_sound(Path(sound): Path<SoundFile>) -> Result<Response, ApiError> {
         .body(Body::from(sound.data.into_owned()))
         .unwrap();
     Ok(response)
+}
+
+async fn list_mcp_tools() -> ResponseJson<ApiResponse<Vec<McpToolInfo>>> {
+    ResponseJson(ApiResponse::success(tool_catalogue()))
 }
 
 #[derive(TS, Debug, Deserialize)]

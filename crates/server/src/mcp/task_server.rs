@@ -1,4 +1,4 @@
-use std::{future::Future, path::PathBuf};
+use std::{collections::HashSet, future::Future, path::PathBuf};
 
 use db::models::{
     project::Project,
@@ -15,6 +15,7 @@ use rmcp::{
 use serde::{Deserialize, Serialize};
 use serde_json;
 use sqlx::SqlitePool;
+use ts_rs::TS;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
@@ -115,6 +116,48 @@ pub struct ListTasksFilters {
     pub limit: i32,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+pub struct McpToolInfo {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+}
+
+pub fn tool_catalogue() -> Vec<McpToolInfo> {
+    vec![
+        McpToolInfo {
+            id: "create_task".to_string(),
+            name: "Create Task".to_string(),
+            description: "Create a new task/ticket in a project".to_string(),
+        },
+        McpToolInfo {
+            id: "list_projects".to_string(),
+            name: "List Projects".to_string(),
+            description: "List projects with metadata".to_string(),
+        },
+        McpToolInfo {
+            id: "list_tasks".to_string(),
+            name: "List Tasks".to_string(),
+            description: "List tasks in a project with optional filters".to_string(),
+        },
+        McpToolInfo {
+            id: "update_task".to_string(),
+            name: "Update Task".to_string(),
+            description: "Update title, description, or status of a task".to_string(),
+        },
+        McpToolInfo {
+            id: "delete_task".to_string(),
+            name: "Delete Task".to_string(),
+            description: "Delete a task from a project".to_string(),
+        },
+        McpToolInfo {
+            id: "get_task".to_string(),
+            name: "Get Task".to_string(),
+            description: "Fetch a specific task and its summary".to_string(),
+        },
+    ]
+}
+
 fn parse_task_status(status_str: &str) -> Option<TaskStatus> {
     match status_str.to_lowercase().as_str() {
         "todo" => Some(TaskStatus::Todo),
@@ -199,14 +242,23 @@ pub struct GetTaskResponse {
 pub struct TaskServer {
     pub pool: SqlitePool,
     tool_router: ToolRouter<TaskServer>,
+    allowed_tools: Option<HashSet<String>>,
 }
 
 impl TaskServer {
     #[allow(dead_code)]
-    pub fn new(pool: SqlitePool) -> Self {
+    pub fn new(pool: SqlitePool, allowed_tools: Option<HashSet<String>>) -> Self {
         Self {
             pool,
             tool_router: Self::tool_router(),
+            allowed_tools,
+        }
+    }
+
+    fn is_tool_allowed(&self, tool: &str) -> bool {
+        match &self.allowed_tools {
+            Some(set) => set.contains(tool),
+            None => true,
         }
     }
 }
@@ -225,6 +277,12 @@ impl TaskServer {
             branch_template,
         }): Parameters<CreateTaskRequest>,
     ) -> Result<CallToolResult, ErrorData> {
+        if !self.is_tool_allowed("create_task") {
+            return Ok(CallToolResult::error(vec![Content::text(
+                "Tool 'create_task' is disabled for this agent.",
+            )]));
+        }
+
         // Parse project_id from string to UUID
         let project_uuid = match Uuid::parse_str(&project_id) {
             Ok(uuid) => uuid,
@@ -309,6 +367,12 @@ impl TaskServer {
 
     #[tool(description = "List all the available projects")]
     async fn list_projects(&self) -> Result<CallToolResult, ErrorData> {
+        if !self.is_tool_allowed("list_projects") {
+            return Ok(CallToolResult::error(vec![Content::text(
+                "Tool 'list_projects' is disabled for this agent.",
+            )]));
+        }
+
         match Project::find_all(&self.pool).await {
             Ok(projects) => {
                 let count = projects.len();
@@ -362,6 +426,12 @@ impl TaskServer {
             limit,
         }): Parameters<ListTasksRequest>,
     ) -> Result<CallToolResult, ErrorData> {
+        if !self.is_tool_allowed("list_tasks") {
+            return Ok(CallToolResult::error(vec![Content::text(
+                "Tool 'list_tasks' is disabled for this agent.",
+            )]));
+        }
+
         let project_uuid = match Uuid::parse_str(&project_id) {
             Ok(uuid) => uuid,
             Err(_) => {
@@ -503,6 +573,12 @@ impl TaskServer {
             status,
         }): Parameters<UpdateTaskRequest>,
     ) -> Result<CallToolResult, ErrorData> {
+        if !self.is_tool_allowed("update_task") {
+            return Ok(CallToolResult::error(vec![Content::text(
+                "Tool 'update_task' is disabled for this agent.",
+            )]));
+        }
+
         let project_uuid = match Uuid::parse_str(&project_id) {
             Ok(uuid) => uuid,
             Err(_) => {
@@ -639,6 +715,12 @@ impl TaskServer {
             task_id,
         }): Parameters<DeleteTaskRequest>,
     ) -> Result<CallToolResult, ErrorData> {
+        if !self.is_tool_allowed("delete_task") {
+            return Ok(CallToolResult::error(vec![Content::text(
+                "Tool 'delete_task' is disabled for this agent.",
+            )]));
+        }
+
         let project_uuid = match Uuid::parse_str(&project_id) {
             Ok(uuid) => uuid,
             Err(_) => {
@@ -733,6 +815,12 @@ impl TaskServer {
             task_id,
         }): Parameters<GetTaskRequest>,
     ) -> Result<CallToolResult, ErrorData> {
+        if !self.is_tool_allowed("get_task") {
+            return Ok(CallToolResult::error(vec![Content::text(
+                "Tool 'get_task' is disabled for this agent.",
+            )]));
+        }
+
         let project_uuid = match Uuid::parse_str(&project_id) {
             Ok(uuid) => uuid,
             Err(_) => {

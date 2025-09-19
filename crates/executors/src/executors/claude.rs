@@ -23,6 +23,7 @@ use crate::{
         stderr_processor::normalize_stderr_logs,
         utils::{EntryIndexProvider, patch::ConversationPatch},
     },
+    mcp_config::apply_allowed_tools_env,
 };
 
 fn base_command(claude_code_router: bool) -> &'static str {
@@ -47,6 +48,8 @@ pub struct ClaudeCode {
     pub dangerously_skip_permissions: Option<bool>,
     #[serde(flatten)]
     pub cmd: CmdOverrides,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_tools: Option<Vec<String>>,
 }
 
 impl ClaudeCode {
@@ -105,6 +108,8 @@ impl StandardCodingAgentExecutor for ClaudeCode {
             .arg(shell_arg)
             .arg(&claude_command);
 
+        apply_allowed_tools_env(&mut command, self.mcp_tools.as_ref());
+
         let mut child = command.group_spawn()?;
 
         // Feed the prompt in, then close the pipe so Claude sees EOF
@@ -144,6 +149,8 @@ impl StandardCodingAgentExecutor for ClaudeCode {
             .current_dir(current_dir)
             .arg(shell_arg)
             .arg(&claude_command);
+
+        apply_allowed_tools_env(&mut command, self.mcp_tools.as_ref());
 
         let mut child = command.group_spawn()?;
 

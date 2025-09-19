@@ -28,6 +28,7 @@ use crate::{
         ActionType, FileChange, NormalizedEntry, NormalizedEntryType, TodoItem,
         utils::EntryIndexProvider,
     },
+    mcp_config::apply_allowed_tools_env,
     stdout_dup,
 };
 
@@ -104,6 +105,8 @@ pub struct Opencode {
     pub agent: Option<String>,
     #[serde(flatten)]
     pub cmd: CmdOverrides,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_tools: Option<Vec<String>>,
 }
 
 impl Opencode {
@@ -152,6 +155,8 @@ impl StandardCodingAgentExecutor for Opencode {
             .env("NODE_NO_WARNINGS", "1")
             .env("OPENCODE_AUTO_SHARE", "1")
             .env("OPENCODE_API", bridge.base_url.clone());
+
+        apply_allowed_tools_env(&mut command, self.mcp_tools.as_ref());
 
         let mut child = match command.group_spawn() {
             Ok(c) => c,
@@ -219,6 +224,8 @@ impl StandardCodingAgentExecutor for Opencode {
             .env("NODE_NO_WARNINGS", "1")
             .env("OPENCODE_AUTO_SHARE", "1")
             .env("OPENCODE_API", bridge.base_url.clone());
+
+        apply_allowed_tools_env(&mut command, self.mcp_tools.as_ref());
 
         let mut child = match command.group_spawn() {
             Ok(c) => c,

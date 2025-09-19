@@ -42,6 +42,7 @@ fn generate_types_content() -> String {
         server::routes::config::McpServerQuery::decl(),
         server::routes::config::UpdateMcpServersBody::decl(),
         server::routes::config::GetMcpServerResponse::decl(),
+        server::mcp::task_server::McpToolInfo::decl(),
         server::routes::task_attempts::CreateFollowUpAttempt::decl(),
         server::routes::task_attempts::FollowUpDraftResponse::decl(),
         server::routes::task_attempts::UpdateFollowUpDraftRequest::decl(),

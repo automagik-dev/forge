@@ -46,6 +46,15 @@
       "items": {
         "type": "string"
       }
+    },
+    "mcp_tools": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string"
+      }
     }
   }
 }

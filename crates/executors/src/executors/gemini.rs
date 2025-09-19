@@ -24,6 +24,7 @@ use crate::{
         NormalizedEntry, NormalizedEntryType, plain_text_processor::PlainTextLogProcessor,
         stderr_processor::normalize_stderr_logs, utils::EntryIndexProvider,
     },
+    mcp_config::apply_allowed_tools_env,
     stdout_dup,
 };
 
@@ -59,6 +60,8 @@ pub struct Gemini {
     pub yolo: Option<bool>,
     #[serde(flatten)]
     pub cmd: CmdOverrides,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_tools: Option<Vec<String>>,
 }
 
 impl Gemini {
@@ -95,6 +98,8 @@ impl StandardCodingAgentExecutor for Gemini {
             .arg(shell_arg)
             .arg(gemini_command)
             .env("NODE_NO_WARNINGS", "1");
+
+        apply_allowed_tools_env(&mut command, self.mcp_tools.as_ref());
 
         let mut child = command.group_spawn()?;
 
@@ -139,6 +144,8 @@ impl StandardCodingAgentExecutor for Gemini {
             .arg(shell_arg)
             .arg(gemini_command)
             .env("NODE_NO_WARNINGS", "1");
+
+        apply_allowed_tools_env(&mut command, self.mcp_tools.as_ref());
 
         let mut child = command.group_spawn()?;
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Card,
   CardContent,
@@ -24,6 +25,7 @@ import { ExecutorConfigForm } from '@/components/ExecutorConfigForm';
 import { useProfiles } from '@/hooks/useProfiles';
 import { useUserSystem } from '@/components/config-provider';
 import { showModal } from '@/lib/modals';
+import { mcpToolsApi } from '@/lib/api';
 
 export function AgentSettings() {
   // Use profiles hook for server state
@@ -37,6 +39,12 @@ export function AgentSettings() {
   } = useProfiles();
 
   const { reloadSystem } = useUserSystem();
+
+  const { data: availableMcpTools = [] } = useQuery({
+    queryKey: ['mcp-tools'],
+    queryFn: () => mcpToolsApi.list(),
+    staleTime: 1000 * 60,
+  });
 
   // Local editor state (draft that may differ from server)
   const [localProfilesContent, setLocalProfilesContent] = useState('');
@@ -511,6 +519,7 @@ export function AgentSettings() {
                   disabled={profilesSaving}
                   isSaving={profilesSaving}
                   isDirty={isDirty}
+                  mcpTools={availableMcpTools}
                 />
               )}
             </div>

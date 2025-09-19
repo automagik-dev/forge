@@ -1,10 +1,12 @@
-use std::str::FromStr;
+use std::{collections::HashSet, str::FromStr};
 
 use rmcp::{ServiceExt, transport::stdio};
 use server::mcp::task_server::TaskServer;
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 use tracing_subscriber::{EnvFilter, prelude::*};
 use utils::{assets::asset_dir, sentry::sentry_layer};
+
+use executors::mcp_config::MCP_ALLOWED_TOOLS_ENV;
 
 fn main() -> anyhow::Result<()> {
     let environment = if cfg!(debug_assertions) {
@@ -49,7 +51,23 @@ fn main() -> anyhow::Result<()> {
             let options = SqliteConnectOptions::from_str(&database_url)?.create_if_missing(false);
             let pool = SqlitePool::connect_with(options).await?;
 
-            let service = TaskServer::new(pool)
+            let allowed_tools = std::env::var(MCP_ALLOWED_TOOLS_ENV).ok().map(|raw| {
+                if raw.trim().is_empty() {
+                    return HashSet::new();
+                }
+                raw.split(',')
+                    .filter_map(|entry| {
+                        let trimmed = entry.trim();
+                        if trimmed.is_empty() {
+                            None
+                        } else {
+                            Some(trimmed.to_string())
+                        }
+                    })
+                    .collect::<HashSet<String>>()
+            });
+
+            let service = TaskServer::new(pool, allowed_tools)
                 .serve(stdio())
                 .await
                 .inspect_err(|e| {

@@ -37,6 +37,7 @@ import {
   McpServerQuery,
   UpdateMcpServersBody,
   GetMcpServerResponse,
+  McpToolInfo,
   ImageResponse,
   FollowUpDraftResponse,
   UpdateFollowUpDraftRequest,
@@ -737,6 +738,13 @@ export const mcpServersApi = {
         response
       );
     }
+  },
+};
+
+export const mcpToolsApi = {
+  list: async (): Promise<McpToolInfo[]> => {
+    const response = await makeRequest('/api/mcp-tools');
+    return handleApiResponse<McpToolInfo[]>(response);
   },
 };
 

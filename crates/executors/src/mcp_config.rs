@@ -6,7 +6,7 @@ use std::{collections::HashMap, sync::LazyLock};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use tokio::fs;
+use tokio::{fs, process::Command};
 use ts_rs::TS;
 
 use crate::executors::{CodingAgent, ExecutorError};
@@ -15,6 +15,8 @@ static DEFAULT_MCP_JSON: &str = include_str!("../default_mcp.json");
 pub static PRECONFIGURED_MCP_SERVERS: LazyLock<Value> = LazyLock::new(|| {
     serde_json::from_str::<Value>(DEFAULT_MCP_JSON).expect("Failed to parse default MCP JSON")
 });
+
+pub const MCP_ALLOWED_TOOLS_ENV: &str = "FORGE_MCP_ALLOWED_TOOLS";
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 pub struct McpConfig {
@@ -83,6 +85,19 @@ pub async fn write_agent_config(
         fs::write(config_path, json_content).await?;
     }
     Ok(())
+}
+
+pub fn apply_allowed_tools_env(command: &mut Command, selected_tools: Option<&Vec<String>>) {
+    match selected_tools {
+        Some(tools) => {
+            // Allow explicit empty selection to disable all MCP tools for this agent
+            let value = tools.join(",");
+            command.env(MCP_ALLOWED_TOOLS_ENV, value);
+        }
+        None => {
+            // No per-agent selection -> inherit default behaviour (all tools available)
+        }
+    }
 }
 
 type ServerMap = Map<String, Value>;

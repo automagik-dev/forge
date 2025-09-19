@@ -15,6 +15,7 @@ use crate::{
         claude::{ClaudeLogProcessor, HistoryStrategy},
     },
     logs::{stderr_processor::normalize_stderr_logs, utils::EntryIndexProvider},
+    mcp_config::apply_allowed_tools_env,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS, JsonSchema)]
@@ -29,6 +30,8 @@ pub struct Amp {
     pub dangerously_allow_all: Option<bool>,
     #[serde(flatten)]
     pub cmd: CmdOverrides,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_tools: Option<Vec<String>>,
 }
 
 impl Amp {
@@ -64,6 +67,8 @@ impl StandardCodingAgentExecutor for Amp {
             .arg(shell_arg)
             .arg(&amp_command);
 
+        apply_allowed_tools_env(&mut command, self.mcp_tools.as_ref());
+
         let mut child = command.group_spawn()?;
 
         // Feed the prompt in, then close the pipe so amp sees EOF
@@ -90,15 +95,18 @@ impl StandardCodingAgentExecutor for Amp {
             "fork".to_string(),
             session_id.to_string(),
         ]);
-        let fork_output = Command::new(shell_cmd)
+        let mut fork_command = Command::new(shell_cmd);
+        fork_command
             .kill_on_drop(true)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .current_dir(current_dir)
             .arg(shell_arg)
-            .arg(&fork_cmd)
-            .output()
-            .await?;
+            .arg(&fork_cmd);
+
+        apply_allowed_tools_env(&mut fork_command, self.mcp_tools.as_ref());
+
+        let fork_output = fork_command.output().await?;
         let stdout_str = String::from_utf8_lossy(&fork_output.stdout);
         let new_thread_id = stdout_str
             .lines()
@@ -133,6 +141,8 @@ impl StandardCodingAgentExecutor for Amp {
             .current_dir(current_dir)
             .arg(shell_arg)
             .arg(&continue_cmd);
+
+        apply_allowed_tools_env(&mut command, self.mcp_tools.as_ref());
 
         let mut child = command.group_spawn()?;
 

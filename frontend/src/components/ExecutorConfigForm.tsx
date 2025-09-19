@@ -8,6 +8,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { shadcnTheme } from './rjsf';
+import { McpToolSelector } from '@/components/McpToolSelector';
+import { McpToolInfo } from 'shared/types';
 // Using custom shadcn/ui widgets instead of @rjsf/shadcn theme
 
 type ExecutorType =
@@ -28,6 +30,7 @@ interface ExecutorConfigFormProps {
   disabled?: boolean;
   isSaving?: boolean;
   isDirty?: boolean;
+  mcpTools?: McpToolInfo[];
 }
 
 import schemas from 'virtual:executor-schemas';
@@ -41,6 +44,7 @@ export function ExecutorConfigForm({
   disabled = false,
   isSaving = false,
   isDirty = false,
+  mcpTools,
 }: ExecutorConfigFormProps) {
   const [formData, setFormData] = useState(value || {});
   const [validationErrors, setValidationErrors] = useState<
@@ -51,6 +55,17 @@ export function ExecutorConfigForm({
     return schemas[executor];
   }, [executor]);
 
+  const uiSchema = useMemo(() => {
+    if (!mcpTools) {
+      return undefined;
+    }
+    return {
+      mcp_tools: {
+        'ui:widget': 'hidden',
+      },
+    } as Record<string, unknown>;
+  }, [mcpTools]);
+
   useEffect(() => {
     setFormData(value || {});
     setValidationErrors([]);
@@ -60,6 +75,17 @@ export function ExecutorConfigForm({
     setFormData(newFormData);
     if (onChange) {
       onChange(newFormData);
+    }
+  };
+
+  const handleMcpToolsChange = (tools: string[]) => {
+    const nextFormData = {
+      ...formData,
+      mcp_tools: tools,
+    };
+    setFormData(nextFormData);
+    if (onChange) {
+      onChange(nextFormData);
     }
   };
 
@@ -100,6 +126,7 @@ export function ExecutorConfigForm({
             disabled={disabled}
             liveValidate
             showErrorList={false}
+            uiSchema={uiSchema}
             widgets={shadcnTheme.widgets}
             templates={shadcnTheme.templates}
           >
@@ -119,6 +146,15 @@ export function ExecutorConfigForm({
           </Form>
         </CardContent>
       </Card>
+
+      {mcpTools && (
+        <McpToolSelector
+          availableTools={mcpTools}
+          selected={(formData?.mcp_tools as string[] | undefined) || []}
+          onChange={handleMcpToolsChange}
+          disabled={disabled}
+        />
+      )}
 
       {validationErrors.length > 0 && (
         <Alert variant="destructive">

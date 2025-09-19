@@ -30,6 +30,7 @@ use crate::{
         ActionType, FileChange, NormalizedEntry, NormalizedEntryType,
         utils::{EntryIndexProvider, patch::ConversationPatch},
     },
+    mcp_config::apply_allowed_tools_env,
 };
 
 /// Sandbox policy modes for Codex
@@ -80,6 +81,8 @@ pub struct Codex {
     pub model_reasoning_summary: Option<ReasoningSummary>,
     #[serde(flatten)]
     pub cmd: CmdOverrides,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_tools: Option<Vec<String>>,
 }
 
 impl Codex {
@@ -148,6 +151,8 @@ impl StandardCodingAgentExecutor for Codex {
             .env("NODE_NO_WARNINGS", "1")
             .env("RUST_LOG", "info");
 
+        apply_allowed_tools_env(&mut command, self.mcp_tools.as_ref());
+
         let mut child = command.group_spawn()?;
 
         // Feed the prompt in, then close the pipe so codex sees EOF
@@ -187,6 +192,8 @@ impl StandardCodingAgentExecutor for Codex {
             .arg(&codex_command)
             .env("NODE_NO_WARNINGS", "1")
             .env("RUST_LOG", "info");
+
+        apply_allowed_tools_env(&mut command, self.mcp_tools.as_ref());
 
         let mut child = command.group_spawn()?;
 

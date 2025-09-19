@@ -26,6 +26,7 @@ use crate::{
         plain_text_processor::PlainTextLogProcessor,
         utils::{ConversationPatch, EntryIndexProvider},
     },
+    mcp_config::apply_allowed_tools_env,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS, JsonSchema)]
@@ -38,6 +39,8 @@ pub struct Cursor {
     pub model: Option<String>,
     #[serde(flatten)]
     pub cmd: CmdOverrides,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_tools: Option<Vec<String>>,
 }
 
 impl Cursor {
@@ -78,6 +81,10 @@ impl StandardCodingAgentExecutor for Cursor {
             .current_dir(current_dir)
             .arg(shell_arg)
             .arg(&agent_cmd);
+
+        apply_allowed_tools_env(&mut command, self.mcp_tools.as_ref());
+
+        apply_allowed_tools_env(&mut command, self.mcp_tools.as_ref());
 
         let mut child = command.group_spawn()?;
 
