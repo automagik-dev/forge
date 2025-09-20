@@ -1,0 +1,8 @@
+[package]
+name = "forge-config"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+upstream-services = { path = "../../upstream/crates/services", package = "services" }
+serde = { workspace = true }

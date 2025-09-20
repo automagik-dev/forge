@@ -1,0 +1,23 @@
+[package]
+name = "forge-app"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Upstream crates
+upstream-server = { path = "../upstream/crates/server", package = "server" }
+upstream-db = { path = "../upstream/crates/db", package = "db" }
+
+# Forge extensions
+forge-omni = { path = "../forge-extensions/omni" }
+forge-branch-templates = { path = "../forge-extensions/branch-templates" }
+forge-config = { path = "../forge-extensions/config" }
+forge-genie = { path = "../forge-extensions/genie" }
+
+# Other dependencies from the root workspace
+tokio = { workspace = true }
+axum = { workspace = true }
+anyhow = { workspace = true }
+
+[build-dependencies]
+walkdir = "2.5.0"
