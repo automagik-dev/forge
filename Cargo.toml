@@ -1,6 +1,32 @@
 [workspace]
 resolver = "2"
-members = ["crates/server", "crates/db", "crates/executors", "crates/services", "crates/utils", "crates/local-deployment", "crates/deployment"]
+members = [
+    # Existing crates (will be replaced by upstream eventually)
+    "crates/server",
+    "crates/db",
+    "crates/executors",
+    "crates/services",
+    "crates/utils",
+    "crates/local-deployment",
+    "crates/deployment",
+
+    # Upstream crates (from submodule)
+    "upstream/crates/server",
+    "upstream/crates/db",
+    "upstream/crates/executors",
+    "upstream/crates/services",
+    "upstream/crates/utils",
+    "upstream/crates/local-deployment",
+    "upstream/crates/deployment",
+
+    # Forge extensions
+    "forge-extensions/omni",
+    "forge-extensions/branch-templates",
+    "forge-extensions/config",
+
+    # Forge main app
+    "forge-app"
+]
 
 [workspace.dependencies]
 tokio = { version = "1.0", features = ["full"] }

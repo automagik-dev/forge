@@ -1,0 +1,12 @@
+[package]
+name = "forge-branch-templates"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+sqlx = { version = "0.7", features = ["runtime-tokio-native-tls", "sqlite"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+ts-rs = { workspace = true }

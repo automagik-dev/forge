@@ -1,0 +1,11 @@
+[package]
+name = "forge-config"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+forge-omni = { path = "../omni" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+ts-rs = { workspace = true }
+anyhow = { workspace = true }
