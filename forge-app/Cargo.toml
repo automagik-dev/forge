@@ -1,0 +1,17 @@
+[package]
+name = "forge-app"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = { workspace = true }
+axum = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+forge-extensions-omni = { path = "../forge-extensions/omni" }
+forge-extensions-branch-templates = { path = "../forge-extensions/branch-templates" }
+forge-extensions-config = { path = "../forge-extensions/config" }
+forge-extensions-genie = { path = "../forge-extensions/genie" }
+services = { path = "../crates/services" }
+db = { path = "../crates/db" }
