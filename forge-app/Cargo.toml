@@ -1,0 +1,26 @@
+[package]
+name = "forge-app"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Upstream dependencies (will be added as we extract)
+# forge-* extensions
+forge-omni = { path = "../forge-extensions/omni" }
+forge-branch-templates = { path = "../forge-extensions/branch-templates" }
+forge-config = { path = "../forge-extensions/config" }
+forge-genie = { path = "../forge-extensions/genie" }
+
+# Workspace dependencies
+tokio = { workspace = true }
+axum = { workspace = true }
+tower-http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio", "sqlite", "macros", "migrate"] }
