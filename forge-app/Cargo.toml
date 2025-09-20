@@ -1,0 +1,46 @@
+[package]
+name = "forge-app"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "forge-app"
+path = "src/main.rs"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+axum = { workspace = true }
+tower-http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "sqlite", "chrono", "json", "uuid"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# HTTP
+reqwest = { version = "0.12", features = ["json"] }
+rust-embed = "8.0"
+mime_guess = "2.0"
+dirs = "5.0"
+
+# Forge extensions
+forge-omni = { path = "../forge-extensions/omni" }
+forge-branch-templates = { path = "../forge-extensions/branch-templates" }
+forge-config = { path = "../forge-extensions/config" }
+forge-genie = { path = "../forge-extensions/genie" }
+
+# Upstream dependencies (will reference from submodule)
+# NOTE: These paths will need to be updated once we reference upstream submodule
+# For now, we'll reference the current crates to bootstrap the composition layer
+server = { path = "../crates/server" }
+db = { path = "../crates/db" }
+services = { path = "../crates/services" }
+executors = { path = "../crates/executors" }
+utils = { path = "../crates/utils" }
