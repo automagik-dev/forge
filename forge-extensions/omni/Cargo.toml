@@ -1,0 +1,18 @@
+[package]
+name = "forge-omni"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+async-trait = "0.1"
+thiserror = { workspace = true }
+reqwest = { version = "0.12", features = ["json"] }
+ts-rs = { workspace = true }
