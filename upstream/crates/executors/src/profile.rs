@@ -5,8 +5,13 @@ use lazy_static::lazy_static;
 use serde::{Deserialize, Deserializer, Serialize, de::Error as DeError};
 use thiserror::Error;
 use ts_rs::TS;
+use utils::assets::asset_dir;
 
 use crate::executors::{BaseCodingAgent, CodingAgent, StandardCodingAgentExecutor};
+
+fn profiles_path() -> std::path::PathBuf {
+    asset_dir().join("profiles.json")
+}
 
 /// Return the canonical form for variant keys.
 /// – "DEFAULT" is kept as-is  
@@ -204,7 +209,7 @@ impl ExecutorConfigs {
 
     /// Load executor profiles from file or defaults
     pub fn load() -> Self {
-        let profiles_path = utils::assets::profiles_path();
+        let profiles_path = profiles_path();
 
         // Load defaults first
         let mut defaults = Self::from_defaults();
@@ -238,7 +243,7 @@ impl ExecutorConfigs {
 
     /// Save user profile overrides to file (only saves what differs from defaults)
     pub fn save_overrides(&self) -> Result<(), ProfileError> {
-        let profiles_path = utils::assets::profiles_path();
+        let profiles_path = profiles_path();
         let mut defaults = Self::from_defaults();
         defaults.canonicalise();
 

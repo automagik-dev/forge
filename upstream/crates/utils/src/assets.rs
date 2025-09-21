@@ -5,7 +5,7 @@ const PROJECT_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 
 pub fn asset_dir() -> std::path::PathBuf {
     let path = if cfg!(debug_assertions) {
-        std::path::PathBuf::from(PROJECT_ROOT).join("../../dev_assets")
+        std::path::PathBuf::from(PROJECT_ROOT).join("../../../dev_assets")
     } else if cfg!(target_os = "linux") {
         // Linux: Use ~/.automagik-forge directly
         BaseDirs::new()
@@ -13,7 +13,7 @@ pub fn asset_dir() -> std::path::PathBuf {
             .home_dir()
             .join(".automagik-forge")
     } else if cfg!(target_os = "windows") {
-        // Windows: Use %APPDATA%\automagik-forge (without organization folder)
+        // Windows: Use %APPDATA%\\automagik-forge (without organization folder)
         BaseDirs::new()
             .expect("OS didn't give us a data directory")
             .data_dir()
@@ -33,7 +33,7 @@ pub fn asset_dir() -> std::path::PathBuf {
 
     path
     // ✔ Linux → ~/.automagik-forge
-    // ✔ Windows → %APPDATA%\automagik-forge
+    // ✔ Windows → %APPDATA%\\automagik-forge
     // ✔ macOS → ~/Library/Application Support/automagik-forge
 }
 
@@ -46,9 +46,9 @@ pub fn profiles_path() -> std::path::PathBuf {
 }
 
 #[derive(RustEmbed)]
-#[folder = "../../assets/sounds"]
+#[folder = "../../../assets/sounds"]
 pub struct SoundAssets;
 
 #[derive(RustEmbed)]
-#[folder = "../../assets/scripts"]
+#[folder = "../../../assets/scripts"]
 pub struct ScriptAssets;

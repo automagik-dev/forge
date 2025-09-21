@@ -1,4 +1,5 @@
 use std::{env, sync::OnceLock};
+use rust_embed::Embed;
 
 use directories::ProjectDirs;
 
@@ -53,7 +54,7 @@ pub fn cache_dir() -> std::path::PathBuf {
 
     // ✔ macOS → ~/Library/Caches/MyApp
     // ✔ Linux → ~/.cache/myapp (respects XDG_CACHE_HOME)
-    // ✔ Windows → %LOCALAPPDATA%\Example\MyApp
+    // ✔ Windows → %LOCALAPPDATA%\\Example\\MyApp
     proj.cache_dir().to_path_buf()
 }
 

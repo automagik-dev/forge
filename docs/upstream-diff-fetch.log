@@ -1,7 +1,9 @@
 # Upstream Diff Audit Fetch Log
-Generated: 2025-09-21T16:29:14Z
+Generated: 2025-09-21T21:09:26Z
 
 Fetching remotes...
+From https://github.com/BloopAI/vibe-kanban
+   7a37e329..7702e7a4  gabriel/user-approval -> upstream/gabriel/user-approval
 
 
 Writing full diff to docs/upstream-diff-full.patch

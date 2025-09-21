@@ -1,6 +1,10 @@
 [workspace]
 resolver = "2"
-members = ["crates/server", "crates/db", "crates/executors", "crates/services", "crates/utils", "crates/local-deployment", "crates/deployment"]
+members = [
+    "upstream/crates/*",
+    "forge-extensions/*",
+    "forge-app"
+]
 
 [workspace.dependencies]
 tokio = { version = "1.0", features = ["full"] }
