@@ -1,0 +1,10 @@
+[package]
+name = "forge-extensions-genie"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true }
+anyhow = { workspace = true }
+reqwest = { version = "0.12", features = ["json"] }
+ts-rs = { workspace = true }

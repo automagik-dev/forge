@@ -1,0 +1,9 @@
+[package]
+name = "forge-extensions-branch-templates"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true }
+sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid"] }
+anyhow = { workspace = true }
