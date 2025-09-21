@@ -1,9 +1,12 @@
 use anyhow::Result;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use tracing::info;
 
 mod router;
 mod services;
+
+use services::ForgeServices;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -15,14 +18,25 @@ async fn main() -> Result<()> {
         )
         .init();
 
-    info!("Starting forge-app scaffold...");
+    info!("Starting forge-app with extensions...");
 
-    // Create router
-    let app = router::create_router();
+    // Initialize services
+    let services = Arc::new(ForgeServices::new());
+
+    // Create router with services
+    let app = router::create_router(services);
 
     // Bind and serve
     let addr = SocketAddr::from(([127, 0, 0, 1], 8887));
     info!("Listening on {}", addr);
+    info!("Available endpoints:");
+    info!("  - GET  /health");
+    info!("  - GET  /api/forge/omni/instances");
+    info!("  - POST /api/forge/omni/test");
+    info!("  - GET  /api/forge/branch-templates/{{task_id}}");
+    info!("  - POST /api/forge/branch-templates/{{task_id}}");
+    info!("  - GET  /api/forge/genie/wishes");
+    info!("  - GET  /api/forge/genie/commands");
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;

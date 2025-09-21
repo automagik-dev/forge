@@ -4,4 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# Dependencies will be added in Task 2 when extracting Genie/Claude functionality
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+
+# For TypeScript type generation
+ts-rs = { workspace = true }

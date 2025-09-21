@@ -4,4 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# Dependencies will be added in Task 2 when extracting Omni functionality
+# Core dependencies
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+reqwest = { version = "0.12", features = ["json"] }
+tracing = { workspace = true }
+
+# For TypeScript type generation
+ts-rs = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }

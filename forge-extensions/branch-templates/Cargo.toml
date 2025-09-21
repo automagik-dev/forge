@@ -4,4 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# Dependencies will be added in Task 2 when extracting branch template functionality
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { version = "0.8", features = ["runtime-tokio-native-tls", "sqlite"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.10", features = ["v4", "serde"] }
+tracing = { workspace = true }
+
+# For TypeScript type generation
+ts-rs = { workspace = true }
