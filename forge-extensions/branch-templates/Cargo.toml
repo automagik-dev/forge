@@ -7,3 +7,8 @@ edition = "2021"
 # Dependencies will be added in Task 2
 sqlx = { workspace = true }
 anyhow.workspace = true
+utils = { path = "../../crates/utils" }
+uuid.workspace = true
+chrono.workspace = true
+serde.workspace = true
+ts-rs.workspace = true

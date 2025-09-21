@@ -138,7 +138,7 @@ impl LocalContainerService {
 
         // Send Omni notification independently to preserve decoupling
         if omni_cfg.enabled {
-            let omni_service = services::services::omni::OmniService::new(omni_cfg.clone());
+            let omni_service = forge_omni::OmniService::new(omni_cfg.clone());
 
             // Build a detailed status message similar to push notification
             let status_message = match ctx.execution_process.status {

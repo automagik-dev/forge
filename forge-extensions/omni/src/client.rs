@@ -1,4 +1,4 @@
-use super::types::{OmniInstance, RawOmniInstance, SendTextRequest, SendTextResponse};
+use crate::types::{OmniInstance, RawOmniInstance, SendTextRequest, SendTextResponse};
 use anyhow::Result;
 
 pub struct OmniClient {

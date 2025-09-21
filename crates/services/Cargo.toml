@@ -11,6 +11,7 @@ cloud = []
 utils = { path = "../utils" }
 executors = { path = "../executors" }
 db = { path = "../db" }
+forge-omni = { path = "../../forge-extensions/omni" }
 tokio = { workspace = true }
 tokio-util = { version = "0.7", features = ["io"] }
 axum = { workspace = true }

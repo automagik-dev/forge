@@ -1,7 +1,8 @@
 //! Omni notification extension crate
 
+pub mod client;
+pub mod types;
 pub mod services;
 
-pub fn dummy() -> &'static str {
-    "Omni scaffold"
-}
+pub use types::*;
+pub use services::notifications::OmniService;

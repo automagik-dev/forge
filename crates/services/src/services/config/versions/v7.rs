@@ -5,8 +5,8 @@ use ts_rs::TS;
 pub use v6::{EditorConfig, EditorType, GitHubConfig, NotificationConfig, SoundFile, ThemeMode};
 
 use crate::services::config::versions::v6;
-// Import OmniConfig directly from the omni module - single source of truth
-pub use crate::services::omni::types::{OmniConfig, RecipientType};
+// Import OmniConfig directly from the forge-omni extension - single source of truth
+pub use forge_omni::types::{OmniConfig, RecipientType};
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 pub struct Config {
