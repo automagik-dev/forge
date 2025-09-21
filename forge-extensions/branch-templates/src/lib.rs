@@ -1,18 +1,13 @@
 //! Forge Branch Templates Extension
 //!
-//! This module will contain the branch template feature extracted from the upstream fork.
-//! Currently scaffolded - business logic will be migrated in Task 2.
+//! This module contains the branch template functionality extracted from the upstream fork.
+//! Provides services for managing custom branch naming patterns for tasks.
 
-pub fn placeholder() {
-    tracing::info!("Forge Branch Templates extension scaffolded - ready for feature extraction");
-}
+pub mod service;
+pub mod types;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub use service::BranchTemplateService;
+pub use types::*;
 
-    #[test]
-    fn test_placeholder() {
-        placeholder();
-    }
-}
+// Re-export the key function for backwards compatibility
+pub use service::generate_branch_name;

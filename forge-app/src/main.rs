@@ -1,9 +1,9 @@
 //! Forge Application
 //!
-//! Main application binary that will compose upstream services with forge extensions.
-//! Currently scaffolded - full composition logic will be implemented in Task 2/3.
+//! Main application binary that composes upstream services with forge extensions.
+//! Provides unified API access to both upstream functionality and forge-specific features.
 
-use std::net::SocketAddr;
+use std::{env, net::SocketAddr};
 use tracing_subscriber;
 
 mod router;
@@ -13,13 +13,18 @@ mod services;
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
-    // Initialize forge extensions (currently just placeholders)
-    forge_omni::placeholder();
-    forge_branch_templates::placeholder();
-    forge_config::placeholder();
-    forge_genie::placeholder();
+    // Initialize database and forge services
+    let database_url =
+        env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:./forge.sqlite".to_string());
 
-    let app = router::create_router();
+    tracing::info!(
+        "Initializing forge services with database: {}",
+        database_url
+    );
+    let services = services::ForgeServices::new(&database_url).await?;
+
+    // Create router with services
+    let app = router::create_router(services);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8887));
     tracing::info!("Forge app listening on {}", addr);
