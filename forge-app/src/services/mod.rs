@@ -9,8 +9,15 @@ pub fn bootstrap_extensions() -> Result<()> {
     let cfg = config::ForgeConfig { version: 7 };
     config::validate(&cfg)?;
 
-    let omni_settings = omni::OmniSettings { enabled: false };
-    omni::init(&omni_settings);
+    let omni_service = omni::OmniService::new(omni::OmniConfig {
+        enabled: false,
+        host: None,
+        api_key: None,
+        instance: None,
+        recipient: None,
+        recipient_type: None,
+    });
+    let _ = omni_service.config.enabled;
 
     let template = branch_templates::BranchTemplate::example();
     info!(?template, "branch template scaffold available");

@@ -1,15 +1,14 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-// Match the wish specification exactly - simple flat structure
 #[derive(Clone, Debug, Default, Serialize, Deserialize, TS)]
 pub struct OmniConfig {
     pub enabled: bool,
     pub host: Option<String>,
     pub api_key: Option<String>,
     pub instance: Option<String>,
-    pub recipient: Option<String>, // phone_number or user_id
-    pub recipient_type: Option<RecipientType>, // phone or user_id
+    pub recipient: Option<String>,
+    pub recipient_type: Option<RecipientType>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -149,7 +148,7 @@ mod tests {
 
         let json = serde_json::to_string(&req).unwrap();
         assert!(json.contains("phone_number"));
-        assert!(!json.contains("user_id")); // Should be skipped when None
+        assert!(!json.contains("user_id"));
         assert!(json.contains("Test message"));
     }
 

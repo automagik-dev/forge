@@ -22,3 +22,4 @@ async-trait = "0.1"
 regex = "1.11.1"
 sentry-tracing = { version = "0.41.0", features = ["backtrace"] }
 futures-util = "0.3"
+forge-extensions-branch-templates = { path = "../../forge-extensions/branch-templates" }

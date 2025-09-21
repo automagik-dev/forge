@@ -1,4 +1,4 @@
-use super::types::{OmniInstance, RawOmniInstance, SendTextRequest, SendTextResponse};
+use crate::types::{OmniInstance, RawOmniInstance, SendTextRequest, SendTextResponse};
 use anyhow::Result;
 
 pub struct OmniClient {
@@ -26,23 +26,13 @@ impl OmniClient {
         }
 
         let response: Vec<RawOmniInstance> = request.send().await?.json().await?;
-
-        let instances = response.into_iter().map(OmniInstance::from).collect();
-
-        Ok(instances)
+        Ok(response.into_iter().map(OmniInstance::from).collect())
     }
 
-    pub async fn send_text(
-        &self,
-        instance: &str,
-        req: SendTextRequest,
-    ) -> Result<SendTextResponse> {
+    pub async fn send_text(&self, instance: &str, req: SendTextRequest) -> Result<SendTextResponse> {
         let mut request = self
             .client
-            .post(format!(
-                "{}/api/v1/instance/{}/send-text",
-                self.base_url, instance
-            ))
+            .post(format!("{}/api/v1/instance/{}/send-text", self.base_url, instance))
             .json(&req);
 
         if let Some(key) = &self.api_key {
@@ -50,7 +40,6 @@ impl OmniClient {
         }
 
         let response = request.send().await?.json().await?;
-
         Ok(response)
     }
 }

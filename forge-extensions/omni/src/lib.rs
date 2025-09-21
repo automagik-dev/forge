@@ -1,26 +1,9 @@
-//! Forge Omni extension scaffold.
+pub mod client;
+pub mod service;
+pub mod types;
 
-use serde::{Deserialize, Serialize};
-use tracing::info;
+pub use service::OmniService;
+pub use types::{OmniConfig, OmniInstance, RecipientType, SendTextRequest, SendTextResponse};
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct OmniSettings {
-    pub enabled: bool,
-}
-
-pub fn init(settings: &OmniSettings) {
-    if settings.enabled {
-        info!("Omni extension scaffold initialised");
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn defaults_are_disabled() {
-        let settings = OmniSettings::default();
-        assert!(!settings.enabled);
-    }
-}
+/// Backwards-compatible alias while forge-app wiring is updated.
+pub type OmniSettings = OmniConfig;

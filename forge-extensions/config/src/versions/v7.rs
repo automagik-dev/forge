@@ -1,15 +1,17 @@
 use anyhow::Error;
+use executors::{executors::BaseCodingAgent, profile::ExecutorProfileId};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-pub use v4::{EditorConfig, EditorType, GitHubConfig, NotificationConfig, SoundFile, ThemeMode};
+pub use v6::{EditorConfig, EditorType, GitHubConfig, NotificationConfig, SoundFile, ThemeMode};
 
-use crate::services::config::versions::v4::{self, ProfileVariantLabel};
+use super::v6;
+pub use forge_extensions_omni::{OmniConfig, RecipientType};
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 pub struct Config {
     pub config_version: String,
     pub theme: ThemeMode,
-    pub profile: ProfileVariantLabel,
+    pub executor_profile: ExecutorProfileId,
     pub disclaimer_acknowledged: bool,
     pub onboarding_acknowledged: bool,
     pub github_login_acknowledged: bool,
@@ -21,11 +23,12 @@ pub struct Config {
     pub workspace_dir: Option<String>,
     pub last_app_version: Option<String>,
     pub show_release_notes: bool,
+    pub omni: OmniConfig,
 }
 
 impl Config {
     pub fn from_previous_version(raw_config: &str) -> Result<Self, Error> {
-        let old_config = match serde_json::from_str::<v4::Config>(raw_config) {
+        let old_config = match serde_json::from_str::<v6::Config>(raw_config) {
             Ok(cfg) => cfg,
             Err(e) => {
                 tracing::error!("❌ Failed to parse config: {}", e);
@@ -35,9 +38,9 @@ impl Config {
         };
 
         Ok(Self {
-            config_version: "v5".to_string(),
+            config_version: "v7".to_string(),
             theme: old_config.theme,
-            profile: old_config.profile,
+            executor_profile: old_config.executor_profile,
             disclaimer_acknowledged: old_config.disclaimer_acknowledged,
             onboarding_acknowledged: old_config.onboarding_acknowledged,
             github_login_acknowledged: old_config.github_login_acknowledged,
@@ -47,8 +50,16 @@ impl Config {
             github: old_config.github,
             analytics_enabled: old_config.analytics_enabled,
             workspace_dir: old_config.workspace_dir,
-            last_app_version: None,
-            show_release_notes: false,
+            last_app_version: old_config.last_app_version,
+            show_release_notes: old_config.show_release_notes,
+            omni: OmniConfig {
+                enabled: false,
+                host: None,
+                api_key: None,
+                instance: None,
+                recipient: None,
+                recipient_type: None,
+            },
         })
     }
 }
@@ -56,14 +67,14 @@ impl Config {
 impl From<String> for Config {
     fn from(raw_config: String) -> Self {
         if let Ok(config) = serde_json::from_str::<Config>(&raw_config)
-            && config.config_version == "v5"
+            && config.config_version == "v7"
         {
             return config;
         }
 
         match Self::from_previous_version(&raw_config) {
             Ok(config) => {
-                tracing::info!("Config upgraded to v5");
+                tracing::info!("Config upgraded to v7");
                 config
             }
             Err(e) => {
@@ -77,9 +88,9 @@ impl From<String> for Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            config_version: "v5".to_string(),
+            config_version: "v7".to_string(),
             theme: ThemeMode::System,
-            profile: ProfileVariantLabel::default("claude-code".to_string()),
+            executor_profile: ExecutorProfileId::new(BaseCodingAgent::ClaudeCode),
             disclaimer_acknowledged: false,
             onboarding_acknowledged: false,
             github_login_acknowledged: false,
@@ -91,6 +102,14 @@ impl Default for Config {
             workspace_dir: None,
             last_app_version: None,
             show_release_notes: false,
+            omni: OmniConfig {
+                enabled: false,
+                host: None,
+                api_key: None,
+                instance: None,
+                recipient: None,
+                recipient_type: None,
+            },
         }
     }
 }

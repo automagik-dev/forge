@@ -1,34 +1,44 @@
-//! Forge configuration scaffold.
+use std::path::PathBuf;
 
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct ForgeConfig {
-    pub version: u8,
-}
+pub mod versions;
 
-#[derive(Debug, Error, PartialEq, Eq)]
+#[derive(Debug, Error)]
 pub enum ConfigError {
-    #[error("forge configuration version {0} is not supported yet")]
-    UnsupportedVersion(u8),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+    #[error("Validation error: {0}")]
+    ValidationError(String),
 }
 
-pub fn validate(config: &ForgeConfig) -> Result<(), ConfigError> {
-    if config.version == 7 {
-        Ok(())
-    } else {
-        Err(ConfigError::UnsupportedVersion(config.version))
+pub type ForgeConfig = versions::v7::Config;
+pub type NotificationConfig = versions::v7::NotificationConfig;
+pub type EditorConfig = versions::v7::EditorConfig;
+pub type ThemeMode = versions::v7::ThemeMode;
+pub type SoundFile = versions::v7::SoundFile;
+pub type EditorType = versions::v7::EditorType;
+pub type GitHubConfig = versions::v7::GitHubConfig;
+pub type OmniConfig = versions::v7::OmniConfig;
+pub type RecipientType = versions::v7::RecipientType;
+
+pub async fn load_config_from_file(config_path: &PathBuf) -> ForgeConfig {
+    match std::fs::read_to_string(config_path) {
+        Ok(raw_config) => ForgeConfig::from(raw_config),
+        Err(_) => {
+            tracing::info!("No config file found, creating one");
+            ForgeConfig::default()
+        }
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn accepts_version_seven() {
-        let cfg = ForgeConfig { version: 7 };
-        assert!(validate(&cfg).is_ok());
-    }
+pub async fn save_config_to_file(
+    config: &ForgeConfig,
+    config_path: &PathBuf,
+) -> Result<(), ConfigError> {
+    let raw_config = serde_json::to_string_pretty(config)?;
+    std::fs::write(config_path, raw_config)?;
+    Ok(())
 }

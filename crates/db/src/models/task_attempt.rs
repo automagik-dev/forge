@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use executors::executors::BaseCodingAgent;
+use forge_extensions_branch_templates as branch_templates;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool, Type};
 use thiserror::Error;
@@ -390,7 +391,11 @@ impl TaskAttempt {
             .await?
             .ok_or(TaskAttemptError::TaskNotFound)?;
 
-        let branch_name = generate_branch_name(&task, &attempt_id);
+        let branch_name = branch_templates::generate_branch_name(
+            task.branch_template.as_deref(),
+            &task.title,
+            &attempt_id,
+        );
 
         let branch_name_opt = Some(branch_name);
 
@@ -450,57 +455,31 @@ impl TaskAttempt {
     }
 }
 
-fn generate_branch_name(task: &Task, attempt_id: &Uuid) -> String {
-    if let Some(template) = &task.branch_template {
-        // User-provided template with short UUID suffix for uniqueness
-        format!("{}-{}", template, &attempt_id.to_string()[..4])
-    } else {
-        // Fallback to forge-{title}-{uuid} pattern
-        let task_title_id = utils::text::git_branch_id(&task.title);
-        format!(
-            "forge-{}-{}",
-            task_title_id,
-            utils::text::short_uuid(attempt_id)
-        )
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::task::TaskStatus;
 
-    fn dummy_task(branch_template: Option<String>, title: &str) -> Task {
-        Task {
+    #[test]
+    fn branch_name_generation_delegates_to_extension() {
+        let attempt_id = Uuid::nil();
+        let task = Task {
             id: Uuid::new_v4(),
             project_id: Uuid::new_v4(),
-            title: title.to_string(),
+            title: "Simple Task".to_string(),
             description: None,
-            status: TaskStatus::Todo,
-            branch_template,
+            status: crate::models::task::TaskStatus::Todo,
+            branch_template: Some("feature".to_string()),
             parent_task_attempt: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
-        }
-    }
+        };
 
-    #[test]
-    fn generate_branch_name_uses_template_suffix() {
-        let attempt_id = Uuid::new_v4();
-        let task = dummy_task(Some("feature-login".to_string()), "Login Flow");
-        let branch = generate_branch_name(&task, &attempt_id);
-        assert!(branch.starts_with("feature-login-"));
-        assert_eq!(branch.len(), "feature-login-".len() + 4);
-    }
+        let branch_name = branch_templates::generate_branch_name(
+            task.branch_template.as_deref(),
+            &task.title,
+            &attempt_id,
+        );
 
-    #[test]
-    fn generate_branch_name_falls_back_to_forge_pattern() {
-        let attempt_id = Uuid::nil();
-        let task = dummy_task(None, "Add Payment Flow");
-        let branch = generate_branch_name(&task, &attempt_id);
-        let expected_prefix = format!("forge-{}-", utils::text::git_branch_id(&task.title));
-        let expected_suffix = utils::text::short_uuid(&attempt_id);
-        assert!(branch.starts_with(&expected_prefix));
-        assert!(branch.ends_with(&expected_suffix));
+        assert!(branch_name.starts_with("feature-"));
     }
 }
