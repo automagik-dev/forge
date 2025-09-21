@@ -26,11 +26,16 @@ fi
 echo "📦 Building for platform: $PLATFORM_DIR"
 mkdir -p npx-cli/dist/$PLATFORM_DIR
 
-echo "🔨 Building frontend..."
+echo "🔨 Building legacy frontend..."
 (cd frontend && npm run build)
 
+echo "🔨 Building forge frontend (if exists)..."
+if [ -d "frontend-forge" ]; then
+    (cd frontend-forge && npm install && npm run build) || echo "⚠️  Frontend-forge build failed, continuing..."
+fi
+
 echo "🔨 Building Rust binaries..."
-cargo build --release
+cargo build --release --bin forge-app
 cargo build --release --bin mcp_task_server
 
 echo "📦 Creating distribution package..."
@@ -41,8 +46,8 @@ PLATFORMS=("linux-x64" "linux-arm64" "windows-x64" "windows-arm64" "macos-x64" "
 echo "📦 Packaging binaries for $PLATFORM_DIR..."
 mkdir -p npx-cli/dist/$PLATFORM_DIR
 
-# Copy and zip the main binary
-cp target/release/server automagik-forge
+# Copy and zip the main binary (forge-app)
+cp target/release/forge-app automagik-forge
 zip -q automagik-forge.zip automagik-forge
 rm -f automagik-forge
 mv automagik-forge.zip npx-cli/dist/$PLATFORM_DIR/automagik-forge.zip

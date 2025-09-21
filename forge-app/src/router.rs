@@ -1,18 +1,40 @@
 use axum::{
+    body::Body,
     extract::{Path, State},
+    http::{header, StatusCode},
+    response::{Html, IntoResponse, Response},
     routing::{get, post},
     Json, Router,
 };
+use rust_embed::{RustEmbed, Embed};
 use serde_json::json;
 use std::sync::Arc;
 
 use crate::services::ForgeServices;
+
+// Embed the new forge frontend (built from frontend-forge/)
+// In development, this will be empty until built
+#[derive(RustEmbed)]
+#[folder = "../frontend-forge/dist"]
+#[include = "*"]
+struct ForgeFrontend;
+
+// Embed the legacy frontend (built from frontend/)
+#[derive(RustEmbed)]
+#[folder = "../frontend/dist"]
+#[include = "*"]
+struct LegacyFrontend;
 
 pub fn create_router(services: Arc<ForgeServices>) -> Router {
     Router::new()
         .route("/health", get(health_check))
         // Forge API routes
         .nest("/api/forge", forge_api_routes())
+        // Legacy frontend at /legacy
+        .nest("/legacy", legacy_frontend_router())
+        // New forge frontend at root
+        .route("/", get(serve_forge_index))
+        .route("/{*path}", get(serve_forge_asset))
         .with_state(services)
 }
 
@@ -27,6 +49,82 @@ fn forge_api_routes() -> Router<Arc<ForgeServices>> {
         // Genie routes
         .route("/genie/wishes", get(list_genie_wishes))
         .route("/genie/commands", get(list_genie_commands))
+}
+
+fn legacy_frontend_router() -> Router<Arc<ForgeServices>> {
+    Router::new()
+        .route("/", get(serve_legacy_index))
+        .route("/{*path}", get(serve_legacy_asset))
+}
+
+async fn serve_forge_index() -> impl IntoResponse {
+    match <ForgeFrontend as Embed>::get("index.html") {
+        Some(content) => {
+            let body = std::str::from_utf8(content.data.as_ref())
+                .unwrap_or("")
+                .to_owned();
+            Html(body).into_response()
+        },
+        None => (StatusCode::NOT_FOUND, "Forge frontend not built yet. Run: cd frontend-forge && pnpm build").into_response(),
+    }
+}
+
+async fn serve_forge_asset(Path(path): Path<String>) -> impl IntoResponse {
+    match <ForgeFrontend as Embed>::get(&path) {
+        Some(content) => {
+            let mime = mime_guess::from_path(&path).first_or_octet_stream();
+            Response::builder()
+                .status(StatusCode::OK)
+                .header(header::CONTENT_TYPE, mime.as_ref())
+                .body(Body::from(content.data))
+                .unwrap()
+        }
+        None => {
+            // Try index.html for client-side routing
+            if !path.contains('.') {
+                return serve_forge_index().await.into_response();
+            }
+            Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(Body::from("Not Found"))
+                .unwrap()
+        }
+    }
+}
+
+async fn serve_legacy_index() -> impl IntoResponse {
+    match <LegacyFrontend as Embed>::get("index.html") {
+        Some(content) => {
+            let body = std::str::from_utf8(content.data.as_ref())
+                .unwrap_or("")
+                .to_owned();
+            Html(body).into_response()
+        },
+        None => (StatusCode::NOT_FOUND, "Legacy frontend not built yet. Run: cd frontend && pnpm build").into_response(),
+    }
+}
+
+async fn serve_legacy_asset(Path(path): Path<String>) -> impl IntoResponse {
+    match <LegacyFrontend as Embed>::get(&path) {
+        Some(content) => {
+            let mime = mime_guess::from_path(&path).first_or_octet_stream();
+            Response::builder()
+                .status(StatusCode::OK)
+                .header(header::CONTENT_TYPE, mime.as_ref())
+                .body(Body::from(content.data))
+                .unwrap()
+        }
+        None => {
+            // Try index.html for client-side routing
+            if !path.contains('.') {
+                return serve_legacy_index().await.into_response();
+            }
+            Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(Body::from("Not Found"))
+                .unwrap()
+        }
+    }
 }
 
 async fn health_check() -> Json<serde_json::Value> {
