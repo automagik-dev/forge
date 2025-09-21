@@ -1,0 +1,10 @@
+{
+  "name": "frontend-forge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Forge frontend - will be populated in Task 3",
+  "scripts": {
+    "dev": "echo 'Frontend development will be configured in Task 3'",
+    "build": "echo 'Frontend build will be configured in Task 3'"
+  }
+}

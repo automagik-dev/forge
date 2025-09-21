@@ -1,0 +1,24 @@
+[package]
+name = "forge-app"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "forge-app"
+path = "src/main.rs"
+
+[dependencies]
+# Core dependencies
+tokio = { workspace = true }
+axum = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Forge extensions (will be wired in Task 2)
+forge-extensions-omni = { path = "../forge-extensions/omni" }
+forge-extensions-branch-templates = { path = "../forge-extensions/branch-templates" }
+forge-extensions-config = { path = "../forge-extensions/config" }
+forge-extensions-genie = { path = "../forge-extensions/genie" }

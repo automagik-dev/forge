@@ -1,2 +1,4 @@
 packages:
   - 'frontend'
+  - 'frontend-forge'
+  # Note: upstream/frontend will be added once submodule is initialized
