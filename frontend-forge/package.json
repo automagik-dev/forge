@@ -1,0 +1,16 @@
+{
+  "name": "@automagik/frontend-forge",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo frontend-forge scaffold only",
+    "build": "echo frontend-forge scaffold only",
+    "check": "echo frontend-forge scaffold only"
+  },
+  "description": "Placeholder workspace package for the forge-specific frontend extracted in future tasks.",
+  "keywords": [
+    "forge",
+    "scaffold"
+  ],
+  "license": "MIT"
+}

@@ -14,3 +14,7 @@ All commands executed from repo root on branch `restructure/upstream-as-library-
 - Personal snapshot **not** committed; populate `dev_assets_seed/forge-snapshot/from_home/` locally via `./scripts/collect-forge-snapshot.sh` (defaults to `~/.automagik-forge`). The directory stays git-ignored to avoid secrets and large binaries.
 
 See `docs/regression/baseline/checksums.txt` for SHA256 fingerprints of the committed artifacts. Compute hashes for your local snapshot as needed once copied.
+
+## Task 1 Layout Notes
+- New scaffolding directories (`upstream/`, `forge-app/`, `forge-extensions/`, `forge-overrides/`, `frontend-forge/`) do not alter existing regression artifacts.
+- Continue referencing the legacy `frontend/` and backend crates for behaviour until Tasks 2–3 migrate functionality.

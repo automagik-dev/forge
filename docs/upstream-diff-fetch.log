@@ -1,9 +1,5 @@
 # Upstream Diff Audit Fetch Log
-Generated: 2025-09-21T16:29:14Z
+Generated: 2025-09-21T17:58:21Z
 
 Fetching remotes...
-
-
-Writing full diff to docs/upstream-diff-full.patch
-Full diff written to docs/upstream-diff-full.patch
-Audit complete.
+error: cannot open '/home/namastex/workspace/automagik-forge/.git/worktrees/forge-task-1-ups-297d/FETCH_HEAD': Permission denied

@@ -1,0 +1,9 @@
+[package]
+name = "forge-extensions-branch-templates"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+serde = { workspace = true }
+anyhow = { workspace = true }
