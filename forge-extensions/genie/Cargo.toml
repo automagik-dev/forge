@@ -1,0 +1,10 @@
+[package]
+name = "forge-genie"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Dependencies will be added in Task 2
+tokio.workspace = true
+reqwest.workspace = true
+anyhow.workspace = true

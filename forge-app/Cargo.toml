@@ -1,0 +1,26 @@
+[package]
+name = "forge-app"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "forge-app"
+path = "src/main.rs"
+
+[dependencies]
+axum.workspace = true
+tokio.workspace = true
+tower-http.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+
+# Upstream server (uncomment after submodule init)
+# upstream-server = { path = "../upstream/crates/server" }
+
+# Forge extensions
+forge-omni = { path = "../forge-extensions/omni" }
+forge-branch-templates = { path = "../forge-extensions/branch-templates" }
+forge-config = { path = "../forge-extensions/config" }
+forge-genie = { path = "../forge-extensions/genie" }

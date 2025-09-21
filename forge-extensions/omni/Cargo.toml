@@ -1,0 +1,9 @@
+[package]
+name = "forge-omni"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Dependencies will be added in Task 2
+tokio.workspace = true
+anyhow.workspace = true

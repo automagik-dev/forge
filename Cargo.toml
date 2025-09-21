@@ -1,6 +1,23 @@
 [workspace]
 resolver = "2"
-members = ["crates/server", "crates/db", "crates/executors", "crates/services", "crates/utils", "crates/local-deployment", "crates/deployment"]
+members = [
+  # Upstream crates (uncomment after submodule initialization)
+  # "upstream/crates/*",
+  
+  # Existing forge crates (to be refactored in future tasks)
+  "crates/server",
+  "crates/db",
+  "crates/executors",
+  "crates/services",
+  "crates/utils",
+  "crates/local-deployment",
+  "crates/deployment",
+  
+  # New forge structure
+  "forge-extensions/*",
+  "forge-app",
+  # "forge-overrides/*",  # Add specific overrides as needed
+]
 
 [workspace.dependencies]
 tokio = { version = "1.0", features = ["full"] }
@@ -15,6 +32,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 openssl-sys = { version = "0.9", features = ["vendored"] }
 ts-rs = { git = "https://github.com/xazukx/ts-rs.git", branch = "use-ts-enum", features = ["uuid-impl", "chrono-impl", "no-serde-warnings"] }
 schemars = { version = "1.0.4", features = ["derive", "chrono04", "uuid1", "preserve_order"] }
+sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid"] }
+reqwest = { version = "0.12", features = ["json"] }
 
 [profile.release]
 debug = true

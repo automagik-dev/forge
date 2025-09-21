@@ -1,6 +1,14 @@
-# Baseline Regression Artifacts (2025-09-21)
+# Baseline Regression Artifacts (2025-09-21) - Pre-Scaffold
 
-## Commands Captured
+## Note on Scaffold Changes (Task 1)
+The workspace structure has been updated with new directories (`upstream/`, `forge-extensions/`, `forge-app/`, `frontend-forge/`, `forge-overrides/`). Existing crates and frontend remain unchanged. 
+
+- Baseline logs and snapshots refer to the pre-scaffold layout.
+- Post-scaffold verification: `cargo check --workspace` and `pnpm install` succeed (see `docs/upstream-as-library-foundation.md`).
+- For regression testing after full migration (Tasks 2-3), re-run `./scripts/run-forge-regression.sh` and update baselines accordingly.
+- Paths in logs (e.g., `crates/server`) still valid; new paths added but not yet containing logic.
+
+## Original Commands Captured
 - `cargo test --workspace` → `docs/regression/logs/cargo-test-workspace.log`
 - `pnpm run check` → `docs/regression/logs/pnpm-run-check.log`
 - `pnpm install` → `docs/regression/logs/pnpm-install.log`
