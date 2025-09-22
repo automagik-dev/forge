@@ -17,6 +17,8 @@ serde_json = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+rust-embed = { version = "8.0", features = ["debug-embed"] }
+mime_guess = "2.0"
 
 # Database dependencies
 sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "migrate", "uuid", "chrono"] }

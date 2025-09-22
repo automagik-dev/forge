@@ -10,6 +10,7 @@ use std::sync::Arc;
 // Import forge extension services
 use forge_branch_templates::BranchTemplateService;
 use forge_config::ForgeConfigService;
+use forge_genie::GenieService;
 use forge_omni::{OmniConfig, OmniService};
 
 /// Main forge services container
@@ -18,6 +19,7 @@ pub struct ForgeServices {
     pub omni: Arc<OmniService>,
     pub branch_templates: Arc<BranchTemplateService>,
     pub config: Arc<ForgeConfigService>,
+    pub genie: Arc<GenieService>,
     pub pool: SqlitePool,
 }
 
@@ -42,11 +44,13 @@ impl ForgeServices {
         let omni = Arc::new(OmniService::new(omni_config));
         let branch_templates = Arc::new(BranchTemplateService::new(pool.clone()));
         let config = Arc::new(ForgeConfigService::new(pool.clone()));
+        let genie = Arc::new(GenieService::new("./genie/wishes".to_string()));
 
         Ok(Self {
             omni,
             branch_templates,
             config,
+            genie,
             pool,
         })
     }
