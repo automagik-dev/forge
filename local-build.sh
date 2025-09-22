@@ -5,6 +5,23 @@ set -e  # Exit on any error
 echo "🧹 Cleaning previous builds..."
 rm -rf npx-cli/dist
 
+echo "📐 Preparing SQLx offline cache..."
+if ! command -v cargo-sqlx >/dev/null 2>&1; then
+  echo "Installing sqlx-cli (sqlite support)..."
+  cargo install sqlx-cli --no-default-features --features sqlite >/dev/null
+fi
+
+TMP_DB=$(mktemp -u)
+TMP_DB="$TMP_DB.db"
+export DATABASE_URL="sqlite://$TMP_DB"
+(cd crates/db && cargo sqlx database create --database-url "$DATABASE_URL" >/dev/null)
+(cd crates/db && cargo sqlx migrate run --database-url "$DATABASE_URL")
+cargo sqlx prepare --workspace -- --all-targets >/dev/null
+unset DATABASE_URL
+
+# remove temporary database file
+rm -f "$TMP_DB"
+
 # Detect current platform
 PLATFORM=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)

@@ -81,6 +81,23 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install --no-frozen-lockfile
 
+      - name: Install sqlx-cli
+        run: |
+          if ! command -v cargo-sqlx >/dev/null 2>&1; then
+            cargo install sqlx-cli --no-default-features --features sqlite
+          fi
+
+      - name: Prepare SQLx offline data
+        shell: bash
+        run: |
+          DB_PATH="$(pwd)/target/sqlx-dev.db"
+          export DATABASE_URL="sqlite://$DB_PATH"
+          cargo sqlx database create --database-url "$DATABASE_URL"
+          cargo sqlx migrate run --database-url "$DATABASE_URL" --source crates/db/migrations
+          cargo sqlx prepare --workspace -- --all-targets
+          rm -f "$DB_PATH"
+          unset DATABASE_URL
+
       - name: Install Windows build tools for vendored OpenSSL
         if: runner.os == 'Windows'
         shell: pwsh

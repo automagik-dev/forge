@@ -86,6 +86,7 @@ vibe-kanban-*.tgz
 .dev-ports.json
 
 dev_assets
+/.sqlx/
 /frontend/.env.sentry-build-plugin
 .ssh
 
