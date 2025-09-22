@@ -8,14 +8,17 @@
       ],
       "command": "npx"
     },
-    "google-sheets": {
-      "command": "uvx",
-      "args": ["mcp-google-sheets@latest"],
-      "env": {
-        "SERVICE_ACCOUNT_PATH": "/home/namastex/workspace/nmstx-support/workspace-mcp-469715-625458b64974.json",
-        "DRIVE_FOLDER_ID": "1WrqiOh2ihXkGJKjItg_q-q8VQeIVCkhR"
-      }
-  },
+    "ask-repo-agent": {
+      "type": "sse",
+      "url": "https://mcp.deepwiki.com/sse"
+    },
+    "search-repo-docs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ]
+    },
     "playwright": {
       "command": "npx",
       "args": ["-y", "@executeautomation/playwright-mcp-server"]
