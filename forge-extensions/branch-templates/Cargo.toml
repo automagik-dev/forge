@@ -12,6 +12,7 @@ sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "uuid"
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 tracing = { workspace = true }
+utils = { path = "../../crates/utils" }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

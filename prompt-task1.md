@@ -20,7 +20,7 @@ Establish the minimal but working project scaffold for the upcoming migration so
    - the actual git submodule reference (if the environment allows `git submodule add`), **or**
    - a README that documents the exact commands to initialise the submodule locally and explicitly states that no upstream files were modified.
 2. New directory layout in place:
-   - `forge-extensions/{omni,branch-templates,config,genie}/` with `Cargo.toml` and a minimal `src/lib.rs` that compiles.
+   - `forge-extensions/{omni,branch-templates,config}/` with `Cargo.toml` and a minimal `src/lib.rs` that compiles.
    - `forge-app/` with `Cargo.toml`, `src/main.rs`, `src/router.rs` (stub returning `/health`), and `src/services/mod.rs` scaffolding.
    - `forge-overrides/` exists (empty except for `.gitkeep` or README describing its future use).
 3. Root `Cargo.toml` updated:

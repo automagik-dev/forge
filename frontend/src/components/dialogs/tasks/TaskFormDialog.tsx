@@ -18,7 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { templatesApi, imagesApi, projectsApi, attemptsApi } from '@/lib/api';
+import {
+  templatesApi,
+  imagesApi,
+  projectsApi,
+  attemptsApi,
+  branchTemplatesApi,
+} from '@/lib/api';
 import { useTaskMutations } from '@/hooks/useTaskMutations';
 import { useUserSystem } from '@/components/config-provider';
 import { ExecutorProfileSelector } from '@/components/settings';
@@ -38,7 +44,6 @@ interface Task {
   title: string;
   description: string | null;
   status: TaskStatus;
-  branch_template: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -69,6 +74,8 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState<TaskStatus>('todo');
     const [branchTemplate, setBranchTemplate] = useState<string>('');
+    const [initialBranchTemplate, setInitialBranchTemplate] =
+      useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmittingAndStart, setIsSubmittingAndStart] = useState(false);
     const [templates, setTemplates] = useState<TaskTemplate[]>([]);
@@ -98,10 +105,25 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
         const descriptionChanged =
           (description || '').trim() !== (task.description || '').trim();
         const statusChanged = status !== task.status;
-        return titleChanged || descriptionChanged || statusChanged;
+        const branchTemplateChanged =
+          branchTemplate.trim() !== initialBranchTemplate.trim();
+        return (
+          titleChanged ||
+          descriptionChanged ||
+          statusChanged ||
+          branchTemplateChanged
+        );
       }
       return false;
-    }, [title, description, status, isEditMode, task]);
+    }, [
+      title,
+      description,
+      status,
+      branchTemplate,
+      initialBranchTemplate,
+      isEditMode,
+      task,
+    ]);
 
     // Warn on browser/tab close if there are unsaved changes
     useEffect(() => {
@@ -129,7 +151,8 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
         setTitle(task.title);
         setDescription(task.description || '');
         setStatus(task.status);
-        setBranchTemplate(task.branch_template || '');
+        setBranchTemplate('');
+        setInitialBranchTemplate('');
 
         // Load existing images for the task
         if (modal.visible) {
@@ -139,6 +162,19 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
             .catch((err) => {
               console.error('Failed to load task images:', err);
               setImages([]);
+            });
+
+          branchTemplatesApi
+            .get(task.id)
+            .then((response) => {
+              const templateValue = response.branch_template ?? '';
+              setBranchTemplate(templateValue);
+              setInitialBranchTemplate(templateValue);
+            })
+            .catch((err) => {
+              console.error('Failed to load branch template:', err);
+              setBranchTemplate('');
+              setInitialBranchTemplate('');
             });
         }
       } else if (initialTask) {
@@ -150,6 +186,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
         setImages([]);
         setNewlyUploadedImageIds([]);
         setBranchTemplate('');
+        setInitialBranchTemplate('');
       } else if (initialTemplate) {
         // Create mode with template - pre-fill from template
         setTitle(initialTemplate.title);
@@ -157,6 +194,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
         setStatus('todo');
         setSelectedTemplate('');
         setBranchTemplate('');
+        setInitialBranchTemplate('');
       } else {
         // Create mode - reset to defaults
         setTitle('');
@@ -167,6 +205,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
         setNewlyUploadedImageIds([]);
         // Reset both our branch template and upstream quickstart fields
         setBranchTemplate('');
+        setInitialBranchTemplate('');
         setSelectedBranch('');
         setSelectedExecutorProfile(system.config?.executor_profile || null);
         setQuickstartExpanded(false);
@@ -303,6 +342,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       setIsSubmitting(true);
       try {
         let imageIds: string[] | undefined;
+        const trimmedBranchTemplate = branchTemplate.trim();
 
         if (isEditMode) {
           // In edit mode, send all current image IDs (existing + newly uploaded)
@@ -324,14 +364,26 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                 title,
                 description: description || null,
                 status,
-                branch_template: branchTemplate || null,
                 parent_task_attempt: parentTaskAttemptId || null,
                 image_ids: imageIds || null,
               },
             },
             {
-              onSuccess: () => {
-                modal.hide();
+              onSuccess: async () => {
+                try {
+                  if (trimmedBranchTemplate) {
+                    await branchTemplatesApi.update(
+                      task.id,
+                      trimmedBranchTemplate
+                    );
+                  } else {
+                    await branchTemplatesApi.delete(task.id);
+                  }
+                } catch (err) {
+                  console.error('Failed to update branch template:', err);
+                } finally {
+                  modal.hide();
+                }
               },
             }
           );
@@ -341,7 +393,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
               project_id: projectId,
               title,
               description: description || null,
-              branch_template: branchTemplate || null,
+              branch_template: trimmedBranchTemplate || null,
               parent_task_attempt: parentTaskAttemptId || null,
               image_ids: imageIds || null,
             },
@@ -359,6 +411,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       title,
       description,
       status,
+      branchTemplate,
       isEditMode,
       projectId,
       task,
@@ -367,6 +420,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       images,
       createTask,
       updateTask,
+      parentTaskAttemptId,
     ]);
 
     const handleCreateAndStart = useCallback(async () => {
@@ -379,6 +433,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
             newlyUploadedImageIds.length > 0
               ? newlyUploadedImageIds
               : undefined;
+          const trimmedBranchTemplate = branchTemplate.trim();
 
           // Use selected executor profile or fallback to config default
           const finalExecutorProfile =
@@ -396,7 +451,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                 project_id: projectId,
                 title,
                 description: description || null,
-                branch_template: branchTemplate || null,
+                branch_template: trimmedBranchTemplate || null,
                 parent_task_attempt: parentTaskAttemptId || null,
                 image_ids: imageIds || null,
               },
@@ -416,6 +471,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     }, [
       title,
       description,
+      branchTemplate,
       isEditMode,
       projectId,
       modal,
@@ -424,6 +480,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       selectedExecutorProfile,
       selectedBranch,
       system.config?.executor_profile,
+      parentTaskAttemptId,
     ]);
 
     const handleCancel = useCallback(() => {

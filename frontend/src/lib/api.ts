@@ -41,6 +41,7 @@ import {
   FollowUpDraftResponse,
   UpdateFollowUpDraftRequest,
   GitOperationError,
+  BranchTemplateResponse,
 } from 'shared/types';
 
 // Re-export types for convenience
@@ -302,6 +303,31 @@ export const tasksApi = {
 
   delete: async (taskId: string): Promise<void> => {
     const response = await makeRequest(`/api/tasks/${taskId}`, {
+      method: 'DELETE',
+    });
+    return handleApiResponse<void>(response);
+  },
+};
+
+export const branchTemplatesApi = {
+  get: async (taskId: string): Promise<BranchTemplateResponse> => {
+    const response = await makeRequest(`/api/forge/branch-templates/${taskId}`);
+    return handleApiResponse<BranchTemplateResponse>(response);
+  },
+
+  update: async (
+    taskId: string,
+    branchTemplate: string | null
+  ): Promise<BranchTemplateResponse> => {
+    const response = await makeRequest(`/api/forge/branch-templates/${taskId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ branch_template: branchTemplate }),
+    });
+    return handleApiResponse<BranchTemplateResponse>(response);
+  },
+
+  delete: async (taskId: string): Promise<void> => {
+    const response = await makeRequest(`/api/forge/branch-templates/${taskId}`, {
       method: 'DELETE',
     });
     return handleApiResponse<void>(response);

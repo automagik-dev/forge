@@ -2,7 +2,7 @@ use std::{future::Future, path::PathBuf};
 
 use db::models::{
     project::Project,
-    task::{CreateTask, Task, TaskStatus},
+    task::{CreateTask as DbCreateTask, Task, TaskStatus},
 };
 use forge_extensions_branch_templates::BranchTemplateService;
 use rmcp::{
@@ -271,11 +271,10 @@ impl TaskServer {
         }
 
         let task_id = Uuid::new_v4();
-        let create_task_data = CreateTask {
+        let create_task_data = DbCreateTask {
             project_id: project_uuid,
             title: title.clone(),
             description: description.clone(),
-            branch_template: branch_template.clone(),
             parent_task_attempt: None,
             image_ids: None,
         };
@@ -285,7 +284,7 @@ impl TaskServer {
         match Task::create(&self.pool, &create_task_data, task_id).await {
             Ok(task) => {
                 if let Err(err) = branch_template_service
-                    .upsert_template(task.id, task.branch_template.clone())
+                    .upsert_template(task.id, branch_template.clone())
                     .await
                 {
                     tracing::error!("Failed to sync branch template for MCP task: {err}");
@@ -599,7 +598,6 @@ impl TaskServer {
         let new_title = title.unwrap_or(current_task.title);
         let new_description = description.or(current_task.description);
         let new_status = status_enum.unwrap_or(current_task.status);
-        let new_branch_template = current_task.branch_template;
         let new_parent_task_attempt = current_task.parent_task_attempt;
 
         match Task::update(
@@ -609,7 +607,6 @@ impl TaskServer {
             new_title,
             new_description,
             new_status,
-            new_branch_template,
             new_parent_task_attempt,
         )
         .await

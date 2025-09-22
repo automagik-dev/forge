@@ -1,11 +1,10 @@
 -- Create auxiliary tables for forge-specific data while preserving upstream schema
 CREATE TABLE IF NOT EXISTS forge_task_extensions (
-    task_id       BLOB PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
-    branch_template TEXT,
-    omni_settings   TEXT,
-    genie_metadata  TEXT,
-    created_at    TEXT NOT NULL DEFAULT (datetime('now', 'subsec')),
-    updated_at    TEXT NOT NULL DEFAULT (datetime('now', 'subsec'))
+    task_id          BLOB PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
+    branch_template  TEXT,
+    omni_settings    TEXT,
+    created_at       TEXT NOT NULL DEFAULT (datetime('now', 'subsec')),
+    updated_at       TEXT NOT NULL DEFAULT (datetime('now', 'subsec'))
 );
 
 CREATE TABLE IF NOT EXISTS forge_project_settings (
@@ -30,3 +29,5 @@ SELECT id, branch_template
 FROM tasks
 WHERE branch_template IS NOT NULL
 ON CONFLICT(task_id) DO UPDATE SET branch_template = excluded.branch_template;
+
+-- Clear legacy branch_template column now that data lives in the extension table

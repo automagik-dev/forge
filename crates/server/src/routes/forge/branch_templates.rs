@@ -6,6 +6,7 @@ use axum::{
 };
 use forge_extensions_branch_templates::{BranchTemplateRecord, BranchTemplateService};
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 use utils::response::ApiResponse;
 use uuid::Uuid;
 
@@ -21,12 +22,11 @@ pub fn router() -> Router<DeploymentImpl> {
     )
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, TS)]
 pub struct BranchTemplateResponse {
     pub task_id: Uuid,
     pub branch_template: Option<String>,
     pub omni_settings: Option<String>,
-    pub genie_metadata: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -64,7 +64,7 @@ async fn remove_template(
 ) -> Result<(StatusCode, Json<ApiResponse<()>>), ApiError> {
     let service = BranchTemplateService::new(deployment.db().pool.clone());
     service.delete_template(task_id).await?;
-    Ok((StatusCode::NO_CONTENT, Json(ApiResponse::success(()))))
+    Ok((StatusCode::OK, Json(ApiResponse::success(()))))
 }
 
 fn into_response(task_id: Uuid, record: Option<BranchTemplateRecord>) -> BranchTemplateResponse {
@@ -73,14 +73,12 @@ fn into_response(task_id: Uuid, record: Option<BranchTemplateRecord>) -> BranchT
             task_id,
             branch_template: record.branch_template,
             omni_settings: record.omni_settings,
-            genie_metadata: record.genie_metadata,
         }
     } else {
         BranchTemplateResponse {
             task_id,
             branch_template: None,
             omni_settings: None,
-            genie_metadata: None,
         }
     }
 }

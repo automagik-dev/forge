@@ -14,7 +14,7 @@ use axum::{
 };
 use db::models::{
     image::TaskImage,
-    task::{CreateTask, Task, TaskWithAttemptStatus, UpdateTask},
+    task::{CreateTask as DbCreateTask, Task, TaskWithAttemptStatus},
     task_attempt::{CreateTaskAttempt, TaskAttempt},
 };
 use deployment::Deployment;
@@ -102,25 +102,73 @@ pub async fn get_task(
     Ok(ResponseJson(ApiResponse::success(task)))
 }
 
+#[derive(Debug, Deserialize, TS)]
+#[ts(export, rename = "CreateTask")]
+pub struct CreateTaskRequest {
+    pub project_id: Uuid,
+    pub title: String,
+    pub description: Option<String>,
+    pub branch_template: Option<String>,
+    pub parent_task_attempt: Option<Uuid>,
+    pub image_ids: Option<Vec<Uuid>>,
+}
+
+impl CreateTaskRequest {
+    fn into_db(self) -> DbCreateTask {
+        DbCreateTask {
+            project_id: self.project_id,
+            title: self.title,
+            description: self.description,
+            parent_task_attempt: self.parent_task_attempt,
+            image_ids: self.image_ids,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, TS)]
+#[ts(export, rename = "UpdateTask")]
+pub struct UpdateTaskRequest {
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub status: Option<db::models::task::TaskStatus>,
+    pub parent_task_attempt: Option<Uuid>,
+    pub image_ids: Option<Vec<Uuid>>,
+}
+
+impl UpdateTaskRequest {}
+
 pub async fn create_task(
     State(deployment): State<DeploymentImpl>,
-    Json(payload): Json<CreateTask>,
+    Json(payload): Json<CreateTaskRequest>,
 ) -> Result<ResponseJson<ApiResponse<Task>>, ApiError> {
     let id = Uuid::new_v4();
 
-    tracing::debug!(
-        "Creating task '{}' in project {}",
-        payload.title,
-        payload.project_id
-    );
+    let CreateTaskRequest {
+        project_id,
+        title,
+        description,
+        branch_template,
+        parent_task_attempt,
+        image_ids,
+    } = payload;
 
-    let task = Task::create(&deployment.db().pool, &payload, id).await?;
+    tracing::debug!("Creating task '{}' in project {}", title, project_id);
+
+    let db_payload = DbCreateTask {
+        project_id,
+        title,
+        description,
+        parent_task_attempt,
+        image_ids: image_ids.clone(),
+    };
+
+    let task = Task::create(&deployment.db().pool, &db_payload, id).await?;
 
     BranchTemplateService::new(deployment.db().pool.clone())
-        .upsert_template(task.id, task.branch_template.clone())
+        .upsert_template(task.id, branch_template)
         .await?;
 
-    if let Some(image_ids) = &payload.image_ids {
+    if let Some(image_ids) = &image_ids {
         TaskImage::associate_many_dedup(&deployment.db().pool, task.id, image_ids).await?;
     }
 
@@ -129,9 +177,9 @@ pub async fn create_task(
             "task_created",
             serde_json::json!({
             "task_id": task.id.to_string(),
-            "project_id": payload.project_id,
+            "project_id": task.project_id,
             "has_description": task.description.is_some(),
-            "has_images": payload.image_ids.is_some(),
+            "has_images": image_ids.is_some(),
             }),
         )
         .await;
@@ -141,7 +189,7 @@ pub async fn create_task(
 
 #[derive(Debug, Deserialize, TS)]
 pub struct CreateAndStartTaskRequest {
-    pub task: CreateTask,
+    pub task: CreateTaskRequest,
     pub executor_profile_id: ExecutorProfileId,
     pub base_branch: String,
 }
@@ -151,13 +199,16 @@ pub async fn create_task_and_start(
     Json(payload): Json<CreateAndStartTaskRequest>,
 ) -> Result<ResponseJson<ApiResponse<TaskWithAttemptStatus>>, ApiError> {
     let task_id = Uuid::new_v4();
-    let task = Task::create(&deployment.db().pool, &payload.task, task_id).await?;
+    let branch_template = payload.task.branch_template.clone();
+    let branch_template_for_attempt = branch_template.clone();
+    let image_ids = payload.task.image_ids.clone();
+    let task = Task::create(&deployment.db().pool, &payload.task.into_db(), task_id).await?;
 
     BranchTemplateService::new(deployment.db().pool.clone())
-        .upsert_template(task.id, task.branch_template.clone())
+        .upsert_template(task.id, branch_template)
         .await?;
 
-    if let Some(image_ids) = &payload.task.image_ids {
+    if let Some(image_ids) = &image_ids {
         TaskImage::associate_many(&deployment.db().pool, task.id, image_ids).await?;
     }
 
@@ -165,15 +216,15 @@ pub async fn create_task_and_start(
         .track_if_analytics_allowed(
             "task_created",
             serde_json::json!({
-                "task_id": task.id.to_string(),
-                "project_id": task.project_id,
-                "has_description": task.description.is_some(),
-                "has_images": payload.task.image_ids.is_some(),
+                    "task_id": task.id.to_string(),
+                    "project_id": task.project_id,
+                    "has_description": task.description.is_some(),
+                "has_images": image_ids.is_some(),
             }),
         )
         .await;
 
-    let task_attempt = TaskAttempt::create(
+    let mut task_attempt = TaskAttempt::create(
         &deployment.db().pool,
         &CreateTaskAttempt {
             executor: payload.executor_profile_id.executor,
@@ -182,6 +233,15 @@ pub async fn create_task_and_start(
         task.id,
     )
     .await?;
+
+    let branch_name = BranchTemplateService::generate_branch_name_from_template(
+        branch_template_for_attempt.as_deref(),
+        &task.title,
+        &task_attempt.id,
+    );
+
+    TaskAttempt::update_branch(&deployment.db().pool, task_attempt.id, &branch_name).await?;
+    task_attempt.branch = Some(branch_name);
     let execution_process = deployment
         .container()
         .start_attempt(&task_attempt, payload.executor_profile_id.clone())
@@ -215,13 +275,12 @@ pub async fn create_task_and_start(
 pub async fn update_task(
     Extension(existing_task): Extension<Task>,
     State(deployment): State<DeploymentImpl>,
-    Json(payload): Json<UpdateTask>,
+    Json(payload): Json<UpdateTaskRequest>,
 ) -> Result<ResponseJson<ApiResponse<Task>>, ApiError> {
     // Use existing values if not provided in update
     let title = payload.title.unwrap_or(existing_task.title);
     let description = payload.description.or(existing_task.description);
     let status = payload.status.unwrap_or(existing_task.status);
-    let branch_template = payload.branch_template.or(existing_task.branch_template);
     let parent_task_attempt = payload
         .parent_task_attempt
         .or(existing_task.parent_task_attempt);
@@ -233,14 +292,9 @@ pub async fn update_task(
         title,
         description,
         status,
-        branch_template,
         parent_task_attempt,
     )
     .await?;
-
-    BranchTemplateService::new(deployment.db().pool.clone())
-        .upsert_template(task.id, task.branch_template.clone())
-        .await?;
 
     if let Some(image_ids) = &payload.image_ids {
         TaskImage::delete_by_task_id(&deployment.db().pool, task.id).await?;

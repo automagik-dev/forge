@@ -42,15 +42,15 @@ export type UpdateTaskTemplate = { title: string | null, description: string | n
 
 export type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelled";
 
-export type Task = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, branch_template: string | null, parent_task_attempt: string | null, created_at: string, updated_at: string, };
+export type Task = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, created_at: string, updated_at: string, };
 
-export type TaskWithAttemptStatus = { has_in_progress_attempt: boolean, has_merged_attempt: boolean, last_attempt_failed: boolean, executor: string, id: string, project_id: string, title: string, description: string | null, status: TaskStatus, branch_template: string | null, parent_task_attempt: string | null, created_at: string, updated_at: string, };
+export type TaskWithAttemptStatus = { has_in_progress_attempt: boolean, has_merged_attempt: boolean, last_attempt_failed: boolean, executor: string, id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, created_at: string, updated_at: string, };
 
 export type TaskRelationships = { parent_task: Task | null, current_attempt: TaskAttempt, children: Array<Task>, };
 
 export type CreateTask = { project_id: string, title: string, description: string | null, branch_template: string | null, parent_task_attempt: string | null, image_ids: Array<string> | null, };
 
-export type UpdateTask = { title: string | null, description: string | null, status: TaskStatus | null, branch_template: string | null, parent_task_attempt: string | null, image_ids: Array<string> | null, };
+export type UpdateTask = { title: string | null, description: string | null, status: TaskStatus | null, parent_task_attempt: string | null, image_ids: Array<string> | null, };
 
 export type Image = { id: string, file_path: string, original_name: string, mime_type: string | null, size_bytes: bigint, hash: string, created_at: string, updated_at: string, };
 
@@ -79,6 +79,8 @@ export type FollowUpDraftResponse = { task_attempt_id: string, prompt: string, q
 export type UpdateFollowUpDraftRequest = { prompt: string | null, variant: string | null | null, image_ids: Array<string> | null, version: bigint | null, };
 
 export type CreateAndStartTaskRequest = { task: CreateTask, executor_profile_id: ExecutorProfileId, base_branch: string, };
+
+export type BranchTemplateResponse = { task_id: string, branch_template: string | null, omni_settings: string | null, };
 
 export type CreateGitHubPrRequest = { title: string, body: string | null, base_branch: string | null, };
 

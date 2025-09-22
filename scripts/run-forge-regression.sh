@@ -95,9 +95,16 @@ for name in "${!ENDPOINTS[@]}"; do
   url="http://$FORGE_APP_ADDR${ENDPOINTS[$name]}"
   target="$OUT_DIR/$name.json"
   echo "  -> $url"
-  if ! curl --fail --silent "$url" | jq --sort-keys '.' > "$target"; then
-    echo "ERROR: Failed to collect $url"
-    exit 1
+  if [[ "$name" == "health" ]]; then
+    if ! curl --fail --silent "$url" > "$target"; then
+      echo "ERROR: Failed to collect $url"
+      exit 1
+    fi
+  else
+    if ! curl --fail --silent "$url" | jq --sort-keys '.' > "$target"; then
+      echo "ERROR: Failed to collect $url"
+      exit 1
+    fi
   fi
 done
 

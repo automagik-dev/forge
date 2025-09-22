@@ -32,6 +32,7 @@ use executors::{
     },
     profile::ExecutorProfileId,
 };
+use forge_extensions_branch_templates::BranchTemplateService;
 use futures_util::TryStreamExt;
 use git2::BranchType;
 use serde::{Deserialize, Serialize};
@@ -141,7 +142,7 @@ pub async fn create_task_attempt(
 ) -> Result<ResponseJson<ApiResponse<TaskAttempt>>, ApiError> {
     let executor_profile_id = payload.get_executor_profile_id();
 
-    let task_attempt = TaskAttempt::create(
+    let mut task_attempt = TaskAttempt::create(
         &deployment.db().pool,
         &CreateTaskAttempt {
             executor: executor_profile_id.executor,
@@ -150,6 +151,17 @@ pub async fn create_task_attempt(
         payload.task_id,
     )
     .await?;
+
+    let task = Task::find_by_id(&deployment.db().pool, payload.task_id)
+        .await?
+        .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
+
+    let branch_name = BranchTemplateService::new(deployment.db().pool.clone())
+        .generate_branch_name_for_task(task.id, &task.title, &task_attempt.id)
+        .await?;
+
+    TaskAttempt::update_branch(&deployment.db().pool, task_attempt.id, &branch_name).await?;
+    task_attempt.branch = Some(branch_name);
 
     let execution_process = deployment
         .container()
