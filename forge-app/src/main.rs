@@ -10,7 +10,7 @@ use utils::{
 };
 
 #[derive(Debug, Error)]
-pub enum VibeKanbanError {
+pub enum ForgeAppError {
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]
@@ -22,7 +22,7 @@ pub enum VibeKanbanError {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), VibeKanbanError> {
+async fn main() -> Result<(), ForgeAppError> {
     let log_level = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
     let filter_string = format!(
         "warn,server={level},services={level},db={level},executors={level},deployment={level},local_deployment={level},utils={level}",
@@ -34,7 +34,6 @@ async fn main() -> Result<(), VibeKanbanError> {
         .with(sentry_layer())
         .init();
 
-    // Create asset directory if it doesn't exist
     if !asset_dir().exists() {
         std::fs::create_dir_all(asset_dir())?;
     }
@@ -48,7 +47,6 @@ async fn main() -> Result<(), VibeKanbanError> {
         .track_if_analytics_allowed("session_start", serde_json::json!({}))
         .await;
 
-    // Pre-warm file search cache for most active projects
     let deployment_for_cache = deployment.clone();
     tokio::spawn(async move {
         if let Err(e) = deployment_for_cache
@@ -60,13 +58,12 @@ async fn main() -> Result<(), VibeKanbanError> {
         }
     });
 
-    let app_router = routes::router(deployment);
+    let app_router = routes::router(deployment.clone());
 
     let port = std::env::var("BACKEND_PORT")
         .or_else(|_| std::env::var("PORT"))
         .ok()
         .and_then(|s| {
-            // remove any ANSI codes, then turn into String
             let cleaned =
                 String::from_utf8(strip(s.as_bytes())).expect("UTF-8 after stripping ANSI");
             cleaned.trim().parse::<u16>().ok()
@@ -74,20 +71,19 @@ async fn main() -> Result<(), VibeKanbanError> {
         .unwrap_or_else(|| {
             tracing::info!("No PORT environment variable set, using port 0 for auto-assignment");
             0
-        }); // Use 0 to find free port if no specific port provided
+        });
 
     let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;
-    let actual_port = listener.local_addr()?.port(); // get → 53427 (example)
+    let actual_port = listener.local_addr()?.port();
 
-    // Write port file for discovery if prod, warn on fail
     if !cfg!(debug_assertions)
         && let Err(e) = write_port_file(actual_port).await
     {
         tracing::warn!("Failed to write port file: {}", e);
     }
 
-    tracing::info!("Server running on http://{host}:{actual_port}");
+    tracing::info!("Forge backend running on http://{host}:{actual_port}");
 
     if !cfg!(debug_assertions) {
         tracing::info!("Opening browser...");

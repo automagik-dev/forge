@@ -1,12 +1,13 @@
+use std::str::FromStr;
+
 use anyhow::Error;
 use executors::{executors::BaseCodingAgent, profile::ExecutorProfileId};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-pub use v6::{EditorConfig, EditorType, GitHubConfig, NotificationConfig, SoundFile, ThemeMode};
+use utils;
+pub use v5::{EditorConfig, EditorType, GitHubConfig, NotificationConfig, SoundFile, ThemeMode};
 
-use crate::services::config::versions::v6;
-// Import OmniConfig directly from the omni module - single source of truth
-pub use crate::services::omni::types::{OmniConfig, RecipientType};
+use super::v5;
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
 pub struct Config {
@@ -24,12 +25,11 @@ pub struct Config {
     pub workspace_dir: Option<String>,
     pub last_app_version: Option<String>,
     pub show_release_notes: bool,
-    pub omni: OmniConfig,
 }
 
 impl Config {
     pub fn from_previous_version(raw_config: &str) -> Result<Self, Error> {
-        let old_config = match serde_json::from_str::<v6::Config>(raw_config) {
+        let old_config = match serde_json::from_str::<v5::Config>(raw_config) {
             Ok(cfg) => cfg,
             Err(e) => {
                 tracing::error!("❌ Failed to parse config: {}", e);
@@ -38,10 +38,36 @@ impl Config {
             }
         };
 
+        // Backup custom profiles.json if it exists (v6 migration may break compatibility)
+        let profiles_path = utils::assets::profiles_path();
+        if profiles_path.exists() {
+            let backup_name = format!(
+                "profiles_v5_backup_{}.json",
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs()
+            );
+            let backup_path = profiles_path.parent().unwrap().join(backup_name);
+
+            if let Err(e) = std::fs::rename(&profiles_path, &backup_path) {
+                tracing::warn!("Failed to backup profiles.json: {}", e);
+            } else {
+                tracing::info!("Custom profiles.json backed up to {:?}", backup_path);
+                tracing::info!("Please review your custom profiles after migration to v6");
+            }
+        }
+
+        // Validate and convert ProfileVariantLabel
+        let old_coding_agent = old_config.profile.profile.to_uppercase();
+        let base_coding_agent =
+            BaseCodingAgent::from_str(&old_coding_agent).unwrap_or(BaseCodingAgent::ClaudeCode);
+        let executor_profile = ExecutorProfileId::new(base_coding_agent);
+
         Ok(Self {
-            config_version: "v7".to_string(),
+            config_version: "v6".to_string(),
             theme: old_config.theme,
-            executor_profile: old_config.executor_profile,
+            executor_profile,
             disclaimer_acknowledged: old_config.disclaimer_acknowledged,
             onboarding_acknowledged: old_config.onboarding_acknowledged,
             github_login_acknowledged: old_config.github_login_acknowledged,
@@ -53,14 +79,6 @@ impl Config {
             workspace_dir: old_config.workspace_dir,
             last_app_version: old_config.last_app_version,
             show_release_notes: old_config.show_release_notes,
-            omni: OmniConfig {
-                enabled: false,
-                host: None,
-                api_key: None,
-                instance: None,
-                recipient: None,
-                recipient_type: None,
-            },
         })
     }
 }
@@ -68,14 +86,14 @@ impl Config {
 impl From<String> for Config {
     fn from(raw_config: String) -> Self {
         if let Ok(config) = serde_json::from_str::<Config>(&raw_config)
-            && config.config_version == "v7"
+            && config.config_version == "v6"
         {
             return config;
         }
 
         match Self::from_previous_version(&raw_config) {
             Ok(config) => {
-                tracing::info!("Config upgraded to v7");
+                tracing::info!("Config upgraded to v6");
                 config
             }
             Err(e) => {
@@ -89,7 +107,7 @@ impl From<String> for Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            config_version: "v7".to_string(),
+            config_version: "v6".to_string(),
             theme: ThemeMode::System,
             executor_profile: ExecutorProfileId::new(BaseCodingAgent::ClaudeCode),
             disclaimer_acknowledged: false,
@@ -103,14 +121,6 @@ impl Default for Config {
             workspace_dir: None,
             last_app_version: None,
             show_release_notes: false,
-            omni: OmniConfig {
-                enabled: false,
-                host: None,
-                api_key: None,
-                instance: None,
-                recipient: None,
-                recipient_type: None,
-            },
         }
     }
 }

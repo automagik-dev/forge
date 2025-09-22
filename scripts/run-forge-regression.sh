@@ -28,6 +28,11 @@ for tool in jq curl pnpm; do
   fi
 done
 
+if [[ ! -d "upstream/frontend/node_modules" ]]; then
+  echo "Installing upstream frontend dependencies..."
+  (cd upstream/frontend && pnpm install)
+fi
+
 if [[ ! -f "$SNAPSHOT_DB" ]]; then
   echo "ERROR: Snapshot database not found at $SNAPSHOT_DB"
   echo "Provide FORGE_SNAPSHOT_DB or populate dev_assets_seed/forge-snapshot/forge.sqlite"
@@ -57,7 +62,7 @@ pnpm pack --filter npx-cli --pack-destination "$LOG_DIR"
 echo "Starting forge-app for regression checks..."
 APP_LOG="$LOG_DIR/forge-app-$TIMESTAMP.log"
 FORGE_ENV=(DATABASE_URL="$DATABASE_URL" FORGE_APP_ADDR="$FORGE_APP_ADDR")
-env DATABASE_URL="$DATABASE_URL" FORGE_APP_ADDR="$FORGE_APP_ADDR" cargo run --quiet -p forge-app >"$APP_LOG" 2>&1 &
+env DATABASE_URL="$DATABASE_URL" FORGE_APP_ADDR="$FORGE_APP_ADDR" cargo run --quiet -p forge-app --bin server >"$APP_LOG" 2>&1 &
 APP_PID=$!
 
 cleanup() {
@@ -83,7 +88,6 @@ declare -A ENDPOINTS=(
   [health]="/health"
   [omni_instances]="/api/forge/omni/instances"
   [branch_templates]="/api/forge/branch-templates/${BRANCH_TEMPLATE_TASK_ID}"
-  [genie_wishes]="/api/forge/genie/wishes"
 )
 
 echo "Collecting API samples..."

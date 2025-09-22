@@ -9,6 +9,7 @@ use db::models::{
 };
 use deployment::DeploymentError;
 use executors::executors::ExecutorError;
+use forge_extensions_branch_templates::BranchTemplateError;
 use git2::Error as Git2Error;
 use services::services::{
     auth::AuthError, config::ConfigError, container::ContainerError, git::GitServiceError,
@@ -57,6 +58,14 @@ pub enum ApiError {
 impl From<Git2Error> for ApiError {
     fn from(err: Git2Error) -> Self {
         ApiError::GitService(GitServiceError::from(err))
+    }
+}
+
+impl From<BranchTemplateError> for ApiError {
+    fn from(err: BranchTemplateError) -> Self {
+        match err {
+            BranchTemplateError::Database(db_err) => ApiError::Database(db_err),
+        }
     }
 }
 

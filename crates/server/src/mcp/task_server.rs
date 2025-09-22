@@ -4,6 +4,7 @@ use db::models::{
     project::Project,
     task::{CreateTask, Task, TaskStatus},
 };
+use forge_extensions_branch_templates::BranchTemplateService;
 use rmcp::{
     ErrorData, ServerHandler,
     handler::server::tool::{Parameters, ToolRouter},
@@ -279,8 +280,28 @@ impl TaskServer {
             image_ids: None,
         };
 
+        let branch_template_service = BranchTemplateService::new(self.pool.clone());
+
         match Task::create(&self.pool, &create_task_data, task_id).await {
-            Ok(_task) => {
+            Ok(task) => {
+                if let Err(err) = branch_template_service
+                    .upsert_template(task.id, task.branch_template.clone())
+                    .await
+                {
+                    tracing::error!("Failed to sync branch template for MCP task: {err}");
+                    let error_response = serde_json::json!({
+                        "success": false,
+                        "error": "Failed to persist branch template",
+                        "details": err.to_string(),
+                        "project_id": project_id,
+                        "title": title
+                    });
+                    return Ok(CallToolResult::error(vec![Content::text(
+                        serde_json::to_string_pretty(&error_response)
+                            .unwrap_or_else(|_| "Failed to persist branch template".to_string()),
+                    )]));
+                }
+
                 let success_response = CreateTaskResponse {
                     success: true,
                     task_id: task_id.to_string(),

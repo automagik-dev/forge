@@ -21,9 +21,11 @@ cargo install cargo-watch sqlx-cli
 # Clone repository
 git clone https://github.com/namastexlabs/automagik-forge
 cd automagik-forge
+git submodule update --init --recursive
 
 # Install dependencies
 pnpm install
+(cd upstream/frontend && pnpm install)
 
 # Run development server
 pnpm run dev
@@ -32,7 +34,7 @@ pnpm run dev
 ### Building from Source
 
 ```bash
-# Build production binary
+# Build production binaries (backend + both frontends)
 ./local-build.sh
 
 # Package for NPM
@@ -46,12 +48,12 @@ npx automagik-forge
 
 ```bash
 # Run all checks
-npm run check
+pnpm run check
 
 # Frontend checks
-cd frontend && npm run lint
-cd frontend && npm run format:check
-cd frontend && npx tsc --noEmit
+pnpm run frontend:lint
+cd frontend && pnpm run format:check
+cd frontend && pnpm run check
 
 # Backend checks
 cargo test --workspace
@@ -119,22 +121,24 @@ sqlx migrate revert
 
 ```
 automagik-forge/
-├── crates/                    # Rust backend modules
-│   ├── server/               # HTTP server & MCP implementation
+├── forge-app/                # Binary crate that composes Forge runtime from libraries
+├── forge-extensions/         # Extension crates layered on top of upstream
+│   ├── omni/                 # Omni notifications client + types
+│   ├── branch-templates/     # Branch template storage + API helpers
+│   └── config/               # v7 configuration schema and helpers
+├── crates/                   # Forge backend libraries
+│   ├── server/               # HTTP/MCP router (library only)
 │   ├── db/                   # Database models & migrations
 │   ├── executors/            # AI agent integrations
 │   ├── services/             # Business logic & git operations
 │   ├── local-deployment/     # Deployment configuration
 │   └── utils/                # Shared utilities
 │
-├── frontend/                  # React application
-│   ├── src/
-│   │   ├── components/       # UI components (TaskCard, etc.)
-│   │   ├── pages/           # Route pages
-│   │   ├── hooks/           # Custom React hooks
-│   │   └── lib/             # API client & utilities
-│   └── public/              # Static assets
-│
+├── frontend/                 # Forge React application (served at /)
+│   ├── src/                  # UI source
+│   └── public/               # Static assets
+├── upstream/                 # Read-only vibe-kanban submodule
+│   └── frontend/             # Legacy React application (served at /legacy)
 ├── npx-cli/                  # NPX CLI wrapper
 ├── scripts/                  # Build & development scripts
 ├── dev_assets_seed/          # Development database seed

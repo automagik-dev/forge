@@ -1,54 +1,96 @@
+use std::path::Path;
+
+use axum::http::header;
 use axum::{
     body::Body,
-    http::HeaderValue,
+    http::{HeaderValue, StatusCode},
     response::{IntoResponse, Response},
 };
-use reqwest::{StatusCode, header};
+use mime_guess::from_path;
 use rust_embed::RustEmbed;
+
+const LEGACY_FRONTEND_ROOT: &str = "../../upstream/frontend/dist";
 
 #[derive(RustEmbed)]
 #[folder = "../../frontend/dist"]
-pub struct Assets;
+struct ForgeAssets;
 
-pub async fn serve_frontend(uri: axum::extract::Path<String>) -> impl IntoResponse {
-    let path = uri.trim_start_matches('/');
-    serve_file(path).await
+pub async fn serve_frontend(path: axum::extract::Path<String>) -> impl IntoResponse {
+    serve_embedded::<ForgeAssets>(&path)
 }
 
 pub async fn serve_frontend_root() -> impl IntoResponse {
-    serve_file("index.html").await
+    serve_embedded::<ForgeAssets>("index.html")
 }
 
-async fn serve_file(path: &str) -> impl IntoResponse + use<> {
-    let file = Assets::get(path);
+pub async fn serve_legacy_frontend(path: axum::extract::Path<String>) -> impl IntoResponse {
+    serve_from_disk(&path)
+}
 
-    match file {
-        Some(content) => {
-            let mime = mime_guess::from_path(path).first_or_octet_stream();
+pub async fn serve_legacy_frontend_root() -> impl IntoResponse {
+    serve_from_disk("index.html")
+}
 
-            Response::builder()
-                .status(StatusCode::OK)
-                .header(
-                    header::CONTENT_TYPE,
-                    HeaderValue::from_str(mime.as_ref()).unwrap(),
-                )
-                .body(Body::from(content.data.into_owned()))
-                .unwrap()
-        }
+fn serve_embedded<A>(requested_path: &str) -> Response
+where
+    A: RustEmbed,
+{
+    let normalized = requested_path.trim_start_matches('/');
+    let path = if normalized.is_empty() {
+        "index.html"
+    } else {
+        normalized
+    };
+
+    match A::get(path) {
+        Some(content) => build_response(path, content.data.into_owned()),
         None => {
-            // For SPA routing, serve index.html for unknown routes
-            if let Some(index) = Assets::get("index.html") {
-                Response::builder()
-                    .status(StatusCode::OK)
-                    .header(header::CONTENT_TYPE, HeaderValue::from_static("text/html"))
-                    .body(Body::from(index.data.into_owned()))
-                    .unwrap()
+            if let Some(index) = A::get("index.html") {
+                build_response("index.html", index.data.into_owned())
             } else {
-                Response::builder()
-                    .status(StatusCode::NOT_FOUND)
-                    .body(Body::from("404 Not Found"))
-                    .unwrap()
+                not_found()
             }
         }
     }
+}
+
+fn serve_from_disk(requested_path: &str) -> Response {
+    let normalized = requested_path.trim_start_matches('/');
+    let base = Path::new(LEGACY_FRONTEND_ROOT);
+    let target_path = if normalized.is_empty() {
+        base.join("index.html")
+    } else {
+        base.join(normalized)
+    };
+
+    if let Ok(bytes) = std::fs::read(&target_path) {
+        let mime = from_path(&target_path).first_or_octet_stream();
+        build_response_lite(mime.as_ref(), bytes)
+    } else {
+        let index_path = base.join("index.html");
+        match std::fs::read(&index_path) {
+            Ok(bytes) => build_response_lite("text/html", bytes),
+            Err(_) => not_found(),
+        }
+    }
+}
+
+fn build_response(path: &str, bytes: Vec<u8>) -> Response {
+    let mime = from_path(path).first_or_octet_stream();
+    build_response_lite(mime.as_ref(), bytes)
+}
+
+fn build_response_lite(mime: &str, bytes: Vec<u8>) -> Response {
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, HeaderValue::from_str(mime).unwrap())
+        .body(Body::from(bytes))
+        .unwrap()
+}
+
+fn not_found() -> Response {
+    Response::builder()
+        .status(StatusCode::NOT_FOUND)
+        .body(Body::from("404 Not Found"))
+        .unwrap()
 }

@@ -34,6 +34,7 @@ use executors::{
         utils::{ConversationPatch, patch::escape_json_pointer_segment},
     },
 };
+use forge_extensions_omni::OmniService;
 use futures::{StreamExt, TryStreamExt, stream::select};
 use notify_debouncer_full::DebouncedEvent;
 use serde_json::json;
@@ -138,7 +139,7 @@ impl LocalContainerService {
 
         // Send Omni notification independently to preserve decoupling
         if omni_cfg.enabled {
-            let omni_service = services::services::omni::OmniService::new(omni_cfg.clone());
+            let omni_service = OmniService::new(omni_cfg.clone());
 
             // Build a detailed status message similar to push notification
             let status_message = match ctx.execution_process.status {

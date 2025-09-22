@@ -7,11 +7,8 @@ use axum::{
     routing::{get, post},
 };
 use deployment::Deployment;
+use forge_extensions_omni::{OmniConfig, OmniInstance, OmniService, RecipientType};
 use serde::{Deserialize, Serialize};
-use services::services::omni::{
-    OmniService,
-    types::{OmniConfig, OmniInstance},
-};
 use utils::response::ApiResponse;
 
 pub fn router() -> Router<DeploymentImpl> {
@@ -38,12 +35,8 @@ async fn list_instances(
         instance: config.omni.instance.clone(),
         recipient: config.omni.recipient.clone(),
         recipient_type: config.omni.recipient_type.clone().map(|rt| match rt {
-            services::services::config::RecipientType::PhoneNumber => {
-                services::services::omni::types::RecipientType::PhoneNumber
-            }
-            services::services::config::RecipientType::UserId => {
-                services::services::omni::types::RecipientType::UserId
-            }
+            services::services::config::RecipientType::PhoneNumber => RecipientType::PhoneNumber,
+            services::services::config::RecipientType::UserId => RecipientType::UserId,
         }),
     };
 
@@ -115,12 +108,8 @@ async fn test_notification(
         instance: config.omni.instance.clone(),
         recipient: config.omni.recipient.clone(),
         recipient_type: config.omni.recipient_type.clone().map(|rt| match rt {
-            services::services::config::RecipientType::PhoneNumber => {
-                services::services::omni::types::RecipientType::PhoneNumber
-            }
-            services::services::config::RecipientType::UserId => {
-                services::services::omni::types::RecipientType::UserId
-            }
+            services::services::config::RecipientType::PhoneNumber => RecipientType::PhoneNumber,
+            services::services::config::RecipientType::UserId => RecipientType::UserId,
         }),
     };
 

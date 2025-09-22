@@ -29,6 +29,12 @@ mkdir -p npx-cli/dist/$PLATFORM_DIR
 echo "🔨 Building frontend..."
 (cd frontend && npm run build)
 
+echo "🔨 Building legacy frontend..."
+if [ ! -d upstream/frontend/node_modules ]; then
+  (cd upstream/frontend && pnpm install)
+fi
+(cd upstream/frontend && pnpm run build)
+
 echo "🔨 Building Rust binaries..."
 cargo build --release
 cargo build --release --bin mcp_task_server

@@ -2,7 +2,6 @@
 name = "server"
 version = "0.3.10"
 edition = "2024"
-default-run = "server"
 
 [lints.clippy]
 uninlined-format-args = "allow"
@@ -14,6 +13,8 @@ local-deployment = { path = "../local-deployment" }
 utils = { path = "../utils" }
 db = { path = "../db" }
 services = { path = "../services" }
+forge-extensions-omni = { path = "../../forge-extensions/omni" }
+forge-extensions-branch-templates = { path = "../../forge-extensions/branch-templates" }
 tokio = { workspace = true }
 tokio-util = { version = "0.7", features = ["io"] }
 axum = { workspace = true }

@@ -8,6 +8,7 @@ db = { path = "../db" }
 executors = { path="../executors" }
 deployment = { path = "../deployment" }
 services = { path = "../services" }
+forge-extensions-omni = { path = "../../forge-extensions/omni" }
 utils = { path = "../utils" }
 tokio-util = { version = "0.7", features = ["io"] }
 bytes = "1.0"
@@ -33,7 +34,6 @@ notify = "8.2.0"
 notify-debouncer-full = "0.5.0"
 sentry = { version = "0.41.0", features = ["anyhow", "backtrace", "panic", "debug-images"] }
 sentry-tracing = { version = "0.41.0", features = ["backtrace"] }
-reqwest = { version = "0.12", features = ["json"] }
 futures = "0.3"
 async-stream = "0.3"
 json-patch = "2.0"

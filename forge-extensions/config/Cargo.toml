@@ -1,0 +1,21 @@
+[package]
+name = "forge-extensions-config"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+ts-rs = { workspace = true }
+tracing = { workspace = true }
+executors = { path = "../../crates/executors" }
+utils = { path = "../../crates/utils" }
+forge-extensions-omni = { path = "../omni" }
+strum = "0.27.2"
+strum_macros = "0.27.2"
+rust-embed = "8.2"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

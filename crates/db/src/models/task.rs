@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::{FromRow, SqlitePool, Type};
+use sqlx::{FromRow, Row, SqlitePool, Type};
 use ts_rs::TS;
 use uuid::Uuid;
 
@@ -98,17 +98,17 @@ impl Task {
         pool: &SqlitePool,
         project_id: Uuid,
     ) -> Result<Vec<TaskWithAttemptStatus>, sqlx::Error> {
-        let records = sqlx::query!(
+        let records = sqlx::query(
             r#"SELECT
-  t.id                            AS "id!: Uuid",
-  t.project_id                    AS "project_id!: Uuid",
+  t.id,
+  t.project_id,
   t.title,
   t.description,
-  t.status                        AS "status!: TaskStatus",
-  t.branch_template,
-  t.parent_task_attempt           AS "parent_task_attempt: Uuid",
-  t.created_at                    AS "created_at!: DateTime<Utc>",
-  t.updated_at                    AS "updated_at!: DateTime<Utc>",
+  t.status,
+  COALESCE(fx.branch_template, t.branch_template) AS branch_template,
+  t.parent_task_attempt,
+  t.created_at,
+  t.updated_at,
 
   CASE WHEN EXISTS (
     SELECT 1
@@ -119,8 +119,8 @@ impl Task {
        AND ep.status        = 'running'
        AND ep.run_reason IN ('setupscript','cleanupscript','codingagent')
      LIMIT 1
-  ) THEN 1 ELSE 0 END            AS "has_in_progress_attempt!: i64",
-  
+  ) THEN 1 ELSE 0 END            AS has_in_progress_attempt,
+
   CASE WHEN (
     SELECT ep.status
       FROM task_attempts ta
@@ -131,67 +131,94 @@ impl Task {
      ORDER BY ep.created_at DESC
      LIMIT 1
   ) IN ('failed','killed') THEN 1 ELSE 0 END
-                                 AS "last_attempt_failed!: i64",
+                                 AS last_attempt_failed,
 
   ( SELECT ta.executor
       FROM task_attempts ta
       WHERE ta.task_id = t.id
      ORDER BY ta.created_at DESC
       LIMIT 1
-    )                               AS "executor!: String"
+    )                               AS executor
 
 FROM tasks t
-WHERE t.project_id = $1
+LEFT JOIN forge_task_extensions fx ON t.id = fx.task_id
+WHERE t.project_id = ?
 ORDER BY t.created_at DESC"#,
-            project_id
         )
+        .bind(project_id)
         .fetch_all(pool)
         .await?;
 
         let tasks = records
             .into_iter()
-            .map(|rec| TaskWithAttemptStatus {
-                task: Task {
-                    id: rec.id,
-                    project_id: rec.project_id,
-                    title: rec.title,
-                    description: rec.description,
-                    status: rec.status,
-                    branch_template: rec.branch_template,
-                    parent_task_attempt: rec.parent_task_attempt,
-                    created_at: rec.created_at,
-                    updated_at: rec.updated_at,
-                },
-                has_in_progress_attempt: rec.has_in_progress_attempt != 0,
-                has_merged_attempt: false, // TODO use merges table
-                last_attempt_failed: rec.last_attempt_failed != 0,
-                executor: rec.executor,
+            .map(|rec| -> Result<TaskWithAttemptStatus, sqlx::Error> {
+                let task = Task {
+                    id: rec.try_get("id")?,
+                    project_id: rec.try_get("project_id")?,
+                    title: rec.try_get("title")?,
+                    description: rec.try_get("description")?,
+                    status: rec.try_get("status")?,
+                    branch_template: rec.try_get("branch_template")?,
+                    parent_task_attempt: rec.try_get("parent_task_attempt")?,
+                    created_at: rec.try_get("created_at")?,
+                    updated_at: rec.try_get("updated_at")?,
+                };
+
+                let has_in_progress: i64 = rec.try_get("has_in_progress_attempt")?;
+                let last_failed: i64 = rec.try_get("last_attempt_failed")?;
+                let executor: String = rec.try_get("executor")?;
+
+                Ok(TaskWithAttemptStatus {
+                    task,
+                    has_in_progress_attempt: has_in_progress != 0,
+                    has_merged_attempt: false, // TODO use merges table
+                    last_attempt_failed: last_failed != 0,
+                    executor,
+                })
             })
-            .collect();
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(tasks)
     }
 
     pub async fn find_by_id(pool: &SqlitePool, id: Uuid) -> Result<Option<Self>, sqlx::Error> {
-        sqlx::query_as!(
-            Task,
-            r#"SELECT id as "id!: Uuid", project_id as "project_id!: Uuid", title, description, status as "status!: TaskStatus", branch_template, parent_task_attempt as "parent_task_attempt: Uuid", created_at as "created_at!: DateTime<Utc>", updated_at as "updated_at!: DateTime<Utc>"
-               FROM tasks 
-               WHERE id = $1"#,
-            id
+        sqlx::query_as::<_, Task>(
+            r#"SELECT
+                 t.id,
+                 t.project_id,
+                 t.title,
+                 t.description,
+                 t.status,
+                 COALESCE(fx.branch_template, t.branch_template) AS branch_template,
+                 t.parent_task_attempt,
+                 t.created_at,
+                 t.updated_at
+               FROM tasks t
+               LEFT JOIN forge_task_extensions fx ON t.id = fx.task_id
+               WHERE t.id = ?"#,
         )
+        .bind(id)
         .fetch_optional(pool)
         .await
     }
 
     pub async fn find_by_rowid(pool: &SqlitePool, rowid: i64) -> Result<Option<Self>, sqlx::Error> {
-        sqlx::query_as!(
-            Task,
-            r#"SELECT id as "id!: Uuid", project_id as "project_id!: Uuid", title, description, status as "status!: TaskStatus", branch_template, parent_task_attempt as "parent_task_attempt: Uuid", created_at as "created_at!: DateTime<Utc>", updated_at as "updated_at!: DateTime<Utc>"
-               FROM tasks 
-               WHERE rowid = $1"#,
-            rowid
+        sqlx::query_as::<_, Task>(
+            r#"SELECT
+                 t.id,
+                 t.project_id,
+                 t.title,
+                 t.description,
+                 t.status,
+                 COALESCE(fx.branch_template, t.branch_template) AS branch_template,
+                 t.parent_task_attempt,
+                 t.created_at,
+                 t.updated_at
+               FROM tasks t
+               LEFT JOIN forge_task_extensions fx ON t.id = fx.task_id
+               WHERE t.rowid = ?"#,
         )
+        .bind(rowid)
         .fetch_optional(pool)
         .await
     }
@@ -201,14 +228,23 @@ ORDER BY t.created_at DESC"#,
         id: Uuid,
         project_id: Uuid,
     ) -> Result<Option<Self>, sqlx::Error> {
-        sqlx::query_as!(
-            Task,
-            r#"SELECT id as "id!: Uuid", project_id as "project_id!: Uuid", title, description, status as "status!: TaskStatus", branch_template, parent_task_attempt as "parent_task_attempt: Uuid", created_at as "created_at!: DateTime<Utc>", updated_at as "updated_at!: DateTime<Utc>"
-               FROM tasks 
-               WHERE id = $1 AND project_id = $2"#,
-            id,
-            project_id
+        sqlx::query_as::<_, Task>(
+            r#"SELECT
+                 t.id,
+                 t.project_id,
+                 t.title,
+                 t.description,
+                 t.status,
+                 COALESCE(fx.branch_template, t.branch_template) AS branch_template,
+                 t.parent_task_attempt,
+                 t.created_at,
+                 t.updated_at
+               FROM tasks t
+               LEFT JOIN forge_task_extensions fx ON t.id = fx.task_id
+               WHERE t.id = ? AND t.project_id = ?"#,
         )
+        .bind(id)
+        .bind(project_id)
         .fetch_optional(pool)
         .await
     }
@@ -235,6 +271,7 @@ ORDER BY t.created_at DESC"#,
         .await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn update(
         pool: &SqlitePool,
         id: Uuid,
@@ -305,23 +342,23 @@ ORDER BY t.created_at DESC"#,
         attempt_id: Uuid,
     ) -> Result<Vec<Self>, sqlx::Error> {
         // Find only child tasks that have this attempt as their parent
-        sqlx::query_as!(
-            Task,
+        sqlx::query_as::<_, Task>(
             r#"SELECT 
-                 id as "id!: Uuid",
-                 project_id as "project_id!: Uuid",
-                 title,
-                 description,
-                 status as "status!: TaskStatus",
-                 branch_template,
-                 parent_task_attempt as "parent_task_attempt: Uuid",
-                 created_at as "created_at!: DateTime<Utc>",
-                 updated_at as "updated_at!: DateTime<Utc>"
-               FROM tasks 
-               WHERE parent_task_attempt = $1
-               ORDER BY created_at DESC"#,
-            attempt_id,
+                 t.id,
+                 t.project_id,
+                 t.title,
+                 t.description,
+                 t.status,
+                 COALESCE(fx.branch_template, t.branch_template) AS branch_template,
+                 t.parent_task_attempt,
+                 t.created_at,
+                 t.updated_at
+               FROM tasks t
+               LEFT JOIN forge_task_extensions fx ON t.id = fx.task_id
+               WHERE t.parent_task_attempt = ?
+               ORDER BY t.created_at DESC"#,
         )
+        .bind(attempt_id)
         .fetch_all(pool)
         .await
     }

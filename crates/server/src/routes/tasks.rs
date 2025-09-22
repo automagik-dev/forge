@@ -19,6 +19,7 @@ use db::models::{
 };
 use deployment::Deployment;
 use executors::profile::ExecutorProfileId;
+use forge_extensions_branch_templates::BranchTemplateService;
 use futures_util::{SinkExt, StreamExt, TryStreamExt};
 use serde::Deserialize;
 use services::services::container::{
@@ -115,6 +116,10 @@ pub async fn create_task(
 
     let task = Task::create(&deployment.db().pool, &payload, id).await?;
 
+    BranchTemplateService::new(deployment.db().pool.clone())
+        .upsert_template(task.id, task.branch_template.clone())
+        .await?;
+
     if let Some(image_ids) = &payload.image_ids {
         TaskImage::associate_many_dedup(&deployment.db().pool, task.id, image_ids).await?;
     }
@@ -147,6 +152,10 @@ pub async fn create_task_and_start(
 ) -> Result<ResponseJson<ApiResponse<TaskWithAttemptStatus>>, ApiError> {
     let task_id = Uuid::new_v4();
     let task = Task::create(&deployment.db().pool, &payload.task, task_id).await?;
+
+    BranchTemplateService::new(deployment.db().pool.clone())
+        .upsert_template(task.id, task.branch_template.clone())
+        .await?;
 
     if let Some(image_ids) = &payload.task.image_ids {
         TaskImage::associate_many(&deployment.db().pool, task.id, image_ids).await?;
@@ -228,6 +237,10 @@ pub async fn update_task(
         parent_task_attempt,
     )
     .await?;
+
+    BranchTemplateService::new(deployment.db().pool.clone())
+        .upsert_template(task.id, task.branch_template.clone())
+        .await?;
 
     if let Some(image_ids) = &payload.image_ids {
         TaskImage::delete_by_task_id(&deployment.db().pool, task.id).await?;
