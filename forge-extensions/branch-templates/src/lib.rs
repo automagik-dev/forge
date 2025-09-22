@@ -1,7 +1,11 @@
-//! Branch template helpers and placeholder data structures.
+//! Branch template helpers and data access for forge-specific metadata.
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+mod store;
+
+pub use store::BranchTemplateStore;
 
 /// Generate a branch name using either a custom template or the default forge pattern.
 pub fn generate_branch_name(template: Option<&str>, title: &str, attempt_id: &Uuid) -> String {
@@ -54,10 +58,7 @@ mod tests {
     fn generate_branch_name_uses_default_pattern() {
         let attempt_id = Uuid::nil();
         let result = generate_branch_name(None, "Add Payment Flow", &attempt_id);
-        let expected_prefix = format!(
-            "forge-{}-",
-            utils::text::git_branch_id("Add Payment Flow")
-        );
+        let expected_prefix = format!("forge-{}-", utils::text::git_branch_id("Add Payment Flow"));
         assert!(result.starts_with(&expected_prefix));
     }
 

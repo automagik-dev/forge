@@ -29,10 +29,17 @@ impl OmniClient {
         Ok(response.into_iter().map(OmniInstance::from).collect())
     }
 
-    pub async fn send_text(&self, instance: &str, req: SendTextRequest) -> Result<SendTextResponse> {
+    pub async fn send_text(
+        &self,
+        instance: &str,
+        req: SendTextRequest,
+    ) -> Result<SendTextResponse> {
         let mut request = self
             .client
-            .post(format!("{}/api/v1/instance/{}/send-text", self.base_url, instance))
+            .post(format!(
+                "{}/api/v1/instance/{}/send-text",
+                self.base_url, instance
+            ))
             .json(&req);
 
         if let Some(key) = &self.api_key {

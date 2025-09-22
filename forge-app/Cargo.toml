@@ -14,3 +14,8 @@ forge-extensions-omni = { path = "../forge-extensions/omni" }
 forge-extensions-branch-templates = { path = "../forge-extensions/branch-templates" }
 forge-extensions-config = { path = "../forge-extensions/config" }
 forge-extensions-genie = { path = "../forge-extensions/genie" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+uuid = { workspace = true }
+tower = { version = "0.4", features = ["util", "make"] }

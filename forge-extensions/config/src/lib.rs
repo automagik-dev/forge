@@ -24,6 +24,17 @@ pub type GitHubConfig = versions::v7::GitHubConfig;
 pub type OmniConfig = versions::v7::OmniConfig;
 pub type RecipientType = versions::v7::RecipientType;
 
+pub fn validate(config: &ForgeConfig) -> Result<(), ConfigError> {
+    if config.config_version != "v7" {
+        return Err(ConfigError::ValidationError(format!(
+            "Unsupported config version: {}",
+            config.config_version
+        )));
+    }
+
+    Ok(())
+}
+
 pub async fn load_config_from_file(config_path: &PathBuf) -> ForgeConfig {
     match std::fs::read_to_string(config_path) {
         Ok(raw_config) => ForgeConfig::from(raw_config),

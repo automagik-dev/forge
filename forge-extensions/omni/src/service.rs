@@ -1,4 +1,7 @@
-use crate::{client::OmniClient, types::{OmniConfig, RecipientType, SendTextRequest}};
+use crate::{
+    client::OmniClient,
+    types::{OmniConfig, OmniInstance, RecipientType, SendTextRequest},
+};
 use anyhow::Result;
 
 pub struct OmniService {
@@ -8,11 +11,27 @@ pub struct OmniService {
 
 impl OmniService {
     pub fn new(config: OmniConfig) -> Self {
-        let client = OmniClient::new(
-            config.host.clone().unwrap_or_default(),
-            config.api_key.clone(),
-        );
+        let base_url = config.host.clone().unwrap_or_default().trim().to_string();
+        let client = OmniClient::new(base_url, config.api_key.clone());
         Self { config, client }
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.config.enabled
+            && self
+                .config
+                .host
+                .as_ref()
+                .map(|host| !host.trim().is_empty())
+                .unwrap_or(false)
+    }
+
+    pub async fn list_instances(&self) -> Result<Vec<OmniInstance>> {
+        if !self.is_enabled() {
+            return Ok(vec![]);
+        }
+
+        self.client.list_instances().await
     }
 
     pub async fn send_task_notification(
