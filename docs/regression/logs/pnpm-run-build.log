@@ -1,3 +1,0 @@
- ERR_PNPM_NO_SCRIPT  Missing script: build
-
-Command "build" not found. Did you mean "pnpm run build:npx"?
