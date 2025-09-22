@@ -6,6 +6,26 @@
 - Risk inventory (from structured diff scan): **69 high-risk**, **32 medium-risk**, **16 low-risk**, **26 fork-only** files.
 - Supporting artifacts generated: `raw-diff.txt`, `numstat.txt`, `diff-stats.txt`, `merge-history.txt`, `fork-commits.txt`.
 
+## Composition Matrix (2025-09-22)
+| Area | Upstream Source | Forge Layer | Remaining Divergence |
+|------|-----------------|-------------|-----------------------|
+| Backend runtime | `upstream/crates/{server,db,services,executors,utils}` | Patched workspace crates (`crates/*`) now call into `forge-extensions/*` and are composed by `forge-app` | Patches limited to thin adapters; submodule stays pristine. Ongoing task: keep patched crates in sync with upstream on each bump. |
+| Frontend bundles | `upstream/frontend` (legacy UI) | `frontend-forge` (forge UI), router mounts `/` vs `/legacy` | Repository still keeps a duplicated `frontend/` copy; migrate consumers to `frontend-forge` + upstream build artifacts then archive/remove duplicate. |
+| Migrations | `upstream/crates/db/migrations` | `forge-app/migrations/{001,002}_*.sql` for auxiliary tables + data copy | Branch template column remains in local `crates/db/migrations/20250903172012_add_branch_template_to_tasks.sql`; safe to remove once branch_template field disappears from runtime structs. |
+| Packaging & CLI | `upstream/local-build.sh`, `upstream/npx-cli` | Root `local-build.sh`, `npx-cli/bin/cli.js`, `dev_assets_*` seeds | Ensure bundle assembly only reads `frontend-forge` + upstream legacy build, drop references to repo-relative sqlite/config once FORGE_BUNDLE_PATH covers all cases. |
+| Documentation | `upstream/docs` | `docs/**/*`, `genie/wishes/*`, `prompt-task*.md`, `analysis/*` | Align wish notes + prompts with composition architecture; remove stale references to Genie HTTP APIs. |
+
+## Runtime Path Resolution Audit
+- **Database**: `DATABASE_URL` overrides everything; otherwise `FORGE_BUNDLE_PATH/forge.sqlite`, fall back to `dev_assets_seed/forge-snapshot/forge.sqlite`, finally `~/.automagik-forge/forge.sqlite` (auto-created).
+- **Config**: `FORGE_CONFIG_PATH` or `FORGE_BUNDLE_PATH/config.json`; dev fallback `dev_assets/config.json`; final fallback `~/.automagik-forge/config.json` (auto-created).
+- **Forge UI**: `FORGE_FRONTEND_DIST` > `FORGE_BUNDLE_PATH/frontend-forge-dist` > repo `frontend-forge/dist` > alongside binary.
+- **Legacy UI**: `FORGE_LEGACY_FRONTEND_DIST` > `FORGE_BUNDLE_PATH/legacy-frontend-dist` > repo `upstream/frontend/dist` > alongside binary; router returns 503 if missing.
+- **Data/config**: upstream crates resolve to `${XDG_DATA_HOME:-$HOME}/bloop/vibe-kanban`, the CLI pre-populates that path with the seeded config and SQLite snapshot.
+- **Bundle root**: CLI sets `FORGE_BUNDLE_PATH` to the extracted zip directory; `local-build.sh` mirrors that structure when packing.
+- **Regression harness**: `scripts/run-forge-regression.sh` expects `dev_assets_seed/forge-snapshot/forge.sqlite` unless `FORGE_SNAPSHOT_DB` supplied; writes logs under `docs/regression/`.
+
+
+
 > _Note_: The fork currently diverges in **143** paths (not 84). All files listed below were reviewed and categorised.
 
 ## Divergence highlights

@@ -25,10 +25,6 @@ pub struct CreateTaskRequest {
     pub title: String,
     #[schemars(description = "Optional description of the task")]
     pub description: Option<String>,
-    #[schemars(
-        description = "Optional branch naming template (e.g., 'fix/auth-bug', 'feat/new-feature'). If not provided, will use 'forge-{title}-{uuid}' pattern"
-    )]
-    pub branch_template: Option<String>,
 }
 
 #[derive(Debug, Serialize, schemars::JsonSchema)]
@@ -222,7 +218,6 @@ impl TaskServer {
             project_id,
             title,
             description,
-            branch_template,
         }): Parameters<CreateTaskRequest>,
     ) -> Result<CallToolResult, ErrorData> {
         // Parse project_id from string to UUID
@@ -274,7 +269,6 @@ impl TaskServer {
             project_id: project_uuid,
             title: title.clone(),
             description: description.clone(),
-            branch_template: branch_template.clone(),
             parent_task_attempt: None,
             image_ids: None,
         };
@@ -578,7 +572,6 @@ impl TaskServer {
         let new_title = title.unwrap_or(current_task.title);
         let new_description = description.or(current_task.description);
         let new_status = status_enum.unwrap_or(current_task.status);
-        let new_branch_template = current_task.branch_template;
         let new_parent_task_attempt = current_task.parent_task_attempt;
 
         match Task::update(
@@ -588,7 +581,6 @@ impl TaskServer {
             new_title,
             new_description,
             new_status,
-            new_branch_template,
             new_parent_task_attempt,
         )
         .await
@@ -819,7 +811,7 @@ impl ServerHandler for TaskServer {
                 .enable_tools()
                 .build(),
             server_info: Implementation {
-                name: "automagik-forge".to_string(),
+                name: "vibe-kanban".to_string(),
                 version: "1.0.0".to_string(),
             },
             instructions: Some("A task and project management server. If you need to create or update tickets or tasks then use these tools. Most of them absolutely require that you pass the `project_id` of the project that you are currently working on. This should be provided to you. Call `list_tasks` to fetch the `task_ids` of all the tasks in a project`. TOOLS: 'list_projects', 'list_tasks', 'create_task', 'get_task', 'update_task', 'delete_task'. Make sure to pass `project_id` or `task_id` where required. You can use list tools to get the available ids.".to_string()),

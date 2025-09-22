@@ -32,14 +32,10 @@
   - Provide `ForgeConfig` facade in extension returning/accepting upstream-friendly types; `forge-app` composes this with upstream deployment config loader.
   - Update TS generation to pull types from the new crate (likely via `forge_extensions_config::ForgeConfig` exports).
 
-## Genie / MCP integration hooks
-- **Git service identity**: `crates/services/src/services/git.rs` ensures repo commit identity defaults to "Automagik Genie" (`ensure_cli_commit_identity`, `signature_with_fallback`). Tests under `crates/services/tests/git_workflow.rs` validate behaviour.
-- **Executor metadata**: Genie naming appears in package metadata (`package.json` author) and documentation; backend code impact limited to git service for now.
-- **MCP touchpoints**: `crates/server/src/mcp/task_server.rs` handles task creation/update via MCP, returning/accepting branch template data; any Genie extensions will eventually consume this service surface.
-- **Planned destination**:
-  - Provide `forge-extensions/genie` module exposing constants/helpers (e.g., preferred git identity, future automation metadata).
-  - `forge-app` should expose adapters so upstream git service can invoke Genie-specific overrides without direct forge logic.
-  - Future Task 3 will likely flesh out richer Genie endpoints; note current backend impact scope (identity + MCP routes).
+## Genie / MCP integration hooks (documentation only)
+- **Current usage**: Genie branding appears in git commit identity helpers (`crates/services/src/services/git.rs`) and documentation assets (`genie/wishes/*.md`, `.claude/` commands). No runtime HTTP handlers exist today.
+- **Scope guardrail**: Migration keeps Genie automation as documentation/process guidance; backend code only references Genie for naming/metadata defaults.
+- **Follow-up note**: Any future automation would be handled as separate work; Task 2 ensures docs stay accurate without adding endpoints.
 
 ## Auxiliary data & migrations
 - **Existing data model** relies on upstream tables (`tasks`, `task_attempts`) holding forge-only columns (`branch_template`).

@@ -56,8 +56,8 @@ pnpm pack --filter npx-cli --pack-destination "$LOG_DIR"
 
 echo "Starting forge-app for regression checks..."
 APP_LOG="$LOG_DIR/forge-app-$TIMESTAMP.log"
-FORGE_ENV=(DATABASE_URL="$DATABASE_URL" FORGE_APP_ADDR="$FORGE_APP_ADDR")
-env DATABASE_URL="$DATABASE_URL" FORGE_APP_ADDR="$FORGE_APP_ADDR" cargo run --quiet -p forge-app >"$APP_LOG" 2>&1 &
+env DATABASE_URL="$DATABASE_URL" FORGE_APP_ADDR="$FORGE_APP_ADDR" \
+  cargo run --quiet -p forge-app >"$APP_LOG" 2>&1 &
 APP_PID=$!
 
 cleanup() {
@@ -83,7 +83,6 @@ declare -A ENDPOINTS=(
   [health]="/health"
   [omni_instances]="/api/forge/omni/instances"
   [branch_templates]="/api/forge/branch-templates/${BRANCH_TEMPLATE_TASK_ID}"
-  [genie_wishes]="/api/forge/genie/wishes"
 )
 
 echo "Collecting API samples..."
@@ -91,9 +90,13 @@ for name in "${!ENDPOINTS[@]}"; do
   url="http://$FORGE_APP_ADDR${ENDPOINTS[$name]}"
   target="$OUT_DIR/$name.json"
   echo "  -> $url"
-  if ! curl --fail --silent "$url" | jq --sort-keys '.' > "$target"; then
+  if ! response=$(curl --fail --silent "$url"); then
     echo "ERROR: Failed to collect $url"
     exit 1
+  fi
+
+  if ! printf '%s' "$response" | jq --sort-keys '.' > "$target" 2>/dev/null; then
+    printf '%s' "$response" > "$target"
   fi
 done
 

@@ -67,6 +67,13 @@ const isMcpMode = process.argv.includes("--mcp");
 // ensure output dir
 fs.mkdirSync(extractDir, { recursive: true });
 
+function toSqliteUrl(filePath) {
+  if (process.platform === "win32") {
+    return `sqlite://${filePath.replace(/\\/g, "/")}`;
+  }
+  return `sqlite://${filePath}`;
+}
+
 function extractAndRun(baseName, launch) {
   const binName = getBinaryName(baseName);
   const binPath = path.join(extractDir, binName);
@@ -141,6 +148,27 @@ if (isMcpMode) {
     }
     
     // Set default environment variables if not already set
+    env.FORGE_BUNDLE_PATH = extractDir;
+    const forgeFrontendDist = path.join(extractDir, "frontend-forge-dist");
+    if (!env.FORGE_FRONTEND_DIST && fs.existsSync(forgeFrontendDist)) {
+      env.FORGE_FRONTEND_DIST = forgeFrontendDist;
+    }
+
+    const legacyFrontendDist = path.join(extractDir, "legacy-frontend-dist");
+    if (!env.FORGE_LEGACY_FRONTEND_DIST && fs.existsSync(legacyFrontendDist)) {
+      env.FORGE_LEGACY_FRONTEND_DIST = legacyFrontendDist;
+    }
+
+    const bundledDb = path.join(extractDir, "forge.sqlite");
+    if (!env.DATABASE_URL && fs.existsSync(bundledDb)) {
+      env.DATABASE_URL = toSqliteUrl(bundledDb);
+    }
+
+    const bundledConfig = path.join(extractDir, "config.json");
+    if (!env.FORGE_CONFIG_PATH && fs.existsSync(bundledConfig)) {
+      env.FORGE_CONFIG_PATH = bundledConfig;
+    }
+
     if (!env.BACKEND_PORT && !env.PORT) {
       env.BACKEND_PORT = "8887";
     }

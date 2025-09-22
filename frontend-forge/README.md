@@ -9,7 +9,7 @@ pnpm install
 pnpm run dev
 ```
 
-Forge routes call the new composition APIs exposed under `/api/forge/*`. During development the upstream UI can still be accessed from `forge-app` at `/legacy` provided a legacy build exists in `frontend/dist`.
+Forge routes call the new composition APIs exposed under `/api/forge/*`. During development the upstream UI can still be accessed from `forge-app` at `/legacy` provided a legacy build exists in `upstream/frontend/dist`.
 
 ## Production Builds
 

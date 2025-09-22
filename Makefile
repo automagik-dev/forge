@@ -88,8 +88,12 @@ build:
 	@echo "🚀 Building Automagik Forge for current platform..."
 	@echo "🧹 Cleaning previous builds..."
 	@rm -rf npx-cli/dist
-	@echo "🔨 Building frontend..."
-	@cd frontend && npm run build
+	@echo "🔨 Building forge frontend..."
+	@cd frontend-forge && pnpm run build
+	@if [ -d upstream/frontend ]; then \
+		 echo "🔨 Building legacy frontend..." && \
+		 (cd upstream/frontend && pnpm run build); \
+	fi
 	@echo "🔨 Building Rust binaries..."
 	@cargo build --release
 	@cargo build --release --bin mcp_task_server
@@ -103,7 +107,8 @@ build:
 clean:
 	@echo "🧹 Cleaning build artifacts..."
 	@rm -rf target/
-	@rm -rf frontend/dist/
+	@rm -rf frontend-forge/dist/
+	@rm -rf upstream/frontend/dist/
 	@rm -rf npx-cli/dist/
 	@rm -f automagik-forge automagik-forge-mcp
 	@rm -f *.zip

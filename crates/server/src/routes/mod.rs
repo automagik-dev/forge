@@ -28,6 +28,7 @@ pub fn router(deployment: DeploymentImpl) -> IntoMakeService<Router> {
         .merge(config::router())
         .merge(containers::router(&deployment))
         .merge(projects::router(&deployment))
+        .nest("/omni", omni::router())
         .merge(tasks::router(&deployment))
         .merge(task_attempts::router(&deployment))
         .merge(execution_processes::router(&deployment))
@@ -36,7 +37,6 @@ pub fn router(deployment: DeploymentImpl) -> IntoMakeService<Router> {
         .merge(filesystem::router())
         .merge(events::router(&deployment))
         .nest("/images", images::routes())
-        .nest("/omni", omni::router())
         .with_state(deployment);
 
     Router::new()

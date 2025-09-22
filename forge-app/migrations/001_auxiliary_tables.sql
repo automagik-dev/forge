@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS forge_task_extensions (
     task_id         BLOB PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
     branch_template TEXT,
     omni_settings   TEXT,
-    genie_metadata  TEXT,
     created_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -1,6 +1,5 @@
 use chrono::{DateTime, Utc};
 use executors::executors::BaseCodingAgent;
-use forge_extensions_branch_templates as branch_templates;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool, Type};
 use thiserror::Error;
@@ -385,20 +384,7 @@ impl TaskAttempt {
         task_id: Uuid,
     ) -> Result<Self, TaskAttemptError> {
         let attempt_id = Uuid::new_v4();
-
-        // Get the task to access branch_template and title
-        let task = Task::find_by_id(pool, task_id)
-            .await?
-            .ok_or(TaskAttemptError::TaskNotFound)?;
-
-        let branch_name = branch_templates::generate_branch_name(
-            task.branch_template.as_deref(),
-            &task.title,
-            &attempt_id,
-        );
-
-        let branch_name_opt = Some(branch_name);
-
+        // let prefixed_id = format!("vibe-kanban-{}", attempt_id);
         // Insert the record into the database
         Ok(sqlx::query_as!(
             TaskAttempt,
@@ -408,7 +394,7 @@ impl TaskAttempt {
             attempt_id,
             task_id,
             Option::<String>::None, // Container isn't known yet
-            branch_name_opt, // Use the generated branch name
+            Option::<String>::None, // branch name isn't known yet
             data.base_branch,
             data.executor,
             false, // worktree_deleted is false during creation
@@ -452,34 +438,5 @@ impl TaskAttempt {
         .ok_or(sqlx::Error::RowNotFound)?;
 
         Ok((result.attempt_id, result.task_id, result.project_id))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn branch_name_generation_delegates_to_extension() {
-        let attempt_id = Uuid::nil();
-        let task = Task {
-            id: Uuid::new_v4(),
-            project_id: Uuid::new_v4(),
-            title: "Simple Task".to_string(),
-            description: None,
-            status: crate::models::task::TaskStatus::Todo,
-            branch_template: Some("feature".to_string()),
-            parent_task_attempt: None,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        };
-
-        let branch_name = branch_templates::generate_branch_name(
-            task.branch_template.as_deref(),
-            &task.title,
-            &attempt_id,
-        );
-
-        assert!(branch_name.starts_with("feature-"));
     }
 }

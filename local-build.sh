@@ -29,9 +29,10 @@ mkdir -p npx-cli/dist/$PLATFORM_DIR
 echo "🔨 Building forge frontend..."
 (cd frontend-forge && pnpm run build)
 
-if [ -d frontend ]; then
-  echo "🔨 Building legacy frontend..."
-  (cd frontend && pnpm run build)
+LEGACY_FRONTEND_DIR=upstream/frontend
+if [ -d "$LEGACY_FRONTEND_DIR" ]; then
+  echo "🔨 Building legacy frontend from $LEGACY_FRONTEND_DIR..."
+  (cd "$LEGACY_FRONTEND_DIR" && pnpm run build)
 else
   echo "⚠️  Legacy frontend directory missing; skipping build"
 fi
@@ -48,11 +49,40 @@ PLATFORMS=("linux-x64" "linux-arm64" "windows-x64" "windows-arm64" "macos-x64" "
 echo "📦 Packaging binaries for $PLATFORM_DIR..."
 mkdir -p npx-cli/dist/$PLATFORM_DIR
 
-# Copy and zip the main binary
-cp target/release/server automagik-forge
-zip -q automagik-forge.zip automagik-forge
-rm -f automagik-forge
+# Build bundle containing binary, frontends, and defaults
+BUNDLE_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t automagik-forge)
+trap 'rm -rf "$BUNDLE_DIR"' EXIT
+
+cp target/release/forge-app "$BUNDLE_DIR/automagik-forge"
+cp -R frontend-forge/dist "$BUNDLE_DIR/frontend-forge-dist"
+
+if [ -d "$LEGACY_FRONTEND_DIR/dist" ]; then
+  cp -R "$LEGACY_FRONTEND_DIR/dist" "$BUNDLE_DIR/legacy-frontend-dist"
+fi
+
+if [ -f dev_assets_seed/forge-snapshot/from_repo/db.sqlite ]; then
+  cp dev_assets_seed/forge-snapshot/from_repo/db.sqlite "$BUNDLE_DIR/forge.sqlite"
+fi
+
+if [ -f dev_assets/config.json ]; then
+  cp dev_assets/config.json "$BUNDLE_DIR/config.json"
+fi
+
+mkdir -p "$BUNDLE_DIR/bloop/vibe-kanban"
+
+if [ -f dev_assets_seed/forge-snapshot/from_repo/db.sqlite ]; then
+  cp dev_assets_seed/forge-snapshot/from_repo/db.sqlite "$BUNDLE_DIR/bloop/vibe-kanban/db.sqlite"
+fi
+
+if [ -f dev_assets/config.json ]; then
+  cp dev_assets/config.json "$BUNDLE_DIR/bloop/vibe-kanban/config.json"
+fi
+
+(cd "$BUNDLE_DIR" && zip -rq "$OLDPWD/automagik-forge.zip" .)
 mv automagik-forge.zip npx-cli/dist/$PLATFORM_DIR/automagik-forge.zip
+
+rm -rf "$BUNDLE_DIR"
+trap - EXIT
 
 # Copy and zip the MCP binary
 cp target/release/mcp_task_server automagik-forge-mcp

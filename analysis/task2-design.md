@@ -42,15 +42,6 @@
   ```
 - Keep upgrade logic and `Default` implementation identical; replace `services::services::omni::types::OmniConfig` import with `forge_extensions_omni::OmniSettings`.
 
-### forge-extensions/genie
-- **Goal**: minimal helper crate for backend identity + future metadata. Provide `DEFAULT_GIT_NAME`, `DEFAULT_GIT_EMAIL`, plus helper functions for deriving commit signatures. Optionally wrap existing logic from `GitService` if we migrate it later.
-- **Public API**:
-  ```rust
-  pub const DEFAULT_GIT_USER: &str = "Automagik Genie";
-  pub const DEFAULT_GIT_EMAIL: &str = "genie@namastex.ai";
-  pub fn apply_repo_identity(repo: &Repository) -> Result<()>; // optional
-  ```
-
 ## 2. forge-app composition layer
 
 ### Services module layout
@@ -140,7 +131,7 @@ Create under `forge-app/migrations` (numbering matches Task 2 requirements):
 - **Rust checks**: `cargo check --workspace`, targeted tests for `forge-extensions-omni` (existing ones) and new branch template helpers.
 - **SQLx migration dry run**: `cargo sqlx migrate run --dry-run` pointing at `forge-app/migrations` (document results if sandbox prohibits running).
 - **Smoke endpoints**: run `cargo run -p forge-app`, curl endpoints (document if not run).
-- **Docs**: update `genie/prep/wish-prep-restructure-upstream-library.md` with migration summary & note about branch template AUX tables.
+- **Docs**: update `genie/prep/wish-prep-restructure-upstream-library.md` with migration summary & clarify that Genie remains documentation-only (no service wiring).
 
 ## 6. Open questions / assumptions
 - Upstream crates will accept new dependency on `forge-app` or raw extension crates? For now assume we can add `forge-extensions` as dependencies where needed.
@@ -148,6 +139,6 @@ Create under `forge-app/migrations` (numbering matches Task 2 requirements):
 - Genie extraction scope limited to git identity constants for Task 2; deeper automation deferred unless blocking tests.
 
 ## Next concrete actions
-1. Update extension crate scaffolds with real module layout (`omni`, `branch-templates`, `config`, `genie`).
+1. Update extension crate scaffolds with real module layout (`omni`, `branch-templates`, `config`).
 2. Move Omni code into extension crate while updating imports + TS generation references.
 3. Draft auxiliary migrations under `forge-app/migrations` before wiring branch template adapters.
