@@ -73,13 +73,17 @@ The database must contain upstream tables (`tasks`, etc.). If you need a throwaw
 Example endpoints:
 
 - `GET /health` → plain text heartbeat.
+- `GET /legacy` → upstream UI bundle (served when an upstream build is present).
 - `GET /api/forge/omni/instances` → Omni instance list (empty when Omni disabled).
-- `GET /api/forge/branch-templates/:task_id` → forge template metadata for a task.
-- `GET /api/forge/genie/wishes` → Genie connection summary placeholder.
+- `GET /api/forge/branch-templates/:task_id` → branch template metadata, backed by auxiliary tables.
+- `PUT /api/forge/branch-templates/:task_id` → update/clear forge branch templates.
+- `GET /api/forge/genie/wishes` → wish metadata parsed from `genie/wishes`.
+- `GET /api/forge/genie/commands` → Genie CLI command catalogue derived from `.claude/commands`.
 
 ## Notes for Task 3
 
-- Frontend extraction remains outstanding (`frontend-forge/` is still a stub).
+- `frontend-forge/` now contains the forge UI (copied from the former forked frontend) and is served at `/`; the legacy/upstream bundle is mounted at `/legacy`.
+- Configure `FORGE_FRONTEND_DIST`, `FORGE_LEGACY_FRONTEND_DIST`, `FORGE_GENIE_COMMANDS_DIR`, and `FORGE_GENIE_WISHES_DIR` to override static asset directories when running outside the repository layout.
 - Re-run `pnpm install`, `pnpm run lint`, and `pnpm run build` once network access is available; update regression baselines after successful runs.
 - `scripts/run-forge-regression.sh` assumes a hydrated forge snapshot and a reachable npm registry. Record limitations if these commands remain sandbox-blocked.
-- Confirm dual-frontend routing and Genie automation wiring as you move into Task 3.
+- Confirm dual-frontend routing and Genie automation wiring as part of Task 3 verification.

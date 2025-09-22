@@ -1,5 +1,5 @@
 {
-  "name": "automagik-forge",
+  "name": "@automagik/frontend-legacy",
   "private": true,
   "version": "0.3.10",
   "type": "module",

@@ -3,7 +3,7 @@ use std::{env, path::PathBuf, sync::Arc};
 use anyhow::{Context, Result};
 use forge_extensions_branch_templates::BranchTemplateStore;
 use forge_extensions_config as config;
-use forge_extensions_genie::{self as genie, GenieConfig};
+use forge_extensions_genie::{self as genie, GenieCommand, GenieConfig, GenieWish};
 use forge_extensions_omni::{OmniInstance, OmniService};
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 use tracing::{info, warn};
@@ -11,6 +11,10 @@ use uuid::Uuid;
 
 const DEFAULT_DATABASE_URL: &str = "sqlite://dev_assets_seed/forge-snapshot/forge.sqlite";
 const DEFAULT_CONFIG_PATH: &str = "dev_assets/config.json";
+const DEFAULT_GENIE_COMMANDS_DIR: &str = ".claude/commands";
+const DEFAULT_GENIE_WISHES_DIR: &str = "genie/wishes";
+const ENV_GENIE_COMMANDS_DIR: &str = "FORGE_GENIE_COMMANDS_DIR";
+const ENV_GENIE_WISHES_DIR: &str = "FORGE_GENIE_WISHES_DIR";
 
 /// Shared forge-specific services composed with upstream functionality.
 pub struct ForgeServices {
@@ -18,6 +22,8 @@ pub struct ForgeServices {
     branch_templates: BranchTemplateStore,
     omni: OmniService,
     genie_config: GenieConfig,
+    genie_commands_dir: PathBuf,
+    genie_wishes_dir: PathBuf,
     _forge_config: config::ForgeConfig,
     _config_path: PathBuf,
 }
@@ -60,12 +66,20 @@ impl ForgeServices {
         }
 
         let branch_templates = BranchTemplateStore::new(pool.clone());
+        let genie_commands_dir = env::var(ENV_GENIE_COMMANDS_DIR)
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from(DEFAULT_GENIE_COMMANDS_DIR));
+        let genie_wishes_dir = env::var(ENV_GENIE_WISHES_DIR)
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from(DEFAULT_GENIE_WISHES_DIR));
 
         Ok(Arc::new(Self {
             _pool: pool,
             branch_templates,
             omni: omni_service,
             genie_config,
+            genie_commands_dir,
+            genie_wishes_dir,
             _forge_config: forge_config,
             _config_path: config_path,
         }))
@@ -79,13 +93,23 @@ impl ForgeServices {
         self.branch_templates.fetch(task_id).await
     }
 
-    pub async fn list_genie_wishes(&self) -> Vec<String> {
-        match genie::connect(&self.genie_config) {
-            Ok(msg) => vec![msg],
-            Err(err) => {
-                warn!(%err, "genie wish listing returned placeholder error");
-                vec![]
-            }
-        }
+    pub async fn set_branch_template(
+        &self,
+        task_id: Uuid,
+        template: &str,
+    ) -> Result<(), sqlx::Error> {
+        self.branch_templates.upsert(task_id, template).await
+    }
+
+    pub async fn clear_branch_template(&self, task_id: Uuid) -> Result<(), sqlx::Error> {
+        self.branch_templates.clear(task_id).await
+    }
+
+    pub fn list_genie_wishes(&self) -> Result<Vec<GenieWish>> {
+        genie::list_wishes(&self.genie_wishes_dir)
+    }
+
+    pub fn list_genie_commands(&self) -> Result<Vec<GenieCommand>> {
+        genie::list_commands(&self.genie_commands_dir)
     }
 }

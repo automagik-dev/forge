@@ -26,8 +26,15 @@ fi
 echo "📦 Building for platform: $PLATFORM_DIR"
 mkdir -p npx-cli/dist/$PLATFORM_DIR
 
-echo "🔨 Building frontend..."
-(cd frontend && npm run build)
+echo "🔨 Building forge frontend..."
+(cd frontend-forge && pnpm run build)
+
+if [ -d frontend ]; then
+  echo "🔨 Building legacy frontend..."
+  (cd frontend && pnpm run build)
+else
+  echo "⚠️  Legacy frontend directory missing; skipping build"
+fi
 
 echo "🔨 Building Rust binaries..."
 cargo build --release

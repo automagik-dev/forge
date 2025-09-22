@@ -19,3 +19,4 @@ serde_json = { workspace = true }
 sqlx = { workspace = true }
 uuid = { workspace = true }
 tower = { version = "0.4", features = ["util", "make"] }
+tower-http = { workspace = true }

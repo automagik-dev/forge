@@ -7,3 +7,6 @@ publish = false
 [dependencies]
 serde = { workspace = true }
 anyhow = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"
