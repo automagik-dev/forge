@@ -35,7 +35,7 @@ import {
 import { toPrettyCase } from '@/utils/string';
 import { useTheme } from '@/components/theme-provider';
 import { useUserSystem } from '@/components/config-provider';
-import { OmniCard } from '@/components/omni/OmniCard';
+
 import { TaskTemplateManager } from '@/components/TaskTemplateManager';
 import NiceModal from '@ebay/nice-modal-react';
 
@@ -394,7 +394,7 @@ export function GeneralSettings() {
         </CardContent>
       </Card>
 
-      <OmniCard />
+      
 
       <Card>
         <CardHeader>

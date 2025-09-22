@@ -1,0 +1,4 @@
+# Forge Regression Harness
+Timestamp: 2025-09-21T19:57:15Z
+ERROR: Snapshot database not found at /var/tmp/automagik-forge/worktrees/forge-task-3-gro-ba8a/dev_assets_seed/forge-snapshot/forge.sqlite
+Provide FORGE_SNAPSHOT_DB or populate dev_assets_seed/forge-snapshot/forge.sqlite

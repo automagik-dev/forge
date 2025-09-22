@@ -9,10 +9,8 @@ use uuid::Uuid;
 pub use models::template::BranchTemplate;
 
 pub async fn get_branch_template(pool: &SqlitePool, task_id: Uuid) -> Result<Option<String>, sqlx::Error> {
-    sqlx::query_scalar!(
-        "SELECT branch_template FROM forge_task_extensions WHERE task_id = $1",
-        task_id
-    )
+sqlx::query_scalar("SELECT branch_template FROM forge_task_extensions WHERE task_id = ?")
+    .bind(task_id)
     .fetch_optional(pool)
     .await
 }

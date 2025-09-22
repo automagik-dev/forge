@@ -3,43 +3,43 @@
 
 -- Forge task extensions (e.g., branch templates per task)
 CREATE TABLE IF NOT EXISTS forge_task_extensions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    task_id UUID NOT NULL UNIQUE REFERENCES tasks(id) ON DELETE CASCADE,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL UNIQUE REFERENCES tasks(id) ON DELETE CASCADE,
     branch_template TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
 );
 
 -- Forge project settings (future: project-specific configurations)
 CREATE TABLE IF NOT EXISTS forge_project_settings (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id UUID NOT NULL UNIQUE REFERENCES projects(id) ON DELETE CASCADE,
-    settings JSONB DEFAULT '{}',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL UNIQUE REFERENCES projects(id) ON DELETE CASCADE,
+    settings TEXT DEFAULT '{}' ,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
 );
 
 -- Forge omni notifications (e.g., notification history or configs per task/project)
 CREATE TABLE IF NOT EXISTS forge_omni_notifications (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    task_id UUID REFERENCES tasks(id) ON DELETE SET NULL,
-    project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+    project_id INTEGER REFERENCES projects(id) ON DELETE SET NULL,
     instance_name TEXT,
     recipient TEXT,
-    sent_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    sent_at TEXT DEFAULT (datetime('now')),
     status TEXT DEFAULT 'sent',
     message TEXT
 );
 
 -- Views for compatibility (join upstream tables with extensions)
-CREATE OR REPLACE VIEW tasks_with_extensions AS
+DROP VIEW IF EXISTS tasks_with_extensions; CREATE VIEW tasks_with_extensions AS
 SELECT 
     t.*,
     fte.branch_template
 FROM tasks t
 LEFT JOIN forge_task_extensions fte ON t.id = fte.task_id;
 
-CREATE OR REPLACE VIEW projects_with_settings AS
+DROP VIEW IF EXISTS projects_with_settings; CREATE VIEW projects_with_settings AS
 SELECT 
     p.*,
     fps.settings
