@@ -80,6 +80,7 @@ build-npm-package-codesign.sh
 
 npx-cli/dist
 npx-cli/vibe-kanban-*
+npx-cli/automagik-forge-*.tgz
 vibe-kanban-*.tgz
 
 # Development ports file

@@ -3,13 +3,12 @@ use std::{env, path::PathBuf, sync::Arc};
 use axum::{
     extract::{Extension, Path},
     http::StatusCode,
-    routing::{delete, get, get_service, put},
+    routing::{get, get_service},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
-use tower::ServiceExt;
 use tower_http::services::{ServeDir, ServeFile};
-use tracing::{error, warn};
+use tracing::warn;
 use uuid::Uuid;
 
 use crate::services::ForgeServices;
@@ -191,26 +190,9 @@ fn static_frontend_service(
         );
     }
 
-    let error_context = root.clone();
-    let service = ServeDir::new(root.clone()).fallback(ServeFile::new(fallback_file));
+    let service = ServeDir::new(root).fallback(ServeFile::new(fallback_file));
 
-    Some(
-        get_service(service).handle_error(move |error: std::io::Error| {
-            let path = error_context.clone();
-            async move {
-                error!(
-                    %label,
-                    path = %path.display(),
-                    err = %error,
-                    "failed serving static frontend assets"
-                );
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("failed to serve {label} frontend assets"),
-                )
-            }
-        }),
-    )
+    Some(get_service(service))
 }
 
 async fn legacy_frontend_unavailable() -> (StatusCode, &'static str) {
