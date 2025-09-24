@@ -508,4 +508,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
   Made with ❤️ by <a href="https://namastex.ai">Namastex Labs</a><br>
   <em>AI that elevates human potential, not replaces it</em>
 </p>
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/namastexlabs/automagik-forge)
+<a href="https://deepwiki.com/namastexlabs/automagik-forge"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
