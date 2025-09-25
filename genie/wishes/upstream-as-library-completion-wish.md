@@ -43,9 +43,9 @@ Elevate the newly merged PR-21 foundation to a production-ready upstream-as-libr
 - [x] **B3 Omni Integration:** Wire Omni service to real credentials/config from upstream deployment; remove duplicate logic from upstream routes in favor of extension adapters.
 
 ### Phase C – Frontend Completion (+3 → 94)
-- [ ] **C1 Forge UI Port:** Populate `frontend-forge/` with forge-specific components, build pipeline, and asset embedding.
-- [ ] **C2 Dual Routing:** Serve upstream bundle at `/legacy` and forge bundle at `/` via `forge-app` using `RustEmbed` or static file proxy.
-- [ ] **C3 API Integration:** Implement remaining forge-specific API endpoints for CLI + UI integration.
+- [x] **C1 Forge UI Port:** Populate `frontend-forge/` with forge-specific components, build pipeline, and asset embedding.
+- [x] **C2 Dual Routing:** Serve upstream bundle at `/legacy` and forge bundle at `/` via `forge-app` using `RustEmbed` or static file proxy.
+- [x] **C3 API Integration:** Implement remaining forge-specific API endpoints for CLI + UI integration.
 
 ### Phase D – Validation & Testing (+4 → 98)
 - [ ] **D1 SQLx Cache:** Regenerate `.sqlx/*` with merged migrations.

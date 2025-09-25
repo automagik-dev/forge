@@ -27,6 +27,6 @@ This runs TypeScript in no-emit mode to ensure the forge UI stays in sync with t
 
 ## Next Steps
 
-- Port forge-specific surfaces from the forked frontend.
-- Replace the temporary status panel with real Omni/branch template management views.
-- Add Vitest coverage for forge UI components once extracted.
+- Continue porting forge-only surfaces (e.g., Genie task flows) into this bundle.
+- Add Vitest coverage for the new configuration and notification panels.
+- Integrate live updates (SSE/WebSocket) once the backend exposes a streaming feed.

@@ -8,9 +8,9 @@ Progress tracker derived from `genie/wishes/upstream-as-library-completion-wish.
 - [x] **B3 – Omni Integration:** Wire Omni service to production credentials path, migrate API adapters, and remove legacy duplications.
 
 ## Phase C – Frontend Completion (target +3 → Score 94)
-- [ ] **C1 – Forge UI Port:** Flesh out `frontend-forge` to cover forge dashboard features and ensure build artifacts embed cleanly in `forge-app`.
-- [ ] **C2 – Dual Routing:** Verify `/` serves forge UI and `/legacy` continues to serve upstream with API compatibility (including `/api` + `/legacy/api`).
-- [ ] **C3 – API Integration:** Backfill forge-specific endpoints for CLI/UI (branch templates, Omni, config) and update consumers.
+- [x] **C1 – Forge UI Port:** Flesh out `frontend-forge` to cover forge dashboard features and ensure build artifacts embed cleanly in `forge-app`.
+- [x] **C2 – Dual Routing:** Verify `/` serves forge UI and `/legacy` continues to serve upstream with API compatibility (including `/api` + `/legacy/api`).
+- [x] **C3 – API Integration:** Backfill forge-specific endpoints for CLI/UI (branch templates, Omni, config) and update consumers.
 
 ## Phase D – Validation & Testing (target +4 → Score 98)
 - [ ] **D1 – SQLx Cache:** Regenerate `.sqlx` data with merged migrations.

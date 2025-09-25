@@ -12,6 +12,7 @@ yarn-error.log*
 
 # Build outputs
 /dist
+!/frontend-forge/dist/.gitkeep
 /build
 
 # Environment variables
@@ -73,6 +74,8 @@ coverage/
 
 .env
 frontend/dist
+frontend-forge/dist/*
+!frontend-forge/dist/.gitkeep
 crates/executors/bindings
 crates/utils/bindings
 

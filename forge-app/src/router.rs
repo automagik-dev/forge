@@ -89,6 +89,7 @@ fn forge_api_routes() -> Router<ForgeAppState> {
             get(get_project_settings).put(update_project_settings),
         )
         .route("/api/forge/omni/instances", get(list_omni_instances))
+        .route("/api/forge/omni/notifications", get(list_omni_notifications))
         .route(
             "/api/forge/branch-templates/{task_id}",
             get(get_branch_template).put(set_branch_template),
@@ -278,6 +279,65 @@ async fn list_omni_instances(
             })))
         }
     }
+}
+
+async fn list_omni_notifications(
+    State(services): State<ForgeServices>,
+) -> Result<Json<Value>, StatusCode> {
+    let rows = sqlx::query(
+        r#"SELECT
+                id,
+                task_id,
+                notification_type,
+                status,
+                message,
+                error_message,
+                sent_at,
+                created_at,
+                metadata
+           FROM forge_omni_notifications
+          ORDER BY created_at DESC
+          LIMIT 50"#,
+    )
+    .fetch_all(services.pool())
+    .await
+    .map_err(|error| {
+        tracing::error!("Failed to fetch Omni notifications: {}", error);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let mut notifications = Vec::with_capacity(rows.len());
+
+    for row in rows {
+        let metadata = match row.try_get::<Option<String>, _>("metadata") {
+            Ok(Some(raw)) => serde_json::from_str::<Value>(&raw).ok(),
+            _ => None,
+        };
+
+        let record = json!({
+            "id": row.try_get::<String, _>("id").unwrap_or_default(),
+            "task_id": row.try_get::<Option<String>, _>("task_id").unwrap_or(None),
+            "notification_type": row
+                .try_get::<String, _>("notification_type")
+                .unwrap_or_else(|_| "unknown".to_string()),
+            "status": row
+                .try_get::<String, _>("status")
+                .unwrap_or_else(|_| "pending".to_string()),
+            "message": row.try_get::<Option<String>, _>("message").unwrap_or(None),
+            "error_message": row
+                .try_get::<Option<String>, _>("error_message")
+                .unwrap_or(None),
+            "sent_at": row.try_get::<Option<String>, _>("sent_at").unwrap_or(None),
+            "created_at": row
+                .try_get::<String, _>("created_at")
+                .unwrap_or_else(|_| chrono::Utc::now().to_rfc3339()),
+            "metadata": metadata,
+        });
+
+        notifications.push(record);
+    }
+
+    Ok(Json(json!({ "notifications": notifications })))
 }
 
 async fn get_branch_template(
