@@ -4,7 +4,7 @@
 //! Serves forge UI at `/` and upstream UI at `/legacy`
 
 use axum::{
-    extract::{Path, State},
+    extract::{FromRef, Path, State},
     http::{header, HeaderValue, StatusCode},
     response::{Html, IntoResponse, Response},
     routing::{get, post},
@@ -18,49 +18,116 @@ use uuid::Uuid;
 use crate::services::ForgeServices;
 use forge_branch_templates::BranchNameResponse;
 use forge_config::ForgeProjectSettings;
+use server::routes::{
+    self as upstream, auth, config as upstream_config, containers, events, execution_processes,
+    filesystem, images, projects, task_attempts, task_templates, tasks,
+};
+use server::DeploymentImpl;
 use sqlx::{self, Row};
 
 #[derive(RustEmbed)]
-#[folder = "../frontend/dist"]
+#[folder = "../frontend-forge/dist"]
 struct ForgeFrontend;
 
-// For now, we'll create a simple placeholder for the upstream frontend
-// In the future, this will embed the upstream frontend dist
 #[derive(RustEmbed)]
-#[folder = "../frontend/dist"] // Using same frontend for now
+#[folder = "../frontend/dist"]
 struct UpstreamFrontend;
 
+#[derive(Clone)]
+struct ForgeAppState {
+    services: ForgeServices,
+    deployment: DeploymentImpl,
+}
+
+impl ForgeAppState {
+    fn new(services: ForgeServices, deployment: DeploymentImpl) -> Self {
+        Self {
+            services,
+            deployment,
+        }
+    }
+}
+
+impl FromRef<ForgeAppState> for ForgeServices {
+    fn from_ref(state: &ForgeAppState) -> ForgeServices {
+        state.services.clone()
+    }
+}
+
+impl FromRef<ForgeAppState> for DeploymentImpl {
+    fn from_ref(state: &ForgeAppState) -> DeploymentImpl {
+        state.deployment.clone()
+    }
+}
+
 pub fn create_router(services: ForgeServices) -> Router {
+    let deployment = services.deployment.as_ref().clone();
+    let state = ForgeAppState::new(services, deployment.clone());
+
     Router::new()
         .route("/health", get(health_check))
-        // Forge API routes
+        .merge(forge_api_routes())
+        .nest("/legacy/api", legacy_api_router(&deployment))
+        // Dual frontend routing
+        .nest("/legacy", legacy_frontend_router())
+        .fallback(forge_frontend_handler)
+        .with_state(state)
+}
+
+fn forge_api_routes() -> Router<ForgeAppState> {
+    Router::new()
         .route(
             "/api/forge/config",
             get(get_forge_config).put(update_forge_config),
         )
         .route(
-            "/api/forge/projects/:project_id/settings",
+            "/api/forge/projects/{project_id}/settings",
             get(get_project_settings).put(update_project_settings),
         )
         .route("/api/forge/omni/instances", get(list_omni_instances))
         .route(
-            "/api/forge/branch-templates/:task_id",
+            "/api/forge/branch-templates/{task_id}",
             get(get_branch_template).put(set_branch_template),
         )
         .route(
-            "/api/forge/branch-templates/:task_id/generate",
+            "/api/forge/branch-templates/{task_id}/generate",
             post(generate_branch_name),
         )
-        // Dual frontend routing
-        .nest("/legacy", legacy_frontend_router())
-        .fallback(forge_frontend_handler)
-        .with_state(services)
 }
 
-fn legacy_frontend_router() -> Router<ForgeServices> {
+fn legacy_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
+    let mut router = Router::new().route("/health", get(upstream::health::health_check));
+
+    let dep_clone = deployment.clone();
+
+    router = router.merge(upstream_config::router().with_state::<ForgeAppState>(dep_clone.clone()));
+    router =
+        router.merge(containers::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+    router =
+        router.merge(projects::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+    router = router.merge(tasks::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+    router = router
+        .merge(task_attempts::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+    router = router.merge(
+        execution_processes::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()),
+    );
+    router = router
+        .merge(task_templates::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+    router = router.merge(auth::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+    router = router.merge(filesystem::router().with_state::<ForgeAppState>(dep_clone.clone()));
+    router =
+        router.merge(events::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+
+    router.nest(
+        "/images",
+        images::routes().with_state::<ForgeAppState>(dep_clone),
+    )
+}
+
+fn legacy_frontend_router() -> Router<ForgeAppState> {
     Router::new()
         .route("/", get(serve_legacy_index))
-        .route("/*path", get(serve_legacy_assets))
+        .route("/{*path}", get(serve_legacy_assets))
 }
 
 async fn forge_frontend_handler(uri: axum::http::Uri) -> Response {

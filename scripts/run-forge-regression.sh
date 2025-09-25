@@ -21,7 +21,7 @@ exec > >(tee "$RUN_LOG") 2>&1
 echo "# Forge Regression Harness"
 echo "Timestamp: $TIMESTAMP"
 
-for tool in jq curl pnpm; do
+for tool in jq curl pnpm sqlite3; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "ERROR: Required tool '$tool' is not available in PATH"
     exit 1
@@ -34,14 +34,31 @@ if [[ ! -f "$SNAPSHOT_DB" ]]; then
   exit 1
 fi
 
+# Ensure forge-app and upstream deployment use the snapshot database
+mkdir -p "$ROOT_DIR/dev_assets" "$ROOT_DIR/upstream/dev_assets"
+cp "$SNAPSHOT_DB" "$ROOT_DIR/dev_assets/db.sqlite"
+cp "$SNAPSHOT_DB" "$ROOT_DIR/upstream/dev_assets/db.sqlite"
+
 export DATABASE_URL="${DATABASE_URL:-sqlite://$SNAPSHOT_DB}"
-export FORGE_APP_ADDR="${FORGE_APP_ADDR:-127.0.0.1:8887}"
+export FORGE_APP_ADDR="${FORGE_APP_ADDR:-127.0.0.1:8891}"
 export RUST_LOG="${RUST_LOG:-info}"
-BRANCH_TEMPLATE_TASK_ID="${FORGE_SAMPLE_TASK_ID:-1}"
+BRANCH_TEMPLATE_TASK_ID="${FORGE_SAMPLE_TASK_ID:-}"
+
+if [[ -z "$BRANCH_TEMPLATE_TASK_ID" ]]; then
+  BRANCH_TEMPLATE_TASK_ID="$(sqlite3 "$SNAPSHOT_DB" "SELECT id FROM tasks LIMIT 1;")"
+  if [[ -z "$BRANCH_TEMPLATE_TASK_ID" ]]; then
+    echo "No tasks found in snapshot database; branch template sample will be skipped"
+  fi
+else
+  if [[ -z "$(sqlite3 "$SNAPSHOT_DB" "SELECT 1 FROM tasks WHERE id = '$BRANCH_TEMPLATE_TASK_ID' LIMIT 1;")" ]]; then
+    echo "WARNING: Provided FORGE_SAMPLE_TASK_ID=$BRANCH_TEMPLATE_TASK_ID not present in snapshot; skipping branch template sample"
+    BRANCH_TEMPLATE_TASK_ID=""
+  fi
+fi
 
 echo "Database: $DATABASE_URL"
 echo "Forge app address: $FORGE_APP_ADDR"
-echo "Sample task id: $BRANCH_TEMPLATE_TASK_ID"
+echo "Sample task id: ${BRANCH_TEMPLATE_TASK_ID:-<none>}"
 
 echo "Running cargo tests..."
 cargo test --workspace --quiet
@@ -54,9 +71,13 @@ pnpm run build:npx
 echo "Packing npx CLI (output captured in docs/regression/)"
 pnpm pack --filter npx-cli --pack-destination "$LOG_DIR"
 
+CLI_BACKEND_PORT="${FORGE_CLI_PORT:-8890}"
+echo "Running CLI smoke tests (BACKEND_PORT=$CLI_BACKEND_PORT)..."
+BACKEND_PORT="$CLI_BACKEND_PORT" node npx-cli/bin/cli.js --help > "$OUT_DIR/cli-help.txt"
+BACKEND_PORT="$CLI_BACKEND_PORT" node npx-cli/bin/cli.js --version > "$OUT_DIR/cli-version.txt"
+
 echo "Starting forge-app for regression checks..."
 APP_LOG="$LOG_DIR/forge-app-$TIMESTAMP.log"
-FORGE_ENV=(DATABASE_URL="$DATABASE_URL" FORGE_APP_ADDR="$FORGE_APP_ADDR")
 env DATABASE_URL="$DATABASE_URL" FORGE_APP_ADDR="$FORGE_APP_ADDR" cargo run --quiet -p forge-app >"$APP_LOG" 2>&1 &
 APP_PID=$!
 
@@ -83,8 +104,11 @@ declare -A ENDPOINTS=(
   [health]="/health"
   [forge_config]="/api/forge/config"
   [omni_instances]="/api/forge/omni/instances"
-  [branch_templates]="/api/forge/branch-templates/${BRANCH_TEMPLATE_TASK_ID}"
 )
+
+if [[ -n "$BRANCH_TEMPLATE_TASK_ID" ]]; then
+  ENDPOINTS[branch_templates]="/api/forge/branch-templates/${BRANCH_TEMPLATE_TASK_ID}"
+fi
 
 echo "Collecting API samples..."
 for name in "${!ENDPOINTS[@]}"; do
@@ -96,10 +120,6 @@ for name in "${!ENDPOINTS[@]}"; do
     exit 1
   fi
 done
-
-echo "Running CLI smoke tests..."
-node npx-cli/bin/cli.js --help > "$OUT_DIR/cli-help.txt"
-node npx-cli/bin/cli.js --version > "$OUT_DIR/cli-version.txt"
 
 if [[ -d "$BASELINE_DIR" ]]; then
   echo "Comparing against baseline in $BASELINE_DIR"

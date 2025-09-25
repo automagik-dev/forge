@@ -66,7 +66,7 @@ INSERT OR IGNORE INTO forge_omni_notifications (
     status,
     created_at
 ) VALUES (
-    'migration-002-' || datetime('now'),
+    'migration-002',
     NULL,
     'system',
     'migration',
