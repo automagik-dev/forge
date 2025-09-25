@@ -1,5 +1,5 @@
 import { Diff } from 'shared/types';
-import { DiffModeEnum, DiffView, SplitSide } from '@git-diff-view/react';
+import { DiffModeEnum, DiffView, SplitSide, type DiffViewProps } from '@git-diff-view/react';
 import { generateDiffFile, type DiffFile } from '@git-diff-view/file';
 import { useMemo } from 'react';
 import { useUserSystem } from '@/components/config-provider';
@@ -22,7 +22,7 @@ import {
 import '@/styles/diff-style-overrides.css';
 import { attemptsApi } from '@/lib/api';
 import type { TaskAttempt } from 'shared/types';
-import { useReview, type ReviewDraft } from '@/contexts/ReviewProvider';
+import { useReview, type ReviewDraft, type ReviewComment } from '@/contexts/ReviewProvider';
 import { CommentWidgetLine } from '@/components/diff/CommentWidgetLine';
 import { ReviewCommentRenderer } from '@/components/diff/ReviewCommentRenderer';
 import { useDiffViewMode } from '@/stores/useDiffViewStore';
@@ -131,10 +131,9 @@ export default function DiffCard({
   );
 
   // Transform comments to git-diff-view extendData format
-  const extendData = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const oldFileData: Record<string, { data: any }> = {};
-    const newFileData: Record<string, { data: any }> = {};
+  const extendData = useMemo<DiffViewProps<ReviewComment>['extendData']>(() => {
+    const oldFileData: Record<string, { data: ReviewComment }> = {};
+    const newFileData: Record<string, { data: ReviewComment }> = {};
 
     commentsForFile.forEach((comment) => {
       const lineKey = String(comment.lineNumber);
@@ -164,8 +163,10 @@ export default function DiffCard({
     setDraft(widgetKey, draft);
   };
 
-  const renderWidgetLine = (props: any) => {
-    const widgetKey = `${filePath}-${props.side}-${props.lineNumber}`;
+  const renderWidgetLine: NonNullable<
+    DiffViewProps<ReviewComment>['renderWidgetLine']
+  > = ({ side, lineNumber, onClose }) => {
+    const widgetKey = `${filePath}-${side}-${lineNumber}`;
     const draft = drafts[widgetKey];
     if (!draft) return null;
 
@@ -173,17 +174,17 @@ export default function DiffCard({
       <CommentWidgetLine
         draft={draft}
         widgetKey={widgetKey}
-        onSave={props.onClose}
-        onCancel={props.onClose}
+        onSave={onClose}
+        onCancel={onClose}
         projectId={projectId}
       />
     );
   };
 
-  const renderExtendLine = (lineData: any) => {
-    return (
-      <ReviewCommentRenderer comment={lineData.data} projectId={projectId} />
-    );
+  const renderExtendLine: NonNullable<
+    DiffViewProps<ReviewComment>['renderExtendLine']
+  > = ({ data }) => {
+    return <ReviewCommentRenderer comment={data} projectId={projectId} />;
   };
 
   // Title row
@@ -271,7 +272,7 @@ export default function DiffCard({
 
       {expanded && diffFile && (
         <div>
-          <DiffView
+          <DiffView<ReviewComment>
             diffFile={diffFile}
             diffViewWrap={false}
             diffViewTheme={theme}

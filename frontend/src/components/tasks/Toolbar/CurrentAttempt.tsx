@@ -207,8 +207,12 @@ function CurrentAttempt({
       setError(null); // Clear any previous errors on success
       setPushSuccess(true);
       setTimeout(() => setPushSuccess(false), 2000);
-    } catch (error: any) {
-      setError(error.message || 'Failed to push changes');
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'Failed to push changes';
+      setError(message);
     } finally {
       setPushing(false);
     }
@@ -221,9 +225,12 @@ function CurrentAttempt({
       setError(null); // Clear any previous errors on success
       setMergeSuccess(true);
       setTimeout(() => setMergeSuccess(false), 2000);
-    } catch (error) {
-      // @ts-expect-error it is type ApiError
-      setError(error.message || 'Failed to merge changes');
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'Failed to merge changes';
+      setError(message);
     } finally {
       setMerging(false);
     }

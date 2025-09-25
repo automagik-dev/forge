@@ -1,5 +1,5 @@
 import { useMemo, useEffect, useState } from 'react';
-import Form from '@rjsf/core';
+import Form, { type IChangeEvent } from '@rjsf/core';
 import { RJSFValidationError } from '@rjsf/utils';
 import validator from '@rjsf/validator-ajv8';
 
@@ -10,21 +10,16 @@ import { Loader2 } from 'lucide-react';
 import { shadcnTheme } from './rjsf';
 // Using custom shadcn/ui widgets instead of @rjsf/shadcn theme
 
-type ExecutorType =
-  | 'AMP'
-  | 'CLAUDE_CODE'
-  | 'GEMINI'
-  | 'CODEX'
-  | 'CURSOR'
-  | 'OPENCODE'
-  | 'QWEN_CODE';
+import type { BaseCodingAgent } from 'shared/types';
+
+type ExecutorConfiguration = Record<string, unknown>;
 
 interface ExecutorConfigFormProps {
-  executor: ExecutorType;
-  value: any;
-  onSubmit?: (formData: any) => void;
-  onChange?: (formData: any) => void;
-  onSave?: (formData: any) => Promise<void>;
+  executor: BaseCodingAgent;
+  value?: ExecutorConfiguration;
+  onSubmit?: (formData: ExecutorConfiguration) => void;
+  onChange?: (formData: ExecutorConfiguration) => void;
+  onSave?: (formData: ExecutorConfiguration) => Promise<void>;
   disabled?: boolean;
   isSaving?: boolean;
   isDirty?: boolean;
@@ -42,7 +37,7 @@ export function ExecutorConfigForm({
   isSaving = false,
   isDirty = false,
 }: ExecutorConfigFormProps) {
-  const [formData, setFormData] = useState(value || {});
+  const [formData, setFormData] = useState<ExecutorConfiguration>(value || {});
   const [validationErrors, setValidationErrors] = useState<
     RJSFValidationError[]
   >([]);
@@ -56,14 +51,14 @@ export function ExecutorConfigForm({
     setValidationErrors([]);
   }, [value, executor]);
 
-  const handleChange = ({ formData: newFormData }: any) => {
+  const handleChange = ({ formData: newFormData }: IChangeEvent<ExecutorConfiguration>) => {
     setFormData(newFormData);
     if (onChange) {
       onChange(newFormData);
     }
   };
 
-  const handleSubmit = async ({ formData: submitData }: any) => {
+  const handleSubmit = async ({ formData: submitData }: IChangeEvent<ExecutorConfiguration>) => {
     setValidationErrors([]);
     if (onSave) {
       await onSave(submitData);

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import DiffViewSwitch from '@/components/diff-view-switch';
 import DiffCard from '@/components/DiffCard';
 import { useDiffSummary } from '@/hooks/useDiffSummary';
-import type { TaskAttempt } from 'shared/types';
+import type { TaskAttempt, Diff } from 'shared/types';
 
 interface DiffTabProps {
   selectedAttempt: TaskAttempt | null;
@@ -122,7 +122,7 @@ function DiffTab({ selectedAttempt }: DiffTabProps) {
 }
 
 interface DiffTabContentProps {
-  diffs: any[];
+  diffs: Diff[];
   fileCount: number;
   added: number;
   deleted: number;

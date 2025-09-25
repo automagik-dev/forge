@@ -120,9 +120,9 @@ function TaskKanbanBoard({
   useKanbanKeyboardNavigation({
     focusedTaskId,
     setFocusedTaskId: (id) => {
-      setFocusedTaskId(id as string | null);
+      setFocusedTaskId(id);
       if (isPanelOpen) {
-        const task = filteredTasks.find((t: any) => t.id === id);
+        const task = filteredTasks.find((candidate) => candidate.id === id);
         if (task) {
           onViewTaskDetails(task);
         }

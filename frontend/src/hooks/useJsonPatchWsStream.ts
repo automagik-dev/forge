@@ -111,16 +111,17 @@ export const useJsonPatchWsStream = <T>(
               ? options.deduplicatePatches(patches)
               : patches;
 
-            if (!filtered.length || !dataRef.current) return;
+            const currentData = dataRef.current;
+            if (!filtered.length || !currentData) return;
 
             // Deep clone the current state before mutating it
-            dataRef.current = structuredClone(dataRef.current);
+            const nextData = structuredClone(currentData);
 
             // Apply patch (mutates the clone in place)
-            applyPatch(dataRef.current as any, filtered);
+            applyPatch(nextData, filtered);
 
-            // React re-render: dataRef.current is already a new object
-            setData(dataRef.current);
+            dataRef.current = nextData;
+            setData(nextData);
           }
 
           // Handle finished messages ({finished: true})

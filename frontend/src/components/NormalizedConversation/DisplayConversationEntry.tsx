@@ -4,6 +4,9 @@ import {
   NormalizedEntry,
   TaskAttempt,
   type NormalizedEntryType,
+  type CommandRunResult,
+  type ToolResult,
+  type JsonValue,
 } from 'shared/types.ts';
 import type { ProcessStartPayload } from '@/types/logs';
 import FileChangeRenderer from './FileChangeRenderer';
@@ -37,6 +40,17 @@ type Props = {
 };
 
 type FileEditAction = Extract<ActionType, { action: 'file_edit' }>;
+
+type ToolCallActionResult = (Partial<CommandRunResult> & Partial<ToolResult>) | null;
+
+type ToolCallAction = {
+  action?: ActionType['action'];
+  tool_name?: string;
+  arguments?: JsonValue | string | null;
+  result?: ToolCallActionResult;
+  message?: string;
+  summary?: string;
+};
 
 const getEntryIcon = (entryType: NormalizedEntryType) => {
   const iconSize = 'h-3 w-3';
@@ -349,38 +363,111 @@ const PlanPresentationCard: React.FC<{
   );
 };
 
+function toToolCallAction(value: unknown): ToolCallAction | null {
+  if (value == null || typeof value !== 'object') {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  if (
+    'action_type' in record &&
+    record.action_type &&
+    typeof record.action_type === 'object'
+  ) {
+    const nested = toToolCallAction(record.action_type);
+    if (!nested) {
+      return null;
+    }
+    const message =
+      typeof record.message === 'string' ? record.message : nested.message;
+    const summary =
+      typeof record.summary === 'string' ? record.summary : nested.summary;
+    return {
+      ...nested,
+      message,
+      summary,
+    };
+  }
+
+  const action: ToolCallAction = {};
+
+  if (typeof record.action === 'string') {
+    action.action = record.action as ActionType['action'];
+  }
+  if (typeof record.tool_name === 'string') {
+    action.tool_name = record.tool_name;
+  }
+  if ('arguments' in record) {
+    const args = record.arguments;
+    if (
+      typeof args === 'string' ||
+      typeof args === 'number' ||
+      typeof args === 'boolean' ||
+      args === null ||
+      Array.isArray(args) ||
+      typeof args === 'object'
+    ) {
+      action.arguments = args as JsonValue | string | null;
+    }
+  }
+  if ('result' in record) {
+    action.result = record.result as ToolCallActionResult;
+  }
+  if (typeof record.message === 'string') {
+    action.message = record.message;
+  }
+  if (typeof record.summary === 'string') {
+    action.summary = record.summary;
+  }
+
+  return action;
+}
+
 const ToolCallCard: React.FC<{
   entryType?: Extract<NormalizedEntryType, { type: 'tool_use' }>;
-  action?: any;
+  action?: ToolCallAction | null;
   expansionKey: string;
   content?: string;
   entryContent?: string;
 }> = ({ entryType, action, expansionKey, content, entryContent }) => {
-  const at: any = entryType?.action_type || action;
+  const actionFromEntry = entryType ? toToolCallAction(entryType.action_type) : null;
+  const actionDetails = actionFromEntry ?? action ?? null;
   const [expanded, toggle] = useExpandable(`tool-entry:${expansionKey}`, false);
 
   const label =
-    at?.action === 'command_run'
+    actionDetails?.action === 'command_run'
       ? 'Ran'
-      : entryType?.tool_name || at?.tool_name || 'Tool';
+      : entryType?.tool_name || actionDetails?.tool_name || 'Tool';
 
-  const isCommand = at?.action === 'command_run';
+  const resolvedActionType =
+    entryType?.action_type.action ?? actionDetails?.action ?? null;
+
+  const isCommand = resolvedActionType === 'command_run';
 
   const inlineText = (entryContent || content || '').trim();
   const isSingleLine = inlineText !== '' && !/\r?\n/.test(inlineText);
   const showInlineSummary = isSingleLine;
 
-  const hasArgs = at?.action === 'tool' && !!at?.arguments;
-  const hasResult = at?.action === 'tool' && !!at?.result;
+  const hasArgs =
+    resolvedActionType === 'tool' &&
+    (entryType?.action_type.arguments ?? actionDetails?.arguments) != null;
+  const hasResult =
+    resolvedActionType === 'tool' &&
+    (entryType?.action_type.result ?? actionDetails?.result) != null;
 
-  const output: string | null = isCommand ? (at?.result?.output ?? null) : null;
+  const output: string | null = isCommand
+    ? actionDetails?.result?.output ?? null
+    : null;
+
   let argsText: string | null = null;
   if (isCommand) {
+    const rawArgs = actionDetails?.arguments;
     const fromArgs =
-      typeof at?.arguments === 'string'
-        ? at.arguments
-        : at?.arguments != null
-          ? JSON.stringify(at.arguments, null, 2)
+      typeof rawArgs === 'string'
+        ? rawArgs
+        : rawArgs != null
+          ? JSON.stringify(rawArgs, null, 2)
           : '';
 
     const fallback = (entryContent || content || '').trim();
@@ -391,9 +478,7 @@ const ToolCallCard: React.FC<{
     ? Boolean(argsText) || Boolean(output)
     : hasArgs || hasResult;
 
-  const HeaderWrapper: React.ElementType = hasExpandableDetails
-    ? 'button'
-    : 'div';
+  const HeaderWrapper: React.ElementType = hasExpandableDetails ? 'button' : 'div';
   const headerProps = hasExpandableDetails
     ? {
         onClick: (e: React.MouseEvent) => {
@@ -512,12 +597,14 @@ function DisplayConversationEntry({
   ): entry is ProcessStartPayload => 'processId' in entry;
 
   if (isProcessStart(entry)) {
-    const toolAction: any = entry.action ?? null;
+    const toolAction = toToolCallAction(entry.action ?? null);
+    const toolActionContent =
+      toolAction?.message ?? toolAction?.summary ?? undefined;
     return (
       <ToolCallCard
         action={toolAction}
         expansionKey={expansionKey}
-        content={toolAction?.message ?? toolAction?.summary ?? undefined}
+        content={toolActionContent}
       />
     );
   }

@@ -1,8 +1,7 @@
 import MarkdownRenderer from '@/components/ui/markdown-renderer.tsx';
 import RawLogText from '@/components/common/RawLogText';
 import { Braces, FileText } from 'lucide-react';
-
-type JsonValue = any;
+import type { JsonValue } from 'shared/types';
 
 type ToolResult = {
   type: 'markdown' | 'json';

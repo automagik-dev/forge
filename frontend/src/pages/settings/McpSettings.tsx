@@ -25,7 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { JSONEditor } from '@/components/ui/json-editor';
 import { Loader2 } from 'lucide-react';
-import type { BaseCodingAgent, ExecutorConfig } from 'shared/types';
+import type { BaseCodingAgent, ExecutorConfig, JsonValue } from 'shared/types';
 import { McpConfig } from 'shared/types';
 import { useUserSystem } from '@/components/config-provider';
 import { mcpServersApi } from '@/lib/api';
@@ -89,9 +89,10 @@ export function McpSettings() {
         const configJson = JSON.stringify(fullConfig, null, 2);
         setMcpServers(configJson);
         setMcpConfigPath(result.config_path);
-      } catch (err: any) {
-        if (err?.message && err.message.includes('does not support MCP')) {
-          setMcpError(err.message);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : undefined;
+        if (message && message.includes('does not support MCP')) {
+          setMcpError(message);
         } else {
           console.error('Error loading MCP servers:', err);
         }
@@ -204,14 +205,14 @@ export function McpSettings() {
     }
   };
 
-  const preconfigured = (mcpConfig?.preconfigured ?? {}) as Record<string, any>;
-  const meta = (preconfigured.meta ?? {}) as Record<
+  const rawPreconfigured = (mcpConfig?.preconfigured ?? {}) as Record<string, JsonValue>;
+  const meta = (rawPreconfigured.meta ?? {}) as Record<
     string,
     { name?: string; description?: string; url?: string; icon?: string }
   >;
   const servers = Object.fromEntries(
-    Object.entries(preconfigured).filter(([k]) => k !== 'meta')
-  ) as Record<string, any>;
+    Object.entries(rawPreconfigured).filter(([k]) => k !== 'meta')
+  ) as Record<string, JsonValue>;
   const getMetaFor = (key: string) => meta[key] || {};
 
   if (!config) {

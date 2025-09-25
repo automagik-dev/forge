@@ -24,6 +24,32 @@ import { ExecutorConfigForm } from '@/components/ExecutorConfigForm';
 import { useProfiles } from '@/hooks/useProfiles';
 import { useUserSystem } from '@/components/config-provider';
 import { showModal } from '@/lib/modals';
+import { BaseCodingAgent } from 'shared/types';
+
+type ExecutorConfigurationEntry = Record<string, unknown>;
+
+type ExecutorConfigurationGroup = Record<string, ExecutorConfigurationEntry>;
+
+type ExecutorConfigurationMap = Record<string, ExecutorConfigurationGroup>;
+
+interface ParsedProfiles extends Record<string, unknown> {
+  executors?: ExecutorConfigurationMap;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isParsedProfiles = (value: unknown): value is ParsedProfiles => {
+  if (!isRecord(value)) return false;
+  const executors = (value as { executors?: unknown }).executors;
+  if (executors === undefined) return true;
+  if (!isRecord(executors)) return false;
+  return Object.values(executors).every(
+    (group) =>
+      isRecord(group) &&
+      Object.values(group).every((entry) => isRecord(entry))
+  );
+};
 
 export function AgentSettings() {
   // Use profiles hook for server state
@@ -46,10 +72,11 @@ export function AgentSettings() {
   // Form-based editor state
   const [useFormEditor, setUseFormEditor] = useState(true);
   const [selectedExecutorType, setSelectedExecutorType] =
-    useState<string>('CLAUDE_CODE');
+    useState<BaseCodingAgent>(BaseCodingAgent.CLAUDE_CODE);
   const [selectedConfiguration, setSelectedConfiguration] =
     useState<string>('DEFAULT');
-  const [localParsedProfiles, setLocalParsedProfiles] = useState<any>(null);
+  const [localParsedProfiles, setLocalParsedProfiles] =
+    useState<ParsedProfiles | null>(null);
   const [isDirty, setIsDirty] = useState(false);
 
   // Sync server state to local state when not dirty
@@ -59,7 +86,11 @@ export function AgentSettings() {
       // Parse JSON inside effect to avoid object dependency
       try {
         const parsed = JSON.parse(serverProfilesContent);
-        setLocalParsedProfiles(parsed);
+        if (isParsedProfiles(parsed)) {
+          setLocalParsedProfiles(parsed);
+        } else {
+          setLocalParsedProfiles(null);
+        }
       } catch (err) {
         console.error('Failed to parse profiles JSON:', err);
         setLocalParsedProfiles(null);
@@ -68,12 +99,12 @@ export function AgentSettings() {
   }, [serverProfilesContent, isDirty]);
 
   // Sync raw profiles with parsed profiles
-  const syncRawProfiles = (profiles: unknown) => {
+  const syncRawProfiles = (profiles: ParsedProfiles) => {
     setLocalProfilesContent(JSON.stringify(profiles, null, 2));
   };
 
   // Mark profiles as dirty
-  const markDirty = (nextProfiles: unknown) => {
+  const markDirty = (nextProfiles: ParsedProfiles) => {
     setLocalParsedProfiles(nextProfiles);
     syncRawProfiles(nextProfiles);
     setIsDirty(true);
@@ -113,13 +144,14 @@ export function AgentSettings() {
   ) => {
     if (!localParsedProfiles || !localParsedProfiles.executors) return;
 
-    const base =
+    const base: ExecutorConfigurationEntry =
       baseConfig &&
       localParsedProfiles.executors[executorType]?.[baseConfig]?.[executorType]
-        ? localParsedProfiles.executors[executorType][baseConfig][executorType]
+        ? (localParsedProfiles.executors[executorType][baseConfig][executorType]
+            as ExecutorConfigurationEntry)
         : {};
 
-    const updatedProfiles = {
+    const updatedProfiles: ParsedProfiles = {
       ...localParsedProfiles,
       executors: {
         ...localParsedProfiles.executors,
@@ -181,12 +213,12 @@ export function AgentSettings() {
       }
 
       // Remove the configuration from the executor
-      const remainingConfigs = {
+      const remainingConfigs: ExecutorConfigurationGroup = {
         ...localParsedProfiles.executors[selectedExecutorType],
       };
       delete remainingConfigs[configToDelete];
 
-      const updatedProfiles = {
+      const updatedProfiles: ParsedProfiles = {
         ...localParsedProfiles,
         executors: {
           ...localParsedProfiles.executors,
@@ -196,8 +228,11 @@ export function AgentSettings() {
 
       // If no configurations left, create a blank DEFAULT (should not happen due to check above)
       if (Object.keys(remainingConfigs).length === 0) {
-        updatedProfiles.executors[selectedExecutorType] = {
-          DEFAULT: { [selectedExecutorType]: {} },
+        updatedProfiles.executors = {
+          ...updatedProfiles.executors,
+          [selectedExecutorType]: {
+            DEFAULT: { [selectedExecutorType]: {} },
+          },
         };
       }
 
@@ -279,12 +314,12 @@ export function AgentSettings() {
   const handleExecutorConfigChange = (
     executorType: string,
     configuration: string,
-    formData: unknown
+    formData: ExecutorConfigurationEntry
   ) => {
     if (!localParsedProfiles || !localParsedProfiles.executors) return;
 
     // Update the parsed profiles with the new config
-    const updatedProfiles = {
+    const updatedProfiles: ParsedProfiles = {
       ...localParsedProfiles,
       executors: {
         ...localParsedProfiles.executors,
@@ -300,14 +335,14 @@ export function AgentSettings() {
     markDirty(updatedProfiles);
   };
 
-  const handleExecutorConfigSave = async (formData: unknown) => {
+  const handleExecutorConfigSave = async (formData: ExecutorConfigurationEntry) => {
     if (!localParsedProfiles || !localParsedProfiles.executors) return;
 
     // Clear any previous errors
     setSaveError(null);
 
     // Update the parsed profiles with the saved config
-    const updatedProfiles = {
+    const updatedProfiles: ParsedProfiles = {
       ...localParsedProfiles,
       executors: {
         ...localParsedProfiles.executors,
@@ -409,7 +444,7 @@ export function AgentSettings() {
                   <Select
                     value={selectedExecutorType}
                     onValueChange={(value) => {
-                      setSelectedExecutorType(value);
+                      setSelectedExecutorType(value as BaseCodingAgent);
                       // Reset configuration selection when executor type changes
                       setSelectedConfiguration('DEFAULT');
                     }}
@@ -494,7 +529,7 @@ export function AgentSettings() {
                 selectedConfiguration
               ]?.[selectedExecutorType] && (
                 <ExecutorConfigForm
-                  executor={selectedExecutorType as any}
+                  executor={selectedExecutorType}
                   value={
                     localParsedProfiles.executors[selectedExecutorType][
                       selectedConfiguration

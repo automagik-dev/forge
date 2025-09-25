@@ -1,5 +1,6 @@
 import Markdown from 'markdown-to-jsx';
 import { memo, useMemo, useState, useCallback } from 'react';
+import type { ComponentProps } from 'react';
 import {
   Tooltip,
   TooltipContent,
@@ -24,7 +25,7 @@ function MarkdownRenderer({
   const overrides = useMemo(
     () => ({
       code: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps<'code'>) => (
           <code
             {...props}
             className="bg-background px-1 py-0.5 text-sm font-mono"
@@ -34,63 +35,63 @@ function MarkdownRenderer({
         ),
       },
       strong: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps<'span'>) => (
           <span {...props} className="">
             {children}
           </span>
         ),
       },
       em: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps<'em'>) => (
           <em {...props} className="italic">
             {children}
           </em>
         ),
       },
       p: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps<'p'>) => (
           <p {...props} className="leading-tight">
             {children}
           </p>
         ),
       },
       h1: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps<'h1'>) => (
           <h1 {...props} className="text-lg leading-tight font-medium">
             {children}
           </h1>
         ),
       },
       h2: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps<'h2'>) => (
           <h2 {...props} className="text-baseleading-tight font-medium">
             {children}
           </h2>
         ),
       },
       h3: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps<'h3'>) => (
           <h3 {...props} className="text-sm leading-tight">
             {children}
           </h3>
         ),
       },
       ul: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps<'ul'>) => (
           <ul {...props} className="list-disc list-outside space-y-1 ps-6">
             {children}
           </ul>
         ),
       },
       ol: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps<'ol'>) => (
           <ol {...props} className="list-decimal list-outside space-y-1 ps-6">
             {children}
           </ol>
         ),
       },
       li: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps<'li'>) => (
           <li {...props} className="leading-tight">
             {children}
           </li>

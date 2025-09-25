@@ -38,9 +38,11 @@ const GitHubLoginDialog = NiceModal.create(() => {
       const data = await githubAuthApi.start();
       setDeviceState(data);
       setPolling(true);
-    } catch (e: any) {
-      console.error(e);
-      setError(e?.message || 'Network error');
+    } catch (error) {
+      console.error(error);
+      const message =
+        error instanceof Error && error.message ? error.message : 'Network error';
+      setError(message);
     } finally {
       setFetching(false);
     }
@@ -66,14 +68,15 @@ const GitHubLoginDialog = NiceModal.create(() => {
             case DevicePollStatus.SLOW_DOWN:
               timer = setTimeout(poll, (deviceState.interval + 5) * 1000);
           }
-        } catch (e: any) {
-          if (e?.message === 'expired_token') {
+        } catch (error) {
+          const message = error instanceof Error ? error.message : undefined;
+          if (message === 'expired_token') {
             setPolling(false);
             setError('Device code expired. Please try again.');
             setDeviceState(null);
           } else {
             setPolling(false);
-            setError(e?.message || 'Login failed.');
+            setError(message || 'Login failed.');
             setDeviceState(null);
           }
         }
@@ -112,13 +115,13 @@ const GitHubLoginDialog = NiceModal.create(() => {
           document.execCommand('copy');
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
-          console.warn('Copy to clipboard failed:', err);
+        } catch (fallbackError: unknown) {
+          console.warn('Copy to clipboard failed:', fallbackError);
         }
         document.body.removeChild(textArea);
       }
-    } catch (err) {
-      console.warn('Copy to clipboard failed:', err);
+    } catch (error: unknown) {
+      console.warn('Copy to clipboard failed:', error);
     }
   };
 

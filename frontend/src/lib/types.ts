@@ -1,4 +1,5 @@
-import { ExecutionProcess } from 'shared/types';
+import { ExecutionProcess, NormalizedEntry } from 'shared/types';
+import type { ProcessStartPayload } from '@/types/logs';
 
 export type AttemptData = {
   processes: ExecutionProcess[];
@@ -6,12 +7,12 @@ export type AttemptData = {
 };
 
 export interface ConversationEntryDisplayType {
-  entry: any;
+  entry: NormalizedEntry | ProcessStartPayload;
   processId: string;
   processPrompt?: string;
   processStatus: string;
   processIsRunning: boolean;
-  process: any;
+  process: ExecutionProcess;
   isFirstInProcess: boolean;
   processIndex: number;
   entryIndex: number;

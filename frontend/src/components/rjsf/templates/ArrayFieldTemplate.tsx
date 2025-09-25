@@ -50,29 +50,30 @@ interface ArrayItemProps {
 }
 
 const ArrayItem = ({ element, disabled, readonly }: ArrayItemProps) => {
-  const { children } = element;
-  const elementAny = element as any; // Type assertion needed for RJSF v6 beta properties
+  const { children, buttonsProps } = element;
+
+  if (!buttonsProps?.hasRemove) {
+    return <div className="flex items-center gap-2"><div className="flex-1">{children}</div></div>;
+  }
+
+  const handleRemove = buttonsProps.onDropIndexClick(buttonsProps.index);
+  const isDisabled = disabled || readonly || buttonsProps.disabled;
 
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1">{children}</div>
 
-      {/* Remove button */}
-      {elementAny.buttonsProps?.hasRemove && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={elementAny.buttonsProps.onDropIndexClick(
-            elementAny.buttonsProps.index
-          )}
-          disabled={disabled || readonly || elementAny.buttonsProps.disabled}
-          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 shrink-0"
-          title="Remove item"
-        >
-          <X className="w-4 h-4" />
-        </Button>
-      )}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={handleRemove}
+        disabled={isDisabled}
+        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 shrink-0"
+        title="Remove item"
+      >
+        <X className="w-4 h-4" />
+      </Button>
     </div>
   );
 };

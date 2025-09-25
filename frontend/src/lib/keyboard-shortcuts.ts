@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import type { ExecutorConfig } from 'shared/types';
+import type { ExecutorConfig, Task } from 'shared/types';
 
 // Define available keyboard shortcuts
 export interface KeyboardShortcut {
@@ -172,10 +172,10 @@ export function useKanbanKeyboardNavigation({
   setFocusedTaskId: (id: string | null) => void;
   focusedStatus: string | null;
   setFocusedStatus: (status: string | null) => void;
-  groupedTasks: Record<string, any[]>;
-  filteredTasks: unknown[];
+  groupedTasks: Record<string, Task[]>;
+  filteredTasks: Task[];
   allTaskStatuses: string[];
-  onViewTaskDetails?: (task: any) => void;
+  onViewTaskDetails?: (task: Task) => void;
   preserveIndexOnColumnSwitch?: boolean;
 }) {
   useEffect(() => {
@@ -191,9 +191,9 @@ export function useKanbanKeyboardNavigation({
         return;
       if (!focusedTaskId || !focusedStatus) return;
       const currentColumn = groupedTasks[focusedStatus];
-      const currentIndex = currentColumn.findIndex(
-        (t: any) => t.id === focusedTaskId
-      );
+      if (!currentColumn || currentColumn.length === 0) return;
+      const currentIndex = currentColumn.findIndex((task) => task.id === focusedTaskId);
+      if (currentIndex === -1) return;
       let newStatus = focusedStatus;
       let newTaskId = focusedTaskId;
       if (e.key === 'ArrowDown') {
@@ -239,7 +239,7 @@ export function useKanbanKeyboardNavigation({
           }
         }
       } else if ((e.key === 'Enter' || e.key === ' ') && onViewTaskDetails) {
-        const task = filteredTasks.find((t: any) => t.id === focusedTaskId);
+        const task = filteredTasks.find((candidate) => candidate.id === focusedTaskId);
         if (task) {
           onViewTaskDetails(task);
         }

@@ -3,19 +3,26 @@ import { applyPatch } from 'rfc6902';
 import type { ExecutionProcess } from 'shared/types';
 import type { ProcessStartPayload } from '@/types/logs';
 
-interface ProcessData {
-  [processId: string]: any;
+interface ProcessLogEntry {
+  type: string;
+  content: unknown;
 }
+
+interface ProcessLogData extends Record<string, unknown> {
+  entries: ProcessLogEntry[];
+}
+
+type ProcessDataMap = Record<string, ProcessLogData>;
 
 interface UseEventSourceManagerParams {
   processes: ExecutionProcess[];
   enabled: boolean;
   getEndpoint: (process: ExecutionProcess) => string;
-  initialData?: any;
+  initialData?: ProcessLogData | null;
 }
 
 interface UseEventSourceManagerResult {
-  processData: ProcessData;
+  processData: ProcessDataMap;
   isConnected: boolean;
   error: string | null;
 }
@@ -26,11 +33,11 @@ export const useEventSourceManager = ({
   getEndpoint,
   initialData = null,
 }: UseEventSourceManagerParams): UseEventSourceManagerResult => {
-  const [processData, setProcessData] = useState<ProcessData>({});
+  const [processData, setProcessData] = useState<ProcessDataMap>({});
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const eventSourcesRef = useRef<Map<string, EventSource>>(new Map());
-  const processDataRef = useRef<ProcessData>({});
+  const processDataRef = useRef<ProcessDataMap>({});
   const processedEntriesRef = useRef<Map<string, Set<number>>>(new Map());
   const processesRef = useRef<ExecutionProcess[]>([]);
   const enabledRef = useRef<boolean>(enabled);
@@ -86,7 +93,7 @@ export const useEventSourceManager = ({
 
       // Reinitialize process data on each (re)connect to avoid duplicating history
       processDataRef.current[process.id] = initialData
-        ? structuredClone(initialData)
+        ? structuredClone(initialData as ProcessLogData)
         : { entries: [] };
       processedEntriesRef.current.delete(process.id);
 
@@ -97,8 +104,8 @@ export const useEventSourceManager = ({
         startedAt: process.started_at,
         status: process.status,
       };
-      const processStartEntry = {
-        type: 'PROCESS_START' as const,
+      const processStartEntry: ProcessLogEntry = {
+        type: 'PROCESS_START',
         content: processStartPayload,
       };
       processDataRef.current[process.id].entries.push(processStartEntry);

@@ -5,7 +5,7 @@ import { profilesApi } from '@/lib/api';
 export type UseProfilesReturn = {
   // data
   profilesContent: string;
-  parsedProfiles: any | null;
+  parsedProfiles: Record<string, unknown> | null;
   profilesPath: string;
 
   // status
@@ -33,7 +33,7 @@ export function useProfiles(): UseProfilesReturn {
     mutationFn: (content: string) => profilesApi.save(content),
     onSuccess: (_, content) => {
       // Optimistically update cache with new content
-      queryClient.setQueryData(['profiles'], (old: any) =>
+      queryClient.setQueryData(['profiles'], (old: { content: string; path: string } | undefined) =>
         old ? { ...old, content } : old
       );
     },
@@ -46,7 +46,10 @@ export function useProfiles(): UseProfilesReturn {
   const parsedProfiles = useMemo(() => {
     if (!data?.content) return null;
     try {
-      return JSON.parse(data.content);
+      const parsed = JSON.parse(data.content);
+      return typeof parsed === 'object' && parsed !== null
+        ? (parsed as Record<string, unknown>)
+        : null;
     } catch {
       return null;
     }
