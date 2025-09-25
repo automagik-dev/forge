@@ -13,6 +13,16 @@ interface HealthResponse {
   message: string;
 }
 
+export {
+  statusTone,
+  formatTimestamp,
+  omniConfigFor,
+  normaliseConfigDraft,
+  toastToneColor,
+  omniConfigErrors,
+  describeOmniField,
+};
+
 interface BranchTemplateEnvelope {
   task_id: string;
   project_id: string;
@@ -119,6 +129,41 @@ function normaliseConfigDraft(settings: ForgeProjectSettings): ForgeProjectSetti
   const draft = cloneSettings(settings);
   draft.omni_config = omniConfigFor(settings);
   return draft;
+}
+
+function omniConfigErrors(config: OmniConfig): string[] {
+  if (!config.enabled) {
+    return [];
+  }
+
+  const errors: string[] = [];
+
+  if (!config.host || !config.host.trim()) {
+    errors.push('host');
+  }
+
+  if (!config.instance || !config.instance.trim()) {
+    errors.push('instance');
+  }
+
+  if (!config.recipient || !config.recipient.trim()) {
+    errors.push('recipient');
+  }
+
+  return errors;
+}
+
+function describeOmniField(field: string): string {
+  switch (field) {
+    case 'host':
+      return 'Host URL';
+    case 'instance':
+      return 'Instance name';
+    case 'recipient':
+      return 'Recipient contact';
+    default:
+      return field;
+  }
 }
 
 function toastToneColor(tone: ToastTone): string {
@@ -362,6 +407,8 @@ export default function App() {
     () => projectDraft?.omni_config ?? EMPTY_OMNI_CONFIG,
     [projectDraft],
   );
+  const globalOmniErrors = useMemo(() => omniConfigErrors(globalOmniDraft), [globalOmniDraft]);
+  const projectOmniErrors = useMemo(() => omniConfigErrors(projectOmniDraft), [projectOmniDraft]);
 
   return (
     <main className="container">
@@ -535,8 +582,19 @@ export default function App() {
             </div>
           </fieldset>
 
+          {globalOmniDraft.enabled && globalOmniErrors.length > 0 && (
+            <div className="meta error">
+              <p>Complete these fields before saving Omni notifications:</p>
+              <ul>
+                {globalOmniErrors.map((field) => (
+                  <li key={field}>{describeOmniField(field)}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <div className="form-actions">
-            <button type="submit" disabled={isSavingGlobal}>
+            <button type="submit" disabled={isSavingGlobal || globalOmniErrors.length > 0}>
               {isSavingGlobal ? 'Saving…' : 'Save Global Settings'}
             </button>
             <button type="button" onClick={refreshGlobalSettings} disabled={isSavingGlobal}>
@@ -696,8 +754,22 @@ export default function App() {
                 </div>
               </fieldset>
 
+              {projectOmniDraft.enabled && projectOmniErrors.length > 0 && (
+                <div className="meta error">
+                  <p>Project overrides require the following Omni fields:</p>
+                  <ul>
+                    {projectOmniErrors.map((field) => (
+                      <li key={field}>{describeOmniField(field)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <div className="form-actions">
-                <button type="submit" disabled={isSavingProject}>
+                <button
+                  type="submit"
+                  disabled={isSavingProject || projectOmniErrors.length > 0}
+                >
                   {isSavingProject ? 'Saving…' : 'Save Project Overrides'}
                 </button>
               </div>

@@ -26,8 +26,10 @@
     "prepare-db": "node scripts/prepare-db.js",
     "build:frontends": "pnpm --filter ./frontend... build && pnpm --filter frontend-forge build",
     "build": "pnpm run build:frontends",
+    "test:e2e": "pnpm --filter frontend-forge test",
     "build:npx": "bash ./local-build.sh",
-    "prepack": "pnpm run build:npx"
+    "prepack": "pnpm run build:npx",
+    "sync:upstream": "bash ./scripts/sync-upstream.sh"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",

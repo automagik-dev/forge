@@ -1,6 +1,6 @@
 # WISH: Upstream-as-Library Completion (100/100 Target)
 
-**Status:** IN_PROGRESS (Score: 88/100)
+**Status:** IN_PROGRESS (Score: 94/100)
 
 ## 🎯 Objective
 Elevate the newly merged PR-21 foundation to a production-ready upstream-as-library architecture that scores a perfect 100/100 by finishing extraction, wiring, validation, and documentation without modifying `upstream/` sources.
@@ -9,11 +9,11 @@ Elevate the newly merged PR-21 foundation to a production-ready upstream-as-libr
 | Track | Current | Target | Delta |
 |-------|---------|--------|-------|
 | Core Tasks | 40/40 | 40/40 | +0 |
-| Code Quality | 22/25 | 25/25 | +3 |
-| Testing Coverage | 16/20 | 20/20 | +4 |
+| Code Quality | 24/25 | 25/25 | +1 |
+| Testing Coverage | 17/20 | 20/20 | +3 |
 | Documentation | 8/10 | 10/10 | +2 |
-| Risk Mitigation | 2/5 | 5/5 | +3 |
-| **Total** | **88/100** | **100/100** | **+12** |
+| Risk Mitigation | 5/5 | 5/5 | +0 |
+| **Total** | **94/100** | **100/100** | **+6** |
 
 **Scorekeeping Rule:** After each completed phase, increment the score and commit with message `feat: phase-<letter> complete (<new-score>/100)`.
 

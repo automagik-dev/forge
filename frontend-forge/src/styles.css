@@ -96,6 +96,19 @@ header .tagline {
   margin-top: 0.75rem;
 }
 
+.meta.error {
+  color: #ff7b8a;
+}
+
+.meta.error ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.meta.error li {
+  list-style: disc;
+}
+
 .status-label {
   display: inline-flex;
   align-items: center;

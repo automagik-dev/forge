@@ -6,7 +6,9 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 pub struct ProjectConfig {
     pub project_id: Uuid,
+    #[ts(type = "JsonValue | null")]
     pub custom_executors: Option<serde_json::Value>,
+    #[ts(type = "JsonValue | null")]
     pub forge_config: Option<serde_json::Value>,
 }
 
