@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/namastexlabs/vibe-kanban.git",
+  "version": "v0.0.95",
+  "sync_mode": "release-tag",
+  "auto_sync": false,
+  "description": "Configuration for upstream vibe-kanban dependency"
+}

@@ -1,0 +1,97 @@
+name: Sync Upstream Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to sync (e.g., v0.0.95)'
+        required: true
+        type: string
+  push:
+    paths:
+      - 'upstream-config.json'
+    branches:
+      - main
+      - 'restructure/**'
+
+jobs:
+  sync-upstream:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup jq
+      run: sudo apt-get update && sudo apt-get install -y jq
+
+    - name: Read configuration
+      id: config
+      run: |
+        VERSION="${{ github.event.inputs.version }}"
+        if [ -z "$VERSION" ]; then
+          VERSION=$(jq -r '.version' upstream-config.json)
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "repo_url=$(jq -r '.repository' upstream-config.json)" >> $GITHUB_OUTPUT
+
+    - name: Configure git
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+
+    - name: Sync upstream to release tag
+      run: |
+        echo "Syncing to version ${{ steps.config.outputs.version }}"
+
+        # Initialize submodule if needed
+        git submodule update --init upstream
+
+        cd upstream
+
+        # Set origin to fork
+        git remote set-url origin ${{ steps.config.outputs.repo_url }}
+
+        # Add upstream remote for original repo
+        git remote add upstream https://github.com/BloopAI/vibe-kanban.git || true
+
+        # Fetch all tags
+        git fetch origin --tags
+        git fetch upstream --tags
+
+        # Checkout the specific version
+        git checkout tags/${{ steps.config.outputs.version }} -B release-${{ steps.config.outputs.version }}
+
+        cd ..
+
+        # Update the submodule reference
+        git add upstream
+
+        # Check if there are changes
+        if git diff --cached --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "chore: sync upstream to ${{ steps.config.outputs.version }}"
+          git push origin HEAD
+        fi
+
+    - name: Create Pull Request
+      if: github.ref != 'refs/heads/main'
+      uses: peter-evans/create-pull-request@v5
+      with:
+        title: "Sync upstream to ${{ steps.config.outputs.version }}"
+        body: |
+          This PR syncs the upstream vibe-kanban submodule to version ${{ steps.config.outputs.version }}.
+
+          ## Changes
+          - Updated upstream submodule to release tag ${{ steps.config.outputs.version }}
+
+          ## Checklist
+          - [ ] Verified the correct version is checked out
+          - [ ] Tested integration with the main codebase
+          - [ ] Updated any dependent configurations
+        branch: sync-upstream-${{ steps.config.outputs.version }}
+        base: main
