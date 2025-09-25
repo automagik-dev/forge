@@ -64,11 +64,15 @@ pub fn create_router(services: ForgeServices) -> Router {
     let deployment = services.deployment.as_ref().clone();
     let state = ForgeAppState::new(services, deployment.clone());
 
+    let legacy_api = legacy_api_router(&deployment);
+
     Router::new()
         .route("/health", get(health_check))
         .merge(forge_api_routes())
-        .nest("/legacy/api", legacy_api_router(&deployment))
-        // Dual frontend routing
+        // Provide upstream API compatibility at both /api and /legacy/api
+        .nest("/api", legacy_api.clone())
+        .nest("/legacy/api", legacy_api)
+        // Dual frontend routing: modern Forge UI at /, upstream at /legacy
         .nest("/legacy", legacy_frontend_router())
         .fallback(forge_frontend_handler)
         .with_state(state)

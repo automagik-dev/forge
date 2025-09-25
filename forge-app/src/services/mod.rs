@@ -3,15 +3,17 @@
 //! Service composition layer that wraps upstream services with forge extensions.
 //! Provides unified access to both upstream functionality and forge-specific features.
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use deployment::Deployment;
+use serde::Deserialize;
 use serde_json::json;
 use server::DeploymentImpl;
-use sqlx::{sqlite::SqliteConnectOptions, ConnectOptions, SqlitePool};
+use sqlx::{sqlite::SqliteConnectOptions, ConnectOptions, Row, SqlitePool};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use tokio::time::{sleep, Duration};
 use uuid::Uuid;
 
 // Import forge extension services
@@ -86,6 +88,9 @@ impl ForgeServices {
             "Loaded forge extension settings from auxiliary schema"
         );
         let branch_templates = Arc::new(BranchTemplateService::new(pool.clone()));
+
+        // Spawn background worker that converts execution events into Omni notifications
+        spawn_omni_notification_worker(pool.clone(), config.clone());
 
         Ok(Self {
             deployment,
@@ -212,6 +217,11 @@ const FORGE_MIGRATIONS: &[ForgeMigration] = &[
         description: "migrate_branch_template_data",
         sql: include_str!("../../migrations/20250924090002_migrate_data.sql"),
     },
+    ForgeMigration {
+        version: "20250924090003",
+        description: "omni_notification_triggers",
+        sql: include_str!("../../migrations/20250924090003_omni_triggers.sql"),
+    },
 ];
 
 async fn apply_forge_migrations(pool: &SqlitePool) -> Result<()> {
@@ -303,23 +313,37 @@ fn split_statements(sql: &str) -> Vec<String> {
         current.push('\n');
 
         if trimmed.ends_with(';') && begin_depth == 0 {
-            statements.push(current.trim().trim_end_matches(';').to_string());
+            statements.push(current.trim().to_string());
             current.clear();
         }
     }
 
     if !current.trim().is_empty() {
-        statements.push(current.trim().trim_end_matches(';').to_string());
+        statements.push(current.trim().to_string());
     }
 
     statements
 }
 
 fn should_ignore_migration_error(version: &str, statement: &str, err: &sqlx::Error) -> bool {
+    let normalized = statement
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_ascii_lowercase();
+
     if version == "20250924090000"
-        && statement
-            .to_ascii_lowercase()
-            .starts_with("alter table tasks add column branch_template")
+        && normalized.starts_with("alter table tasks add column branch_template")
+    {
+        if let sqlx::Error::Database(db_err) = err {
+            if db_err.message().contains("duplicate column name") {
+                return true;
+            }
+        }
+    }
+
+    if version == "20250924090003"
+        && normalized.starts_with("alter table forge_omni_notifications add column metadata")
     {
         if let sqlx::Error::Database(db_err) = err {
             if db_err.message().contains("duplicate column name") {
@@ -329,4 +353,347 @@ fn should_ignore_migration_error(version: &str, statement: &str, err: &sqlx::Err
     }
 
     false
+}
+
+fn spawn_omni_notification_worker(pool: SqlitePool, config: Arc<ForgeConfigService>) {
+    tokio::spawn(async move {
+        loop {
+            match process_next_omni_notification(&pool, &config).await {
+                Ok(true) => {
+                    // Processed at least one item, immediately attempt next
+                    continue;
+                }
+                Ok(false) => {
+                    // Queue empty → short backoff
+                    sleep(Duration::from_secs(10)).await;
+                }
+                Err(err) => {
+                    tracing::error!("Omni notification worker error: {err:?}");
+                    sleep(Duration::from_secs(15)).await;
+                }
+            }
+        }
+    });
+}
+
+async fn process_next_omni_notification(
+    pool: &SqlitePool,
+    config: &ForgeConfigService,
+) -> Result<bool> {
+    let pending_row = sqlx::query(
+        r#"SELECT id,
+                  metadata
+             FROM forge_omni_notifications
+            WHERE status = 'pending'
+            ORDER BY created_at
+            LIMIT 1"#,
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    let Some(row) = pending_row else {
+        return Ok(false);
+    };
+
+    let row = PendingNotification {
+        id: row.try_get::<String, _>("id")?,
+        metadata: row.try_get::<Option<String>, _>("metadata")?,
+    };
+
+    // Mark as processing to avoid multiple workers picking it up
+    let claimed = sqlx::query(
+        "UPDATE forge_omni_notifications SET status = 'processing' WHERE id = ? AND status = 'pending'",
+    )
+    .bind(&row.id)
+    .execute(pool)
+    .await?;
+
+    if claimed.rows_affected() == 0 {
+        // Another worker grabbed it first; treat as processed and continue
+        return Ok(true);
+    }
+
+    match handle_omni_notification(pool, config, &row).await {
+        Ok(OmniQueueAction::Sent { message }) => {
+            sqlx::query(
+                "UPDATE forge_omni_notifications SET status = 'sent', sent_at = CURRENT_TIMESTAMP, message = ? WHERE id = ?",
+            )
+            .bind(&message)
+            .bind(&row.id)
+            .execute(pool)
+            .await?;
+        }
+        Ok(OmniQueueAction::Skipped { reason }) => {
+            sqlx::query(
+                "UPDATE forge_omni_notifications SET status = 'skipped', error_message = ? WHERE id = ?",
+            )
+            .bind(&reason)
+            .bind(&row.id)
+            .execute(pool)
+            .await?;
+        }
+        Err(err) => {
+            sqlx::query(
+                "UPDATE forge_omni_notifications SET status = 'failed', error_message = ? WHERE id = ?",
+            )
+            .bind(err.to_string())
+            .bind(&row.id)
+            .execute(pool)
+            .await?;
+        }
+    }
+
+    Ok(true)
+}
+
+enum OmniQueueAction {
+    Sent { message: String },
+    Skipped { reason: String },
+}
+
+#[derive(Debug)]
+struct PendingNotification {
+    id: String,
+    metadata: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OmniNotificationMetadata {
+    task_attempt_id: Option<Uuid>,
+    status: Option<String>,
+    executor: Option<String>,
+    branch: Option<String>,
+    project_id: Option<Uuid>,
+}
+
+async fn handle_omni_notification(
+    pool: &SqlitePool,
+    config: &ForgeConfigService,
+    row: &PendingNotification,
+) -> Result<OmniQueueAction> {
+    let metadata: OmniNotificationMetadata = match &row.metadata {
+        Some(payload) if !payload.is_empty() => {
+            serde_json::from_str(&payload).with_context(|| "failed to deserialize omni metadata")?
+        }
+        _ => return Err(anyhow!("missing metadata for omni notification")),
+    };
+
+    let attempt_id = metadata
+        .task_attempt_id
+        .ok_or_else(|| anyhow!("metadata missing task_attempt_id"))?;
+    let status = metadata
+        .status
+        .ok_or_else(|| anyhow!("metadata missing status"))?;
+
+    let attempt_row = sqlx::query(
+        r#"SELECT
+                t.id         AS task_id,
+                t.title      AS title,
+                t.project_id AS project_id,
+                ta.branch    AS branch,
+                ta.executor  AS executor
+           FROM task_attempts ta
+           JOIN tasks t ON t.id = ta.task_id
+          WHERE ta.id = ?"#,
+    )
+    .bind(attempt_id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| anyhow!("task attempt not found for omni notification"))?;
+
+    let project_id = metadata
+        .project_id
+        .or_else(|| attempt_row.try_get::<Uuid, _>("project_id").ok())
+        .ok_or_else(|| anyhow!("missing project id for omni notification"))?;
+    let omni_config = config.effective_omni_config(Some(project_id)).await?;
+
+    if !omni_config.enabled {
+        return Ok(OmniQueueAction::Skipped {
+            reason: "Omni notifications disabled for project".into(),
+        });
+    }
+
+    let host = omni_config
+        .host
+        .as_deref()
+        .ok_or_else(|| anyhow!("Omni host not configured"))?;
+    if host.is_empty() {
+        return Err(anyhow!("Omni host configuration empty"));
+    }
+
+    let branch = metadata
+        .branch
+        .or_else(|| {
+            attempt_row
+                .try_get::<Option<String>, _>("branch")
+                .ok()
+                .flatten()
+        })
+        .unwrap_or_else(|| "unknown".to_string());
+    let executor = metadata.executor.unwrap_or_else(|| {
+        attempt_row
+            .try_get::<String, _>("executor")
+            .unwrap_or_else(|_| "unknown".into())
+    });
+
+    let title: String = attempt_row.try_get("title")?;
+    let task_id: Uuid = attempt_row.try_get("task_id")?;
+
+    let status_summary = format_status_summary(&status, &executor, &branch);
+    let task_url = format!(
+        "{}/projects/{}/tasks/{}",
+        omni_base_url(),
+        project_id,
+        task_id
+    );
+
+    let omni_service = OmniService::new(omni_config);
+    omni_service
+        .send_task_notification(&title, &status_summary, Some(&task_url))
+        .await?;
+
+    Ok(OmniQueueAction::Sent {
+        message: status_summary,
+    })
+}
+
+fn format_status_summary(status: &str, executor: &str, branch: &str) -> String {
+    match status {
+        "completed" => format!("✅ Execution completed\nBranch: {branch}\nExecutor: {executor}"),
+        "failed" => format!("❌ Execution failed\nBranch: {branch}\nExecutor: {executor}"),
+        "killed" => format!("🛑 Execution cancelled\nBranch: {branch}\nExecutor: {executor}"),
+        other => format!("{other}\nBranch: {branch}\nExecutor: {executor}"),
+    }
+}
+
+fn omni_base_url() -> String {
+    if let Ok(url) = std::env::var("PUBLIC_BASE_URL") {
+        return url.trim_end_matches('/').to_string();
+    }
+
+    let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let port = std::env::var("BACKEND_PORT")
+        .or_else(|_| std::env::var("PORT"))
+        .unwrap_or_else(|_| "8887".to_string());
+
+    format!("http://{host}:{port}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use forge_branch_templates::BranchTemplateService;
+    use sqlx::SqlitePool;
+
+    async fn setup_pool() -> SqlitePool {
+        let pool = SqlitePool::connect("sqlite::memory:")
+            .await
+            .expect("failed to create in-memory pool");
+
+        sqlx::query(
+            r#"CREATE TABLE tasks (
+                id TEXT PRIMARY KEY,
+                project_id TEXT,
+                title TEXT NOT NULL,
+                description TEXT,
+                status TEXT,
+                parent_task_attempt TEXT,
+                created_at TEXT,
+                updated_at TEXT,
+                branch_template TEXT
+            )"#,
+        )
+        .execute(&pool)
+        .await
+        .expect("failed to create tasks table");
+
+        sqlx::query(
+            r#"CREATE TABLE task_attempts (
+                id TEXT PRIMARY KEY,
+                task_id TEXT NOT NULL,
+                branch TEXT,
+                base_branch TEXT,
+                executor TEXT
+            )"#,
+        )
+        .execute(&pool)
+        .await
+        .expect("failed to create task_attempts table");
+
+        sqlx::query(
+            r#"CREATE TABLE execution_processes (
+                id TEXT PRIMARY KEY,
+                task_attempt_id TEXT NOT NULL,
+                status TEXT NOT NULL,
+                run_reason TEXT NOT NULL,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )"#,
+        )
+        .execute(&pool)
+        .await
+        .expect("failed to create execution_processes table");
+
+        apply_forge_migrations(&pool)
+            .await
+            .expect("forge migrations should apply cleanly");
+
+        pool
+    }
+
+    #[tokio::test]
+    async fn task_inserts_sync_into_extensions() {
+        let pool = setup_pool().await;
+        let task_id = uuid::Uuid::new_v4();
+
+        sqlx::query(
+            "INSERT INTO tasks (id, project_id, title, status, created_at, updated_at, branch_template)
+             VALUES (?, ?, 'Branch Template Demo', 'todo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'feature-login')",
+        )
+        .bind(task_id)
+        .bind(uuid::Uuid::new_v4())
+        .execute(&pool)
+        .await
+        .expect("failed to insert task row");
+
+        let template: Option<String> = sqlx::query_scalar(
+            "SELECT branch_template FROM forge_task_extensions WHERE task_id = ?",
+        )
+        .bind(task_id)
+        .fetch_optional(&pool)
+        .await
+        .expect("failed to fetch extension row");
+
+        assert_eq!(template.as_deref(), Some("feature-login"));
+    }
+
+    #[tokio::test]
+    async fn extension_updates_propagate_back_to_tasks() {
+        let pool = setup_pool().await;
+        let task_id = uuid::Uuid::new_v4();
+
+        sqlx::query(
+            "INSERT INTO tasks (id, project_id, title, status, created_at, updated_at)
+             VALUES (?, ?, 'Branch Template Demo', 'todo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+        )
+        .bind(task_id)
+        .bind(uuid::Uuid::new_v4())
+        .execute(&pool)
+        .await
+        .expect("failed to insert task row");
+
+        let service = BranchTemplateService::new(pool.clone());
+        service
+            .set_template(task_id, Some("feature-auth".into()))
+            .await
+            .expect("failed to set branch template");
+
+        let template: Option<String> =
+            sqlx::query_scalar("SELECT branch_template FROM tasks WHERE id = ?")
+                .bind(task_id)
+                .fetch_one(&pool)
+                .await
+                .expect("failed to fetch task branch template");
+
+        assert_eq!(template.as_deref(), Some("feature-auth"));
+    }
 }

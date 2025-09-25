@@ -38,9 +38,9 @@ Elevate the newly merged PR-21 foundation to a production-ready upstream-as-libr
 - [x] **A3 Migration Relocation:** Move PR-22 auxiliary migrations into `forge-app/migrations`, ensure paths & IDs align, and delete redundant upstream copies.
 
 ### Phase B – Data & Service Integrity (+3 → 91)
-- [ ] **B1 Branch Templates:** Integrate PR-22 trigger + sync pattern via extension service with shared `SqlitePool`.
-- [ ] **B2 Config Extraction:** Re-export config via `forge-extensions/config`, adjust upstream imports, verify `pnpm run generate-types` parity.
-- [ ] **B3 Omni Integration:** Wire Omni service to real credentials/config from upstream deployment; remove duplicate logic from upstream routes in favor of extension adapters.
+- [x] **B1 Branch Templates:** Integrate PR-22 trigger + sync pattern via extension service with shared `SqlitePool`.
+- [x] **B2 Config Extraction:** Re-export config via `forge-extensions/config`, adjust upstream imports, verify `pnpm run generate-types` parity.
+- [x] **B3 Omni Integration:** Wire Omni service to real credentials/config from upstream deployment; remove duplicate logic from upstream routes in favor of extension adapters.
 
 ### Phase C – Frontend Completion (+3 → 94)
 - [ ] **C1 Forge UI Port:** Populate `frontend-forge/` with forge-specific components, build pipeline, and asset embedding.

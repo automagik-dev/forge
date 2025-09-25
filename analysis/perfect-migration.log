@@ -4,3 +4,6 @@
 [2025-09-24] Phase B: Omni service now hydrates from forge settings (global/project), exposes config refresh through API, and branch template endpoint returns computed names with TS bindings.
 [2025-09-24] Phase B: enforced branch template feature flags per project and exposed project_id on branch template APIs.
 [2025-09-24] Regression harness failure traced to upstream migrator encountering forge migration versions 0-2 in shared _sqlx_migrations table; forge-app needs dedicated migration table and snapshot cleanup before rerun.
+[2025-09-24] Phase B (config extraction) re-exported upstream config as forge-config shim, updated forge-app scripts, and added dev pipeline for frontend-forge assets.
+[2025-09-24] Phase B (branch templates) validated forge migrations via unit tests to ensure legacy task writes sync into forge auxiliary tables and API services stay in lockstep.
+[2025-09-24] Phase B (omni integration) added notification queue migrations, background worker, and queue tests to ensure execution completions fan out via forge Omni service.
