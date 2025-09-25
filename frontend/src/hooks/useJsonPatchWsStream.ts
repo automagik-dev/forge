@@ -41,6 +41,8 @@ export const useJsonPatchWsStream = <T>(
   const retryAttemptsRef = useRef<number>(0);
   const [retryNonce, setRetryNonce] = useState(0);
 
+  const { injectInitialEntry, deduplicatePatches } = options;
+
   function scheduleReconnect() {
     if (retryTimerRef.current) return; // already scheduled
     // Exponential backoff with cap: 1s, 2s, 4s, 8s (max), then stay at 8s
@@ -76,8 +78,8 @@ export const useJsonPatchWsStream = <T>(
       dataRef.current = initialData();
 
       // Inject initial entry if provided
-      if (options.injectInitialEntry) {
-        options.injectInitialEntry(dataRef.current);
+      if (injectInitialEntry) {
+        injectInitialEntry(dataRef.current);
       }
 
       setData({ ...dataRef.current });
@@ -107,8 +109,8 @@ export const useJsonPatchWsStream = <T>(
           // Handle JsonPatch messages (same as SSE json_patch event)
           if ('JsonPatch' in msg) {
             const patches: Operation[] = msg.JsonPatch;
-            const filtered = options.deduplicatePatches
-              ? options.deduplicatePatches(patches)
+            const filtered = deduplicatePatches
+              ? deduplicatePatches(patches)
               : patches;
 
             const currentData = dataRef.current;
@@ -169,8 +171,8 @@ export const useJsonPatchWsStream = <T>(
     endpoint,
     enabled,
     initialData,
-    options.injectInitialEntry,
-    options.deduplicatePatches,
+    injectInitialEntry,
+    deduplicatePatches,
     retryNonce,
   ]);
 

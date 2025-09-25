@@ -37,23 +37,29 @@ export function ProjectTasks() {
   const [project, setProject] = useState<Project | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Helper functions to open task forms
-  const handleCreateTask = () => {
+  const handleCreateTask = useCallback(() => {
     if (project?.id) {
       openTaskForm({ projectId: project.id });
     }
-  };
+  }, [project?.id]);
 
-  const handleEditTask = (task: Task) => {
-    if (project?.id) {
-      openTaskForm({ projectId: project.id, task });
-    }
-  };
+  const handleEditTask = useCallback(
+    (task: Task) => {
+      if (project?.id) {
+        openTaskForm({ projectId: project.id, task });
+      }
+    },
+    [project?.id]
+  );
 
-  const handleDuplicateTask = (task: Task) => {
-    if (project?.id) {
-      openTaskForm({ projectId: project.id, initialTask: task });
-    }
-  };
+  const handleDuplicateTask = useCallback(
+    (task: Task) => {
+      if (project?.id) {
+        openTaskForm({ projectId: project.id, initialTask: task });
+      }
+    },
+    [project?.id]
+  );
   const { query: searchQuery } = useSearch();
 
   // Panel state

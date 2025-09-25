@@ -44,7 +44,7 @@ export function useDraftEdits({
       // Skip applying server changes while user is editing; still advance version to avoid loops
       lastServerVersionRef.current = incomingVersion;
     }
-  }, [draft]);
+  }, [draft, forceNextApplyRef, lastServerVersionRef, suppressNextSaveRef]);
 
   // Sync images from server when not locally dirty
   useEffect(() => {
@@ -71,7 +71,7 @@ export function useDraftEdits({
         setNewlyUploadedImageIds([]);
       })
       .catch(() => void 0);
-  }, [draft?.image_ids, taskId, images]);
+  }, [draft?.image_ids, taskId, images, draft]);
 
   const handleImageUploaded = useCallback((image: ImageResponse) => {
     imagesDirtyRef.current = true;

@@ -70,6 +70,7 @@ export function useDraftQueue({
     selectedVariant,
     suppressNextSaveRef,
     lastServerVersionRef,
+    draft?.queued,
   ]);
 
   const onUnqueue = useCallback(async (): Promise<boolean> => {

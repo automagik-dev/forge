@@ -365,6 +365,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       images,
       createTask,
       updateTask,
+      parentTaskAttemptId,
     ]);
 
     const handleCreateAndStart = useCallback(async () => {
@@ -421,6 +422,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       selectedExecutorProfile,
       selectedBranch,
       system.config?.executor_profile,
+      parentTaskAttemptId,
     ]);
 
     const handleCancel = useCallback(() => {

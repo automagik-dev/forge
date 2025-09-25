@@ -452,7 +452,7 @@ function CurrentAttempt({
       text: `Up to date${branchStatus?.has_uncommitted_changes ? ' (dirty)' : ''}`,
       isClickable: false,
     };
-  }, [mergeInfo, branchStatus]);
+  }, [mergeInfo, branchStatus, hasConflicts, conflictOpLabel]);
 
   return (
     <div className="space-y-2 @container">

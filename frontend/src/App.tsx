@@ -123,7 +123,7 @@ function AppContent() {
     return () => {
       cancelled = true;
     };
-  }, [config]);
+  }, [config, updateAndSaveConfig]);
 
   if (loading) {
     return (

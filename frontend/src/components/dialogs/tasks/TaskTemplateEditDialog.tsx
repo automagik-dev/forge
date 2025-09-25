@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,26 +58,7 @@ export const TaskTemplateEditDialog =
         setError(null);
       }, [template]);
 
-      // Handle keyboard shortcuts
-      useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-          // Command/Ctrl + Enter to save template
-          if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-            if (modal.visible && !saving) {
-              event.preventDefault();
-              handleSave();
-            }
-          }
-        };
-
-        if (modal.visible) {
-          document.addEventListener('keydown', handleKeyDown, true);
-          return () =>
-            document.removeEventListener('keydown', handleKeyDown, true);
-        }
-      }, [modal.visible, saving]);
-
-      const handleSave = async () => {
+      const handleSave = useCallback(async () => {
         if (!formData.template_name.trim() || !formData.title.trim()) {
           setError('Template name and title are required');
           return;
@@ -115,7 +96,35 @@ export const TaskTemplateEditDialog =
         } finally {
           setSaving(false);
         }
-      };
+      }, [
+        formData.description,
+        formData.template_name,
+        formData.title,
+        isEditMode,
+        isGlobal,
+        modal,
+        projectId,
+        template,
+      ]);
+
+      // Handle keyboard shortcuts
+      useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+          // Command/Ctrl + Enter to save template
+          if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+            if (modal.visible && !saving) {
+              event.preventDefault();
+              handleSave();
+            }
+          }
+        };
+
+        if (modal.visible) {
+          document.addEventListener('keydown', handleKeyDown, true);
+          return () =>
+            document.removeEventListener('keydown', handleKeyDown, true);
+        }
+      }, [modal.visible, saving, handleSave]);
 
       const handleCancel = () => {
         modal.resolve('canceled' as TaskTemplateEditResult);

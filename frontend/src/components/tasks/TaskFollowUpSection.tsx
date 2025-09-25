@@ -53,7 +53,7 @@ export function TaskFollowUpSection({
 
   const reviewMarkdown = useMemo(
     () => generateReviewMarkdown(),
-    [generateReviewMarkdown, comments]
+    [generateReviewMarkdown]
   );
 
   // Draft stream and synchronization
@@ -240,7 +240,7 @@ export function TaskFollowUpSection({
     } else {
       if (isUnqueuing) setIsUnqueuing(false);
     }
-  }, [isQueued]);
+  }, [isQueued, isQueuing, isUnqueuing]);
 
   return (
     selectedAttemptId && (

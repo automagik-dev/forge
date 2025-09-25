@@ -180,12 +180,15 @@ export const useEventSourceManager = ({
 
     setIsConnected(eventSourcesRef.current.size > 0);
 
+    const cleanupEventSources = eventSourcesRef.current;
+    const cleanupRetryTimers = retryTimersRef.current;
+
     return () => {
       // Cleanup all event sources and any pending retry timers
-      eventSourcesRef.current.forEach((es) => es.close());
-      eventSourcesRef.current.clear();
-      retryTimersRef.current.forEach((t) => clearTimeout(t));
-      retryTimersRef.current.clear();
+      cleanupEventSources.forEach((es) => es.close());
+      cleanupEventSources.clear();
+      cleanupRetryTimers.forEach((t) => clearTimeout(t));
+      cleanupRetryTimers.clear();
     };
   }, [processes, enabled, getEndpoint, initialData]);
 

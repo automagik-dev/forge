@@ -144,12 +144,14 @@ export function AgentSettings() {
   ) => {
     if (!localParsedProfiles || !localParsedProfiles.executors) return;
 
-    const base: ExecutorConfigurationEntry =
+    let base: ExecutorConfigurationEntry = {};
+    if (
       baseConfig &&
       localParsedProfiles.executors[executorType]?.[baseConfig]?.[executorType]
-        ? (localParsedProfiles.executors[executorType][baseConfig][executorType]
-            as ExecutorConfigurationEntry)
-        : {};
+    ) {
+      base =
+        localParsedProfiles.executors[executorType][baseConfig][executorType] as ExecutorConfigurationEntry;
+    }
 
     const updatedProfiles: ParsedProfiles = {
       ...localParsedProfiles,

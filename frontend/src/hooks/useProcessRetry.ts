@@ -47,8 +47,8 @@ export function useProcessRetry(attempt: TaskAttempt | undefined) {
 
   // Any process running at all?
   const anyRunning = useMemo(
-    () => (attemptData.processes || []).some((p) => p.status === 'running'),
-    [attemptData.processes?.map((p) => p.status).join(',')]
+    () => (attemptData.processes ?? []).some((p) => p.status === 'running'),
+    [attemptData.processes]
   );
 
   // Convenience lookups

@@ -107,6 +107,8 @@ export function useDraftAutosave({
     isUnqueuing,
     suppressNextSaveRef,
     lastServerVersionRef,
+    forceNextApplyRef,
+    serverDraft,
   ]);
 
   return { isSaving, saveStatus } as const;
