@@ -206,4 +206,53 @@ mod tests {
             Some("forge")
         );
     }
+
+    #[tokio::test]
+    async fn project_overrides_effective_omni_config() {
+        let pool = setup_pool().await;
+        let service = ForgeConfigService::new(pool);
+
+        let project_id = Uuid::new_v4();
+
+        let mut global = ForgeProjectSettings::default();
+        global.omni_enabled = true;
+        global.omni_config = Some(OmniConfig {
+            enabled: true,
+            host: Some("https://global.omni".into()),
+            api_key: Some("global-key".into()),
+            instance: Some("global".into()),
+            recipient: Some("global-recipient".into()),
+            recipient_type: Some(RecipientType::PhoneNumber),
+        });
+        service
+            .set_global_settings(&global)
+            .await
+            .expect("global settings should persist");
+
+        let mut project = ForgeProjectSettings::default();
+        project.omni_enabled = true;
+        project.omni_config = Some(OmniConfig {
+            enabled: true,
+            host: Some("https://project.omni".into()),
+            api_key: Some("project-key".into()),
+            instance: Some("project".into()),
+            recipient: Some("project-recipient".into()),
+            recipient_type: Some(RecipientType::UserId),
+        });
+        service
+            .set_forge_settings(project_id, &project)
+            .await
+            .expect("project settings should persist");
+
+        let config = service
+            .effective_omni_config(Some(project_id))
+            .await
+            .expect("effective omni config should resolve");
+
+        assert_eq!(config.host.as_deref(), Some("https://project.omni"));
+        assert_eq!(config.api_key.as_deref(), Some("project-key"));
+        assert_eq!(config.instance.as_deref(), Some("project"));
+        assert_eq!(config.recipient.as_deref(), Some("project-recipient"));
+        assert!(matches!(config.recipient_type, Some(RecipientType::UserId)));
+    }
 }

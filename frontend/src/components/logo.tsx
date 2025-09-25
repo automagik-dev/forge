@@ -7,7 +7,7 @@ export function Logo({ className = '' }: { className?: string }) {
 
   useEffect(() => {
     const updateTheme = () => {
-      if (theme === 'LIGHT' || theme === 'ALUCARD') {
+      if (theme === 'LIGHT') {
         setIsDark(false);
       } else if (theme === 'SYSTEM') {
         // System theme

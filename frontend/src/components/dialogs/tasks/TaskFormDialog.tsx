@@ -38,7 +38,7 @@ interface Task {
   title: string;
   description: string | null;
   status: TaskStatus;
-  branch_template: string | null;
+  branch_template?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -324,7 +324,6 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                 title,
                 description: description || null,
                 status,
-                branch_template: branchTemplate || null,
                 parent_task_attempt: parentTaskAttemptId || null,
                 image_ids: imageIds || null,
               },
@@ -341,7 +340,6 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
               project_id: projectId,
               title,
               description: description || null,
-              branch_template: branchTemplate || null,
               parent_task_attempt: parentTaskAttemptId || null,
               image_ids: imageIds || null,
             },
@@ -396,7 +394,6 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                 project_id: projectId,
                 title,
                 description: description || null,
-                branch_template: branchTemplate || null,
                 parent_task_attempt: parentTaskAttemptId || null,
                 image_ids: imageIds || null,
               },

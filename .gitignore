@@ -92,3 +92,4 @@ dev_assets_seed/forge-snapshot/from_home/**
 .ssh
 
 vibe-kanban-cloud/
+.mcp.json

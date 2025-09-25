@@ -28,6 +28,9 @@ jobs:
       - name: Lint frontend
         run: cd frontend && npm run lint
 
+      - name: Lint forge frontend
+        run: pnpm --filter frontend-forge lint
+
       - name: Format check frontend
         run: cd frontend && npm run format:check
 
@@ -53,6 +56,9 @@ jobs:
 
       - name: Build frontend
         run: cd frontend && npm run build
+
+      - name: Build forge frontend
+        run: pnpm --filter frontend-forge build
 
       - name: Checks
         run: |

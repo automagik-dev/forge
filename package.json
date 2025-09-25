@@ -10,6 +10,7 @@
     "npx-cli/dist/**"
   ],
   "scripts": {
+    "lint": "pnpm --filter ./frontend... lint && pnpm --filter frontend-forge lint",
     "format": "cargo fmt --all && cd frontend && pnpm run format",
     "check": "pnpm run frontend:check && pnpm run backend:check",
     "dev": "export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend) && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && concurrently \"pnpm run backend:dev:watch\" \"pnpm run frontend:dev\"",
@@ -22,6 +23,8 @@
     "generate-types": "cargo run --bin generate_types && cargo run -p forge-app --bin generate_forge_types",
     "generate-types:check": "cargo run --bin generate_types -- --check && cargo run -p forge-app --bin generate_forge_types -- --check",
     "prepare-db": "node scripts/prepare-db.js",
+    "build:frontends": "pnpm --filter ./frontend... build && pnpm --filter frontend-forge build",
+    "build": "pnpm run build:frontends",
     "build:npx": "bash ./local-build.sh",
     "prepack": "pnpm run build:npx"
   },
