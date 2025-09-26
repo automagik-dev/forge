@@ -1,0 +1,76 @@
+# GENIE Agent CLI configuration
+#
+# Every setting can be overridden at runtime with -c/--config.
+# Example: agent chat forge-coder "prompt" -c codex.exec.model="\"o4\""
+
+defaults:
+  preset: default        # Default preset when --preset is omitted.
+  background: false      # Run chats in background by default when true.
+
+paths:
+  baseDir: .                                # Base directory for resolving relative paths.
+  sessionsFile: .genie/state/agents/sessions.json   # JSON session index written by the CLI.
+  logsDir: .genie/state/agents/logs                 # Directory where Codex output logs are stored.
+  backgroundDir: .genie/state/agents/background     # Reserved for future background coordination metadata.
+  legacySessionsFile: ~/.genie-sessions.json        # Optional legacy session map (read-only fallback).
+  codexSessionsDir: ~/.codex/sessions               # Native Codex session store used to discover UUIDs.
+
+codex:
+  exec:
+    fullAuto: true                           # Adds --full-auto unless explicitly disabled.
+    model: gpt-5-codex                       # Equivalent to `-m`.
+    sandbox: workspace-write                 # Equivalent to `-s`.
+    profile: null                            # Equivalent to `-p` when set.
+    includePlanTool: false                   # Adds --include-plan-tool when true.
+    search: false                            # Adds --search when true.
+    skipGitRepoCheck: false                  # Adds --skip-git-repo-check when true.
+    json: false                              # Adds --json when true.
+    color: auto                              # Passes value to --color when not auto.
+    cd: null                                 # Sets -C <dir> when provided.
+    outputSchema: null                       # Passes --output-schema when provided.
+    outputLastMessage: null                  # Passes --output-last-message when provided.
+    additionalArgs: []                       # Extra codex exec flags appended verbatim.
+    images: []                               # Image paths forwarded via --image for multimodal prompts.
+  resume:
+    includePlanTool: false                   # Resume-specific toggle for --include-plan-tool.
+    search: false                            # Resume-specific toggle for --search.
+    last: false                              # Adds --last when true and session id omitted.
+    additionalArgs: []                       # Extra flags appended to `codex exec resume`.
+
+presets:
+  default:
+    description: >-
+      Workspace-write, on-failure approvals (via --full-auto) and GPT-5 Codex. Mirrors the original CLI behaviour.
+    overrides:
+      exec:
+        model: gpt-5-codex
+        sandbox: workspace-write
+        fullAuto: true
+  careful:
+    description: >-
+      Read-only sandbox. Combine with CLI overrides if you need manual approval policies.
+    overrides:
+      exec:
+        sandbox: read-only
+  danger:
+    description: >-
+      Full access execution for externally sandboxed environments only. Use with extreme caution.
+    overrides:
+      exec:
+        sandbox: danger-full-access
+        fullAuto: false
+        additionalArgs:
+          - --dangerously-bypass-approvals-and-sandbox
+  debug:
+    description: >-
+      Enable the plan tool and web search for design reviews and investigations.
+    overrides:
+      exec:
+        includePlanTool: true
+        search: true
+
+background:
+  enabled: true                               # Disable to forbid --background entirely.
+  detach: true                                # Detach stdio when launching background runners.
+  pollIntervalMs: 1500                        # Reserved for future health check loops.
+  sessionExtractionDelayMs: 2000              # Wait before scanning Codex session logs for UUIDs.

@@ -37,7 +37,8 @@
     "vite": "^6.3.5"
   },
   "dependencies": {
-    "@ebay/nice-modal-react": "^1.2.13"
+    "@ebay/nice-modal-react": "^1.2.13",
+    "yaml": "^2.8.1"
   },
   "engines": {
     "node": ">=18",

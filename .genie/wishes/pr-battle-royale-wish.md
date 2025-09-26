@@ -160,18 +160,18 @@ const evaluateFoundation = async () => {
 
   for (const pr of prs) {
     // Round 1: Individual scoring
-    const geminiScore = await zen.chat({
+    const geminiScore = await agentMcp.chat({
       model: "gemini-2.5-pro",
       prompt: `Evaluate PR #${pr} against wish requirements...`
     });
 
-    const grokScore = await zen.chat({
+    const grokScore = await agentMcp.chat({
       model: "grok-4",
       prompt: `Evaluate PR #${pr} against wish requirements...`
     });
 
     // Round 2: Consensus building
-    const consensus = await zen.consensus({
+    const consensus = await agentMcp.consensus({
       models: ["gemini-2.5-pro", "grok-4"],
       scores: [geminiScore, grokScore],
       mode: "discussion"

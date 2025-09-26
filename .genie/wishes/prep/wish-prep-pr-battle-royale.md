@@ -23,7 +23,7 @@ Searches planned:
 Found patterns:
 - @genie/wishes/restructure-upstream-library-wish.md - Core migration requirements
 - Foundation task PRs confirmed (6 implementations)
-- zen consensus tools available (gemini-2.5-pro, grok-4)
+- Agent MCP twin consensus available (gemini-2.5-pro, grok-4)
 - codex exec available for final review
 
 ### Upstream Diff Audit (pending)
@@ -50,7 +50,7 @@ Early stop: 100% patterns identified
 - REQ-2: Evaluate existing foundation setup PRs (opencode, code-supernova, etc.)
 - REQ-3: Pick winner for each task phase (foundation, then 2 more tasks)
 - REQ-4: Evaluate if winner is sufficient or need to absorb competitor features
-- REQ-5: Use Zen consensus tool with gemini-2.5-pro and grok-4 for evaluation
+- REQ-5: Use Agent MCP twin consensus with gemini-2.5-pro and grok-4 for evaluation
 - REQ-6: Final review using codex exec for comprehensive analysis
 - REQ-7: Create scoring sheet with points per LLM/agent
 - REQ-8: Include 3 columns for human evaluator scores

@@ -15,7 +15,11 @@
         "SERVICE_ACCOUNT_PATH": "/home/namastex/workspace/nmstx-support/workspace-mcp-469715-625458b64974.json",
         "DRIVE_FOLDER_ID": "1WrqiOh2ihXkGJKjItg_q-q8VQeIVCkhR"
       }
-  },
+    },
+    "agent": {
+      "command": "npx",
+      "args": ["-y", "codex","mcp"]
+    },
     "playwright": {
       "command": "npx",
       "args": ["-y", "@executeautomation/playwright-mcp-server"]
