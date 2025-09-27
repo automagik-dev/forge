@@ -8,7 +8,12 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { spawn } = require('child_process');
-const YAML = require('yaml');
+let YAML = null;
+try {
+  YAML = require('yaml');
+} catch (_) {
+  // YAML module not available; we'll ignore agent.yaml or try JSON as fallback.
+}
 
 const SCRIPT_DIR = path.dirname(__filename);
 const CONFIG_PATH = path.join(SCRIPT_DIR, 'agent.yaml');
@@ -208,7 +213,14 @@ function loadConfig(overrides) {
     try {
       const file = fs.readFileSync(CONFIG_PATH, 'utf8');
       if (file.trim().length) {
-        const parsed = YAML.parse(file) || {};
+        let parsed = {};
+        if (YAML) {
+          parsed = YAML.parse(file) || {};
+        } else if (file.trim().startsWith('{')) {
+          try { parsed = JSON.parse(file); } catch (_) { parsed = {}; }
+        } else {
+          console.warn('[genie] YAML module not found; skipping agent.yaml parsing');
+        }
         config = mergeDeep(config, parsed);
       }
     } catch (error) {
