@@ -136,20 +136,20 @@ jobs:
 
       - name: Build frontend
         run: cd frontend && npm run build
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        # env:
+        #   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
-      - name: Create Sentry release
-        uses: getsentry/action-release@v3
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-        with:
-          release: ${{ needs.bump-version.outputs.new_version }}
-          environment: production
-          sourcemaps: "./frontend/dist"
-          ignore_missing: true
+      # - name: Create Sentry release
+      #   uses: getsentry/action-release@v3
+      #   env:
+      #     SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      #     SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      #     SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+      #   with:
+      #     release: ${{ needs.bump-version.outputs.new_version }}
+      #     environment: production
+      #     sourcemaps: "./frontend/dist"
+      #     ignore_missing: true
 
       - name: Upload frontend artifact
         uses: actions/upload-artifact@v4
@@ -226,29 +226,29 @@ jobs:
         run: |
           cargo zigbuild --release --target ${{ matrix.target }} -p server
           cargo zigbuild --release --target ${{ matrix.target }} --bin mcp_task_server
-        env:
-          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
-          POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
+        # env:
+        #   POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+        #   POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
 
       - name: Build backend for target
         if: runner.os != 'Linux'
         run: |
           cargo build --release --target ${{ matrix.target }} -p server
           cargo build --release --target ${{ matrix.target }} --bin mcp_task_server
-        env:
-          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
-          POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
+        # env:
+        #   POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+        #   POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
 
-      - name: Setup Sentry CLI
-        uses: matbour/setup-sentry-cli@v2
-        with:
-          token: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          organization: ${{ secrets.SENTRY_ORG }}
-          project: ${{ secrets.SENTRY_PROJECT }}
-          version: 2.21.2
+      # - name: Setup Sentry CLI
+      #   uses: matbour/setup-sentry-cli@v2
+      #   with:
+      #     token: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      #     organization: ${{ secrets.SENTRY_ORG }}
+      #     project: ${{ secrets.SENTRY_PROJECT }}
+      #     version: 2.21.2
 
-      - name: Upload source maps to Sentry
-        run: sentry-cli debug-files upload --include-sources target/${{ matrix.target }}/release
+      # - name: Upload source maps to Sentry
+      #   run: sentry-cli debug-files upload --include-sources target/${{ matrix.target }}/release
 
       - name: Prepare binaries (non-macOS)
         if: runner.os != 'macOS'
