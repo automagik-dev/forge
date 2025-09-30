@@ -30,7 +30,7 @@ env:
 
 jobs:
   bump-version:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     outputs:
       new_tag: ${{ steps.version.outputs.new_tag }}
       new_version: ${{ steps.version.outputs.new_version }}
@@ -114,7 +114,7 @@ jobs:
 
   build-frontend:
     needs: bump-version
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     env:
       VITE_PUBLIC_REACT_VIRTUOSO_LICENSE_KEY: ${{ secrets.PUBLIC_REACT_VIRTUOSO_LICENSE_KEY }}
     steps:
@@ -161,13 +161,21 @@ jobs:
   build-backend:
     needs: [bump-version, build-frontend]
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+    env:
+      ZIG_BUILD_IMG: ghcr.io/rust-cross/cargo-zigbuild@sha256:af1bc2b869c5d76c1300f7a4685c2f1793d068e6e895c9f5c399b517b31a731e
     strategy:
       # Platform matrix - keep target/name in sync with package-npx-cli job
       matrix:
         include:
           - target: x86_64-unknown-linux-musl
-            os: ubuntu-22.04
+            os: ubuntu-latest
+            container: ghcr.io/rust-cross/cargo-zigbuild@sha256:af1bc2b869c5d76c1300f7a4685c2f1793d068e6e895c9f5c399b517b31a731e
             name: linux-x64
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            name: linux-arm64
+            container: ghcr.io/rust-cross/cargo-zigbuild@sha256:af1bc2b869c5d76c1300f7a4685c2f1793d068e6e895c9f5c399b517b31a731e
           # - target: x86_64-pc-windows-msvc
           #   os: windows-latest-l
           #   name: windows-x64
@@ -180,9 +188,6 @@ jobs:
           # - target: aarch64-pc-windows-msvc
           #   os: windows-latest-l
           #   name: windows-arm64
-          - target: aarch64-unknown-linux-musl
-            os: ubuntu-22.04
-            name: linux-arm64
     steps:
       - uses: actions/checkout@v4
         with:
@@ -210,16 +215,6 @@ jobs:
         with:
           name: frontend-dist
           path: frontend/dist/
-
-      - name: Install system dependencies (Linux)
-        if: matrix.os == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config libssl-dev
-
-      - name: Install cargo-zigbuild
-        if: runner.os == 'Linux'
-        run: cargo install cargo-zigbuild --locked
 
       - name: Build backend for Linux
         if: runner.os == 'Linux'
@@ -347,7 +342,7 @@ jobs:
 
   package-npx-cli:
     needs: [bump-version, build-frontend, build-backend]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       # NOTE: This matrix must be kept in sync with build-backend job above
       # GitHub Actions doesn't support YAML anchors, so duplication is unavoidable
@@ -429,7 +424,7 @@ jobs:
 
   create-prerelease:
     needs: [bump-version, build-frontend, build-backend, package-npx-cli]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
