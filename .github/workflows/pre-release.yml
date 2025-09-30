@@ -165,7 +165,7 @@ jobs:
       # Platform matrix - keep target/name in sync with package-npx-cli job
       matrix:
         include:
-          - target: x86_64-unknown-linux-gnu
+          - target: x86_64-unknown-linux-musl
             os: ubuntu-22.04
             name: linux-x64
           - target: x86_64-pc-windows-msvc
@@ -180,7 +180,7 @@ jobs:
           - target: aarch64-pc-windows-msvc
             os: windows-latest-l
             name: windows-arm64
-          - target: aarch64-unknown-linux-gnu
+          - target: aarch64-unknown-linux-musl
             os: ubuntu-22.04
             name: linux-arm64
     steps:
@@ -217,17 +217,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pkg-config libssl-dev
 
-      - name: Install ARM64 cross-compilation dependencies (Linux)
-        if: matrix.os == 'ubuntu-22.04' && matrix.target == 'aarch64-unknown-linux-gnu'
+      - name: Install cargo-zigbuild
+        if: runner.os == 'Linux'
+        run: cargo install cargo-zigbuild --locked
+
+      - name: Build backend for Linux
+        if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross
+          cargo zigbuild --release --target ${{ matrix.target }} -p server
+          cargo zigbuild --release --target ${{ matrix.target }} --bin mcp_task_server
+        env:
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
 
       - name: Build backend for target
+        if: runner.os != 'Linux'
         run: |
           cargo build --release --target ${{ matrix.target }} -p server
           cargo build --release --target ${{ matrix.target }} --bin mcp_task_server
         env:
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: ${{ matrix.target == 'aarch64-unknown-linux-gnu' && 'aarch64-linux-gnu-gcc' || '' }}
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
 
@@ -345,7 +353,7 @@ jobs:
       # GitHub Actions doesn't support YAML anchors, so duplication is unavoidable
       matrix:
         include:
-          - target: x86_64-unknown-linux-gnu
+          - target: x86_64-unknown-linux-musl
             name: linux-x64
             binary: vibe-kanban
             mcp_binary: vibe-kanban-mcp
@@ -365,7 +373,7 @@ jobs:
             name: windows-arm64
             binary: vibe-kanban.exe
             mcp_binary: vibe-kanban-mcp.exe
-          - target: aarch64-unknown-linux-gnu
+          - target: aarch64-unknown-linux-musl
             name: linux-arm64
             binary: vibe-kanban
             mcp_binary: vibe-kanban-mcp
