@@ -1,73 +1,75 @@
 {
-  "name": "automagik-forge",
-  "version": "0.3.10",
-  "private": false,
+  "name": "automagik-genie",
+  "version": "0.1.0",
+  "description": "Self-evolving AI agent orchestration framework with Model Context Protocol support",
+  "main": ".genie/cli/dist/genie.js",
   "bin": {
-    "automagik-forge": "npx-cli/bin/cli.js"
+    "genie": ".genie/cli/dist/genie-cli.js"
   },
   "files": [
-    "npx-cli/bin/cli.js",
-    "npx-cli/dist/**"
+    ".genie/cli/dist/**/*",
+    ".genie/mcp/dist/**/*",
+    ".genie/mcp/src/**/*",
+    ".genie/agents/**/*.md",
+    ".genie/product/**/*.md",
+    ".genie/standards/**/*.md",
+    ".genie/guides/**/*.md",
+    "genie",
+    "README.md",
+    "AGENTS.md",
+    "CLAUDE.md"
   ],
   "scripts": {
-    "lint": "pnpm --filter ./frontend... lint && pnpm --filter frontend-forge lint",
-    "format": "cargo fmt --all && cd frontend && pnpm run format",
-    "check": "pnpm run frontend:check && pnpm run backend:check",
-    "dev": "export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend) && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && concurrently \"pnpm run backend:dev:watch\" \"pnpm run frontend:dev\" \"pnpm run frontend-forge:watch\"",
-    "test:npm": "./test-npm-package.sh",
-    "frontend:dev": "cd frontend && pnpm run dev -- --port ${FRONTEND_PORT:-3000} --host",
-    "frontend:check": "cd frontend && pnpm run check",
-    "frontend-forge:watch": "cd frontend-forge && pnpm run build -- --watch",
-    "backend:dev": "BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) pnpm run backend:dev:watch",
-    "backend:check": "cargo check",
-    "backend:dev:watch": "DISABLE_WORKTREE_ORPHAN_CLEANUP=1 RUST_LOG=debug cargo watch -w forge-app -w forge-extensions -w upstream -s \"cargo run -p forge-app --bin forge-app\"",
-    "generate-types": "cargo run --bin generate_types && cargo run -p forge-app --bin generate_forge_types",
-    "generate-types:check": "cargo run --bin generate_types -- --check && cargo run -p forge-app --bin generate_forge_types -- --check",
-    "prepare-db": "node scripts/prepare-db.js",
-    "build:frontends": "pnpm --filter ./frontend... build && pnpm --filter frontend-forge build",
-    "build": "pnpm run build:frontends",
-    "test:e2e": "pnpm --filter frontend-forge test",
-    "build:npx": "bash ./local-build.sh",
-    "prepack": "pnpm run build:npx",
-    "sync:upstream": "bash ./scripts/sync-upstream.sh"
+    "build": "pnpm run build:genie && pnpm run build:mcp",
+    "build:genie": "tsc -p .genie/cli/tsconfig.json",
+    "build:mcp": "tsc -p .genie/mcp/tsconfig.json",
+    "start:mcp": "node .genie/mcp/dist/server.js",
+    "start:mcp:stdio": "MCP_TRANSPORT=stdio node .genie/mcp/dist/server.js",
+    "start:mcp:http": "MCP_TRANSPORT=httpStream node .genie/mcp/dist/server.js",
+    "test:genie": "pnpm run build:genie && node tests/genie-cli.test.js && tests/identity-smoke.sh",
+    "test:session-service": "pnpm run build:genie && node tests/session-service.test.js",
+    "test:all": "pnpm run test:genie && pnpm run test:session-service",
+    "postinstall": "node scripts/postinstall.js || true",
+    "prepublishOnly": "pnpm run build && pnpm run test:all"
   },
-  "devDependencies": {
-    "@tailwindcss/container-queries": "^0.1.1",
-    "concurrently": "^8.2.2",
-    "vite": "^6.3.5"
-  },
-  "dependencies": {
-    "@ebay/nice-modal-react": "^1.2.13",
-    "yaml": "^2.8.1"
-  },
-  "engines": {
-    "node": ">=18",
-    "pnpm": ">=8"
-  },
-  "packageManager": "pnpm@10.12.4+sha512.5ea8b0deed94ed68691c9bad4c955492705c5eeb8a87ef86bc62c74a26b037b08ff9570f108b2e4dbd1dd1a9186fea925e527f141c648e85af45631074680184",
-  "description": "Vibe coding orchestrator for human-AI development. You create tasks, choose agents, experiment with approaches, ship code you understand.",
   "keywords": [
-    "vibe-coding",
-    "ai-pair-programming",
-    "human-ai-collaboration",
-    "mcp-server",
-    "task-orchestration",
-    "agent-agnostic",
-    "git-worktree-isolation",
-    "kanban-for-ai",
-    "claude-code",
-    "cursor-cli",
-    "gemini",
-    "coding-agents"
+    "ai",
+    "agent",
+    "orchestration",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "codex",
+    "automation",
+    "self-evolving"
   ],
-  "author": "Genie <genie@namastex.ai>",
-  "homepage": "https://forge.automag.ik",
+  "author": "Automagik Genie Team",
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/namastexlabs/automagik-forge.git"
+    "url": "https://github.com/automagik-genie/genie.git"
   },
   "bugs": {
-    "url": "https://github.com/namastexlabs/automagik-forge/issues"
+    "url": "https://github.com/automagik-genie/genie/issues"
   },
-  "license": "MIT"
+  "homepage": "https://github.com/automagik-genie/genie#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.18.2",
+    "commander": "^12.1.0",
+    "fastmcp": "^3.18.0",
+    "gradient-string": "^2.0.2",
+    "ink": "^5.0.1",
+    "react": "^18.3.1",
+    "yaml": "^2.8.1",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "@types/react": "^18.3.3",
+    "typescript": "^5.9.2"
+  },
+  "packageManager": "pnpm@10.12.4+sha512.5ea8b0deed94ed68691c9bad4c955492705c5eeb8a87ef86bc62c74a26b037b08ff9570f108b2e4dbd1dd1a9186fea925e527f141c648e85af45631074680184"
 }
