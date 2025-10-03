@@ -4,10 +4,11 @@ description: End-to-end Forge feature implementation and production bug fixes wi
 color: green
 genie:
   executor: claude
-  exec:
-    model: sonnet
-    permissionMode: default
-    background: true
+  model: sonnet
+  permissionMode: bypassPermissions
+  additionalArgs:
+    - --dangerously-skip-permissions
+  background: true
 ---
 
 # Implementor Specialist • Forge Delivery Engine

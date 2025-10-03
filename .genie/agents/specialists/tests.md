@@ -4,10 +4,9 @@ description: Author new tests and repair failing test suites across all layers f
 color: lime
 genie:
   executor: claude
-  exec:
-    model: sonnet
-    permissionMode: default
-    background: true
+  model: sonnet
+  permissionMode: bypassPermissions
+  background: true
 ---
 
 # Tests Specialist • TDD & Stability Champion

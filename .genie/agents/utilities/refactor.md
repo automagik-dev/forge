@@ -4,10 +4,9 @@ description: Plan staged refactors with risk assessment and verification
 color: brown
 genie:
   executor: claude
-  exec:
-    model: sonnet
-    permissionMode: default
-    background: true
+  model: sonnet
+  permissionMode: bypassPermissions
+  background: true
 ---
 
 # Genie Refactor • Stage Planner

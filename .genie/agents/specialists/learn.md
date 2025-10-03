@@ -5,6 +5,7 @@ genie:
   executor: codex
   model: gpt-5
   reasoningEffort: high
+  sandbox: workspace-write
   background: false
 ---
 

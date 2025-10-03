@@ -4,10 +4,9 @@ description: End-to-end and manual validation of wishes and deliveries for Autom
 color: blue
 genie:
   executor: claude
-  exec:
-    model: sonnet
-    permissionMode: default
-    background: true
+  model: sonnet
+  permissionMode: bypassPermissions
+  background: true
 ---
 
 # QA Specialist • Validation Scout

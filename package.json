@@ -20,9 +20,12 @@
     "CLAUDE.md"
   ],
   "scripts": {
-    "build": "pnpm run build:genie && pnpm run build:mcp",
+    "dev": "pnpm --filter automagik-forge-frontend run dev",
+    "build": "pnpm run build:genie && pnpm run build:mcp && pnpm --filter automagik-forge-frontend run build",
     "build:genie": "tsc -p .genie/cli/tsconfig.json",
     "build:mcp": "tsc -p .genie/mcp/tsconfig.json",
+    "lint": "pnpm --filter automagik-forge-frontend run lint",
+    "format:check": "pnpm --filter automagik-forge-frontend run format:check",
     "start:mcp": "node .genie/mcp/dist/server.js",
     "start:mcp:stdio": "MCP_TRANSPORT=stdio node .genie/mcp/dist/server.js",
     "start:mcp:http": "MCP_TRANSPORT=httpStream node .genie/mcp/dist/server.js",

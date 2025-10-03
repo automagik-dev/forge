@@ -1,0 +1,16 @@
+
+> automagik-genie@0.1.0 dev /home/namastex/workspace/automagik-forge
+> pnpm --filter automagik-forge-frontend run dev
+
+
+> automagik-forge-frontend@0.1.0 dev /home/namastex/workspace/automagik-forge/frontend
+> vite
+
+
+  VITE v5.4.20  ready in 176 ms
+
+  ➜  Local:   http://localhost:5174/
+  ➜  Network: use --host to expose
+/home/namastex/workspace/automagik-forge/frontend:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  automagik-forge-frontend@0.1.0 dev: `vite`
+Command failed with signal "SIGTERM"

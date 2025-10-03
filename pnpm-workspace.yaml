@@ -1,4 +1,2 @@
 packages:
   - 'frontend'
-  - 'frontend-forge'
-  - 'upstream/frontend'

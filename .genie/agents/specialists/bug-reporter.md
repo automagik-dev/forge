@@ -6,6 +6,7 @@ genie:
   executor: codex
   model: gpt-5
   reasoningEffort: medium
+  sandbox: workspace-write
 ---
 
 # Bug Reporter Specialist • Incident Field Journal

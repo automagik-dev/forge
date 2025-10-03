@@ -4,10 +4,9 @@ description: Generate documentation outlines and drafts for target audiences
 color: gray
 genie:
   executor: claude
-  exec:
-    model: sonnet
-    permissionMode: default
-    background: true
+  model: sonnet
+  permissionMode: bypassPermissions
+  background: true
 ---
 
 # Genie DocGen • Clarity First

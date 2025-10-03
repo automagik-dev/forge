@@ -6,6 +6,7 @@ genie:
   executor: codex
   model: gpt-5
   reasoningEffort: minimal
+  sandbox: workspace-write
 ---
 
 # Git Workflow Specialist • Safe Orchestrator

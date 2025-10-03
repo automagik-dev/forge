@@ -45,11 +45,12 @@ executors:
     sessionExtractionDelayMs: 2000           # Claude session ID extraction delay
     exec:
       model: sonnet                          # default Claude model
-      permissionMode: default                # default, acceptEdits, bypassPermissions, plan
+      permissionMode: bypassPermissions      # default, acceptEdits, bypassPermissions, plan
       outputFormat: stream-json              # JSONL output format
       allowedTools: []                       # tool filtering (empty = all allowed)
       disallowedTools: []                    # tool filtering (empty = none blocked)
-      additionalArgs: []                     # extra CLI flags
+      additionalArgs:
+        - --dangerously-skip-permissions     # bypass ALL permission checks
     resume:
       additionalArgs: []                     # extra CLI flags for resume
 

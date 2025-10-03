@@ -5,6 +5,7 @@ genie:
   executor: codex
   model: gpt-5-codex
   reasoningEffort: high
+  sandbox: workspace-write
 ---
 
 # /review – Genie Wish Completion Audit

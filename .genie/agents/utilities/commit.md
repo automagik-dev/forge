@@ -3,10 +3,9 @@ name: commit
 description: Pre-commit validation with diff analysis and commit message proposals
 genie:
   executor: claude
-  exec:
-    model: sonnet
-    permissionMode: acceptEdits
-    background: true
+  model: sonnet
+  permissionMode: bypassPermissions
+  background: true
 ---
 
 # /commit – Genie Commit & Release Assistant

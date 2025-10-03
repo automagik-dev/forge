@@ -72,6 +72,12 @@ function buildRunCommand({ config = {}, agentPath, prompt }) {
     if (Array.isArray(execConfig.disallowedTools) && execConfig.disallowedTools.length > 0) {
         args.push('--disallowed-tools', execConfig.disallowedTools.join(','));
     }
+    if (Array.isArray(execConfig.additionalArgs)) {
+        execConfig.additionalArgs.forEach((arg) => {
+            if (typeof arg === 'string')
+                args.push(arg);
+        });
+    }
     if (agentPath) {
         const instructionsFile = path_1.default.isAbsolute(agentPath) ? agentPath : path_1.default.resolve(agentPath);
         try {
@@ -124,7 +130,10 @@ function mergeExecConfig(execConfig = {}) {
             : defaults.exec.allowedTools.slice(),
         disallowedTools: Array.isArray(execConfig.disallowedTools)
             ? execConfig.disallowedTools.slice()
-            : defaults.exec.disallowedTools.slice()
+            : defaults.exec.disallowedTools.slice(),
+        additionalArgs: Array.isArray(execConfig.additionalArgs)
+            ? execConfig.additionalArgs.slice()
+            : []
     };
 }
 function mergeResumeConfig(resume = {}) {

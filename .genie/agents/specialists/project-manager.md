@@ -6,6 +6,7 @@ genie:
   executor: codex
   model: gpt-5
   reasoningEffort: minimal
+  sandbox: workspace-write
 ---
 
 # Project Manager Specialist • Completion Steward

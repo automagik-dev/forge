@@ -42,6 +42,12 @@ function buildRunCommand({ config = {}, agentPath, prompt }: { config?: Record<s
     args.push('--disallowed-tools', execConfig.disallowedTools.join(','));
   }
 
+  if (Array.isArray(execConfig.additionalArgs)) {
+    execConfig.additionalArgs.forEach((arg: any) => {
+      if (typeof arg === 'string') args.push(arg);
+    });
+  }
+
   if (agentPath) {
     const instructionsFile = path.isAbsolute(agentPath) ? agentPath : path.resolve(agentPath);
     try {
@@ -103,7 +109,10 @@ function mergeExecConfig(execConfig: Record<string, any> = {}) {
       : (defaults.exec as any).allowedTools.slice(),
     disallowedTools: Array.isArray(execConfig.disallowedTools)
       ? execConfig.disallowedTools.slice()
-      : (defaults.exec as any).disallowedTools.slice()
+      : (defaults.exec as any).disallowedTools.slice(),
+    additionalArgs: Array.isArray(execConfig.additionalArgs)
+      ? execConfig.additionalArgs.slice()
+      : []
   };
 }
 

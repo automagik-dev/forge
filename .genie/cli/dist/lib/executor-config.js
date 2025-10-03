@@ -44,7 +44,9 @@ function extractExecutorOverrides(agentGenie, executorKey) {
         allowedTools: 'allowedTools',
         allowed_tools: 'allowedTools',
         systemPrompt: 'systemPrompt',
-        system_prompt: 'systemPrompt'
+        system_prompt: 'systemPrompt',
+        additionalArgs: 'additionalArgs',
+        additional_args: 'additionalArgs'
     };
     Object.entries(directMappings).forEach(([sourceKey, targetKey]) => {
         const value = agentGenie[sourceKey];
@@ -52,6 +54,10 @@ function extractExecutorOverrides(agentGenie, executorKey) {
             overrides[targetKey] = value;
         }
     });
+    // For Claude executor, wrap overrides in 'exec' to match config structure
+    if (executorKey === 'claude' && Object.keys(overrides).length > 0) {
+        return { exec: overrides };
+    }
     return overrides;
 }
 /**

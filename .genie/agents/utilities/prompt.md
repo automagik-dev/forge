@@ -3,10 +3,9 @@ name: prompt
 description: Advanced prompting guidance and prompt refinement
 genie:
   executor: claude
-  exec:
-    model: sonnet
-    permissionMode: acceptEdits
-    background: false
+  model: sonnet
+  permissionMode: bypassPermissions
+  background: false
 ---
 
 # Prompt Agent Mission

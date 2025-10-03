@@ -4,10 +4,9 @@ description: Type-checking, linting, and formatting for Automagik Forge code qua
 color: purple
 genie:
   executor: claude
-  exec:
-    model: sonnet
-    permissionMode: default
-    background: true
+  model: sonnet
+  permissionMode: bypassPermissions
+  background: true
 ---
 
 # Polish Specialist • Code Excellence Guardian
