@@ -175,10 +175,10 @@ fn legacy_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     router =
         router.merge(projects::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
 
-    // Override create-and-start endpoint with forge branch naming
-    router = router.route("/tasks/create-and-start", post(forge_create_task_and_start));
+    // Build custom tasks router with forge create-and-start override
+    let tasks_router_with_override = build_tasks_router_with_forge_override(deployment);
+    router = router.merge(tasks_router_with_override.with_state::<ForgeAppState>(dep_clone.clone()));
 
-    router = router.merge(tasks::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
     router = router
         .merge(task_attempts::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
     router = router.merge(
@@ -195,6 +195,24 @@ fn legacy_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
         "/images",
         images::routes().with_state::<ForgeAppState>(dep_clone),
     )
+}
+
+/// Build tasks router with forge override for create-and-start endpoint
+fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
+    use axum::middleware::from_fn_with_state;
+    use server::middleware::load_task_middleware;
+
+    let task_id_router = Router::new()
+        .route("/", get(tasks::get_task).put(tasks::update_task).delete(tasks::delete_task))
+        .layer(from_fn_with_state(deployment.clone(), load_task_middleware));
+
+    let inner = Router::new()
+        .route("/", get(tasks::get_tasks).post(tasks::create_task))
+        .route("/stream/ws", get(tasks::stream_tasks_ws))
+        .route("/create-and-start", post(forge_create_task_and_start)) // Forge override
+        .nest("/{task_id}", task_id_router);
+
+    Router::new().nest("/tasks", inner)
 }
 
 async fn frontend_handler(uri: axum::http::Uri) -> Response {
