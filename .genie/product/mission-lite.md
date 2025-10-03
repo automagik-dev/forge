@@ -1,5 +1,7 @@
 # Product Mission (Lite)
 
-Genie Dev is the self-improvement branch of the Genie framework. It exists to let the agents audit, upgrade, and validate themselves without sacrificing the evidence-first guardrails that downstream teams rely on.
+Automagik Forge is the Vibe Coding++™ platform where human developers orchestrate AI coding agents through a persistent kanban board. Plan tasks yourself or with AI help, experiment with multiple agents (Claude, Gemini, Cursor, open-source models), review changes in isolated git worktrees, and ship code you actually understand.
 
-Maintainers and pilot squads use this branch to test meta-agent behaviours, publish learnings, and package upgrade kits so every improvement arrives with validation steps, rollback paths, and human approval checkpoints.
+**The 2-Week Curse Solution:** Stop shipping mysterious AI code that breaks later. With Forge, you maintain control, understand every change, and experiment until you find what works - then merge with confidence.
+
+100% open-source • Self-hostable • No vendor lock-in

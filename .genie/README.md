@@ -18,21 +18,25 @@ GENIE is a self-contained framework for managing AI agent conversations, wishes,
 
 ## Quick Start
 
-### Using the Agent CLI
+### Using MCP Genie Tools
 
 Start a conversation with any agent:
-```bash
-./genie run implementor "implement authentication for Automagik Forge"
+```
+Use mcp__genie__run with:
+- agent: "specialists/implementor"
+- prompt: "implement authentication for Automagik Forge"
 ```
 
 Continue the conversation:
-```bash
-./genie resume <sessionId> "add OAuth support"
+```
+Use mcp__genie__resume with:
+- sessionId: "<sessionId>"
+- prompt: "add OAuth support"
 ```
 
 List active sessions:
-```bash
-./genie list sessions
+```
+Use mcp__genie__list_sessions
 ```
 
 ### Available Agents
@@ -77,14 +81,18 @@ List active sessions:
 
 ### For AI Agents (Claude, etc.)
 
-Instead of using one-shot Task tools, use the CLI for full conversations:
+Instead of using one-shot Task tools, use MCP Genie tools for full conversations:
 
-```bash
+```
 # Start implementing a wish
-./genie run implementor "@.genie/wishes/auth-wish.md implement Group A"
+Use mcp__genie__run with:
+- agent: "specialists/implementor"
+- prompt: "@.genie/wishes/auth-wish.md implement Group A"
 
 # Continue with error handling
-./genie resume <sessionId> "tests failing, debug the issue"
+Use mcp__genie__resume with:
+- sessionId: "<sessionId>"
+- prompt: "tests failing, debug the issue"
 ```
 
 ## Conventions
@@ -195,10 +203,10 @@ pnpm run check
 1. **Product Planning**: `/plan` - Discovery, roadmap sync, context gathering
 2. **Wish Creation**: `/wish` - Convert planning to structured wish document
 3. **Execution**: `/forge` - Break wish into execution groups, spawn specialists
-4. **Implementation**: `./genie run implementor "@.genie/wishes/<slug>-wish.md Group A"`
-5. **Testing**: `./genie run tests "@.genie/wishes/<slug>-wish.md"`
-6. **QA**: `./genie run qa "@.genie/wishes/<slug>-wish.md"`
-7. **Polish**: `./genie run polish "@.genie/wishes/<slug>-wish.md"`
+4. **Implementation**: Use `mcp__genie__run` with agent "specialists/implementor" and prompt "@.genie/wishes/<slug>-wish.md Group A"
+5. **Testing**: Use `mcp__genie__run` with agent "specialists/tests" and prompt "@.genie/wishes/<slug>-wish.md"
+6. **QA**: Use `mcp__genie__run` with agent "specialists/qa" and prompt "@.genie/wishes/<slug>-wish.md"
+7. **Polish**: Use `mcp__genie__run` with agent "specialists/polish" and prompt "@.genie/wishes/<slug>-wish.md"
 8. **Review**: `/review` - Validate completion, generate QA report
 9. **Commit**: `/commit` - Generate commit message
 

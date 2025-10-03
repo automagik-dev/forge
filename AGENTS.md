@@ -297,7 +297,7 @@ pnpm pack --filter npx-cli                   # Package NPX CLI after ./local-bui
 
 <context>
 [CONTEXT]
-- Use `./genie run plan` → `./genie run wish` → `./genie run forge` as the canonical Plan → Wish → Forge sequence for Automagik Forge.
+- Use `mcp__genie__run` with agents "plan" → "wish" → "forge" as the canonical Plan → Wish → Forge sequence for Automagik Forge.
 - Wishes live in `.genie/wishes/<slug>-wish.md` with inline `<spec_contract>`, evidence checklist, tracker plan, and branch strategy.
 - Forge writes execution groups to `.genie/wishes/<slug>/task-<letter>.md` and defines validation hooks plus evidence paths.
 - Specialists such as implementor, tests, qa, polish, bug-reporter, git-workflow, project-manager, sleepy, self-learn, and learn are defined under `.genie/agents/specialists/`.
@@ -409,31 +409,30 @@ Use `/wish` for any development request:
 ✅ Ensure quality through analysis and validation
 </success_criteria>
 
-## CLI Quick Reference
+## MCP Genie Quick Reference
 
 <context>
 [CONTEXT]
-```bash
-./genie --help                      # CLI overview
-./genie list agents                 # Inspect core, specialist, and utility agents
-./genie run plan "<prompt>"         # Start planning session
-./genie run wish "<prompt>"         # Draft or refine a wish contract
-./genie run forge "<prompt>"        # Generate execution groups / task files
-./genie run review "<prompt>"       # Replay validations / QA verdict
-./genie run specialists/implementor "<prompt>"    # Delegate implementation work
-./genie run specialists/tests "<prompt>"          # Extend or repair tests
-./genie run specialists/qa "<prompt>"             # Automagik QA specialist
-./genie resume <sessionId> "<prompt>"             # Continue an existing session
-./genie view <sessionId> --full                  # Inspect transcript and evidence
-./genie stop <sessionId>                         # Terminate background execution
-```
+Use MCP Genie tools to orchestrate agents:
+- `mcp__genie__list_agents` - Inspect available core, specialist, and utility agents
+- `mcp__genie__run` with `agent: "plan"` - Start planning session
+- `mcp__genie__run` with `agent: "wish"` - Draft or refine a wish contract
+- `mcp__genie__run` with `agent: "forge"` - Generate execution groups / task files
+- `mcp__genie__run` with `agent: "review"` - Replay validations / QA verdict
+- `mcp__genie__run` with `agent: "specialists/implementor"` - Delegate implementation work
+- `mcp__genie__run` with `agent: "specialists/tests"` - Extend or repair tests
+- `mcp__genie__run` with `agent: "specialists/qa"` - Automagik QA specialist
+- `mcp__genie__list_sessions` - Show active and recent sessions
+- `mcp__genie__resume` with `sessionId` and `prompt` - Continue an existing session
+- `mcp__genie__view` with `sessionId` and `full: true` - Inspect transcript and evidence
+- `mcp__genie__stop` with `sessionId` - Terminate background execution
 </context>
 
 <success_criteria>
 [SUCCESS CRITERIA]
-✅ Prefer `resume` / `view` rather than starting redundant runs
+✅ Prefer `mcp__genie__resume` / `mcp__genie__view` rather than starting redundant runs
 ✅ Use specialist namespaces (`specialists/`, `utilities/`) when delegating
-✅ Keep CLI prompts concise and rely on file references for context
+✅ Keep prompts concise and rely on file references for context
 </success_criteria>
 
 ## Chat-Mode & Utility Agents
@@ -455,10 +454,10 @@ Use `/wish` for any development request:
 
 <context>
 [CONTEXT]
-- Launch specialists with `./genie run specialists/<agent> "<prompt>"` (e.g., implementor, tests, qa, polish, bug-reporter, git-workflow, project-manager, sleepy, learn).
-- Manage sessions with `./genie list sessions`, `./genie view <sessionId> --full`, `./genie resume <sessionId> "<prompt>"`, and `./genie stop <sessionId>`.
+- Launch specialists with `mcp__genie__run` using agent parameter `specialists/<agent>` (e.g., specialists/implementor, specialists/tests, specialists/qa, specialists/polish, specialists/bug-reporter, specialists/git-workflow, specialists/project-manager, specialists/sleepy, specialists/learn).
+- Manage sessions with `mcp__genie__list_sessions`, `mcp__genie__view` (with `sessionId` and `full: true`), `mcp__genie__resume` (with `sessionId` and `prompt`), and `mcp__genie__stop` (with `sessionId`).
 - Twin prompt patterns (see `@.genie/agents/utilities/twin.md`):
-  - **Planning** — request 3 risks, 3 missing validations, 3 refinements, close with “Twin Verdict” + confidence.
+  - **Planning** — request 3 risks, 3 missing validations, 3 refinements, close with "Twin Verdict" + confidence.
   - **Consensus** — challenge a conclusion, provide counterpoints and a recommendation.
   - **Deep-dive** — investigate a component, list affected files and follow-ups.
 - Record Twin session IDs and verdicts (with confidence) in wishes or Done Reports whenever they influence decisions.
@@ -670,7 +669,7 @@ When the user states something that contradicts your observations, code, or prev
 
 ### Forge Workflow (`.claude/commands/forge.md`)
 1. Break the wish into discrete, approved execution groups
-2. Use `./genie run forge` to generate `.genie/wishes/<slug>/task-*.md`; delegate follow-up work to `specialists/project-manager`, `specialists/implementor`, or other specialists as needed
+2. Use `mcp__genie__run` with agent "forge" to generate `.genie/wishes/<slug>/task-*.md`; delegate follow-up work to `specialists/project-manager`, `specialists/implementor`, or other specialists as needed
 3. Run tasks in isolated worktrees referencing the origin branch; no commits/PRs unless humans approve
 4. After completion, review diffs, capture evidence, and merge only after human sign-off
 
@@ -765,7 +764,7 @@ Load all context from the referenced files above. Do not duplicate content here.
 3. For dedicated testing → `specialists/tests`; coordinate outcomes with the implementor
 4. For QA verdicts → `specialists/qa`; have them replay the validation plan and capture evidence
 5. For git/worktree or coordination issues → `specialists/git-workflow` or `specialists/project-manager`
-6. When scope feels ambiguous, pause and align with the human (and optionally run `./genie run twin ...` for a second opinion)
+6. When scope feels ambiguous, pause and align with the human (and optionally use `mcp__genie__run` with agent "utilities/twin" for a second opinion)
 </routing_decision_matrix>
 
 ## Execution Patterns & Evidence
@@ -863,22 +862,22 @@ Every wish should include a comprehensive evaluation matrix:
   ```
 
 ### Agent MCP Mode Library
-- **Planning Mode** – `./genie run twin "Mode: planning. Objective: …"`
-- **Consensus Mode** – `./genie run twin "Mode: consensus. Decision: …"`
-- **Deep-dive Mode** – `./genie run twin "Mode: deep-dive. Topic: …"`
-- **Debug Mode** – `./genie run twin "Mode: debug. Symptoms: …"`
-- **Socratic Mode** – `./genie run twin "Mode: socratic. Assumption: …"`
-- **Debate Mode** – `./genie run twin "Mode: debate. Decision: …"`
-- **Risk Audit Mode** – `./genie run twin "Mode: risk-audit. Scope: …"`
-- **Design Review Mode** – `./genie run twin "Mode: design-review. Component: …"`
-- **Test Strategy Mode** – `./genie run twin "Mode: test-strategy. Feature: …"`
-- **Compliance Mode** – `./genie run twin "Mode: compliance. Change: …"`
-- **Retrospective Mode** – `./genie run twin "Mode: retrospective. Work: …"`
+- **Planning Mode** – Use `mcp__genie__run` with agent "utilities/twin" and prompt "Mode: planning. Objective: …"
+- **Consensus Mode** – Use `mcp__genie__run` with agent "utilities/twin" and prompt "Mode: consensus. Decision: …"
+- **Deep-dive Mode** – Use `mcp__genie__run` with agent "utilities/twin" and prompt "Mode: deep-dive. Topic: …"
+- **Debug Mode** – Use `mcp__genie__run` with agent "utilities/twin" and prompt "Mode: debug. Symptoms: …"
+- **Socratic Mode** – Use `mcp__genie__run` with agent "utilities/twin" and prompt "Mode: socratic. Assumption: …"
+- **Debate Mode** – Use `mcp__genie__run` with agent "utilities/twin" and prompt "Mode: debate. Decision: …"
+- **Risk Audit Mode** – Use `mcp__genie__run` with agent "utilities/twin" and prompt "Mode: risk-audit. Scope: …"
+- **Design Review Mode** – Use `mcp__genie__run` with agent "utilities/twin" and prompt "Mode: design-review. Component: …"
+- **Test Strategy Mode** – Use `mcp__genie__run` with agent "utilities/twin" and prompt "Mode: test-strategy. Feature: …"
+- **Compliance Mode** – Use `mcp__genie__run` with agent "utilities/twin" and prompt "Mode: compliance. Change: …"
+- **Retrospective Mode** – Use `mcp__genie__run` with agent "utilities/twin" and prompt "Mode: retrospective. Work: …"
 
 ### Session Management
-- `./genie list sessions` to discover active runs
-- `./genie view <sessionId> --full` to inspect transcripts
-- `./genie resume <sessionId> "<follow-up prompt>"` to continue a twin session
+- `mcp__genie__list_sessions` to discover active runs
+- `mcp__genie__view` with `sessionId` and `full: true` to inspect transcripts
+- `mcp__genie__resume` with `sessionId` and `prompt` to continue a twin session
 - Record the session ID and Twin verdict (with confidence) inside the wish or Done Report whenever a decision depends on it
 
 ### Model Flexibility

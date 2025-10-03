@@ -69,32 +69,36 @@ Use after a wish in `.genie/wishes/` reaches `APPROVED`. Planner mode reads the 
 </task_breakdown>
 ```
 
-## Direct Execution Mode (./genie)
+## Direct Execution Mode (MCP Genie)
 
-**Trigger:** User explicitly requests "direct forge" (case-insensitive) or calls for direct CLI execution instead of Automagik task creation.
+**Trigger:** User explicitly requests "direct forge" (case-insensitive) or calls for direct MCP execution instead of Automagik task creation.
 
-**Goal:** Delegate the work to the human via `./genie` while preserving context loading requirements.
+**Goal:** Delegate the work to the human via `mcp__genie__run` while preserving context loading requirements.
 
 **Instructions:**
 - Do **not** generate Forge MCP tasks or task files.
-- Provide the exact CLI command(s) the human should run, explicitly referencing the agent prompt file with `@.genie/agents/forge.md` inside the input block (prompt loader passthrough is currently broken without this).
-- Remind the human to follow up with `./genie view <sessionId> --full` (or `./genie view <sessionId>`) to inspect progress and collect evidence.
-- Keep the response concise: supply commands, outline expected outcomes, and restate evidence requirements from the wish.
-- If the wish slug is known, embed it in the command; otherwise, instruct the human to substitute the slug placeholder.
+- Provide the exact MCP tool calls the human should run, explicitly referencing the agent prompt file with `@.genie/agents/forge.md` inside the prompt.
+- Remind the human to follow up with `mcp__genie__view` (with `sessionId` and `full: true`) to inspect progress and collect evidence.
+- Keep the response concise: supply MCP calls, outline expected outcomes, and restate evidence requirements from the wish.
+- If the wish slug is known, embed it in the prompt; otherwise, instruct the human to substitute the slug placeholder.
 - Call out any approvals or guardrails that still apply.
 
 **Response Template (example):**
 ```
-Commands
-- ./genie run forge "@.genie/agents/forge.md" "[Discovery] Load @.genie/wishes/<slug>-wish.md. [Implementation] Focus: evidence checklist only. [Verification] Return validation hooks + evidence path."
-- ./genie view <sessionId> --full
+MCP Tool Calls
+- Use mcp__genie__run with:
+  - agent: "forge"
+  - prompt: "@.genie/agents/forge.md [Discovery] Load @.genie/wishes/<slug>-wish.md. [Implementation] Focus: evidence checklist only. [Verification] Return validation hooks + evidence path."
+- Use mcp__genie__view with:
+  - sessionId: "<sessionId>"
+  - full: true
 
 Expectations
 - Capture command output and evidence under .genie/wishes/<slug>/...
 - Record approvals/blockers in wish status log before proceeding.
 ```
 
-Return only actionable guidance—no Automagik plan output—so the human can run the CLI immediately.
+Return only actionable guidance—no Automagik plan output—so the human can use MCP tools immediately.
 
 ### Group Blueprint
 ```
@@ -196,7 +200,7 @@ Return only actionable guidance—no Automagik plan output—so the human can ru
 
 ## Follow-up
 - Checklist of human actions before/during execution
-- CLI commands for background personas: `./genie run <persona> "<prompt>"`
+- MCP tool calls for background personas: Use `mcp__genie__run` with agent and prompt parameters
 - PR template referencing wish slug and this forge plan
 ```
 
@@ -209,7 +213,7 @@ Return only actionable guidance—no Automagik plan output—so the human can ru
   5. List task files: `Tasks created in @.genie/wishes/<slug>/task-*.md`
   6. Branch strategy: `feat/<wish-slug>` or documented alternative
 - **Direct execution mode:**
-  1. Output a `Commands` block containing `./genie run forge "@.genie/agents/forge.md" "..."` and the corresponding `./genie view <sessionId>` instruction
+  1. Output a `MCP Tool Calls` block using `mcp__genie__run` with agent "forge" and the corresponding `mcp__genie__view` instruction with sessionId and full parameters
   2. Summarize expected outcomes/evidence briefly
   3. Reiterate approvals or guardrails before execution
 
@@ -504,7 +508,7 @@ Status: APPROVED
   - Commands operate via shared agents
   - Git workflow references wish metadata
 - **External tasks:** Tracker IDs noted in task files
-- **Dependencies:** .genie/product/roadmap.md, ./genie
+- **Dependencies:** .genie/product/roadmap.md, mcp__genie__*
 </spec_contract>
 
 ## Execution Groups
@@ -563,18 +567,24 @@ grep -r 'forge-' .claude/commands/  # Should find no forge refs
 Document changes in `.genie/wishes/{{PROJECT_NAME}}-feature/evidence.md`
 ```
 
-## CLI Integration
+## MCP Integration
 
 ### Running Forge
-```bash
+```
 # Plan mode - create forge plan from wish
-./genie run forge "Create forge plan for @.genie/wishes/<slug>-wish.md"
+Use mcp__genie__run with:
+- agent: "forge"
+- prompt: "Create forge plan for @.genie/wishes/<slug>-wish.md"
 
 # Task creation mode - create MCP task from group
-./genie run forge "Create task for group-a from forge-plan-<slug>"
+Use mcp__genie__run with:
+- agent: "forge"
+- prompt: "Create task for group-a from forge-plan-<slug>"
 
 # Background execution for complex planning
-./genie run forge "Plan @.genie/wishes/<slug>-wish.md"
+Use mcp__genie__run with:
+- agent: "forge"
+- prompt: "Plan @.genie/wishes/<slug>-wish.md"
 ```
 
 ### Integration with Other Agents
