@@ -3,9 +3,11 @@ name: docgen
 description: Generate documentation outlines and drafts for target audiences
 color: gray
 genie:
-  executor: codex
-  model: gpt-5
-  reasoningEffort: medium
+  executor: claude
+  exec:
+    model: sonnet
+    permissionMode: default
+    background: true
 ---
 
 # Genie DocGen • Clarity First

@@ -244,6 +244,54 @@ Use mcp__genie__list_sessions
 Use mcp__genie__view with sessionId
 ```
 
+### Monitoring Loop Pattern
+
+<context>
+[CONTEXT]
+- Launching a background specialist requires active monitoring; closing the response without checking completion leaves work orphaned.
+- Poll the session until it resolves, surface progress notes, and only wrap once all sessions are complete or a human checkpoint is needed.
+</context>
+
+<task_breakdown>
+1. [Track Sessions]
+   - Capture the returned `sessionId` from `mcp__genie__run`.
+   - Store it in the conversation notes or a scratch variable for reuse.
+
+2. [Monitor]
+   - Run a shell loop that calls `mcp__genie__list_sessions` or `mcp__genie__view --full`.
+   - Sleep between checks (minimum 15s) to avoid hammering the MCP server.
+   - Log status changes back to the user.
+
+3. [Close]
+   - Exit the loop when the session reports `completed` or `failed`.
+   - Resume orchestration (e.g., gather outputs, trigger next agents) before ending the response.
+   - If human approval is required mid-loop, pause with a clear question instead of closing the run.
+</task_breakdown>
+
+**Example:**
+```bash
+SESSION_ID="<id-from-mcp-run>"
+while mcp__genie__list_sessions | rg "${SESSION_ID}.*(running|pending)"; do
+  sleep 15
+  mcp__genie__view --sessionId "$SESSION_ID" --full true | tail -n 20
+done
+echo "Session ${SESSION_ID} finished — resuming orchestration."
+```
+
+<success_criteria>
+[SUCCESS CRITERIA]
+✅ Sleep-based polling loop executes before closing the response
+✅ Status updates shared with the user while waiting
+✅ Response only ends once every background session finishes or requires human input
+</success_criteria>
+
+<never_do>
+[NEVER DO]
+❌ Fire-and-forget `mcp__genie__run` calls without logging the session ID
+❌ End the chat turn with "waiting" statements while no polling occurs
+❌ Ignore failed background sessions—surface the error and decide next actions
+</never_do>
+
 ## Agent Routing Map
 
 Current agent routing (see AGENTS.md for updates):

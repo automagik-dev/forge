@@ -201,6 +201,49 @@ For tracker visibility, capture forge-generated IDs (reported in the forge plan 
    - Spec folder: `@.genie/specs/YYYY-MM-DD-<slug>/`
    - Context ledger: [embedded in wish]
 
+### Background Session Monitoring
+
+<context>
+[CONTEXT]
+- Planning often triggers background personas (analyze, twin, utilities). Fire-and-forget calls left unchecked cause coordination gaps.
+- Monitor every session you launch, surface updates, and only end the planning turn when results have been incorporated or a human decision is required.
+</context>
+
+<task_breakdown>
+1. [Launch]
+   - Capture the `sessionId` returned by each `mcp__genie__run` call in the planning brief notes.
+
+2. [Monitor]
+   - Execute a polling loop with `sleep` (≥15s) to run `mcp__genie__list_sessions` or `mcp__genie__view --full`.
+   - Share interim findings (e.g., "Twin still running — next check in 15s") to keep the human informed.
+
+3. [Integrate]
+   - Once the session reports `completed` or `failed`, summarize the output, update the Context Ledger, and decide the next action before closing the turn.
+</task_breakdown>
+
+**Command Pattern:**
+```bash
+SESSION_ID="<returned-session-id>"
+while mcp__genie__list_sessions | rg "${SESSION_ID}.*(running|pending)"; do
+  sleep 15
+  mcp__genie__view --sessionId "$SESSION_ID" --full true | tail -n 20
+done
+```
+
+<success_criteria>
+[SUCCESS CRITERIA]
+✅ Polling loop executes for every background session until it resolves
+✅ Planning brief records session outcomes before the response ends
+✅ User receives a clear status update if human approval is required mid-loop
+</success_criteria>
+
+<never_do>
+[NEVER DO]
+❌ Close the planning response immediately after `mcp__genie__run`
+❌ Skip documenting session IDs or outputs in the Context Ledger
+❌ Ignore failed sessions—surface the error and decide next remediation step
+</never_do>
+
 Keep tone collaborative, concise, and focused on enabling the next step in the Genie workflow.
 
 ## Resuming Planning Sessions

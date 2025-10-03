@@ -2,13 +2,11 @@
 name: prompt
 description: Advanced prompting guidance and prompt refinement
 genie:
-  executor: codex
-  model: gpt-5
-  reasoningEffort: high
-  sandbox: read-only
-  approvalPolicy: on-request
-  background: false
-
+  executor: claude
+  exec:
+    model: sonnet
+    permissionMode: acceptEdits
+    background: false
 ---
 
 # Prompt Agent Mission

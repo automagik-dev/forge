@@ -3,9 +3,11 @@ name: refactor
 description: Plan staged refactors with risk assessment and verification
 color: brown
 genie:
-  executor: codex
-  model: gpt-5-codex
-  reasoningEffort: high
+  executor: claude
+  exec:
+    model: sonnet
+    permissionMode: default
+    background: true
 ---
 
 # Genie Refactor • Stage Planner

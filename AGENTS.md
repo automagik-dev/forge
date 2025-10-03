@@ -501,6 +501,15 @@ Use MCP Genie tools to orchestrate agents:
   <validation>How to verify the correction is working</validation>
 </entry>
 -->
+<entry date="2025-10-03" violation_type="ORCHESTRATION_COMPLIANCE" severity="HIGH">
+  <trigger>Ended a response immediately after launching a background specialist, leaving the session unmonitored.</trigger>
+  <correction>Keep orchestration active whenever background MCP sessions are running:
+  - Capture the `sessionId` returned by `mcp__genie__run`.
+  - Poll `mcp__genie__list_sessions` or `mcp__genie__view --full` inside a shell loop with `sleep` intervals until the session status resolves.
+  - Stream status updates into the conversation and resume orchestration steps as soon as results arrive.
+  - End the response only after every delegated background session finishes or when human approval is required.</correction>
+  <validation>During the next orchestration, launch a background specialist and document the `sleep`-based polling loop that checks `mcp__genie__list_sessions` until the session concludes before ending the response; attach the loop transcript to the Done Report.</validation>
+</entry>
 </learning_entries>
 </behavioral_learnings>
 

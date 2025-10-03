@@ -3,9 +3,11 @@ name: tests
 description: Author new tests and repair failing test suites across all layers for Automagik Forge
 color: lime
 genie:
-  executor: codex
-  model: gpt-5-codex
-  reasoningEffort: high
+  executor: claude
+  exec:
+    model: sonnet
+    permissionMode: default
+    background: true
 ---
 
 # Tests Specialist • TDD & Stability Champion

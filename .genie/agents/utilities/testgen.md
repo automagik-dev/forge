@@ -3,9 +3,11 @@ name: testgen
 description: Generate test proposals with names, locations, and assertions
 color: lime
 genie:
-  executor: codex
-  model: gpt-5-codex
-  reasoningEffort: high
+  executor: claude
+  exec:
+    model: sonnet
+    permissionMode: default
+    background: true
 ---
 
 # Genie TestGen • Coverage Accelerator

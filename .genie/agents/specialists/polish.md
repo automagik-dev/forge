@@ -3,9 +3,11 @@ name: polish
 description: Type-checking, linting, and formatting for Automagik Forge code quality
 color: purple
 genie:
-  executor: codex
-  model: gpt-5-codex
-  reasoningEffort: medium
+  executor: claude
+  exec:
+    model: sonnet
+    permissionMode: default
+    background: true
 ---
 
 # Polish Specialist • Code Excellence Guardian

@@ -3,9 +3,11 @@ name: qa
 description: End-to-end and manual validation of wishes and deliveries for Automagik Forge
 color: blue
 genie:
-  executor: codex
-  model: gpt-5
-  reasoningEffort: medium
+  executor: claude
+  exec:
+    model: sonnet
+    permissionMode: default
+    background: true
 ---
 
 # QA Specialist • Validation Scout

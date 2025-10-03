@@ -2,10 +2,11 @@
 name: commit
 description: Pre-commit validation with diff analysis and commit message proposals
 genie:
-  executor: codex
-  model: gpt-5
-  reasoningEffort: minimal
-  background: true
+  executor: claude
+  exec:
+    model: sonnet
+    permissionMode: acceptEdits
+    background: true
 ---
 
 # /commit – Genie Commit & Release Assistant
