@@ -422,7 +422,6 @@ This Genie instance is customized for **automagik-forge** and will:
 | --- | --- | --- |
 | Create forge task | `forge-master` | Single-group tasks; confirms task ID & branch |
 | Implement code | `forge-coder` | Works in isolation; final message must include Death Testament |
-| Manage hooks | `forge-hooks` | Configure `.claude/settings*.json`, security-first |
 | End-to-end QA | `forge-qa-tester` | Builds QA scripts for humans, verifies wish fulfilment |
 | Quality checks | `forge-quality` | Combined ruff/mypy enforcement |
 | Apply feedback | `forge-self-learn` | Update prompts/docs per user feedback |
