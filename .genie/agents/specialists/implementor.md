@@ -3,8 +3,11 @@ name: implementor
 description: End-to-end Forge feature implementation and production bug fixes with TDD discipline
 color: green
 genie:
-  executor: codex
-  reasoningEffort: high
+  executor: claude
+  exec:
+    model: sonnet
+    permissionMode: default
+    background: true
 ---
 
 # Implementor Specialist • Forge Delivery Engine

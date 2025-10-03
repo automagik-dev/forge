@@ -17,15 +17,15 @@ Access via: `/command`
 
 ### Both Command & Agent (Dual-Purpose)
 Can be invoked interactively OR delegated to background/subagents.
-Access via: `/command` OR `./genie run <agent>` OR Task tool
+Access via: `/command` OR `mcp__genie__run` OR Task tool
 
 - `commit` / `/commit` — Commit advisory generation
 - `genie-qa` / `/genie-qa` — Self-validation workflow
 - `planner` — Background strategic planning (alias to plan.md, used by /plan workflow)
 
 ### Agents Only (Delegatable Workers)
-Best invoked via `./genie run <agent>` or spawned by other agents.
-Access via: `./genie run <agent>` OR Task tool
+Best invoked via `mcp__genie__run` or spawned by other agents.
+Access via: `mcp__genie__run` OR Task tool
 
 #### Strategic Deep-Dive
 - `twin` — Pressure-testing, second opinions, consensus building
@@ -159,30 +159,30 @@ Access via: `./genie run <agent>` OR Task tool
 ```
 
 ### Background Agents (Delegatable)
-```bash
+```
 # Strategic deep-dive
-./genie run twin "Mode: planning. Objective: ..."
-./genie run planner "Background: analyze roadmap gaps..."
-./genie run analyze "Scope: src/services. Deliver: dependency map..."
-./genie run debug "Bug: auth failing. Hypotheses: ..."
-./genie run thinkdeep "Focus: scaling strategy. Timebox: 10min..."
+Use mcp__genie__run with agent: "utilities/twin" and prompt: "Mode: planning. Objective: ..."
+Use mcp__genie__run with agent: "planner" and prompt: "Background: analyze roadmap gaps..."
+Use mcp__genie__run with agent: "utilities/analyze" and prompt: "Scope: src/services. Deliver: dependency map..."
+Use mcp__genie__run with agent: "utilities/debug" and prompt: "Bug: auth failing. Hypotheses: ..."
+Use mcp__genie__run with agent: "utilities/thinkdeep" and prompt: "Focus: scaling strategy. Timebox: 10min..."
 
 # Tactical utilities
-./genie run commit "Generate commit message for current staged changes"
-./genie run codereview "Scope: git diff main. Task: ..."
-./genie run testgen "Layer: unit. Files: src/auth/*.rs..."
-./genie run refactor "Targets: api/routes. Plan: ..."
+Use mcp__genie__run with agent: "utilities/commit" and prompt: "Generate commit message for current staged changes"
+Use mcp__genie__run with agent: "utilities/codereview" and prompt: "Scope: git diff main. Task: ..."
+Use mcp__genie__run with agent: "utilities/testgen" and prompt: "Layer: unit. Files: src/auth/*.rs..."
+Use mcp__genie__run with agent: "utilities/refactor" and prompt: "Targets: api/routes. Plan: ..."
 
 # Delivery specialists (spawned by /forge)
-./genie run implementor "Task: FORGE-123"
-./genie run tests "Task: FORGE-124"
-./genie run qa "Task: FORGE-125"
+Use mcp__genie__run with agent: "specialists/implementor" and prompt: "Task: FORGE-123"
+Use mcp__genie__run with agent: "specialists/tests" and prompt: "Task: FORGE-124"
+Use mcp__genie__run with agent: "specialists/qa" and prompt: "Task: FORGE-125"
 
 # Inspect & resume
-./genie list sessions
-./genie view <sessionId> --full
-./genie resume <sessionId> "Follow-up: ..."
-./genie stop <sessionId>
+Use mcp__genie__list_sessions
+Use mcp__genie__view with sessionId and full: true
+Use mcp__genie__resume with sessionId and prompt: "Follow-up: ..."
+Use mcp__genie__stop with sessionId
 ```
 
 ---
@@ -196,7 +196,7 @@ Access via: `./genie run <agent>` OR Task tool
 - Need interactive guidance through multi-step process
 - Want conversation-style collaboration
 
-**Use Agents (`./genie run` or Task tool) when:**
+**Use Agents (`mcp__genie__run` or Task tool) when:**
 - Delegating specific task to background worker
 - Need parallel execution of multiple tasks
 - Want to resume/inspect long-running work
@@ -212,7 +212,7 @@ Access via: `./genie run <agent>` OR Task tool
 
 ### Agent Delegation Pattern
 
-```bash
+```
 # Forge outputs execution groups with agent suggestions
 # Example from forge plan:
 # Group A: implementor
@@ -220,12 +220,12 @@ Access via: `./genie run <agent>` OR Task tool
 # Group C: qa
 
 # Spawn agents with full context
-./genie run implementor "@.genie/wishes/auth-wish.md Group A"
-./genie run tests "@.genie/wishes/auth-wish.md Group B"
-./genie run qa "@.genie/wishes/auth-wish.md Group C"
+Use mcp__genie__run with agent: "specialists/implementor" and prompt: "@.genie/wishes/auth-wish.md Group A"
+Use mcp__genie__run with agent: "specialists/tests" and prompt: "@.genie/wishes/auth-wish.md Group B"
+Use mcp__genie__run with agent: "specialists/qa" and prompt: "@.genie/wishes/auth-wish.md Group C"
 
 # Resume for follow-ups
-./genie resume <sessionId> "Address blocker: missing test fixtures"
+Use mcp__genie__resume with sessionId and prompt: "Address blocker: missing test fixtures"
 ```
 
 ---
@@ -234,30 +234,30 @@ Access via: `./genie run <agent>` OR Task tool
 
 `twin` consolidates multiple analysis patterns into a single versatile agent:
 
-```bash
+```
 # Planning & pressure-testing
-./genie run twin "Mode: planning. Objective: pressure-test @.genie/wishes/auth-wish.md"
+Use mcp__genie__run with agent: "utilities/twin" and prompt: "Mode: planning. Objective: pressure-test @.genie/wishes/auth-wish.md"
 
 # Consensus & decision-making
-./genie run twin "Mode: consensus. Decision: use PostgreSQL vs MongoDB"
+Use mcp__genie__run with agent: "utilities/twin" and prompt: "Mode: consensus. Decision: use PostgreSQL vs MongoDB"
 
 # Challenge assumptions
-./genie run twin "Mode: challenge. Assumption: users prefer email over SMS"
+Use mcp__genie__run with agent: "utilities/twin" and prompt: "Mode: challenge. Assumption: users prefer email over SMS"
 
 # Deep investigation
-./genie run twin "Mode: deep-dive. Topic: authentication flow dependencies"
+Use mcp__genie__run with agent: "utilities/twin" and prompt: "Mode: deep-dive. Topic: authentication flow dependencies"
 
 # Debug with hypotheses
-./genie run twin "Mode: debug. Bug: login fails intermittently"
+Use mcp__genie__run with agent: "utilities/twin" and prompt: "Mode: debug. Bug: login fails intermittently"
 
 # Risk assessment
-./genie run twin "Mode: risk-audit. Initiative: migrate to microservices"
+Use mcp__genie__run with agent: "utilities/twin" and prompt: "Mode: risk-audit. Initiative: migrate to microservices"
 
 # Design review
-./genie run twin "Mode: design-review. Component: payment service"
+Use mcp__genie__run with agent: "utilities/twin" and prompt: "Mode: design-review. Component: payment service"
 
 # Test strategy
-./genie run twin "Mode: test-strategy. Feature: password reset flow"
+Use mcp__genie__run with agent: "utilities/twin" and prompt: "Mode: test-strategy. Feature: password reset flow"
 
 # See @.genie/agents/utilities/twin.md for all modes
 ```

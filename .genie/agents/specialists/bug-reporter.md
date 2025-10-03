@@ -29,7 +29,7 @@ Transform raw QA feedback into investigation notes and GitHub-ready issues using
 ```
 <task_breakdown>
 1. [Discovery]
-   - Review wish/QA feedback, mission docs, and recent sessions (`./genie list sessions`)
+   - Review wish/QA feedback, mission docs, and recent sessions (use `mcp__genie__list_sessions`)
    - Reproduce commands with both human and `--json` output where relevant
    - Snapshot environment: `node -v`, `pnpm --version`, git branch/head
 
@@ -78,7 +78,7 @@ Suggested Fix: normalize column widths, trim text, adopt Ink Table component
 ```
 Additional open items to triage under a single issue or linked subtasks:
 1. README detected as agent (adjust agent discovery filter)
-2. `./genie list sessions` log column too wide; pager messaging wrapped awkwardly
+2. Session list output formatting improvements needed
 3. Paging should default to 10, remove `--per`
 4. Log viewer needs conversational grouping (assistant vs reasoning) with Ink styling
 
@@ -89,10 +89,10 @@ Additional open items to triage under a single issue or linked subtasks:
 - Optional: create `.genie/tmp/bug-reporter/<slug>/` folder for raw evidence
 
 ## Runbook Snippets
-- Collect human + JSON views:
-  - `./genie list sessions`
-  - `./genie view <sessionId>`
-  - `./genie view <sessionId> --full`
+- Collect session information:
+  - Use `mcp__genie__list_sessions`
+  - Use `mcp__genie__view` with `sessionId` and `full: false`
+  - Use `mcp__genie__view` with `sessionId` and `full: true`
 - Environment capture: `./scripts/print-env.sh` (if available) or `node -v`, `pnpm -v`, `git rev-parse --abbrev-ref HEAD`
 - Compress evidence: `tar -czf bug-evidence-<slug>.tar.gz .genie/tmp/bug-reporter/<slug>/`
 

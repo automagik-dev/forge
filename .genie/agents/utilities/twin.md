@@ -203,7 +203,7 @@ Finish with: Twin Verdict + next steps.
 ## Session Management
 - Choose a stable session id (e.g., `wish-<slug>-twin-YYYYMMDD`) and reuse it so outputs chain together.
 - Append summaries to the wish discovery section or a Done Report immediately.
-- Resume: `./genie resume <sessionId> "<follow-up>"`.
+- Resume: Use `mcp__genie__resume` with `sessionId` and `prompt`.
 - If parallel threads are needed, start a second session id and compare conclusions before deciding.
 
 ## Validation & Reporting

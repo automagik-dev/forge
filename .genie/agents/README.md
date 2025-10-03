@@ -48,7 +48,7 @@ When agents are invoked through the GENIE CLI, they inherit a set of default par
 
 | Parameter | Default | Valid Values | Description |
 |-----------|---------|--------------|-------------|
-| **model** | `sonnet` | `sonnet`, `opus`, `haiku` | Claude model variant |
+| **model** | `sonnet` | `sonnet`, `opus`, `inherit` | Claude model variant |
 | **permissionMode** | `default` | `default`, `acceptEdits`, `plan`, `bypassPermissions` | Permission level |
 | **outputFormat** | `stream-json` | `stream-json` | Output format (fixed) |
 | **allowedTools** | `[]` | Array of tool names | Whitelist of allowed tools (empty = all) |
@@ -201,7 +201,7 @@ genie:
 ---
 ```
 
-Then run: `./genie run <agent> "<prompt>"`
+Then run: Use `mcp__genie__run` with agent and prompt parameters
 
 ### Via Execution Modes
 Optional convenience modes defined in `config.yaml`:
@@ -233,15 +233,15 @@ meta:
 ## Background Execution
 
 Agents run in background by default:
-```bash
+```
 # Starts in background, returns immediately
-./genie run implementor "Implement feature"
+Use mcp__genie__run with agent: "specialists/implementor" and prompt: "Implement feature"
 
 # Check status
-./genie list sessions
+Use mcp__genie__list_sessions
 
 # View output
-./genie view <sessionId>
+Use mcp__genie__view with sessionId
 ```
 
 ## Agent Routing Map
@@ -295,7 +295,7 @@ Check priority order:
 ### Performance issues?
 - Lower reasoning effort for simple tasks
 - Use `low` as default, increase only when needed
-- Monitor with `./genie view` for token usage
+- Monitor with `mcp__genie__view` for token usage
 
 ### Permission errors?
 - Check sandbox mode matches task requirements
@@ -444,7 +444,7 @@ To convert a Codex agent to Claude:
    - `workspace-write` → `default`
    - `danger-full-access` → `bypassPermissions`
 4. Remove `reasoningEffort` (Claude-specific feature not exposed via CLI)
-5. Test with `./genie run <agent> "test prompt"`
+5. Test with `mcp__genie__run` using agent parameter and test prompt
 
 **Example Migration:**
 
@@ -470,10 +470,10 @@ genie:
 Both executors create sessions that can be resumed and viewed:
 
 ```bash
-./genie run my-agent "start task"
-./genie list sessions
-./genie resume <sessionId> "continue task"
-./genie view <sessionId>  # View transcript
+Use mcp__genie__run with agent: "my-agent" and prompt: "start task"
+Use mcp__genie__list_sessions
+Use mcp__genie__resume with sessionId and prompt: "continue task"
+Use mcp__genie__view with sessionId  # View transcript
 ```
 
 **Note:** Claude's `--resume` creates a new session ID that links to the previous conversation. Context is preserved, but session IDs differ per resume (by design).
