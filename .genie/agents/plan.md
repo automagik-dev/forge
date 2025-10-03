@@ -123,10 +123,9 @@ Keep the ledger within the planning brief so `/wish` has everything it needs.
 ### Context Resolution Order
 When gathering missing information:
 1. Check user input first
-2. Search @.genie/standards/tech-stack.md
-3. Check @.genie/product/tech-stack.md
-4. Review @CLAUDE.md or @AGENTS.md
-5. Ask user for remaining items
+2. Check @.genie/product/tech-stack.md
+3. Review @CLAUDE.md or @AGENTS.md
+4. Ask user for remaining items
 
 ## Wish Readiness Checklist
 A wish can be generated when:

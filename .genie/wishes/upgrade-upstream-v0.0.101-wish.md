@@ -70,34 +70,38 @@
   - Current upstream submodule at v0.0.95-20250924092007 (detached HEAD)
   - Latest available: v0.0.101-20251001171801 (6 versions behind)
   - 225+ files changed in upstream between versions
-  - ~30 frontend files customized for Automagik Forge branding
-  - forge-extensions/branch-templates and forge-extensions/genie to be removed
+  - **NEW:** Overlay architecture implemented (commit 2fa77027, Oct 3 2025)
+    - Frontend now uses Vite overlay resolver (forge-overrides/ → upstream/)
+    - `frontend/` is minimal (5 files), `forge-overrides/frontend/` currently empty
+    - All UI currently pure upstream (no active customizations)
+  - forge-extensions/branch-templates to be removed
   - forge-extensions/omni and forge-extensions/config are actively used, must keep
+  - No forge-extensions/genie exists (was hallucinated reference)
   - No production data concerns - pre-release state allows fresh DB start
 
 - **Assumptions (ASM-#):**
   - **ASM-1**: Upstream v0.0.101 is stable and production-ready
-  - **ASM-2**: Frontend customizations are primarily cosmetic (branding, naming)
+  - **ASM-2**: Overlay architecture (commit 2fa77027) is functional and complete
   - **ASM-3**: forge-extensions/omni and config are integrated and functional
   - **ASM-4**: Database schema can start fresh (no migration required)
   - **ASM-5**: Main branch is old direct fork - this branch is the future architecture
-  - **ASM-6**: forge-overrides/ will remain empty but kept for future Cargo patches
+  - **ASM-6**: forge-overrides/frontend/ can stay empty (pure upstream UI acceptable for now)
 
 - **Open questions (Q-#):**
-  - **Q-1**: Are there breaking API changes in v0.96-v0.101 that affect our customizations?
-  - **Q-2**: Does PendingApprovalEntry.tsx (new in upstream) conflict with our workflow?
-  - **Q-3**: Should we adopt all upstream frontend improvements or cherry-pick?
+  - **Q-1**: Are there breaking API changes in v0.96-v0.101 that affect forge-extensions?
+  - **Q-2**: Does overlay resolver handle all upstream frontend changes automatically?
+  - **Q-3**: Any branding customizations needed in forge-overrides/frontend/?
   - **Q-4**: Any runtime dependencies changed (Node, Rust, pnpm versions)?
 
 - **Risks:**
-  - **RISK-1**: Manual merge of ~30 frontend files may introduce regressions
-  - **RISK-2**: New upstream components may break existing UI assumptions
+  - **RISK-1**: Overlay resolver may fail with new upstream file structure
+  - **RISK-2**: New upstream components may break forge-extensions/omni integration
   - **RISK-3**: Database schema changes may surface at runtime if migrations incomplete
-  - **RISK-4**: Omni component integration may conflict with upstream notification changes
-  - **RISK-5**: Comprehensive testing required across 225+ changed files
+  - **RISK-4**: Breaking API changes in 225+ files could affect forge-extensions
+  - **RISK-5**: Build script (local-build.sh) references deleted frontend-forge package
 
 ## Executive Summary
-Upgrade the upstream vibe-kanban submodule from v0.0.95 to v0.0.101 (6 versions, 225+ files), synchronize ~30 customized frontend files while preserving Automagik Forge branding, and remove dead code (branch-templates, genie extensions). This establishes the foundation for easier future upgrades through the upstream-as-library architecture.
+Upgrade the upstream vibe-kanban submodule from v0.0.95 to v0.0.101 (6 versions, 225+ files), verify overlay architecture handles upstream changes, remove dead code (branch-templates extension), and fix build script. With the new overlay architecture (commit 2fa77027), frontend upgrades are automatic—no manual file merging required.
 
 ## Current State
 - **Upstream submodule:** v0.0.95-20250924092007 (Sept 2025)
@@ -105,45 +109,43 @@ Upgrade the upstream vibe-kanban submodule from v0.0.95 to v0.0.101 (6 versions,
   - Backend: Using upstream crates directly via Cargo workspace (@Cargo.toml)
   - Database: Custom `dev_assets/db.sqlite` with v0.95 schema
 
-- **Frontend customizations:** @frontend/
-  - ~30 files differ from @upstream/frontend/
-  - Branding: forge-dark.svg, forge-clear.png, custom logos
-  - Naming: "Automagik Forge" vs "Vibe Kanban" throughout UI
-  - Custom component: @frontend/src/components/omni/ (notification system)
-  - Partial branch_template removal: @frontend/src/components/dialogs/tasks/TaskFormDialog.tsx
+- **Frontend (NEW overlay architecture):** @frontend/
+  - Minimal package: 5 files in src/ (App.tsx 930 lines, main.tsx, styles.css, etc.)
+  - Vite overlay resolver: @forge-overrides/frontend/src/ → @upstream/frontend/src/
+  - Currently using pure upstream UI (forge-overrides/frontend/ is empty)
+  - @frontend/vite.config.ts implements overlay pattern
 
 - **Extensions:** @forge-extensions/
   - **omni/**: Notification system (KEEP - actively used)
   - **config/**: Forge config management (KEEP - actively used)
   - **branch-templates/**: Custom branch naming (DELETE - being removed)
-  - **genie/**: Hallucinated feature (DELETE if exists - refers to .genie framework)
+  - **genie/**: Does not exist (was hallucinated reference)
 
 - **Overrides:** @forge-overrides/
-  - Empty placeholder with .gitkeep (KEEP - for future Cargo patches)
+  - @forge-overrides/frontend/ exists but empty (future UI customizations)
+  - .gitkeep placeholder retained
 
 - **Gaps/Pain points:**
   - 6 versions behind upstream (missing features, bug fixes, security patches)
-  - branch_template feature half-removed (incomplete cleanup)
-  - Dead code (genie extension) cluttering workspace
-  - Frontend divergence makes upstream tracking harder
-  - Manual merge conflicts every upgrade
+  - branch_template extension still present (needs deletion)
+  - Build script broken: references deleted frontend-forge package
+  - Cargo.toml ts-rs missing serde-json-impl feature (causes build failure)
 
 ## Target State & Guardrails
 - **Desired behaviour:**
   - Upstream submodule at v0.0.101-20251001171801
-  - Frontend synchronized with upstream while preserving:
-    - Automagik Forge branding (logos, colors, naming)
-    - Omni notification component integration
-    - Custom UI polish and cosmetic improvements
+  - Overlay architecture handles upstream frontend automatically
+  - forge-overrides/frontend/ ready for future customizations (currently empty OK)
   - Clean workspace: only omni+config extensions remain
   - Fresh database with v0.0.101 schema
+  - Build script fixed (no frontend-forge references)
   - All smoke tests passing (create project → task → attempt)
 
 - **Non-negotiables:**
-  - **Preserve branding:** All "Automagik Forge" naming, logos, theme
   - **Keep omni+config:** These extensions are functional and required
   - **No data loss:** Pre-release state, fresh DB acceptable
   - **Backend unchanged:** Use upstream crates directly (no local overrides)
+  - **Overlay architecture:** Preserve Vite overlay resolver pattern
   - **Testable:** Must be able to run full development cycle
   - **Reversible:** Git allows rollback if critical issues found
 

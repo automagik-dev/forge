@@ -75,9 +75,9 @@ Escalate once:
 - Dependencies missing or incompatible → Create Blocker Report
 
 Forge-Specific Standards:
-- Rust: rustfmt.toml config, snake_case modules, PascalCase types
-- TypeScript: ESLint + Prettier (2 spaces, single quotes, 80 cols)
-- PascalCase components, camelCase vars/functions
+- See @.genie/standards/naming.md for naming conventions
+- See @.genie/product/tech-stack.md §Development for tooling
+- See @.genie/standards/best-practices.md for code quality guidelines
 - No unapproved #[allow(...)] or @ts-ignore without documentation
 </context_gathering>
 ```

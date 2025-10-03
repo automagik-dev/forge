@@ -1,34 +1,43 @@
 # Automagik Forge Technical Stack
 
-## Core Technologies
+## Backend
+- Language: Rust (1.83+)
+- Web Framework: Axum 0.8+
+- Async Runtime: Tokio 1.0+
+- Database: SQLite with SQLx
+- ORM/Query Builder: SQLx (compile-time checked queries)
+- Type Sharing: ts-rs (Rust → TypeScript codegen)
+- MCP Server: Built-in Model Context Protocol server
 
-**Backend:**
-- Rust with Axum web framework
-- Tokio async runtime
-- SQLx for database operations with SQLite
-- ts-rs for TypeScript type generation from Rust structs
+## Frontend
+- Framework: React 18+
+- Language: TypeScript 5+
+- Build Tool: Vite 6+
+- Package Manager: pnpm 10+
+- Node Version: 18+ LTS
+- CSS Framework: Tailwind CSS
+- UI Components: shadcn/ui
+- Icons: Lucide React components
+- Import Strategy: ES modules
 
-**Frontend:**
-- React 18 with TypeScript
-- Vite build tool and dev server
-- Tailwind CSS for styling
-- shadcn/ui component library
-
-**Task Orchestration:**
-- Git worktree management for isolated execution
-- Server-Sent Events (SSE) for real-time streaming
-- SQLite database with SQLx migrations
-
-**AI Agent Integration:**
+## AI Agent Integration
 - MCP (Model Context Protocol) server built-in
 - 8 AI coding agent executors: Claude Code, Cursor CLI, Gemini, Codex, Amp, OpenCode, Qwen Code, Claude Router
-- Specialized agent prompts stored as markdown templates
+- Specialized agent prompts stored as markdown templates in `.genie/agents/`
 
-## Architecture
+## Task Orchestration
+- Git worktree management for isolated task execution
+- Server-Sent Events (SSE) for real-time log streaming
+- SQLite database with task/project models
 
-### Monorepo Structure
+## Forge Extensions
+- `forge-app/`: Extended Axum binary composing upstream + extensions
+- `forge-extensions/`: Extension crates (omni, branch-templates, config)
+- `forge-overrides/`: Source-level overrides for upstream frontend/app code
+
+## Monorepo Structure
 ```
-crates/              # Rust workspace
+crates/              # Rust workspace (upstream via submodule)
 ├── server/          # Axum HTTP server, API routes, MCP server
 ├── db/              # SQLx models and migrations
 ├── executors/       # AI agent integrations
@@ -49,40 +58,111 @@ shared/              # Generated TypeScript types
 └── forge-types.ts   # From forge-app
 
 upstream/            # Git submodule (read-only base template)
+npx-cli/             # Published npm CLI package
+scripts/             # Dev helpers (ports, build, regression)
 ```
 
-### Key Patterns
+## Architecture Patterns
 
-**1. Event Streaming via SSE**
-- Process logs: `/api/events/processes/:id/logs`
-- Task diffs: `/api/events/task-attempts/:id/diff`
-- Real-time progress updates to frontend
+### Core Patterns
+- **Event Streaming**: Server-Sent Events (SSE) for real-time updates
+- **Git Isolation**: Per-task worktrees via `WorktreeManager` service
+- **Executor Pattern**: Pluggable AI agents (Claude, Gemini, etc.)
+- **API Style**: REST with SSE for real-time updates
+- **Authentication**: GitHub OAuth (device flow)
 
-**2. Git Worktree Isolation**
-- Each task attempt gets its own git worktree
-- Managed by `WorktreeManager` service
-- Automatic orphan cleanup on shutdown
-- No conflicts between parallel attempts
+### Automagik Forge-Specific Patterns
 
-**3. Executor Pattern**
-- Pluggable AI agent executors
-- Common interface: `coding_agent_initial`, `coding_agent_follow_up`, `script`
-- Each executor wraps specific AI platform (Claude API, Gemini API, CLI tools)
+1. **Upstream Overlay Architecture**
+   - `upstream/` submodule contains base Genie template (read-only)
+   - `forge-extensions/` adds Forge-specific services
+   - `forge-overrides/` patches upstream frontend/app at build time
+   - Build-time composition via `./local-build.sh`
 
-**4. MCP Server**
-- Built-in Model Context Protocol server
-- Tools: `list_projects`, `list_tasks`, `create_task`, `get_task`, `update_task`, `delete_task`
-- Allows any MCP-compatible AI agent to manage tasks
+2. **Dual Type Generation**
+   - Core types: `cargo run -p server --bin generate_types` → `shared/types.ts`
+   - Forge extensions: `cargo run -p forge-app --bin generate_forge_types` → `shared/forge-types.ts`
+   - CI validates with `-- --check` flag
 
-**5. Type Sharing**
-- Rust structs with `#[derive(TS)]` generate TypeScript equivalents
-- `cargo run -p server --bin generate_types` → `shared/types.ts`
-- `cargo run -p forge-app --bin generate_forge_types` → `shared/forge-types.ts`
-- Never edit generated files manually
+3. **Multi-Executor Support**
+   - 8 AI coding agents: Claude Code, Cursor CLI, Gemini, Codex, Amp, OpenCode, Qwen Code, Claude Router
+   - Pluggable via executor pattern
+   - Each executor wraps specific AI platform (API or CLI)
 
-## Dependencies
+## Development
 
-**Rust Crates:**
+### Tooling
+- Version Control: Git with worktree isolation
+- Linting (Rust): cargo clippy
+- Formatting (Rust): cargo fmt (rustfmt)
+- Linting (TypeScript): ESLint
+- Formatting (TypeScript): Prettier
+- Type Checking: TypeScript compiler + ts-rs codegen
+- Database Migrations: SQLx migrations
+- Testing (Rust): cargo test
+- Testing (Frontend): Vitest (as needed)
+
+### Development Commands
+```bash
+# Start development servers
+pnpm run dev                                             # Both frontend + backend
+pnpm --filter frontend run dev -- --host --port 3000     # Frontend only
+pnpm --filter frontend-forge run dev -- --host --port 3001  # Forge overlay UI
+BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) \
+  cargo watch -w forge-app -x 'run -p forge-app --bin forge-app'   # Backend watch
+
+# Testing & Validation
+cargo test --workspace                                   # Rust tests
+cargo clippy --all --all-targets --all-features -- -D warnings  # Linting
+cargo fmt --all -- --check                              # Format check
+
+pnpm --filter frontend run lint                         # Frontend lint
+pnpm --filter frontend run format:check                 # Frontend format
+pnpm --filter frontend exec tsc --noEmit                # Frontend types
+
+pnpm --filter frontend-forge run lint                   # Forge overlay lint
+pnpm --filter frontend-forge run format:check           # Forge overlay format
+pnpm --filter frontend-forge exec tsc --noEmit          # Forge overlay types
+
+# Type Generation
+cargo run -p server --bin generate_types                # Core types
+cargo run -p server --bin generate_types -- --check     # CI validation
+cargo run -p forge-app --bin generate_forge_types       # Forge types
+cargo run -p forge-app --bin generate_forge_types -- --check  # CI validation
+
+# Database
+sqlx migrate run                                        # Apply migrations
+```
+
+### Forge-Specific Development
+- Build script: `./local-build.sh` (composes upstream + forge extensions)
+- Regression harness: `./scripts/run-forge-regression.sh`
+- Port management: `scripts/setup-dev-environment.js`
+- NPM packaging: `pnpm pack --filter npx-cli`
+- Database seeding: `dev_assets_seed/` → `dev_assets/` on dev start
+
+## Deployment
+- CI/CD Platform: GitHub Actions
+- Build Command: `./local-build.sh`
+- Package Distribution: npm registry (npx-cli)
+- Binary Packaging: Cross-platform (Linux, macOS, Windows)
+- Database: SQLite (bundled, seeded from dev_assets_seed/)
+
+## Environment Variables
+
+### Standard Variables
+- `HOST`: 127.0.0.1 (default)
+- `BACKEND_PORT`: Auto-assigned via scripts/setup-dev-environment.js
+- `FRONTEND_PORT`: 3000 (default)
+- `GITHUB_CLIENT_ID`: Optional (for custom GitHub OAuth)
+- `POSTHOG_API_KEY`: Optional (analytics)
+
+### Forge-Specific Variables
+- `DISABLE_WORKTREE_ORPHAN_CLEANUP`: Debug flag for worktree management
+
+## Key Dependencies
+
+### Rust Crates
 - axum (web framework)
 - tokio (async runtime)
 - sqlx (database)
@@ -91,66 +171,30 @@ upstream/            # Git submodule (read-only base template)
 - reqwest (HTTP client)
 - anyhow, thiserror (error handling)
 
-**Frontend Packages:**
+### Frontend Packages
 - react, react-dom
 - @tanstack/react-query (data fetching)
 - tailwindcss (styling)
 - shadcn/ui components
 - vite (build tool)
+- @ebay/nice-modal-react (modal management)
 
-**Development Tools:**
+### Development Tools
 - pnpm (package manager)
 - cargo (Rust build)
 - SQLx CLI (migrations)
 - TypeScript compiler
 
-## Infrastructure
+## Testing
 
-**Development:**
-- Frontend dev server: Vite on port 3000 (auto-proxy to backend)
-- Backend dev server: Cargo watch with hot reload
-- Database: SQLite file, auto-initialized from `dev_assets_seed/`
-- Port management: `scripts/setup-dev-environment.js`
-
-**Production:**
-- Bundled binaries via `./local-build.sh`
-- NPM package via `pnpm pack --filter npx-cli`
-- Self-hostable: run on any Linux/macOS/Windows system
-- No external dependencies beyond Node.js runtime
-
-**CI/CD:**
-- GitHub Actions for tests and builds
-- Regression harness: `./scripts/run-forge-regression.sh`
-- Type check, lint, clippy, format validation
-- SQLx prepare check for query validation
-
-## Configuration
-
-**Build-time:**
-- `GITHUB_CLIENT_ID`: OAuth app ID (optional, for custom auth)
-- `POSTHOG_API_KEY`: Analytics key (optional)
-
-**Runtime:**
-- `FRONTEND_PORT`: Default 3000
-- `BACKEND_PORT`: Auto-assigned or specified
-- `HOST`: Default 127.0.0.1
-- `DISABLE_WORKTREE_ORPHAN_CLEANUP`: Debug flag
-
-**Environment Files:**
-- `.env` for local overrides
-- Never commit secrets or API keys
-- Managed via `scripts/setup-dev-environment.js`
-
-## Testing & Validation
-
-**Backend:**
+### Rust Testing
 ```bash
-cargo test --workspace
-cargo clippy --all --all-targets --all-features -- -D warnings
-cargo fmt --all -- --check
+cargo test --workspace                                   # All tests
+cargo test -p <crate>                                    # Specific crate
+cargo test <test_name>                                   # Specific test
 ```
 
-**Frontend:**
+### Frontend Testing
 ```bash
 pnpm --filter frontend run lint
 pnpm --filter frontend run format:check
@@ -161,16 +205,10 @@ pnpm --filter frontend-forge run format:check
 pnpm --filter frontend-forge exec tsc --noEmit
 ```
 
-**Type Generation:**
-```bash
-cargo run -p server --bin generate_types -- --check
-cargo run -p forge-app --bin generate_forge_types -- --check
-```
-
-**Database:**
-```bash
-sqlx migrate run
-```
+### Forge-Specific Testing
+- Dual frontend validation: `frontend` and `frontend-forge`
+- Dual type generation validation: `server` and `forge-app`
+- Regression harness: `./scripts/run-forge-regression.sh`
 
 ## Development Workflow
 

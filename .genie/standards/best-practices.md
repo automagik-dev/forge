@@ -2,7 +2,7 @@
 
 ## Context
 
-Global development guidelines for Agent OS projects.
+Global development guidelines for Automagik Forge projects.
 
 <conditional-block context-check="core-principles">
 IF this Core Principles section already read in current context:

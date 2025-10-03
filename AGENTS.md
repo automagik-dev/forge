@@ -55,11 +55,7 @@ automagik-forge/
 ```
 
 ### Tech Stack
-- **Backend**: Rust with Axum web framework, Tokio async runtime, SQLx for database
-- **Frontend**: React 18 + TypeScript + Vite, Tailwind CSS, shadcn/ui components
-- **Database**: SQLite with SQLx migrations
-- **Type Sharing**: ts-rs generates TypeScript types from Rust structs
-- **MCP Server**: Built-in Model Context Protocol server for AI agent integration
+See @.genie/product/tech-stack.md for complete stack details.
 
 ### Key Architectural Patterns
 1. **Event Streaming**: Server-Sent Events (SSE) for real-time updates
@@ -194,18 +190,19 @@ pnpm pack --filter npx-cli                   # Package NPX CLI after ./local-bui
 
 <context>
 [CONTEXT]
-- **Rust**: `rustfmt` enforced (`rustfmt.toml`); group imports by crate; snake_case modules, PascalCase types
-- **TypeScript/React**: ESLint + Prettier (2 spaces, single quotes, 80 cols). PascalCase components, camelCase vars/functions, kebab-case file names where practical
+See @.genie/standards/naming.md for naming conventions and @.genie/standards/best-practices.md for coding style guidelines.
+
+Quick reference:
+- **Rust**: `rustfmt` enforced; snake_case modules, PascalCase types
+- **TypeScript/React**: ESLint + Prettier; PascalCase components, camelCase vars/functions
 - Keep functions small, add `Debug`/`Serialize`/`Deserialize` where useful
 </context>
 
 <success_criteria>
 [SUCCESS CRITERIA]
-✅ Follow `rustfmt` for Rust code
-✅ Follow ESLint + Prettier for TypeScript/React
-✅ Use proper naming conventions (snake_case, PascalCase, camelCase, kebab-case)
-✅ Keep functions small and focused
-✅ Add derive macros where appropriate
+✅ Follow standards documented in @.genie/standards/*
+✅ Use proper naming conventions per @.genie/standards/naming.md
+✅ Apply best practices from @.genie/standards/best-practices.md
 </success_criteria>
 
 <never_do>
@@ -509,6 +506,25 @@ Use MCP Genie tools to orchestrate agents:
   - Stream status updates into the conversation and resume orchestration steps as soon as results arrive.
   - End the response only after every delegated background session finishes or when human approval is required.</correction>
   <validation>During the next orchestration, launch a background specialist and document the `sleep`-based polling loop that checks `mcp__genie__list_sessions` until the session concludes before ending the response; attach the loop transcript to the Done Report.</validation>
+</entry>
+<entry date="2025-10-03" violation_type="STANDARDS_CUSTOMIZATION" severity="HIGH">
+  <trigger>Install agent reads `.genie/standards/*` for defaults but doesn't customize template placeholders, leaving generic placeholder references and incorrect tech stack defaults (Ruby/Rails instead of Rust/Axum).</trigger>
+  <correction>Install agent MUST customize standard files during setup:
+  1. Update `.genie/product/tech-stack.md` with detected stack (Rust/Axum/SQLite, Node/pnpm, React/TypeScript/Vite, etc.)
+  2. Replace all template placeholders in `.genie/standards/naming.md`:
+     - `{{PROJECT_NAME}}` → detected from repo name/package.json
+     - `{{ORG}}` → extracted from git remote or asked during interview
+     - `{{PREFIX}}` → derived from project name (e.g., "automagik-forge" → "FORGE_")
+  3. Replace generic references with actual project name (e.g., "Automagik Forge")
+  4. Add to install.md task breakdown: "Customize .genie/standards/* and .genie/product/tech-stack.md with project-specific values"
+
+  Architecture: Single tech stack file at `.genie/product/tech-stack.md` (not split between product/ and standards/)
+  - Saves tokens, creates single source of truth, reduces maintenance burden</correction>
+  <validation>After install runs:
+  - Verify `.genie/product/tech-stack.md` reflects actual project stack (not generic defaults)
+  - Confirm all `{{PLACEHOLDER}}` values in `.genie/standards/naming.md` are replaced
+  - Check tech stack matches detected dependencies (Cargo.toml, package.json)
+  - Test that wishes/agents loading @.genie/product/tech-stack.md receive correct project context</validation>
 </entry>
 </learning_entries>
 </behavioral_learnings>

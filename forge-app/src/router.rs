@@ -26,12 +26,8 @@ use server::DeploymentImpl;
 use sqlx::{self, Row};
 
 #[derive(RustEmbed)]
-#[folder = "../frontend-forge/dist"]
-struct ForgeFrontend;
-
-#[derive(RustEmbed)]
 #[folder = "../frontend/dist"]
-struct UpstreamFrontend;
+struct Frontend;
 
 #[derive(Clone)]
 struct ForgeAppState {
@@ -69,12 +65,10 @@ pub fn create_router(services: ForgeServices) -> Router {
     Router::new()
         .route("/health", get(health_check))
         .merge(forge_api_routes())
-        // Provide upstream API compatibility at both /api and /legacy/api
-        .nest("/api", legacy_api.clone())
-        .nest("/legacy/api", legacy_api)
-        // Dual frontend routing: modern Forge UI at /, upstream at /legacy
-        .nest("/legacy", legacy_frontend_router())
-        .fallback(forge_frontend_handler)
+        // Upstream API at /api
+        .nest("/api", legacy_api)
+        // Single frontend with overlay architecture
+        .fallback(frontend_handler)
         .with_state(state)
 }
 
@@ -129,42 +123,25 @@ fn legacy_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     )
 }
 
-fn legacy_frontend_router() -> Router<ForgeAppState> {
-    Router::new()
-        .route("/", get(serve_legacy_index))
-        .route("/{*path}", get(serve_legacy_assets))
-}
-
-async fn forge_frontend_handler(uri: axum::http::Uri) -> Response {
+async fn frontend_handler(uri: axum::http::Uri) -> Response {
     let path = uri.path().trim_start_matches('/');
 
     if path.is_empty() {
-        serve_forge_index().await
+        serve_index().await
     } else {
-        serve_forge_assets(Path(path.to_string())).await
+        serve_assets(Path(path.to_string())).await
     }
 }
 
-async fn serve_forge_index() -> Response {
-    match ForgeFrontend::get("index.html") {
+async fn serve_index() -> Response {
+    match Frontend::get("index.html") {
         Some(content) => Html(content.data.to_vec()).into_response(),
         None => (StatusCode::NOT_FOUND, "404 Not Found").into_response(),
     }
 }
 
-async fn serve_forge_assets(Path(path): Path<String>) -> Response {
-    serve_static_file::<ForgeFrontend>(&path).await
-}
-
-async fn serve_legacy_index() -> Response {
-    match UpstreamFrontend::get("index.html") {
-        Some(content) => Html(content.data.to_vec()).into_response(),
-        None => (StatusCode::NOT_FOUND, "404 Not Found").into_response(),
-    }
-}
-
-async fn serve_legacy_assets(Path(path): Path<String>) -> Response {
-    serve_static_file::<UpstreamFrontend>(&path).await
+async fn serve_assets(Path(path): Path<String>) -> Response {
+    serve_static_file::<Frontend>(&path).await
 }
 
 async fn serve_static_file<T: RustEmbed>(path: &str) -> Response {

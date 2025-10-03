@@ -1,33 +1,40 @@
-# Naming Conventions (Template)
+# Naming Conventions
 
-Consistent naming conventions for {{PROJECT_NAME}}. Customize these patterns for your domain.
+Consistent naming conventions for Automagik Forge. Customize these patterns for your domain.
 
 ## Project Names
 
 ### Repository
-- **Pattern**: Use your organization's standard
-- **Example**: `{{ORG}}-{{PROJECT_NAME}}`
+- **Pattern**: namastexlabs/automagik-forge
+- **Organization**: namastexlabs
 
 ### Product
-- **Marketing Name**: {{PROJECT_NAME}}
-- **Documentation**: Use consistent casing
+- **Marketing Name**: Automagik Forge
+- **Documentation**: Automagik Forge (consistent casing)
+- **Short Name**: Forge
 
 ### Binary/Package
 - **Pattern**: kebab-case
-- **Example**: `{{PROJECT_NAME}}-cli`
+- **NPM Package**: automagik-forge
+- **Binary**: automagik-forge
+- **Rust Crates**: server, db, executors, services, utils, deployment, local-deployment
+- **Forge Extensions**: forge-app, forge-extensions/*
 
 ## Environment Variables
 
 ### Prefix
-- **Application**: Use a short prefix like `{{PREFIX}}_`
-- **Providers**: Keep provider names as-is (e.g., `AWS_`, `GITHUB_`)
+- **Application**: `FORGE_` (optional, most vars unprefixed)
+- **Providers**: Keep provider names as-is (e.g., `GITHUB_`, `POSTHOG_`)
 
 ### Format
 - **Style**: UPPER_SNAKE_CASE
 - **Examples**:
-  - `{{PREFIX}}_SERVER_PORT`
-  - `{{PREFIX}}_LOG_LEVEL`
-  - `{{PROVIDER}}_API_KEY`
+  - `BACKEND_PORT`
+  - `FRONTEND_PORT`
+  - `HOST`
+  - `GITHUB_CLIENT_ID`
+  - `POSTHOG_API_KEY`
+  - `DISABLE_WORKTREE_ORPHAN_CLEANUP`
 
 ## File & Directory Names
 

@@ -18,6 +18,7 @@ genie:
 
 2. [Implementation] Prepare Genie product docs and wiring
    - Create/update `.genie/product/{mission.md, mission-lite.md, tech-stack.md, roadmap.md, environment.md}`
+   - Customize `.genie/standards/*` with project-specific values (tech stack, naming placeholders, remove generic "Agent OS" references)
    - Configure Genie CLI in-context; do not alter app code
    - Calibrate specialists in `.genie/agents/specialists/*.md` as needed
    - Initialize lightweight structure only when explicitly confirmed
@@ -189,6 +190,31 @@ Transform placeholder templates into project-specific content:
 {{SETUP_STEPS}}
 ```
 
+### Standards Customization
+Customize standard files with project-specific values:
+
+**product/tech-stack.md**:
+- Update tech stack from detected dependencies:
+  - If Rust detected → Backend: Rust with {{FRAMEWORK}} (e.g., Axum, Actix)
+  - If Node detected → Package Manager: {{PKG_MANAGER}} (npm, pnpm, yarn)
+  - If Python detected → Language: Python {{VERSION}}, Framework: {{FRAMEWORK}}
+  - Database: {{DATABASE}} (SQLite, PostgreSQL, MySQL, etc.)
+  - Frontend: {{FRONTEND_FRAMEWORK}} (React, Vue, Svelte, etc.)
+
+**standards/naming.md**:
+- `{{PROJECT_NAME}}` → detected from repo name or package.json
+- `{{ORG}}` → extracted from git remote origin or asked in interview
+- `{{PREFIX}}` → derived from project name (e.g., "automagik-forge" → "FORGE_")
+- `{{PROVIDER}}` → detected provider names (AWS, GITHUB, STRIPE, etc.)
+
+**standards/best-practices.md**:
+- Update generic project references to `{{PROJECT_NAME}}`
+- Add language-specific guidelines if detected
+
+**standards/code-style.md**:
+- Detect and document formatter configs (rustfmt.toml, .prettierrc, etc.)
+- Add linter rules (clippy.toml, .eslintrc, etc.)
+
 ### Missing Items Resolution
 If required details are missing, explicitly request them:
 ```
@@ -209,15 +235,19 @@ When populating product docs and resolving gaps:
 
 ## Success Criteria
 ✅ Project state correctly detected and appropriate mode selected
-✅ All {{PLACEHOLDER}} values identified and populated
+✅ All {{PLACEHOLDER}} values identified and populated in product docs AND standards
 ✅ Generated documentation is coherent and actionable
 ✅ Environment configuration matches technical requirements
+✅ Standards files customized with project-specific tech stack and naming conventions
 ✅ User confirms accuracy of extracted/gathered information
 ✅ Framework remains fully functional with new project context
 ✅ Handoff to `/plan` prepared with a concise brief
 
 ## Verification Checklist
 - [ ] `.genie/product/` contains mission, mission-lite, tech-stack, roadmap, environment
+- [ ] `.genie/standards/*` customized with NO template placeholders or generic references
+- [ ] Standards tech-stack.md reflects actual project stack (not Agent OS defaults)
+- [ ] Standards naming.md has project-specific values for {{PROJECT_NAME}}, {{ORG}}, {{PREFIX}}
 - [ ] Roadmap reflects reality (Phase 0 for existing work, next phases clear)
 - [ ] Tech stack matches detected dependencies and deployment
 - [ ] Environment variables documented and scoped

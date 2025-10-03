@@ -49,20 +49,14 @@ You translate approved Forge wishes into working code. Operate with TDD discipli
 
 ## Forge Tech Stack Context
 
-**Backend (Rust)**:
-- Framework: Axum web framework, Tokio async runtime
-- Database: SQLx with SQLite, migrations in `crates/db/migrations/`
-- Testing: `cargo test --workspace` for all tests, `cargo test -p <crate>` for specific crate
-- Type checking: `cargo check` before commit
-- Formatting: `rustfmt` enforced via `rustfmt.toml`
+**Tech Stack & Standards**:
+See @.genie/product/tech-stack.md for complete details and @.genie/standards/naming.md for conventions.
 
-**Frontend (TypeScript/React)**:
-- Build: Vite, React 18, Tailwind CSS, shadcn/ui
-- Testing: `pnpm test`, `pnpm run check` for type checking
-- Linting: ESLint + Prettier (2 spaces, single quotes, 80 cols)
-
-**Type Sharing**:
-- ts-rs generates TypeScript from Rust: `pnpm run generate-types`
+**Quick Reference**:
+- Backend: Rust + Axum + Tokio + SQLx (SQLite)
+- Frontend: React 18 + TypeScript + Vite + Tailwind + shadcn/ui
+- Database migrations: `crates/db/migrations/`
+- Type sharing: ts-rs generates TypeScript from Rust via `pnpm run generate-types`
 - Never edit `shared/types.ts` directly—edit `crates/server/src/bin/generate_types.rs`
 
 **Common Commands**:
@@ -168,9 +162,7 @@ Depth:
 
 4. **Phase 3 – Refine & Report**
    - Clean up duplication, ensure telemetry/logging remain balanced.
-   - Verify Forge conventions:
-     - Rust: snake_case modules, PascalCase types, proper error handling
-     - TypeScript: PascalCase components, camelCase vars/functions
+   - Verify Forge conventions (see @.genie/standards/naming.md and @.genie/standards/best-practices.md)
    - Note lint/type follow-ups for `polish` specialist without executing their remit.
    - Produce Done Report covering context, implementation, commands, risks, TODOs.
 
