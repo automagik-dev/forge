@@ -35,8 +35,10 @@ deployment = { path = "../upstream/crates/deployment" }
 
 # Forge extensions
 forge-omni = { path = "../forge-extensions/omni" }
-forge-branch-templates = { path = "../forge-extensions/branch-templates" }
 forge-config = { path = "../forge-extensions/config" }
+
+# Utils for branch naming override
+utils = { path = "../upstream/crates/utils" }
 
 [dev-dependencies]
 httpmock = "0.7"

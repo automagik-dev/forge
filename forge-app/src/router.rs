@@ -15,8 +15,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use uuid::Uuid;
 
-use crate::services::ForgeServices;
-use forge_branch_templates::BranchNameResponse;
+use crate::services::{container_ext::forge_branch_from_task_attempt, ForgeServices};
 use forge_config::ForgeProjectSettings;
 use server::routes::{
     self as upstream, auth, config as upstream_config, containers, events, execution_processes,
@@ -84,14 +83,7 @@ fn forge_api_routes() -> Router<ForgeAppState> {
         )
         .route("/api/forge/omni/instances", get(list_omni_instances))
         .route("/api/forge/omni/notifications", get(list_omni_notifications))
-        .route(
-            "/api/forge/branch-templates/{task_id}",
-            get(get_branch_template).put(set_branch_template),
-        )
-        .route(
-            "/api/forge/branch-templates/{task_id}/generate",
-            post(generate_branch_name),
-        )
+        // Branch-templates extension removed - using simple forge/ prefix
 }
 
 fn legacy_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
@@ -317,150 +309,3 @@ async fn list_omni_notifications(
     Ok(Json(json!({ "notifications": notifications })))
 }
 
-async fn get_branch_template(
-    Path(task_id): Path<Uuid>,
-    State(services): State<ForgeServices>,
-) -> Result<Json<Value>, StatusCode> {
-    let project_id = resolve_project_id(&services, task_id).await?;
-    let enabled = services
-        .config
-        .get_forge_settings(project_id)
-        .await
-        .map(|settings| settings.branch_templates_enabled)
-        .map_err(|e| {
-            tracing::error!("Failed to load project settings for {}: {}", project_id, e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    let template = if enabled {
-        services
-            .branch_templates
-            .get_template(task_id)
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to get branch template: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?
-    } else {
-        None
-    };
-
-    Ok(Json(json!({
-        "task_id": task_id,
-        "project_id": project_id,
-        "branch_template": template,
-        "enabled": enabled
-    })))
-}
-
-async fn set_branch_template(
-    Path(task_id): Path<Uuid>,
-    State(services): State<ForgeServices>,
-    Json(payload): Json<Value>,
-) -> Result<Json<Value>, StatusCode> {
-    let project_id = ensure_branch_templates_enabled(&services, task_id).await?;
-
-    let template = payload
-        .get("branch_template")
-        .and_then(|v| v.as_str())
-        .map(|s| s.to_string());
-
-    match services
-        .branch_templates
-        .set_template(task_id, template.clone())
-        .await
-    {
-        Ok(()) => Ok(Json(json!({
-            "task_id": task_id,
-            "project_id": project_id,
-            "branch_template": template,
-            "enabled": true
-        }))),
-        Err(e) => {
-            tracing::error!("Failed to set branch template: {}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
-}
-
-#[derive(Deserialize)]
-struct BranchNameRequest {
-    attempt_id: Option<Uuid>,
-}
-
-async fn generate_branch_name(
-    Path(task_id): Path<Uuid>,
-    State(services): State<ForgeServices>,
-    Json(payload): Json<BranchNameRequest>,
-) -> Result<Json<BranchNameResponse>, StatusCode> {
-    ensure_branch_templates_enabled(&services, task_id).await?;
-
-    let attempt_id = payload.attempt_id.unwrap_or_else(Uuid::new_v4);
-
-    let branch_name = services
-        .branch_templates
-        .generate_branch_name(task_id, attempt_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to generate branch name: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    Ok(Json(BranchNameResponse {
-        attempt_id,
-        branch_name,
-    }))
-}
-
-async fn resolve_project_id(services: &ForgeServices, task_id: Uuid) -> Result<Uuid, StatusCode> {
-    let pool = services.pool();
-    let row = sqlx::query("SELECT project_id FROM tasks WHERE id = ?")
-        .bind(task_id)
-        .fetch_optional(pool)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to resolve project for task {}: {}", task_id, e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    let project_id = row
-        .map(|r| r.try_get::<Uuid, _>("project_id"))
-        .transpose()
-        .map_err(|e| {
-            tracing::error!("Invalid project id for task {}: {}", task_id, e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .ok_or(StatusCode::NOT_FOUND)?;
-
-    Ok(project_id)
-}
-
-async fn ensure_branch_templates_enabled(
-    services: &ForgeServices,
-    task_id: Uuid,
-) -> Result<Uuid, StatusCode> {
-    let project_id = resolve_project_id(services, task_id).await?;
-    let settings = services
-        .config
-        .get_forge_settings(project_id)
-        .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to load project settings for {} when validating branch templates: {}",
-                project_id,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    if !settings.branch_templates_enabled {
-        tracing::warn!(
-            "Branch templates disabled for project {}, rejecting task {} operation",
-            project_id,
-            task_id
-        );
-        return Err(StatusCode::FORBIDDEN);
-    }
-
-    Ok(project_id)
-}

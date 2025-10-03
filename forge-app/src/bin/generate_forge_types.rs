@@ -1,7 +1,6 @@
 use std::{env, fs, path::Path};
 
 use anyhow::{bail, Context, Result};
-use forge_branch_templates::BranchNameResponse;
 use forge_config::{ForgeProjectSettings, ProjectConfig};
 use forge_omni::{OmniConfig, OmniInstance, RecipientType, SendTextRequest, SendTextResponse};
 use ts_rs::TS;
@@ -11,7 +10,6 @@ fn main() -> Result<()> {
     let check_mode = args.iter().any(|arg| arg == "--check");
 
     let declarations = vec![
-        BranchNameResponse::decl(),
         ForgeProjectSettings::decl(),
         ProjectConfig::decl(),
         OmniConfig::decl(),

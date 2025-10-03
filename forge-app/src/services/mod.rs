@@ -17,9 +17,10 @@ use tokio::time::{sleep, Duration};
 use uuid::Uuid;
 
 // Import forge extension services
-use forge_branch_templates::BranchTemplateService;
 use forge_config::ForgeConfigService;
 use forge_omni::{OmniConfig, OmniService};
+
+pub mod container_ext;
 
 /// Main forge services container
 #[derive(Clone)]
@@ -27,7 +28,6 @@ pub struct ForgeServices {
     #[allow(dead_code)]
     pub deployment: Arc<DeploymentImpl>,
     pub omni: Arc<RwLock<OmniService>>,
-    pub branch_templates: Arc<BranchTemplateService>,
     pub config: Arc<ForgeConfigService>,
     pub pool: SqlitePool,
 }
@@ -83,11 +83,9 @@ impl ForgeServices {
         let omni = Arc::new(RwLock::new(OmniService::new(omni_config)));
 
         tracing::info!(
-            forge_branch_templates_enabled = global_settings.branch_templates_enabled,
             forge_omni_enabled = global_settings.omni_enabled,
             "Loaded forge extension settings from auxiliary schema"
         );
-        let branch_templates = Arc::new(BranchTemplateService::new(pool.clone()));
 
         // Spawn background worker that converts execution events into Omni notifications
         spawn_omni_notification_worker(pool.clone(), config.clone());
@@ -95,7 +93,6 @@ impl ForgeServices {
         Ok(Self {
             deployment,
             omni,
-            branch_templates,
             config,
             pool,
         })
@@ -583,7 +580,6 @@ fn omni_base_url() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use forge_branch_templates::BranchTemplateService;
     use forge_config::{ForgeConfigService, ForgeProjectSettings, OmniConfig, RecipientType};
     use httpmock::prelude::*;
     use serde_json::json;
@@ -704,62 +700,7 @@ mod tests {
         .to_string()
     }
 
-    #[tokio::test]
-    async fn task_inserts_sync_into_extensions() {
-        let pool = setup_pool().await;
-        let task_id = uuid::Uuid::new_v4();
-
-        sqlx::query(
-            "INSERT INTO tasks (id, project_id, title, status, created_at, updated_at, branch_template)
-             VALUES (?, ?, 'Branch Template Demo', 'todo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'feature-login')",
-        )
-        .bind(task_id)
-        .bind(uuid::Uuid::new_v4())
-        .execute(&pool)
-        .await
-        .expect("failed to insert task row");
-
-        let template: Option<String> = sqlx::query_scalar(
-            "SELECT branch_template FROM forge_task_extensions WHERE task_id = ?",
-        )
-        .bind(task_id)
-        .fetch_optional(&pool)
-        .await
-        .expect("failed to fetch extension row");
-
-        assert_eq!(template.as_deref(), Some("feature-login"));
-    }
-
-    #[tokio::test]
-    async fn extension_updates_propagate_back_to_tasks() {
-        let pool = setup_pool().await;
-        let task_id = uuid::Uuid::new_v4();
-
-        sqlx::query(
-            "INSERT INTO tasks (id, project_id, title, status, created_at, updated_at)
-             VALUES (?, ?, 'Branch Template Demo', 'todo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-        )
-        .bind(task_id)
-        .bind(uuid::Uuid::new_v4())
-        .execute(&pool)
-        .await
-        .expect("failed to insert task row");
-
-        let service = BranchTemplateService::new(pool.clone());
-        service
-            .set_template(task_id, Some("feature-auth".into()))
-            .await
-            .expect("failed to set branch template");
-
-        let template: Option<String> =
-            sqlx::query_scalar("SELECT branch_template FROM tasks WHERE id = ?")
-                .bind(task_id)
-                .fetch_one(&pool)
-                .await
-                .expect("failed to fetch task branch template");
-
-        assert_eq!(template.as_deref(), Some("feature-auth"));
-    }
+    // Removed: branch-templates extension tests (extension deleted)
 
     #[tokio::test]
     async fn omni_notification_skips_when_disabled() {
