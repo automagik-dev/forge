@@ -11,18 +11,25 @@ use axum::{
     Json, Router,
 };
 use rust_embed::RustEmbed;
-use serde::Deserialize;
 use serde_json::{json, Value};
 use uuid::Uuid;
 
 use crate::services::{container_ext::forge_branch_from_task_attempt, ForgeServices};
+use db::models::{
+    image::TaskImage,
+    task::{Task, TaskWithAttemptStatus},
+    task_attempt::{CreateTaskAttempt, TaskAttempt},
+};
+use deployment::Deployment;
 use forge_config::ForgeProjectSettings;
+use services::services::container::ContainerService;
+use server::{routes::tasks::CreateAndStartTaskRequest, DeploymentImpl, error::ApiError};
 use server::routes::{
     self as upstream, auth, config as upstream_config, containers, events, execution_processes,
     filesystem, images, projects, task_attempts, task_templates, tasks,
 };
-use server::DeploymentImpl;
-use sqlx::{self, Row};
+use sqlx::{self, Row, Error as SqlxError};
+use utils::response::ApiResponse;
 
 #[derive(RustEmbed)]
 #[folder = "../frontend/dist"]
@@ -86,6 +93,77 @@ fn forge_api_routes() -> Router<ForgeAppState> {
         // Branch-templates extension removed - using simple forge/ prefix
 }
 
+/// Forge override: create task and start with forge/ branch prefix
+async fn forge_create_task_and_start(
+    State(deployment): State<DeploymentImpl>,
+    Json(payload): Json<CreateAndStartTaskRequest>,
+) -> Result<Json<ApiResponse<TaskWithAttemptStatus>>, ApiError> {
+    let task_id = Uuid::new_v4();
+    let task = Task::create(&deployment.db().pool, &payload.task, task_id).await?;
+
+    if let Some(image_ids) = &payload.task.image_ids {
+        TaskImage::associate_many(&deployment.db().pool, task.id, image_ids).await?;
+    }
+
+    deployment
+        .track_if_analytics_allowed(
+            "task_created",
+            serde_json::json!({
+                "task_id": task.id.to_string(),
+                "project_id": task.project_id,
+                "has_description": task.description.is_some(),
+                "has_images": payload.task.image_ids.is_some(),
+            }),
+        )
+        .await;
+
+    // Use forge branch naming instead of upstream "vk/" prefix
+    let attempt_id = Uuid::new_v4();
+    let git_branch_name = forge_branch_from_task_attempt(&attempt_id, &task.title);
+
+    let task_attempt = TaskAttempt::create(
+        &deployment.db().pool,
+        &CreateTaskAttempt {
+            executor: payload.executor_profile_id.executor,
+            base_branch: payload.base_branch,
+            branch: git_branch_name,
+        },
+        attempt_id,
+        task.id,
+    )
+    .await?;
+
+    let execution_process = deployment
+        .container()
+        .start_attempt(&task_attempt, payload.executor_profile_id.clone())
+        .await?;
+
+    deployment
+        .track_if_analytics_allowed(
+            "task_attempt_started",
+            serde_json::json!({
+                "task_id": task.id.to_string(),
+                "executor": &payload.executor_profile_id.executor,
+                "variant": &payload.executor_profile_id.variant,
+                "attempt_id": task_attempt.id.to_string(),
+            }),
+        )
+        .await;
+
+    let task = Task::find_by_id(&deployment.db().pool, task.id)
+        .await?
+        .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
+
+    tracing::info!("Started execution process {} with forge/ branch", execution_process.id);
+    Ok(Json(ApiResponse::success(TaskWithAttemptStatus {
+        task,
+        has_in_progress_attempt: true,
+        has_merged_attempt: false,
+        last_attempt_failed: false,
+        executor: task_attempt.executor,
+    })))
+}
+
 fn legacy_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     let mut router = Router::new().route("/health", get(upstream::health::health_check));
 
@@ -96,6 +174,10 @@ fn legacy_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
         router.merge(containers::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
     router =
         router.merge(projects::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+
+    // Override create-and-start endpoint with forge branch naming
+    router = router.route("/tasks/create-and-start", post(forge_create_task_and_start));
+
     router = router.merge(tasks::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
     router = router
         .merge(task_attempts::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));

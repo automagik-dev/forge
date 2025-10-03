@@ -8,7 +8,6 @@ use utils::text::{git_branch_id, short_uuid};
 /// Generate git branch name with forge prefix
 ///
 /// Creates branch names like: `forge/a1b2-feature-title`
-/// This overrides upstream's `vk/` prefix while keeping the same structure.
 pub fn forge_branch_from_task_attempt(attempt_id: &Uuid, task_title: &str) -> String {
     let task_title_id = git_branch_id(task_title);
     format!("forge/{}-{}", short_uuid(attempt_id), task_title_id)
