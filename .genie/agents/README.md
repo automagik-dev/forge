@@ -67,7 +67,7 @@ These parameters control executor binaries and session management:
 | **sessionsDir** | `~/.codex/sessions` | `null` | Session storage directory |
 | **sessionExtractionDelayMs** | `null` | `1000` | Delay before reading session (ms) |
 
-**Note:** Infrastructure parameters are typically configured in `.genie/cli/config.yaml` rather than agent frontmatter.
+**Note:** Infrastructure parameters are typically configured in the Genie CLI configuration rather than agent frontmatter.
 
 ### Parameter Inheritance Hierarchy
 
@@ -528,7 +528,7 @@ Use mcp__genie__view with sessionId  # View transcript
 
 ### Default Executor
 
-The default executor is set in `.genie/cli/config.yaml`:
+The default executor is configured in the Genie CLI:
 
 ```yaml
 defaults:

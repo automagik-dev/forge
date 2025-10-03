@@ -6,8 +6,6 @@ genie:
   executor: claude
   model: sonnet
   permissionMode: bypassPermissions
-  additionalArgs:
-    - --dangerously-skip-permissions
   background: true
 ---
 
