@@ -1,7 +1,7 @@
 //! Forge Router
 //!
-//! This module handles API routing for forge services and dual frontend routing.
-//! Serves forge UI at `/` and upstream UI at `/legacy`
+//! Routes forge-specific APIs under `/api/forge/*` and upstream APIs under `/api/*`.
+//! Serves single frontend (with overlay architecture) at `/`.
 
 use axum::{
     extract::{FromRef, Path, State},
@@ -66,13 +66,13 @@ pub fn create_router(services: ForgeServices) -> Router {
     let deployment = services.deployment.as_ref().clone();
     let state = ForgeAppState::new(services, deployment.clone());
 
-    let legacy_api = legacy_api_router(&deployment);
+    let upstream_api = upstream_api_router(&deployment);
 
     Router::new()
         .route("/health", get(health_check))
         .merge(forge_api_routes())
         // Upstream API at /api
-        .nest("/api", legacy_api)
+        .nest("/api", upstream_api)
         // Single frontend with overlay architecture
         .fallback(frontend_handler)
         .with_state(state)
@@ -164,7 +164,7 @@ async fn forge_create_task_and_start(
     })))
 }
 
-fn legacy_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
+fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     let mut router = Router::new().route("/health", get(upstream::health::health_check));
 
     let dep_clone = deployment.clone();

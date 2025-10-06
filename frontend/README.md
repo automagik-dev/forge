@@ -1,32 +1,38 @@
-# Frontend Forge
+# Frontend
 
-Forge's standalone frontend powered by Vite + React. The bundle produced here is embedded by `forge-app` and served at `/`, while the upstream UI remains available at `/legacy`.
+Automagik Forge's frontend built with Vite + React. Uses overlay architecture where `forge-overrides/frontend/src/` customizations are merged with `upstream/frontend/src/` base at build time. The resulting bundle is embedded by `forge-app` via rust-embed and served at `/`.
 
-## Getting Started
+## Development
 
 ```bash
-pnpm install
-pnpm --filter frontend-forge dev
+# From repository root
+pnpm run dev              # Start both frontend + backend
+
+# Or frontend only
+cd frontend && pnpm run dev
 ```
 
 ## Build
 
 ```bash
-pnpm --filter frontend-forge build
+cd frontend && pnpm run build
 ```
 
-Build artifacts are emitted to `frontend-forge/dist` and embedded by the Rust application via `rust-embed`.
+Build artifacts are emitted to `frontend/dist/` and embedded by `forge-app` via rust-embed.
 
 ## Lint / Type-check
 
 ```bash
-pnpm --filter frontend-forge lint
+cd frontend && pnpm run lint
 ```
 
-This runs TypeScript in no-emit mode to ensure the forge UI stays in sync with the backend contracts exposed at `/api/forge/*`.
+This runs TypeScript in no-emit mode to ensure types stay in sync with backend contracts at `/api/*` and `/api/forge/*`.
 
-## Next Steps
+## Architecture
 
-- Continue porting forge-only surfaces (e.g., Genie task flows) into this bundle.
-- Add Vitest coverage for the new configuration and notification panels.
-- Integrate live updates (SSE/WebSocket) once the backend exposes a streaming feed.
+- **Base:** `upstream/frontend/src/` (vibe-kanban submodule)
+- **Overlays:** `forge-overrides/frontend/src/` (Automagik Forge customizations)
+- **Build:** Vite resolves imports from overlays first, falls back to upstream
+- **Deployment:** `forge-app` embeds `frontend/dist/` and serves at `/`
+
+See `frontend/vite.config.ts` for overlay resolver implementation.

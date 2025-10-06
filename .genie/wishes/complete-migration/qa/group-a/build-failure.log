@@ -1,0 +1,22 @@
+
+> automagik-forge-frontend@0.4.0 build /home/namastex/workspace/automagik-forge/frontend
+> vite build
+
+vite v5.4.20 building for production...
+transforming...
+✓ 5 modules transformed.
+x Build failed in 72ms
+error during build:
+[vite]: Rollup failed to resolve import "react-router-dom" from "/home/namastex/workspace/automagik-forge/frontend/src/App.tsx".
+This is most likely unintended because it can break your application at runtime.
+If you do want to externalize this module explicitly add it to
+`build.rollupOptions.external`
+    at viteWarn (file:///home/namastex/workspace/automagik-forge/node_modules/.pnpm/vite@5.4.20_@types+node@24.6.2/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:65854:17)
+    at onwarn (file:///home/namastex/workspace/automagik-forge/node_modules/.pnpm/@vitejs+plugin-react@4.7.0_vite@5.4.20_@types+node@24.6.2_/node_modules/@vitejs/plugin-react/dist/index.js:90:7)
+    at onRollupWarning (file:///home/namastex/workspace/automagik-forge/node_modules/.pnpm/vite@5.4.20_@types+node@24.6.2/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:65884:5)
+    at onwarn (file:///home/namastex/workspace/automagik-forge/node_modules/.pnpm/vite@5.4.20_@types+node@24.6.2/node_modules/vite/dist/node/chunks/dep-D_zLpgQd.js:65549:7)
+    at file:///home/namastex/workspace/automagik-forge/node_modules/.pnpm/rollup@4.52.0/node_modules/rollup/dist/es/shared/node-entry.js:20970:13
+    at Object.logger [as onLog] (file:///home/namastex/workspace/automagik-forge/node_modules/.pnpm/rollup@4.52.0/node_modules/rollup/dist/es/shared/node-entry.js:22842:9)
+    at ModuleLoader.handleInvalidResolvedId (file:///home/namastex/workspace/automagik-forge/node_modules/.pnpm/rollup@4.52.0/node_modules/rollup/dist/es/shared/node-entry.js:21586:26)
+    at file:///home/namastex/workspace/automagik-forge/node_modules/.pnpm/rollup@4.52.0/node_modules/rollup/dist/es/shared/node-entry.js:21544:26
+ ELIFECYCLE  Command failed with exit code 1.
