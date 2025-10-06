@@ -168,7 +168,7 @@ async fn purge_shared_migration_markers() -> Result<()> {
             continue;
         }
 
-        let deleted = sqlx::query("DELETE FROM _sqlx_migrations WHERE version IN (0,1,2)")
+        let deleted = sqlx::query("DELETE FROM _sqlx_migrations WHERE version IN (0,1,2,20250903172012)")
             .execute(&mut conn)
             .await;
 
@@ -200,19 +200,9 @@ struct ForgeMigration {
 
 const FORGE_MIGRATIONS: &[ForgeMigration] = &[
     ForgeMigration {
-        version: "20250924090000",
-        description: "add_branch_template_column",
-        sql: include_str!("../../migrations/20250924090000_add_branch_template_column.sql"),
-    },
-    ForgeMigration {
         version: "20250924090001",
         description: "auxiliary_tables",
         sql: include_str!("../../migrations/20250924090001_auxiliary_tables.sql"),
-    },
-    ForgeMigration {
-        version: "20250924090002",
-        description: "migrate_branch_template_data",
-        sql: include_str!("../../migrations/20250924090002_migrate_data.sql"),
     },
     ForgeMigration {
         version: "20250924090003",

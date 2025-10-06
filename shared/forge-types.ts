@@ -4,9 +4,7 @@
 
 type JsonValue = any;
 
-export type BranchNameResponse = { attempt_id: string, branch_name: string, };
-
-export type ForgeProjectSettings = { omni_enabled: boolean, omni_config: OmniConfig | null, branch_templates_enabled: boolean, };
+export type ForgeProjectSettings = { omni_enabled: boolean, omni_config: OmniConfig | null, };
 
 export type ProjectConfig = { project_id: string, custom_executors: JsonValue | null, forge_config: JsonValue | null, };
 

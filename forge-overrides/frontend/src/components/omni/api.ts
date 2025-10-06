@@ -1,11 +1,47 @@
-import { makeRequest, handleApiResponse } from '@/lib/api';
 import { OmniInstance } from './types';
+
+interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  error_data?: unknown;
+}
+
+async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  };
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  let payload: ApiEnvelope<T>;
+  try {
+    payload = (await response.json()) as ApiEnvelope<T>;
+  } catch (error) {
+    throw new Error(
+      `Failed to parse response from ${url}: ${(error as Error).message}`
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(payload.message || `Request failed with ${response.status}`);
+  }
+
+  if (!payload.success) {
+    throw new Error(payload.message || 'Request failed');
+  }
+
+  return payload.data;
+}
 
 // Omni API client
 export const omniApi = {
   listInstances: async (): Promise<OmniInstance[]> => {
-    const response = await makeRequest('/api/omni/instances');
-    return handleApiResponse<OmniInstance[]>(response);
+    return request<OmniInstance[]>('/api/omni/instances');
   },
 
   validateConfig: async (host: string, apiKey: string): Promise<{
@@ -13,17 +49,15 @@ export const omniApi = {
     instances: OmniInstance[];
     error?: string;
   }> => {
-    const response = await makeRequest('/api/omni/validate', {
+    return request('/api/omni/validate', {
       method: 'POST',
       body: JSON.stringify({ host, api_key: apiKey }),
     });
-    return handleApiResponse(response);
   },
 
   testNotification: async (): Promise<string> => {
-    const response = await makeRequest('/api/omni/test', {
+    return request<string>('/api/omni/test', {
       method: 'POST',
     });
-    return handleApiResponse<string>(response);
   },
 };

@@ -7,7 +7,6 @@
 -- Extensions for individual tasks
 CREATE TABLE IF NOT EXISTS forge_task_extensions (
     task_id TEXT PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
-    branch_template TEXT,
     omni_settings TEXT, -- JSON for Omni notification settings
     genie_metadata TEXT, -- JSON for future Genie integration
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -40,7 +39,6 @@ CREATE TABLE IF NOT EXISTS forge_omni_notifications (
 CREATE VIEW IF NOT EXISTS enhanced_tasks AS
 SELECT
     t.*,
-    fx.branch_template,
     fx.omni_settings,
     fx.genie_metadata
 FROM tasks t

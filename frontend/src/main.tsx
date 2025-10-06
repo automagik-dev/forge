@@ -1,10 +1,6 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import './styles.css';
+// Forge frontend entry point
+// This file loads the upstream Vibe Kanban UI via the overlay resolver
+// Customizations are applied via forge-overrides/frontend/src/
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);
+// Import from upstream via @ alias (goes through overlay resolver)
+import '@/main';

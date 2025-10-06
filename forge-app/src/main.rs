@@ -5,6 +5,7 @@
 
 use std::net::{IpAddr, SocketAddr};
 use tracing_subscriber;
+use utils::browser::open_browser;
 
 mod router;
 mod services;
@@ -40,6 +41,12 @@ async fn main() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind(requested_addr).await?;
     let actual_addr = listener.local_addr()?;
     tracing::info!("Forge app listening on {}", actual_addr);
+
+    // Open browser automatically
+    let url = format!("http://{}", actual_addr);
+    if let Err(e) = open_browser(&url).await {
+        tracing::warn!("Failed to open browser: {}", e);
+    }
 
     axum::serve(listener, app).await?;
 

@@ -10,7 +10,20 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "../forge-overrides/frontend/src/*",
+        "../upstream/frontend/src/*"
+      ],
+      "@dialogs/*": [
+        "../forge-overrides/frontend/src/components/dialogs/*",
+        "../upstream/frontend/src/components/dialogs/*"
+      ],
+      "shared/*": ["../shared/*"]
+    },
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,

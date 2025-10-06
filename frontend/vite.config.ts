@@ -134,12 +134,20 @@ export default defineConfig({
   },
   server: {
     port: Number(process.env.FRONTEND_PORT ?? 5174),
+    proxy: {
+      '/api': {
+        target: `http://${process.env.HOST || 'localhost'}:${process.env.BACKEND_PORT || '8887'}`,
+        changeOrigin: true,
+        ws: true,
+      },
+    },
     fs: {
       // Allow serving files from parent directories (forge-overrides, upstream)
       allow: [
         path.resolve(__dirname, '..'),
       ],
     },
+    open: process.env.VITE_OPEN === 'true',
   },
   build: {
     outDir: 'dist',

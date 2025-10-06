@@ -23,21 +23,26 @@ import { useUserSystem } from '@/components/config-provider';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import { omniApi } from './api';
 import { OmniInstance } from './types';
+import type { Config } from 'shared/types';
+import type { OmniConfig } from 'shared/forge-types';
+
+type ForgeConfig = Config & { omni?: OmniConfig | null };
 
 const OmniModalImpl = () => {
   const modal = useModal();
   const { config, updateAndSaveConfig } = useUserSystem();
+  const forgeConfig = config as ForgeConfig | null;
   const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [instances, setInstances] = useState<OmniInstance[]>([]);
-  
+
   const [formData, setFormData] = useState({
-    host: config?.omni?.host || 'http://localhost:8882',
-    api_key: config?.omni?.api_key || '',
-    instance: config?.omni?.instance || '',
-    recipient: config?.omni?.recipient || '',
-    recipient_type: config?.omni?.recipient_type || 'PhoneNumber',
+    host: forgeConfig?.omni?.host ?? 'http://localhost:8882',
+    api_key: forgeConfig?.omni?.api_key ?? '',
+    instance: forgeConfig?.omni?.instance ?? '',
+    recipient: forgeConfig?.omni?.recipient ?? '',
+    recipient_type: forgeConfig?.omni?.recipient_type ?? 'PhoneNumber',
   });
 
   const validateAndLoadInstances = async () => {
@@ -45,10 +50,10 @@ const OmniModalImpl = () => {
       setError('Host and API key are required');
       return;
     }
-    
+
     setValidating(true);
     setError(null);
-    
+
     try {
       const result = await omniApi.validateConfig(formData.host, formData.api_key);
       if (result.valid) {
@@ -71,10 +76,10 @@ const OmniModalImpl = () => {
       setError('Please select an instance and enter a recipient');
       return;
     }
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       await updateAndSaveConfig({
         omni: {
@@ -85,7 +90,7 @@ const OmniModalImpl = () => {
           recipient: formData.recipient,
           recipient_type: formData.recipient_type as any,
         },
-      });
+      } as Partial<Config>);
       modal.hide();
     } catch (e: any) {
       setError(e.message || 'Failed to save configuration');
@@ -94,7 +99,9 @@ const OmniModalImpl = () => {
     }
   };
 
-  const selectedInstance = instances.find(i => i.instance_name === formData.instance);
+  const selectedInstance = instances.find(
+    (instance) => instance.instance_name === formData.instance
+  );
   const isDiscord = selectedInstance?.channel_type === 'discord';
 
   return (
@@ -109,7 +116,7 @@ const OmniModalImpl = () => {
             Connect to your Omni server to send notifications
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="host">Server Host</Label>
@@ -120,7 +127,7 @@ const OmniModalImpl = () => {
               onChange={(e) => setFormData({ ...formData, host: e.target.value })}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="api-key">API Key</Label>
             <Input
@@ -131,13 +138,9 @@ const OmniModalImpl = () => {
               onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
             />
           </div>
-          
+
           {instances.length === 0 && (
-            <Button 
-              onClick={validateAndLoadInstances}
-              disabled={validating}
-              className="w-full"
-            >
+            <Button onClick={validateAndLoadInstances} disabled={validating} className="w-full">
               {validating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -148,7 +151,7 @@ const OmniModalImpl = () => {
               )}
             </Button>
           )}
-          
+
           {instances.length > 0 && (
             <>
               <div className="space-y-2">
@@ -162,55 +165,49 @@ const OmniModalImpl = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {instances.map((instance) => (
-                      <SelectItem 
-                        key={instance.instance_name} 
-                        value={instance.instance_name}
-                      >
+                      <SelectItem key={instance.instance_name} value={instance.instance_name}>
                         {instance.display_name} ({instance.status})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="recipient">
-                  {isDiscord ? 'User ID' : 'Phone Number'}
-                </Label>
+                <Label htmlFor="recipient">{isDiscord ? 'User ID' : 'Phone Number'}</Label>
                 <Input
                   id="recipient"
                   placeholder={isDiscord ? 'Discord User ID' : '5512982298888'}
                   value={formData.recipient}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    recipient: e.target.value,
-                    recipient_type: isDiscord ? 'UserId' : 'PhoneNumber'
-                  })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      recipient: e.target.value,
+                      recipient_type: isDiscord ? 'UserId' : 'PhoneNumber',
+                    })
+                  }
                 />
                 <p className="text-xs text-muted-foreground">
-                  {isDiscord 
+                  {isDiscord
                     ? 'Enter the Discord user ID to receive notifications'
                     : 'Enter phone number with country code (e.g., 5512982298888)'}
                 </p>
               </div>
             </>
           )}
-          
+
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
         </div>
-        
+
         <DialogFooter>
           <Button variant="outline" onClick={() => modal.hide()}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleSave}
-            disabled={loading || instances.length === 0}
-          >
+          <Button onClick={handleSave} disabled={loading || instances.length === 0}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

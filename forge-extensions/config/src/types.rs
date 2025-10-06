@@ -17,7 +17,6 @@ pub struct ProjectConfig {
 pub struct ForgeProjectSettings {
     pub omni_enabled: bool,
     pub omni_config: Option<forge_omni::OmniConfig>,
-    pub branch_templates_enabled: bool,
 }
 
 impl Default for ForgeProjectSettings {
@@ -25,7 +24,6 @@ impl Default for ForgeProjectSettings {
         Self {
             omni_enabled: false,
             omni_config: None,
-            branch_templates_enabled: true,
         }
     }
 }
