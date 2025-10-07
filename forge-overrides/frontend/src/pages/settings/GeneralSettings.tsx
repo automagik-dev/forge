@@ -44,7 +44,7 @@ import { useUserSystem } from '@/components/config-provider';
 import { TaskTemplateManager } from '@/components/TaskTemplateManager';
 import { OmniCard } from '@/components/omni/OmniCard';
 import NiceModal from '@ebay/nice-modal-react';
-import { api } from '@/lib/api';
+import { forgeApi } from '@/lib/forge-api';
 
 export function GeneralSettings() {
   const { t } = useTranslation(['settings', 'common']);
@@ -76,8 +76,8 @@ export function GeneralSettings() {
   useEffect(() => {
     const loadForgeSettings = async () => {
       try {
-        const response = await api.get<ForgeProjectSettings>('/api/forge/config');
-        setForgeSettings(response.data);
+        const settings = await forgeApi.getGlobalSettings();
+        setForgeSettings(settings);
       } catch (err) {
         console.error('Failed to load forge settings:', err);
       }
@@ -148,7 +148,7 @@ export function GeneralSettings() {
 
       // Save forge settings if changed
       if (forgeSettings) {
-        await api.put('/api/forge/config', forgeSettings);
+        await forgeApi.setGlobalSettings(forgeSettings);
       }
 
       setTheme(draft.theme);

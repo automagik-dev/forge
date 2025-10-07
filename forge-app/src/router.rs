@@ -11,6 +11,7 @@ use axum::{
     routing::{get, post},
 };
 use rust_embed::RustEmbed;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use uuid::Uuid;
 
@@ -89,6 +90,7 @@ fn forge_api_routes() -> Router<ForgeAppState> {
             get(get_project_settings).put(update_project_settings),
         )
         .route("/api/forge/omni/instances", get(list_omni_instances))
+        .route("/api/forge/omni/validate", post(validate_omni_config))
         .route(
             "/api/forge/omni/notifications",
             get(list_omni_notifications),
@@ -413,4 +415,46 @@ async fn list_omni_notifications(
     }
 
     Ok(Json(json!({ "notifications": notifications })))
+}
+
+#[derive(Debug, Deserialize)]
+struct ValidateOmniRequest {
+    host: String,
+    api_key: String,
+}
+
+#[derive(Debug, Serialize)]
+struct ValidateOmniResponse {
+    valid: bool,
+    instances: Vec<forge_omni::OmniInstance>,
+    error: Option<String>,
+}
+
+async fn validate_omni_config(
+    State(_services): State<ForgeServices>,
+    Json(req): Json<ValidateOmniRequest>,
+) -> Result<Json<ValidateOmniResponse>, StatusCode> {
+    // Create temporary OmniService with provided credentials
+    let temp_config = forge_omni::OmniConfig {
+        enabled: false,
+        host: Some(req.host),
+        api_key: Some(req.api_key),
+        instance: None,
+        recipient: None,
+        recipient_type: None,
+    };
+
+    let temp_service = forge_omni::OmniService::new(temp_config);
+    match temp_service.list_instances().await {
+        Ok(instances) => Ok(Json(ValidateOmniResponse {
+            valid: true,
+            instances,
+            error: None,
+        })),
+        Err(e) => Ok(Json(ValidateOmniResponse {
+            valid: false,
+            instances: vec![],
+            error: Some(format!("Configuration validation failed: {}", e)),
+        })),
+    }
 }

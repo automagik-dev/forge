@@ -1,12 +1,12 @@
 {
   "mcpServers": {
     "forge": {
+      "command": "npx",
       "args": [
         "-y",
-        "vibe-kanban",
+        "vibe-kanban@0.0.102",
         "--mcp"
-      ],
-      "command": "npx"
+      ]
     },
     "playwright": {
       "command": "npx",

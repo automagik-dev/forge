@@ -49,10 +49,20 @@ export const omniApi = {
     instances: OmniInstance[];
     error?: string;
   }> => {
-    return request('/api/omni/validate', {
+    // Direct fetch without envelope wrapper since Forge endpoints return data directly
+    const response = await fetch('/api/forge/omni/validate', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ host, api_key: apiKey }),
     });
+
+    if (!response.ok) {
+      throw new Error(`Request failed with ${response.status}`);
+    }
+
+    return response.json();
   },
 
   testNotification: async (): Promise<string> => {

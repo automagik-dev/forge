@@ -1,4 +1,4 @@
-use super::types::{OmniInstance, RawOmniInstance, SendTextRequest, SendTextResponse};
+use super::types::{InstancesResponse, OmniInstance, SendTextRequest, SendTextResponse};
 use anyhow::Result;
 
 pub struct OmniClient {
@@ -25,9 +25,9 @@ impl OmniClient {
             request = request.header("X-API-Key", key);
         }
 
-        let response: Vec<RawOmniInstance> = request.send().await?.json().await?;
+        let response: InstancesResponse = request.send().await?.json().await?;
 
-        let instances = response.into_iter().map(OmniInstance::from).collect();
+        let instances = response.channels.into_iter().map(OmniInstance::from).collect();
 
         Ok(instances)
     }

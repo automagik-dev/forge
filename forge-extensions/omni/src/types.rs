@@ -43,65 +43,30 @@ pub struct OmniInstance {
 
 impl From<RawOmniInstance> for OmniInstance {
     fn from(raw: RawOmniInstance) -> Self {
-        let channel_type = if raw.channel_type.trim().is_empty() {
-            "unknown".to_string()
-        } else {
-            raw.channel_type
-        };
-
-        let display_name = raw
-            .profile_name
-            .clone()
-            .filter(|name| !name.trim().is_empty())
-            .unwrap_or_else(|| raw.name.clone());
-
-        let status = raw
-            .evolution_status
-            .as_ref()
-            .and_then(|status| status.state.clone())
-            .unwrap_or_else(|| {
-                if raw.is_active.unwrap_or(false) {
-                    "active".to_string()
-                } else {
-                    "inactive".to_string()
-                }
-            });
-
-        let is_healthy = raw
-            .evolution_status
-            .as_ref()
-            .map(|status| status.error.is_none())
-            .unwrap_or_else(|| raw.is_active.unwrap_or(false));
-
         OmniInstance {
-            instance_name: raw.name,
-            channel_type,
-            display_name,
-            status,
-            is_healthy,
+            instance_name: raw.instance_name,
+            channel_type: raw.channel_type,
+            display_name: raw.display_name,
+            status: raw.status,
+            is_healthy: raw.is_healthy,
         }
     }
 }
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct RawOmniInstance {
-    pub name: String,
-    #[serde(default)]
+    pub instance_name: String,
     pub channel_type: String,
-    #[serde(default)]
-    pub profile_name: Option<String>,
-    #[serde(default)]
-    pub is_active: Option<bool>,
-    #[serde(default)]
-    pub evolution_status: Option<RawEvolutionStatus>,
+    pub display_name: String,
+    pub status: String,
+    pub is_healthy: bool,
 }
 
 #[derive(Debug, Deserialize)]
-pub(crate) struct RawEvolutionStatus {
-    pub state: Option<String>,
-    #[serde(default)]
-    pub error: Option<String>,
+pub(crate) struct InstancesResponse {
+    pub channels: Vec<RawOmniInstance>,
 }
+
 
 #[derive(Debug, Serialize, TS)]
 pub struct SendTextRequest {
@@ -170,34 +135,31 @@ mod tests {
     #[test]
     fn test_raw_instance_conversion() {
         let raw = RawOmniInstance {
-            name: "felipe0008".to_string(),
-            channel_type: "".to_string(),
-            profile_name: Some("Namastex Labs".to_string()),
-            is_active: Some(true),
-            evolution_status: Some(RawEvolutionStatus {
-                state: Some("open".to_string()),
-                error: None,
-            }),
+            instance_name: "felipe0008".to_string(),
+            channel_type: "whatsapp".to_string(),
+            display_name: "WhatsApp - felipe0008".to_string(),
+            status: "connected".to_string(),
+            is_healthy: true,
         };
 
         let instance: OmniInstance = raw.into();
         assert_eq!(instance.instance_name, "felipe0008");
-        assert_eq!(instance.channel_type, "unknown");
-        assert_eq!(instance.display_name, "Namastex Labs");
-        assert_eq!(instance.status, "open");
+        assert_eq!(instance.channel_type, "whatsapp");
+        assert_eq!(instance.display_name, "WhatsApp - felipe0008");
+        assert_eq!(instance.status, "connected");
         assert!(instance.is_healthy);
 
         let raw = RawOmniInstance {
-            name: "discord-bot".to_string(),
+            instance_name: "discord-bot".to_string(),
             channel_type: "discord".to_string(),
-            profile_name: None,
-            is_active: Some(false),
-            evolution_status: None,
+            display_name: "Discord - discord-bot".to_string(),
+            status: "not_found".to_string(),
+            is_healthy: false,
         };
 
         let instance: OmniInstance = raw.into();
-        assert_eq!(instance.display_name, "discord-bot");
-        assert_eq!(instance.status, "inactive");
+        assert_eq!(instance.display_name, "Discord - discord-bot");
+        assert_eq!(instance.status, "not_found");
         assert!(!instance.is_healthy);
     }
 }

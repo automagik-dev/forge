@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from '@/App.tsx';
 import '@/styles/index.css';
 import { ClickToComponent } from 'click-to-react-component';
-import { VibeKanbanWebCompanion } from 'vibe-kanban-web-companion';
+import { VibeKanbanWebCompanion} from 'vibe-kanban-web-companion';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
 import NiceModal from '@ebay/nice-modal-react';
@@ -31,8 +31,8 @@ import {
   ProjectFormDialog,
   ProjectEditorSelectionDialog,
   RestoreLogsDialog,
-} from '@/components/dialogs';
-import { OmniModal } from '@/components/omni/OmniModal';
+} from './components/dialogs';
+import { OmniModal } from './components/omni/OmniModal';
 
 // Register modals
 NiceModal.register('github-login', GitHubLoginDialog);
@@ -55,6 +55,7 @@ NiceModal.register('delete-configuration', DeleteConfigurationDialog);
 NiceModal.register('project-form', ProjectFormDialog);
 NiceModal.register('project-editor-selection', ProjectEditorSelectionDialog);
 NiceModal.register('restore-logs', RestoreLogsDialog);
+// Forge: register Omni modal
 NiceModal.register('omni-modal', OmniModal);
 // Install VS Code iframe keyboard bridge when running inside an iframe
 import '@/vscode/bridge';
