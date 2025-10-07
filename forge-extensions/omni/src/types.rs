@@ -54,7 +54,6 @@ pub(crate) struct InstancesResponse {
     pub channels: Vec<RawOmniInstance>,
 }
 
-
 #[derive(Debug, Serialize, TS)]
 pub struct SendTextRequest {
     #[serde(skip_serializing_if = "Option::is_none")]

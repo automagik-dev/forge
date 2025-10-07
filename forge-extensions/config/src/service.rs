@@ -103,9 +103,10 @@ impl ForgeConfigService {
 
     pub async fn get_global_settings(&self) -> Result<ForgeProjectSettings> {
         // Read from forge_global_settings table
-        let row: Option<(String,)> = sqlx::query_as("SELECT forge_config FROM forge_global_settings WHERE id = 1")
-            .fetch_optional(&self.pool)
-            .await?;
+        let row: Option<(String,)> =
+            sqlx::query_as("SELECT forge_config FROM forge_global_settings WHERE id = 1")
+                .fetch_optional(&self.pool)
+                .await?;
 
         if let Some((config_str,)) = row {
             if let Ok(settings) = serde_json::from_str::<ForgeProjectSettings>(&config_str) {
@@ -122,7 +123,7 @@ impl ForgeConfigService {
 
         sqlx::query(
             "INSERT INTO forge_global_settings (id, forge_config) VALUES (1, ?)
-             ON CONFLICT(id) DO UPDATE SET forge_config = excluded.forge_config"
+             ON CONFLICT(id) DO UPDATE SET forge_config = excluded.forge_config",
         )
         .bind(config_json)
         .execute(&self.pool)

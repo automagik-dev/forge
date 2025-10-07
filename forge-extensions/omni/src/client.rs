@@ -27,7 +27,11 @@ impl OmniClient {
 
         let response: InstancesResponse = request.send().await?.json().await?;
 
-        let instances = response.channels.into_iter().map(OmniInstance::from).collect();
+        let instances = response
+            .channels
+            .into_iter()
+            .map(OmniInstance::from)
+            .collect();
 
         Ok(instances)
     }

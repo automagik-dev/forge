@@ -343,9 +343,7 @@ async fn update_project_settings(
     Ok(Json(settings))
 }
 
-async fn get_omni_status(
-    State(services): State<ForgeServices>,
-) -> Result<Json<Value>, StatusCode> {
+async fn get_omni_status(State(services): State<ForgeServices>) -> Result<Json<Value>, StatusCode> {
     let omni = services.omni.read().await;
     let config = omni.config();
 
