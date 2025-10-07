@@ -49,12 +49,12 @@ const DisclaimerDialog = NiceModal.create(() => {
               Learn how we isolate worktrees, clean up containers, and audit
               command history in the Automagik Forge safety guide:{' '}
               <a
-                href="https://docs.automagikforge.com/safety"
+                href="https://forge.automag.ik"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 dark:text-blue-400 underline hover:no-underline"
               >
-                https://docs.automagikforge.com/safety
+                https://forge.automag.ik
               </a>
             </p>
           </DialogDescription>

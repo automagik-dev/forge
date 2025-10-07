@@ -42,9 +42,13 @@ async fn main() -> anyhow::Result<()> {
     let actual_addr = listener.local_addr()?;
     tracing::info!("Forge app listening on {}", actual_addr);
 
-    // Open browser automatically
-    let url = format!("http://{}", actual_addr);
-    if let Err(e) = open_browser(&url).await {
+    // Open browser automatically with localhost instead of 0.0.0.0
+    let browser_url = if actual_addr.ip().is_unspecified() {
+        format!("http://localhost:{}", actual_addr.port())
+    } else {
+        format!("http://{}", actual_addr)
+    };
+    if let Err(e) = open_browser(&browser_url).await {
         tracing::warn!("Failed to open browser: {}", e);
     }
 

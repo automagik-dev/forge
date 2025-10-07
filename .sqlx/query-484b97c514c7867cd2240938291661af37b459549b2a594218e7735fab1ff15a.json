@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "INSERT INTO tasks (id, project_id, title, description, status, parent_task_attempt) \n               VALUES ($1, $2, $3, $4, $5, $6) \n               RETURNING id as \"id!: Uuid\", project_id as \"project_id!: Uuid\", title, description, status as \"status!: TaskStatus\", parent_task_attempt as \"parent_task_attempt: Uuid\", created_at as \"created_at!: DateTime<Utc>\", updated_at as \"updated_at!: DateTime<Utc>\"",
+  "query": "SELECT\n                 id as \"id!: Uuid\",\n                 project_id as \"project_id!: Uuid\",\n                 title,\n                 description,\n                 status as \"status!: TaskStatus\",\n                 parent_task_attempt as \"parent_task_attempt: Uuid\",\n                 created_at as \"created_at!: DateTime<Utc>\",\n                 updated_at as \"updated_at!: DateTime<Utc>\"\n               FROM tasks\n               WHERE parent_task_attempt = $1\n               ORDER BY created_at DESC",
   "describe": {
     "columns": [
       {
@@ -45,7 +45,7 @@
       }
     ],
     "parameters": {
-      "Right": 6
+      "Right": 1
     },
     "nullable": [
       true,
@@ -58,5 +58,5 @@
       false
     ]
   },
-  "hash": "5ae4dea70309b2aa40d41412f70b200038176dc8c56c49eeaaa65763a1b276eb"
+  "hash": "484b97c514c7867cd2240938291661af37b459549b2a594218e7735fab1ff15a"
 }

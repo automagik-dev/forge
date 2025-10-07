@@ -855,7 +855,9 @@ mod tests {
         .expect("failed to queue notification");
 
         let previous_url = std::env::var("PUBLIC_BASE_URL").ok();
-        std::env::set_var("PUBLIC_BASE_URL", "http://forge.example");
+        unsafe {
+            std::env::set_var("PUBLIC_BASE_URL", "http://forge.example");
+        }
 
         let processed = process_next_omni_notification(&pool, &config_service)
             .await
@@ -875,10 +877,12 @@ mod tests {
 
         mock.assert_async().await;
 
-        if let Some(url) = previous_url {
-            std::env::set_var("PUBLIC_BASE_URL", url);
-        } else {
-            std::env::remove_var("PUBLIC_BASE_URL");
+        unsafe {
+            if let Some(url) = previous_url {
+                std::env::set_var("PUBLIC_BASE_URL", url);
+            } else {
+                std::env::remove_var("PUBLIC_BASE_URL");
+            }
         }
     }
 
