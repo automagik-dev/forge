@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { AlertCircle, ExternalLink } from 'lucide-react';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 
+// FORGE CUSTOMIZATION: Automagik Forge release notes URL
 const RELEASE_NOTES_URL = 'https://forge.automag.ik/release-notes';
 
 export const ReleaseNotesDialog = NiceModal.create(() => {
@@ -34,6 +35,7 @@ export const ReleaseNotesDialog = NiceModal.create(() => {
       <DialogContent className="flex flex-col w-full h-full max-w-7xl max-h-[calc(100dvh-1rem)] p-0">
         <DialogHeader className="p-4 border-b flex-shrink-0">
           <DialogTitle className="text-xl font-semibold">
+            {/* FORGE CUSTOMIZATION: Automagik Forge branding */}
             We've updated Automagik Forge! Check out what's new...
           </DialogTitle>
         </DialogHeader>
