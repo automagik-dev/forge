@@ -36,6 +36,7 @@ import {
   UiLanguage,
 } from 'shared/types';
 import { getLanguageOptions } from '@/i18n/languages';
+import type { ForgeProjectSettings } from 'shared/forge-types';
 
 import { toPrettyCase } from '@/utils/string';
 import { useTheme } from '@/components/theme-provider';
@@ -43,6 +44,7 @@ import { useUserSystem } from '@/components/config-provider';
 import { TaskTemplateManager } from '@/components/TaskTemplateManager';
 import { OmniCard } from '@/components/omni/OmniCard';
 import NiceModal from '@ebay/nice-modal-react';
+import { api } from '@/lib/api';
 
 export function GeneralSettings() {
   const { t } = useTranslation(['settings', 'common']);
@@ -67,7 +69,21 @@ export function GeneralSettings() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [forgeSettings, setForgeSettings] = useState<ForgeProjectSettings | null>(null);
   const { setTheme } = useTheme();
+
+  // Load forge settings
+  useEffect(() => {
+    const loadForgeSettings = async () => {
+      try {
+        const response = await api.get<ForgeProjectSettings>('/api/forge/config');
+        setForgeSettings(response.data);
+      } catch (err) {
+        console.error('Failed to load forge settings:', err);
+      }
+    };
+    loadForgeSettings();
+  }, []);
 
   // When config loads or changes externally, update draft only if not dirty
   useEffect(() => {
@@ -129,6 +145,12 @@ export function GeneralSettings() {
 
     try {
       await updateAndSaveConfig(draft); // Atomically apply + persist
+
+      // Save forge settings if changed
+      if (forgeSettings) {
+        await api.put('/api/forge/config', forgeSettings);
+      }
+
       setTheme(draft.theme);
       setDirty(false);
       setSuccess(true);
@@ -641,7 +663,15 @@ export function GeneralSettings() {
         </CardContent>
       </Card>
 
-      <OmniCard />
+      {forgeSettings && (
+        <OmniCard
+          value={forgeSettings}
+          onChange={(updated) => {
+            setForgeSettings(updated);
+            setDirty(true);
+          }}
+        />
+      )}
 
       <Card>
         <CardHeader>
