@@ -57,9 +57,11 @@ const GitHubLoginDialog = NiceModal.create(() => {
           switch (poll_status) {
             case DevicePollStatus.SUCCESS:
               setPolling(false);
-              setDeviceState(null);
               setError(null);
               await reloadSystem();
+              modal.resolve(true);
+              modal.hide();
+              setDeviceState(null);
               break;
             case DevicePollStatus.AUTHORIZATION_PENDING:
               timer = setTimeout(poll, deviceState.interval * 1000);
@@ -140,6 +142,7 @@ const GitHubLoginDialog = NiceModal.create(() => {
             <DialogTitle>Sign in with GitHub</DialogTitle>
           </div>
           <DialogDescription className="text-left pt-1">
+            {/* FORGE CUSTOMIZATION: Branding - "Automagik Forge" instead of "Vibe Kanban" */}
             Connect your GitHub account to create and manage pull requests
             directly from Automagik Forge.
           </DialogDescription>
