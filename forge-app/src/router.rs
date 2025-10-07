@@ -14,7 +14,7 @@ use rust_embed::RustEmbed;
 use serde_json::{Value, json};
 use uuid::Uuid;
 
-use crate::services::{ForgeServices, container_ext::forge_branch_from_task_attempt};
+use crate::services::ForgeServices;
 use db::models::{
     image::TaskImage,
     task::{Task, TaskWithAttemptStatus},
@@ -120,18 +120,12 @@ async fn forge_create_task_and_start(
         )
         .await;
 
-    // Use forge branch naming instead of upstream "vk/" prefix
-    let attempt_id = Uuid::new_v4();
-    let git_branch_name = forge_branch_from_task_attempt(&attempt_id, &task.title);
-
     let task_attempt = TaskAttempt::create(
         &deployment.db().pool,
         &CreateTaskAttempt {
             executor: payload.executor_profile_id.executor,
             base_branch: payload.base_branch,
-            branch: git_branch_name,
         },
-        attempt_id,
         task.id,
     )
     .await?;

@@ -498,8 +498,8 @@ mod tests {
         let attempt_id = Uuid::nil();
         let task = dummy_task(None, "Add Payment Flow");
         let branch = generate_branch_name(&task, &attempt_id);
-        let expected_prefix = format!("forge-{}-", utils::text::git_branch_id(&task.title));
-        let expected_suffix = utils::text::short_uuid(&attempt_id);
+        let expected_prefix = format!("forge/{}-", utils::text::short_uuid(&attempt_id));
+        let expected_suffix = utils::text::git_branch_id(&task.title);
         assert!(branch.starts_with(&expected_prefix));
         assert!(branch.ends_with(&expected_suffix));
     }

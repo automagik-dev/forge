@@ -21,6 +21,7 @@ pub type ThemeMode = versions::v7::ThemeMode;
 pub type SoundFile = versions::v7::SoundFile;
 pub type EditorType = versions::v7::EditorType;
 pub type GitHubConfig = versions::v7::GitHubConfig;
+pub type UiLanguage = versions::v7::UiLanguage;
 pub type OmniConfig = versions::v7::OmniConfig;
 pub type RecipientType = versions::v7::RecipientType;
 

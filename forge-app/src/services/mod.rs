@@ -20,8 +20,6 @@ use uuid::Uuid;
 use forge_config::ForgeConfigService;
 use forge_omni::{OmniConfig, OmniService};
 
-pub mod container_ext;
-
 /// Main forge services container
 #[derive(Clone)]
 pub struct ForgeServices {
@@ -38,6 +36,7 @@ impl ForgeServices {
 
         // Initialize upstream deployment (handles DB, sentry, analytics, etc.)
         let deployment = DeploymentImpl::new().await?;
+        ensure_legacy_base_branch_column(&deployment.db().pool).await?;
 
         deployment.update_sentry_scope().await?;
         deployment.cleanup_orphan_executions().await?;
@@ -197,6 +196,55 @@ struct ForgeMigration {
     version: &'static str,
     description: &'static str,
     sql: &'static str,
+}
+
+async fn ensure_legacy_base_branch_column(pool: &SqlitePool) -> Result<()> {
+    let has_base_branch = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(1) FROM pragma_table_info('task_attempts') WHERE name = 'base_branch'",
+    )
+    .fetch_one(pool)
+    .await?
+        > 0;
+
+    tracing::debug!(
+        has_base_branch,
+        "legacy schema check for task_attempts.base_branch"
+    );
+
+    if !has_base_branch {
+        sqlx::query(
+            "ALTER TABLE task_attempts ADD COLUMN base_branch TEXT NOT NULL DEFAULT 'main'",
+        )
+        .execute(pool)
+        .await?;
+
+        let has_target_branch = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(1) FROM pragma_table_info('task_attempts') WHERE name = 'target_branch'",
+        )
+        .fetch_one(pool)
+        .await?
+            > 0;
+
+        if has_target_branch {
+            sqlx::query(
+                "UPDATE task_attempts SET base_branch = COALESCE(NULLIF(target_branch, ''), branch, 'main')",
+            )
+            .execute(pool)
+            .await?;
+        }
+
+        tracing::info!(
+            "Backfilled task_attempts.base_branch for legacy Vibe Kanban databases so orphan cleanup can run"
+        );
+    }
+
+    sqlx::query(
+        "UPDATE task_attempts SET base_branch = 'main' WHERE base_branch IS NULL OR TRIM(base_branch) = ''",
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
 }
 
 const FORGE_MIGRATIONS: &[ForgeMigration] = &[
