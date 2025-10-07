@@ -1,6 +1,11 @@
 // FORGE CUSTOMIZATION: This dialog contains Automagik Forge-specific safety warnings
 // and legal disclaimers tailored to Forge's elevated workspace access model.
 // Content references Forge branding, documentation URLs, and security practices.
+//
+// ALIGNMENT STATUS: Structurally aligned with upstream v0.0.105 (commit ad1696cd)
+// - Same component structure (NiceModal.create pattern)
+// - Same Dialog props (uncloseable={true})
+// - Content customized for Forge branding and worktree architecture
 
 import {
   Dialog,
