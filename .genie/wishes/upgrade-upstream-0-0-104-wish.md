@@ -1,9 +1,11 @@
-# Wish: Upgrade Upstream Submodule to v0.0.104
+# Wish: Upgrade Upstream Submodule to v0.0.105
 
-**Slug:** `upgrade-upstream-0-0-104`
+**Slug:** `upgrade-upstream-0-0-104` (keeping original slug for compatibility)
+**Actual Version:** v0.0.105-20251007161830
 **Branch:** `feat/genie-framework-migration` (current branch - staying here)
-**Status:** Draft → Approved (pending human review)
+**Status:** In Progress - Submodule updated, overrides pending
 **Created:** 2025-10-07
+**Updated:** 2025-10-07 (v0.0.105 upgrade completed)
 **Effort:** Large (L) - 30 individual tasks
 **Task Count:** 1 prep + 1 audit + 25 file refactors + 3 validation = **30 tasks**
 
@@ -11,7 +13,9 @@
 
 ## Overview
 
-Upgrade the upstream vibe-kanban submodule from v0.0.101 (commit d8fc7a98) to v0.0.104 (commit fbb972a5), incorporating 3 intermediate releases with 68 files changed (+1,835/-975 lines). Refactor all 25 forge-overrides via focused 1:1 upstream comparison, preserving ONLY minimal Forge customizations (branding, forge-api, Omni integration, repository links).
+**UPDATE 2025-10-07:** Upgraded to v0.0.105-20251007161830 (skipping v0.0.104). Repository now independent from BloopAI, using namastexlabs/vibe-kanban fork.
+
+Upgrade the upstream vibe-kanban submodule from v0.0.101 (commit d8fc7a98) to v0.0.105, incorporating 4 releases with additional changes beyond original scope. Refactor all 25 forge-overrides via focused 1:1 upstream comparison, preserving ONLY minimal Forge customizations (branding, forge-api, Omni integration, repository links).
 
 **Override Strategy:** Prioritize upstream structure - avoid merge conflicts, eliminate drift bugs.
 
@@ -21,17 +25,20 @@ Upgrade the upstream vibe-kanban submodule from v0.0.101 (commit d8fc7a98) to v0
 
 ## Context
 
-**Current State:**
-- Upstream: v0.0.101-20251001171801 (d8fc7a98)
+**Current State (as of commit 9c0d5506):**
+- Upstream: v0.0.105 (ad1696cd) ✅ upgraded from v0.0.101 (d8fc7a98)
 - Branch: `feat/genie-framework-migration`
-- Override files: **25 files** in `forge-overrides/frontend/src/`
-- Known issues: Potential bugs from override drift vs upstream
+- Override files: **25 files** in `forge-overrides/frontend/src/` (need refactoring)
+- Repository: Independent from BloopAI, using namastexlabs/vibe-kanban fork ✅
+- Known issues: Potential bugs from override drift vs upstream (to be addressed)
 
 **Target State:**
-- Upstream: v0.0.104-20251006165551 (fbb972a5)
-- All 25 overrides refactored via 1:1 upstream comparison
+- Upstream: v0.0.105-20251007161830 ✅ (achieved)
+- Repository: Independent from BloopAI, using namastexlabs/vibe-kanban fork ✅ (achieved)
+- All 25 overrides refactored via 1:1 upstream comparison (in progress)
 - Minimal customizations preserved (branding, forge-api, Omni, links)
 - Discord integration enabled (guild ID: 1095114867012292758)
+- Codex executor refactor validated (new split architecture)
 - New Copilot executor integrated
 - MCP server refactor validated
 - Override drift eliminated
@@ -1090,6 +1097,8 @@ Closes: #[issue-number-if-any]
 | Date | Event | Notes |
 |------|-------|-------|
 | 2025-10-07 | Wish created | Planning complete, awaiting human approval |
+| 2025-10-07 | Repository independence achieved | Removed BloopAI upstream, reconfigured to namastexlabs/vibe-kanban fork (commit 9c0d5506) |
+| 2025-10-07 | Submodule upgraded to v0.0.105 | Skipped v0.0.104, now at v0.0.105-20251007161830; wish needs scope adjustment |
 
 ---
 
@@ -1194,6 +1203,16 @@ This wish is considered **COMPLETE** when:
 ---
 
 ## Notes
+
+**IMPORTANT UPDATE (2025-10-07):**
+Repository has been upgraded to v0.0.105-20251007161830, superseding the original v0.0.104 target. Changes between v0.0.104 and v0.0.105 include:
+- Major: Codex executor refactored (1352 lines → split into client.rs, jsonrpc.rs, normalize_logs.rs, session.rs)
+- API route updates (approvals, projects, task_attempts, task_templates)
+- Version bumps across all crates
+
+**Recommended Action:**
+- Option 1: Rename wish to `upgrade-upstream-0-0-105` and update all task references
+- Option 2: Continue with existing wish structure but update target version throughout
 
 **Override Refactoring Philosophy:**
 - Upstream structure is source of truth
