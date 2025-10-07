@@ -136,12 +136,6 @@ Task: "Implement user authentication"
 
 ---
 
-## 📸 Visual Context
-
-Attach screenshots, diagrams, or mockups to any task - agents see the visual context and generate better solutions.
-
----
-
 ## 📡 MCP: Remote Control from Anywhere
 
 Automagik Forge acts as a **Model Context Protocol (MCP) server**, enabling AI coding agents to programmatically manage tasks. Control your Forge task board from your preferred AI coding agent without leaving your flow.
