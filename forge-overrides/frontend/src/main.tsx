@@ -1,9 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+// FORGE CUSTOMIZATION: Use @/ path alias for consistency with Forge codebase
 import App from '@/App.tsx';
 import '@/styles/index.css';
 import { ClickToComponent } from 'click-to-react-component';
-import { VibeKanbanWebCompanion} from 'vibe-kanban-web-companion';
+import { VibeKanbanWebCompanion } from 'vibe-kanban-web-companion';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
 import NiceModal from '@ebay/nice-modal-react';
@@ -32,6 +33,7 @@ import {
   ProjectEditorSelectionDialog,
   RestoreLogsDialog,
 } from './components/dialogs';
+// FORGE CUSTOMIZATION: Import Omni modal for Forge-specific feature
 import { OmniModal } from './components/omni/OmniModal';
 
 // Register modals
@@ -55,7 +57,7 @@ NiceModal.register('delete-configuration', DeleteConfigurationDialog);
 NiceModal.register('project-form', ProjectFormDialog);
 NiceModal.register('project-editor-selection', ProjectEditorSelectionDialog);
 NiceModal.register('restore-logs', RestoreLogsDialog);
-// Forge: register Omni modal
+// FORGE CUSTOMIZATION: Register Omni modal for AI-powered prompt features
 NiceModal.register('omni-modal', OmniModal);
 // Install VS Code iframe keyboard bridge when running inside an iframe
 import '@/vscode/bridge';
