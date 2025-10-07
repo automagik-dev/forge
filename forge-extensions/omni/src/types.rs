@@ -9,7 +9,7 @@ pub enum RecipientType {
 }
 
 /// Forge-scoped Omni configuration payload.
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, TS)]
 pub struct OmniConfig {
     pub enabled: bool,
     pub host: Option<String>,
@@ -17,19 +17,6 @@ pub struct OmniConfig {
     pub instance: Option<String>,
     pub recipient: Option<String>,
     pub recipient_type: Option<RecipientType>,
-}
-
-impl Default for OmniConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            host: None,
-            api_key: None,
-            instance: None,
-            recipient: None,
-            recipient_type: None,
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, TS)]
