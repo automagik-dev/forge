@@ -3,4 +3,4 @@
 // Customizations are applied via forge-overrides/frontend/src/
 
 // Import from upstream via @ alias (goes through overlay resolver)
-import '@/main';
+import "@/main";

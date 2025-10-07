@@ -34,7 +34,7 @@ function forgeOverlayResolver(): Plugin {
   return {
     name: 'forge-overlay-resolver',
     enforce: 'pre', // Run before other resolvers
-    resolveId(id, importer) {
+    resolveId(id) {
       // Only handle @/ imports
       if (!id.startsWith('@/')) return null;
 
@@ -110,12 +110,11 @@ function forceWorkspaceResolution(): Plugin {
   return {
     name: 'force-workspace-resolution',
     enforce: 'pre',
-    async resolveId(source, importer, options) {
+    async resolveId(source) {
       // Only handle bare imports (not relative/absolute paths, not aliases)
       if (!source.startsWith('.') && !source.startsWith('/') && !source.startsWith('@/') && source !== 'shared' && !source.startsWith('shared/')) {
         // Force resolution from workspace root via frontend/package.json
         const resolved = await this.resolve(source, buildRoot, {
-          ...options,
           skipSelf: true,
         });
         return resolved;

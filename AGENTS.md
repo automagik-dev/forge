@@ -7,14 +7,12 @@
 <context>
 [CONTEXT]
 - `crates/`: Rust workspace crates — `server` (API + bins), `db` (SQLx models/migrations), `executors`, `services`, `utils`, `deployment`, `local-deployment`
-- `frontend/`: React + TypeScript app (Vite, Tailwind). Source in `frontend/src`
-- `frontend/src/components/dialogs`: Dialog components for the frontend
+- `frontend/`: Vite React entrypoint that imports overlays from `forge-overrides/frontend/src` and upstream source from `upstream/frontend/src`
 - `shared/`: Generated TypeScript types (`shared/types.ts`). Do not edit directly
 - `assets/`, `dev_assets_seed/`, `dev_assets/`: Packaged and local dev assets
 - `forge-app/`: Axum server binary that composes upstream crates and Forge extensions
 - `forge-extensions/`: Rust crates that layer additional services (omni, branch templates, config)
 - `forge-overrides/`: Source overrides glued onto upstream frontend/app code
-- `frontend/`, `frontend-forge/`: Vite React apps; `frontend` mirrors upstream, `frontend-forge` extends it
 - `npx-cli/`: Files published to the npm CLI package
 - `scripts/`: Dev helpers (ports, build pipeline, regression harness)
 - `upstream/`: Git submodule containing the base Automagik Genie template (read-only)
@@ -36,13 +34,11 @@ automagik-forge/
 │   ├── branch-templates/
 │   └── config/
 ├── forge-overrides/     # Source overrides for upstream
-├── frontend/            # React + TypeScript + Vite (upstream mirror)
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── hooks/
-│   │   └── lib/
-├── frontend-forge/      # Forge-specific frontend extensions
+├── frontend/            # React + TypeScript + Vite entrypoint (imports overlays + upstream)
+│   ├── public/          # Forge brand assets & manifest
+│   ├── src/             # Minimal bootstrap into overlays
+│   └── vite.config.ts
+├── forge-overrides/frontend/src/  # Automagik Forge overlays (logo, Omni, dialogs, etc.)
 ├── shared/              # Generated TypeScript types
 │   ├── types.ts         # From server
 │   └── forge-types.ts   # From forge-app
@@ -130,8 +126,7 @@ Essential commands for development, testing, and validation:
 **Development:**
 ```bash
 pnpm install                                             # Install workspace dependencies
-pnpm --filter frontend run dev -- --host --port 3000     # Core frontend dev server
-pnpm --filter frontend-forge run dev -- --host --port 3001  # Forge overlay UI (as needed)
+cd frontend && pnpm run dev -- --host --port 3000        # Frontend dev server (uses overlays)
 BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) \
   cargo watch -w forge-app -x 'run -p forge-app --bin forge-app'   # Backend (watch mode)
 cargo run -p forge-app --bin forge-app                             # Backend single run
@@ -146,15 +141,10 @@ cargo test -p <crate_name>
 cargo fmt --all -- --check
 cargo clippy --all --all-targets --all-features -- -D warnings
 
-# Frontend (core app)
-pnpm --filter frontend run lint
-pnpm --filter frontend run format:check
-pnpm --filter frontend exec tsc --noEmit
-
-# Frontend (forge overlays)
-pnpm --filter frontend-forge run lint
-pnpm --filter frontend-forge run format:check
-pnpm --filter frontend-forge exec tsc --noEmit
+# Frontend (overlays + upstream)
+cd frontend && pnpm run lint
+cd frontend && pnpm run format:check
+cd frontend && pnpm run check
 
 # Type generation (core + forge extensions)
 cargo run -p server --bin generate_types
@@ -217,7 +207,7 @@ Quick reference:
 <context>
 [CONTEXT]
 - **Rust**: Prefer unit tests alongside code (`#[cfg(test)]`), run `cargo test --workspace`. Add tests for new logic and edge cases
-- **Frontend**: Run lint/format/tsc for both `frontend` and `frontend-forge` (`pnpm --filter ... run lint`, `pnpm --filter ... run format:check`, `pnpm --filter ... exec tsc --noEmit`). If adding runtime logic, add scoped Vitest coverage alongside the change
+- **Frontend**: From `frontend/`, run `pnpm run lint`, `pnpm run format:check`, and `pnpm run check`. If adding runtime logic, add scoped Vitest coverage alongside the change
 </context>
 
 <success_criteria>
@@ -271,7 +261,7 @@ Quick reference:
 1. **Backend changes first**: When modifying both frontend and backend, start with backend
 2. **Type generation**: Re-run `cargo run -p server --bin generate_types` (and the forge counterpart) after modifying Rust types
 3. **Database migrations**: Create in `crates/db/migrations/`, apply with `sqlx migrate run`
-4. **Component patterns**: Follow existing patterns in `frontend/src/components/` and overlay tweaks in `frontend-forge/src/`
+4. **Component patterns**: Follow upstream implementations in `upstream/frontend/src/` and keep Automagik overrides in `forge-overrides/frontend/src/`
 </context>
 
 <success_criteria>
@@ -607,7 +597,7 @@ When the user states something that contradicts your observations, code, or prev
 
 ### Rust/TypeScript/Node Tooling *(CRITICAL)*
 - Rust: `cargo test --workspace`, `cargo fmt --all -- --check`, `cargo clippy --all --all-targets --all-features -- -D warnings`
-- Frontend: `pnpm --filter frontend run lint`, `pnpm --filter frontend run format:check`, `pnpm --filter frontend exec tsc --noEmit` (repeat for `frontend-forge` when overlays change)
+- Frontend: `cd frontend && pnpm run lint`, `cd frontend && pnpm run format:check`, `cd frontend && pnpm run check`
 - Type generation: `cargo run -p server --bin generate_types` / `cargo run -p forge-app --bin generate_forge_types` (use `-- --check` variants in CI)
 - Database: `sqlx migrate run` (create migrations with `sqlx migrate add <name>`)
 </critical_behavioral_overrides>
@@ -654,10 +644,10 @@ When the user states something that contradicts your observations, code, or prev
 - Rust tests: `cargo test --workspace`, `cargo test -p <crate>`, `cargo test <test_name>`
 - Rust quality: `cargo fmt --all -- --check`, `cargo clippy --all --all-targets --all-features -- -D warnings`
 - Frontend (core): `pnpm --filter frontend run lint`, `pnpm --filter frontend run format:check`, `pnpm --filter frontend exec tsc --noEmit`
-- Frontend (forge overlays): `pnpm --filter frontend-forge run lint`, `pnpm --filter frontend-forge run format:check`, `pnpm --filter frontend-forge exec tsc --noEmit`
+- Frontend (overlays + upstream): `cd frontend && pnpm run lint`, `cd frontend && pnpm run format:check`, `cd frontend && pnpm run check`
 - Type generation: `cargo run -p server --bin generate_types` (use `-- --check` in CI) and `cargo run -p forge-app --bin generate_forge_types` (use `-- --check` in CI)
 - Database: `sqlx migrate run` (and `sqlx migrate add <name>` when introducing schema changes)
-- Development: `pnpm --filter frontend run dev`, `pnpm --filter frontend-forge run dev`, `cargo watch -w forge-app -x 'run -p forge-app --bin forge-app'`
+- Development: `cd frontend && pnpm run dev`, `cargo watch -w forge-app -x 'run -p forge-app --bin forge-app'`
 - Build & packaging: `./local-build.sh`, then `pnpm pack --filter npx-cli` if publishing the CLI
 - Regression harness: `./scripts/run-forge-regression.sh`
 - Forge MCP integration: use MCP tools (`mcp__forge__*`) for task management

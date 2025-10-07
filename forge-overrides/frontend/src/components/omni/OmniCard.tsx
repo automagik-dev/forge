@@ -18,7 +18,7 @@ import {
 import NiceModal from '@ebay/nice-modal-react';
 import { useUserSystem } from '@/components/config-provider';
 import type { Config } from 'shared/types';
-import type { OmniConfig } from 'shared/forge-types';
+import type { OmniConfig } from './types';
 
 type ForgeConfig = Config & { omni?: OmniConfig | null };
 

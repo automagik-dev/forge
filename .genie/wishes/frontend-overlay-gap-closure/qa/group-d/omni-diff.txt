@@ -1,0 +1,64 @@
+diff --git a/upstream/frontend/src/main.tsx b/forge-overrides/frontend/src/main.tsx
+index a0d10363..679778c7 100644
+--- a/upstream/frontend/src/main.tsx
++++ b/forge-overrides/frontend/src/main.tsx
+@@ -1,14 +1,14 @@
+ import React from 'react';
+ import ReactDOM from 'react-dom/client';
+-import App from './App.tsx';
+-import './styles/index.css';
++import App from '@/App.tsx';
++import '@/styles/index.css';
+ import { ClickToComponent } from 'click-to-react-component';
+ import { VibeKanbanWebCompanion } from 'vibe-kanban-web-companion';
+ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+ import * as Sentry from '@sentry/react';
+ import NiceModal from '@ebay/nice-modal-react';
+ // Import modal type definitions
+-import './types/modals';
++import '@/types/modals';
+ // Import and register modals
+ import {
+   GitHubLoginDialog,
+@@ -31,7 +31,8 @@ import {
+   ProjectFormDialog,
+   ProjectEditorSelectionDialog,
+   RestoreLogsDialog,
+-} from './components/dialogs';
++} from '@/components/dialogs';
++import { OmniModal } from '@/components/omni/OmniModal';
+ 
+ // Register modals
+ NiceModal.register('github-login', GitHubLoginDialog);
+@@ -54,8 +55,9 @@ NiceModal.register('delete-configuration', DeleteConfigurationDialog);
+ NiceModal.register('project-form', ProjectFormDialog);
+ NiceModal.register('project-editor-selection', ProjectEditorSelectionDialog);
+ NiceModal.register('restore-logs', RestoreLogsDialog);
++NiceModal.register('omni-modal', OmniModal);
+ // Install VS Code iframe keyboard bridge when running inside an iframe
+-import './vscode/bridge';
++import '@/vscode/bridge';
+ 
+ import {
+   useLocation,
+diff --git a/upstream/frontend/src/pages/settings/GeneralSettings.tsx b/forge-overrides/frontend/src/pages/settings/GeneralSettings.tsx
+index 15f95c0c..859c9cac 100644
+--- a/upstream/frontend/src/pages/settings/GeneralSettings.tsx
++++ b/forge-overrides/frontend/src/pages/settings/GeneralSettings.tsx
+@@ -41,6 +41,7 @@ import { toPrettyCase } from '@/utils/string';
+ import { useTheme } from '@/components/theme-provider';
+ import { useUserSystem } from '@/components/config-provider';
+ import { TaskTemplateManager } from '@/components/TaskTemplateManager';
++import { OmniCard } from '@/components/omni/OmniCard';
+ import NiceModal from '@ebay/nice-modal-react';
+ 
+ export function GeneralSettings() {
+@@ -640,6 +641,8 @@ export function GeneralSettings() {
+         </CardContent>
+       </Card>
+ 
++      <OmniCard />
++
+       <Card>
+         <CardHeader>
+           <CardTitle>{t('settings.general.privacy.title')}</CardTitle>

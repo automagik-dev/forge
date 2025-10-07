@@ -3,13 +3,14 @@ import { useEffect, useState } from 'react';
 
 export function Logo({ className = '' }: { className?: string }) {
   const { theme } = useTheme();
+  const themeValue = String(theme);
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
     const updateTheme = () => {
-      if (theme === 'LIGHT' || theme === 'ALUCARD') {
+      if (themeValue === 'LIGHT' || themeValue === 'ALUCARD') {
         setIsDark(false);
-      } else if (theme === 'SYSTEM') {
+      } else if (themeValue === 'SYSTEM') {
         // System theme
         setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
       } else {
@@ -21,7 +22,7 @@ export function Logo({ className = '' }: { className?: string }) {
     updateTheme();
 
     // Listen for system theme changes when using system theme
-    if (theme === 'SYSTEM') {
+    if (themeValue === 'SYSTEM') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       mediaQuery.addEventListener('change', updateTheme);
       return () => mediaQuery.removeEventListener('change', updateTheme);
