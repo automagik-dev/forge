@@ -1,3 +1,7 @@
+// FORGE CUSTOMIZATION: This dialog contains Automagik Forge-specific safety warnings
+// and legal disclaimers tailored to Forge's elevated workspace access model.
+// Content references Forge branding, documentation URLs, and security practices.
+
 import {
   Dialog,
   DialogContent,
@@ -18,7 +22,7 @@ const DisclaimerDialog = NiceModal.create(() => {
   };
 
   return (
-    <Dialog open={modal.visible} uncloseable>
+    <Dialog open={modal.visible} uncloseable={true}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <div className="flex items-center gap-3">
