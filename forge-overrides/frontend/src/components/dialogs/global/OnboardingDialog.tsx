@@ -70,6 +70,7 @@ const OnboardingDialog = NiceModal.create(() => {
         <DialogHeader>
           <div className="flex items-center gap-3">
             <HandMetal className="h-6 w-6 text-primary text-primary-foreground" />
+            {/* FORGE CUSTOMIZATION: Branding - "Automagik Forge" instead of "Vibe Kanban" */}
             <DialogTitle>Welcome to Automagik Forge</DialogTitle>
           </div>
           <DialogDescription className="text-left pt-2">
