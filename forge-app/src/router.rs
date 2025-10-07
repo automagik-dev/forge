@@ -278,12 +278,12 @@ async fn health_check() -> Json<Value> {
 
 async fn get_forge_config(
     State(services): State<ForgeServices>,
-) -> Result<Json<ForgeProjectSettings>, StatusCode> {
+) -> Result<Json<ApiResponse<ForgeProjectSettings>>, StatusCode> {
     services
         .config
         .get_global_settings()
         .await
-        .map(Json)
+        .map(|settings| Json(ApiResponse::success(settings)))
         .map_err(|e| {
             tracing::error!("Failed to load forge config: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
@@ -293,7 +293,7 @@ async fn get_forge_config(
 async fn update_forge_config(
     State(services): State<ForgeServices>,
     Json(settings): Json<ForgeProjectSettings>,
-) -> Result<Json<ForgeProjectSettings>, StatusCode> {
+) -> Result<Json<ApiResponse<ForgeProjectSettings>>, StatusCode> {
     services
         .config
         .set_global_settings(&settings)
@@ -308,18 +308,18 @@ async fn update_forge_config(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    Ok(Json(settings))
+    Ok(Json(ApiResponse::success(settings)))
 }
 
 async fn get_project_settings(
     Path(project_id): Path<Uuid>,
     State(services): State<ForgeServices>,
-) -> Result<Json<ForgeProjectSettings>, StatusCode> {
+) -> Result<Json<ApiResponse<ForgeProjectSettings>>, StatusCode> {
     services
         .config
         .get_forge_settings(project_id)
         .await
-        .map(Json)
+        .map(|settings| Json(ApiResponse::success(settings)))
         .map_err(|e| {
             tracing::error!("Failed to load project settings {}: {}", project_id, e);
             StatusCode::INTERNAL_SERVER_ERROR
@@ -330,7 +330,7 @@ async fn update_project_settings(
     Path(project_id): Path<Uuid>,
     State(services): State<ForgeServices>,
     Json(settings): Json<ForgeProjectSettings>,
-) -> Result<Json<ForgeProjectSettings>, StatusCode> {
+) -> Result<Json<ApiResponse<ForgeProjectSettings>>, StatusCode> {
     services
         .config
         .set_forge_settings(project_id, &settings)
@@ -340,7 +340,7 @@ async fn update_project_settings(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    Ok(Json(settings))
+    Ok(Json(ApiResponse::success(settings)))
 }
 
 async fn get_omni_status(State(services): State<ForgeServices>) -> Result<Json<Value>, StatusCode> {
