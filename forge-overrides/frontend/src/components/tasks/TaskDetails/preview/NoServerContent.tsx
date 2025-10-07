@@ -1,3 +1,12 @@
+/**
+ * FORGE OVERRIDE: NoServerContent.tsx (vibe-kanban ad1696cd)
+ *
+ * Customizations:
+ * - Changed companion docs link from GitHub README to Forge documentation site
+ *   (line 276: https://forge.automag.ik/docs/integrations/omni-companion)
+ *
+ * Otherwise identical to upstream - displays UI when no dev server is running.
+ */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
