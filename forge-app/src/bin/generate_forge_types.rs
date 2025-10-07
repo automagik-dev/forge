@@ -1,6 +1,6 @@
 use std::{env, fs, path::Path};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use forge_config::{ForgeProjectSettings, ProjectConfig};
 use forge_omni::{OmniConfig, OmniInstance, RecipientType, SendTextRequest, SendTextResponse};
 use ts_rs::TS;

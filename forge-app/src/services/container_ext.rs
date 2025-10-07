@@ -2,8 +2,8 @@
 //!
 //! Overrides branch naming to use "forge/" prefix instead of "vk/"
 
-use uuid::Uuid;
 use utils::text::{git_branch_id, short_uuid};
+use uuid::Uuid;
 
 /// Generate git branch name with forge prefix
 ///

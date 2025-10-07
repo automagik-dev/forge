@@ -4,17 +4,17 @@
 //! Serves single frontend (with overlay architecture) at `/`.
 
 use axum::{
+    Json, Router,
     extract::{FromRef, Path, State},
-    http::{header, HeaderValue, StatusCode},
+    http::{HeaderValue, StatusCode, header},
     response::{Html, IntoResponse, Response},
     routing::{get, post},
-    Json, Router,
 };
 use rust_embed::RustEmbed;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use uuid::Uuid;
 
-use crate::services::{container_ext::forge_branch_from_task_attempt, ForgeServices};
+use crate::services::{ForgeServices, container_ext::forge_branch_from_task_attempt};
 use db::models::{
     image::TaskImage,
     task::{Task, TaskWithAttemptStatus},
@@ -22,13 +22,13 @@ use db::models::{
 };
 use deployment::Deployment;
 use forge_config::ForgeProjectSettings;
-use services::services::container::ContainerService;
-use server::{routes::tasks::CreateAndStartTaskRequest, DeploymentImpl, error::ApiError};
 use server::routes::{
     self as upstream, auth, config as upstream_config, containers, events, execution_processes,
     filesystem, images, projects, task_attempts, task_templates, tasks,
 };
-use sqlx::{self, Row, Error as SqlxError};
+use server::{DeploymentImpl, error::ApiError, routes::tasks::CreateAndStartTaskRequest};
+use services::services::container::ContainerService;
+use sqlx::{self, Error as SqlxError, Row};
 use utils::response::ApiResponse;
 
 #[derive(RustEmbed)]
@@ -89,8 +89,11 @@ fn forge_api_routes() -> Router<ForgeAppState> {
             get(get_project_settings).put(update_project_settings),
         )
         .route("/api/forge/omni/instances", get(list_omni_instances))
-        .route("/api/forge/omni/notifications", get(list_omni_notifications))
-        // Branch-templates extension removed - using simple forge/ prefix
+        .route(
+            "/api/forge/omni/notifications",
+            get(list_omni_notifications),
+        )
+    // Branch-templates extension removed - using simple forge/ prefix
 }
 
 /// Forge override: create task and start with forge/ branch prefix
@@ -154,7 +157,10 @@ async fn forge_create_task_and_start(
         .await?
         .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
 
-    tracing::info!("Started execution process {} with forge/ branch", execution_process.id);
+    tracing::info!(
+        "Started execution process {} with forge/ branch",
+        execution_process.id
+    );
     Ok(Json(ApiResponse::success(TaskWithAttemptStatus {
         task,
         has_in_progress_attempt: true,
@@ -177,7 +183,8 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
 
     // Build custom tasks router with forge create-and-start override
     let tasks_router_with_override = build_tasks_router_with_forge_override(deployment);
-    router = router.merge(tasks_router_with_override.with_state::<ForgeAppState>(dep_clone.clone()));
+    router =
+        router.merge(tasks_router_with_override.with_state::<ForgeAppState>(dep_clone.clone()));
 
     router = router
         .merge(task_attempts::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
@@ -203,7 +210,12 @@ fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router
     use server::middleware::load_task_middleware;
 
     let task_id_router = Router::new()
-        .route("/", get(tasks::get_task).put(tasks::update_task).delete(tasks::delete_task))
+        .route(
+            "/",
+            get(tasks::get_task)
+                .put(tasks::update_task)
+                .delete(tasks::delete_task),
+        )
         .layer(from_fn_with_state(deployment.clone(), load_task_middleware));
 
     let inner = Router::new()
@@ -408,4 +420,3 @@ async fn list_omni_notifications(
 
     Ok(Json(json!({ "notifications": notifications })))
 }
-

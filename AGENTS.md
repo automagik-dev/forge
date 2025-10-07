@@ -126,7 +126,7 @@ Essential commands for development, testing, and validation:
 **Development:**
 ```bash
 pnpm install                                             # Install workspace dependencies
-cd frontend && pnpm run dev -- --host --port 3000        # Frontend dev server (uses overlays)
+cd frontend && pnpm run dev -- --port 3000               # Frontend dev server (uses overlays)
 BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) \
   cargo watch -w forge-app -x 'run -p forge-app --bin forge-app'   # Backend (watch mode)
 cargo run -p forge-app --bin forge-app                             # Backend single run

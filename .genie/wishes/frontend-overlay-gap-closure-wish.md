@@ -238,6 +238,7 @@ Common blockers: overlay resolution conflicts, missing dependency port causing b
 - **[2025-10-07 02:17Z]** Group F – Updated PR dialog branding; diff at `qa/group-f/create-pr-diff.txt`.
 - **[2025-10-07 02:17Z]** Group G – Reintroduced `pnpm run check` script (tsc); output captured in `qa/group-g/check-command.log`.
 - **[2025-10-07 02:17Z]** Group H – Documentation aligned with overlay workflow (`AGENTS.md`).
+- **[2025-10-07 02:59Z]** Regression cleanup – Overrode dialog index to surface Automagik copy and clarified dev host instructions (no accidental 0.0.0.0 binding).
 - **[Pending]** Final full-system validation once sandbox access available.
 
 ---

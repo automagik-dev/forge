@@ -3,17 +3,17 @@
 //! Service composition layer that wraps upstream services with forge extensions.
 //! Provides unified access to both upstream functionality and forge-specific features.
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use deployment::Deployment;
 use serde::Deserialize;
 use serde_json::json;
 use server::DeploymentImpl;
-use sqlx::{sqlite::SqliteConnectOptions, ConnectOptions, Row, SqlitePool};
+use sqlx::{ConnectOptions, Row, SqlitePool, sqlite::SqliteConnectOptions};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 use uuid::Uuid;
 
 // Import forge extension services
@@ -168,9 +168,10 @@ async fn purge_shared_migration_markers() -> Result<()> {
             continue;
         }
 
-        let deleted = sqlx::query("DELETE FROM _sqlx_migrations WHERE version IN (0,1,2,20250903172012)")
-            .execute(&mut conn)
-            .await;
+        let deleted =
+            sqlx::query("DELETE FROM _sqlx_migrations WHERE version IN (0,1,2,20250903172012)")
+                .execute(&mut conn)
+                .await;
 
         match deleted {
             Ok(result) => {
@@ -649,10 +650,7 @@ mod tests {
             .expect("failed to insert project row");
     }
 
-    async fn insert_task_graph(
-        pool: &SqlitePool,
-        project_id: Uuid,
-    ) -> (Uuid, Uuid) {
+    async fn insert_task_graph(pool: &SqlitePool, project_id: Uuid) -> (Uuid, Uuid) {
         let task_id = Uuid::new_v4();
         let attempt_id = Uuid::new_v4();
 

@@ -458,9 +458,9 @@ fn generate_branch_name(task: &Task, attempt_id: &Uuid) -> String {
         // Fallback to forge-{title}-{uuid} pattern
         let task_title_id = utils::text::git_branch_id(&task.title);
         format!(
-            "forge-{}-{}",
-            task_title_id,
-            utils::text::short_uuid(attempt_id)
+            "forge/{}-{}",
+            utils::text::short_uuid(attempt_id),
+            task_title_id
         )
     }
 }

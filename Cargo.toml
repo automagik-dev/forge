@@ -1,18 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    # Upstream crates (read-only via submodule)
-    "upstream/crates/server",
-    "upstream/crates/db",
-    "upstream/crates/executors",
-    "upstream/crates/services",
-    "upstream/crates/utils",
-    "upstream/crates/local-deployment",
-    "upstream/crates/deployment",
-    # Forge extensions
-    "forge-extensions/*",
-    # Main forge application
-    "forge-app"
+    "forge-app",
+    "forge-extensions/*"
 ]
 
 # NOTE: upstream sources remain untouched; forge crates extend them via forge-extensions/
