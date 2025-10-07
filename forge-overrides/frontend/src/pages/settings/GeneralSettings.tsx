@@ -36,14 +36,17 @@ import {
   UiLanguage,
 } from 'shared/types';
 import { getLanguageOptions } from '@/i18n/languages';
+// FORGE CUSTOMIZATION: Import Forge-specific types
 import type { ForgeProjectSettings } from 'shared/forge-types';
 
 import { toPrettyCase } from '@/utils/string';
 import { useTheme } from '@/components/theme-provider';
 import { useUserSystem } from '@/components/config-provider';
 import { TaskTemplateManager } from '@/components/TaskTemplateManager';
+// FORGE CUSTOMIZATION: Import OmniCard for Forge settings
 import { OmniCard } from '@/components/omni/OmniCard';
 import NiceModal from '@ebay/nice-modal-react';
+// FORGE CUSTOMIZATION: Import forgeApi for global settings management
 import { forgeApi } from '@/lib/forge-api';
 
 export function GeneralSettings() {
@@ -69,10 +72,11 @@ export function GeneralSettings() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  // FORGE CUSTOMIZATION: State for Forge-specific global settings
   const [forgeSettings, setForgeSettings] = useState<ForgeProjectSettings | null>(null);
   const { setTheme } = useTheme();
 
-  // Load forge settings
+  // FORGE CUSTOMIZATION: Load Forge global settings on mount
   useEffect(() => {
     const loadForgeSettings = async () => {
       try {
@@ -146,7 +150,7 @@ export function GeneralSettings() {
     try {
       await updateAndSaveConfig(draft); // Atomically apply + persist
 
-      // Save forge settings if changed
+      // FORGE CUSTOMIZATION: Save Forge-specific settings
       if (forgeSettings) {
         await forgeApi.setGlobalSettings(forgeSettings);
       }
@@ -509,25 +513,11 @@ export function GeneralSettings() {
               <p className="text-sm text-muted-foreground">
                 {t('settings.general.github.helper')}
               </p>
-              <Button
-                onClick={() =>
-                  NiceModal.show('github-login').finally(() =>
-                    NiceModal.hide('github-login')
-                  )
-                }
-              >
+              <Button onClick={() => NiceModal.show('github-login')}>
                 {t('settings.general.github.connectButton')}
               </Button>
             </div>
           )}
-
-          <div className="flex items-center gap-4 my-6">
-            <div className="flex-1 border-t border-border"></div>
-            <span className="text-sm text-muted-foreground font-medium">
-              {t('settings.general.github.or')}
-            </span>
-            <div className="flex-1 border-t border-border"></div>
-          </div>
 
           <div className="space-y-2">
             <Label htmlFor="github-token">
@@ -561,6 +551,8 @@ export function GeneralSettings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* FORGE CUSTOMIZATION: Removed Git branch prefix Card - not used in Forge */}
 
       <Card>
         <CardHeader>
@@ -663,6 +655,7 @@ export function GeneralSettings() {
         </CardContent>
       </Card>
 
+      {/* FORGE CUSTOMIZATION: Render OmniCard for Forge-specific Omni settings */}
       {forgeSettings && (
         <OmniCard
           value={forgeSettings}
