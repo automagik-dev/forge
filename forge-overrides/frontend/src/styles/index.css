@@ -16,6 +16,7 @@
 @layer base {
   /* Light defaults */
   :root {
+    color-scheme: light;
     --_background: 48 33% 97%;
     --_foreground: 222.2 84% 4.9%;
     --_primary: var(--_muted);
@@ -52,6 +53,7 @@
 
   /* Dark defaults (used if no theme class but user prefers dark) */
   .dark {
+    color-scheme: dark;
     --_background: 60 2% 18%;
     --_foreground: 48 7% 95%;
     --_primary: var(--_muted);
@@ -87,6 +89,7 @@
 
   /* Purple theme */
   .purple {
+    color-scheme: dark;
     --_background: 270 10% 12%;
     --_foreground: 270 5% 95%;
     --_primary: 270 60% 50%;
@@ -122,6 +125,7 @@
 
   /* Green theme */
   .green {
+    color-scheme: dark;
     --_background: 120 10% 12%;
     --_foreground: 120 5% 95%;
     --_primary: 120 60% 40%;
@@ -157,6 +161,7 @@
 
   /* Blue theme */
   .blue {
+    color-scheme: dark;
     --_background: 210 15% 12%;
     --_foreground: 210 5% 95%;
     --_primary: 210 70% 50%;
@@ -192,6 +197,7 @@
 
   /* Orange theme */
   .orange {
+    color-scheme: dark;
     --_background: 30 10% 12%;
     --_foreground: 30 5% 95%;
     --_primary: 30 80% 50%;
@@ -227,6 +233,7 @@
 
   /* Red theme */
   .red {
+    color-scheme: dark;
     --_background: 0 10% 12%;
     --_foreground: 0 5% 95%;
     --_primary: 0 70% 50%;
@@ -262,6 +269,7 @@
 
   /* Dracula theme - Official Dracula Spec */
   .dracula {
+    color-scheme: dark;
     --_background: 231 15% 18%; /* #282A36 - Background */
     --_foreground: 60 30% 96%; /* #F8F8F2 - Foreground */
     --_primary: 265 89% 78%; /* #BD93F9 - Purple (primary actions) */
@@ -297,6 +305,7 @@
 
   /* Alucard theme - Official Alucard Classic (light version of Dracula) */
   .alucard {
+    color-scheme: light;
     --_background: 48 100% 96%; /* #FFFBEB - Background (light cream) */
     --_foreground: 0 0% 12%; /* #1F1F1F - Foreground (near black) */
     --_primary: 54 37% 90%; /* #EFEDDC - Floating elements (light) */
