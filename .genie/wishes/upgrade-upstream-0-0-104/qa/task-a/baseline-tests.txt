@@ -1,0 +1,30 @@
+    Updating crates.io index
+    Updating git repository `https://github.com/xazukx/ts-rs.git`
+     Locking 542 packages to latest compatible versions
+      Adding convert_case v0.6.0 (available: v0.8.0)
+      Adding dirs v5.0.1 (available: v6.0.0)
+      Adding git2 v0.18.3 (available: v0.20.2)
+      Adding json-patch v2.0.0 (available: v4.1.0)
+      Adding matchit v0.8.4 (available: v0.8.6)
+      Adding nix v0.29.0 (available: v0.30.1)
+      Adding notify-debouncer-full v0.5.0 (available: v0.6.0)
+      Adding octocrab v0.44.1 (available: v0.47.0)
+      Adding rmcp v0.5.0 (available: v0.8.0)
+      Adding sentry v0.41.0 (available: v0.44.0)
+      Adding sentry-tracing v0.41.0 (available: v0.44.0)
+      Adding toml v0.8.23 (available: v0.9.7)
+      Adding tower v0.4.13 (available: v0.5.2)
+ Downloading crates ...
+  Downloaded itertools v0.12.1
+   Compiling proc-macro2 v1.0.101
+   Compiling quote v1.0.41
+   Compiling unicode-ident v1.0.19
+   Compiling cfg-if v1.0.3
+   Compiling libc v0.2.176
+   Compiling memchr v2.7.6
+   Compiling serde v1.0.228
+   Compiling pin-project-lite v0.2.16
+   Compiling shlex v1.3.0
+   Compiling futures-core v0.3.31
+   Compiling find-msvc-tools v0.1.3
+   Compiling equivalent v1.0.2
