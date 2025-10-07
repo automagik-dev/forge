@@ -1,4 +1,4 @@
-// Forge override: export all settings pages (GeneralSettings is customized, others are copies)
+// FORGE CUSTOMIZATION: Re-exports settings components (GeneralSettings has Forge-specific OmniCard integration)
 export { SettingsLayout } from './SettingsLayout';
 export { GeneralSettings } from './GeneralSettings';
 export { AgentSettings } from './AgentSettings';
