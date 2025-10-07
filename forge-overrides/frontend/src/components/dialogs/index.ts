@@ -1,22 +1,22 @@
-// Forge override: re-export upstream dialogs but use forge DisclaimerDialog
-// This file overrides upstream/frontend/src/components/dialogs/index.ts
+// FORGE CUSTOMIZATION: Selective dialog overrides
+// This file uses upstream structure but imports Forge-customized dialogs locally
+// Forge overrides: DisclaimerDialog, OnboardingDialog, PrivacyOptInDialog,
+//                  ReleaseNotesDialog, GitHubLoginDialog, CreatePRDialog
 
-// Global app dialogs - use forge override for DisclaimerDialog
+// Global app dialogs - Forge overrides
 export { DisclaimerDialog } from './global/DisclaimerDialog';
+export { OnboardingDialog } from './global/OnboardingDialog';
+export { PrivacyOptInDialog } from './global/PrivacyOptInDialog';
+export { ReleaseNotesDialog } from './global/ReleaseNotesDialog';
 
-// Re-export all other dialogs from upstream using relative paths
-export { OnboardingDialog } from '../../../../../upstream/frontend/src/components/dialogs/global/OnboardingDialog';
-export { PrivacyOptInDialog } from '../../../../../upstream/frontend/src/components/dialogs/global/PrivacyOptInDialog';
-export { ReleaseNotesDialog } from '../../../../../upstream/frontend/src/components/dialogs/global/ReleaseNotesDialog';
-
-// Authentication dialogs
-export { GitHubLoginDialog } from '../../../../../upstream/frontend/src/components/dialogs/auth/GitHubLoginDialog';
+// Authentication dialogs - GitHubLoginDialog is Forge override
+export { GitHubLoginDialog } from './auth/GitHubLoginDialog';
 export {
   ProvidePatDialog,
   type ProvidePatDialogProps,
 } from '../../../../../upstream/frontend/src/components/dialogs/auth/ProvidePatDialog';
 
-// Project-related dialogs
+// Project-related dialogs - all from upstream
 export {
   ProjectFormDialog,
   type ProjectFormDialogProps,
@@ -27,13 +27,13 @@ export {
   type ProjectEditorSelectionDialogProps,
 } from '../../../../../upstream/frontend/src/components/dialogs/projects/ProjectEditorSelectionDialog';
 
-// Task-related dialogs
+// Task-related dialogs - CreatePRDialog is Forge override
 export {
   TaskFormDialog,
   type TaskFormDialogProps,
 } from '../../../../../upstream/frontend/src/components/dialogs/tasks/TaskFormDialog';
 
-export { CreatePRDialog } from '../../../../../upstream/frontend/src/components/dialogs/tasks/CreatePRDialog';
+export { CreatePRDialog } from './tasks/CreatePRDialog';
 export {
   EditorSelectionDialog,
   type EditorSelectionDialogProps,
@@ -63,7 +63,7 @@ export {
   type RestoreLogsDialogResult,
 } from '../../../../../upstream/frontend/src/components/dialogs/tasks/RestoreLogsDialog';
 
-// Settings dialogs
+// Settings dialogs - all from upstream
 export {
   CreateConfigurationDialog,
   type CreateConfigurationDialogProps,
@@ -75,7 +75,7 @@ export {
   type DeleteConfigurationResult,
 } from '../../../../../upstream/frontend/src/components/dialogs/settings/DeleteConfigurationDialog';
 
-// Shared/Generic dialogs
+// Shared/Generic dialogs - all from upstream
 export { ConfirmDialog, type ConfirmDialogProps } from '../../../../../upstream/frontend/src/components/dialogs/shared/ConfirmDialog';
 export {
   FolderPickerDialog,
