@@ -89,6 +89,7 @@ fn forge_api_routes() -> Router<ForgeAppState> {
             "/api/forge/projects/{project_id}/settings",
             get(get_project_settings).put(update_project_settings),
         )
+        .route("/api/forge/omni/status", get(get_omni_status))
         .route("/api/forge/omni/instances", get(list_omni_instances))
         .route("/api/forge/omni/validate", post(validate_omni_config))
         .route(
@@ -340,6 +341,23 @@ async fn update_project_settings(
         })?;
 
     Ok(Json(settings))
+}
+
+async fn get_omni_status(
+    State(services): State<ForgeServices>,
+) -> Result<Json<Value>, StatusCode> {
+    let omni = services.omni.read().await;
+    let config = omni.config();
+
+    Ok(Json(json!({
+        "enabled": config.enabled,
+        "version": env!("CARGO_PKG_VERSION"),
+        "config": if config.enabled {
+            serde_json::to_value(config).ok()
+        } else {
+            None
+        }
+    })))
 }
 
 async fn list_omni_instances(
