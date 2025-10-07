@@ -1,0 +1,27 @@
+src/App.test.ts(4,3): error TS2614: Module '"./App"' has no exported member 'describeOmniField'. Did you mean to use 'import describeOmniField from "./App"' instead?
+src/App.test.ts(5,3): error TS2614: Module '"./App"' has no exported member 'formatTimestamp'. Did you mean to use 'import formatTimestamp from "./App"' instead?
+src/App.test.ts(6,3): error TS2614: Module '"./App"' has no exported member 'normaliseConfigDraft'. Did you mean to use 'import normaliseConfigDraft from "./App"' instead?
+src/App.test.ts(7,3): error TS2614: Module '"./App"' has no exported member 'omniConfigErrors'. Did you mean to use 'import omniConfigErrors from "./App"' instead?
+src/App.test.ts(8,3): error TS2614: Module '"./App"' has no exported member 'omniConfigFor'. Did you mean to use 'import omniConfigFor from "./App"' instead?
+src/App.test.ts(9,3): error TS2614: Module '"./App"' has no exported member 'statusTone'. Did you mean to use 'import statusTone from "./App"' instead?
+src/App.test.ts(10,3): error TS2614: Module '"./App"' has no exported member 'toastToneColor'. Did you mean to use 'import toastToneColor from "./App"' instead?
+src/App.tsx(4,18): error TS2307: Cannot find module '@/i18n' or its corresponding type declarations.
+src/App.tsx(5,24): error TS2307: Cannot find module '@/components/layout/navbar' or its corresponding type declarations.
+src/App.tsx(6,26): error TS2307: Cannot find module '@/pages/projects' or its corresponding type declarations.
+src/App.tsx(7,30): error TS2307: Cannot find module '@/pages/project-tasks' or its corresponding type declarations.
+src/App.tsx(8,36): error TS2307: Cannot find module '@/hooks/useTaskViewManager' or its corresponding type declarations.
+src/App.tsx(9,33): error TS2307: Cannot find module '@/hooks/usePreviousPath' or its corresponding type declarations.
+src/App.tsx(16,8): error TS2307: Cannot find module '@/pages/settings/' or its corresponding type declarations.
+src/App.tsx(20,8): error TS2307: Cannot find module '@/components/config-provider' or its corresponding type declarations.
+src/App.tsx(21,31): error TS2307: Cannot find module '@/components/theme-provider' or its corresponding type declarations.
+src/App.tsx(22,32): error TS2307: Cannot find module '@/contexts/search-context' or its corresponding type declarations.
+src/App.tsx(23,43): error TS2307: Cannot find module '@/contexts/keyboard-shortcuts-context' or its corresponding type declarations.
+src/App.tsx(25,31): error TS2307: Cannot find module '@/components/shortcuts-help' or its corresponding type declarations.
+src/App.tsx(28,33): error TS2307: Cannot find module '@/contexts/project-context' or its corresponding type declarations.
+src/App.tsx(29,27): error TS2307: Cannot find module 'shared/types' or its corresponding type declarations.
+src/App.tsx(31,24): error TS2307: Cannot find module '@/components/ui/loader' or its corresponding type declarations.
+src/App.tsx(33,38): error TS2307: Cannot find module '@/utils/style-override' or its corresponding type declarations.
+src/App.tsx(34,36): error TS2307: Cannot find module '@/vscode/ContextMenu' or its corresponding type declarations.
+src/App.tsx(35,27): error TS2307: Cannot find module '@/components/DevBanner' or its corresponding type declarations.
+src/App.tsx(37,34): error TS2307: Cannot find module '@/components/dialogs/global/OnboardingDialog' or its corresponding type declarations.
+src/App.tsx(38,41): error TS2307: Cannot find module '@/contexts/ClickedElementsProvider' or its corresponding type declarations.

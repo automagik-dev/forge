@@ -1,25 +1,22 @@
 use anyhow::Error;
 use executors::{executors::BaseCodingAgent, profile::ExecutorProfileId};
 use serde::{Deserialize, Serialize};
+use strum_macros::EnumString;
 use ts_rs::TS;
-pub use v6::{EditorConfig, EditorType, GitHubConfig, NotificationConfig, SoundFile, ThemeMode};
+pub use v6::{EditorConfig, EditorType, GitHubConfig, NotificationConfig, SoundFile, UiLanguage};
 
 use crate::services::config::versions::v6;
-// Omni config types - moved here since omni service extracted to forge-extensions
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
-pub struct OmniConfig {
-    pub enabled: bool,
-    pub host: Option<String>,
-    pub api_key: Option<String>,
-    pub instance: Option<String>,
-    pub recipient: Option<String>,
-    pub recipient_type: Option<RecipientType>,
-}
+// Import OmniConfig directly from the omni module - single source of truth
+pub use crate::services::omni::types::{OmniConfig, RecipientType};
 
-#[derive(Clone, Debug, Serialize, Deserialize, TS)]
-pub enum RecipientType {
-    PhoneNumber,
-    UserId,
+#[derive(Debug, Clone, Serialize, Deserialize, TS, EnumString)]
+#[ts(use_ts_enum)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
+pub enum ThemeMode {
+    Light,
+    Dark,
+    System,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -38,6 +35,8 @@ pub struct Config {
     pub workspace_dir: Option<String>,
     pub last_app_version: Option<String>,
     pub show_release_notes: bool,
+    #[serde(default)]
+    pub language: UiLanguage,
     pub omni: OmniConfig,
 }
 
@@ -52,9 +51,29 @@ impl Config {
             }
         };
 
+        // Map old theme modes to new simplified theme modes
+        let theme = match old_config.theme {
+            v6::ThemeMode::Light => ThemeMode::Light,
+            v6::ThemeMode::Dark => ThemeMode::Dark,
+            v6::ThemeMode::System => ThemeMode::System,
+            v6::ThemeMode::Purple
+            | v6::ThemeMode::Green
+            | v6::ThemeMode::Blue
+            | v6::ThemeMode::Orange
+            | v6::ThemeMode::Red
+            | v6::ThemeMode::Dracula
+            | v6::ThemeMode::Alucard => {
+                tracing::info!(
+                    "Migrating color theme {:?} to System theme",
+                    old_config.theme
+                );
+                ThemeMode::System
+            }
+        };
+
         Ok(Self {
             config_version: "v7".to_string(),
-            theme: old_config.theme,
+            theme,
             executor_profile: old_config.executor_profile,
             disclaimer_acknowledged: old_config.disclaimer_acknowledged,
             onboarding_acknowledged: old_config.onboarding_acknowledged,
@@ -67,6 +86,7 @@ impl Config {
             workspace_dir: old_config.workspace_dir,
             last_app_version: old_config.last_app_version,
             show_release_notes: old_config.show_release_notes,
+            language: old_config.language,
             omni: OmniConfig {
                 enabled: false,
                 host: None,
@@ -117,6 +137,7 @@ impl Default for Config {
             workspace_dir: None,
             last_app_version: None,
             show_release_notes: false,
+            language: UiLanguage::default(),
             omni: OmniConfig {
                 enabled: false,
                 host: None,

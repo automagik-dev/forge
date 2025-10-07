@@ -7,12 +7,22 @@
 -- Extensions for individual tasks
 CREATE TABLE IF NOT EXISTS forge_task_extensions (
     task_id TEXT PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
-    branch_template TEXT,
     omni_settings TEXT, -- JSON for Omni notification settings
     genie_metadata TEXT, -- JSON for future Genie integration
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Global forge settings (singleton table)
+CREATE TABLE IF NOT EXISTS forge_global_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    forge_config TEXT NOT NULL DEFAULT '{}', -- JSON for global forge settings
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Initialize global settings row
+INSERT OR IGNORE INTO forge_global_settings (id, forge_config) VALUES (1, '{}');
 
 -- Project-level settings and configuration
 CREATE TABLE IF NOT EXISTS forge_project_settings (
@@ -40,7 +50,6 @@ CREATE TABLE IF NOT EXISTS forge_omni_notifications (
 CREATE VIEW IF NOT EXISTS enhanced_tasks AS
 SELECT
     t.*,
-    fx.branch_template,
     fx.omni_settings,
     fx.genie_metadata
 FROM tasks t
@@ -63,6 +72,12 @@ CREATE INDEX IF NOT EXISTS idx_forge_omni_notifications_status ON forge_omni_not
 CREATE INDEX IF NOT EXISTS idx_forge_omni_notifications_sent_at ON forge_omni_notifications(sent_at);
 
 -- Triggers to maintain updated_at timestamps
+CREATE TRIGGER IF NOT EXISTS update_forge_global_settings_updated_at
+AFTER UPDATE ON forge_global_settings
+BEGIN
+    UPDATE forge_global_settings SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
 CREATE TRIGGER IF NOT EXISTS update_forge_task_extensions_updated_at
 AFTER UPDATE ON forge_task_extensions
 BEGIN

@@ -1,37 +1,40 @@
 //! Forge Router
 //!
-//! This module handles API routing for forge services and dual frontend routing.
-//! Serves forge UI at `/` and upstream UI at `/legacy`
+//! Routes forge-specific APIs under `/api/forge/*` and upstream APIs under `/api/*`.
+//! Serves single frontend (with overlay architecture) at `/`.
 
 use axum::{
+    Json, Router,
     extract::{FromRef, Path, State},
-    http::{header, HeaderValue, StatusCode},
+    http::{HeaderValue, StatusCode, header},
     response::{Html, IntoResponse, Response},
     routing::{get, post},
-    Json, Router,
 };
 use rust_embed::RustEmbed;
-use serde::Deserialize;
-use serde_json::{json, Value};
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 use uuid::Uuid;
 
 use crate::services::ForgeServices;
-use forge_branch_templates::BranchNameResponse;
+use db::models::{
+    image::TaskImage,
+    task::{Task, TaskWithAttemptStatus},
+    task_attempt::{CreateTaskAttempt, TaskAttempt},
+};
+use deployment::Deployment;
 use forge_config::ForgeProjectSettings;
 use server::routes::{
     self as upstream, auth, config as upstream_config, containers, events, execution_processes,
     filesystem, images, projects, task_attempts, task_templates, tasks,
 };
-use server::DeploymentImpl;
-use sqlx::{self, Row};
-
-#[derive(RustEmbed)]
-#[folder = "../frontend-forge/dist"]
-struct ForgeFrontend;
+use server::{DeploymentImpl, error::ApiError, routes::tasks::CreateAndStartTaskRequest};
+use services::services::container::ContainerService;
+use sqlx::{self, Error as SqlxError, Row};
+use utils::response::ApiResponse;
 
 #[derive(RustEmbed)]
 #[folder = "../frontend/dist"]
-struct UpstreamFrontend;
+struct Frontend;
 
 #[derive(Clone)]
 struct ForgeAppState {
@@ -64,17 +67,15 @@ pub fn create_router(services: ForgeServices) -> Router {
     let deployment = services.deployment.as_ref().clone();
     let state = ForgeAppState::new(services, deployment.clone());
 
-    let legacy_api = legacy_api_router(&deployment);
+    let upstream_api = upstream_api_router(&deployment);
 
     Router::new()
         .route("/health", get(health_check))
         .merge(forge_api_routes())
-        // Provide upstream API compatibility at both /api and /legacy/api
-        .nest("/api", legacy_api.clone())
-        .nest("/legacy/api", legacy_api)
-        // Dual frontend routing: modern Forge UI at /, upstream at /legacy
-        .nest("/legacy", legacy_frontend_router())
-        .fallback(forge_frontend_handler)
+        // Upstream API at /api
+        .nest("/api", upstream_api)
+        // Single frontend with overlay architecture
+        .fallback(frontend_handler)
         .with_state(state)
 }
 
@@ -88,19 +89,85 @@ fn forge_api_routes() -> Router<ForgeAppState> {
             "/api/forge/projects/{project_id}/settings",
             get(get_project_settings).put(update_project_settings),
         )
+        .route("/api/forge/omni/status", get(get_omni_status))
         .route("/api/forge/omni/instances", get(list_omni_instances))
-        .route("/api/forge/omni/notifications", get(list_omni_notifications))
+        .route("/api/forge/omni/validate", post(validate_omni_config))
         .route(
-            "/api/forge/branch-templates/{task_id}",
-            get(get_branch_template).put(set_branch_template),
+            "/api/forge/omni/notifications",
+            get(list_omni_notifications),
         )
-        .route(
-            "/api/forge/branch-templates/{task_id}/generate",
-            post(generate_branch_name),
-        )
+    // Branch-templates extension removed - using simple forge/ prefix
 }
 
-fn legacy_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
+/// Forge override: create task and start with forge/ branch prefix
+async fn forge_create_task_and_start(
+    State(deployment): State<DeploymentImpl>,
+    Json(payload): Json<CreateAndStartTaskRequest>,
+) -> Result<Json<ApiResponse<TaskWithAttemptStatus>>, ApiError> {
+    let task_id = Uuid::new_v4();
+    let task = Task::create(&deployment.db().pool, &payload.task, task_id).await?;
+
+    if let Some(image_ids) = &payload.task.image_ids {
+        TaskImage::associate_many(&deployment.db().pool, task.id, image_ids).await?;
+    }
+
+    deployment
+        .track_if_analytics_allowed(
+            "task_created",
+            serde_json::json!({
+                "task_id": task.id.to_string(),
+                "project_id": task.project_id,
+                "has_description": task.description.is_some(),
+                "has_images": payload.task.image_ids.is_some(),
+            }),
+        )
+        .await;
+
+    let task_attempt = TaskAttempt::create(
+        &deployment.db().pool,
+        &CreateTaskAttempt {
+            executor: payload.executor_profile_id.executor,
+            base_branch: payload.base_branch,
+        },
+        task.id,
+    )
+    .await?;
+
+    let execution_process = deployment
+        .container()
+        .start_attempt(&task_attempt, payload.executor_profile_id.clone())
+        .await?;
+
+    deployment
+        .track_if_analytics_allowed(
+            "task_attempt_started",
+            serde_json::json!({
+                "task_id": task.id.to_string(),
+                "executor": &payload.executor_profile_id.executor,
+                "variant": &payload.executor_profile_id.variant,
+                "attempt_id": task_attempt.id.to_string(),
+            }),
+        )
+        .await;
+
+    let task = Task::find_by_id(&deployment.db().pool, task.id)
+        .await?
+        .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
+
+    tracing::info!(
+        "Started execution process {} with forge/ branch",
+        execution_process.id
+    );
+    Ok(Json(ApiResponse::success(TaskWithAttemptStatus {
+        task,
+        has_in_progress_attempt: true,
+        has_merged_attempt: false,
+        last_attempt_failed: false,
+        executor: task_attempt.executor,
+    })))
+}
+
+fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     let mut router = Router::new().route("/health", get(upstream::health::health_check));
 
     let dep_clone = deployment.clone();
@@ -110,7 +177,12 @@ fn legacy_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
         router.merge(containers::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
     router =
         router.merge(projects::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
-    router = router.merge(tasks::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+
+    // Build custom tasks router with forge create-and-start override
+    let tasks_router_with_override = build_tasks_router_with_forge_override(deployment);
+    router =
+        router.merge(tasks_router_with_override.with_state::<ForgeAppState>(dep_clone.clone()));
+
     router = router
         .merge(task_attempts::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
     router = router.merge(
@@ -129,42 +201,48 @@ fn legacy_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     )
 }
 
-fn legacy_frontend_router() -> Router<ForgeAppState> {
-    Router::new()
-        .route("/", get(serve_legacy_index))
-        .route("/{*path}", get(serve_legacy_assets))
+/// Build tasks router with forge override for create-and-start endpoint
+fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
+    use axum::middleware::from_fn_with_state;
+    use server::middleware::load_task_middleware;
+
+    let task_id_router = Router::new()
+        .route(
+            "/",
+            get(tasks::get_task)
+                .put(tasks::update_task)
+                .delete(tasks::delete_task),
+        )
+        .layer(from_fn_with_state(deployment.clone(), load_task_middleware));
+
+    let inner = Router::new()
+        .route("/", get(tasks::get_tasks).post(tasks::create_task))
+        .route("/stream/ws", get(tasks::stream_tasks_ws))
+        .route("/create-and-start", post(forge_create_task_and_start)) // Forge override
+        .nest("/{task_id}", task_id_router);
+
+    Router::new().nest("/tasks", inner)
 }
 
-async fn forge_frontend_handler(uri: axum::http::Uri) -> Response {
+async fn frontend_handler(uri: axum::http::Uri) -> Response {
     let path = uri.path().trim_start_matches('/');
 
     if path.is_empty() {
-        serve_forge_index().await
+        serve_index().await
     } else {
-        serve_forge_assets(Path(path.to_string())).await
+        serve_assets(Path(path.to_string())).await
     }
 }
 
-async fn serve_forge_index() -> Response {
-    match ForgeFrontend::get("index.html") {
+async fn serve_index() -> Response {
+    match Frontend::get("index.html") {
         Some(content) => Html(content.data.to_vec()).into_response(),
         None => (StatusCode::NOT_FOUND, "404 Not Found").into_response(),
     }
 }
 
-async fn serve_forge_assets(Path(path): Path<String>) -> Response {
-    serve_static_file::<ForgeFrontend>(&path).await
-}
-
-async fn serve_legacy_index() -> Response {
-    match UpstreamFrontend::get("index.html") {
-        Some(content) => Html(content.data.to_vec()).into_response(),
-        None => (StatusCode::NOT_FOUND, "404 Not Found").into_response(),
-    }
-}
-
-async fn serve_legacy_assets(Path(path): Path<String>) -> Response {
-    serve_static_file::<UpstreamFrontend>(&path).await
+async fn serve_assets(Path(path): Path<String>) -> Response {
+    serve_static_file::<Frontend>(&path).await
 }
 
 async fn serve_static_file<T: RustEmbed>(path: &str) -> Response {
@@ -200,12 +278,12 @@ async fn health_check() -> Json<Value> {
 
 async fn get_forge_config(
     State(services): State<ForgeServices>,
-) -> Result<Json<ForgeProjectSettings>, StatusCode> {
+) -> Result<Json<ApiResponse<ForgeProjectSettings>>, StatusCode> {
     services
         .config
         .get_global_settings()
         .await
-        .map(Json)
+        .map(|settings| Json(ApiResponse::success(settings)))
         .map_err(|e| {
             tracing::error!("Failed to load forge config: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
@@ -215,7 +293,7 @@ async fn get_forge_config(
 async fn update_forge_config(
     State(services): State<ForgeServices>,
     Json(settings): Json<ForgeProjectSettings>,
-) -> Result<Json<ForgeProjectSettings>, StatusCode> {
+) -> Result<Json<ApiResponse<ForgeProjectSettings>>, StatusCode> {
     services
         .config
         .set_global_settings(&settings)
@@ -230,18 +308,18 @@ async fn update_forge_config(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    Ok(Json(settings))
+    Ok(Json(ApiResponse::success(settings)))
 }
 
 async fn get_project_settings(
     Path(project_id): Path<Uuid>,
     State(services): State<ForgeServices>,
-) -> Result<Json<ForgeProjectSettings>, StatusCode> {
+) -> Result<Json<ApiResponse<ForgeProjectSettings>>, StatusCode> {
     services
         .config
         .get_forge_settings(project_id)
         .await
-        .map(Json)
+        .map(|settings| Json(ApiResponse::success(settings)))
         .map_err(|e| {
             tracing::error!("Failed to load project settings {}: {}", project_id, e);
             StatusCode::INTERNAL_SERVER_ERROR
@@ -252,7 +330,7 @@ async fn update_project_settings(
     Path(project_id): Path<Uuid>,
     State(services): State<ForgeServices>,
     Json(settings): Json<ForgeProjectSettings>,
-) -> Result<Json<ForgeProjectSettings>, StatusCode> {
+) -> Result<Json<ApiResponse<ForgeProjectSettings>>, StatusCode> {
     services
         .config
         .set_forge_settings(project_id, &settings)
@@ -262,7 +340,22 @@ async fn update_project_settings(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    Ok(Json(settings))
+    Ok(Json(ApiResponse::success(settings)))
+}
+
+async fn get_omni_status(State(services): State<ForgeServices>) -> Result<Json<Value>, StatusCode> {
+    let omni = services.omni.read().await;
+    let config = omni.config();
+
+    Ok(Json(json!({
+        "enabled": config.enabled,
+        "version": env!("CARGO_PKG_VERSION"),
+        "config": if config.enabled {
+            serde_json::to_value(config).ok()
+        } else {
+            None
+        }
+    })))
 }
 
 async fn list_omni_instances(
@@ -340,150 +433,44 @@ async fn list_omni_notifications(
     Ok(Json(json!({ "notifications": notifications })))
 }
 
-async fn get_branch_template(
-    Path(task_id): Path<Uuid>,
-    State(services): State<ForgeServices>,
-) -> Result<Json<Value>, StatusCode> {
-    let project_id = resolve_project_id(&services, task_id).await?;
-    let enabled = services
-        .config
-        .get_forge_settings(project_id)
-        .await
-        .map(|settings| settings.branch_templates_enabled)
-        .map_err(|e| {
-            tracing::error!("Failed to load project settings for {}: {}", project_id, e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+#[derive(Debug, Deserialize)]
+struct ValidateOmniRequest {
+    host: String,
+    api_key: String,
+}
 
-    let template = if enabled {
-        services
-            .branch_templates
-            .get_template(task_id)
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to get branch template: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?
-    } else {
-        None
+#[derive(Debug, Serialize)]
+struct ValidateOmniResponse {
+    valid: bool,
+    instances: Vec<forge_omni::OmniInstance>,
+    error: Option<String>,
+}
+
+async fn validate_omni_config(
+    State(_services): State<ForgeServices>,
+    Json(req): Json<ValidateOmniRequest>,
+) -> Result<Json<ValidateOmniResponse>, StatusCode> {
+    // Create temporary OmniService with provided credentials
+    let temp_config = forge_omni::OmniConfig {
+        enabled: false,
+        host: Some(req.host),
+        api_key: Some(req.api_key),
+        instance: None,
+        recipient: None,
+        recipient_type: None,
     };
 
-    Ok(Json(json!({
-        "task_id": task_id,
-        "project_id": project_id,
-        "branch_template": template,
-        "enabled": enabled
-    })))
-}
-
-async fn set_branch_template(
-    Path(task_id): Path<Uuid>,
-    State(services): State<ForgeServices>,
-    Json(payload): Json<Value>,
-) -> Result<Json<Value>, StatusCode> {
-    let project_id = ensure_branch_templates_enabled(&services, task_id).await?;
-
-    let template = payload
-        .get("branch_template")
-        .and_then(|v| v.as_str())
-        .map(|s| s.to_string());
-
-    match services
-        .branch_templates
-        .set_template(task_id, template.clone())
-        .await
-    {
-        Ok(()) => Ok(Json(json!({
-            "task_id": task_id,
-            "project_id": project_id,
-            "branch_template": template,
-            "enabled": true
-        }))),
-        Err(e) => {
-            tracing::error!("Failed to set branch template: {}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
+    let temp_service = forge_omni::OmniService::new(temp_config);
+    match temp_service.list_instances().await {
+        Ok(instances) => Ok(Json(ValidateOmniResponse {
+            valid: true,
+            instances,
+            error: None,
+        })),
+        Err(e) => Ok(Json(ValidateOmniResponse {
+            valid: false,
+            instances: vec![],
+            error: Some(format!("Configuration validation failed: {}", e)),
+        })),
     }
-}
-
-#[derive(Deserialize)]
-struct BranchNameRequest {
-    attempt_id: Option<Uuid>,
-}
-
-async fn generate_branch_name(
-    Path(task_id): Path<Uuid>,
-    State(services): State<ForgeServices>,
-    Json(payload): Json<BranchNameRequest>,
-) -> Result<Json<BranchNameResponse>, StatusCode> {
-    ensure_branch_templates_enabled(&services, task_id).await?;
-
-    let attempt_id = payload.attempt_id.unwrap_or_else(Uuid::new_v4);
-
-    let branch_name = services
-        .branch_templates
-        .generate_branch_name(task_id, attempt_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to generate branch name: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    Ok(Json(BranchNameResponse {
-        attempt_id,
-        branch_name,
-    }))
-}
-
-async fn resolve_project_id(services: &ForgeServices, task_id: Uuid) -> Result<Uuid, StatusCode> {
-    let pool = services.pool();
-    let row = sqlx::query("SELECT project_id FROM tasks WHERE id = ?")
-        .bind(task_id)
-        .fetch_optional(pool)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to resolve project for task {}: {}", task_id, e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    let project_id = row
-        .map(|r| r.try_get::<Uuid, _>("project_id"))
-        .transpose()
-        .map_err(|e| {
-            tracing::error!("Invalid project id for task {}: {}", task_id, e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .ok_or(StatusCode::NOT_FOUND)?;
-
-    Ok(project_id)
-}
-
-async fn ensure_branch_templates_enabled(
-    services: &ForgeServices,
-    task_id: Uuid,
-) -> Result<Uuid, StatusCode> {
-    let project_id = resolve_project_id(services, task_id).await?;
-    let settings = services
-        .config
-        .get_forge_settings(project_id)
-        .await
-        .map_err(|e| {
-            tracing::error!(
-                "Failed to load project settings for {} when validating branch templates: {}",
-                project_id,
-                e
-            );
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
-
-    if !settings.branch_templates_enabled {
-        tracing::warn!(
-            "Branch templates disabled for project {}, rejecting task {} operation",
-            project_id,
-            task_id
-        );
-        return Err(StatusCode::FORBIDDEN);
-    }
-
-    Ok(project_id)
 }

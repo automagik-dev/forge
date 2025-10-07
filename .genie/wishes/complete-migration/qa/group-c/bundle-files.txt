@@ -1,0 +1,4 @@
+total 14M
+-rw-r--r-- 1 namastex namastex 2.8M Oct  6 15:42 index-B7z1qmx3.js
+-rw-r--r-- 1 namastex namastex  11M Oct  6 15:42 index-B7z1qmx3.js.map
+-rw-r--r-- 1 namastex namastex  22K Oct  6 15:42 index-BMxr6zC8.css

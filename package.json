@@ -1,6 +1,6 @@
 {
   "name": "automagik-forge",
-  "version": "0.3.10",
+  "version": "0.4.0",
   "private": false,
   "bin": {
     "automagik-forge": "npx-cli/bin/cli.js"
@@ -10,26 +10,20 @@
     "npx-cli/dist/**"
   ],
   "scripts": {
-    "lint": "pnpm --filter ./frontend... lint && pnpm --filter frontend-forge lint",
     "format": "cargo fmt --all && cd frontend && pnpm run format",
     "check": "pnpm run frontend:check && pnpm run backend:check",
-    "dev": "export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend) && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && concurrently \"pnpm run backend:dev:watch\" \"pnpm run frontend:dev\" \"pnpm run frontend-forge:watch\"",
+    "dev": "export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend) && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && concurrently \"pnpm run backend:dev:watch\" \"pnpm run frontend:dev\"",
     "test:npm": "./test-npm-package.sh",
     "frontend:dev": "cd frontend && pnpm run dev -- --port ${FRONTEND_PORT:-3000} --host",
     "frontend:check": "cd frontend && pnpm run check",
-    "frontend-forge:watch": "cd frontend-forge && pnpm run build -- --watch",
     "backend:dev": "BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) pnpm run backend:dev:watch",
     "backend:check": "cargo check",
-    "backend:dev:watch": "DISABLE_WORKTREE_ORPHAN_CLEANUP=1 RUST_LOG=debug cargo watch -w forge-app -w forge-extensions -w upstream -s \"cargo run -p forge-app --bin forge-app\"",
-    "generate-types": "cargo run --bin generate_types && cargo run -p forge-app --bin generate_forge_types",
-    "generate-types:check": "cargo run --bin generate_types -- --check && cargo run -p forge-app --bin generate_forge_types -- --check",
+    "backend:dev:watch": "DISABLE_WORKTREE_ORPHAN_CLEANUP=1 RUST_LOG=debug cargo watch -w crates -x 'run --bin server'",
+    "generate-types": "cargo run --bin generate_types",
+    "generate-types:check": "cargo run --bin generate_types -- --check",
     "prepare-db": "node scripts/prepare-db.js",
-    "build:frontends": "pnpm --filter ./frontend... build && pnpm --filter frontend-forge build",
-    "build": "pnpm run build:frontends",
-    "test:e2e": "pnpm --filter frontend-forge test",
     "build:npx": "bash ./local-build.sh",
-    "prepack": "pnpm run build:npx",
-    "sync:upstream": "bash ./scripts/sync-upstream.sh"
+    "prepack": "pnpm run build:npx"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
@@ -37,8 +31,7 @@
     "vite": "^6.3.5"
   },
   "dependencies": {
-    "@ebay/nice-modal-react": "^1.2.13",
-    "yaml": "^2.8.1"
+    "@ebay/nice-modal-react": "^1.2.13"
   },
   "engines": {
     "node": ">=18",

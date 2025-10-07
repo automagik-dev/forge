@@ -3,21 +3,20 @@
 //! Service composition layer that wraps upstream services with forge extensions.
 //! Provides unified access to both upstream functionality and forge-specific features.
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use deployment::Deployment;
 use serde::Deserialize;
 use serde_json::json;
 use server::DeploymentImpl;
-use sqlx::{sqlite::SqliteConnectOptions, ConnectOptions, Row, SqlitePool};
+use sqlx::{ConnectOptions, Row, SqlitePool, sqlite::SqliteConnectOptions};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 use uuid::Uuid;
 
 // Import forge extension services
-use forge_branch_templates::BranchTemplateService;
 use forge_config::ForgeConfigService;
 use forge_omni::{OmniConfig, OmniService};
 
@@ -27,7 +26,6 @@ pub struct ForgeServices {
     #[allow(dead_code)]
     pub deployment: Arc<DeploymentImpl>,
     pub omni: Arc<RwLock<OmniService>>,
-    pub branch_templates: Arc<BranchTemplateService>,
     pub config: Arc<ForgeConfigService>,
     pub pool: SqlitePool,
 }
@@ -38,6 +36,7 @@ impl ForgeServices {
 
         // Initialize upstream deployment (handles DB, sentry, analytics, etc.)
         let deployment = DeploymentImpl::new().await?;
+        ensure_legacy_base_branch_column(&deployment.db().pool).await?;
 
         deployment.update_sentry_scope().await?;
         deployment.cleanup_orphan_executions().await?;
@@ -83,11 +82,9 @@ impl ForgeServices {
         let omni = Arc::new(RwLock::new(OmniService::new(omni_config)));
 
         tracing::info!(
-            forge_branch_templates_enabled = global_settings.branch_templates_enabled,
             forge_omni_enabled = global_settings.omni_enabled,
             "Loaded forge extension settings from auxiliary schema"
         );
-        let branch_templates = Arc::new(BranchTemplateService::new(pool.clone()));
 
         // Spawn background worker that converts execution events into Omni notifications
         spawn_omni_notification_worker(pool.clone(), config.clone());
@@ -95,7 +92,6 @@ impl ForgeServices {
         Ok(Self {
             deployment,
             omni,
-            branch_templates,
             config,
             pool,
         })
@@ -171,9 +167,10 @@ async fn purge_shared_migration_markers() -> Result<()> {
             continue;
         }
 
-        let deleted = sqlx::query("DELETE FROM _sqlx_migrations WHERE version IN (0,1,2)")
-            .execute(&mut conn)
-            .await;
+        let deleted =
+            sqlx::query("DELETE FROM _sqlx_migrations WHERE version IN (0,1,2,20250903172012)")
+                .execute(&mut conn)
+                .await;
 
         match deleted {
             Ok(result) => {
@@ -201,21 +198,60 @@ struct ForgeMigration {
     sql: &'static str,
 }
 
+async fn ensure_legacy_base_branch_column(pool: &SqlitePool) -> Result<()> {
+    let has_base_branch = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(1) FROM pragma_table_info('task_attempts') WHERE name = 'base_branch'",
+    )
+    .fetch_one(pool)
+    .await?
+        > 0;
+
+    tracing::debug!(
+        has_base_branch,
+        "legacy schema check for task_attempts.base_branch"
+    );
+
+    if !has_base_branch {
+        sqlx::query(
+            "ALTER TABLE task_attempts ADD COLUMN base_branch TEXT NOT NULL DEFAULT 'main'",
+        )
+        .execute(pool)
+        .await?;
+
+        let has_target_branch = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(1) FROM pragma_table_info('task_attempts') WHERE name = 'target_branch'",
+        )
+        .fetch_one(pool)
+        .await?
+            > 0;
+
+        if has_target_branch {
+            sqlx::query(
+                "UPDATE task_attempts SET base_branch = COALESCE(NULLIF(target_branch, ''), branch, 'main')",
+            )
+            .execute(pool)
+            .await?;
+        }
+
+        tracing::info!(
+            "Backfilled task_attempts.base_branch for legacy Vibe Kanban databases so orphan cleanup can run"
+        );
+    }
+
+    sqlx::query(
+        "UPDATE task_attempts SET base_branch = 'main' WHERE base_branch IS NULL OR TRIM(base_branch) = ''",
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
 const FORGE_MIGRATIONS: &[ForgeMigration] = &[
-    ForgeMigration {
-        version: "20250924090000",
-        description: "add_branch_template_column",
-        sql: include_str!("../../migrations/20250924090000_add_branch_template_column.sql"),
-    },
     ForgeMigration {
         version: "20250924090001",
         description: "auxiliary_tables",
         sql: include_str!("../../migrations/20250924090001_auxiliary_tables.sql"),
-    },
-    ForgeMigration {
-        version: "20250924090002",
-        description: "migrate_branch_template_data",
-        sql: include_str!("../../migrations/20250924090002_migrate_data.sql"),
     },
     ForgeMigration {
         version: "20250924090003",
@@ -583,7 +619,6 @@ fn omni_base_url() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use forge_branch_templates::BranchTemplateService;
     use forge_config::{ForgeConfigService, ForgeProjectSettings, OmniConfig, RecipientType};
     use httpmock::prelude::*;
     use serde_json::json;
@@ -663,10 +698,7 @@ mod tests {
             .expect("failed to insert project row");
     }
 
-    async fn insert_task_graph(
-        pool: &SqlitePool,
-        project_id: Uuid,
-    ) -> (Uuid, Uuid) {
+    async fn insert_task_graph(pool: &SqlitePool, project_id: Uuid) -> (Uuid, Uuid) {
         let task_id = Uuid::new_v4();
         let attempt_id = Uuid::new_v4();
 
@@ -704,62 +736,7 @@ mod tests {
         .to_string()
     }
 
-    #[tokio::test]
-    async fn task_inserts_sync_into_extensions() {
-        let pool = setup_pool().await;
-        let task_id = uuid::Uuid::new_v4();
-
-        sqlx::query(
-            "INSERT INTO tasks (id, project_id, title, status, created_at, updated_at, branch_template)
-             VALUES (?, ?, 'Branch Template Demo', 'todo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'feature-login')",
-        )
-        .bind(task_id)
-        .bind(uuid::Uuid::new_v4())
-        .execute(&pool)
-        .await
-        .expect("failed to insert task row");
-
-        let template: Option<String> = sqlx::query_scalar(
-            "SELECT branch_template FROM forge_task_extensions WHERE task_id = ?",
-        )
-        .bind(task_id)
-        .fetch_optional(&pool)
-        .await
-        .expect("failed to fetch extension row");
-
-        assert_eq!(template.as_deref(), Some("feature-login"));
-    }
-
-    #[tokio::test]
-    async fn extension_updates_propagate_back_to_tasks() {
-        let pool = setup_pool().await;
-        let task_id = uuid::Uuid::new_v4();
-
-        sqlx::query(
-            "INSERT INTO tasks (id, project_id, title, status, created_at, updated_at)
-             VALUES (?, ?, 'Branch Template Demo', 'todo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-        )
-        .bind(task_id)
-        .bind(uuid::Uuid::new_v4())
-        .execute(&pool)
-        .await
-        .expect("failed to insert task row");
-
-        let service = BranchTemplateService::new(pool.clone());
-        service
-            .set_template(task_id, Some("feature-auth".into()))
-            .await
-            .expect("failed to set branch template");
-
-        let template: Option<String> =
-            sqlx::query_scalar("SELECT branch_template FROM tasks WHERE id = ?")
-                .bind(task_id)
-                .fetch_one(&pool)
-                .await
-                .expect("failed to fetch task branch template");
-
-        assert_eq!(template.as_deref(), Some("feature-auth"));
-    }
+    // Removed: branch-templates extension tests (extension deleted)
 
     #[tokio::test]
     async fn omni_notification_skips_when_disabled() {
@@ -878,7 +855,9 @@ mod tests {
         .expect("failed to queue notification");
 
         let previous_url = std::env::var("PUBLIC_BASE_URL").ok();
-        std::env::set_var("PUBLIC_BASE_URL", "http://forge.example");
+        unsafe {
+            std::env::set_var("PUBLIC_BASE_URL", "http://forge.example");
+        }
 
         let processed = process_next_omni_notification(&pool, &config_service)
             .await
@@ -898,10 +877,12 @@ mod tests {
 
         mock.assert_async().await;
 
-        if let Some(url) = previous_url {
-            std::env::set_var("PUBLIC_BASE_URL", url);
-        } else {
-            std::env::remove_var("PUBLIC_BASE_URL");
+        unsafe {
+            if let Some(url) = previous_url {
+                std::env::set_var("PUBLIC_BASE_URL", url);
+            } else {
+                std::env::remove_var("PUBLIC_BASE_URL");
+            }
         }
     }
 

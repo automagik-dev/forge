@@ -1,18 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    # Upstream crates (read-only via submodule)
-    "upstream/crates/server",
-    "upstream/crates/db",
-    "upstream/crates/executors",
-    "upstream/crates/services",
-    "upstream/crates/utils",
-    "upstream/crates/local-deployment",
-    "upstream/crates/deployment",
-    # Forge extensions
-    "forge-extensions/*",
-    # Main forge application
-    "forge-app"
+    "forge-app",
+    "forge-extensions/*"
 ]
 
 # NOTE: upstream sources remain untouched; forge crates extend them via forge-extensions/
@@ -28,7 +18,7 @@ thiserror = "2.0.12"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 openssl-sys = { version = "0.9", features = ["vendored"] }
-ts-rs = { git = "https://github.com/xazukx/ts-rs.git", branch = "use-ts-enum", features = ["uuid-impl", "chrono-impl", "no-serde-warnings"] }
+ts-rs = { git = "https://github.com/xazukx/ts-rs.git", branch = "use-ts-enum", features = ["uuid-impl", "chrono-impl", "no-serde-warnings", "serde-json-impl"] }
 schemars = { version = "1.0.4", features = ["derive", "chrono04", "uuid1", "preserve_order"] }
 
 [profile.release]

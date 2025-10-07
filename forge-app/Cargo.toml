@@ -1,7 +1,7 @@
 [package]
 name = "forge-app"
-version = "0.1.0"
-edition = "2021"
+version = "0.4.0"
+edition = "2024"
 default-run = "forge-app"
 
 [[bin]]
@@ -28,15 +28,17 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 
 # Upstream crate dependencies (for composition)
-db = { path = "../upstream/crates/db" }
-services = { path = "../upstream/crates/services" }
-server = { path = "../upstream/crates/server" }
-deployment = { path = "../upstream/crates/deployment" }
+db = { path = "../crates/db" }
+services = { path = "../crates/services" }
+server = { path = "../crates/server" }
+deployment = { path = "../crates/deployment" }
 
 # Forge extensions
 forge-omni = { path = "../forge-extensions/omni" }
-forge-branch-templates = { path = "../forge-extensions/branch-templates" }
 forge-config = { path = "../forge-extensions/config" }
+
+# Utils for branch naming override
+utils = { path = "../crates/utils" }
 
 [dev-dependencies]
 httpmock = "0.7"

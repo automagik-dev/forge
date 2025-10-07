@@ -43,18 +43,29 @@ pub fn is_wsl2() -> bool {
 }
 
 pub fn cache_dir() -> std::path::PathBuf {
-    let proj = if cfg!(debug_assertions) {
-        ProjectDirs::from("ai", "bloop-dev", env!("CARGO_PKG_NAME"))
-            .expect("OS didn't give us a home directory")
+    if let Ok(custom) = std::env::var("FORGE_CACHE_DIR") {
+        let expanded = crate::path::expand_tilde(custom.trim());
+        if !expanded.exists() {
+            if let Err(err) = std::fs::create_dir_all(&expanded) {
+                tracing::warn!(?err, path=?expanded, "Failed to create custom FORGE_CACHE_DIR, falling back to default");
+            } else {
+                return expanded;
+            }
+        } else {
+            return expanded;
+        }
+    }
+
+    let org = if cfg!(debug_assertions) {
+        "namastex-dev"
     } else {
-        ProjectDirs::from("ai", "bloop", env!("CARGO_PKG_NAME"))
-            .expect("OS didn't give us a home directory")
+        "namastex"
     };
 
-    // ✔ macOS → ~/Library/Caches/MyApp
-    // ✔ Linux → ~/.cache/myapp (respects XDG_CACHE_HOME)
-    // ✔ Windows → %LOCALAPPDATA%\Example\MyApp
-    proj.cache_dir().to_path_buf()
+    ProjectDirs::from("ai", org, env!("CARGO_PKG_NAME"))
+        .expect("OS didn't give us a home directory")
+        .cache_dir()
+        .to_path_buf()
 }
 
 // Get or create cached PowerShell script file

@@ -1,0 +1,4 @@
+warning: server@0.4.0: Creating dummy frontend/dist directory for compilation
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.28s
+     Running `target/debug/generate_forge_types --check`
+Forge types up to date

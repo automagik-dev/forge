@@ -15,6 +15,10 @@ yarn-error.log*
 !/frontend-forge/dist/.gitkeep
 /build
 
+# Genie CLI/MCP (now from npm)
+.genie/cli/
+.genie/mcp/
+
 # Environment variables
 .env
 .env.local

@@ -26,9 +26,8 @@ fi
 echo "📦 Building for platform: $PLATFORM_DIR"
 mkdir -p npx-cli/dist/$PLATFORM_DIR
 
-echo "🔨 Building frontends with pnpm..."
-pnpm --filter ./frontend... build
-pnpm --filter frontend-forge build
+echo "🔨 Building frontend with pnpm..."
+cd frontend && pnpm run build && cd ..
 
 echo "🔨 Building Rust binaries..."
 cargo build --release

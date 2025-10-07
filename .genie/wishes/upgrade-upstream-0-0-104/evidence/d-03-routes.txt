@@ -1,0 +1,30 @@
+# Route Testing Results
+
+## Forge Routes (under /api/forge/*)
+
+### Omni Routes
+$ curl http://localhost:3002/api/forge/omni/instances
+{"instances":[],"error":"Failed to connect to Omni service"}
+✅ Route registered (expected error - Omni not configured)
+
+### Config Routes
+$ curl http://localhost:3002/api/forge/config
+{"omni_enabled":false,"omni_config":null}
+✅ Route registered and responding
+
+## Upstream Routes (under /api/*)
+
+### Health Check
+$ curl http://localhost:3002/health
+{"status":"ok","service":"forge-app","message":"Forge application ready - backend extensions extracted successfully"}
+✅ Root health check working
+
+$ curl http://localhost:3002/api/health
+{"success":true,"data":"OK","error_data":null,"message":null}
+✅ Upstream API health check working
+
+## Verification Summary
+- ✅ Forge-specific routes registered under /api/forge/*
+- ✅ Upstream routes preserved under /api/*
+- ✅ Server composition working correctly
+- ✅ Both Forge extensions and upstream functionality accessible

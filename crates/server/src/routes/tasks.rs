@@ -212,7 +212,6 @@ pub async fn update_task(
     let title = payload.title.unwrap_or(existing_task.title);
     let description = payload.description.or(existing_task.description);
     let status = payload.status.unwrap_or(existing_task.status);
-    let branch_template = payload.branch_template.or(existing_task.branch_template);
     let parent_task_attempt = payload
         .parent_task_attempt
         .or(existing_task.parent_task_attempt);
@@ -224,7 +223,6 @@ pub async fn update_task(
         title,
         description,
         status,
-        branch_template,
         parent_task_attempt,
     )
     .await?;

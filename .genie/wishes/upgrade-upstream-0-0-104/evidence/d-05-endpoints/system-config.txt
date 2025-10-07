@@ -1,0 +1,4 @@
+<!DOCTYPE html>
+<html><head><title>Build frontend first</title></head>
+<body><h1>Please build the frontend</h1></body></html>
+HTTP Status: 200

@@ -1,0 +1,7 @@
+AGENTS.md:- Automagik Forge does NOT support backwards compatibility or legacy features
+AGENTS.md:❌ Suggest `--metrics`, `--legacy`, `--compat` flags or similar
+AGENTS.md:- Cleaner codebase without legacy cruft
+CLAUDE.md:Automagik Forge does NOT support legacy features or compatibility flags.
+CLAUDE.md:- ❌ NEVER suggest `--legacy`, `--compat`, `--metrics` flags
+CLAUDE.md:**Example (WRONG):** "Add `--legacy-executor` flag for compatibility"
+CLAUDE.md:**Example (CORRECT):** "Replace executor interface entirely. Remove legacy code from `crates/executors/src/`"

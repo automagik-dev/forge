@@ -11,8 +11,8 @@ pub use types::*;
 
 // Re-export upstream config primitives so downstream code can switch to forge-config without churn
 pub use services::services::config::{
-    load_config_from_file, save_config_to_file, Config, ConfigError, EditorConfig, EditorType,
-    GitHubConfig, NotificationConfig, SoundFile, ThemeMode, UiLanguage,
+    Config, ConfigError, EditorConfig, EditorType, GitHubConfig, NotificationConfig, SoundFile,
+    ThemeMode, UiLanguage, load_config_from_file, save_config_to_file,
 };
 
 // Re-export Omni config for compatibility

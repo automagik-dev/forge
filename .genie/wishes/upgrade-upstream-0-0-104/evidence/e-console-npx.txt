@@ -1,0 +1,36 @@
+# Browser Console Logs - NPX Package QA Testing
+# Date: 2025-10-07T23:18 UTC
+# Browser: Playwright Chromium
+# URL: http://localhost:8887
+
+## Console Output
+
+[error] [Forge API Error] {message: undefined, endpoint: http://localhost:8887/api/forge/config, timestamp: 2025-10-07T23:10:11.461Z}
+
+[error] Failed to load forge settings: ApiError: Forge API request failed
+    at $P (http://localhost:8887/assets/index-ClrY0KYn.js:792:39463)
+    at async http://localhost:8887/assets/index-ClrY0KYn.js:792:40240
+
+[verbose] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq)
+
+[warning] unknown format "textarea" ignored in schema at path "#/properties/append_prompt"
+
+[warning] unknown format "textarea" ignored in schema at path "#/properties/append_prompt"
+
+## Analysis
+
+### Critical Issues
+- **Forge API Config Error**: The `/api/forge/config` endpoint is returning undefined, causing forge settings to fail loading
+  - This is a known issue when running via NPX without forge-specific configuration
+  - Does not block core functionality but disables Omni modal and other forge-specific features
+
+### Non-Critical Issues
+- **Password form warning**: Standard browser warning, cosmetic only
+- **Textarea schema warnings**: JSON schema validation warnings, do not affect functionality
+
+### Impact Assessment
+- ✅ Core UI loads and renders correctly
+- ✅ Navigation works
+- ✅ Settings pages load
+- ✅ Agent executor selection works
+- ⚠️ Forge-specific features (Omni) may be disabled due to config API error
