@@ -6,8 +6,8 @@
 **Status:** In Progress - Submodule updated, overrides pending
 **Created:** 2025-10-07
 **Updated:** 2025-10-07 (v0.0.105 upgrade completed)
-**Effort:** Large (L) - 30 individual tasks
-**Task Count:** 1 prep + 1 audit + 25 file refactors + 3 validation = **30 tasks**
+**Effort:** Large (L) - 35 individual tasks
+**Task Count:** 1 prep + 1 audit + 25 frontend + 6 backend + 2 integration = **35 tasks**
 
 ---
 
@@ -287,14 +287,24 @@ None - all questions answered by human:
 **Owner:** implementor
 **Effort:** XS
 
-1. Update upstream submodule pointer to v0.0.104-20251006165551
+**Setup (REQUIRED - worktree isolation):**
+```bash
+git submodule update --init --recursive
+```
+
+**Steps:**
+1. Update upstream submodule pointer to v0.0.105
 2. Create baseline snapshots (executors, tests, MCP responses)
 3. Backup current overrides to `forge-overrides-backup/`
 4. Run initial type generation check
 
 **Validation:**
 ```bash
-cd upstream && git checkout v0.0.104-20251006165551
+# Initialize submodules first
+git submodule update --init --recursive
+
+# Update submodule
+cd upstream && git checkout v0.0.105
 cd .. && git add upstream
 git diff --cached upstream  # Should show submodule pointer change
 test -d forge-overrides-backup  # Backup exists
@@ -309,6 +319,11 @@ test -d forge-overrides-backup  # Backup exists
 ### Task B: Comprehensive Override Audit
 **Owner:** implementor
 **Effort:** S
+
+**Setup (REQUIRED - worktree isolation):**
+```bash
+git submodule update --init --recursive
+```
 
 **Purpose:** Analyze ALL existing overrides + identify new upstream files before refactoring.
 
@@ -920,38 +935,184 @@ cd frontend && pnpm exec tsc --noEmit src/utils/companion-install-task.ts
 
 ---
 
-### Task C: Backend Integration Validation
+## Backend Extension Validation (Phase 4)
+
+**Note:** All tasks MUST initialize submodules first (worktree isolation issue):
+```bash
+git submodule update --init --recursive
+```
+
+---
+
+### Task D-01: Omni Extension Validation
+**Owner:** implementor
+**Effort:** S
+**Files:** `forge-extensions/omni/{client.rs,types.rs,service.rs,lib.rs}`
+
+**Setup (REQUIRED):**
+```bash
+git submodule update --init --recursive
+```
+
+**Validation:**
+1. Compile against v0.0.105: `cargo build -p forge-omni`
+2. Run tests: `cargo test -p forge-omni`
+3. Check type compatibility with `shared/forge-types.ts`
+4. Test Omni API endpoints (requires running server)
+
+**Commands:**
+```bash
+cargo build -p forge-omni
+cargo test -p forge-omni
+cargo clippy -p forge-omni -- -D warnings
+```
+
+**Evidence:** Compilation success, test output, clippy clean
+
+---
+
+### Task D-02: Config Extension Validation
+**Owner:** implementor
+**Effort:** XS
+**Files:** `forge-extensions/config/{types.rs,service.rs,lib.rs}`
+
+**Setup (REQUIRED):**
+```bash
+git submodule update --init --recursive
+```
+
+**Validation:**
+1. Compile against v0.0.105: `cargo build -p forge-config`
+2. Run tests: `cargo test -p forge-config`
+3. Verify config storage/retrieval
+
+**Commands:**
+```bash
+cargo build -p forge-config
+cargo test -p forge-config
+cargo clippy -p forge-config -- -D warnings
+```
+
+**Evidence:** Compilation success, test output
+
+---
+
+### Task D-03: Forge-App Binary Validation
+**Owner:** implementor
+**Effort:** M
+**Files:** `forge-app/src/{main.rs,router.rs,services/mod.rs}`
+
+**Setup (REQUIRED):**
+```bash
+git submodule update --init --recursive
+```
+
+**Validation:**
+1. Compile forge-app: `cargo build -p forge-app`
+2. Verify composition of upstream + extensions
+3. Check route registration (Omni routes, config routes)
+4. Test server startup
+
+**Commands:**
+```bash
+cargo build -p forge-app
+cargo run -p forge-app --bin forge-app &
+sleep 5
+curl http://localhost:PORT/api/system/config
+pkill forge-app
+```
+
+**Evidence:** Compilation success, server starts, routes respond
+
+---
+
+### Task D-04: Type Generation Validation
+**Owner:** implementor
+**Effort:** XS
+**Files:** `forge-app/src/bin/generate_forge_types.rs`
+
+**Setup (REQUIRED):**
+```bash
+git submodule update --init --recursive
+```
+
+**Validation:**
+```bash
+cargo run -p server --bin generate_types -- --check
+cargo run -p forge-app --bin generate_forge_types -- --check
+```
+
+**Evidence:** Both type generators pass, `shared/forge-types.ts` valid
+
+---
+
+### Task D-05: MCP Server Endpoints Validation
+**Owner:** qa
+**Effort:** S
+
+**Setup (REQUIRED):**
+```bash
+git submodule update --init --recursive
+```
+
+**Validation:**
+1. Start forge-app server
+2. Test all Forge MCP tools
+3. Verify responses match schema
+
+**Commands:**
+```bash
+# Start server
+cargo run -p forge-app --bin forge-app &
+SERVER_PID=$!
+
+# Test endpoints
+curl http://localhost:PORT/api/forge/omni/status
+curl http://localhost:PORT/api/forge/config
+
+# Cleanup
+kill $SERVER_PID
+```
+
+**Evidence:** All endpoints respond, JSON schemas valid
+
+---
+
+### Task D-06: Git Services & Worktree Validation
 **Owner:** implementor
 **Effort:** S
 
-1. Run type generation (core + forge)
-2. Test MCP server endpoints
-3. Verify executor profiles API
-4. Check Copilot executor presence
-5. Validate git services (worktree manager)
-
-**Validation Commands:**
+**Setup (REQUIRED):**
 ```bash
-# Type generation
-cargo run -p server --bin generate_types -- --check
-cargo run -p forge-app --bin generate_forge_types -- --check
+git submodule update --init --recursive
+```
 
-# MCP server (requires running forge-app)
-curl http://localhost:PORT/api/system/config  # Should return config
+**Validation:**
+1. Test worktree manager against v0.0.105
+2. Verify executor profiles API
+3. Check Copilot executor presence
 
+**Commands:**
+```bash
 # Executors
 curl http://localhost:PORT/api/executors/profiles | jq 'keys | length'  # Should be 8
 curl http://localhost:PORT/api/executors/profiles | jq 'has("copilot")'  # Should be true
 ```
 
-**Evidence:** Type generation success, MCP response JSONs, executor count verification
+**Evidence:** Worktree operations succeed, 8 executors present
 
 ---
 
-### Task D: Full Integration Testing
+### Task E: Full Integration Testing
 **Owner:** qa
 **Effort:** M
 
+**Setup (REQUIRED):**
+```bash
+git submodule update --init --recursive
+```
+
+**Validation:**
 1. Start full dev environment: `pnpm run dev`
 2. Create test project
 3. Test each executor (especially Copilot)
@@ -978,10 +1139,16 @@ curl http://localhost:PORT/api/executors/profiles | jq 'has("copilot")'  # Shoul
 
 ---
 
-### Task E: Regression Testing & Final Validation
+### Task F: Regression Testing & Final Validation
 **Owner:** qa
 **Effort:** S
 
+**Setup (REQUIRED):**
+```bash
+git submodule update --init --recursive
+```
+
+**Validation:**
 1. Run full test suite
 2. Run regression harness
 3. Compare baseline vs upgraded (tests, executors, MCP, UI)
@@ -989,10 +1156,13 @@ curl http://localhost:PORT/api/executors/profiles | jq 'has("copilot")'  # Shoul
 
 **Validation Commands:**
 ```bash
+# Full test suite
 cargo test --workspace 2>&1 | tee upgraded-tests.txt
 cargo clippy --all --all-targets --all-features -- -D warnings
 cd frontend && pnpm run lint
 cd frontend && pnpm run check
+
+# Regression harness
 ./scripts/run-forge-regression.sh
 
 # Comparison
@@ -1044,15 +1214,15 @@ Closes: #[issue-number-if-any]
 
 ## Tracker Plan
 
-**Forge MCP Tasks (30 total):**
+**Forge MCP Tasks (35 total): A + B + 25×C + 6×D + E + F = 35 tasks**
 
-**Phase 1: Preparation**
+**Phase 1: Preparation (1 task)**
 - Task A: `upgrade-upstream-0-0-104-task-a` (Submodule update & baseline)
 
-**Phase 2: Override Audit**
+**Phase 2: Override Audit (1 task)**
 - Task B: `upgrade-upstream-0-0-104-task-b` (Comprehensive override audit + new file detection)
 
-**Phase 3: Override Refactoring (25 individual files)**
+**Phase 3: Frontend Override Refactoring (25 individual files)**
 - Task C-01: `upgrade-upstream-0-0-104-task-c-01` (GitHubLoginDialog.tsx)
 - Task C-02: `upgrade-upstream-0-0-104-task-c-02` (DisclaimerDialog.tsx)
 - Task C-03: `upgrade-upstream-0-0-104-task-c-03` (OnboardingDialog.tsx)
@@ -1079,15 +1249,22 @@ Closes: #[issue-number-if-any]
 - Task C-24: `upgrade-upstream-0-0-104-task-c-24` (shims.d.ts - Forge-specific)
 - Task C-25: `upgrade-upstream-0-0-104-task-c-25` (companion-install-task.ts - Forge-specific)
 
-**Phase 4: Backend & Integration**
-- Task D: `upgrade-upstream-0-0-104-task-d` (Backend validation)
-- Task E: `upgrade-upstream-0-0-104-task-e` (Integration testing)
+**Phase 4: Backend Extension Validation (6 component-based tasks)**
+- Task D-01: `upgrade-upstream-0-0-104-task-d-01` (Omni extension - 4 Rust files)
+- Task D-02: `upgrade-upstream-0-0-104-task-d-02` (Config extension - 3 Rust files)
+- Task D-03: `upgrade-upstream-0-0-104-task-d-03` (Forge-app binary validation)
+- Task D-04: `upgrade-upstream-0-0-104-task-d-04` (Type generation)
+- Task D-05: `upgrade-upstream-0-0-104-task-d-05` (MCP server endpoints)
+- Task D-06: `upgrade-upstream-0-0-104-task-d-06` (Git services & worktree)
+
+**Phase 5: Integration & Regression (2 tasks)**
+- Task E: `upgrade-upstream-0-0-104-task-e` (Full integration testing)
 - Task F: `upgrade-upstream-0-0-104-task-f` (Regression testing)
 
 **Human Review Gates:**
 1. After Task B: Review override audit report → approve/modify refactoring plan
 2. After each C-task: Quick approval for file refactor (can be batched)
-3. After Task D: Backend validation review
+3. After Task D-06: Backend validation review
 4. After Task F: Final approval to commit + push
 
 ---
