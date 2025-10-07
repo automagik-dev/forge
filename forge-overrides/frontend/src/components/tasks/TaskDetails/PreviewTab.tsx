@@ -9,6 +9,7 @@ import { useClickedElements } from '@/contexts/ClickedElementsProvider';
 import { TaskAttempt } from 'shared/types';
 import { Alert } from '@/components/ui/alert';
 import { useProject } from '@/contexts/project-context';
+// FORGE CUSTOMIZATION: Using absolute imports for consistency with Forge module resolution
 import { DevServerLogsView } from '@/components/tasks/TaskDetails/preview/DevServerLogsView';
 import { PreviewToolbar } from '@/components/tasks/TaskDetails/preview/PreviewToolbar';
 import { NoServerContent } from '@/components/tasks/TaskDetails/preview/NoServerContent';
@@ -185,6 +186,7 @@ export default function PreviewTab({
               </li>
               <li>
                 {t('preview.troubleAlert.item3')}{' '}
+                {/* FORGE CUSTOMIZATION: Link to Forge documentation instead of BloopAI repository */}
                 <a
                   href="https://forge.automag.ik/docs/integrations/omni-companion"
                   target="_blank"
