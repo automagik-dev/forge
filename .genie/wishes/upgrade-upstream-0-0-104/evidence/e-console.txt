@@ -1,0 +1,54 @@
+# Backend Console Log (from pnpm run dev)
+
+## Server Startup
+[2025-10-07T22:45:26.505009Z]  INFO  executors::profile: No user profiles.json found, using defaults only
+[2025-10-07T22:45:26.512477Z]  DEBUG local_deployment::container: Orphan worktree cleanup is disabled via DISABLE_WORKTREE_ORPHAN_CLEANUP environment variable
+[2025-10-07T22:45:26.512476Z]  INFO  local_deployment: Starting orphaned image cleanup...
+[2025-10-07T22:45:26.513177Z]  INFO  local_deployment::container: Starting periodic worktree cleanup...
+[2025-10-07T22:45:26.513373Z]  DEBUG services::services::image: No orphaned images found during cleanup
+[2025-10-07T22:45:26.515723Z]  DEBUG local_deployment::container: Checking 1 active worktrees for external deletion...
+[2025-10-07T22:45:26.515911Z]  INFO  services::services::pr_monitor: Starting PR monitoring service with interval 60s
+[2025-10-07T22:45:26.515981Z]  INFO  services::services::file_search_cache: Starting file search cache warming...
+[2025-10-07T22:45:26.516304Z]  DEBUG local_deployment::container: No expired worktrees found
+[2025-10-07T22:45:26.516627Z]  INFO  services::services::file_search_cache: Warming cache for 1 projects: ["/home/namastex/workspace/automagik-forge"]
+[2025-10-07T22:45:26.517172Z]  INFO  services::services::file_search_cache: Setup file watcher for repo: "/home/namastex/workspace/automagik-forge"
+[2025-10-07T22:45:26.517246Z]  INFO  services::services::file_search_cache: File search cache warming completed
+[2025-10-07T22:45:26.517262Z]  INFO  services::services::file_search_cache: Building cache for repo: "/home/namastex/workspace/automagik-forge"
+[2025-10-07T22:45:26.517483Z]  DEBUG services::services::pr_monitor: No open PRs to check
+[2025-10-07T22:45:26.518970Z]  INFO  server: Server running on http://127.0.0.1:3001
+[2025-10-07T22:45:27.315616Z]  INFO  services::services::file_search_cache: Successfully cached repo: "/home/namastex/workspace/automagik-forge"
+
+## Periodic Tasks
+[2025-10-07T22:46:32.999852Z]  DEBUG services::services::pr_monitor: No open PRs to check
+
+## Summary
+- No errors detected
+- All services initialized successfully
+- Server listening on port 3001
+- File search cache built successfully
+- PR monitoring active
+- Worktree cleanup disabled (as configured)
+
+# Frontend Console Log (from Vite)
+
+## Vite Dev Server
+VITE v5.4.20 ready in 182 ms
+
+➜  Local:   http://localhost:3000/
+➜  Network: use --host to expose
+
+## Summary
+- No compilation errors
+- Dev server ready
+- React Fast Refresh enabled
+- Module resolution working
+
+# Browser Console
+⚠️ UNABLE TO CAPTURE: No browser access in headless worktree environment
+
+Requires manual execution by human tester with browser access to:
+1. Navigate to http://localhost:3000/
+2. Open DevTools console
+3. Check for JavaScript errors
+4. Verify React app initialization
+5. Test all UI interactions from task-e.md checklist
