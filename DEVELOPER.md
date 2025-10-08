@@ -74,6 +74,24 @@ sqlx migrate revert
 
 ## 🏗️ Architecture
 
+### Upstream Integration Model
+
+Automagik Forge uses an **upstream integration architecture** where it extends a base template rather than forking it:
+
+- **`upstream/`** - Git submodule containing the base Automagik Genie template (read-only)
+- **`forge-app/`** - Forge-specific Axum binary that composes upstream + extensions
+- **`forge-extensions/`** - Rust crates providing Forge-specific features (Omni, config, etc.)
+- **`crates/`** - Empty directory (all upstream crates accessed via `../upstream/crates/*`)
+
+**Key Principle**: Forge uses upstream crates directly via path dependencies. No code duplication.
+
+### Forge Customizations
+
+Forge adds exactly two customizations on top of upstream:
+
+1. **Branch Prefix Override** - Tasks use `forge/{task-id}` branch naming (see `forge-app/src/router.rs:127`)
+2. **Omni Integration** - Notification system in `forge-extensions/omni/`
+
 ### Tech Stack
 
 | Layer | Technology | Purpose |
@@ -85,6 +103,7 @@ sqlx migrate revert
 | **Type Safety** | ts-rs | Auto-generated TypeScript from Rust |
 | **Real-time** | Server-Sent Events | Live progress streaming |
 | **Protocol** | MCP (Model Context Protocol) | Agent communication standard |
+| **Extensions** | forge-extensions crates | Modular Forge-specific features |
 
 ### System Architecture
 
@@ -119,13 +138,21 @@ sqlx migrate revert
 
 ```
 automagik-forge/
-├── crates/                    # Rust backend modules
-│   ├── server/               # HTTP server & MCP implementation
-│   ├── db/                   # Database models & migrations
-│   ├── executors/            # AI agent integrations
-│   ├── services/             # Business logic & git operations
-│   ├── local-deployment/     # Deployment configuration
-│   └── utils/                # Shared utilities
+├── upstream/                  # Git submodule (base template, read-only)
+│   └── crates/               # Upstream crates (db, server, executors, services, utils, etc.)
+│
+├── crates/                    # Empty (uses upstream via path deps)
+│
+├── forge-app/                 # Forge-specific Axum binary
+│   ├── src/
+│   │   ├── main.rs           # Application entry point
+│   │   ├── router.rs         # API routing + branch prefix override
+│   │   └── services/         # Forge service composition
+│   └── migrations/           # Forge-specific migrations (Omni tables)
+│
+├── forge-extensions/          # Forge extension crates
+│   ├── omni/                 # Notification service
+│   └── config/               # Configuration service
 │
 ├── frontend/                  # React application
 │   ├── src/
@@ -135,11 +162,32 @@ automagik-forge/
 │   │   └── lib/             # API client & utilities
 │   └── public/              # Static assets
 │
+├── scripts/                   # Build & development scripts
+│   └── check-upstream-alignment.sh  # Guardrail to prevent duplication
+│
 ├── npx-cli/                  # NPX CLI wrapper
-├── scripts/                  # Build & development scripts
 ├── dev_assets_seed/          # Development database seed
-└── shared/types.ts           # Auto-generated TypeScript types
+└── shared/
+    ├── types.ts              # Auto-generated from upstream server
+    └── forge-types.ts        # Auto-generated from forge-app
 ```
+
+### Dependency Flow
+
+```
+forge-app
+    ├─→ forge-extensions/omni
+    ├─→ forge-extensions/config
+    └─→ upstream/crates/* (db, server, services, executors, utils, etc.)
+
+forge-extensions/omni
+    └─→ upstream/crates/* (for shared types and utilities)
+
+forge-extensions/config
+    └─→ upstream/crates/* (for shared types and utilities)
+```
+
+**Guardrail**: Run `./scripts/check-upstream-alignment.sh` to verify no duplication occurs.
 
 ## 📚 API Reference
 

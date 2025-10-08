@@ -175,6 +175,26 @@ mod tests {
             .await
             .expect("failed to create in-memory sqlite pool");
 
+        // Create forge_global_settings table
+        sqlx::query(
+            r#"CREATE TABLE forge_global_settings (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    forge_config TEXT NOT NULL DEFAULT '{}',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )"#,
+        )
+        .execute(&pool)
+        .await
+        .expect("failed to create forge_global_settings table for tests");
+
+        // Initialize global settings row
+        sqlx::query("INSERT INTO forge_global_settings (id, forge_config) VALUES (1, '{}')")
+            .execute(&pool)
+            .await
+            .expect("failed to initialize global settings row");
+
+        // Create forge_project_settings table
         sqlx::query(
             r#"CREATE TABLE forge_project_settings (
                     project_id TEXT PRIMARY KEY,
@@ -276,5 +296,38 @@ mod tests {
         assert_eq!(config.instance.as_deref(), Some("project"));
         assert_eq!(config.recipient.as_deref(), Some("project-recipient"));
         assert!(matches!(config.recipient_type, Some(RecipientType::UserId)));
+    }
+
+    #[tokio::test]
+    async fn forge_global_settings_singleton_constraint() {
+        let pool = setup_pool().await;
+
+        // Try to insert a second global settings row (should fail due to CHECK constraint)
+        let result = sqlx::query("INSERT INTO forge_global_settings (id, forge_config) VALUES (2, '{}')")
+            .execute(&pool)
+            .await;
+
+        assert!(result.is_err(), "Should not allow multiple global settings rows");
+    }
+
+    #[tokio::test]
+    async fn forge_global_settings_has_default_row() {
+        let pool = setup_pool().await;
+
+        // Verify the default row exists
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM forge_global_settings")
+            .fetch_one(&pool)
+            .await
+            .expect("should count rows");
+
+        assert_eq!(count, 1, "Should have exactly one global settings row");
+
+        // Verify it's ID 1
+        let id: i64 = sqlx::query_scalar("SELECT id FROM forge_global_settings")
+            .fetch_one(&pool)
+            .await
+            .expect("should fetch id");
+
+        assert_eq!(id, 1, "Global settings row should have ID 1");
     }
 }

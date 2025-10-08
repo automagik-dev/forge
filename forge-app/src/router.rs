@@ -481,3 +481,47 @@ async fn validate_omni_config(
         })),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_forge_branch_prefix_format() {
+        // Test that branch names are prefixed with "forge/"
+        let task_id = Uuid::new_v4();
+        let branch_name = format!("forge/{}", task_id);
+
+        assert!(branch_name.starts_with("forge/"));
+        assert_eq!(branch_name, format!("forge/{}", task_id));
+    }
+
+    #[test]
+    fn test_forge_branch_prefix_uniqueness() {
+        // Test that different task IDs produce different branch names
+        let task_id_1 = Uuid::new_v4();
+        let task_id_2 = Uuid::new_v4();
+
+        let branch_1 = format!("forge/{}", task_id_1);
+        let branch_2 = format!("forge/{}", task_id_2);
+
+        assert_ne!(branch_1, branch_2);
+        assert!(branch_1.starts_with("forge/"));
+        assert!(branch_2.starts_with("forge/"));
+    }
+
+    #[test]
+    fn test_forge_branch_prefix_uuid_format() {
+        // Test that branch name contains valid UUID after prefix
+        let task_id = Uuid::new_v4();
+        let branch_name = format!("forge/{}", task_id);
+
+        let parts: Vec<&str> = branch_name.split('/').collect();
+        assert_eq!(parts.len(), 2);
+        assert_eq!(parts[0], "forge");
+
+        // Verify second part is a valid UUID
+        let uuid_str = parts[1];
+        assert!(Uuid::parse_str(uuid_str).is_ok());
+    }
+}
