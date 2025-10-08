@@ -8,6 +8,7 @@ use crate::DeploymentImpl;
 pub mod auth;
 pub mod config;
 pub mod containers;
+pub mod drafts;
 pub mod filesystem;
 // pub mod github;
 pub mod events;
@@ -28,6 +29,7 @@ pub fn router(deployment: DeploymentImpl) -> IntoMakeService<Router> {
         .merge(config::router())
         .merge(containers::router(&deployment))
         .merge(projects::router(&deployment))
+        .merge(drafts::router(&deployment))
         .merge(tasks::router(&deployment))
         .merge(task_attempts::router(&deployment))
         .merge(execution_processes::router(&deployment))
@@ -40,8 +42,8 @@ pub fn router(deployment: DeploymentImpl) -> IntoMakeService<Router> {
         .with_state(deployment);
 
     Router::new()
+        .nest("/api", base_routes)
         .route("/", get(frontend::serve_frontend_root))
         .route("/{*path}", get(frontend::serve_frontend))
-        .nest("/api", base_routes)
         .into_make_service()
 }

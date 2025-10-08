@@ -24,8 +24,8 @@ use db::models::{
 use deployment::Deployment;
 use forge_config::ForgeProjectSettings;
 use server::routes::{
-    self as upstream, auth, config as upstream_config, containers, events, execution_processes,
-    filesystem, images, projects, task_attempts, task_templates, tasks,
+    self as upstream, auth, config as upstream_config, containers, drafts, events,
+    execution_processes, filesystem, images, projects, task_attempts, task_templates, tasks,
 };
 use server::{DeploymentImpl, error::ApiError, routes::tasks::CreateAndStartTaskRequest};
 use services::services::container::ContainerService;
@@ -177,6 +177,7 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
         router.merge(containers::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
     router =
         router.merge(projects::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+    router = router.merge(drafts::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
 
     // Build custom tasks router with forge create-and-start override
     let tasks_router_with_override = build_tasks_router_with_forge_override(deployment);

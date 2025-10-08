@@ -103,6 +103,12 @@ pub struct TaskAttemptQuery {
     pub task_id: Option<Uuid>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct DiffStreamQuery {
+    #[serde(default)]
+    pub stats_only: bool,
+}
+
 pub async fn get_task_attempts(
     State(deployment): State<DeploymentImpl>,
     Query(query): Query<TaskAttemptQuery>,
@@ -513,6 +519,46 @@ pub async fn save_follow_up_draft(
         });
 
     Ok(ResponseJson(ApiResponse::success(current)))
+}
+
+#[axum::debug_handler]
+pub async fn stream_task_attempt_diff_ws(
+    ws: WebSocketUpgrade,
+    Query(params): Query<DiffStreamQuery>,
+    Extension(task_attempt): Extension<TaskAttempt>,
+    State(deployment): State<DeploymentImpl>,
+) -> impl IntoResponse {
+    let stats_only = params.stats_only;
+    ws.on_upgrade(move |socket| async move {
+        if let Err(e) =
+            handle_task_attempt_diff_ws(socket, deployment, task_attempt, stats_only).await
+        {
+            tracing::warn!("diff WS closed: {}", e);
+        }
+    })
+}
+
+async fn handle_task_attempt_diff_ws(
+    socket: WebSocket,
+    _deployment: DeploymentImpl,
+    _task_attempt: TaskAttempt,
+    _stats_only: bool,
+) -> anyhow::Result<()> {
+    use axum::extract::ws::Message;
+    use futures_util::{SinkExt, StreamExt};
+
+    // TODO(upstream-alignment): Implement full diff streaming from upstream
+    // Minimal stub to prevent infinite retries - sends empty state and closes
+    let (mut sender, _receiver) = socket.split();
+
+    let empty_diff = serde_json::json!({"entries": {}});
+    let msg = Message::Text(serde_json::to_string(&empty_diff)?.into());
+    let _ = sender.send(msg).await;
+
+    let finished_msg = Message::Text(serde_json::to_string(&serde_json::json!({"finished": true}))?.into());
+    let _ = sender.send(finished_msg).await;
+
+    Ok(())
 }
 
 #[axum::debug_handler]
@@ -1734,6 +1780,7 @@ pub fn router(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
         .route("/start-dev-server", post(start_dev_server))
         .route("/branch-status", get(get_task_attempt_branch_status))
         .route("/diff", get(get_task_attempt_diff))
+        .route("/diff/ws", get(stream_task_attempt_diff_ws))
         .route("/merge", post(merge_task_attempt))
         .route("/push", post(push_task_attempt_branch))
         .route("/rebase", post(rebase_task_attempt))
