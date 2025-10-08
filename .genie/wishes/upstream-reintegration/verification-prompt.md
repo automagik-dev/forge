@@ -22,10 +22,10 @@ Load these files before starting analysis:
 
 **Initial workspace assessment:**
 - Verify current working directory and repository structure
-- Check for existence of `upstream/` directory
+- Check for existence of `upstream/` directory (should exist as git submodule)
 - Review current git status for any uncommitted changes
 - Identify workspace members in `Cargo.toml`
-- Note the current state of `crates/` directory
+- Note the current state of `crates/` directory (expecting duplicated crates to still exist pre-migration)
 
 ## Analysis Protocol
 
@@ -57,9 +57,9 @@ Load these files before starting analysis:
 ---
 
 ### Phase 2: Migration Feasibility
-**Goal:** Validate the 5-step migration approach
+**Goal:** Validate the 5-step migration approach will work as described
 
-**Verify each step:**
+**Verify each step's feasibility (pre-execution):**
 
 1. **Group A - Delete duplicates feasible?**
    - Check if `forge-app/Cargo.toml` has dependencies pointing to local `crates/` directory
