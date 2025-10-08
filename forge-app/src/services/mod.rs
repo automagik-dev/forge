@@ -639,8 +639,7 @@ mod tests {
                 status TEXT,
                 parent_task_attempt TEXT,
                 created_at TEXT,
-                updated_at TEXT,
-                branch_template TEXT
+                updated_at TEXT
             )"#,
         )
         .execute(&pool)
@@ -703,8 +702,8 @@ mod tests {
         let attempt_id = Uuid::new_v4();
 
         sqlx::query(
-            "INSERT INTO tasks (id, project_id, title, status, created_at, updated_at, branch_template)
-             VALUES (?, ?, 'Branch Template Demo', 'todo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL)",
+            "INSERT INTO tasks (id, project_id, title, status, created_at, updated_at)
+             VALUES (?, ?, 'Omni Notification Test', 'todo', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
         )
         .bind(task_id)
         .bind(project_id)

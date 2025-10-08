@@ -90,7 +90,7 @@ export type Config = { config_version: string, theme: ThemeMode, executor_profil
 
 export type NotificationConfig = { sound_enabled: boolean, push_enabled: boolean, sound_file: SoundFile, };
 
-export enum ThemeMode { LIGHT = "LIGHT", DARK = "DARK", SYSTEM = "SYSTEM" }
+export enum ThemeMode { LIGHT = "LIGHT", DARK = "DARK", SYSTEM = "SYSTEM", DRACULA = "DRACULA", ALUCARD = "ALUCARD" }
 
 export type EditorConfig = { editor_type: EditorType, custom_command: string | null, };
 

@@ -17,6 +17,8 @@ pub enum ThemeMode {
     Light,
     Dark,
     System,
+    Dracula,
+    Alucard,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]
@@ -51,23 +53,24 @@ impl Config {
             }
         };
 
-        // Map old theme modes to new simplified theme modes
+        // Map old theme modes to v7 (only keeping dracula and alucard, dropping color themes)
         let theme = match old_config.theme {
             v6::ThemeMode::Light => ThemeMode::Light,
             v6::ThemeMode::Dark => ThemeMode::Dark,
             v6::ThemeMode::System => ThemeMode::System,
+            v6::ThemeMode::Dracula => ThemeMode::Dracula,
+            v6::ThemeMode::Alucard => ThemeMode::Alucard,
+            // Drop all color themes (Purple, Green, Blue, Orange, Red)
             v6::ThemeMode::Purple
             | v6::ThemeMode::Green
             | v6::ThemeMode::Blue
             | v6::ThemeMode::Orange
-            | v6::ThemeMode::Red
-            | v6::ThemeMode::Dracula
-            | v6::ThemeMode::Alucard => {
+            | v6::ThemeMode::Red => {
                 tracing::info!(
-                    "Migrating color theme {:?} to System theme",
+                    "Migrating removed color theme {:?} to Dark theme",
                     old_config.theme
                 );
-                ThemeMode::System
+                ThemeMode::Dark
             }
         };
 
