@@ -1,12 +1,13 @@
-# Files to MOVE to upstream (not delete) - 4 items
+# Files to MOVE to upstream (not delete) - 3-4 items
+# Note: shims.d.ts requires upstream compilation test before moving
 
-# Logo component with theme-aware switching logic
+# 1. Logo component with theme-aware switching logic
 forge-overrides/frontend/src/components/logo.tsx
   → Move to: upstream/frontend/src/components/logo.tsx
   → Reason: Theme-aware dark/light logo switching (lines 9-30)
   → Action: Copy logic to upstream, update paths/alt text during rebrand
 
-# Font variable definitions (partial)
+# 2. Font variable definitions (partial)
 forge-overrides/frontend/src/styles/index.css (lines 8-13 only)
   → Move to: upstream/frontend/src/styles/index.css
   → Content:
@@ -15,14 +16,18 @@ forge-overrides/frontend/src/styles/index.css (lines 8-13 only)
   → Reason: Custom font variables needed by components
   → Action: Add these variables to upstream CSS
 
-# TypeScript module shims
-forge-overrides/frontend/src/types/shims.d.ts
-  → Move to: upstream/frontend/src/types/shims.d.ts
-  → Reason: Upstream uses fancy-ansi and @dnd-kit/utilities but lacks type declarations
-  → Action: Copy entire file to upstream types directory
-
-# Companion install task text
+# 3. Companion install task text
 forge-overrides/frontend/src/utils/companion-install-task.ts
   → Move to: upstream/frontend/src/utils/companion-install-task.ts
   → Reason: Only branding text changes ("Automagik Omni" → will become generic)
   → Action: Update branding text in upstream during rebrand
+
+# 4. TypeScript module shims ⚠️ REQUIRES INVESTIGATION
+forge-overrides/frontend/src/types/shims.d.ts
+  → Status: ⏸️ HOLD - Must test upstream first
+  → Reason: Upstream uses fancy-ansi and @dnd-kit/utilities
+  → Test: cd upstream/frontend && pnpm exec tsc --noEmit
+  → If upstream has TS errors: MOVE to upstream/frontend/src/types/shims.d.ts
+  → If upstream compiles: DELETE from forge-overrides (not needed)
+  → Temporary: KEEP in forge-overrides until tested (low risk, 8 lines)
+  → See: shims-analysis.md for detailed investigation

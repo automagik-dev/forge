@@ -128,3 +128,54 @@ Store in `.genie/wishes/mechanical-rebrand/qa/group-a/`:
 **Decision:** Logo and font variables move to upstream (not deleted).
 **Reason:** Eliminates frontend overhead; upstream handles these globally.
 **Result:** Only Omni (8 files) + Extended Themes (1 file) + .gitkeep remain = 10 files total.
+
+## Rust Backend Analysis
+
+### Backend Files Analyzed (16 files)
+
+**forge-extensions/omni/** (5 files):
+- `src/types.rs` - OmniConfig, OmniInstance, SendTextRequest/Response
+- `src/service.rs` - OmniService business logic
+- `src/client.rs` - HTTP client for Omni server
+- `src/lib.rs` - Public API exports
+- `Cargo.toml` - Dependencies
+
+**forge-extensions/config/** (4 files):
+- `src/types.rs` - ForgeProjectSettings (only contains `omni_enabled` + `omni_config`)
+- `src/service.rs` - ForgeConfigService for SQLite persistence
+- `src/lib.rs` - Public API exports
+- `Cargo.toml` - Dependencies
+
+**forge-app/src/** (7 files):
+- `router.rs` - Forge API routes (`/api/forge/*`)
+- `services/mod.rs` - ForgeServices aggregation
+- `main.rs` - Entry point
+- `bin/generate_forge_types.rs` - TypeScript type generator
+- `Cargo.toml` - Workspace dependencies
+
+### Backend Categorization Result
+
+**KEEP: 100% (all 16 files)**
+- Reason: All backend code is Omni feature implementation
+- Config extension exists solely to persist Omni settings
+- No branding-only backend overrides
+- All API routes serve Omni functionality
+
+**DELETE: 0 files**
+**MOVE: 0 files**
+
+### Backend Evidence
+
+See `.genie/wishes/mechanical-rebrand/qa/group-a/rust-backend-analysis.md` for:
+- Detailed file-by-file breakdown
+- Type definitions and API contracts
+- Database schema usage
+- TypeScript generation flow
+
+## Complete File Count
+
+**Total Analyzed:** 41 files (25 frontend + 16 backend)
+**Total to KEEP:** 26 files (10 frontend + 16 backend)
+**Total to DELETE:** 13 frontend files
+**Total to MOVE:** 3-4 items (logo, fonts, companion-task, shims?)
+**Overall Reduction:** 31.7% (13 of 41 files deleted)
