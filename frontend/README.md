@@ -30,7 +30,7 @@ This runs TypeScript in no-emit mode to ensure types stay in sync with backend c
 
 ## Architecture
 
-- **Base:** `upstream/frontend/src/` (vibe-kanban submodule)
+- **Base:** `upstream/frontend/src/` (automagik-forge submodule)
 - **Overlays:** `forge-overrides/frontend/src/` (Automagik Forge customizations)
 - **Build:** Vite resolves imports from overlays first, falls back to upstream
 - **Deployment:** `forge-app` embeds `frontend/dist/` and serves at `/`

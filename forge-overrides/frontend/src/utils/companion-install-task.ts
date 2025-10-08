@@ -5,10 +5,10 @@ export const COMPANION_INSTALL_TASK_DESCRIPTION = `Goal: Install and integrate t
 
 Do:
 1) Detect package manager from lockfiles and use it:
-   - pnpm-lock.yaml → pnpm add vibe-kanban-web-companion
-   - yarn.lock → yarn add vibe-kanban-web-companion
-   - package-lock.json → npm i vibe-kanban-web-companion
-   - bun.lockb → bun add vibe-kanban-web-companion
+   - pnpm-lock.yaml → pnpm add automagik-forge-web-companion
+   - yarn.lock → yarn add automagik-forge-web-companion
+   - package-lock.json → npm i automagik-forge-web-companion
+   - bun.lockb → bun add automagik-forge-web-companion
    If already listed in package.json dependencies, skip install.
 
 2) Detect framework and app entry:
@@ -19,8 +19,8 @@ Do:
    Confirm by reading package.json and directory structure.
 
 3) Integrate the component:
-   import { VibeKanbanWebCompanion } from 'vibe-kanban-web-companion';
-   - Vite/CRA: render <VibeKanbanWebCompanion /> at the app root.
+   import { AutomagikForgeWebCompanion } from 'automagik-forge-web-companion';
+   - Vite/CRA: render <AutomagikForgeWebCompanion /> at the app root.
    - Next.js (pages): render in pages/_app.*
    - Next.js (app): render in app/layout.* or a client providers component.
    - For Next.js, if SSR issues arise, use dynamic import with ssr: false.
@@ -30,6 +30,6 @@ Do:
    - Ensure it compiles and renders without SSR/hydration errors.
 
 Acceptance:
-- vibe-kanban-web-companion is installed in the correct package.
+- automagik-forge-web-companion is installed in the correct package.
 - The component is rendered once at the app root without SSR/hydration errors.
 - Build/type-check passes.`;

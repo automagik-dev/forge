@@ -142,7 +142,7 @@ const GitHubLoginDialog = NiceModal.create(() => {
             <DialogTitle>Sign in with GitHub</DialogTitle>
           </div>
           <DialogDescription className="text-left pt-1">
-            {/* FORGE CUSTOMIZATION: Branding - "Automagik Forge" instead of "Vibe Kanban" */}
+            {/* FORGE CUSTOMIZATION: Branding - "Automagik Forge" instead of "Automagik Forge" */}
             Connect your GitHub account to create and manage pull requests
             directly from Automagik Forge.
           </DialogDescription>

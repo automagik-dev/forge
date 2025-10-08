@@ -1,0 +1,166 @@
+🔧 Automagik Forge BULLETPROOF Rebranding
+==========================================
+📝 Processing files...
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 53: [: 0
+0: integer expression expected
+./scripts/rebrand.sh: line 57: [: 0
+0: integer expression expected
+📦 Processing package.json files...
+📦 Processing Cargo.toml files...
+
+🔍 VERIFICATION PHASE
+====================
+📊 Replacements made: 0
+📊 Files modified: 0
+📊 Remaining 'vibe-kanban' references: 0
+📊 Remaining 'VK/vk' references: 0
+
+✅ Build verification...
+error: failed to load manifest for workspace member `/var/tmp/vibe-kanban/worktrees/aa54-group-b-bulletpr/forge-app`
+referenced by workspace at `/var/tmp/vibe-kanban/worktrees/aa54-group-b-bulletpr/Cargo.toml`
+
+Caused by:
+  failed to load manifest for dependency `db`
+
+Caused by:
+  failed to read `/var/tmp/vibe-kanban/worktrees/aa54-group-b-bulletpr/upstream/crates/db/Cargo.toml`
+
+Caused by:
+  No such file or directory (os error 2)
+  ✓ Cargo check passed
+
+🎉 SUCCESS: ALL references replaced!
+Total replacements: 0 across 0 files
+
+Next steps:
+1. Review changes: git diff
+2. Test application: cargo run -p forge-app
+3. Commit: git add -A && git commit -m 'chore: mechanical rebrand after upstream merge'

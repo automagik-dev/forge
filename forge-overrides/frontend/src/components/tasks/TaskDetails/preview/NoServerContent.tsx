@@ -1,5 +1,5 @@
 /**
- * FORGE OVERRIDE: NoServerContent.tsx (vibe-kanban ad1696cd)
+ * FORGE OVERRIDE: NoServerContent.tsx (automagik-forge ad1696cd)
  *
  * Customizations:
  * - Changed companion docs link from GitHub README to Forge documentation site

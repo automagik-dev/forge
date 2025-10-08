@@ -39,7 +39,7 @@ const CreatePrDialog = NiceModal.create(() => {
 
   useEffect(() => {
     if (modal.visible && data) {
-      // FORGE CUSTOMIZATION: Brand PR titles with "automagik-forge" instead of "vibe-kanban"
+      // FORGE CUSTOMIZATION: Brand PR titles with "automagik-forge" instead of "automagik-forge"
       setPrTitle(`${data.task.title} (automagik-forge)`);
       setPrBody(data.task.description || '');
 
