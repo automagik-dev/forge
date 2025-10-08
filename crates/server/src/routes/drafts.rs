@@ -34,15 +34,19 @@ async fn handle_project_drafts_ws(
     socket: WebSocket,
 ) -> anyhow::Result<()> {
     // TODO(upstream-alignment): Implement full drafts streaming from upstream
-    // Minimal stub to prevent infinite retries - sends empty state and closes
-    let (mut sender, _receiver) = socket.split();
+    // Minimal stub to prevent infinite retries - sends empty state and waits for client disconnect
+    let (mut sender, mut receiver) = socket.split();
 
     let empty_drafts = serde_json::json!({"drafts": {}});
     let msg = Message::Text(serde_json::to_string(&empty_drafts)?.into());
-    let _ = sender.send(msg).await;
+    sender.send(msg).await?;
 
-    let finished_msg = Message::Text(serde_json::to_string(&serde_json::json!({"finished": true}))?.into());
-    let _ = sender.send(finished_msg).await;
+    // Keep connection open until client disconnects
+    while let Some(result) = receiver.next().await {
+        if result.is_err() {
+            break;
+        }
+    }
 
     Ok(())
 }

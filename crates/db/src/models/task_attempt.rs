@@ -39,8 +39,8 @@ pub struct TaskAttempt {
     pub id: Uuid,
     pub task_id: Uuid,                 // Foreign key to Task
     pub container_ref: Option<String>, // Path to a worktree (local), or cloud container id
-    pub branch: Option<String>,        // Git branch name for this task attempt
-    pub base_branch: String,           // Base branch this attempt is based on
+    pub branch: String,                // Git branch name for this task attempt
+    pub target_branch: String,         // Target branch for this attempt
     pub executor: String, // Name of the base coding agent to use ("AMP", "CLAUDE_CODE",
     // "GEMINI", etc.)
     pub worktree_deleted: bool, // Flag indicating if worktree has been cleaned up
@@ -83,6 +83,7 @@ pub struct TaskAttemptContext {
 pub struct CreateTaskAttempt {
     pub executor: BaseCodingAgent,
     pub base_branch: String,
+    pub branch: String,
 }
 
 impl TaskAttempt {
@@ -102,7 +103,7 @@ impl TaskAttempt {
                               task_id AS "task_id!: Uuid",
                               container_ref,
                               branch,
-                              base_branch,
+                              target_branch,
                               executor AS "executor!",
                               worktree_deleted AS "worktree_deleted!: bool",
                               setup_completed_at AS "setup_completed_at: DateTime<Utc>",
@@ -122,7 +123,7 @@ impl TaskAttempt {
                               task_id AS "task_id!: Uuid",
                               container_ref,
                               branch,
-                              base_branch,
+                              target_branch,
                               executor AS "executor!",
                               worktree_deleted AS "worktree_deleted!: bool",
                               setup_completed_at AS "setup_completed_at: DateTime<Utc>",
@@ -153,7 +154,7 @@ impl TaskAttempt {
                        ta.task_id           AS "task_id!: Uuid",
                        ta.container_ref,
                        ta.branch,
-                       ta.base_branch,
+                       ta.target_branch,
                        ta.executor AS "executor!",
                        ta.worktree_deleted  AS "worktree_deleted!: bool",
                        ta.setup_completed_at AS "setup_completed_at: DateTime<Utc>",
@@ -205,23 +206,6 @@ impl TaskAttempt {
         Ok(())
     }
 
-    pub async fn update_branch(
-        pool: &SqlitePool,
-        attempt_id: Uuid,
-        branch: &str,
-    ) -> Result<(), sqlx::Error> {
-        let now = Utc::now();
-        sqlx::query!(
-            "UPDATE task_attempts SET branch = $1, updated_at = $2 WHERE id = $3",
-            branch,
-            now,
-            attempt_id
-        )
-        .execute(pool)
-        .await?;
-        Ok(())
-    }
-
     /// Helper function to mark a worktree as deleted in the database
     pub async fn mark_worktree_deleted(
         pool: &SqlitePool,
@@ -243,7 +227,7 @@ impl TaskAttempt {
                        task_id           AS "task_id!: Uuid",
                        container_ref,
                        branch,
-                       base_branch,
+                       target_branch,
                        executor AS "executor!",
                        worktree_deleted  AS "worktree_deleted!: bool",
                        setup_completed_at AS "setup_completed_at: DateTime<Utc>",
@@ -264,7 +248,7 @@ impl TaskAttempt {
                        task_id           AS "task_id!: Uuid",
                        container_ref,
                        branch,
-                       base_branch,
+                       target_branch,
                        executor AS "executor!",
                        worktree_deleted  AS "worktree_deleted!: bool",
                        setup_completed_at AS "setup_completed_at: DateTime<Utc>",
@@ -381,30 +365,21 @@ impl TaskAttempt {
     pub async fn create(
         pool: &SqlitePool,
         data: &CreateTaskAttempt,
+        id: Uuid,
         task_id: Uuid,
     ) -> Result<Self, TaskAttemptError> {
-        let attempt_id = Uuid::new_v4();
-
-        // Get the task to access title
-        let task = Task::find_by_id(pool, task_id)
-            .await?
-            .ok_or(TaskAttemptError::TaskNotFound)?;
-
-        let branch_name = generate_branch_name(&task, &attempt_id);
-
-        let branch_name_opt = Some(branch_name);
-
+        // let prefixed_id = format!("vibe-kanban-{}", attempt_id);
         // Insert the record into the database
         Ok(sqlx::query_as!(
             TaskAttempt,
-            r#"INSERT INTO task_attempts (id, task_id, container_ref, branch, base_branch, executor, worktree_deleted, setup_completed_at)
+            r#"INSERT INTO task_attempts (id, task_id, container_ref, branch, target_branch, executor, worktree_deleted, setup_completed_at)
                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-               RETURNING id as "id!: Uuid", task_id as "task_id!: Uuid", container_ref, branch, base_branch, executor as "executor!",  worktree_deleted as "worktree_deleted!: bool", setup_completed_at as "setup_completed_at: DateTime<Utc>", created_at as "created_at!: DateTime<Utc>", updated_at as "updated_at!: DateTime<Utc>""#,
-            attempt_id,
+               RETURNING id as "id!: Uuid", task_id as "task_id!: Uuid", container_ref, branch, target_branch, executor as "executor!",  worktree_deleted as "worktree_deleted!: bool", setup_completed_at as "setup_completed_at: DateTime<Utc>", created_at as "created_at!: DateTime<Utc>", updated_at as "updated_at!: DateTime<Utc>""#,
+            id,
             task_id,
             Option::<String>::None, // Container isn't known yet
-            branch_name_opt, // Use the generated branch name
-            data.base_branch,
+            data.branch,
+            data.base_branch, // Target branch is same as base branch during creation
             data.executor,
             false, // worktree_deleted is false during creation
             Option::<DateTime<Utc>>::None // setup_completed_at is None during creation
@@ -413,14 +388,14 @@ impl TaskAttempt {
         .await?)
     }
 
-    pub async fn update_base_branch(
+    pub async fn update_target_branch(
         pool: &SqlitePool,
         attempt_id: Uuid,
-        new_base_branch: &str,
+        new_target_branch: &str,
     ) -> Result<(), TaskAttemptError> {
         sqlx::query!(
-            "UPDATE task_attempts SET base_branch = $1, updated_at = datetime('now') WHERE id = $2",
-            new_base_branch,
+            "UPDATE task_attempts SET target_branch = $1, updated_at = datetime('now') WHERE id = $2",
+            new_target_branch,
             attempt_id,
         )
         .execute(pool)
@@ -447,45 +422,5 @@ impl TaskAttempt {
         .ok_or(sqlx::Error::RowNotFound)?;
 
         Ok((result.attempt_id, result.task_id, result.project_id))
-    }
-}
-
-fn generate_branch_name(task: &Task, attempt_id: &Uuid) -> String {
-    // Generate forge-{uuid}-{title} pattern
-    let task_title_id = utils::text::git_branch_id(&task.title);
-    format!(
-        "forge/{}-{}",
-        utils::text::short_uuid(attempt_id),
-        task_title_id
-    )
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::models::task::TaskStatus;
-
-    fn dummy_task(title: &str) -> Task {
-        Task {
-            id: Uuid::new_v4(),
-            project_id: Uuid::new_v4(),
-            title: title.to_string(),
-            description: None,
-            status: TaskStatus::Todo,
-            parent_task_attempt: None,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        }
-    }
-
-    #[test]
-    fn generate_branch_name_uses_forge_pattern() {
-        let attempt_id = Uuid::nil();
-        let task = dummy_task("Add Payment Flow");
-        let branch = generate_branch_name(&task, &attempt_id);
-        let expected_prefix = format!("forge/{}-", utils::text::short_uuid(&attempt_id));
-        let expected_suffix = utils::text::git_branch_id(&task.title);
-        assert!(branch.starts_with(&expected_prefix));
-        assert!(branch.ends_with(&expected_suffix));
     }
 }
