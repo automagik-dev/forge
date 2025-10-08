@@ -34,7 +34,7 @@ server = { path = "../upstream/crates/server" }
 deployment = { path = "../upstream/crates/deployment" }
 local-deployment = { path = "../upstream/crates/local-deployment" }
 executors = { path = "../upstream/crates/executors" }
-utils = { path = "../forge-extensions/utils", package = "forge-utils" }
+utils = { path = "../upstream/crates/utils" }
 
 # Forge extensions
 forge-omni = { path = "../forge-extensions/omni" }
