@@ -22,6 +22,7 @@ use db::models::{
     task_attempt::{CreateTaskAttempt, TaskAttempt},
 };
 use deployment::Deployment;
+use utils::text::{git_branch_id, short_uuid};
 use forge_config::ForgeProjectSettings;
 use server::routes::{
     self as upstream, auth, config as upstream_config, containers, drafts, events,
@@ -99,7 +100,82 @@ fn forge_api_routes() -> Router<ForgeAppState> {
     // Branch-templates extension removed - using simple forge/ prefix
 }
 
-/// Forge override: create task and start with forge/ branch prefix
+/// Forge override: create task only (no execution)
+async fn forge_create_task(
+    State(deployment): State<DeploymentImpl>,
+    Json(payload): Json<db::models::task::CreateTask>,
+) -> Result<Json<ApiResponse<Task>>, ApiError> {
+    let task_id = Uuid::new_v4();
+    let task = Task::create(&deployment.db().pool, &payload, task_id).await?;
+
+    if let Some(image_ids) = &payload.image_ids {
+        TaskImage::associate_many(&deployment.db().pool, task.id, image_ids).await?;
+    }
+
+    deployment
+        .track_if_analytics_allowed(
+            "task_created",
+            serde_json::json!({
+                "task_id": task.id.to_string(),
+                "project_id": task.project_id,
+                "has_description": task.description.is_some(),
+                "has_images": payload.image_ids.is_some(),
+            }),
+        )
+        .await;
+
+    Ok(Json(ApiResponse::success(task)))
+}
+
+/// Forge override: create task attempt with forge/ branch prefix (vk -> forge only)
+async fn forge_create_task_attempt(
+    State(deployment): State<DeploymentImpl>,
+    Json(payload): Json<task_attempts::CreateTaskAttemptBody>,
+) -> Result<Json<ApiResponse<TaskAttempt>>, ApiError> {
+    let executor_profile_id = payload.get_executor_profile_id();
+    let task = Task::find_by_id(&deployment.db().pool, payload.task_id)
+        .await?
+        .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
+
+    let attempt_id = Uuid::new_v4();
+
+    // Use same logic as upstream but replace "vk" with "forge" prefix
+    let task_title_id = git_branch_id(&task.title);
+    let short_id = short_uuid(&attempt_id);
+    let git_branch_name = format!("forge/{}-{}", short_id, task_title_id);
+
+    let task_attempt = TaskAttempt::create(
+        &deployment.db().pool,
+        &CreateTaskAttempt {
+            executor: executor_profile_id.executor,
+            base_branch: payload.base_branch.clone(),
+            branch: git_branch_name.clone(),
+        },
+        attempt_id,
+        payload.task_id,
+    )
+    .await?;
+
+    let _execution_process = deployment
+        .container()
+        .start_attempt(&task_attempt, executor_profile_id.clone())
+        .await?;
+
+    deployment
+        .track_if_analytics_allowed(
+            "task_attempt_started",
+            serde_json::json!({
+                "task_id": task.id.to_string(),
+                "executor": &executor_profile_id.executor,
+                "attempt_id": task_attempt.id.to_string(),
+            }),
+        )
+        .await;
+
+    Ok(Json(ApiResponse::success(task_attempt)))
+}
+
+/// Forge override: create task and start with forge/ branch prefix (vk -> forge only)
 async fn forge_create_task_and_start(
     State(deployment): State<DeploymentImpl>,
     Json(payload): Json<CreateAndStartTaskRequest>,
@@ -123,9 +199,12 @@ async fn forge_create_task_and_start(
         )
         .await;
 
-    // Generate forge-prefixed branch name
-    let branch_name = format!("forge/{}", task.id);
     let task_attempt_id = Uuid::new_v4();
+
+    // Use same logic as upstream but replace "vk" with "forge" prefix
+    let task_title_id = git_branch_id(&task.title);
+    let short_id = short_uuid(&task_attempt_id);
+    let branch_name = format!("forge/{}-{}", short_id, task_title_id);
 
     let task_attempt = TaskAttempt::create(
         &deployment.db().pool,
@@ -185,13 +264,15 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
         router.merge(projects::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
     router = router.merge(drafts::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
 
-    // Build custom tasks router with forge create-and-start override
+    // Build custom tasks router with forge override
     let tasks_router_with_override = build_tasks_router_with_forge_override(deployment);
     router =
         router.merge(tasks_router_with_override.with_state::<ForgeAppState>(dep_clone.clone()));
 
+    // Build custom task_attempts router with forge override
+    let task_attempts_router_with_override = build_task_attempts_router_with_forge_override(deployment);
     router = router
-        .merge(task_attempts::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+        .merge(task_attempts_router_with_override.with_state::<ForgeAppState>(dep_clone.clone()));
     router = router.merge(
         execution_processes::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()),
     );
@@ -223,12 +304,59 @@ fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router
         .layer(from_fn_with_state(deployment.clone(), load_task_middleware));
 
     let inner = Router::new()
-        .route("/", get(tasks::get_tasks).post(tasks::create_task))
+        .route("/", get(tasks::get_tasks).post(forge_create_task)) // Forge: task creation only
         .route("/stream/ws", get(tasks::stream_tasks_ws))
-        .route("/create-and-start", post(forge_create_task_and_start)) // Forge override
+        .route("/create-and-start", post(forge_create_task_and_start)) // Forge: create + start
         .nest("/{task_id}", task_id_router);
 
     Router::new().nest("/tasks", inner)
+}
+
+/// Build task_attempts router with forge override for create endpoint
+fn build_task_attempts_router_with_forge_override(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
+    use axum::middleware::from_fn_with_state;
+    use server::middleware::load_task_attempt_middleware;
+
+    let task_attempt_id_router = Router::new()
+        .route(
+            "/",
+            get(task_attempts::get_task_attempt),
+        )
+        .route("/follow-up", post(task_attempts::follow_up))
+        .route(
+            "/draft",
+            get(task_attempts::drafts::get_draft)
+                .put(task_attempts::drafts::save_draft)
+                .delete(task_attempts::drafts::delete_draft),
+        )
+        .route("/draft/queue", post(task_attempts::drafts::set_draft_queue))
+        .route("/replace-process", post(task_attempts::replace_process))
+        .route("/commit-info", get(task_attempts::get_commit_info))
+        .route("/commit-compare", get(task_attempts::compare_commit_to_head))
+        .route("/start-dev-server", post(task_attempts::start_dev_server))
+        .route("/branch-status", get(task_attempts::get_task_attempt_branch_status))
+        .route("/diff/ws", get(task_attempts::stream_task_attempt_diff_ws))
+        .route("/merge", post(task_attempts::merge_task_attempt))
+        .route("/push", post(task_attempts::push_task_attempt_branch))
+        .route("/rebase", post(task_attempts::rebase_task_attempt))
+        .route("/conflicts/abort", post(task_attempts::abort_conflicts_task_attempt))
+        .route("/pr", post(task_attempts::create_github_pr))
+        .route("/pr/attach", post(task_attempts::attach_existing_pr))
+        .route("/open-editor", post(task_attempts::open_task_attempt_in_editor))
+        .route("/delete-file", post(task_attempts::delete_task_attempt_file))
+        .route("/children", get(task_attempts::get_task_attempt_children))
+        .route("/stop", post(task_attempts::stop_task_attempt_execution))
+        .route("/change-target-branch", post(task_attempts::change_target_branch))
+        .layer(from_fn_with_state(
+            deployment.clone(),
+            load_task_attempt_middleware,
+        ));
+
+    let task_attempts_router = Router::new()
+        .route("/", get(task_attempts::get_task_attempts).post(forge_create_task_attempt)) // Forge override
+        .nest("/{id}", task_attempt_id_router);
+
+    Router::new().nest("/task-attempts", task_attempts_router)
 }
 
 async fn frontend_handler(uri: axum::http::Uri) -> Response {
@@ -488,22 +616,32 @@ mod tests {
 
     #[test]
     fn test_forge_branch_prefix_format() {
-        // Test that branch names are prefixed with "forge/"
-        let task_id = Uuid::new_v4();
-        let branch_name = format!("forge/{}", task_id);
+        // Test that branch names use "forge" prefix instead of "vk"
+        let attempt_id = Uuid::new_v4();
+        let task_title = "test task";
+
+        let task_title_id = git_branch_id(task_title);
+        let short_id = short_uuid(&attempt_id);
+        let branch_name = format!("forge/{}-{}", short_id, task_title_id);
 
         assert!(branch_name.starts_with("forge/"));
-        assert_eq!(branch_name, format!("forge/{}", task_id));
+        assert!(branch_name.contains(&short_id));
+        assert!(branch_name.contains(&task_title_id));
     }
 
     #[test]
     fn test_forge_branch_prefix_uniqueness() {
-        // Test that different task IDs produce different branch names
-        let task_id_1 = Uuid::new_v4();
-        let task_id_2 = Uuid::new_v4();
+        // Test that different attempt IDs produce different branch names
+        let attempt_id_1 = Uuid::new_v4();
+        let attempt_id_2 = Uuid::new_v4();
+        let task_title = "test";
 
-        let branch_1 = format!("forge/{}", task_id_1);
-        let branch_2 = format!("forge/{}", task_id_2);
+        let task_title_id = git_branch_id(task_title);
+        let short_id_1 = short_uuid(&attempt_id_1);
+        let short_id_2 = short_uuid(&attempt_id_2);
+
+        let branch_1 = format!("forge/{}-{}", short_id_1, task_title_id);
+        let branch_2 = format!("forge/{}-{}", short_id_2, task_title_id);
 
         assert_ne!(branch_1, branch_2);
         assert!(branch_1.starts_with("forge/"));
@@ -511,17 +649,18 @@ mod tests {
     }
 
     #[test]
-    fn test_forge_branch_prefix_uuid_format() {
-        // Test that branch name contains valid UUID after prefix
-        let task_id = Uuid::new_v4();
-        let branch_name = format!("forge/{}", task_id);
+    fn test_forge_branch_format_matches_upstream() {
+        // Verify format is identical to upstream except for "forge" vs "vk" prefix
+        let attempt_id = Uuid::new_v4();
+        let task_title = "my-test-task";
 
-        let parts: Vec<&str> = branch_name.split('/').collect();
-        assert_eq!(parts.len(), 2);
-        assert_eq!(parts[0], "forge");
+        let task_title_id = git_branch_id(task_title);
+        let short_id = short_uuid(&attempt_id);
 
-        // Verify second part is a valid UUID
-        let uuid_str = parts[1];
-        assert!(Uuid::parse_str(uuid_str).is_ok());
+        let forge_branch = format!("forge/{}-{}", short_id, task_title_id);
+        let upstream_branch = format!("vk/{}-{}", short_id, task_title_id);
+
+        // Only difference should be the prefix
+        assert_eq!(forge_branch.replace("forge/", ""), upstream_branch.replace("vk/", ""));
     }
 }
