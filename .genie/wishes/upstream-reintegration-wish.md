@@ -1,5 +1,5 @@
 # 🧞 Upstream Reintegration Wish
-**Status:** READY
+**Status:** IMPLEMENTED
 **Roadmap Item:** Phase 0 – Open-source foundation – @.genie/product/roadmap.md §Phase 0: Already Completed ✅
 **Mission Link:** @.genie/product/mission.md §Pitch
 **Standards:** @.genie/standards/best-practices.md §Core Principles; @.genie/standards/naming.md §Repository
@@ -91,24 +91,37 @@
 - **Open questions resolved (Q-1):** Migration is straightforward - delete and use upstream.
 
 ## Executive Summary
-Forge should use upstream crates directly, adding only Omni integration as a Forge-specific extension. This wish removes unintended backend divergence by deleting duplicated crates and pointing to upstream. The database will be recreated fresh with upstream schema. The only customizations are: (1) Omni in forge-extensions, (2) git_branch_prefix config override to "forge".
+Forge now uses upstream crates directly with only two Forge-specific customizations: Omni integration and branch prefix override.
 
-## Current State
-- **Unintended duplication:** ALL 7 crates (`db`, `services`, `server`, `executors`, `utils`, `deployment`, `local-deployment`) were copied from upstream and modified, breaking the "upstream as library" architecture.
-- **Only intended changes:**
-  1. Add Omni integration (currently in `crates/services/src/services/omni/`)
-  2. Change `git_branch_prefix` from `"vk"` to `"forge"`
-- **Everything else:** Unintended divergence that should be deleted and replaced with upstream.
-- **Development environment:** Database can be dropped and recreated fresh - no data preservation needed.
+## Implementation Status (2025-10-08)
 
-## Target State
-- **Goal:** Use upstream directly for everything except Omni and branch prefix.
-- **Implementation:**
-  1. Delete all duplicated crates
-  2. Point forge-app to upstream crates via path dependencies
-  3. Override config: `config.git_branch_prefix = "forge"`
-  4. Move Omni to forge-extensions
-- **Out-of-scope:** Frontend changes, any backend changes beyond Omni and branch prefix.
+### ✅ Completed
+- **Deleted all 7 duplicated crates** from `crates/` directory
+  - Removed: `db`, `services`, `server`, `executors`, `utils`, `deployment`, `local-deployment`
+  - Directory now empty: `ls crates/` returns only `.` and `..`
+
+- **Updated all dependencies to use upstream**
+  - `forge-app/Cargo.toml`: Points to `../upstream/crates/*`
+  - `forge-extensions/*/Cargo.toml`: Points to `../../upstream/crates/*`
+
+- **Fixed compilation with upstream integration**
+  - Added missing `branch` field in CreateTaskAttempt
+  - Added task_attempt_id UUID generation
+  - Implemented forge branch prefix directly in router
+
+- **Preserved Forge customizations**
+  - Omni integration: Lives in `forge-extensions/omni/`
+  - Branch prefix: Override in `forge-app/src/router.rs` (generates `forge/{task-id}`)
+
+- **Created guardrail script**
+  - Location: `scripts/check-upstream-alignment.sh`
+  - Prevents future crate duplication
+  - Verifies all dependencies point to upstream
+
+### 📋 Remaining Tasks
+- [ ] CI Integration: Add guardrail script to GitHub Actions
+- [ ] Documentation: Update developer onboarding docs
+- [ ] Migration guide: For other Forge instances
 
 ## Migration Blueprint
 - **Step 1: Delete all duplicated crates**

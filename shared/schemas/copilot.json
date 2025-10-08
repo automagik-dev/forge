@@ -11,19 +11,47 @@
       "format": "textarea",
       "default": null
     },
-    "force": {
-      "description": "Force allow commands unless explicitly denied",
+    "model": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "allow_all_tools": {
       "type": [
         "boolean",
         "null"
       ]
     },
-    "model": {
-      "description": "auto, sonnet-4.5, sonnet-4.5-thinking, gpt-5, opus-4.1, grok",
+    "allow_tool": {
       "type": [
         "string",
         "null"
       ]
+    },
+    "deny_tool": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "add_dir": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string"
+      }
+    },
+    "disable_mcp_server": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string"
+      }
     },
     "base_command_override": {
       "title": "Base Command Override",
