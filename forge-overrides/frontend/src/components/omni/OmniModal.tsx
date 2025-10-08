@@ -75,12 +75,12 @@ const OmniModalImpl = ({ forgeSettings, onChange }: OmniModalProps) => {
       setError('Please select an instance and enter a recipient');
       return;
     }
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
-      onChange({
+      const updatedSettings: ForgeProjectSettings = {
         ...forgeSettings,
         omni_enabled: true,
         omni_config: {
@@ -91,7 +91,24 @@ const OmniModalImpl = ({ forgeSettings, onChange }: OmniModalProps) => {
           recipient: formData.recipient,
           recipient_type: formData.recipient_type as any,
         },
+      };
+
+      // Persist to backend
+      const response = await fetch('/api/forge/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedSettings),
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to save configuration: ${errorText}`);
+      }
+
+      const savedSettings = await response.json();
+
+      // Update parent state with saved settings
+      onChange(savedSettings.data || updatedSettings);
       modal.hide();
     } catch (e: any) {
       setError(e.message || 'Failed to save configuration');
