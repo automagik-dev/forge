@@ -63,16 +63,7 @@ impl ForgeServices {
         // Reuse upstream pool for forge migrations/features
         let pool = deployment.db().pool.clone();
 
-        let forge_tables_ready = sqlx::query_scalar::<_, i64>(
-            "SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = 'forge_task_extensions'",
-        )
-        .fetch_one(&pool)
-        .await
-        .unwrap_or(0)
-            > 0;
-
-        tracing::debug!(forge_tables_ready, "Forge migration readiness check");
-
+        // Apply single Forge migration for Omni tables
         apply_forge_migrations(&pool).await?;
 
         // Initialize forge extension services
@@ -155,20 +146,20 @@ async fn purge_shared_migration_markers() -> Result<()> {
             .await
             .with_context(|| format!("failed to open sqlite connection: {url}"))?;
 
-        let table_exists: bool = sqlx::query_scalar(
-            "SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = '_sqlx_migrations'",
+        let forge_table_exists: bool = sqlx::query_scalar(
+            "SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = '_forge_migrations'",
         )
         .fetch_one(&mut conn)
         .await
         .unwrap_or(0)
             > 0;
 
-        if !table_exists {
+        if !forge_table_exists {
             continue;
         }
 
         let deleted =
-            sqlx::query("DELETE FROM _sqlx_migrations WHERE version IN (0,1,2,20250903172012)")
+            sqlx::query("DELETE FROM _forge_migrations WHERE version IN ('20250924090001', '20250924090003', '20251007000001')")
                 .execute(&mut conn)
                 .await;
 
@@ -249,14 +240,9 @@ async fn ensure_legacy_base_branch_column(pool: &SqlitePool) -> Result<()> {
 
 const FORGE_MIGRATIONS: &[ForgeMigration] = &[
     ForgeMigration {
-        version: "20250924090001",
-        description: "auxiliary_tables",
-        sql: include_str!("../../migrations/20250924090001_auxiliary_tables.sql"),
-    },
-    ForgeMigration {
-        version: "20250924090003",
-        description: "omni_notification_triggers",
-        sql: include_str!("../../migrations/20250924090003_omni_triggers.sql"),
+        version: "20251008000001",
+        description: "forge_omni_tables",
+        sql: include_str!("../../migrations/20251008000001_forge_omni_tables.sql"),
     },
 ];
 
@@ -361,33 +347,8 @@ fn split_statements(sql: &str) -> Vec<String> {
     statements
 }
 
-fn should_ignore_migration_error(version: &str, statement: &str, err: &sqlx::Error) -> bool {
-    let normalized = statement
-        .split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ")
-        .to_ascii_lowercase();
-
-    if version == "20250924090000"
-        && normalized.starts_with("alter table tasks add column branch_template")
-    {
-        if let sqlx::Error::Database(db_err) = err {
-            if db_err.message().contains("duplicate column name") {
-                return true;
-            }
-        }
-    }
-
-    if version == "20250924090003"
-        && normalized.starts_with("alter table forge_omni_notifications add column metadata")
-    {
-        if let sqlx::Error::Database(db_err) = err {
-            if db_err.message().contains("duplicate column name") {
-                return true;
-            }
-        }
-    }
-
+fn should_ignore_migration_error(_version: &str, _statement: &str, _err: &sqlx::Error) -> bool {
+    // No ignored errors - clean migration should succeed
     false
 }
 
