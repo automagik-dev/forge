@@ -1,26 +1,53 @@
-# Group B Evidence - Bulletproof Rebrand Script
+# Group B Evidence - Bulletproof Rebrand Script (CORRECTED)
+
+## ⚠️ CORRECTION NOTICE
+
+The original script (commit 4fdc39ae) had a **scope error**:
+- ❌ Processed `upstream/`, `frontend/`, `forge-overrides/`
+- ✅ Should ONLY process `upstream/` (the vibe-kanban submodule)
+
+See **CORRECTION.md** for full details.
 
 ## Evidence Files
 
-1. **pattern-list.md** - Complete list of ALL patterns replaced by the script
-2. **test-run.log** - Full output from script execution
-3. **verification.txt** - Proof of ZERO remaining references
-4. **build-success.log** - Git diff showing all changes made
-5. **README.md** - This file
+1. **CORRECTION.md** - ⚠️ Scope issue identified and fixed
+2. **pattern-list.md** - Complete list of ALL patterns replaced
+3. **README.md** - This file (corrected)
+4. **README-old.md** - Original (incorrect) README
 
-## Quick Verification
+## Corrected Script Location
 
-All patterns successfully replaced:
-- ✅ vibe-kanban → automagik-forge
-- ✅ Vibe Kanban → Automagik Forge
-- ✅ vibeKanban → automagikForge
-- ✅ VibeKanban → AutomagikForge
-- ✅ vibe_kanban → automagik_forge
-- ✅ VIBE_KANBAN → AUTOMAGIK_FORGE
-- ✅ VK/vk abbreviations → AF/af
-- ✅ vibe-kanban-web-companion → automagik-forge-web-companion
+`scripts/rebrand.sh` - Now processes ONLY `upstream/` folder
 
-## Files Modified (10 total)
+### Key Fix
+```bash
+# OLD (WRONG - line 89):
+find upstream frontend forge-overrides ...
+
+# NEW (CORRECT - line 68):
+find upstream ...  # ONLY upstream/
+```
+
+## Current State
+
+- ✅ Script corrected to process ONLY `upstream/`
+- ⚠️ `upstream/` folder is EMPTY (submodule not initialized)
+- ⚠️ Cannot test script without upstream submodule
+- ⚠️ Previous commit modified wrong files (should be deleted by Group A)
+
+## Corrected Workflow
+
+**After upstream submodule update:**
+```bash
+git submodule update --remote upstream  # Pull vibe-kanban changes
+./scripts/rebrand.sh                    # Rebrand ONLY upstream/
+git add upstream/                        # Stage changes
+git commit -m 'chore: rebrand after upstream merge'
+```
+
+## Files Incorrectly Modified (Commit 4fdc39ae)
+
+These should have been DELETED by Group A, not rebranded:
 1. forge-overrides/frontend/src/components/dialogs/auth/GitHubLoginDialog.tsx
 2. forge-overrides/frontend/src/components/dialogs/global/OnboardingDialog.tsx
 3. forge-overrides/frontend/src/components/dialogs/tasks/CreatePRDialog.tsx
@@ -30,34 +57,27 @@ All patterns successfully replaced:
 7. frontend/README.md
 8. frontend/package.json
 9. frontend/tsconfig.json
-10. scripts/rebrand.sh
 
-## Script Location
-`scripts/rebrand.sh` (executable, bulletproof implementation)
+## Testing Requirements
 
-## Verification Commands
 ```bash
-# Verify zero references remain
-grep -r "vibe-kanban\|Vibe Kanban" upstream frontend forge-overrides | grep -v ".git" | wc -l  # = 0
-grep -rw "VK\|vk" upstream frontend forge-overrides | grep -v ".git" | wc -l  # = 0
+# 1. Initialize upstream
+git submodule update --init --recursive
 
-# Re-run script (idempotent)
+# 2. Verify upstream has vibe-kanban
+grep -r "vibe-kanban" upstream | wc -l  # > 0
+
+# 3. Run script
 ./scripts/rebrand.sh
 
-# Build verification
-cargo check -p forge-app  # (pending upstream submodule fix)
+# 4. Verify zero references
+grep -r "vibe-kanban" upstream | wc -l  # = 0
 ```
 
-## Success Criteria Status
-- ✅ Script replaces ALL pattern variants
-- ✅ Script FAILS if ANY reference remains (verified via exit 1)
-- ✅ Zero vibe-kanban references after execution
-- ✅ Zero VK/vk abbreviations remain
-- ⏳ Application builds successfully (pending upstream submodule)
-- ✅ Clear reporting of replacements made
+## Success Criteria (CORRECTED)
 
-## Notes
-- The script had already been run once before documentation capture
-- All references were successfully replaced
-- Script is idempotent and can be run safely multiple times
-- Build check requires upstream submodule to be present
+- ✅ Script replaces ALL pattern variants (18+)
+- ✅ Script FAILS if ANY reference remains
+- ✅ **Processes ONLY upstream/** ← FIXED
+- ⏳ Zero references (pending upstream init)
+- ⏳ Build verification (pending upstream init)

@@ -1,12 +1,14 @@
 #!/bin/bash
 # Automagik Forge BULLETPROOF Rebranding Script
-# Purpose: Replace ALL vibe-kanban references after upstream merge
+# Purpose: Replace ALL vibe-kanban references in upstream/ after submodule update
 # FAILS LOUDLY if any reference survives
 
 set -e
 
 echo "🔧 Automagik Forge BULLETPROOF Rebranding"
 echo "=========================================="
+echo "Processing ONLY upstream/ folder (read-only submodule)"
+echo ""
 
 # Verify location
 if [ ! -d "upstream" ]; then
@@ -63,9 +65,9 @@ replace_all_patterns() {
     fi
 }
 
-# Process all files
-echo "📝 Processing files..."
-find upstream frontend forge-overrides \
+# Process ONLY upstream/ directory
+echo "📝 Processing upstream/ files..."
+find upstream \
     -type f \
     \( -name "*.rs" -o -name "*.ts" -o -name "*.tsx" -o -name "*.js" \
        -o -name "*.jsx" -o -name "*.json" -o -name "*.toml" \
@@ -77,45 +79,26 @@ find upstream frontend forge-overrides \
     replace_all_patterns "$file"
 done
 
-# Critical: assets.rs
+# Critical: assets.rs (folder path)
 if [ -f "upstream/crates/utils/src/assets.rs" ]; then
     echo "📁 Updating critical asset directory..."
     sed -i 's/ProjectDirs::from("ai", "bloop", "vibe-kanban")/ProjectDirs::from("ai", "bloop", "automagik-forge")/g' \
         "upstream/crates/utils/src/assets.rs"
 fi
 
-# Package.json special handling
-echo "📦 Processing package.json files..."
-find . -name "package.json" -not -path "*/node_modules/*" -not -path "*/.git/*" -type f | while read -r file; do
-    sed -i \
-        -e 's/"vibe-kanban"/"automagik-forge"/g' \
-        -e 's/@vibe-kanban/@automagik-forge/g' \
-        -e 's/vibe-kanban-web-companion/automagik-forge-web-companion/g' \
-        "$file" 2>/dev/null || true
-done
-
-# Cargo.toml special handling
-echo "📦 Processing Cargo.toml files..."
-find . -name "Cargo.toml" -not -path "*/.git/*" -type f | while read -r file; do
-    sed -i \
-        -e 's/name = "vibe-kanban"/name = "automagik-forge"/g' \
-        -e 's/vibe-kanban/automagik-forge/g' \
-        "$file" 2>/dev/null || true
-done
-
 echo ""
 echo "🔍 VERIFICATION PHASE"
 echo "===================="
 
-# Check for ANY remaining references
+# Check for ANY remaining references in upstream/ ONLY
 REMAINING_COUNT=$(grep -r "vibe-kanban\|Vibe Kanban\|vibeKanban\|VibeKanban\|vibe_kanban\|VIBE_KANBAN" \
-    upstream frontend forge-overrides 2>/dev/null | \
+    upstream 2>/dev/null | \
     grep -v ".git" | \
     grep -v "Binary file" | \
     wc -l || echo 0)
 REMAINING_COUNT=${REMAINING_COUNT// /}
 
-REMAINING_VK_COUNT=$(grep -rw "VK\|vk" upstream frontend forge-overrides 2>/dev/null | \
+REMAINING_VK_COUNT=$(grep -rw "VK\|vk" upstream 2>/dev/null | \
     grep -v ".git" | \
     grep -v "Binary file" | \
     grep -E "\bVK\b|\bvk\b" | \
@@ -124,18 +107,18 @@ REMAINING_VK_COUNT=${REMAINING_VK_COUNT// /}
 
 echo "📊 Replacements made: $REPLACEMENTS"
 echo "📊 Files modified: $FILES_MODIFIED"
-echo "📊 Remaining 'vibe-kanban' references: $REMAINING_COUNT"
-echo "📊 Remaining 'VK/vk' references: $REMAINING_VK_COUNT"
+echo "📊 Remaining 'vibe-kanban' references in upstream/: $REMAINING_COUNT"
+echo "📊 Remaining 'VK/vk' references in upstream/: $REMAINING_VK_COUNT"
 
 # FAIL if any remain
 if [ "$REMAINING_COUNT" -gt 0 ] || [ "$REMAINING_VK_COUNT" -gt 0 ]; then
     echo ""
-    echo "❌ FAILURE: References still exist!"
+    echo "❌ FAILURE: References still exist in upstream/!"
     echo ""
     if [ "$REMAINING_COUNT" -gt 0 ]; then
         echo "Files with vibe-kanban:"
         grep -r "vibe-kanban\|Vibe Kanban\|vibeKanban\|VibeKanban\|vibe_kanban\|VIBE_KANBAN" \
-            upstream frontend forge-overrides 2>/dev/null | \
+            upstream 2>/dev/null | \
             grep -v ".git" | \
             grep -v "Binary file" | \
             cut -d: -f1 | sort -u
@@ -143,7 +126,7 @@ if [ "$REMAINING_COUNT" -gt 0 ] || [ "$REMAINING_VK_COUNT" -gt 0 ]; then
     if [ "$REMAINING_VK_COUNT" -gt 0 ]; then
         echo ""
         echo "Files with VK/vk:"
-        grep -rw "VK\|vk" upstream frontend forge-overrides 2>/dev/null | \
+        grep -rw "VK\|vk" upstream 2>/dev/null | \
             grep -v ".git" | \
             grep -v "Binary file" | \
             grep -E "\bVK\b|\bvk\b" | \
@@ -164,10 +147,10 @@ else
 fi
 
 echo ""
-echo "🎉 SUCCESS: ALL references replaced!"
+echo "🎉 SUCCESS: ALL upstream/ references replaced!"
 echo "Total replacements: $REPLACEMENTS across $FILES_MODIFIED files"
 echo ""
 echo "Next steps:"
-echo "1. Review changes: git diff"
+echo "1. Review changes: git diff upstream/"
 echo "2. Test application: cargo run -p forge-app"
-echo "3. Commit: git add -A && git commit -m 'chore: mechanical rebrand after upstream merge'"
+echo "3. Commit: git add upstream/ && git commit -m 'chore: mechanical rebrand after upstream merge'"
