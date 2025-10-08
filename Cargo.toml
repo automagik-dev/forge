@@ -25,3 +25,4 @@ schemars = { version = "1.0.4", features = ["derive", "chrono04", "uuid1", "pres
 debug = true
 split-debuginfo = "packed"
 strip = true
+
