@@ -1,5 +1,4 @@
-# Files to MOVE to upstream (not delete) - 3-4 items
-# Note: shims.d.ts requires upstream compilation test before moving
+# Files to MOVE to upstream (not delete) - 2 items
 
 # 1. Logo component with theme-aware switching logic
 forge-overrides/frontend/src/components/logo.tsx
@@ -16,18 +15,16 @@ forge-overrides/frontend/src/styles/index.css (lines 8-13 only)
   → Reason: Custom font variables needed by components
   → Action: Add these variables to upstream CSS
 
-# 3. Companion install task text
-forge-overrides/frontend/src/utils/companion-install-task.ts
-  → Move to: upstream/frontend/src/utils/companion-install-task.ts
-  → Reason: Only branding text changes ("Automagik Omni" → will become generic)
-  → Action: Update branding text in upstream during rebrand
+# REMOVED ITEMS (After Investigation):
 
-# 4. TypeScript module shims ⚠️ REQUIRES INVESTIGATION
-forge-overrides/frontend/src/types/shims.d.ts
-  → Status: ⏸️ HOLD - Must test upstream first
-  → Reason: Upstream uses fancy-ansi and @dnd-kit/utilities
-  → Test: cd upstream/frontend && pnpm exec tsc --noEmit
-  → If upstream has TS errors: MOVE to upstream/frontend/src/types/shims.d.ts
-  → If upstream compiles: DELETE from forge-overrides (not needed)
-  → Temporary: KEEP in forge-overrides until tested (low risk, 8 lines)
-  → See: shims-analysis.md for detailed investigation
+# ❌ companion-install-task.ts - REMOVED
+#   → Already exists in upstream with identical logic
+#   → Only branding text differs (2 lines)
+#   → Decision: KEEP in forge-overrides (Group B rebrand handles it)
+#   → See: companion-task-investigation.md
+
+# ❌ shims.d.ts - REMOVED
+#   → Upstream compiles successfully without it (tested)
+#   → TypeScript uses skipLibCheck: true in tsconfig
+#   → Decision: DELETE from forge-overrides (not needed)
+#   → See: shims-investigation-COMPLETE.md

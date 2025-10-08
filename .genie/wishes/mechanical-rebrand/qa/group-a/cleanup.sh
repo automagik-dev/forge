@@ -35,6 +35,12 @@ rm -fv forge-overrides/frontend/src/i18n/locales/en/settings.json
 rm -fv forge-overrides/frontend/src/i18n/locales/es/settings.json
 rm -fv forge-overrides/frontend/src/i18n/locales/ja/settings.json
 
+# Delete unnecessary shims
+rm -fv forge-overrides/frontend/src/types/shims.d.ts
+
+# Delete companion task (Group B rebrand handles it)
+rm -fv forge-overrides/frontend/src/utils/companion-install-task.ts
+
 echo ""
 echo "Removing empty directories..."
 find forge-overrides -type d -empty -delete
@@ -48,8 +54,8 @@ DELETED=$((BEFORE_COUNT - AFTER_COUNT))
 REDUCTION=$(awk "BEGIN {printf \"%.1f\", ($DELETED/$BEFORE_COUNT)*100}")
 
 echo ""
-echo "Files after cleanup:  $AFTER_COUNT"
-echo "Files deleted:        $DELETED"
+echo "Files after cleanup:  $AFTER_COUNT (should be 10)"
+echo "Files deleted:        $DELETED (should be 15)"
 echo "Reduction:            $REDUCTION%"
 echo ""
 
