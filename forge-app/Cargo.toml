@@ -28,17 +28,17 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 
 # Upstream crate dependencies (for composition)
-db = { path = "../crates/db" }
-services = { path = "../crates/services" }
-server = { path = "../crates/server" }
-deployment = { path = "../crates/deployment" }
+db = { path = "../upstream/crates/db" }
+services = { path = "../upstream/crates/services" }
+server = { path = "../upstream/crates/server" }
+deployment = { path = "../upstream/crates/deployment" }
+local-deployment = { path = "../upstream/crates/local-deployment" }
+executors = { path = "../upstream/crates/executors" }
+utils = { path = "../upstream/crates/utils" }
 
 # Forge extensions
 forge-omni = { path = "../forge-extensions/omni" }
 forge-config = { path = "../forge-extensions/config" }
-
-# Utils for branch naming override
-utils = { path = "../crates/utils" }
 
 [dev-dependencies]
 httpmock = "0.7"

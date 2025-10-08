@@ -123,12 +123,18 @@ async fn forge_create_task_and_start(
         )
         .await;
 
+    // Generate forge-prefixed branch name
+    let branch_name = format!("forge/{}", task.id);
+    let task_attempt_id = Uuid::new_v4();
+
     let task_attempt = TaskAttempt::create(
         &deployment.db().pool,
         &CreateTaskAttempt {
             executor: payload.executor_profile_id.executor,
-            base_branch: payload.base_branch,
+            base_branch: payload.base_branch.clone(),
+            branch: branch_name,
         },
+        task_attempt_id,
         task.id,
     )
     .await?;
