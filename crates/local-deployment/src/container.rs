@@ -796,14 +796,8 @@ impl ContainerService for LocalContainerService {
             .await?
             .ok_or(sqlx::Error::RowNotFound)?;
 
-        // Use manual branch name if set, otherwise auto-generate
-        let git_branch_name = if let Some(ref branch) = task_attempt.branch {
-            // Manual branch name was provided
-            branch.clone()
-        } else {
-            // Auto-generate branch name using forge/ prefix
-            LocalContainerService::git_branch_from_task_attempt(&task_attempt.id, &task.title)
-        };
+        // Branch is set during task_attempt creation, just use it
+        let git_branch_name = task_attempt.branch.clone();
 
         // Always use the standard directory naming for worktree
         let worktree_dir_name =
@@ -819,7 +813,7 @@ impl ContainerService for LocalContainerService {
             &project.git_repo_path,
             &git_branch_name,
             &worktree_path,
-            &task_attempt.base_branch,
+            &task_attempt.target_branch,
             true, // create new branch
         )
         .await?;
@@ -851,11 +845,6 @@ impl ContainerService for LocalContainerService {
             &worktree_path.to_string_lossy(),
         )
         .await?;
-
-        // Update branch only if it wasn't manually set
-        if task_attempt.branch.is_none() {
-            TaskAttempt::update_branch(&self.db.pool, task_attempt.id, &git_branch_name).await?;
-        }
 
         Ok(worktree_path.to_string_lossy().to_string())
     }
@@ -909,10 +898,7 @@ impl ContainerService for LocalContainerService {
         })?;
         let worktree_path = PathBuf::from(container_ref);
 
-        let branch_name = task_attempt
-            .branch
-            .as_ref()
-            .ok_or_else(|| ContainerError::Other(anyhow!("Branch not found for task attempt")))?;
+        let branch_name = &task_attempt.branch;
 
         WorktreeManager::ensure_worktree_exists(
             &project.git_repo_path,
@@ -1045,18 +1031,12 @@ impl ContainerService for LocalContainerService {
         let project_repo_path = self.get_project_repo_path(task_attempt).await?;
         let latest_merge =
             Merge::find_latest_by_task_attempt_id(&self.db.pool, task_attempt.id).await?;
-        let task_branch = task_attempt
-            .branch
-            .clone()
-            .ok_or(ContainerError::Other(anyhow!(
-                "Task attempt {} does not have a branch",
-                task_attempt.id
-            )))?;
+        let task_branch = task_attempt.branch.clone();
 
         let is_ahead = if let Ok((ahead, _)) = self.git().get_branch_status(
             &project_repo_path,
             &task_branch,
-            &task_attempt.base_branch,
+            &task_attempt.target_branch,
         ) {
             ahead > 0
         } else {
@@ -1077,7 +1057,7 @@ impl ContainerService for LocalContainerService {
         let worktree_path = PathBuf::from(container_ref);
 
         // Handle ongoing attempts (live streaming diff)
-        self.create_live_diff_stream(&worktree_path, &task_branch, &task_attempt.base_branch)
+        self.create_live_diff_stream(&worktree_path, &task_branch, &task_attempt.target_branch)
             .await
     }
 

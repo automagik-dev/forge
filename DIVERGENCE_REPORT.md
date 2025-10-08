@@ -1,271 +1,225 @@
-# Automagik Forge vs Upstream Divergence Report
+# Automagik Forge vs Upstream Divergence Investigation
 
-**Generated**: 2025-10-08
-**Context**: Investigation triggered by WebSocket infinite retry bug fix attempt
-
-## Executive Summary
-
-**TL;DR**: Forge is ~50+ commits behind upstream (vibe-kanban). The "fundamentally different data models" concern was OVERSTATED - actual divergences are minimal and manageable.
+**Generated**: 2025-10-08 (Updated after context rewind)
+**Investigation Goal**: Verify Forge is a perfect mirror of upstream for core task/branch/worktree functionality
 
 ---
 
-## Critical Bug Fixed
+## Current Situation
 
-### WebSocket Infinite Retry Loop
+**Context**: User suspects unnecessary code duplication/divergence exists, questioning the entire "upstream as library" migration strategy.
 
-**Root Cause**: Two missing WebSocket endpoints that exist in upstream but not in Forge:
-1. `/api/drafts/stream/ws` - Draft streaming endpoint
-2. `/api/task-attempts/{id}/diff/ws` - Diff streaming endpoint
-
-**Why They Were Missing**: Forge codebase is behind upstream commits that added these features.
-
-**Fix Applied**: Added stub WebSocket handlers that:
-- Accept connections properly (HTTP 101 upgrade)
-- Send empty initial state `{"drafts": {}}` and `{"entries": {}}`
-- **Keep connection open** until client disconnects (critical - was closing immediately causing retries)
-- Stop infinite retry errors in browser console
-
-**Files Modified**:
-- `crates/server/src/routes/drafts.rs` (NEW - created stub)
-- `crates/server/src/routes/task_attempts.rs` (added `stream_task_attempt_diff_ws` + route)
-- `crates/server/src/routes/mod.rs` (added drafts router)
+**Key Concern**: If upstream is used as a module/library, why does Forge need so much custom code? This suggests either:
+1. The library integration is broken/incomplete
+2. Previous agent made unnecessary customizations
+3. Upstream's library interface is poorly designed
 
 ---
 
-## Data Model Divergences
+## Investigation Scope
 
-### 1. TaskAttempt Model - Field Rename
+### Files to Verify (Core Task/Branch Logic)
 
-**Issue**: Upstream uses `target_branch`, Forge uses `base_branch`
+**Models** (Should be 100% identical to upstream):
+- `crates/db/src/models/task_attempt.rs`
+- `crates/db/src/models/task.rs`
+- `crates/db/src/models/draft.rs`
 
-**Analysis**:
-- **Upstream commit**: `2829686a - Add base branch (vibe-kanban) (#100)`
-- This commit RENAMED `target_branch` → `base_branch` in upstream
-- Forge appears to be ON an older version that still has `target_branch` naming
-- **Actually**: Wait, Forge has `base_branch` too - let me recheck...
+**Services** (Should use upstream as-is):
+- `crates/services/src/services/container.rs` (trait definition)
+- `crates/services/src/services/git.rs`
+- `crates/services/src/services/worktree_manager.rs`
 
-**VERIFIED STATE**:
-- **Upstream (current)**: `target_branch: String` (line 43 in task_attempt.rs)
-- **Forge (current)**: `base_branch: String` (line 43 in task_attempt.rs)
+**Implementation** (May have Forge customizations):
+- `crates/local-deployment/src/container.rs` (ContainerService impl)
 
-**What Happened**:
-1. July 2025: Upstream added `base_branch` in commit `2829686a`
-2. Later: Upstream renamed it BACK to `target_branch` (more recent commits)
-3. Forge: Forked when it was `base_branch`, never updated
-
-**Evidence**: Upstream has commit "#100 - Add base branch" but current code uses `target_branch`
-
-**Additional Difference**:
-- **Upstream**: `branch: String` (required)
-- **Forge**: `branch: Option<String>` (optional)
-
-**Impact**: Medium - any code copied from upstream that references `target_branch` will fail in Forge
+**Config** (Forge-specific branding):
+- `crates/services/src/services/config/versions/v7.rs`
+  - Should have `git_branch_prefix: "forge"` instead of `"vk"`
+  - Everything else identical
 
 ---
 
-### 2. Draft Model - Additional Model File
+## Known Recent Changes (From Previous Agent)
 
-**Issue**: Forge has TWO draft-related models, upstream has ONE
+1. ✅ Copied upstream `task_attempt.rs` model
+2. ✅ Added `git_branch_prefix: "forge"` to config v7
+3. ✅ Copied missing migration `20250923000000_make_branch_non_null.sql`
+4. ❓ Modified `crates/local-deployment/src/container.rs` (34 lines changed)
 
-**Files**:
-- `draft.rs` - 368 lines (IDENTICAL in both Forge and upstream)
-- `follow_up_draft.rs` - 195 lines (Forge ONLY)
-
-**Analysis**:
-- Forge ADDED `follow_up_draft.rs` as an ADDITIONAL model
-- The base `draft.rs` is UNCHANGED from upstream
-- This is NOT a "split" - it's an EXTENSION
-- `follow_up_draft` likely handles follow-up task drafts separately
-
-**Impact**: Low - this is a Forge-specific feature addition, not incompatibility
-
----
-
-### 3. Events Service - Missing Modularization
-
-**Issue**: Upstream modularized events service into subdirectory
-
-**Upstream Structure**:
+**Current Git Status**:
 ```
-services/events.rs (main file)
-services/events/
-  ├── patches.rs
-  ├── streams.rs
-  └── types.rs
-```
-
-**Forge Structure**:
-```
-services/events.rs (monolithic)
-```
-
-**Analysis**:
-- Upstream refactored events service into modules
-- Forge still has monolithic file
-- Upstream's modular version includes:
-  - `PreupdateHookResult` usage (requires `sqlite-preupdate-hook` feature)
-  - `stream_drafts_for_project_raw()` method
-  - Draft/ExecutionProcess/TaskAttempt patch helpers
-
-**Impact**: High - prevents direct file copy from upstream
-
-**Why Feature Flag Needed**:
-- Upstream Cargo.toml: `sqlx = { features = [..., "sqlite-preupdate-hook"] }`
-- Forge Cargo.toml: `sqlx = { features = [...] }` (missing preupdate-hook)
-- This enables real-time database change notifications in upstream
-
----
-
-### 4. Git Service API Differences
-
-**Methods Missing in Forge** (that upstream's routes expect):
-- `reconcile_worktree_to_commit()`
-- `git_branch_from_task_attempt()`
-- `WorktreeResetOptions` type
-
-**Impact**: High - prevents using upstream's diff streaming implementation
-
----
-
-## Upstream Sync Status
-
-**Forge Branch**: `restructure/upstream-as-library-migration`
-**Forge Last Commit**: `24d9a30e fixes`
-**Upstream Submodule**: Points to older commit (need to check which)
-
-**Upstream Recent Commits** (Forge is missing):
-```
-ad1696cd - chore: bump version to 0.0.105
-36587766 - Setting to override branch prefix (#949)
-a733ca51 - More events (#964)
-7c10c00d - Upgrade Codex (#947)
-41eaa061 - fix: create multiple tasks bug (#958)
-... ~50+ more commits
-```
-
-**Key Missing Features** (based on commits):
-- Events system refactor (#964)
-- Branch prefix overrides (#949)
-- Multiple task creation fixes (#958)
-- i18n consistency checks (#960)
-- Codex executor upgrades (#947)
-
----
-
-## Why Couldn't We Copy Upstream Code?
-
-### Attempted: Copy upstream routes directly
-
-**Result**: 19 compilation errors
-
-**Reasons**:
-1. **Field name mismatch**: `target_branch` vs `base_branch`
-2. **Type mismatch**: `branch: String` vs `branch: Option<String>`
-3. **Missing service methods**: `stream_diff()`, `reconcile_worktree_to_commit()`, etc.
-4. **Missing database hooks**: `PreupdateHookResult`, `set_preupdate_hook()`
-5. **Missing modules**: `services/drafts`, `services/events/*`, `routes/util`
-6. **ExecutionProcess API changes**: `latest_executor_profile_for_attempt()` missing
-
-### What THIS Means
-
-To fully align with upstream would require:
-1. Database migration to rename fields
-2. Port missing service layer methods
-3. Add SQLx feature flag
-4. Refactor events service to match structure
-5. Test all downstream code that uses these models
-
-**Estimated Effort**: 2-3 days of careful migration work
-
----
-
-## Recommendations for Next Steps
-
-### Option 1: Minimal Fix (DONE)
-✅ Add WebSocket stub endpoints
-✅ Stop infinite retry errors
-✅ Allow app to function
-
-**Tradeoffs**:
-- Diff history shows empty (not critical for MVP)
-- Drafts show empty (may impact follow-up workflow)
-- Technical debt accumulates
-
-### Option 2: Partial Upstream Sync (Recommended)
-🔄 Update upstream submodule to latest
-🔄 Cherry-pick critical bug fixes
-🔄 Keep Forge-specific extensions (omni, follow_up_draft, etc.)
-🔄 Add SQLx preupdate-hook feature
-🔄 Port events service refactor
-
-**Estimated**: 1-2 days
-**Benefit**: Fixes accumulating bugs, stays closer to upstream
-
-### Option 3: Full Upstream Merge
-⚠️ Merge all ~50+ upstream commits
-⚠️ Resolve all conflicts
-⚠️ Migrate database schema
-⚠️ Update all Forge extensions
-
-**Estimated**: 3-5 days
-**Risk**: High - may break Forge-specific features
-
----
-
-## Files That Need Attention
-
-### Immediate (for proper diff/draft streaming):
-```
-crates/services/src/services/events.rs         # Needs modularization
-crates/services/src/services/container.rs      # Needs stream_diff()
-crates/local-deployment/src/container.rs       # Needs diff streaming impl
-crates/db/Cargo.toml                          # Add preupdate-hook feature
-```
-
-### Medium Priority (for full feature parity):
-```
-crates/db/src/models/task_attempt.rs          # Field name alignment
-crates/services/src/services/git_cli.rs       # Missing methods
-crates/server/src/routes/task_attempts.rs     # Restore full route handlers
-```
-
-### Low Priority (cosmetic/optimization):
-```
-All files with ~50 commits of improvements from upstream
+M crates/local-deployment/src/container.rs
 ```
 
 ---
 
-## Technical Debt Summary
+## Critical Questions for Next Agent
 
-### Acceptable Debt (Forge-specific features):
-- ✅ `follow_up_draft.rs` - Useful extension
-- ✅ Omni integration - Core Forge feature
-- ✅ Branch templates - Added value
+### 1. Library Integration Check
+**Question**: Does Forge actually import/use upstream crates as dependencies, or does it copy code?
 
-### Concerning Debt (blocking upstream sync):
-- ⚠️ TaskAttempt field names diverged
-- ⚠️ Events service architecture mismatch
-- ⚠️ Missing SQLx features
-- ⚠️ Git service method gaps
+**How to verify**:
+```bash
+# Check if upstream is imported as dependency
+grep -r "upstream" Cargo.toml */Cargo.toml
 
-### Critical Debt (causes bugs):
-- ❌ Missing WebSocket endpoints → **FIXED**
-- ⚠️ Out of date with 50+ bug fix commits
+# Check if upstream crates are in workspace
+cat Cargo.toml | grep -A20 "workspace.members"
+
+# Verify if Forge re-exports or duplicates
+ls -la upstream/crates/
+ls -la crates/
+```
+
+**Expected**: If "upstream as library", Forge should import upstream crates, NOT duplicate them.
 
 ---
 
-## Conclusion
+### 2. Actual Divergence Analysis
+**Question**: What ACTUALLY differs between upstream and Forge for task/branch logic?
 
-The "fundamentally different" assessment was **overstated**. Reality:
+**Commands to run**:
+```bash
+# Compare models (should be identical)
+diff -u upstream/crates/db/src/models/task_attempt.rs crates/db/src/models/task_attempt.rs
 
-1. **Core models are similar** - just field renames and optional vs required
-2. **Service architecture diverged** - upstream modularized, Forge didn't follow
-3. **Feature flags differ** - Forge missing preupdate-hook for real-time events
-4. **Forge is behind** - needs upstream sync more than ground-up rewrite
+# Compare container trait (should be identical except imports)
+diff -u upstream/crates/services/src/services/container.rs crates/services/src/services/container.rs
 
-**Current Fix Status**: ✅ WORKING - infinite retries stopped
-**Code Quality**: ⚠️ STUB - needs proper implementation eventually
-**Urgency**: 🟢 LOW - app functions, just missing nice-to-have features
+# Compare container implementation (may have Forge-specific code)
+diff -u upstream/crates/local-deployment/src/container.rs crates/local-deployment/src/container.rs
+```
 
-**Action Item**: Schedule upstream sync sprint (Option 2) within next 2 weeks before debt grows.
+**Focus on**:
+- Field names: `base_branch` vs `target_branch`
+- Field types: `branch: Option<String>` vs `branch: String`
+- Branch naming: Where does `"forge/"` prefix get set?
+- Custom logic: What did previous agent add that shouldn't be there?
+
+---
+
+### 3. Branch Prefix Configuration
+**Question**: How SHOULD branch naming work in the upstream-as-library model?
+
+**Investigation**:
+```bash
+# Find where upstream sets branch prefix
+grep -rn "git_branch_prefix\|vk/" upstream/crates/ --include="*.rs"
+
+# Find where Forge sets branch prefix
+grep -rn "git_branch_prefix\|forge/" crates/ --include="*.rs"
+
+# Check if there's a proper config override mechanism
+grep -rn "git_branch_from_task_attempt" upstream/crates/ crates/ --include="*.rs"
+```
+
+**Expected**: Forge should ONLY need to override the config default, not duplicate any logic.
+
+---
+
+### 4. Container Implementation Divergence
+**Question**: What are the 34 lines changed in `crates/local-deployment/src/container.rs`?
+
+**Check**:
+```bash
+git diff crates/local-deployment/src/container.rs | grep -E "^[\+\-]" | head -50
+```
+
+**Validation**:
+- Are these changes necessary for Forge branding?
+- Or did previous agent unnecessarily customize upstream behavior?
+- Can we revert to 100% upstream implementation?
+
+---
+
+## Investigation Protocol
+
+### Step 1: Verify Library Integration
+- [ ] Check if `upstream/crates/*` are imported as dependencies
+- [ ] Verify Cargo.toml workspace structure
+- [ ] Confirm Forge doesn't duplicate upstream code unnecessarily
+
+### Step 2: Model Alignment
+- [ ] Diff `task_attempt.rs` - should be IDENTICAL
+- [ ] Diff `draft.rs` - should be IDENTICAL (except Forge's `follow_up_draft.rs` extension)
+- [ ] Diff `task.rs` - should be IDENTICAL
+
+### Step 3: Service Alignment
+- [ ] Diff `container.rs` trait - should be IDENTICAL (except imports)
+- [ ] Diff `git.rs` - should be IDENTICAL
+- [ ] Diff `worktree_manager.rs` - should be IDENTICAL
+
+### Step 4: Config Branding
+- [ ] Verify ONLY difference in config v7 is `git_branch_prefix: "forge"` vs `"vk"`
+- [ ] Confirm no other config changes
+
+### Step 5: Implementation Customization
+- [ ] Review `local-deployment/container.rs` changes
+- [ ] Justify each divergence OR revert to upstream
+- [ ] Document any truly necessary Forge-specific logic
+
+---
+
+## Success Criteria
+
+**Perfect Mirror Achieved When**:
+1. All models identical to upstream (byte-for-byte)
+2. All service traits identical to upstream
+3. Config only differs in branding (`git_branch_prefix`)
+4. Implementation (`local-deployment/container.rs`) uses upstream logic, ONLY overrides config
+
+**If This Fails**:
+- Document WHY Forge needs custom code
+- Question if "upstream as library" strategy is viable
+- Consider alternative architectures
+
+---
+
+## Prompt for Next Agent
+
+```
+I need you to verify that Automagik Forge is a perfect mirror of upstream (vibe-kanban) for task/branch/worktree functionality.
+
+**Context**:
+- Forge is supposed to use upstream as a library/module
+- Previous agent made changes that added ~34 lines to container.rs
+- User suspects unnecessary code duplication exists
+- Current state: Only `crates/local-deployment/src/container.rs` is modified
+
+**Your Mission**:
+1. Verify Forge actually imports upstream crates (not duplicates them)
+2. Compare models: task_attempt.rs, draft.rs, task.rs (should be IDENTICAL)
+3. Compare services: container.rs trait, git.rs, worktree_manager.rs (should be IDENTICAL)
+4. Analyze the 34-line diff in local-deployment/container.rs - is it necessary?
+5. Check if ONLY difference should be config `git_branch_prefix: "forge"` vs `"vk"`
+
+**Commands to run**:
+```bash
+# 1. Check library integration
+grep -r "upstream" Cargo.toml */Cargo.toml
+cat Cargo.toml | grep -A30 "workspace.members"
+
+# 2. Compare models
+diff -u upstream/crates/db/src/models/task_attempt.rs crates/db/src/models/task_attempt.rs
+diff -u upstream/crates/db/src/models/draft.rs crates/db/src/models/draft.rs
+
+# 3. Compare services
+diff -u upstream/crates/services/src/services/container.rs crates/services/src/services/container.rs
+diff -u upstream/crates/services/src/services/git.rs crates/services/src/services/git.rs
+
+# 4. Review container.rs changes
+git diff crates/local-deployment/src/container.rs
+
+# 5. Find branch prefix usage
+grep -rn "git_branch_prefix\|forge/\|vk/" crates/ upstream/crates/ --include="*.rs" | grep -v "test\|comment"
+```
+
+**Deliverable**:
+1. List of files that SHOULD be identical but aren't
+2. Justification for each divergence OR recommendation to align with upstream
+3. Confirmation that Forge is a perfect mirror (or explanation of why it can't be)
+4. Assessment of whether "upstream as library" strategy is working as intended
+
+**Focus**: We want MINIMAL code in Forge. If upstream provides it, use it. Don't reinvent.
+```
