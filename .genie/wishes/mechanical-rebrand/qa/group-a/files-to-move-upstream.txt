@@ -1,0 +1,28 @@
+# Files to MOVE to upstream (not delete) - 4 items
+
+# Logo component with theme-aware switching logic
+forge-overrides/frontend/src/components/logo.tsx
+  → Move to: upstream/frontend/src/components/logo.tsx
+  → Reason: Theme-aware dark/light logo switching (lines 9-30)
+  → Action: Copy logic to upstream, update paths/alt text during rebrand
+
+# Font variable definitions (partial)
+forge-overrides/frontend/src/styles/index.css (lines 8-13 only)
+  → Move to: upstream/frontend/src/styles/index.css
+  → Content:
+    --font-primary: 'Alegreya Sans', sans-serif;
+    --font-secondary: 'Manrope', sans-serif;
+  → Reason: Custom font variables needed by components
+  → Action: Add these variables to upstream CSS
+
+# TypeScript module shims
+forge-overrides/frontend/src/types/shims.d.ts
+  → Move to: upstream/frontend/src/types/shims.d.ts
+  → Reason: Upstream uses fancy-ansi and @dnd-kit/utilities but lacks type declarations
+  → Action: Copy entire file to upstream types directory
+
+# Companion install task text
+forge-overrides/frontend/src/utils/companion-install-task.ts
+  → Move to: upstream/frontend/src/utils/companion-install-task.ts
+  → Reason: Only branding text changes ("Automagik Omni" → will become generic)
+  → Action: Update branding text in upstream during rebrand

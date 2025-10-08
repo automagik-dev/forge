@@ -1,0 +1,21 @@
+# Real feature files to KEEP (10 files)
+
+# Omni Feature (4 files)
+forge-overrides/frontend/src/components/omni/OmniCard.tsx
+forge-overrides/frontend/src/components/omni/OmniModal.tsx
+forge-overrides/frontend/src/components/omni/api.ts
+forge-overrides/frontend/src/components/omni/types.ts
+
+# Forge Backend Integration - Omni API (1 file)
+forge-overrides/frontend/src/lib/forge-api.ts
+
+# Settings Integration - Omni UI (3 files)
+forge-overrides/frontend/src/pages/settings/GeneralSettings.tsx
+forge-overrides/frontend/src/pages/settings/index.ts
+forge-overrides/frontend/src/main.tsx
+
+# Extended Themes - Dracula & Alucard (1 file)
+forge-overrides/frontend/src/styles/index.css
+
+# Placeholder (1 file)
+forge-overrides/.gitkeep
