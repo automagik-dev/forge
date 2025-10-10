@@ -38,9 +38,11 @@ jobs:
             platform: macos-arm64
 
     runs-on: ${{ matrix.os }}
-    
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -192,9 +194,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '')
-    
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
