@@ -31,10 +31,10 @@ replace_all_patterns() {
 
     # Count before - sum all occurrences
     local before=0
-    before=$(grep -o "vibe-kanban\|Vibe Kanban\|vibeKanban\|VibeKanban\|vibe_kanban\|VIBE_KANBAN" "$file" 2>/dev/null | wc -l || echo 0)
+    before=$(grep -o "vibe-kanban\|Vibe Kanban\|vibeKanban\|VibeKanban\|vibe_kanban\|VIBE_KANBAN\|Bloop AI\|BloopAI\|bloop" "$file" 2>/dev/null | wc -l || echo 0)
     before=${before// /}  # Remove any whitespace
 
-    # ALL replacement patterns
+    # ALL replacement patterns (vibe-kanban → automagik-forge)
     sed -i \
         -e 's/Vibe Kanban/Automagik Forge/g' \
         -e 's/vibe-kanban/automagik-forge/g' \
@@ -51,9 +51,26 @@ replace_all_patterns() {
         -e 's/VK_/AF_/g' \
         "$file" 2>/dev/null || true
 
+    # Bloop AI → Namastex Labs patterns (order matters!)
+    sed -i \
+        -e 's/Bloop AI/Namastex Labs/g' \
+        -e 's/BloopAI/NamastexLabs/g' \
+        -e 's/maintainers@bloop\.ai/genie@namastex.ai/g' \
+        -e 's/bloop\.ai/namastex.ai/g' \
+        -e 's/"bloop-dev"/"namastex-dev"/g' \
+        -e 's/"bloop-ai"/"namastexlabs"/g' \
+        -e 's/bloop\.automagik-forge/namastexlabs.automagik-forge/g' \
+        -e 's/extension\/bloop\//extension\/namastexlabs\//g' \
+        -e 's/itemName=bloop\./itemName=namastexlabs./g' \
+        -e 's/@id:bloop\./@id:namastexlabs./g' \
+        -e 's/\/BloopAI\//\/namastexlabs\//g' \
+        -e 's/"author": "bloop"/"author": "Namastex Labs"/g' \
+        -e 's/"bloop"/"namastex"/g' \
+        "$file" 2>/dev/null || true
+
     # Count after
     local after=0
-    after=$(grep -o "vibe-kanban\|Vibe Kanban\|vibeKanban\|VibeKanban\|vibe_kanban\|VIBE_KANBAN" "$file" 2>/dev/null | wc -l || echo 0)
+    after=$(grep -o "vibe-kanban\|Vibe Kanban\|vibeKanban\|VibeKanban\|vibe_kanban\|VIBE_KANBAN\|Bloop AI\|BloopAI\|bloop" "$file" 2>/dev/null | wc -l || echo 0)
     after=${after// /}  # Remove any whitespace
 
     if [ "$before" -gt 0 ] && [ "$after" -eq 0 ]; then
@@ -71,10 +88,10 @@ find upstream \
     -type f \
     \( -name "*.rs" -o -name "*.ts" -o -name "*.tsx" -o -name "*.js" \
        -o -name "*.jsx" -o -name "*.json" -o -name "*.toml" \
-       -o -name "*.md" -o -name "*.html" -o -name "*.css" \
+       -o -name "*.md" -o -name "*.mdx" -o -name "*.html" -o -name "*.css" \
        -o -name "*.scss" -o -name "*.yml" -o -name "*.yaml" \
-       -o -name "*.txt" -o -name "*.sh" -o -name "Dockerfile" \
-       -o -name "*.sql" \) \
+       -o -name "*.txt" -o -name "*.sh" -o -name "*.ps1" -o -name "Dockerfile" \
+       -o -name "*.sql" -o -name "*.webmanifest" \) \
     2>/dev/null | while read -r file; do
     replace_all_patterns "$file"
 done
@@ -91,31 +108,38 @@ echo "🔍 VERIFICATION PHASE"
 echo "===================="
 
 # Check for ANY remaining references in upstream/ ONLY
-REMAINING_COUNT=$(grep -r "vibe-kanban\|Vibe Kanban\|vibeKanban\|VibeKanban\|vibe_kanban\|VIBE_KANBAN" \
+REMAINING_VK_COUNT=$(grep -r "vibe-kanban\|Vibe Kanban\|vibeKanban\|VibeKanban\|vibe_kanban\|VIBE_KANBAN" \
     upstream 2>/dev/null | \
     grep -v ".git" | \
     grep -v "Binary file" | \
     wc -l || echo 0)
-REMAINING_COUNT=${REMAINING_COUNT// /}
+REMAINING_VK_COUNT=${REMAINING_VK_COUNT// /}
 
-REMAINING_VK_COUNT=$(grep -rw "VK\|vk" upstream 2>/dev/null | \
+REMAINING_VK_ABBREV=$(grep -rw "VK\|vk" upstream 2>/dev/null | \
     grep -v ".git" | \
     grep -v "Binary file" | \
     grep -E "\bVK\b|\bvk\b" | \
     wc -l || echo 0)
-REMAINING_VK_COUNT=${REMAINING_VK_COUNT// /}
+REMAINING_VK_ABBREV=${REMAINING_VK_ABBREV// /}
+
+REMAINING_BLOOP_COUNT=$(grep -ri "bloop" upstream 2>/dev/null | \
+    grep -v ".git" | \
+    grep -v "Binary file" | \
+    wc -l || echo 0)
+REMAINING_BLOOP_COUNT=${REMAINING_BLOOP_COUNT// /}
 
 echo "📊 Replacements made: $REPLACEMENTS"
 echo "📊 Files modified: $FILES_MODIFIED"
-echo "📊 Remaining 'vibe-kanban' references in upstream/: $REMAINING_COUNT"
-echo "📊 Remaining 'VK/vk' references in upstream/: $REMAINING_VK_COUNT"
+echo "📊 Remaining 'vibe-kanban' references in upstream/: $REMAINING_VK_COUNT"
+echo "📊 Remaining 'VK/vk' abbreviations in upstream/: $REMAINING_VK_ABBREV"
+echo "📊 Remaining 'bloop' references in upstream/: $REMAINING_BLOOP_COUNT"
 
 # FAIL if any remain
-if [ "$REMAINING_COUNT" -gt 0 ] || [ "$REMAINING_VK_COUNT" -gt 0 ]; then
+if [ "$REMAINING_VK_COUNT" -gt 0 ] || [ "$REMAINING_VK_ABBREV" -gt 0 ] || [ "$REMAINING_BLOOP_COUNT" -gt 0 ]; then
     echo ""
     echo "❌ FAILURE: References still exist in upstream/!"
     echo ""
-    if [ "$REMAINING_COUNT" -gt 0 ]; then
+    if [ "$REMAINING_VK_COUNT" -gt 0 ]; then
         echo "Files with vibe-kanban:"
         grep -r "vibe-kanban\|Vibe Kanban\|vibeKanban\|VibeKanban\|vibe_kanban\|VIBE_KANBAN" \
             upstream 2>/dev/null | \
@@ -123,13 +147,21 @@ if [ "$REMAINING_COUNT" -gt 0 ] || [ "$REMAINING_VK_COUNT" -gt 0 ]; then
             grep -v "Binary file" | \
             cut -d: -f1 | sort -u
     fi
-    if [ "$REMAINING_VK_COUNT" -gt 0 ]; then
+    if [ "$REMAINING_VK_ABBREV" -gt 0 ]; then
         echo ""
-        echo "Files with VK/vk:"
+        echo "Files with VK/vk abbreviations:"
         grep -rw "VK\|vk" upstream 2>/dev/null | \
             grep -v ".git" | \
             grep -v "Binary file" | \
             grep -E "\bVK\b|\bvk\b" | \
+            cut -d: -f1 | sort -u
+    fi
+    if [ "$REMAINING_BLOOP_COUNT" -gt 0 ]; then
+        echo ""
+        echo "Files with bloop:"
+        grep -ri "bloop" upstream 2>/dev/null | \
+            grep -v ".git" | \
+            grep -v "Binary file" | \
             cut -d: -f1 | sort -u
     fi
     exit 1
