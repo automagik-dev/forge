@@ -139,8 +139,7 @@ impl ForgeConfigService {
         if let Some(project_id) = project_id
             && let Some(project_config) = self.get_project_config(project_id).await?
             && let Some(value) = project_config.forge_config.clone()
-            && let Ok(project_settings) =
-                serde_json::from_value::<ForgeProjectSettings>(value)
+            && let Ok(project_settings) = serde_json::from_value::<ForgeProjectSettings>(value)
         {
             let mut project_omni = project_settings
                 .omni_config

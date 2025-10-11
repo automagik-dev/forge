@@ -54,7 +54,7 @@ replace_all_patterns() {
     # Bloop AI → Namastex Labs patterns (order matters!)
     sed -i \
         -e 's/Bloop AI/Namastex Labs/g' \
-        -e 's/BloopAI/NamastexLabs/g' \
+        -e 's/BloopAI/namastexlabs/g' \
         -e 's/maintainers@bloop\.ai/genie@namastex.ai/g' \
         -e 's/bloop\.ai/namastex.ai/g' \
         -e 's/"bloop-dev"/"namastex-dev"/g' \
