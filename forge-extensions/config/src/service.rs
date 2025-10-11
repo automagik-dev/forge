@@ -46,13 +46,13 @@ impl ForgeConfigService {
         let custom_executors_json = config
             .custom_executors
             .as_ref()
-            .map(|v| serde_json::to_string(v))
+            .map(serde_json::to_string)
             .transpose()?;
 
         let forge_config_json = config
             .forge_config
             .as_ref()
-            .map(|v| serde_json::to_string(v))
+            .map(serde_json::to_string)
             .transpose()?;
 
         sqlx::query(
@@ -68,12 +68,11 @@ impl ForgeConfigService {
     }
 
     pub async fn get_forge_settings(&self, project_id: Uuid) -> Result<ForgeProjectSettings> {
-        if let Some(config) = self.get_project_config(project_id).await? {
-            if let Some(forge_config) = config.forge_config {
-                if let Ok(settings) = serde_json::from_value::<ForgeProjectSettings>(forge_config) {
-                    return Ok(settings);
-                }
-            }
+        if let Some(config) = self.get_project_config(project_id).await?
+            && let Some(forge_config) = config.forge_config
+            && let Ok(settings) = serde_json::from_value::<ForgeProjectSettings>(forge_config)
+        {
+            return Ok(settings);
         }
 
         Ok(ForgeProjectSettings::default())
@@ -108,10 +107,10 @@ impl ForgeConfigService {
                 .fetch_optional(&self.pool)
                 .await?;
 
-        if let Some((config_str,)) = row {
-            if let Ok(settings) = serde_json::from_str::<ForgeProjectSettings>(&config_str) {
-                return Ok(settings);
-            }
+        if let Some((config_str,)) = row
+            && let Ok(settings) = serde_json::from_str::<ForgeProjectSettings>(&config_str)
+        {
+            return Ok(settings);
         }
 
         Ok(ForgeProjectSettings::default())
@@ -137,20 +136,17 @@ impl ForgeConfigService {
         let mut config = global_settings.omni_config.clone().unwrap_or_default();
         config.enabled = global_settings.omni_enabled;
 
-        if let Some(project_id) = project_id {
-            if let Some(project_config) = self.get_project_config(project_id).await? {
-                if let Some(value) = project_config.forge_config.clone() {
-                    if let Ok(project_settings) =
-                        serde_json::from_value::<ForgeProjectSettings>(value)
-                    {
-                        let mut project_omni = project_settings
-                            .omni_config
-                            .unwrap_or_else(|| config.clone());
-                        project_omni.enabled = project_settings.omni_enabled;
-                        config = project_omni;
-                    }
-                }
-            }
+        if let Some(project_id) = project_id
+            && let Some(project_config) = self.get_project_config(project_id).await?
+            && let Some(value) = project_config.forge_config.clone()
+            && let Ok(project_settings) =
+                serde_json::from_value::<ForgeProjectSettings>(value)
+        {
+            let mut project_omni = project_settings
+                .omni_config
+                .unwrap_or_else(|| config.clone());
+            project_omni.enabled = project_settings.omni_enabled;
+            config = project_omni;
         }
 
         Ok(config)
@@ -256,31 +252,33 @@ mod tests {
 
         let project_id = Uuid::new_v4();
 
-        let mut global = ForgeProjectSettings::default();
-        global.omni_enabled = true;
-        global.omni_config = Some(OmniConfig {
-            enabled: true,
-            host: Some("https://global.omni".into()),
-            api_key: Some("global-key".into()),
-            instance: Some("global".into()),
-            recipient: Some("global-recipient".into()),
-            recipient_type: Some(RecipientType::PhoneNumber),
-        });
+        let global = ForgeProjectSettings {
+            omni_enabled: true,
+            omni_config: Some(OmniConfig {
+                enabled: true,
+                host: Some("https://global.omni".into()),
+                api_key: Some("global-key".into()),
+                instance: Some("global".into()),
+                recipient: Some("global-recipient".into()),
+                recipient_type: Some(RecipientType::PhoneNumber),
+            }),
+        };
         service
             .set_global_settings(&global)
             .await
             .expect("global settings should persist");
 
-        let mut project = ForgeProjectSettings::default();
-        project.omni_enabled = true;
-        project.omni_config = Some(OmniConfig {
-            enabled: true,
-            host: Some("https://project.omni".into()),
-            api_key: Some("project-key".into()),
-            instance: Some("project".into()),
-            recipient: Some("project-recipient".into()),
-            recipient_type: Some(RecipientType::UserId),
-        });
+        let project = ForgeProjectSettings {
+            omni_enabled: true,
+            omni_config: Some(OmniConfig {
+                enabled: true,
+                host: Some("https://project.omni".into()),
+                api_key: Some("project-key".into()),
+                instance: Some("project".into()),
+                recipient: Some("project-recipient".into()),
+                recipient_type: Some(RecipientType::UserId),
+            }),
+        };
         service
             .set_forge_settings(project_id, &project)
             .await
@@ -303,11 +301,15 @@ mod tests {
         let pool = setup_pool().await;
 
         // Try to insert a second global settings row (should fail due to CHECK constraint)
-        let result = sqlx::query("INSERT INTO forge_global_settings (id, forge_config) VALUES (2, '{}')")
-            .execute(&pool)
-            .await;
+        let result =
+            sqlx::query("INSERT INTO forge_global_settings (id, forge_config) VALUES (2, '{}')")
+                .execute(&pool)
+                .await;
 
-        assert!(result.is_err(), "Should not allow multiple global settings rows");
+        assert!(
+            result.is_err(),
+            "Should not allow multiple global settings rows"
+        );
     }
 
     #[tokio::test]

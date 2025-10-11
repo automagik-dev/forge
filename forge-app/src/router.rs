@@ -22,7 +22,6 @@ use db::models::{
     task_attempt::{CreateTaskAttempt, TaskAttempt},
 };
 use deployment::Deployment;
-use utils::text::{git_branch_id, short_uuid};
 use forge_config::ForgeProjectSettings;
 use server::routes::{
     self as upstream, auth, config as upstream_config, containers, drafts, events,
@@ -32,6 +31,7 @@ use server::{DeploymentImpl, error::ApiError, routes::tasks::CreateAndStartTaskR
 use services::services::container::ContainerService;
 use sqlx::{self, Error as SqlxError, Row};
 use utils::response::ApiResponse;
+use utils::text::{git_branch_id, short_uuid};
 
 #[derive(RustEmbed)]
 #[folder = "../frontend/dist"]
@@ -262,7 +262,8 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
         router.merge(containers::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
     router =
         router.merge(projects::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
-    router = router.merge(drafts::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+    router =
+        router.merge(drafts::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
 
     // Build custom tasks router with forge override
     let tasks_router_with_override = build_tasks_router_with_forge_override(deployment);
@@ -270,7 +271,8 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
         router.merge(tasks_router_with_override.with_state::<ForgeAppState>(dep_clone.clone()));
 
     // Build custom task_attempts router with forge override
-    let task_attempts_router_with_override = build_task_attempts_router_with_forge_override(deployment);
+    let task_attempts_router_with_override =
+        build_task_attempts_router_with_forge_override(deployment);
     router = router
         .merge(task_attempts_router_with_override.with_state::<ForgeAppState>(dep_clone.clone()));
     router = router.merge(
@@ -313,15 +315,14 @@ fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router
 }
 
 /// Build task_attempts router with forge override for create endpoint
-fn build_task_attempts_router_with_forge_override(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
+fn build_task_attempts_router_with_forge_override(
+    deployment: &DeploymentImpl,
+) -> Router<DeploymentImpl> {
     use axum::middleware::from_fn_with_state;
     use server::middleware::load_task_attempt_middleware;
 
     let task_attempt_id_router = Router::new()
-        .route(
-            "/",
-            get(task_attempts::get_task_attempt),
-        )
+        .route("/", get(task_attempts::get_task_attempt))
         .route("/follow-up", post(task_attempts::follow_up))
         .route(
             "/draft",
@@ -332,28 +333,49 @@ fn build_task_attempts_router_with_forge_override(deployment: &DeploymentImpl) -
         .route("/draft/queue", post(task_attempts::drafts::set_draft_queue))
         .route("/replace-process", post(task_attempts::replace_process))
         .route("/commit-info", get(task_attempts::get_commit_info))
-        .route("/commit-compare", get(task_attempts::compare_commit_to_head))
+        .route(
+            "/commit-compare",
+            get(task_attempts::compare_commit_to_head),
+        )
         .route("/start-dev-server", post(task_attempts::start_dev_server))
-        .route("/branch-status", get(task_attempts::get_task_attempt_branch_status))
+        .route(
+            "/branch-status",
+            get(task_attempts::get_task_attempt_branch_status),
+        )
         .route("/diff/ws", get(task_attempts::stream_task_attempt_diff_ws))
         .route("/merge", post(task_attempts::merge_task_attempt))
         .route("/push", post(task_attempts::push_task_attempt_branch))
         .route("/rebase", post(task_attempts::rebase_task_attempt))
-        .route("/conflicts/abort", post(task_attempts::abort_conflicts_task_attempt))
+        .route(
+            "/conflicts/abort",
+            post(task_attempts::abort_conflicts_task_attempt),
+        )
         .route("/pr", post(task_attempts::create_github_pr))
         .route("/pr/attach", post(task_attempts::attach_existing_pr))
-        .route("/open-editor", post(task_attempts::open_task_attempt_in_editor))
-        .route("/delete-file", post(task_attempts::delete_task_attempt_file))
+        .route(
+            "/open-editor",
+            post(task_attempts::open_task_attempt_in_editor),
+        )
+        .route(
+            "/delete-file",
+            post(task_attempts::delete_task_attempt_file),
+        )
         .route("/children", get(task_attempts::get_task_attempt_children))
         .route("/stop", post(task_attempts::stop_task_attempt_execution))
-        .route("/change-target-branch", post(task_attempts::change_target_branch))
+        .route(
+            "/change-target-branch",
+            post(task_attempts::change_target_branch),
+        )
         .layer(from_fn_with_state(
             deployment.clone(),
             load_task_attempt_middleware,
         ));
 
     let task_attempts_router = Router::new()
-        .route("/", get(task_attempts::get_task_attempts).post(forge_create_task_attempt)) // Forge override
+        .route(
+            "/",
+            get(task_attempts::get_task_attempts).post(forge_create_task_attempt),
+        ) // Forge override
         .nest("/{id}", task_attempt_id_router);
 
     Router::new().nest("/task-attempts", task_attempts_router)
@@ -661,6 +683,9 @@ mod tests {
         let upstream_branch = format!("vk/{}-{}", short_id, task_title_id);
 
         // Only difference should be the prefix
-        assert_eq!(forge_branch.replace("forge/", ""), upstream_branch.replace("vk/", ""));
+        assert_eq!(
+            forge_branch.replace("forge/", ""),
+            upstream_branch.replace("vk/", "")
+        );
     }
 }

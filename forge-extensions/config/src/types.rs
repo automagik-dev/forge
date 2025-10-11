@@ -13,17 +13,10 @@ pub struct ProjectConfig {
 }
 
 /// Configuration for forge-specific project settings
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS, Default)]
 pub struct ForgeProjectSettings {
+    #[serde(default)]
     pub omni_enabled: bool,
+    #[serde(default)]
     pub omni_config: Option<forge_omni::OmniConfig>,
-}
-
-impl Default for ForgeProjectSettings {
-    fn default() -> Self {
-        Self {
-            omni_enabled: false,
-            omni_config: None,
-        }
-    }
 }

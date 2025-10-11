@@ -238,13 +238,11 @@ async fn ensure_legacy_base_branch_column(pool: &SqlitePool) -> Result<()> {
     Ok(())
 }
 
-const FORGE_MIGRATIONS: &[ForgeMigration] = &[
-    ForgeMigration {
-        version: "20251008000001",
-        description: "forge_omni_tables",
-        sql: include_str!("../../migrations/20251008000001_forge_omni_tables.sql"),
-    },
-];
+const FORGE_MIGRATIONS: &[ForgeMigration] = &[ForgeMigration {
+    version: "20251008000001",
+    description: "forge_omni_tables",
+    sql: include_str!("../../migrations/20251008000001_forge_omni_tables.sql"),
+}];
 
 async fn apply_forge_migrations(pool: &SqlitePool) -> Result<()> {
     sqlx::query(
@@ -471,7 +469,7 @@ async fn handle_omni_notification(
 ) -> Result<OmniQueueAction> {
     let metadata: OmniNotificationMetadata = match &row.metadata {
         Some(payload) if !payload.is_empty() => {
-            serde_json::from_str(&payload).with_context(|| "failed to deserialize omni metadata")?
+            serde_json::from_str(payload).with_context(|| "failed to deserialize omni metadata")?
         }
         _ => return Err(anyhow!("missing metadata for omni notification")),
     };
@@ -735,16 +733,17 @@ mod tests {
         let (_task_id, attempt_id) = insert_task_graph(&pool, project_id).await;
 
         let config_service = ForgeConfigService::new(pool.clone());
-        let mut settings = ForgeProjectSettings::default();
-        settings.omni_enabled = true;
-        settings.omni_config = Some(OmniConfig {
-            enabled: true,
-            host: None,
-            api_key: None,
-            instance: Some("forge-instance".into()),
-            recipient: Some("+15550001111".into()),
-            recipient_type: Some(RecipientType::PhoneNumber),
-        });
+        let settings = ForgeProjectSettings {
+            omni_enabled: true,
+            omni_config: Some(OmniConfig {
+                enabled: true,
+                host: None,
+                api_key: None,
+                instance: Some("forge-instance".into()),
+                recipient: Some("+15550001111".into()),
+                recipient_type: Some(RecipientType::PhoneNumber),
+            }),
+        };
 
         config_service
             .set_global_settings(&settings)
@@ -789,16 +788,17 @@ mod tests {
         });
         let base_url = server.base_url();
 
-        let mut settings = ForgeProjectSettings::default();
-        settings.omni_enabled = true;
-        settings.omni_config = Some(OmniConfig {
-            enabled: true,
-            host: Some(base_url.clone()),
-            api_key: None,
-            instance: Some("forge-instance".into()),
-            recipient: Some("+15550001111".into()),
-            recipient_type: Some(RecipientType::PhoneNumber),
-        });
+        let settings = ForgeProjectSettings {
+            omni_enabled: true,
+            omni_config: Some(OmniConfig {
+                enabled: true,
+                host: Some(base_url.clone()),
+                api_key: None,
+                instance: Some("forge-instance".into()),
+                recipient: Some("+15550001111".into()),
+                recipient_type: Some(RecipientType::PhoneNumber),
+            }),
+        };
         config_service
             .set_global_settings(&settings)
             .await

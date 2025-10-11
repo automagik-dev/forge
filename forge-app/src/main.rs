@@ -4,7 +4,6 @@
 //! Provides unified API access to both upstream functionality and forge-specific features.
 
 use std::net::{IpAddr, SocketAddr};
-use tracing_subscriber;
 use utils::browser::open_browser;
 
 mod router;
