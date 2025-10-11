@@ -9,6 +9,11 @@ use sqlx::SqlitePool;
 /// Install a SQLite trigger that fires when execution_processes complete
 /// This trigger will insert a record into forge_omni_notifications
 pub async fn install_notification_trigger(pool: &SqlitePool) -> Result<()> {
+    // Drop existing trigger if it exists (to allow updates)
+    sqlx::query("DROP TRIGGER IF EXISTS omni_execution_completed")
+        .execute(pool)
+        .await?;
+
     // Create the trigger that fires when execution_process status changes to completed/failed/killed
     sqlx::query(
         r#"
@@ -25,25 +30,23 @@ pub async fn install_notification_trigger(pool: &SqlitePool) -> Result<()> {
                 message,
                 status,
                 metadata,
-                created_at,
-                updated_at
+                created_at
             )
             SELECT
                 lower(hex(randomblob(16))),
-                t.id,
+                NULL,
                 'execution_completed',
                 '',
                 '',
                 'pending',
                 json_object(
-                    'task_attempt_id', NEW.task_attempt_id,
+                    'task_attempt_id', lower(hex(NEW.task_attempt_id)),
                     'status', NEW.status,
-                    'executor', ta.executor,
-                    'branch', ta.branch,
-                    'project_id', t.project_id,
-                    'exit_code', NEW.exit_code
+                    'executor', COALESCE(ta.executor, ''),
+                    'branch', COALESCE(ta.branch, ''),
+                    'project_id', lower(hex(t.project_id)),
+                    'exit_code', COALESCE(NEW.exit_code, 0)
                 ),
-                datetime('now'),
                 datetime('now')
             FROM task_attempts ta
             JOIN tasks t ON t.id = ta.task_id
