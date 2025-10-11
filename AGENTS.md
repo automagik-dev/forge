@@ -433,6 +433,7 @@ Use MCP Genie tools to orchestrate agents:
   - `utilities/thinkdeep` — timeboxed deep reasoning
   - `utilities/consensus` / `utilities/challenge` — decision pressure tests
   - `utilities/prompt` — rewrite wish/forge prompts on the fly
+  - `utilities/upstream-update` — automate complete upstream sync (fork sync, release tag, gitmodule update, rebrand)
   - `utilities/testgen`, `utilities/refactor`, `utilities/commit`, `utilities/tracer`, `utilities/secaudit`, `utilities/docgen` — task-specific helpers
 - Escalate to the Plan → Wish pipeline whenever the scope expands beyond a quick helper (multi-file edits, new tests, major refactors).
 </context>
