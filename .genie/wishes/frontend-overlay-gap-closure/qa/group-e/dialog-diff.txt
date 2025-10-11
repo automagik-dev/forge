@@ -1,0 +1,72 @@
+diff --git a/upstream/frontend/src/components/dialogs/auth/GitHubLoginDialog.tsx b/forge-overrides/frontend/src/components/dialogs/auth/GitHubLoginDialog.tsx
+index 8c0c9325..65760f84 100644
+--- a/upstream/frontend/src/components/dialogs/auth/GitHubLoginDialog.tsx
++++ b/forge-overrides/frontend/src/components/dialogs/auth/GitHubLoginDialog.tsx
+@@ -141,7 +141,7 @@ const GitHubLoginDialog = NiceModal.create(() => {
+           </div>
+           <DialogDescription className="text-left pt-1">
+             Connect your GitHub account to create and manage pull requests
+-            directly from Vibe Kanban.
++            directly from Automagik Forge.
+           </DialogDescription>
+         </DialogHeader>
+         {loading ? (
+diff --git a/upstream/frontend/src/components/dialogs/global/OnboardingDialog.tsx b/forge-overrides/frontend/src/components/dialogs/global/OnboardingDialog.tsx
+index 138b0e33..e6bfea92 100644
+--- a/upstream/frontend/src/components/dialogs/global/OnboardingDialog.tsx
++++ b/forge-overrides/frontend/src/components/dialogs/global/OnboardingDialog.tsx
+@@ -70,7 +70,7 @@ const OnboardingDialog = NiceModal.create(() => {
+         <DialogHeader>
+           <div className="flex items-center gap-3">
+             <HandMetal className="h-6 w-6 text-primary text-primary-foreground" />
+-            <DialogTitle>Welcome to Vibe Kanban</DialogTitle>
++            <DialogTitle>Welcome to Automagik Forge</DialogTitle>
+           </div>
+           <DialogDescription className="text-left pt-2">
+             Let's set up your coding preferences. You can always change these
+diff --git a/upstream/frontend/src/components/dialogs/global/PrivacyOptInDialog.tsx b/forge-overrides/frontend/src/components/dialogs/global/PrivacyOptInDialog.tsx
+index d97b3056..08a19794 100644
+--- a/upstream/frontend/src/components/dialogs/global/PrivacyOptInDialog.tsx
++++ b/forge-overrides/frontend/src/components/dialogs/global/PrivacyOptInDialog.tsx
+@@ -36,8 +36,8 @@ const PrivacyOptInDialog = NiceModal.create(() => {
+             <DialogTitle>Feedback</DialogTitle>
+           </div>
+           <DialogDescription className="text-left pt-1">
+-            Help us improve Vibe Kanban by sharing usage data and allowing us to
+-            contact you if needed.
++            Help us improve Automagik Forge by sharing usage data and allowing
++            us to contact you if needed.
+           </DialogDescription>
+         </DialogHeader>
+ 
+@@ -106,7 +106,7 @@ const PrivacyOptInDialog = NiceModal.create(() => {
+           </Button>
+           <Button onClick={handleOptIn} className="flex-1">
+             <CheckCircle className="h-4 w-4 mr-2" />
+-            Yes, help improve Vibe Kanban
++            Yes, help improve Automagik Forge
+           </Button>
+         </DialogFooter>
+       </DialogContent>
+diff --git a/upstream/frontend/src/components/dialogs/global/ReleaseNotesDialog.tsx b/forge-overrides/frontend/src/components/dialogs/global/ReleaseNotesDialog.tsx
+index 84390e5a..743f2df4 100644
+--- a/upstream/frontend/src/components/dialogs/global/ReleaseNotesDialog.tsx
++++ b/forge-overrides/frontend/src/components/dialogs/global/ReleaseNotesDialog.tsx
+@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
+ import { AlertCircle, ExternalLink } from 'lucide-react';
+ import NiceModal, { useModal } from '@ebay/nice-modal-react';
+ 
+-const RELEASE_NOTES_URL = 'https://vibekanban.com/release-notes';
++const RELEASE_NOTES_URL = 'https://forge.automag.ik/release-notes';
+ 
+ export const ReleaseNotesDialog = NiceModal.create(() => {
+   const modal = useModal();
+@@ -34,7 +34,7 @@ export const ReleaseNotesDialog = NiceModal.create(() => {
+       <DialogContent className="flex flex-col w-full h-full max-w-7xl max-h-[calc(100dvh-1rem)] p-0">
+         <DialogHeader className="p-4 border-b flex-shrink-0">
+           <DialogTitle className="text-xl font-semibold">
+-            We've updated Vibe Kanban! Check out what's new...
++            We've updated Automagik Forge! Check out what's new...
+           </DialogTitle>
+         </DialogHeader>
+ 

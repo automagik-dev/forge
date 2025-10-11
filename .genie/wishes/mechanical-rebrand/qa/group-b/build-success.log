@@ -1,0 +1,99 @@
+diff --git a/forge-overrides/frontend/src/main.tsx b/forge-overrides/frontend/src/main.tsx
+index 26b29179..bbb94825 100644
+--- a/forge-overrides/frontend/src/main.tsx
++++ b/forge-overrides/frontend/src/main.tsx
+@@ -4,7 +4,7 @@ import ReactDOM from 'react-dom/client';
+ import App from '@/App.tsx';
+ import '@/styles/index.css';
+ import { ClickToComponent } from 'click-to-react-component';
+-import { VibeKanbanWebCompanion } from 'vibe-kanban-web-companion';
++import { AutomagikForgeWebCompanion } from 'automagik-forge-web-companion';
+ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+ import * as Sentry from '@sentry/react';
+ import NiceModal from '@ebay/nice-modal-react';
+@@ -99,7 +99,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
+     <QueryClientProvider client={queryClient}>
+       <Sentry.ErrorBoundary fallback={<p>An error has occurred</p>} showDialog>
+         <ClickToComponent />
+-        <VibeKanbanWebCompanion />
++        <AutomagikForgeWebCompanion />
+         <App />
+         {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+       </Sentry.ErrorBoundary>
+diff --git a/forge-overrides/frontend/src/utils/companion-install-task.ts b/forge-overrides/frontend/src/utils/companion-install-task.ts
+index 9805fd61..7451e8ca 100644
+--- a/forge-overrides/frontend/src/utils/companion-install-task.ts
++++ b/forge-overrides/frontend/src/utils/companion-install-task.ts
+@@ -5,10 +5,10 @@ export const COMPANION_INSTALL_TASK_DESCRIPTION = `Goal: Install and integrate t
+ 
+ Do:
+ 1) Detect package manager from lockfiles and use it:
+-   - pnpm-lock.yaml → pnpm add vibe-kanban-web-companion
+-   - yarn.lock → yarn add vibe-kanban-web-companion
+-   - package-lock.json → npm i vibe-kanban-web-companion
+-   - bun.lockb → bun add vibe-kanban-web-companion
++   - pnpm-lock.yaml → pnpm add automagik-forge-web-companion
++   - yarn.lock → yarn add automagik-forge-web-companion
++   - package-lock.json → npm i automagik-forge-web-companion
++   - bun.lockb → bun add automagik-forge-web-companion
+    If already listed in package.json dependencies, skip install.
+ 
+ 2) Detect framework and app entry:
+@@ -19,8 +19,8 @@ Do:
+    Confirm by reading package.json and directory structure.
+ 
+ 3) Integrate the component:
+-   import { VibeKanbanWebCompanion } from 'vibe-kanban-web-companion';
+-   - Vite/CRA: render <VibeKanbanWebCompanion /> at the app root.
++   import { AutomagikForgeWebCompanion } from 'automagik-forge-web-companion';
++   - Vite/CRA: render <AutomagikForgeWebCompanion /> at the app root.
+    - Next.js (pages): render in pages/_app.*
+    - Next.js (app): render in app/layout.* or a client providers component.
+    - For Next.js, if SSR issues arise, use dynamic import with ssr: false.
+@@ -30,6 +30,6 @@ Do:
+    - Ensure it compiles and renders without SSR/hydration errors.
+ 
+ Acceptance:
+-- vibe-kanban-web-companion is installed in the correct package.
++- automagik-forge-web-companion is installed in the correct package.
+ - The component is rendered once at the app root without SSR/hydration errors.
+ - Build/type-check passes.`;
+diff --git a/frontend/README.md b/frontend/README.md
+index a4fa9f97..0a9c7198 100644
+--- a/frontend/README.md
++++ b/frontend/README.md
+@@ -30,7 +30,7 @@ This runs TypeScript in no-emit mode to ensure types stay in sync with backend c
+ 
+ ## Architecture
+ 
+-- **Base:** `upstream/frontend/src/` (vibe-kanban submodule)
++- **Base:** `upstream/frontend/src/` (automagik-forge submodule)
+ - **Overlays:** `forge-overrides/frontend/src/` (Automagik Forge customizations)
+ - **Build:** Vite resolves imports from overlays first, falls back to upstream
+ - **Deployment:** `forge-app` embeds `frontend/dist/` and serves at `/`
+diff --git a/frontend/package.json b/frontend/package.json
+index a43b7a86..f8a1fd6c 100644
+--- a/frontend/package.json
++++ b/frontend/package.json
+@@ -59,7 +59,7 @@
+     "simple-icons": "^15.16.1",
+     "tailwind-merge": "^2.2.0",
+     "tailwindcss-animate": "^1.0.7",
+-    "vibe-kanban-web-companion": "^0.0.4",
++    "automagik-forge-web-companion": "^0.0.4",
+     "zustand": "^4.5.4"
+   },
+   "devDependencies": {
+diff --git a/frontend/tsconfig.json b/frontend/tsconfig.json
+index d89645e0..97e8bc69 100644
+--- a/frontend/tsconfig.json
++++ b/frontend/tsconfig.json
+@@ -48,7 +48,7 @@
+       "@tanstack/react-query": ["./node_modules/@tanstack/react-query", "../node_modules/@tanstack/react-query"],
+       "@sentry/react": ["./node_modules/@sentry/react", "../node_modules/@sentry/react"],
+       "click-to-react-component": ["./node_modules/click-to-react-component", "../node_modules/click-to-react-component"],
+-      "vibe-kanban-web-companion": ["./node_modules/vibe-kanban-web-companion", "../node_modules/vibe-kanban-web-companion"],
++      "automagik-forge-web-companion": ["./node_modules/automagik-forge-web-companion", "../node_modules/automagik-forge-web-companion"],
+       "react-i18next": ["./node_modules/react-i18next", "../node_modules/react-i18next"],
+       "i18next": ["./node_modules/i18next", "../node_modules/i18next"],
+       "lodash": [

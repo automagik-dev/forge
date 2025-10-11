@@ -1,0 +1,48 @@
+diff --git a/upstream/frontend/src/components/layout/navbar.tsx b/forge-overrides/frontend/src/components/layout/navbar.tsx
+index 03b6842a..50458c5a 100644
+--- a/upstream/frontend/src/components/layout/navbar.tsx
++++ b/forge-overrides/frontend/src/components/layout/navbar.tsx
+@@ -33,12 +33,12 @@ const EXTERNAL_LINKS = [
+   {
+     label: 'Docs',
+     icon: BookOpen,
+-    href: 'https://vibekanban.com/docs',
++    href: 'https://forge.automag.ik/',
+   },
+   {
+     label: 'Support',
+     icon: MessageCircleQuestion,
+-    href: 'https://github.com/BloopAI/vibe-kanban/issues',
++    href: 'https://github.com/namastexlabs/automagik-forge/issues',
+   },
+ ];
+ 
+@@ -136,13 +136,13 @@ export function Navbar() {
+ 
+               <DropdownMenuContent align="end">
+                 {INTERNAL_NAV.map((item) => {
+-                  const active = location.pathname.startsWith(item.to);
++                  const activeItem = location.pathname.startsWith(item.to);
+                   const Icon = item.icon;
+                   return (
+                     <DropdownMenuItem
+                       key={item.to}
+                       asChild
+-                      className={active ? 'bg-accent' : ''}
++                      className={activeItem ? 'bg-accent' : ''}
+                     >
+                       <Link to={item.to}>
+                         <Icon className="mr-2 h-4 w-4" />
+@@ -158,11 +158,7 @@ export function Navbar() {
+                   const Icon = item.icon;
+                   return (
+                     <DropdownMenuItem key={item.href} asChild>
+-                      <a
+-                        href={item.href}
+-                        target="_blank"
+-                        rel="noopener noreferrer"
+-                      >
++                      <a href={item.href} target="_blank" rel="noopener noreferrer">
+                         <Icon className="mr-2 h-4 w-4" />
+                         {item.label}
+                       </a>

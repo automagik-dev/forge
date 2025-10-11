@@ -1,0 +1,86 @@
+--- /tmp/upstream_temp.txt	2025-10-07 14:46:31.403080886 -0300
++++ forge-overrides/frontend/src/pages/settings/GeneralSettings.tsx	2025-10-07 14:43:25.284676292 -0300
+@@ -36,12 +36,15 @@
+   UiLanguage,
+ } from 'shared/types';
+ import { getLanguageOptions } from '@/i18n/languages';
++import type { ForgeProjectSettings } from 'shared/forge-types';
+ 
+ import { toPrettyCase } from '@/utils/string';
+ import { useTheme } from '@/components/theme-provider';
+ import { useUserSystem } from '@/components/config-provider';
+ import { TaskTemplateManager } from '@/components/TaskTemplateManager';
++import { OmniCard } from '@/components/omni/OmniCard';
+ import NiceModal from '@ebay/nice-modal-react';
++import { forgeApi } from '@/lib/forge-api';
+ 
+ export function GeneralSettings() {
+   const { t } = useTranslation(['settings', 'common']);
+@@ -66,8 +69,22 @@
+   const [saving, setSaving] = useState(false);
+   const [error, setError] = useState<string | null>(null);
+   const [success, setSuccess] = useState(false);
++  const [forgeSettings, setForgeSettings] = useState<ForgeProjectSettings | null>(null);
+   const { setTheme } = useTheme();
+ 
++  // Load forge settings
++  useEffect(() => {
++    const loadForgeSettings = async () => {
++      try {
++        const settings = await forgeApi.getGlobalSettings();
++        setForgeSettings(settings);
++      } catch (err) {
++        console.error('Failed to load forge settings:', err);
++      }
++    };
++    loadForgeSettings();
++  }, []);
++
+   // When config loads or changes externally, update draft only if not dirty
+   useEffect(() => {
+     if (!config) return;
+@@ -128,6 +145,12 @@
+ 
+     try {
+       await updateAndSaveConfig(draft); // Atomically apply + persist
++
++      // Save forge settings if changed
++      if (forgeSettings) {
++        await forgeApi.setGlobalSettings(forgeSettings);
++      }
++
+       setTheme(draft.theme);
+       setDirty(false);
+       setSuccess(true);
+@@ -486,7 +509,13 @@
+               <p className="text-sm text-muted-foreground">
+                 {t('settings.general.github.helper')}
+               </p>
+-              <Button onClick={() => NiceModal.show('github-login')}>
++              <Button
++                onClick={() =>
++                  NiceModal.show('github-login').finally(() =>
++                    NiceModal.hide('github-login')
++                  )
++                }
++              >
+                 {t('settings.general.github.connectButton')}
+               </Button>
+             </div>
+@@ -634,6 +663,16 @@
+         </CardContent>
+       </Card>
+ 
++      {forgeSettings && (
++        <OmniCard
++          value={forgeSettings}
++          onChange={(updated) => {
++            setForgeSettings(updated);
++            setDirty(true);
++          }}
++        />
++      )}
++
+       <Card>
+         <CardHeader>
+           <CardTitle>{t('settings.general.privacy.title')}</CardTitle>

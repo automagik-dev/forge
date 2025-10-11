@@ -1,22 +1,11 @@
 {
   "mcpServers": {
     "forge": {
-      "args": [
-        "-y",
-        "automagik-forge",
-        "--mcp"
-      ],
-      "command": "npx"
-    },
-    "ask-repo-agent": {
-      "type": "sse",
-      "url": "https://mcp.deepwiki.com/sse"
-    },
-    "search-repo-docs": {
       "command": "npx",
       "args": [
         "-y",
-        "@upstash/context7-mcp"
+        "vibe-kanban@0.0.102",
+        "--mcp"
       ]
     },
     "playwright": {

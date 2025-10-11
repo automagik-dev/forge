@@ -1,27 +1,78 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ESNext",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "allowJs": false,
     "skipLibCheck": true,
-    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Node10",
+    "types": ["react", "react-dom"],
+    "typeRoots": [
+      "./node_modules/@types",
+      "../node_modules/@types"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "../forge-overrides/frontend/src/*",
+        "../upstream/frontend/src/*"
+      ],
+      "@dialogs/*": [
+        "../forge-overrides/frontend/src/components/dialogs/*",
+        "../upstream/frontend/src/components/dialogs/*"
+      ],
+      "shared/*": ["../shared/*"],
+      "shared/forge-types": [
+        "../shared/forge-types"
+      ],
+      "react": [
+        "./node_modules/@types/react/index",
+        "./node_modules/react",
+        "../node_modules/@types/react/index",
+        "../node_modules/react"
+      ],
+      "react/jsx-runtime": [
+        "./node_modules/@types/react/jsx-runtime",
+        "./node_modules/react/jsx-runtime",
+        "../node_modules/@types/react/jsx-runtime",
+        "../node_modules/react/jsx-runtime"
+      ],
+      "react-dom/client": ["./node_modules/react-dom/client", "../node_modules/react-dom/client"],
+      "react-router-dom": ["./node_modules/react-router-dom", "../node_modules/react-router-dom"],
+      "lucide-react": ["./node_modules/lucide-react", "../node_modules/lucide-react"],
+      "@tanstack/react-query": ["./node_modules/@tanstack/react-query", "../node_modules/@tanstack/react-query"],
+      "@sentry/react": ["./node_modules/@sentry/react", "../node_modules/@sentry/react"],
+      "click-to-react-component": ["./node_modules/click-to-react-component", "../node_modules/click-to-react-component"],
+      "vibe-kanban-web-companion": ["./node_modules/vibe-kanban-web-companion", "../node_modules/vibe-kanban-web-companion"],
+      "react-i18next": ["./node_modules/react-i18next", "../node_modules/react-i18next"],
+      "i18next": ["./node_modules/i18next", "../node_modules/i18next"],
+      "lodash": [
+        "./node_modules/@types/lodash/index",
+        "./node_modules/lodash",
+        "../node_modules/@types/lodash/index",
+        "../node_modules/lodash"
+      ],
+      "@dnd-kit/utilities": ["./node_modules/@dnd-kit/utilities", "../node_modules/@dnd-kit/utilities"],
+      "@radix-ui/react-label": ["./node_modules/@radix-ui/react-label", "../node_modules/@radix-ui/react-label"],
+      "shared/types": ["../shared/types"],
+      "shared/schemas/*": ["../shared/schemas/*"],
+      "*": ["./node_modules/*", "../node_modules/*"]
+    },
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@dialogs/*": ["./src/components/dialogs/*"],
-      "shared/*": ["../shared/*"]
-    }
+    "jsx": "react-jsx"
   },
-  "include": ["src"],
+  "include": [
+    "src",
+    "../forge-overrides/frontend/src",
+    "../upstream/frontend/src"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

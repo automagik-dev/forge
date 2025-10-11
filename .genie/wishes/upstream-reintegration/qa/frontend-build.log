@@ -1,0 +1,18 @@
+
+> automagik-forge-frontend@0.4.0 build /home/namastex/workspace/automagik-forge/frontend
+> vite build
+
+vite v5.4.20 building for production...
+transforming...
+✓ 3676 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                     1.24 kB │ gzip:   0.54 kB
+dist/assets/index-D6t1XVGD.css     92.30 kB │ gzip:  16.31 kB
+dist/assets/index-DpGTu7yf.js   3,059.47 kB │ gzip: 975.01 kB │ map: 17,307.93 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 10.44s

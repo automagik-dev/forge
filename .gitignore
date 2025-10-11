@@ -12,7 +12,12 @@ yarn-error.log*
 
 # Build outputs
 /dist
+!/frontend-forge/dist/.gitkeep
 /build
+
+# Genie CLI/MCP (now from npm)
+.genie/cli/
+.genie/mcp/
 
 # Environment variables
 .env
@@ -73,6 +78,8 @@ coverage/
 
 .env
 frontend/dist
+frontend-forge/dist/*
+!frontend-forge/dist/.gitkeep
 crates/executors/bindings
 crates/utils/bindings
 
@@ -86,7 +93,13 @@ vibe-kanban-*.tgz
 .dev-ports.json
 
 dev_assets
+dev_assets_seed/forge-snapshot/from_home/
+dev_assets_seed/forge-snapshot/from_home/**
 /frontend/.env.sentry-build-plugin
 .ssh
 
 vibe-kanban-cloud/
+.mcp.json
+
+# Synced upstream assets
+frontend/public/ide/

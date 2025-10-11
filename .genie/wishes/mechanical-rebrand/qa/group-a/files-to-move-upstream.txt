@@ -1,0 +1,30 @@
+# Files to MOVE to upstream (not delete) - 2 items
+
+# 1. Logo component with theme-aware switching logic
+forge-overrides/frontend/src/components/logo.tsx
+  → Move to: upstream/frontend/src/components/logo.tsx
+  → Reason: Theme-aware dark/light logo switching (lines 9-30)
+  → Action: Copy logic to upstream, update paths/alt text during rebrand
+
+# 2. Font variable definitions (partial)
+forge-overrides/frontend/src/styles/index.css (lines 8-13 only)
+  → Move to: upstream/frontend/src/styles/index.css
+  → Content:
+    --font-primary: 'Alegreya Sans', sans-serif;
+    --font-secondary: 'Manrope', sans-serif;
+  → Reason: Custom font variables needed by components
+  → Action: Add these variables to upstream CSS
+
+# REMOVED ITEMS (After Investigation):
+
+# ❌ companion-install-task.ts - REMOVED
+#   → Already exists in upstream with identical logic
+#   → Only branding text differs (2 lines)
+#   → Decision: KEEP in forge-overrides (Group B rebrand handles it)
+#   → See: companion-task-investigation.md
+
+# ❌ shims.d.ts - REMOVED
+#   → Upstream compiles successfully without it (tested)
+#   → TypeScript uses skipLibCheck: true in tsconfig
+#   → Decision: DELETE from forge-overrides (not needed)
+#   → See: shims-investigation-COMPLETE.md
