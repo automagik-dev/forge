@@ -4,7 +4,7 @@ import ReactDOM from 'react-dom/client';
 import App from '@/App.tsx';
 import '@/styles/index.css';
 import { ClickToComponent } from 'click-to-react-component';
-import { AutomagikForgeWebCompanion } from 'automagik-forge-web-companion';
+import { VibeKanbanWebCompanion as AutomagikForgeWebCompanion } from 'vibe-kanban-web-companion';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
 import NiceModal from '@ebay/nice-modal-react';
@@ -32,7 +32,7 @@ import {
   ProjectFormDialog,
   ProjectEditorSelectionDialog,
   RestoreLogsDialog,
-} from './components/dialogs';
+} from '@/components/dialogs';
 // FORGE CUSTOMIZATION: Import Omni modal for Forge-specific feature
 import { OmniModal } from './components/omni/OmniModal';
 

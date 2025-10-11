@@ -48,7 +48,7 @@
       "@tanstack/react-query": ["./node_modules/@tanstack/react-query", "../node_modules/@tanstack/react-query"],
       "@sentry/react": ["./node_modules/@sentry/react", "../node_modules/@sentry/react"],
       "click-to-react-component": ["./node_modules/click-to-react-component", "../node_modules/click-to-react-component"],
-      "automagik-forge-web-companion": ["./node_modules/automagik-forge-web-companion", "../node_modules/automagik-forge-web-companion"],
+      "vibe-kanban-web-companion": ["./node_modules/vibe-kanban-web-companion", "../node_modules/vibe-kanban-web-companion"],
       "react-i18next": ["./node_modules/react-i18next", "../node_modules/react-i18next"],
       "i18next": ["./node_modules/i18next", "../node_modules/i18next"],
       "lodash": [

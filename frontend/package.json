@@ -59,7 +59,7 @@
     "simple-icons": "^15.16.1",
     "tailwind-merge": "^2.2.0",
     "tailwindcss-animate": "^1.0.7",
-    "automagik-forge-web-companion": "^0.0.4",
+    "vibe-kanban-web-companion": "^0.0.4",
     "zustand": "^4.5.4"
   },
   "devDependencies": {

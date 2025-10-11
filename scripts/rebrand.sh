@@ -68,6 +68,16 @@ replace_all_patterns() {
         -e 's/"bloop"/"namastex"/g' \
         "$file" 2>/dev/null || true
 
+    # EXCEPTION: Revert web-companion package name (we don't fork this)
+    # Keep component name as AutomagikForgeWebCompanion but use aliased import
+    sed -i \
+        -e 's/automagik-forge-web-companion/vibe-kanban-web-companion/g' \
+        -e 's/from '\''automagik-forge-web-companion'\''/from '\''vibe-kanban-web-companion'\''/g' \
+        -e 's/from "automagik-forge-web-companion"/from "vibe-kanban-web-companion"/g' \
+        -e 's/{ AutomagikForgeWebCompanion } from '\''vibe-kanban/{ VibeKanbanWebCompanion as AutomagikForgeWebCompanion } from '\''vibe-kanban/g' \
+        -e 's/{ AutomagikForgeWebCompanion } from "vibe-kanban/{ VibeKanbanWebCompanion as AutomagikForgeWebCompanion } from "vibe-kanban/g' \
+        "$file" 2>/dev/null || true
+
     # Count after
     local after=0
     after=$(grep -o "vibe-kanban\|Vibe Kanban\|vibeKanban\|VibeKanban\|vibe_kanban\|VIBE_KANBAN\|Bloop AI\|BloopAI\|bloop" "$file" 2>/dev/null | wc -l || echo 0)
