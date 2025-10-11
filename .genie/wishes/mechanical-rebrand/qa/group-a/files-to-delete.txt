@@ -1,0 +1,19 @@
+# Branding-only files to DELETE (15 files)
+# Note: logo.tsx and fonts will be moved to upstream (not deleted here)
+# Note: Group B rebrand script will handle all text replacements in upstream
+
+forge-overrides/frontend/src/components/dialogs/global/OnboardingDialog.tsx
+forge-overrides/frontend/src/components/dialogs/global/DisclaimerDialog.tsx
+forge-overrides/frontend/src/components/dialogs/global/ReleaseNotesDialog.tsx
+forge-overrides/frontend/src/components/dialogs/global/PrivacyOptInDialog.tsx
+forge-overrides/frontend/src/components/dialogs/tasks/CreatePRDialog.tsx
+forge-overrides/frontend/src/components/dialogs/auth/GitHubLoginDialog.tsx
+forge-overrides/frontend/src/components/dialogs/index.ts
+forge-overrides/frontend/src/components/layout/navbar.tsx
+forge-overrides/frontend/src/components/tasks/TaskDetails/preview/NoServerContent.tsx
+forge-overrides/frontend/src/components/tasks/TaskDetails/PreviewTab.tsx
+forge-overrides/frontend/src/i18n/locales/en/settings.json
+forge-overrides/frontend/src/i18n/locales/es/settings.json
+forge-overrides/frontend/src/i18n/locales/ja/settings.json
+forge-overrides/frontend/src/types/shims.d.ts
+forge-overrides/frontend/src/utils/companion-install-task.ts

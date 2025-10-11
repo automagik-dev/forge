@@ -1,0 +1,10 @@
+[2025-09-24] Phase B kickoff: ensured branch_template column via forge migrations, bootstrapped global config service with DeploymentImpl pool, exposed /api/forge/config, and added forge-specific TS generator.
+[2025-09-24] Phase B (config hydration) committed at 88/100: global settings served via /api/forge/config, forge migrations aligned, TS exports generated.
+[2025-09-24] Phase B: Added project-level settings API, branch name generator endpoint backed by forge tables, and shared TS bindings for Forge consumers.
+[2025-09-24] Phase B: Omni service now hydrates from forge settings (global/project), exposes config refresh through API, and branch template endpoint returns computed names with TS bindings.
+[2025-09-24] Phase B: enforced branch template feature flags per project and exposed project_id on branch template APIs.
+[2025-09-24] Regression harness failure traced to upstream migrator encountering forge migration versions 0-2 in shared _sqlx_migrations table; forge-app needs dedicated migration table and snapshot cleanup before rerun.
+[2025-09-24] Phase B (config extraction) re-exported upstream config as forge-config shim, updated forge-app scripts, and added dev pipeline for frontend-forge assets.
+[2025-09-24] Phase B (branch templates) validated forge migrations via unit tests to ensure legacy task writes sync into forge auxiliary tables and API services stay in lockstep.
+[2025-09-24] Phase B (omni integration) added notification queue migrations, background worker, and queue tests to ensure execution completions fan out via forge Omni service.
+[2025-09-24] Phase C (forge UI) replaced the placeholder control panel with editable Omni/config forms, branch template tools, and live notification insights backed by new /api/forge endpoints.

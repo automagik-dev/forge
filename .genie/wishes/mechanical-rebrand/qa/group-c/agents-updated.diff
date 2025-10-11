@@ -1,0 +1,48 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 541c9de3..5b7009e8 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -433,8 +433,43 @@ Use MCP Genie tools to orchestrate agents:
+   - `utilities/thinkdeep` — timeboxed deep reasoning
+   - `utilities/consensus` / `utilities/challenge` — decision pressure tests
+   - `utilities/prompt` — rewrite wish/forge prompts on the fly
++  - `utilities/upstream-update` — automate upstream version updates with mechanical rebranding
+   - `utilities/testgen`, `utilities/refactor`, `utilities/commit`, `utilities/tracer`, `utilities/secaudit`, `utilities/docgen` — task-specific helpers
+ - Escalate to the Plan → Wish pipeline whenever the scope expands beyond a quick helper (multi-file edits, new tests, major refactors).
++
++### Upstream Update Workflow
++
++**Purpose:** Automate updating automagik-forge to new upstream versions with mechanical rebranding.
++
++**Usage:**
++```bash
++# Automated via agent
++mcp__genie__run agent="utilities/upstream-update" prompt="Update to v0.0.106"
++```
++
++**What It Does:**
++1. Fetches specified version from upstream submodule
++2. Runs mechanical rebrand script (`scripts/rebrand.sh`)
++3. Verifies zero vibe-kanban references remain
++4. Validates build success (cargo check + pnpm check)
++5. Prepares changes for commit
++
++**Verification:**
++- All vibe-kanban references replaced → automagik-forge
++- Application builds successfully
++- Tests pass (cargo test --workspace)
++- Ready to commit with descriptive message
++
++**Manual Alternative:**
++```bash
++cd upstream && git fetch origin && git checkout v0.0.106 && cd ..
++./scripts/rebrand.sh
++grep -r "vibe-kanban" upstream frontend | wc -l  # Must be 0
++cargo check --workspace && cd frontend && pnpm run check
++git add -A && git status
++```
++
++**Total time:** ~2 minutes. No manual intervention required.
+ </context>
+ 
+ ## Subagent Sessions & Twin Usage

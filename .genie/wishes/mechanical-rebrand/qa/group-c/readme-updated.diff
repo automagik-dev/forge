@@ -1,0 +1,53 @@
+diff --git a/README.md b/README.md
+index c64e634e..f56d7256 100644
+--- a/README.md
++++ b/README.md
+@@ -438,6 +438,48 @@ Interested in contributing or building from source? Check out our [Developer Gui
+ - Database migrations
+ - Architecture details
+ 
++### Upstream Management
++
++Automagik Forge uses a mechanical rebranding approach to stay in sync with the upstream vibe-kanban template:
++
++**Architecture:**
++- `upstream/` - Git submodule from vibe-kanban (READ-ONLY)
++- `scripts/rebrand.sh` - Converts all vibe-kanban references to automagik-forge
++- `forge-extensions/` - Real features (omni, config, branch templates)
++- Minimal `forge-overrides/` - Only feature files, no branding
++
++**Workflow:** Pull upstream → Run rebrand → Verify & commit
++
++#### Updating to New Version
++
++**Automated (recommended):**
++```bash
++mcp__genie__run agent="utilities/upstream-update" prompt="Update to v0.0.106"
++```
++
++**Manual:**
++```bash
++# 1. Update upstream
++cd upstream
++git fetch origin
++git checkout v0.0.106
++cd ..
++
++# 2. Apply mechanical rebrand
++./scripts/rebrand.sh
++
++# 3. Verify success
++grep -r "vibe-kanban" upstream frontend | wc -l  # Must be 0
++cargo check --workspace
++cd frontend && pnpm run check
++
++# 4. Commit changes
++git add -A
++git commit -m "chore: update upstream to v0.0.106 and rebrand"
++```
++
++**Total time:** ~2 minutes. No manual maintenance required!
++
+ ---
+ 
+ ## 🗺️ Roadmap

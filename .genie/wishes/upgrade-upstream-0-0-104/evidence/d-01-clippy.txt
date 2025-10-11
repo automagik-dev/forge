@@ -1,0 +1,2 @@
+    Checking forge-omni v0.4.0 (/var/tmp/vibe-kanban/worktrees/6531-task-d-01-omni-e/forge-extensions/omni)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.85s

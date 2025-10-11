@@ -1,0 +1,24 @@
+--- /tmp/upstream_temp.txt	2025-10-07 14:46:31.311414229 -0300
++++ forge-overrides/frontend/src/components/dialogs/auth/GitHubLoginDialog.tsx	2025-10-07 14:43:25.277299392 -0300
+@@ -57,11 +57,9 @@
+           switch (poll_status) {
+             case DevicePollStatus.SUCCESS:
+               setPolling(false);
++              setDeviceState(null);
+               setError(null);
+               await reloadSystem();
+-              modal.resolve(true);
+-              modal.hide();
+-              setDeviceState(null);
+               break;
+             case DevicePollStatus.AUTHORIZATION_PENDING:
+               timer = setTimeout(poll, deviceState.interval * 1000);
+@@ -143,7 +141,7 @@
+           </div>
+           <DialogDescription className="text-left pt-1">
+             Connect your GitHub account to create and manage pull requests
+-            directly from Vibe Kanban.
++            directly from Automagik Forge.
+           </DialogDescription>
+         </DialogHeader>
+         {loading ? (

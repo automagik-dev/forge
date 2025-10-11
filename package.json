@@ -1,6 +1,6 @@
 {
   "name": "automagik-forge",
-  "version": "0.3.10",
+  "version": "0.4.0",
   "private": false,
   "bin": {
     "automagik-forge": "npx-cli/bin/cli.js"
@@ -12,7 +12,8 @@
   "scripts": {
     "format": "cargo fmt --all && cd frontend && pnpm run format",
     "check": "pnpm run frontend:check && pnpm run backend:check",
-    "dev": "export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend) && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && concurrently \"pnpm run backend:dev:watch\" \"pnpm run frontend:dev\"",
+    "sync-assets": "node scripts/sync-upstream-assets.js",
+    "dev": "pnpm run sync-assets && export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend) && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && concurrently \"pnpm run backend:dev:watch\" \"pnpm run frontend:dev\"",
     "test:npm": "./test-npm-package.sh",
     "frontend:dev": "cd frontend && pnpm run dev -- --port ${FRONTEND_PORT:-3000} --host",
     "frontend:check": "cd frontend && pnpm run check",

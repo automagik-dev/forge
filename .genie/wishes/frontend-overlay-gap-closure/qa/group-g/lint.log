@@ -1,0 +1,4 @@
+
+> automagik-forge-frontend@0.4.0 lint /home/namastex/workspace/automagik-forge/frontend
+> eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 110
+

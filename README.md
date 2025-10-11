@@ -432,6 +432,63 @@ Interested in contributing or building from source? Check out our [Developer Gui
 - Database migrations
 - Architecture details
 
+### Upstream Management
+
+Automagik Forge uses a mechanical rebranding approach to stay in sync with the upstream vibe-kanban template:
+
+**Architecture:**
+- `upstream/` - Git submodule pointing to namastexlabs/vibe-kanban fork
+- `namastexlabs/vibe-kanban` - Fork that mirrors BloopAI/vibe-kanban
+- `scripts/rebrand.sh` - Converts all vibe-kanban references to automagik-forge
+- `forge-extensions/` - Real features (omni, config, branch templates)
+- Minimal `forge-overrides/` - Only feature files, no branding
+
+**Complete Workflow:** Sync fork → Create namastex tag → Update gitmodule → Rebrand → Verify & commit
+
+#### Updating to New Version
+
+**Automated (recommended):**
+```bash
+# From automagik-forge repo
+mcp__genie__run agent="utilities/upstream-update" prompt="Update to v0.0.106"
+```
+
+**Manual:**
+```bash
+# 1. Sync fork (in namastexlabs/vibe-kanban repo)
+git remote add upstream https://github.com/BloopAI/vibe-kanban.git
+git fetch upstream --tags
+LATEST_TAG=$(git tag --list 'v0.0.*' --sort=-version:refname | head -1)
+git reset --hard upstream/main
+git push origin main --force
+
+# 2. Create namastex release tag
+NAMASTEX_TAG="${LATEST_TAG%-*}-namastex"
+git tag -a $NAMASTEX_TAG -m "Namastex release based on $LATEST_TAG"
+git push origin $NAMASTEX_TAG
+gh release create $NAMASTEX_TAG --repo namastexlabs/vibe-kanban --title "$NAMASTEX_TAG" --notes "Based on $LATEST_TAG"
+
+# 3. Update gitmodule (in automagik-forge repo)
+cd upstream
+git fetch origin --tags
+git checkout $NAMASTEX_TAG
+cd ..
+
+# 4. Apply mechanical rebrand
+./scripts/rebrand.sh
+
+# 5. Verify success
+grep -r "vibe-kanban" upstream frontend | wc -l  # Must be 0
+cargo check --workspace
+cd frontend && pnpm run check
+
+# 6. Commit changes
+git add -A
+git commit -m "chore: update upstream to $NAMASTEX_TAG and rebrand"
+```
+
+**Total time:** ~3-5 minutes. Full automation via agent!
+
 ---
 
 ## 🗺️ Roadmap

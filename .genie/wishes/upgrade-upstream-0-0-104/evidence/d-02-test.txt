@@ -1,0 +1,35 @@
+   Compiling forge-config v0.4.0 (/var/tmp/vibe-kanban/worktrees/f97d-task-d-02-config/forge-extensions/config)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 11.09s
+     Running unittests src/lib.rs (target/debug/deps/forge_config-52629e1fb1d15763)
+
+running 2 tests
+test service::tests::project_overrides_effective_omni_config ... FAILED
+test service::tests::round_trips_global_settings ... FAILED
+
+failures:
+
+---- service::tests::project_overrides_effective_omni_config stdout ----
+
+thread 'service::tests::project_overrides_effective_omni_config' panicked at forge-extensions/config/src/service.rs:251:14:
+global settings should persist: error returned from database: (code: 1) no such table: forge_global_settings
+
+Caused by:
+    (code: 1) no such table: forge_global_settings
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- service::tests::round_trips_global_settings stdout ----
+
+thread 'service::tests::round_trips_global_settings' panicked at forge-extensions/config/src/service.rs:200:14:
+default settings should load: error returned from database: (code: 1) no such table: forge_global_settings
+
+Caused by:
+    (code: 1) no such table: forge_global_settings
+
+
+failures:
+    service::tests::project_overrides_effective_omni_config
+    service::tests::round_trips_global_settings
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `-p forge-config --lib`
