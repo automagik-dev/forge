@@ -74,6 +74,7 @@ export function GeneralSettings() {
   const [success, setSuccess] = useState(false);
   // FORGE CUSTOMIZATION: State for Forge-specific global settings
   const [forgeSettings, setForgeSettings] = useState<ForgeProjectSettings | null>(null);
+  const [originalForgeSettings, setOriginalForgeSettings] = useState<ForgeProjectSettings | null>(null);
   const { setTheme } = useTheme();
 
   // FORGE CUSTOMIZATION: Load Forge global settings on mount
@@ -82,6 +83,7 @@ export function GeneralSettings() {
       try {
         const settings = await forgeApi.getGlobalSettings();
         setForgeSettings(settings);
+        setOriginalForgeSettings(settings);
       } catch (err) {
         console.error('Failed to load forge settings:', err);
       }
@@ -100,8 +102,11 @@ export function GeneralSettings() {
   // Check for unsaved changes
   const hasUnsavedChanges = useMemo(() => {
     if (!draft || !config) return false;
-    return !isEqual(draft, config);
-  }, [draft, config]);
+    const configChanged = !isEqual(draft, config);
+    const forgeChanged = forgeSettings && originalForgeSettings &&
+                        !isEqual(forgeSettings, originalForgeSettings);
+    return configChanged || forgeChanged;
+  }, [draft, config, forgeSettings, originalForgeSettings]);
 
   // Generic draft update helper
   const updateDraft = useCallback(
@@ -153,6 +158,7 @@ export function GeneralSettings() {
       // FORGE CUSTOMIZATION: Save Forge-specific settings
       if (forgeSettings) {
         await forgeApi.setGlobalSettings(forgeSettings);
+        setOriginalForgeSettings(forgeSettings);
       }
 
       setTheme(draft.theme);

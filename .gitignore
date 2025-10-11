@@ -100,3 +100,6 @@ dev_assets_seed/forge-snapshot/from_home/**
 
 vibe-kanban-cloud/
 .mcp.json
+
+# Synced upstream assets
+frontend/public/ide/

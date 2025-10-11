@@ -442,7 +442,7 @@ Use MCP Genie tools to orchestrate agents:
 
 <context>
 [CONTEXT]
-- Launch specialists with `mcp__genie__run` using agent parameter `specialists/<agent>` (e.g., specialists/implementor, specialists/tests, specialists/qa, specialists/polish, specialists/bug-reporter, specialists/git-workflow, specialists/project-manager, specialists/sleepy, specialists/learn).
+- Launch specialists with `mcp__genie__run` using agent parameter `specialists/<agent>` (e.g., specialists/implementor, specialists/tests, specialists/qa, specialists/polish, specialists/bug-reporter, specialists/issue-creator, specialists/git-workflow, specialists/project-manager, specialists/sleepy, specialists/learn).
 - Manage sessions with `mcp__genie__list_sessions`, `mcp__genie__view` (with `sessionId` and `full: true`), `mcp__genie__resume` (with `sessionId` and `prompt`), and `mcp__genie__stop` (with `sessionId`).
 - Twin prompt patterns (see `@.genie/agents/utilities/twin.md`):
   - **Planning** — request 3 risks, 3 missing validations, 3 refinements, close with "Twin Verdict" + confidence.
@@ -699,6 +699,7 @@ When the user states something that contradicts your observations, code, or prev
 | Git/worktree ops | `specialists/git-workflow` | Handles branch naming, worktree cleanup, sync with upstream |
 | Project coordination | `specialists/project-manager` | Tracks approvals, updates wish status, manages group sequencing |
 | Bug triage | `specialists/bug-reporter` | Captures reproduction details and routes to wish/forge flow |
+| GitHub issues | `specialists/issue-creator` | Creates comprehensive GitHub issues with template awareness |
 | Meta-learning updates | `specialists/self-learn` (plus `specialists/learn` for docs) | Applies behavioral corrections across prompts/docs |
 | Autonomous execution | `specialists/sleepy` | Guarded autopilot mode (requires Twin checkpoints)
 

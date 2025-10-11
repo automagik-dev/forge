@@ -36,6 +36,7 @@ impl OmniService {
         task_url: Option<&str>,
     ) -> Result<()> {
         if !self.config.enabled {
+            tracing::debug!("Omni notifications disabled");
             return Ok(());
         }
 
@@ -49,6 +50,13 @@ impl OmniService {
             .recipient
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No recipient configured"))?;
+
+        tracing::info!(
+            "Sending Omni notification - Instance: {}, Recipient: {}, Title: {}",
+            instance,
+            recipient,
+            task_title
+        );
 
         let message = format!(
             "🎯 Task Complete: {}\n\n\
@@ -77,8 +85,16 @@ impl OmniService {
             },
         };
 
-        self.client.send_text(instance, request).await?;
-        Ok(())
+        match self.client.send_text(instance, request).await {
+            Ok(response) => {
+                tracing::info!("Omni notification sent successfully: {:?}", response);
+                Ok(())
+            }
+            Err(e) => {
+                tracing::error!("Failed to send Omni notification: {}", e);
+                Err(e)
+            }
+        }
     }
 
     pub async fn list_instances(&self) -> Result<Vec<OmniInstance>> {

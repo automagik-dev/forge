@@ -3,6 +3,8 @@
 //! Service composition layer that wraps upstream services with forge extensions.
 //! Provides unified access to both upstream functionality and forge-specific features.
 
+mod notification_hook;
+
 use anyhow::{Context, Result, anyhow};
 use deployment::Deployment;
 use serde::Deserialize;
@@ -77,7 +79,10 @@ impl ForgeServices {
             "Loaded forge extension settings from auxiliary schema"
         );
 
-        // Spawn background worker that converts execution events into Omni notifications
+        // Install SQLite trigger for Omni notifications when tasks complete
+        notification_hook::install_notification_trigger(&pool).await?;
+
+        // Spawn background worker that processes queued Omni notifications
         spawn_omni_notification_worker(pool.clone(), config.clone());
 
         Ok(Self {
@@ -455,11 +460,11 @@ struct PendingNotification {
 
 #[derive(Debug, Deserialize)]
 struct OmniNotificationMetadata {
-    task_attempt_id: Option<Uuid>,
+    task_attempt_id: Option<String>,
     status: Option<String>,
     executor: Option<String>,
     branch: Option<String>,
-    project_id: Option<Uuid>,
+    project_id: Option<String>,
 }
 
 async fn handle_omni_notification(
@@ -474,9 +479,11 @@ async fn handle_omni_notification(
         _ => return Err(anyhow!("missing metadata for omni notification")),
     };
 
-    let attempt_id = metadata
+    let attempt_id_str = metadata
         .task_attempt_id
         .ok_or_else(|| anyhow!("metadata missing task_attempt_id"))?;
+    let attempt_id = Uuid::parse_str(&attempt_id_str)
+        .with_context(|| format!("invalid task_attempt_id UUID: {}", attempt_id_str))?;
     let status = metadata
         .status
         .ok_or_else(|| anyhow!("metadata missing status"))?;
@@ -497,10 +504,14 @@ async fn handle_omni_notification(
     .await?
     .ok_or_else(|| anyhow!("task attempt not found for omni notification"))?;
 
-    let project_id = metadata
-        .project_id
-        .or_else(|| attempt_row.try_get::<Uuid, _>("project_id").ok())
-        .ok_or_else(|| anyhow!("missing project id for omni notification"))?;
+    let project_id = if let Some(pid_str) = metadata.project_id {
+        Uuid::parse_str(&pid_str)
+            .with_context(|| format!("invalid project_id UUID: {}", pid_str))?
+    } else {
+        attempt_row
+            .try_get::<Uuid, _>("project_id")
+            .with_context(|| "missing project_id in database row")?
+    };
     let omni_config = config.effective_omni_config(Some(project_id)).await?;
 
     if !omni_config.enabled {
@@ -543,14 +554,29 @@ async fn handle_omni_notification(
         task_id
     );
 
-    let omni_service = OmniService::new(omni_config);
-    omni_service
-        .send_task_notification(&title, &status_summary, Some(&task_url))
-        .await?;
+    tracing::info!(
+        "Attempting to send Omni notification for task '{}' with status '{}'",
+        title,
+        status_summary
+    );
 
-    Ok(OmniQueueAction::Sent {
-        message: status_summary,
-    })
+    let omni_service = OmniService::new(omni_config.clone());
+
+    match omni_service
+        .send_task_notification(&title, &status_summary, Some(&task_url))
+        .await
+    {
+        Ok(()) => {
+            tracing::info!("Successfully sent Omni notification for task '{}'", title);
+            Ok(OmniQueueAction::Sent {
+                message: status_summary,
+            })
+        }
+        Err(e) => {
+            tracing::error!("Failed to send Omni notification: {}", e);
+            Err(e)
+        }
+    }
 }
 
 fn format_status_summary(status: &str, executor: &str, branch: &str) -> String {

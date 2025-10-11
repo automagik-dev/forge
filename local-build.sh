@@ -26,6 +26,9 @@ fi
 echo "📦 Building for platform: $PLATFORM_DIR"
 mkdir -p npx-cli/dist/$PLATFORM_DIR
 
+echo "🔄 Syncing upstream assets..."
+node scripts/sync-upstream-assets.js
+
 echo "🔨 Building frontend with pnpm..."
 cd frontend && pnpm run build && cd ..
 

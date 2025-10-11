@@ -41,19 +41,36 @@ impl OmniClient {
         instance: &str,
         req: SendTextRequest,
     ) -> Result<SendTextResponse> {
-        let mut request = self
-            .client
-            .post(format!(
-                "{}/api/v1/instance/{}/send-text",
-                self.base_url, instance
-            ))
-            .json(&req);
+        let url = format!("{}/api/v1/instance/{}/send-text", self.base_url, instance);
+
+        tracing::info!("Sending Omni request to: {} with payload: {:?}", url, req);
+
+        let mut request = self.client.post(&url).json(&req);
 
         if let Some(key) = &self.api_key {
             request = request.header("X-API-Key", key);
+            tracing::debug!("Using API key for authentication");
         }
 
-        let response = request.send().await?.json().await?;
+        let response = match request.send().await {
+            Ok(resp) => {
+                let status = resp.status();
+                tracing::info!("Omni API response status: {}", status);
+                if !status.is_success() {
+                    let text = resp
+                        .text()
+                        .await
+                        .unwrap_or_else(|_| "Unknown error".to_string());
+                    tracing::error!("Omni API error response: {}", text);
+                    return Err(anyhow::anyhow!("Omni API returned {}: {}", status, text));
+                }
+                resp.json().await?
+            }
+            Err(e) => {
+                tracing::error!("Failed to connect to Omni API: {}", e);
+                return Err(e.into());
+            }
+        };
 
         Ok(response)
     }
