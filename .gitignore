@@ -18,6 +18,7 @@ yarn-error.log*
 # Genie CLI/MCP (now from npm)
 .genie/cli/
 .genie/mcp/
+.genie/state/
 
 # Environment variables
 .env
