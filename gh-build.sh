@@ -324,30 +324,40 @@ case "${1:-status}" in
 
             # Use Genie AI agent for semantic release notes
             echo "🧠 Generating intelligent release notes with AI analysis..."
+            echo ""
+            echo "╔═══════════════════════════════════════════════════════════════╗"
+            echo "║          📝 AI Release Notes Generation Required              ║"
+            echo "╚═══════════════════════════════════════════════════════════════╝"
+            echo ""
+            echo "Please run the following command in another terminal:"
+            echo ""
+            echo "  genie run utilities/release-notes --prompt \\"
+            echo "    \"Generate release notes for Automagik Forge version $VERSION."
+            echo "    Compare changes from ${ANALYSIS_FROM:-last 20 commits} to HEAD."
+            echo "    Write output to .release-notes-draft.md\""
+            echo ""
+            echo "───────────────────────────────────────────────────────────────"
+            echo ""
 
-            # Build Genie prompt
-            GENIE_PROMPT="Generate release notes for Automagik Forge version $VERSION.
+            # Remove old draft if exists
+            rm -f .release-notes-draft.md
 
-Compare changes from ${ANALYSIS_FROM:-last 20 commits} to HEAD.
+            # Wait for file to be created by Genie agent
+            echo "⏳ Waiting for Genie agent to create .release-notes-draft.md..."
+            WAIT_COUNT=0
+            MAX_WAIT=300  # 5 minutes max wait
+            while [ ! -f ".release-notes-draft.md" ] && [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+                sleep 1
+                WAIT_COUNT=$((WAIT_COUNT + 1))
+                if [ $((WAIT_COUNT % 10)) -eq 0 ]; then
+                    echo "   Still waiting... (${WAIT_COUNT}s elapsed)"
+                fi
+            done
 
-Analyze the git diff semantically and create user-focused release notes following this structure:
-- 🚨 Breaking Changes (if any, with migration notes)
-- 🚀 New Features (user benefits, not function names)
-- 🔧 Improvements (workflow enhancements, performance)
-- 🐛 Bug Fixes (specific issues resolved)
-- 🧰 Internal Changes (brief, clustered)
-- 📊 What's Changed (files/lines stats)
-- Full Changelog link: https://github.com/$REPO/compare/$LAST_TAG...v$VERSION
-
-Be specific and avoid generic phrases like 'Enhanced X functionality'. Flag uncertain items with [REVIEW] in a separate section at the end.
-
-Output markdown only, no preamble or explanation."
-
-            # Run Genie release-notes agent
-            if npx genie run utilities/release-notes --prompt "$GENIE_PROMPT" > .release-notes-draft.md 2>/dev/null; then
+            if [ -f ".release-notes-draft.md" ]; then
                 echo "✅ AI-powered release notes generated successfully!"
             else
-                echo "❌ Genie agent failed, creating fallback notes"
+                echo "❌ Timeout waiting for Genie agent, creating fallback notes"
                 echo "# Release v$VERSION
 
 ## What's Changed
@@ -434,15 +444,41 @@ This release includes various improvements and bug fixes.
                         break
                         ;;
                     "🔄 Regenerate notes")
+                        clear
+                        echo "╔═══════════════════════════════════════════════════════════════╗"
+                        echo "║              🔄 Regenerate AI Release Notes                   ║"
+                        echo "╚═══════════════════════════════════════════════════════════════╝"
                         echo ""
-                        echo "🧠 Regenerating release notes with AI analysis..."
+                        echo "Please run the following command in another terminal:"
+                        echo ""
+                        echo "  genie run utilities/release-notes --prompt \\"
+                        echo "    \"Generate release notes for Automagik Forge version $VERSION."
+                        echo "    Compare changes from ${ANALYSIS_FROM:-last 20 commits} to HEAD."
+                        echo "    Write output to .release-notes-draft.md\""
+                        echo ""
+                        echo "───────────────────────────────────────────────────────────────"
+                        echo ""
 
-                        # Re-run Genie release-notes agent
-                        if npx genie run utilities/release-notes --prompt "$GENIE_PROMPT" > .release-notes-draft.md 2>/dev/null; then
+                        # Remove old draft
+                        rm -f .release-notes-draft.md
+
+                        # Wait for file to be created
+                        echo "⏳ Waiting for Genie agent to regenerate .release-notes-draft.md..."
+                        WAIT_COUNT=0
+                        MAX_WAIT=300
+                        while [ ! -f ".release-notes-draft.md" ] && [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+                            sleep 1
+                            WAIT_COUNT=$((WAIT_COUNT + 1))
+                            if [ $((WAIT_COUNT % 10)) -eq 0 ]; then
+                                echo "   Still waiting... (${WAIT_COUNT}s elapsed)"
+                            fi
+                        done
+
+                        if [ -f ".release-notes-draft.md" ]; then
                             echo "✅ Release notes regenerated successfully!"
                             sleep 2
                         else
-                            echo "❌ Genie agent failed during regeneration"
+                            echo "❌ Timeout waiting for Genie agent"
                             sleep 2
                         fi
                         break
