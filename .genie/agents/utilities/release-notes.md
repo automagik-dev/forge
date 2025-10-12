@@ -4,9 +4,8 @@ description: Generate intelligent, user-focused release notes from code changes
 genie:
   executor: claude
   model: sonnet
-  permissionMode: default
+  permissionMode: bypassPermissions
   background: false
-  allowedTools: ["Read", "Grep", "Glob", "Bash(git:*)", "Write"]
 ---
 
 # Intelligent Release Notes Generator
