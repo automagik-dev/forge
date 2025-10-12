@@ -158,7 +158,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path "npx-cli/dist/${{ matrix.platform }}" | Out-Null
 
-          Copy-Item "target/${{ matrix.target }}/release/server.exe" "automagik-forge.exe"
+          Copy-Item "target/${{ matrix.target }}/release/forge-app.exe" "automagik-forge.exe"
           Compress-Archive -Path "automagik-forge.exe" -DestinationPath "automagik-forge.zip" -Force
           Move-Item "automagik-forge.zip" "npx-cli/dist/${{ matrix.platform }}/"
           Remove-Item "automagik-forge.exe"
@@ -174,7 +174,7 @@ jobs:
         run: |
           mkdir -p npx-cli/dist/${{ matrix.platform }}
 
-          cp target/${{ matrix.target }}/release/server automagik-forge
+          cp target/${{ matrix.target }}/release/forge-app automagik-forge
           zip -q automagik-forge.zip automagik-forge
           mv automagik-forge.zip npx-cli/dist/${{ matrix.platform }}/
           rm automagik-forge

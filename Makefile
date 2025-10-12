@@ -65,8 +65,10 @@ bump: check-version
 	@sed -i 's/"version": "[^"]*"/"version": "$(VERSION)"/' frontend/package.json
 	@# Update npx-cli package.json
 	@sed -i 's/"version": "[^"]*"/"version": "$(VERSION)"/' npx-cli/package.json
-	@# Update all Cargo.toml files (only the first version under [package])
-	@for f in crates/*/Cargo.toml; do \
+	@# Update forge-app Cargo.toml
+	@sed -i '0,/version = "[^"]*"/s//version = "$(VERSION)"/' forge-app/Cargo.toml
+	@# Update all forge-extensions Cargo.toml files
+	@for f in forge-extensions/*/Cargo.toml; do \
 		sed -i '0,/version = "[^"]*"/s//version = "$(VERSION)"/' $$f; \
 	done
 	@echo "✅ Version bumped to $(VERSION) across all files"
@@ -74,10 +76,11 @@ bump: check-version
 	@echo "   - package.json"
 	@echo "   - frontend/package.json"
 	@echo "   - npx-cli/package.json"
-	@echo "   - crates/*/Cargo.toml"
+	@echo "   - forge-app/Cargo.toml"
+	@echo "   - forge-extensions/*/Cargo.toml"
 	@echo ""
 	@echo "🔄 Committing version bump..."
-	@git add package.json frontend/package.json npx-cli/package.json crates/*/Cargo.toml
+	@git add package.json frontend/package.json npx-cli/package.json forge-app/Cargo.toml forge-extensions/*/Cargo.toml
 	@git commit -m "chore: bump version to $(VERSION)"
 	@echo "✅ Version $(VERSION) committed successfully!"
 	@echo ""
@@ -89,10 +92,7 @@ build:
 	@echo "🧹 Cleaning previous builds..."
 	@rm -rf npx-cli/dist
 	@echo "🔨 Building frontend..."
-	@cd frontend && npm run build
-	@echo "🔨 Building Rust binaries..."
-	@cargo build --release
-	@cargo build --release --bin mcp_task_server
+	@cd frontend && pnpm run build
 	@echo "📦 Creating distribution package..."
 	@bash local-build.sh
 	@echo "✅ Build complete for current platform!"
@@ -105,6 +105,7 @@ clean:
 	@rm -rf target/
 	@rm -rf frontend/dist/
 	@rm -rf npx-cli/dist/
+	@rm -rf dev_assets/
 	@rm -f automagik-forge automagik-forge-mcp
 	@rm -f *.zip
 	@echo "✅ Clean complete!"
@@ -127,16 +128,37 @@ beta:
 # Development helpers
 dev:
 	@echo "🚀 Starting development environment..."
-	@npm run dev
+	@pnpm run dev
 
 test:
-	@echo "🧪 Running tests..."
-	@npm run check
+	@echo "🧪 Running comprehensive test suite..."
+	@echo "📋 Rust: Compilation check..."
+	@cargo check --workspace
+	@echo "🧪 Rust: Running tests..."
+	@cargo test --workspace
+	@echo "🎨 Rust: Format check..."
+	@cargo fmt --all -- --check
+	@echo "📏 Rust: Linting (clippy)..."
+	@cargo clippy --all --all-targets --all-features -- -D warnings
+	@echo "🔧 Type generation validation (server)..."
+	@cargo run -p server --bin generate_types -- --check
+	@echo "🔧 Type generation validation (forge-app)..."
+	@cargo run -p forge-app --bin generate_forge_types -- --check
+	@echo "📋 Frontend: Type check..."
+	@cd frontend && pnpm run check
+	@echo "📏 Frontend: Linting..."
+	@cd frontend && pnpm run lint
+	@echo "🎨 Frontend: Format check..."
+	@cd frontend && pnpm run format:check
+	@echo "✅ All tests passed!"
 
 # Version info
 version:
 	@echo "Current versions:"
-	@echo "  Root:     $$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')"
-	@echo "  Frontend: $$(grep '"version"' frontend/package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')"
-	@echo "  NPX CLI:  $$(grep '"version"' npx-cli/package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')"
-	@echo "  Server:   $$(grep 'version =' crates/server/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
+	@echo "  Root:         $$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')"
+	@echo "  Frontend:     $$(grep '"version"' frontend/package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')"
+	@echo "  NPX CLI:      $$(grep '"version"' npx-cli/package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')"
+	@echo "  Forge App:    $$(grep 'version =' forge-app/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
+	@echo "  Forge Omni:   $$(grep 'version =' forge-extensions/omni/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
+	@echo "  Forge Config: $$(grep 'version =' forge-extensions/config/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
+	@echo "  Upstream:     $$(grep 'version =' upstream/crates/server/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
