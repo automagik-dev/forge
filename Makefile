@@ -24,7 +24,7 @@ help:
 	@echo "  make publish"
 	@echo "  • Automatically bumps version (patch/minor/major)"
 	@echo "  • Builds all platforms via GitHub Actions"
-	@echo "  • Generates release notes with Claude"
+	@echo "  • Generates AI-powered release notes (Genie semantic analysis)"
 	@echo "  • Publishes to npm registry"
 	@echo "  • Creates GitHub release"
 	@echo ""
@@ -116,7 +116,7 @@ publish:
 	@echo "This will:"
 	@echo "  1. Let you choose version bump type (patch/minor/major)"
 	@echo "  2. Trigger GitHub Actions to bump version and build all platforms"
-	@echo "  3. Generate release notes with Claude"
+	@echo "  3. Generate AI-powered release notes with Genie (semantic analysis)"
 	@echo "  4. Create GitHub release and publish to npm"
 	@echo ""
 	@./gh-build.sh publish

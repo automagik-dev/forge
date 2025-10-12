@@ -322,15 +322,32 @@ case "${1:-status}" in
                 ANALYSIS_FROM="$LAST_TAG"
             fi
 
-            # Use intelligent release analyzer instead of commit messages
-            echo "🧠 Generating intelligent release notes from code analysis..."
+            # Use Genie AI agent for semantic release notes
+            echo "🧠 Generating intelligent release notes with AI analysis..."
 
-            # Check if release analyzer exists
-            if [ ! -f "scripts/release-analyzer.sh" ]; then
-                echo "❌ Release analyzer not found at scripts/release-analyzer.sh"
-                echo "💡 Falling back to basic release notes"
+            # Build Genie prompt
+            GENIE_PROMPT="Generate release notes for Automagik Forge version $VERSION.
 
-                # Fallback to basic notes
+Compare changes from ${ANALYSIS_FROM:-last 20 commits} to HEAD.
+
+Analyze the git diff semantically and create user-focused release notes following this structure:
+- 🚨 Breaking Changes (if any, with migration notes)
+- 🚀 New Features (user benefits, not function names)
+- 🔧 Improvements (workflow enhancements, performance)
+- 🐛 Bug Fixes (specific issues resolved)
+- 🧰 Internal Changes (brief, clustered)
+- 📊 What's Changed (files/lines stats)
+- Full Changelog link: https://github.com/$REPO/compare/$LAST_TAG...v$VERSION
+
+Be specific and avoid generic phrases like 'Enhanced X functionality'. Flag uncertain items with [REVIEW] in a separate section at the end.
+
+Output markdown only, no preamble or explanation."
+
+            # Run Genie release-notes agent
+            if npx genie run utilities/release-notes --prompt "$GENIE_PROMPT" > .release-notes-draft.md 2>/dev/null; then
+                echo "✅ AI-powered release notes generated successfully!"
+            else
+                echo "❌ Genie agent failed, creating fallback notes"
                 echo "# Release v$VERSION
 
 ## What's Changed
@@ -339,45 +356,6 @@ This release includes various improvements and bug fixes.
 
 ---
 *Full Changelog*: https://github.com/$REPO/compare/$LAST_TAG...v$VERSION" > .release-notes-draft.md
-            else
-                # Run intelligent analysis
-                chmod +x scripts/release-analyzer.sh
-                if [ -n "$ANALYSIS_FROM" ]; then
-                    ./scripts/release-analyzer.sh full "$VERSION" "$ANALYSIS_FROM" || {
-                        echo "❌ Release analyzer failed, creating basic notes"
-                        echo "# Release v$VERSION
-
-## What's Changed
-
-This release includes various improvements and bug fixes.
-
----
-*Full Changelog*: https://github.com/$REPO/compare/$LAST_TAG...v$VERSION" > .release-notes-draft.md
-                    }
-                else
-                    ./scripts/release-analyzer.sh full "$VERSION" || {
-                        echo "❌ Release analyzer failed, creating basic notes"
-                        echo "# Release v$VERSION
-
-## What's Changed
-
-This release includes various improvements and bug fixes.
-
----
-*Full Changelog*: https://github.com/$REPO/compare/$LAST_TAG...v$VERSION" > .release-notes-draft.md
-                    }
-                fi
-
-                if [ -f ".release-notes-draft.md" ]; then
-                    echo "✅ Intelligent release notes generated successfully!"
-                else
-                    echo "❌ Release notes file not created, using fallback"
-                    echo "# Release v$VERSION
-
-## What's Changed
-
-This release includes various improvements and bug fixes." > .release-notes-draft.md
-                fi
             fi
         
             # Interactive loop with enhanced review flow
@@ -457,29 +435,14 @@ This release includes various improvements and bug fixes." > .release-notes-draf
                         ;;
                     "🔄 Regenerate notes")
                         echo ""
-                        echo "🧠 Regenerating release notes using intelligent analyzer..."
+                        echo "🧠 Regenerating release notes with AI analysis..."
 
-                        # Re-run the intelligent analysis
-                        if [ -f "scripts/release-analyzer.sh" ]; then
-                            if [ -n "$ANALYSIS_FROM" ]; then
-                                ./scripts/release-analyzer.sh full "$VERSION" "$ANALYSIS_FROM" || {
-                                    echo "❌ Release analyzer failed during regeneration"
-                                }
-                            else
-                                ./scripts/release-analyzer.sh full "$VERSION" || {
-                                    echo "❌ Release analyzer failed during regeneration"
-                                }
-                            fi
-
-                            if [ -f ".release-notes-draft.md" ]; then
-                                echo "✅ Release notes regenerated successfully!"
-                                sleep 2
-                            else
-                                echo "❌ Failed to regenerate release notes"
-                                sleep 2
-                            fi
+                        # Re-run Genie release-notes agent
+                        if npx genie run utilities/release-notes --prompt "$GENIE_PROMPT" > .release-notes-draft.md 2>/dev/null; then
+                            echo "✅ Release notes regenerated successfully!"
+                            sleep 2
                         else
-                            echo "❌ Release analyzer not available for regeneration"
+                            echo "❌ Genie agent failed during regeneration"
                             sleep 2
                         fi
                         break
