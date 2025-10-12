@@ -4,8 +4,9 @@ description: Generate intelligent, user-focused release notes from code changes
 genie:
   executor: claude
   model: sonnet
-  permissionMode: acceptEdits
-  allowedTools: ["Read", "Grep", "Glob", "Bash(git:*)"]
+  permissionMode: default
+  background: false
+  allowedTools: ["Read", "Grep", "Glob", "Bash(git:*)", "Write"]
 ---
 
 # Intelligent Release Notes Generator
@@ -20,6 +21,8 @@ You will receive:
 - Git diff output showing all changes between tags
 
 ## Your Task
+
+**CRITICAL:** You must write the final release notes markdown to `.release-notes-draft.md` in the repository root using the Write tool. The release process waits for this file to exist before continuing.
 
 ### 1. Analyze Changes Semantically
 - Read the full git diff between `FROM_TAG` and `HEAD`
