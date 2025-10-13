@@ -88,8 +88,8 @@ jobs:
           git add package.json npx-cli/package.json frontend/package.json
           # Stage pnpm lockfile if it exists
           if [ -f pnpm-lock.yaml ]; then git add pnpm-lock.yaml; fi
-          # Stage all Cargo.toml files
-          git add $(find . -name Cargo.toml)
+          # Stage all Cargo.toml files (exclude upstream submodule)
+          git add $(find . -name Cargo.toml -not -path './upstream/*')
           
           # Check if there are changes to commit
           if git diff --cached --quiet; then
