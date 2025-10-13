@@ -57,7 +57,7 @@ pub async fn install_notification_trigger(pool: &SqlitePool) -> Result<()> {
                   WHERE metadata LIKE '%' || NEW.id || '%'
               );
         END;
-        "#
+        "#,
     )
     .execute(pool)
     .await?;

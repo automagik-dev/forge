@@ -4,7 +4,7 @@ description: Generate intelligent, user-focused release notes from code changes
 genie:
   executor: claude
   model: sonnet
-  dangerouslySkipPermissions: true
+  permissionMode: bypassPermissions
   background: false
 ---
 
