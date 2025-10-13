@@ -13,7 +13,7 @@ BASELINE_DIR="docs/regression/baseline"
 LOG_DIR="docs/regression/logs"
 mkdir -p "$OUT_DIR" "$LOG_DIR"
 
-TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+TIMESTAMP="$(date -u +"%Y-%m-%dT%H-%M-%SZ")"
 RUN_LOG="$LOG_DIR/run-$TIMESTAMP.log"
 
 exec > >(tee "$RUN_LOG") 2>&1
