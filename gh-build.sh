@@ -138,7 +138,60 @@ case "${1:-status}" in
         echo "  Current local:  $CURRENT_VERSION"
         echo "  Latest on npm:  $NPM_VERSION"
         echo ""
-        
+
+        # Check for recent failed workflows (regardless of version state)
+        echo "🔍 Checking for recent failed workflows..."
+        RECENT_FAILED=$(gh run list --workflow="pre-release-simple.yml" --repo "$REPO" --status failure --limit 1 --json databaseId,createdAt,headBranch,conclusion --jq '.[0]' 2>/dev/null || echo "null")
+
+        if [ -n "$RECENT_FAILED" ] && [ "$RECENT_FAILED" != "null" ]; then
+            FAILED_RUN_ID=$(echo "$RECENT_FAILED" | jq -r '.databaseId')
+            FAILED_TIME=$(echo "$RECENT_FAILED" | jq -r '.createdAt')
+            FAILED_BRANCH=$(echo "$RECENT_FAILED" | jq -r '.headBranch')
+
+            echo ""
+            echo "❌ Found recent failed workflow:"
+            echo "   Run ID: $FAILED_RUN_ID"
+            echo "   Time: $FAILED_TIME"
+            echo "   Branch: $FAILED_BRANCH"
+            echo "   URL: https://github.com/$REPO/actions/runs/$FAILED_RUN_ID"
+            echo ""
+
+            echo "Would you like to retry this failed release?"
+            echo "1) Retry failed workflow (re-run with fixes)"
+            echo "2) Continue with new release"
+            echo "3) Cancel"
+            read -p "Select option: " RETRY_CHOICE
+
+            case $RETRY_CHOICE in
+                1)
+                    echo "🔄 Retrying failed workflow..."
+                    gh run rerun "$FAILED_RUN_ID" --repo "$REPO" --failed
+                    echo ""
+                    echo "⏳ Monitoring retry..."
+                    # Wait for new run to start
+                    sleep 5
+                    # Find the retry run (it will be the most recent in_progress run)
+                    RETRY_RUN=$(gh run list --workflow="pre-release-simple.yml" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')
+                    if [ -n "$RETRY_RUN" ]; then
+                        ./gh-build.sh monitor "$RETRY_RUN"
+                    fi
+                    exit 0
+                    ;;
+                2)
+                    echo "▶️  Continuing with new release..."
+                    echo ""
+                    ;;
+                3)
+                    echo "❌ Cancelled"
+                    exit 1
+                    ;;
+                *)
+                    echo "❌ Invalid choice"
+                    exit 1
+                    ;;
+            esac
+        fi
+
         # Check if version was already bumped but not published
         if [ "$CURRENT_VERSION" != "$NPM_VERSION" ]; then
             # Version comparison to check if local is newer
