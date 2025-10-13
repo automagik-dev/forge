@@ -139,6 +139,7 @@ jobs:
         if: runner.os != 'Windows' && matrix.use-cross
         env:
           CROSS_CONTAINER_IN_CONTAINER: true
+          HOSTNAME: github-actions
           OPENSSL_STATIC: 1
           DEP_OPENSSL_VENDORED: 1
           OPENSSL_VENDORED: 1
