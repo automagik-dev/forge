@@ -4,7 +4,7 @@ description: Generate intelligent, user-focused release notes from code changes
 genie:
   executor: claude
   model: sonnet
-  permissionMode: default
+  permissionMode: bypassPermissions
   background: false
 ---
 
@@ -21,11 +21,7 @@ You will receive:
 
 ## Your Task
 
-**CRITICAL OUTPUT FORMAT:**
-
-You must output the release notes as pure markdown text in your final response. Do NOT use the Write tool. The release process will capture your stdout and save it to `.release-notes-draft.md`.
-
-**Your response should contain ONLY the markdown content** - no preamble, no explanation, no "Here are the release notes:", just the raw markdown starting with `# Release v{VERSION}`.
+**CRITICAL:** You must write the final release notes markdown to `.release-notes-draft.md` in the repository root using the Write tool. The release process waits for this file to exist before continuing.
 
 ### 1. Analyze Changes Semantically
 - Read the full git diff between `FROM_TAG` and `HEAD`
