@@ -149,6 +149,7 @@ jobs:
           OPENSSL_NO_VENDOR: 0
           LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
           LIBSQLITE3_SYS_BUNDLED: 1
+          LIBSQLITE3_SYS_NO_BINDGEN: 1
           LIBZ_SYS_STATIC: 1
           SQLX_OFFLINE: true
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
