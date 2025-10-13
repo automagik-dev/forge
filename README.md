@@ -15,7 +15,7 @@
   <a href="https://www.npmjs.com/package/automagik-forge"><img alt="npm version" src="https://img.shields.io/npm/v/automagik-forge?style=flat-square&color=00D9FF" /></a>
   <a href="https://github.com/namastexlabs/automagik-forge/actions"><img alt="Build Status" src="https://img.shields.io/github/actions/workflow/status/namastexlabs/automagik-forge/test.yml?branch=main&style=flat-square" /></a>
   <a href="https://github.com/namastexlabs/automagik-forge/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/namastexlabs/automagik-forge?style=flat-square&color=00D9FF" /></a>
-  <a href="https://discord.gg/automagik"><img alt="Discord" src="https://img.shields.io/discord/1234567890?style=flat-square&color=00D9FF&label=discord" /></a>
+  <a href="https://discord.gg/xcW8c7fF3R"><img alt="Discord" src="https://img.shields.io/discord/1095114867012292758?style=flat-square&color=00D9FF&label=discord" /></a>
 </p>
 
 <p align="center">
@@ -543,16 +543,16 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **Website**: [forge.automag.ik](https://forge.automag.ik)
 - **NPM Package**: [npmjs.com/package/automagik-forge](https://www.npmjs.com/package/automagik-forge)
 - **GitHub**: [github.com/namastexlabs/automagik-forge](https://github.com/namastexlabs/automagik-forge)
-- **Discord**: [discord.gg/automagik](https://discord.gg/automagik)
-- **Twitter**: [@automagikdev](https://twitter.com/automagikdev)
+- **Discord**: [discord.gg/xcW8c7fF3R](https://discord.gg/xcW8c7fF3R)
+- **Twitter**: [@namastexlabs](https://twitter.com/namastexlabs)
 
 ---
 
 <p align="center">
   <strong>🚀 Stop the 2-week curse. Start shipping code you actually understand.</strong><br>
   <strong>Vibe Coding++™ - Where Human Control Meets AI Power</strong><br><br>
-  <a href="https://github.com/namastexlabs/automagik-forge">Star us on GitHub</a> • 
-  <a href="https://discord.gg/automagik">Join our Discord</a> • 
+  <a href="https://github.com/namastexlabs/automagik-forge">Star us on GitHub</a> •
+  <a href="https://discord.gg/xcW8c7fF3R">Join our Discord</a> •
 </p>
 
 <p align="center">
