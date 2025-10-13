@@ -1,0 +1,7 @@
+[target.aarch64-unknown-linux-gnu]
+# Use latest cross image with modern toolchain
+image = "ghcr.io/cross-rs/aarch64-unknown-linux-gnu:latest"
+
+[build]
+# Ensure we use offline SQLx mode
+xargo = false
