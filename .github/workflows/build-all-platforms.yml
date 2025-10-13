@@ -123,6 +123,7 @@ jobs:
           LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
           LIBZ_SYS_STATIC: 1
           OPENSSL_STATIC: 1
+          SQLX_OFFLINE: true
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |
@@ -142,6 +143,7 @@ jobs:
           OPENSSL_NO_VENDOR: 0
           LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
           LIBZ_SYS_STATIC: 1
+          SQLX_OFFLINE: true
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |
