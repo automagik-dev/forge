@@ -104,3 +104,4 @@ vibe-kanban-cloud/
 
 # Synced upstream assets
 frontend/public/ide/
+docs/regression/logs/*.log
