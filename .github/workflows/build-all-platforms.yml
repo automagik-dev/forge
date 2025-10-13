@@ -150,8 +150,8 @@ jobs:
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |
-          # Use newer cross image with proper build tools
-          cross build --release --target ${{ matrix.target }}
+          # Force latest cross image with modern libclang (bypasses Cross.toml)
+          cross build --release --target ${{ matrix.target }} --image ghcr.io/cross-rs/aarch64-unknown-linux-gnu:latest
         shell: bash
 
       - name: Build Rust binaries (non-Windows, native)
