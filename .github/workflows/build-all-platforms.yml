@@ -132,16 +132,30 @@ jobs:
           SQLX_OFFLINE: true
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
-        run: |
-          if [ "${{ matrix.use-cross }}" = "true" ]; then
-            cross build --release --target ${{ matrix.target }}
-          else
-            cargo build --release --target ${{ matrix.target }}
-          fi
+        run: cargo build --release --target ${{ matrix.target }}
         shell: bash
 
-      - name: Build Rust binaries (non-Windows)
-        if: runner.os != 'Windows'
+      - name: Build Rust binaries (non-Windows, cross)
+        if: runner.os != 'Windows' && matrix.use-cross
+        env:
+          CROSS_CONTAINER_IN_CONTAINER: true
+          OPENSSL_STATIC: 1
+          DEP_OPENSSL_VENDORED: 1
+          OPENSSL_VENDORED: 1
+          OPENSSL_NO_VENDOR: 0
+          LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
+          LIBSQLITE3_SYS_BUNDLED: 1
+          LIBSQLITE3_SYS_STATIC: 1
+          SQLX_OFFLINE: true
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
+        run: |
+          # Use newer cross image with proper build tools
+          cross build --release --target ${{ matrix.target }}
+        shell: bash
+
+      - name: Build Rust binaries (non-Windows, native)
+        if: runner.os != 'Windows' && !matrix.use-cross
         env:
           OPENSSL_STATIC: 1
           DEP_OPENSSL_VENDORED: 1
@@ -149,17 +163,13 @@ jobs:
           OPENSSL_NO_VENDOR: 0
           LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
           LIBSQLITE3_SYS_BUNDLED: 1
-          LIBSQLITE3_SYS_NO_BINDGEN: 1
+          LIBSQLITE3_SYS_STATIC: 1
           LIBZ_SYS_STATIC: 1
           SQLX_OFFLINE: true
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |
-          if [ "${{ matrix.use-cross }}" = "true" ]; then
-            cross build --release --target ${{ matrix.target }}
-          else
-            cargo build --release --target ${{ matrix.target }}
-          fi
+          cargo build --release --target ${{ matrix.target }}
         shell: bash
       
       - name: Package binaries (Windows)
