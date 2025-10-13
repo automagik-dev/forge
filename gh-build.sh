@@ -826,19 +826,50 @@ This release includes various improvements and bug fixes.
             echo "⏳ Monitoring npm publish..."
             
             # Monitor the publish workflow
+            BUILD_SUCCESS=false
             while true; do
                 STATUS=$(gh run view "$PUBLISH_RUN" --repo "$REPO" --json status --jq '.status')
                 echo -n "[$(date +%H:%M:%S)] Publish status: $STATUS"
-                
+
                 case "$STATUS" in
                     completed)
                         CONCLUSION=$(gh run view "$PUBLISH_RUN" --repo "$REPO" --json conclusion --jq '.conclusion')
                         if [ "$CONCLUSION" = "success" ]; then
                             echo " ✅"
+                            BUILD_SUCCESS=true
                             break
                         else
                             echo " ❌"
-                            echo "NPM publish failed. Check the logs."
+                            echo ""
+                            echo "❌ NPM publish workflow failed!"
+                            echo "🔗 View logs: https://github.com/$REPO/actions/runs/$PUBLISH_RUN"
+                            echo ""
+                            read -p "Retry the build? (y/n): " RETRY_BUILD
+                            if [ "$RETRY_BUILD" = "y" ] || [ "$RETRY_BUILD" = "Y" ]; then
+                                echo "🔄 Retrying build workflow..."
+                                gh run rerun "$PUBLISH_RUN" --repo "$REPO" --failed
+                                echo ""
+                                echo "⏳ Waiting for retry to start..."
+                                sleep 10
+                                # Get the new run ID
+                                NEW_PUBLISH_RUN=$(gh run list --workflow="Build All Platforms" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')
+                                if [ "$NEW_PUBLISH_RUN" != "$PUBLISH_RUN" ]; then
+                                    PUBLISH_RUN="$NEW_PUBLISH_RUN"
+                                    echo "📋 Monitoring retry: Run ID $PUBLISH_RUN"
+                                    echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$PUBLISH_RUN"
+                                    echo ""
+                                    continue  # Continue monitoring the new run
+                                fi
+                            else
+                                echo ""
+                                echo "❌ Build failed and retry declined"
+                                echo ""
+                                echo "To retry later, run:"
+                                echo "  gh run rerun $PUBLISH_RUN --repo $REPO --failed"
+                                echo "  # or"
+                                echo "  make publish"
+                                exit 1
+                            fi
                             break
                         fi
                         ;;
@@ -848,13 +879,21 @@ This release includes various improvements and bug fixes.
                         ;;
                 esac
             done
+
+            # Only show success if build actually succeeded
+            if [ "$BUILD_SUCCESS" = true ]; then
+                echo ""
+                echo "🎉 Release complete!"
+                echo "📦 Version $NEW_VERSION published"
+                echo "📦 NPM package: https://www.npmjs.com/package/automagik-forge"
+                echo "🏷️  GitHub release: https://github.com/$REPO/releases/tag/$NEW_TAG"
+            else
+                exit 1
+            fi
+        else
+            echo "⚠️  No publish workflow detected"
+            exit 1
         fi
-        
-        echo ""
-        echo "🎉 Release complete!"
-        echo "📦 Version $NEW_VERSION published"
-        echo "📦 NPM package: https://www.npmjs.com/package/automagik-forge"
-        echo "🏷️  GitHub release: https://github.com/$REPO/releases/tag/$NEW_TAG"
         ;;
         
     beta)
