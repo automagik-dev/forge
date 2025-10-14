@@ -136,7 +136,7 @@ jobs:
           version: 0.13.0
 
       - name: Build frontend
-        run: pnpm --filter frontend run build
+        run: pnpm --filter automagik-forge-frontend run build
       
       - name: Build Rust binaries (Windows)
         if: runner.os == 'Windows'
