@@ -23,7 +23,7 @@ jobs:
           - os: ubuntu-22.04  # Use 22.04 for GLIBC 2.35 compatibility (works on 22.04 AND 24.04)
             target: aarch64-unknown-linux-gnu
             platform: linux-arm64
-            use-cross: true
+            use-zigbuild: true
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             platform: windows-x64
@@ -119,21 +119,21 @@ jobs:
           # Additional env vars to help with vendored build
           echo "PERL=$((Get-Command perl).Path)" >> $env:GITHUB_ENV
           
-      - name: Install cross-compilation tools
-        if: matrix.use-cross
+      - name: Install cargo-zigbuild
+        if: matrix.use-zigbuild
         shell: bash
         run: |
-          if command -v cross >/dev/null 2>&1; then
-            echo "cross already installed: $(cross --version)"
+          if cargo zigbuild --version >/dev/null 2>&1; then
+            echo "cargo-zigbuild already installed: $(cargo zigbuild --version)"
           else
-            cargo install cross --locked
+            cargo install cargo-zigbuild --locked
           fi
 
-      - name: Install ARM64 cross-compilation toolchain (Linux)
-        if: matrix.target == 'aarch64-unknown-linux-gnu' && runner.os == 'Linux'
+      - name: Install Zig toolchain (Linux)
+        if: runner.os == 'Linux' && matrix.use-zigbuild
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          sudo apt-get install -y zig
 
       - name: Build frontend
         run: pnpm --filter frontend run build
@@ -150,8 +150,8 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }}
         shell: bash
 
-      - name: Build Rust binaries (non-Windows, cross)
-        if: runner.os != 'Windows' && matrix.use-cross
+      - name: Build Rust binaries (Linux zigbuild)
+        if: runner.os == 'Linux' && matrix.use-zigbuild
         env:
           OPENSSL_STATIC: 1
           DEP_OPENSSL_VENDORED: 1
@@ -164,12 +164,12 @@ jobs:
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |
-          # Force latest cross image with modern libclang (bypasses Cross.toml)
-          cross build --release --target ${{ matrix.target }} --image ghcr.io/cross-rs/aarch64-unknown-linux-gnu:latest
+          # Use cargo-zigbuild (via zig toolchain) for Linux cross targets
+          cargo zigbuild --release --target ${{ matrix.target }}
         shell: bash
 
       - name: Build Rust binaries (non-Windows, native)
-        if: runner.os != 'Windows' && !matrix.use-cross
+        if: runner.os != 'Windows' && !matrix.use-zigbuild
         env:
           OPENSSL_STATIC: 1
           DEP_OPENSSL_VENDORED: 1
