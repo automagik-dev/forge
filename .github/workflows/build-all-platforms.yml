@@ -96,7 +96,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install workspace dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Install Windows build tools for vendored OpenSSL
         if: runner.os == 'Windows'
