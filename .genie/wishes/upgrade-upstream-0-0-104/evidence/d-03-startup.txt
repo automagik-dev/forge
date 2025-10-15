@@ -1,4 +1,0 @@
-warning: server@0.4.0: Creating dummy frontend/dist directory for compilation
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.33s
-     Running `target/debug/forge-app`
-[2m2025-10-07T21:57:14.238794Z[0m [31mERROR[0m [2mforge_app::router[0m[2m:[0m Failed to list Omni instances: builder error: relative URL without a base

@@ -1,7 +1,0 @@
-total 32
-drwxr-xr-x 2 namastex namastex 4096 Oct  6 15:35 .
-drwxr-xr-x 7 namastex namastex 4096 Oct  3 04:50 ..
--rw-r--r-- 1 namastex namastex 4379 Oct  6 15:35 OmniCard.tsx
--rw-r--r-- 1 namastex namastex 7403 Oct  3 04:50 OmniModal.tsx
--rw-r--r-- 1 namastex namastex  862 Oct  3 04:50 api.ts
--rw-r--r-- 1 namastex namastex  504 Oct  3 04:50 types.ts

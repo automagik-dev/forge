@@ -1,5 +1,0 @@
-commit: d8fc7a985d0b2dd9706da8b4267c54b1546cc3a4
-tag: HEAD, tag: v0.0.101-20251001171801
-date: 2025-10-01 17:18:37 +0000
-author: GitHub Action <action@github.com>
-subject: chore: bump version to 0.0.101

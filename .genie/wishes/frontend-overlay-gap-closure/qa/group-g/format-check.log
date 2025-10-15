@@ -1,6 +1,0 @@
-
-> automagik-forge-frontend@0.4.0 format:check /home/namastex/workspace/automagik-forge/frontend
-> prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,md}"
-
-Checking formatting...
-All matched files use Prettier code style!

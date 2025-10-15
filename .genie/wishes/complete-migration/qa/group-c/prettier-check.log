@@ -1,3 +1,0 @@
- ERR_PNPM_NO_SCRIPT  Missing script: format:check
-
-Command "format:check" not found. Did you mean "pnpm run frontend:check"?
