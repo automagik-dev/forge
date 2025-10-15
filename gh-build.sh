@@ -19,23 +19,60 @@ WORKFLOW_FILE=".github/workflows/build-all-platforms.yml"
 case "${1:-status}" in
     trigger)
         echo "🚀 Triggering GitHub Actions build..."
-        gh workflow run "$WORKFLOW_FILE" --repo "$REPO"
-        
+        TAG="${2:-}"
+
+        if [ -n "$TAG" ]; then
+            echo "📦 Building with tag: $TAG"
+            gh workflow run "$WORKFLOW_FILE" --repo "$REPO" --field tag="$TAG"
+        else
+            gh workflow run "$WORKFLOW_FILE" --repo "$REPO"
+        fi
+
         echo "⏳ Waiting for workflow to start..."
         sleep 5
-        
+
         # Get the latest run
         RUN_ID=$(gh run list --workflow="$WORKFLOW_FILE" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')
-        
+
         if [ -z "$RUN_ID" ]; then
             echo "❌ Failed to get workflow run ID"
             exit 1
         fi
-        
+
         echo "📋 Workflow run ID: $RUN_ID"
         echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$RUN_ID"
         echo ""
         echo "Run './gh-build.sh monitor $RUN_ID' to monitor progress"
+        ;;
+
+    publish-tag)
+        TAG="${2:-}"
+        if [ -z "$TAG" ]; then
+            echo "❌ Tag required for publish-tag command"
+            echo "Usage: ./gh-build.sh publish-tag <tag>"
+            echo ""
+            echo "Available tags:"
+            gh release list --repo "$REPO" --limit 5 --json tagName,isPrerelease --jq '.[] | "\(.tagName) \(if .isPrerelease then "(pre-release)" else "" end)"'
+            exit 1
+        fi
+
+        echo "🚀 Triggering publish workflow for tag: $TAG"
+        gh workflow run "$WORKFLOW_FILE" --repo "$REPO" --field tag="$TAG"
+
+        echo "⏳ Waiting for workflow to start..."
+        sleep 10
+
+        RUN_ID=$(gh run list --workflow="$WORKFLOW_FILE" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')
+
+        if [ -n "$RUN_ID" ]; then
+            echo "📋 Monitoring workflow run: $RUN_ID"
+            echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$RUN_ID"
+            echo ""
+            ./gh-build.sh monitor "$RUN_ID"
+        else
+            echo "❌ Failed to get workflow run ID"
+            exit 1
+        fi
         ;;
         
     publish-status)
@@ -275,6 +312,41 @@ case "${1:-status}" in
                             SKIP_VERSION_BUMP=false
                             SKIP_WORKFLOW=false
                         else
+                            # Check if we just need to trigger publish (builds already done)
+                            echo "🔍 Checking if builds are already complete..."
+                            LAST_BUILD_RUN=$(gh run list --workflow="Build All Platforms" --repo "$REPO" --status success --limit 5 --json databaseId,headBranch,createdAt --jq ".[] | select(.headBranch == \"$PRERELEASE_TAG\" or .headBranch == \"main\") | .databaseId" | head -1)
+
+                            if [ -n "$LAST_BUILD_RUN" ]; then
+                                echo "✅ Found successful build run: $LAST_BUILD_RUN"
+
+                                # Check if publish was skipped (manual trigger without tag)
+                                PUBLISH_STATUS=$(gh run view "$LAST_BUILD_RUN" --repo "$REPO" --json jobs --jq '.jobs[] | select(.name == "publish") | .conclusion' 2>/dev/null || echo "")
+
+                                if [ "$PUBLISH_STATUS" = "skipped" ]; then
+                                    echo "⚠️  Publish job was skipped in the last run (missing tag parameter)"
+                                    echo ""
+                                    echo "Would you like to:"
+                                    echo "1) Trigger publish only (no rebuild)"
+                                    echo "2) Rebuild everything"
+                                    read -p "Select option (1-2): " PUBLISH_CHOICE
+
+                                    if [ "$PUBLISH_CHOICE" = "1" ]; then
+                                        echo "🚀 Triggering publish-only workflow with tag..."
+                                        gh workflow run "Build All Platforms" --repo "$REPO" --field tag="$PRERELEASE_TAG"
+
+                                        echo "⏳ Waiting for workflow to start..."
+                                        sleep 10
+
+                                        PUBLISH_RUN=$(gh run list --workflow="Build All Platforms" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')
+                                        if [ -n "$PUBLISH_RUN" ]; then
+                                            echo "📋 Monitoring publish workflow: $PUBLISH_RUN"
+                                            ./gh-build.sh monitor "$PUBLISH_RUN"
+                                        fi
+                                        exit 0
+                                    fi
+                                fi
+                            fi
+
                             SKIP_VERSION_BUMP=true
                             SKIP_WORKFLOW=true
                             VERSION_TYPE="patch"  # Just for display, won't be used
@@ -1137,15 +1209,20 @@ Install with: \`npx automagik-forge@beta\`"
         gh run list --workflow="$WORKFLOW_FILE" --repo "$REPO" --limit 5
         echo ""
         echo "Commands:"
-        echo "  ./gh-build.sh trigger         - Manually trigger workflow"
+        echo "  ./gh-build.sh trigger [tag]   - Manually trigger workflow (with optional tag)"
+        echo "  ./gh-build.sh publish-tag TAG - Quick publish for specific tag (no rebuild)"
         echo "  ./gh-build.sh monitor [id]    - Monitor latest/specific run"
         echo "  ./gh-build.sh download [id]   - Download artifacts"
         echo "  ./gh-build.sh publish [type]  - Publish management:"
         echo "    - check   - Check current publish status"
-        echo "    - manual  - Manually publish from artifacts"  
+        echo "    - manual  - Manually publish from artifacts"
         echo "    - auto    - Monitor automatic tag-based publish"
-        echo "  ./gh-build.sh publish         - Interactive Claude-powered release"
+        echo "  ./gh-build.sh publish         - Interactive release (smart resume)"
         echo "  ./gh-build.sh beta            - Auto-incremented beta release"
         echo "  ./gh-build.sh status          - Show this status"
+        echo ""
+        echo "Quick Resume Examples:"
+        echo "  ./gh-build.sh publish-tag v0.3.11-20251014203510  # Publish existing tag"
+        echo "  ./gh-build.sh trigger v0.3.11-20251014203510      # Rebuild + publish"
         ;;
 esac
