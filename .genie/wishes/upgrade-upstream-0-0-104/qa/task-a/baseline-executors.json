@@ -1,8 +1,0 @@
-# Baseline Executors (pre-upgrade)
-
-Note: Backend not running during baseline capture.
-Expected executors after upgrade: 8 total including Copilot
-
-To verify after upgrade, run:
-curl http://localhost:PORT/api/executors/profiles | jq 'keys | length'
-curl http://localhost:PORT/api/executors/profiles | jq 'has("copilot")'

@@ -1,5 +1,0 @@
-total 16K
-drwxr-xr-x 3 namastex namastex 4.0K Oct  6 15:18 .
-drwxr-xr-x 5 namastex namastex 4.0K Oct  6 15:18 ..
-drwxr-xr-x 2 namastex namastex 4.0K Oct  6 15:18 assets
--rw-r--r-- 1 namastex namastex  463 Oct  6 15:18 index.html

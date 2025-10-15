@@ -1,5 +1,0 @@
-warning: server@0.4.0: Creating dummy frontend/dist directory for compilation
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.34s
-     Running `target/debug/generate_types --check`
-Generating TypeScript types…
-✅ shared/types.ts is up to date.
