@@ -34,7 +34,7 @@ cd frontend && pnpm run build && cd ..
 
 echo "🔨 Building Rust binaries..."
 cargo build --release
-cargo build --release --bin mcp_task_server
+cargo build --release --bin forge-mcp-task-server
 
 echo "📦 Creating distribution package..."
 
@@ -50,8 +50,8 @@ zip -q automagik-forge.zip automagik-forge
 rm -f automagik-forge
 mv automagik-forge.zip npx-cli/dist/$PLATFORM_DIR/automagik-forge.zip
 
-# Copy and zip the MCP binary
-cp target/release/mcp_task_server automagik-forge-mcp
+# Copy and zip the MCP binary (forge-specific)
+cp target/release/forge-mcp-task-server automagik-forge-mcp
 zip -q automagik-forge-mcp.zip automagik-forge-mcp
 rm -f automagik-forge-mcp
 mv automagik-forge-mcp.zip npx-cli/dist/$PLATFORM_DIR/automagik-forge-mcp.zip
