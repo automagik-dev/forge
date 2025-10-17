@@ -8,6 +8,10 @@ default-run = "forge-app"
 name = "forge-app"
 path = "src/main.rs"
 
+[[bin]]
+name = "forge-mcp-task-server"
+path = "src/bin/forge_mcp_task_server.rs"
+
 [dependencies]
 # Framework dependencies
 axum = { workspace = true }
@@ -21,6 +25,7 @@ tracing-subscriber = { workspace = true }
 rust-embed = { version = "8.0", features = ["debug-embed"] }
 mime_guess = "2.0"
 ts-rs = { workspace = true }
+rmcp = { workspace = true }
 
 # Database dependencies
 sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "migrate", "uuid", "chrono"] }
