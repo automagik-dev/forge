@@ -147,7 +147,9 @@ jobs:
           SQLX_OFFLINE: true
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
-        run: cargo build --release --target ${{ matrix.target }}
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+          cargo build --release --target ${{ matrix.target }} --bin forge-mcp-task-server
         shell: bash
 
       - name: Build Rust binaries (Linux zigbuild)
@@ -166,6 +168,7 @@ jobs:
         run: |
           # Use cargo-zigbuild (via zig toolchain) for Linux cross targets
           cargo zigbuild --release --target ${{ matrix.target }}
+          cargo zigbuild --release --target ${{ matrix.target }} --bin forge-mcp-task-server
         shell: bash
 
       - name: Build Rust binaries (non-Windows, native)
@@ -184,6 +187,7 @@ jobs:
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |
           cargo build --release --target ${{ matrix.target }}
+          cargo build --release --target ${{ matrix.target }} --bin forge-mcp-task-server
         shell: bash
       
       - name: Package binaries (Windows)
@@ -197,7 +201,7 @@ jobs:
           Move-Item "automagik-forge.zip" "npx-cli/dist/${{ matrix.platform }}/"
           Remove-Item "automagik-forge.exe"
 
-          Copy-Item "target/${{ matrix.target }}/release/mcp_task_server.exe" "automagik-forge-mcp.exe"
+          Copy-Item "target/${{ matrix.target }}/release/forge-mcp-task-server.exe" "automagik-forge-mcp.exe"
           Compress-Archive -Path "automagik-forge-mcp.exe" -DestinationPath "automagik-forge-mcp.zip" -Force
           Move-Item "automagik-forge-mcp.zip" "npx-cli/dist/${{ matrix.platform }}/"
           Remove-Item "automagik-forge-mcp.exe"
@@ -213,7 +217,7 @@ jobs:
           mv automagik-forge.zip npx-cli/dist/${{ matrix.platform }}/
           rm automagik-forge
 
-          cp target/${{ matrix.target }}/release/mcp_task_server automagik-forge-mcp
+          cp target/${{ matrix.target }}/release/forge-mcp-task-server automagik-forge-mcp
           zip -q automagik-forge-mcp.zip automagik-forge-mcp
           mv automagik-forge-mcp.zip npx-cli/dist/${{ matrix.platform }}/
           rm automagik-forge-mcp
