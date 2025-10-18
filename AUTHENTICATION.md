@@ -273,5 +273,5 @@ await logout();
 ## References
 
 - [GitHub OAuth Device Flow Documentation](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow)
-- [Automagik Forge API Documentation](/swagger-ui)
+- [Automagik Forge API Documentation](/docs)
 - [GitHub OAuth App Settings](https://github.com/settings/developers)

@@ -76,8 +76,8 @@ pub fn create_router(services: ForgeServices) -> Router {
         .route("/health", get(health_check))
         // OpenAPI specification endpoint
         .route("/api/openapi.json", get(openapi_spec))
-        // Swagger UI HTML page
-        .route("/swagger-ui", get(swagger_ui_handler))
+        // API documentation (Swagger UI)
+        .route("/docs", get(swagger_ui_handler))
         .merge(forge_api_routes())
         // Upstream API at /api
         .nest("/api", upstream_api)

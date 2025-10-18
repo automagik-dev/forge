@@ -58,7 +58,7 @@ async fn openapi_spec() -> Json<utoipa::openapi::OpenApi> {
 }
 ```
 
-#### `/swagger-ui` (GET)
+#### `/docs` (GET)
 Serves an interactive Swagger UI HTML page.
 
 ```rust
@@ -104,7 +104,7 @@ Comprehensive documentation of the GitHub OAuth Device Flow authentication syste
 Once the backend server is running:
 
 ### Swagger UI (Interactive)
-Visit: **http://localhost:{port}/swagger-ui**
+Visit: **http://localhost:{port}/docs**
 
 Features:
 - Browse all API endpoints
@@ -187,7 +187,7 @@ Expected output:
 
 ### 3. Test Swagger UI
 
-Open in browser: `http://localhost:8888/swagger-ui`
+Open in browser: `http://localhost:8888/docs`
 
 You should see:
 - Interactive API documentation
@@ -321,7 +321,7 @@ This ensures the spec is always in sync with the code.
 ### Modified:
 - `forge-app/Cargo.toml` - Added utoipa dependency
 - `forge-app/src/main.rs` - Registered openapi module
-- `forge-app/src/router.rs` - Added /api/openapi.json and /swagger-ui endpoints
+- `forge-app/src/router.rs` - Added /api/openapi.json and /docs endpoints
 
 ## Troubleshooting
 
