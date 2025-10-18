@@ -6,6 +6,7 @@
 use std::net::{IpAddr, SocketAddr};
 use utils::browser::open_browser;
 
+mod openapi;
 mod router;
 mod services;
 

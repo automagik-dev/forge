@@ -13,8 +13,10 @@ use axum::{
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use utoipa::OpenApi;
 use uuid::Uuid;
 
+use crate::openapi::ApiDoc;
 use crate::services::ForgeServices;
 use db::models::{
     image::TaskImage,
@@ -72,6 +74,10 @@ pub fn create_router(services: ForgeServices) -> Router {
 
     Router::new()
         .route("/health", get(health_check))
+        // OpenAPI specification endpoint
+        .route("/api/openapi.json", get(openapi_spec))
+        // API documentation (Swagger UI)
+        .route("/docs", get(swagger_ui_handler))
         .merge(forge_api_routes())
         // Upstream API at /api
         .nest("/api", upstream_api)
@@ -431,6 +437,68 @@ async fn health_check() -> Json<Value> {
         "service": "forge-app",
         "message": "Forge application ready - backend extensions extracted successfully"
     }))
+}
+
+/// OpenAPI specification endpoint
+///
+/// Returns the complete OpenAPI 3.0 specification for the Forge API
+#[utoipa::path(
+    get,
+    path = "/api/openapi.json",
+    tag = "health",
+    responses(
+        (status = 200, description = "OpenAPI specification", content_type = "application/json")
+    )
+)]
+async fn openapi_spec() -> Json<utoipa::openapi::OpenApi> {
+    Json(ApiDoc::openapi())
+}
+
+/// Swagger UI handler
+///
+/// Serves the Swagger UI HTML page for interactive API documentation
+async fn swagger_ui_handler() -> Html<&'static str> {
+    Html(
+        r#"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automagik Forge API Documentation</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            window.ui = SwaggerUIBundle({
+                url: '/api/openapi.json',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout"
+            });
+        };
+    </script>
+</body>
+</html>
+    "#,
+    )
 }
 
 async fn get_forge_config(

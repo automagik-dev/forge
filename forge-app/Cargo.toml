@@ -27,6 +27,9 @@ mime_guess = "2.0"
 ts-rs = { workspace = true }
 rmcp = { workspace = true }
 
+# OpenAPI/Swagger dependencies
+utoipa = { version = "5.3", features = ["axum_extras", "chrono", "uuid"] }
+
 # Database dependencies
 sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "migrate", "uuid", "chrono"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
