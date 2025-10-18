@@ -1,12 +1,15 @@
 //! Forge MCP Task Server
 //!
-//! MCP server for Automagik Forge that defaults to port 8887 (forge-app's default port)
-//! instead of reading from port files like upstream.
+//! MCP server for Automagik Forge that reads port from port file (like upstream)
+//! or falls back to BACKEND_PORT env var, then defaults to 8887.
 
 use rmcp::{ServiceExt, transport::stdio};
 use server::mcp::task_server::TaskServer;
 use tracing_subscriber::{EnvFilter, prelude::*};
-use utils::sentry::{self as sentry_utils, SentrySource, sentry_layer};
+use utils::{
+    port_file::read_port_file,
+    sentry::{self as sentry_utils, SentrySource, sentry_layer},
+};
 
 fn main() -> anyhow::Result<()> {
     sentry_utils::init_once(SentrySource::Mcp);
@@ -27,14 +30,14 @@ fn main() -> anyhow::Result<()> {
             let version = env!("CARGO_PKG_VERSION");
             tracing::debug!("[MCP] Starting Forge MCP task server version {version}...");
 
-            // Read backend port from environment variable or use forge default
-            let base_url = if let Ok(url) = std::env::var("VIBE_BACKEND_URL") {
-                tracing::info!("[MCP] Using backend URL from VIBE_BACKEND_URL: {}", url);
+            // Read backend URL/port from environment, port file, or default
+            let base_url = if let Ok(url) = std::env::var("FORGE_BACKEND_URL") {
+                tracing::info!("[MCP] Using backend URL from FORGE_BACKEND_URL: {}", url);
                 url
             } else {
                 let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
 
-                // Get port from environment variables or fall back to forge-app default (8887)
+                // Priority: BACKEND_PORT env > PORT env > port file > default 8887
                 let port = match std::env::var("BACKEND_PORT").or_else(|_| std::env::var("PORT")) {
                     Ok(port_str) => {
                         tracing::info!("[MCP] Using port from environment: {}", port_str);
@@ -43,8 +46,17 @@ fn main() -> anyhow::Result<()> {
                         })?
                     }
                     Err(_) => {
-                        tracing::info!("[MCP] Using default forge-app port: 8887");
-                        8887
+                        // Try reading from port file
+                        match read_port_file("automagik-forge").await {
+                            Ok(port) => {
+                                tracing::info!("[MCP] Using port from port file: {}", port);
+                                port
+                            }
+                            Err(_) => {
+                                tracing::info!("[MCP] Using default forge-app port: 8887");
+                                8887
+                            }
+                        }
                     }
                 };
 
