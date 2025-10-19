@@ -6,17 +6,16 @@
 use axum::{
     Json, Router,
     extract::{FromRef, Path, State},
-    http::{HeaderValue, StatusCode, header},
+    http::{HeaderValue, Method, StatusCode, header},
     response::{Html, IntoResponse, Response},
     routing::{get, post},
 };
+use tower_http::cors::{Any, CorsLayer};
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use utoipa::OpenApi;
 use uuid::Uuid;
 
-use crate::openapi::ApiDoc;
 use crate::services::ForgeServices;
 use db::models::{
     image::TaskImage,
@@ -72,17 +71,23 @@ pub fn create_router(services: ForgeServices) -> Router {
 
     let upstream_api = upstream_api_router(&deployment);
 
+    // Configure CORS for Swagger UI and external API access
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
+        .allow_headers(Any);
+
     Router::new()
         .route("/health", get(health_check))
-        // OpenAPI specification endpoint
-        .route("/api/openapi.json", get(openapi_spec))
-        // API documentation (Swagger UI)
-        .route("/docs", get(swagger_ui_handler))
+        .route("/docs", get(serve_swagger_ui))
+        .route("/api/openapi.json", get(serve_openapi_spec))
+        .route("/api/routes", get(list_routes))
         .merge(forge_api_routes())
         // Upstream API at /api
         .nest("/api", upstream_api)
         // Single frontend with overlay architecture
         .fallback(frontend_handler)
+        .layer(cors)
         .with_state(state)
 }
 
@@ -435,70 +440,155 @@ async fn health_check() -> Json<Value> {
     Json(json!({
         "status": "ok",
         "service": "forge-app",
+        "version": env!("CARGO_PKG_VERSION"),
         "message": "Forge application ready - backend extensions extracted successfully"
     }))
 }
 
-/// OpenAPI specification endpoint
-///
-/// Returns the complete OpenAPI 3.0 specification for the Forge API
-#[utoipa::path(
-    get,
-    path = "/api/openapi.json",
-    tag = "health",
-    responses(
-        (status = 200, description = "OpenAPI specification", content_type = "application/json")
-    )
-)]
-async fn openapi_spec() -> Json<utoipa::openapi::OpenApi> {
-    Json(ApiDoc::openapi())
+/// Serve OpenAPI specification as JSON
+async fn serve_openapi_spec() -> Result<Json<Value>, (StatusCode, String)> {
+    const OPENAPI_YAML: &str = include_str!("../openapi.yaml");
+
+    serde_yaml::from_str::<Value>(OPENAPI_YAML)
+        .map(Json)
+        .map_err(|e| {
+            tracing::error!("Failed to parse openapi.yaml: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to parse OpenAPI spec: {}", e),
+            )
+        })
 }
 
-/// Swagger UI handler
-///
-/// Serves the Swagger UI HTML page for interactive API documentation
-async fn swagger_ui_handler() -> Html<&'static str> {
-    Html(
-        r#"
-<!DOCTYPE html>
+/// Serve Swagger UI HTML
+async fn serve_swagger_ui() -> Html<String> {
+    Html(r#"<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Automagik Forge API Documentation</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-        }
-    </style>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui.css">
 </head>
 <body>
     <div id="swagger-ui"></div>
-    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-standalone-preset.js"></script>
     <script>
-        window.onload = function() {
-            window.ui = SwaggerUIBundle({
-                url: '/api/openapi.json',
+        window.onload = function() {{
+            SwaggerUIBundle({{
+                url: "/api/openapi.json",
                 dom_id: '#swagger-ui',
-                deepLinking: true,
                 presets: [
                     SwaggerUIBundle.presets.apis,
                     SwaggerUIStandalonePreset
                 ],
-                plugins: [
-                    SwaggerUIBundle.plugins.DownloadUrl
-                ],
-                layout: "StandaloneLayout"
-            });
-        };
+                layout: "BaseLayout",
+                deepLinking: true,
+                displayRequestDuration: true,
+                filter: true,
+                tryItOutEnabled: true,
+                persistAuthorization: true
+            }});
+        }};
     </script>
 </body>
-</html>
-    "#,
-    )
+</html>"#.to_string())
+}
+
+/// Simple route listing - practical solution instead of broken OpenAPI
+async fn list_routes() -> Json<Value> {
+    Json(json!({
+        "version": env!("CARGO_PKG_VERSION"),
+        "routes": {
+            "core": [
+                "GET /health",
+                "GET /api/health",
+                "GET /api/routes (this endpoint)"
+            ],
+            "auth": [
+                "POST /api/auth/github/device",
+                "POST /api/auth/github/device/poll",
+                "POST /api/auth/logout"
+            ],
+            "projects": [
+                "GET /api/projects",
+                "POST /api/projects",
+                "GET /api/projects/{id}",
+                "PUT /api/projects/{id}",
+                "DELETE /api/projects/{id}"
+            ],
+            "tasks": [
+                "GET /api/tasks",
+                "POST /api/tasks",
+                "POST /api/tasks/create-and-start",
+                "GET /api/tasks/{id}",
+                "PUT /api/tasks/{id}",
+                "DELETE /api/tasks/{id}",
+                "GET /api/tasks/stream/ws"
+            ],
+            "task_attempts": [
+                "GET /api/task-attempts",
+                "POST /api/task-attempts",
+                "GET /api/task-attempts/{id}",
+                "POST /api/task-attempts/{id}/follow-up",
+                "POST /api/task-attempts/{id}/stop",
+                "POST /api/task-attempts/{id}/merge",
+                "POST /api/task-attempts/{id}/push",
+                "POST /api/task-attempts/{id}/rebase",
+                "POST /api/task-attempts/{id}/pr",
+                "POST /api/task-attempts/{id}/pr/attach",
+                "GET /api/task-attempts/{id}/branch-status",
+                "GET /api/task-attempts/{id}/diff/ws",
+                "GET /api/task-attempts/{id}/draft",
+                "PUT /api/task-attempts/{id}/draft",
+                "DELETE /api/task-attempts/{id}/draft"
+            ],
+            "processes": [
+                "GET /api/execution-processes",
+                "GET /api/execution-processes/{id}",
+                "POST /api/execution-processes/{id}/stop"
+            ],
+            "events": [
+                "GET /api/events/processes/{id}/logs",
+                "GET /api/events/task-attempts/{id}/diff"
+            ],
+            "images": [
+                "POST /api/images",
+                "GET /api/images/{id}"
+            ],
+            "forge": [
+                "GET /api/forge/config",
+                "PUT /api/forge/config",
+                "GET /api/forge/projects/{id}/settings",
+                "PUT /api/forge/projects/{id}/settings",
+                "GET /api/forge/omni/status",
+                "GET /api/forge/omni/instances",
+                "POST /api/forge/omni/validate",
+                "GET /api/forge/omni/notifications"
+            ],
+            "filesystem": [
+                "GET /api/filesystem/tree",
+                "GET /api/filesystem/file"
+            ],
+            "config": [
+                "GET /api/config",
+                "PUT /api/config"
+            ],
+            "drafts": [
+                "GET /api/drafts",
+                "POST /api/drafts",
+                "GET /api/drafts/{id}",
+                "PUT /api/drafts/{id}",
+                "DELETE /api/drafts/{id}"
+            ],
+            "containers": [
+                "GET /api/containers",
+                "GET /api/containers/{id}"
+            ]
+        },
+        "note": "This is a simple route listing. Most endpoints require GitHub OAuth authentication via /api/auth/github/device"
+    }))
 }
 
 async fn get_forge_config(

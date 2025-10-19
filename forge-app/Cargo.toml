@@ -27,8 +27,8 @@ mime_guess = "2.0"
 ts-rs = { workspace = true }
 rmcp = { workspace = true }
 
-# OpenAPI/Swagger dependencies
-utoipa = { version = "5.3", features = ["axum_extras", "chrono", "uuid"] }
+# OpenAPI dependencies (manual YAML spec)
+serde_yaml = "0.9"
 
 # Database dependencies
 sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "migrate", "uuid", "chrono"] }
