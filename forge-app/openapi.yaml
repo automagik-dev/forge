@@ -1,0 +1,1034 @@
+openapi: 3.0.3
+info:
+  title: Automagik Forge API
+  version: 0.3.15
+  description: |
+    Automagik Forge API - AI-powered task orchestration and execution platform.
+
+    ## Authentication
+    Most endpoints require GitHub OAuth authentication via device flow:
+    1. POST `/api/auth/github/device` to get device code
+    2. User visits verification URL and enters code
+    3. POST `/api/auth/github/device/poll` to get access token
+    4. Include token in subsequent requests
+
+    ## Real-time Updates
+    Event streaming endpoints use Server-Sent Events (SSE):
+    - `/api/events/processes/{id}/logs` - Stream process execution logs
+    - `/api/events/task-attempts/{id}/diff` - Stream git diff updates
+  contact:
+    name: Automagik Forge Support
+    url: https://github.com/namastexlabs/automagik-forge
+  license:
+    name: MIT
+    url: https://github.com/namastexlabs/automagik-forge/blob/main/LICENSE
+
+servers:
+  - url: ""
+    description: Same origin (use current server)
+
+tags:
+  - name: Core
+    description: Health checks and system information
+  - name: Auth
+    description: GitHub OAuth authentication
+  - name: Projects
+    description: Project management
+  - name: Tasks
+    description: Task creation and management
+  - name: Task Attempts
+    description: Task execution attempts
+  - name: Processes
+    description: Execution process monitoring
+  - name: Events
+    description: Real-time event streaming (SSE)
+  - name: Images
+    description: Image upload and management
+  - name: Forge
+    description: Forge-specific features (Omni, config)
+  - name: Filesystem
+    description: Repository file browsing
+  - name: Config
+    description: Application configuration
+  - name: Drafts
+    description: Draft task management
+  - name: Containers
+    description: Container/worktree information
+
+paths:
+  /health:
+    get:
+      tags: [Core]
+      summary: Health check
+      description: Basic health check endpoint
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  version:
+                    type: string
+                    example: "0.3.15"
+
+  /api/health:
+    get:
+      tags: [Core]
+      summary: API health check
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /api/routes:
+    get:
+      tags: [Core]
+      summary: List all available routes
+      description: Returns a categorized list of all API endpoints
+      responses:
+        '200':
+          description: Route listing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                  routes:
+                    type: object
+                  note:
+                    type: string
+
+  /api/auth/github/device:
+    post:
+      tags: [Auth]
+      summary: Initiate GitHub OAuth device flow
+      description: Start GitHub device authentication flow. Returns device code and verification URL.
+      responses:
+        '200':
+          description: Device flow initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: true
+                data:
+                  device_code: "abc123"
+                  user_code: "ABCD-1234"
+                  verification_uri: "https://github.com/login/device"
+                  expires_in: 900
+                  interval: 5
+
+  /api/auth/github/device/poll:
+    post:
+      tags: [Auth]
+      summary: Poll for GitHub OAuth token
+      description: Poll to check if user has authorized the device. Call repeatedly with interval from device flow response.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_code:
+                  type: string
+              required: [device_code]
+      responses:
+        '200':
+          description: Token ready or pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout current user
+      responses:
+        '200':
+          description: Successfully logged out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/projects:
+    get:
+      tags: [Projects]
+      summary: List all projects
+      security:
+        - githubAuth: []
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Project'
+    post:
+      tags: [Projects]
+      summary: Create a new project
+      security:
+        - githubAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProject'
+      responses:
+        '200':
+          description: Project created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Project'
+
+  /api/projects/{id}:
+    get:
+      tags: [Projects]
+      summary: Get project by ID
+      security:
+        - githubAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Project details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Project'
+    put:
+      tags: [Projects]
+      summary: Update project
+      security:
+        - githubAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProject'
+      responses:
+        '200':
+          description: Project updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Project'
+    delete:
+      tags: [Projects]
+      summary: Delete project
+      security:
+        - githubAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Project deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/tasks:
+    get:
+      tags: [Tasks]
+      summary: List tasks for a project
+      security:
+        - githubAuth: []
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Project ID to filter tasks
+      responses:
+        '200':
+          description: List of tasks with attempt status
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskWithAttemptStatus'
+    post:
+      tags: [Tasks]
+      summary: Create a new task
+      security:
+        - githubAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTask'
+      responses:
+        '200':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Task'
+
+  /api/tasks/create-and-start:
+    post:
+      tags: [Tasks]
+      summary: Create task and immediately start execution
+      security:
+        - githubAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                task:
+                  $ref: '#/components/schemas/CreateTask'
+                executor_profile_id:
+                  $ref: '#/components/schemas/ExecutorProfileId'
+                base_branch:
+                  type: string
+                  example: main
+              required: [task, executor_profile_id, base_branch]
+      responses:
+        '200':
+          description: Task created and execution started
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TaskWithAttemptStatus'
+
+  /api/tasks/{task_id}:
+    get:
+      tags: [Tasks]
+      summary: Get task by ID
+      security:
+        - githubAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Task'
+    put:
+      tags: [Tasks]
+      summary: Update task
+      security:
+        - githubAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTask'
+      responses:
+        '200':
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Task'
+    delete:
+      tags: [Tasks]
+      summary: Delete task
+      security:
+        - githubAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '202':
+          description: Task deletion accepted (background cleanup initiated)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/task-attempts:
+    get:
+      tags: [Task Attempts]
+      summary: List task attempts
+      security:
+        - githubAuth: []
+      parameters:
+        - name: task_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by task ID
+      responses:
+        '200':
+          description: List of task attempts
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskAttempt'
+    post:
+      tags: [Task Attempts]
+      summary: Create a new task attempt
+      security:
+        - githubAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                task_id:
+                  type: string
+                  format: uuid
+                executor_profile_id:
+                  $ref: '#/components/schemas/ExecutorProfileId'
+                base_branch:
+                  type: string
+                  example: main
+              required: [task_id, executor_profile_id, base_branch]
+      responses:
+        '200':
+          description: Task attempt created and started
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TaskAttempt'
+
+  /api/task-attempts/{id}:
+    get:
+      tags: [Task Attempts]
+      summary: Get task attempt by ID
+      security:
+        - githubAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskAttemptId'
+      responses:
+        '200':
+          description: Task attempt details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TaskAttempt'
+
+  /api/task-attempts/{id}/follow-up:
+    post:
+      tags: [Task Attempts]
+      summary: Send follow-up instruction to running task
+      security:
+        - githubAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskAttemptId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+                  example: "Please also add unit tests"
+              required: [prompt]
+      responses:
+        '200':
+          description: Follow-up sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/task-attempts/{id}/stop:
+    post:
+      tags: [Task Attempts]
+      summary: Stop running task attempt
+      security:
+        - githubAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskAttemptId'
+      responses:
+        '200':
+          description: Task stopped
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/execution-processes:
+    get:
+      tags: [Processes]
+      summary: List execution processes
+      security:
+        - githubAuth: []
+      responses:
+        '200':
+          description: List of processes
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ExecutionProcess'
+
+  /api/execution-processes/{id}:
+    get:
+      tags: [Processes]
+      summary: Get execution process by ID
+      security:
+        - githubAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Process details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ExecutionProcess'
+
+  /api/events/processes/{id}/logs:
+    get:
+      tags: [Events]
+      summary: Stream process execution logs (SSE)
+      description: Server-Sent Events stream of real-time process logs
+      security:
+        - githubAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: SSE stream of log messages
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Server-sent events with log data
+
+  /api/events/task-attempts/{id}/diff:
+    get:
+      tags: [Events]
+      summary: Stream git diff updates (SSE)
+      description: Server-Sent Events stream of git diff as task progresses
+      security:
+        - githubAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskAttemptId'
+      responses:
+        '200':
+          description: SSE stream of diff updates
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /api/images:
+    post:
+      tags: [Images]
+      summary: Upload an image
+      security:
+        - githubAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Image uploaded
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+
+  /api/images/{id}:
+    get:
+      tags: [Images]
+      summary: Get image by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Image data
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+
+  /api/forge/config:
+    get:
+      tags: [Forge]
+      summary: Get Forge configuration
+      security:
+        - githubAuth: []
+      responses:
+        '200':
+          description: Forge configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    put:
+      tags: [Forge]
+      summary: Update Forge configuration
+      security:
+        - githubAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Configuration updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/config:
+    get:
+      tags: [Config]
+      summary: Get application configuration
+      security:
+        - githubAuth: []
+      responses:
+        '200':
+          description: Application configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    put:
+      tags: [Config]
+      summary: Update application configuration
+      security:
+        - githubAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Configuration updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+components:
+  securitySchemes:
+    githubAuth:
+      type: http
+      scheme: bearer
+      description: GitHub OAuth token obtained via device flow
+
+  parameters:
+    ProjectId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Project UUID
+
+    TaskId:
+      name: task_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Task UUID
+
+    TaskAttemptId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Task Attempt UUID
+
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          nullable: true
+        error_data:
+          type: object
+          nullable: true
+        message:
+          type: string
+          nullable: true
+      required: [success]
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        git_repo_path:
+          type: string
+        setup_script:
+          type: string
+          nullable: true
+        dev_script:
+          type: string
+          nullable: true
+        cleanup_script:
+          type: string
+          nullable: true
+        copy_files:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [id, name, git_repo_path, created_at, updated_at]
+
+    CreateProject:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "My Project"
+        git_repo_path:
+          type: string
+          example: "~/projects/my-project"
+        use_existing_repo:
+          type: boolean
+          default: false
+        setup_script:
+          type: string
+          nullable: true
+        dev_script:
+          type: string
+          nullable: true
+        cleanup_script:
+          type: string
+          nullable: true
+        copy_files:
+          type: string
+          nullable: true
+          example: ".env, .mcp.json"
+      required: [name, git_repo_path]
+
+    UpdateProject:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        git_repo_path:
+          type: string
+          nullable: true
+        setup_script:
+          type: string
+          nullable: true
+        dev_script:
+          type: string
+          nullable: true
+        cleanup_script:
+          type: string
+          nullable: true
+        copy_files:
+          type: string
+          nullable: true
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [todo, inprogress, inreview, done, cancelled]
+        parent_task_attempt:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [id, project_id, title, status, created_at, updated_at]
+
+    CreateTask:
+      type: object
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          example: "Fix authentication bug"
+        description:
+          type: string
+          nullable: true
+          example: "Users can't login with GitHub OAuth"
+        image_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+      required: [project_id, title]
+
+    UpdateTask:
+      type: object
+      properties:
+        title:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [todo, inprogress, inreview, done, cancelled]
+          nullable: true
+        parent_task_attempt:
+          type: string
+          format: uuid
+          nullable: true
+        image_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+
+    TaskWithAttemptStatus:
+      allOf:
+        - $ref: '#/components/schemas/Task'
+        - type: object
+          properties:
+            has_in_progress_attempt:
+              type: boolean
+            has_merged_attempt:
+              type: boolean
+            last_attempt_failed:
+              type: boolean
+            executor:
+              type: string
+              nullable: true
+
+    TaskAttempt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        task_id:
+          type: string
+          format: uuid
+        executor:
+          type: string
+          enum: [CLAUDE_CODE, CURSOR, GEMINI, CODEX, AMP, OPENCODE, QWEN_CODE, CLAUDE_ROUTER]
+        base_branch:
+          type: string
+        branch:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, completed, failed, stopped]
+        container_ref:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [id, task_id, executor, base_branch, branch, status, created_at, updated_at]
+
+    ExecutorProfileId:
+      type: object
+      properties:
+        executor:
+          type: string
+          enum: [CLAUDE_CODE, CURSOR, GEMINI, CODEX, AMP, OPENCODE, QWEN_CODE, CLAUDE_ROUTER]
+          example: CLAUDE_CODE
+        variant:
+          type: string
+          nullable: true
+          example: null
+      required: [executor]
+
+    ExecutionProcess:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        task_attempt_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [running, completed, failed, stopped]
+        exit_code:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [id, task_attempt_id, status, created_at, updated_at]

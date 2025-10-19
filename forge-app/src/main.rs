@@ -4,9 +4,9 @@
 //! Provides unified API access to both upstream functionality and forge-specific features.
 
 use std::net::{IpAddr, SocketAddr};
+use tokio::signal;
 use utils::browser::open_browser;
 
-mod openapi;
 mod router;
 mod services;
 
@@ -52,7 +52,41 @@ async fn main() -> anyhow::Result<()> {
         tracing::warn!("Failed to open browser: {}", e);
     }
 
-    axum::serve(listener, app).await?;
+    // Graceful shutdown on Ctrl+C
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
+
+    tracing::info!("Forge app shut down gracefully");
 
     Ok(())
+}
+
+/// Wait for Ctrl+C or SIGTERM signal
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install SIGTERM handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {
+            tracing::info!("Received Ctrl+C, initiating graceful shutdown...");
+        },
+        _ = terminate => {
+            tracing::info!("Received SIGTERM, initiating graceful shutdown...");
+        },
+    }
 }
