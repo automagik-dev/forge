@@ -1,6 +1,6 @@
 [package]
 name = "forge-omni"
-version = "0.3.13"
+version = "0.3.15"
 edition = "2024"
 
 [dependencies]
