@@ -28,34 +28,54 @@ This agent orchestrates the full upstream update workflow:
    - Verify current versions (upstream, fork, gitmodule)
    - Check for uncommitted changes in automagik-forge
    - Validate prerequisites (remotes, auth, gh CLI)
+   - **CRITICAL**: Compare previous namastex tag's rebrand to ensure no changes lost
+   - Backup any WIP migrations in upstream/crates/db/migrations/
 
-2. [Fork Sync]
-   - Setup upstream remote (BloopAI/vibe-kanban)
-   - Fetch latest from upstream
+2. [Fork Sync] (in automagik-forge/upstream/ submodule)
+   - Setup upstream remote (BloopAI/vibe-kanban) in upstream/ directory
+   - Fetch latest from upstream with tags
    - Identify latest upstream release tag
-   - Hard reset fork to upstream/main
-   - Force push to namastexlabs/vibe-kanban
+   - Clean any WIP files (migrations, etc.)
+   - Hard reset to upstream tag
+   - Checkout main branch
 
-3. [Release Creation]
-   - Determine namastex tag name (e.g., v0.0.106-namastex)
-   - Create release on namastexlabs/vibe-kanban
+3. [Mechanical Rebrand] (BEFORE creating tag - critical!)
+   - Execute rebrand script from automagik-forge root
+   - Commit rebrand changes in upstream/ submodule
+   - Verify rebrand (allow external packages like vibe-kanban-web-companion)
+   - Force push main branch to namastexlabs/vibe-kanban
+
+4. [Release Creation]
+   - Determine namastex tag name with increment suffix (e.g., v0.0.106-namastex-1)
+   - Delete old namastex tag if it exists (locally and remotely)
+   - Create new annotated tag on rebranded commit
+   - Push tag to namastexlabs/vibe-kanban
+   - Create GitHub release with detailed notes
    - Verify release exists
 
-4. [Gitmodule Update]
-   - Navigate to automagik-forge upstream/ directory
-   - Fetch new tags from fork
-   - Checkout new namastex tag
+5. [Gitmodule Update]
+   - Fetch new tags in upstream/ submodule
+   - Checkout new namastex tag (with rebrand already applied)
    - Return to automagik-forge root
+   - Stage submodule pointer change
 
-5. [Mechanical Rebrand]
-   - Execute rebrand script
-   - Verify zero vibe-kanban references
-   - Confirm build success
+6. [Type Regeneration & Verification]
+   - Run `pnpm run generate-types` (upstream version changed)
+   - Run `cargo clippy` and fix any warnings
+   - Run `cargo check --workspace`
+   - Verify build success
+   - Stage regenerated types
 
-6. [Report]
-   - List changes made
-   - Provide commit instructions
-   - Note any issues
+7. [Commit & Push]
+   - Commit submodule update with detailed message
+   - Commit type regeneration separately
+   - Push to automagik-forge remote
+   - Create session continuation document
+
+8. [Report]
+   - List all changes made
+   - Document what changed from previous namastex tag
+   - Note any issues or manual steps needed
 </task_breakdown>
 
 ## Prerequisites
@@ -74,189 +94,381 @@ This agent orchestrates the full upstream update workflow:
 # Current upstream version in automagik-forge
 cd upstream && git describe --tags && cd ..
 
-# Check if in vibe-kanban fork repo
-pwd  # Should be in vibe-kanban fork for sync operations
+# Check what changed in previous namastex tag
+cd upstream
+git log v0.0.106-20251009115922..v0.0.106-namastex-2 --oneline
+# Should show: rebrand commit, any fixes
+cd ..
 ```
 
 #### Verify Prerequisites
 ```bash
-# Check upstream remote exists (in fork repo)
-git remote -v | grep upstream
+# Check upstream remote exists in upstream/ submodule
+cd upstream
+git remote -v | grep upstream || echo "Need to add upstream remote"
+cd ..
 
 # Verify gh CLI authentication
 gh auth status
 
-# Check for uncommitted changes
+# Check for uncommitted changes in automagik-forge
 git status
+
+# Check for WIP migrations
+ls -la upstream/crates/db/migrations/ | grep "$(date +%Y)"
 ```
 
-### Phase 2: Fork Sync (in namastexlabs/vibe-kanban repo)
+#### Backup WIP Migrations
+```bash
+# If WIP migrations exist, back them up
+mkdir -p .genie/backups/migrations-pre-$(date +%Y%m%d)-upgrade
+cp upstream/crates/db/migrations/2025*.sql .genie/backups/migrations-pre-$(date +%Y%m%d)-upgrade/ 2>/dev/null || true
+```
+
+### Phase 2: Fork Sync (in automagik-forge/upstream/ submodule)
 
 #### Setup Upstream Remote
 ```bash
+cd upstream
 # Add upstream if it doesn't exist
 git remote -v | grep upstream || git remote add upstream https://github.com/BloopAI/vibe-kanban.git
 ```
 
 #### Fetch Latest from Upstream
 ```bash
-# Fetch all changes and tags
-git fetch upstream
+# Fetch all changes and tags from BloopAI
 git fetch upstream --tags
 ```
 
 #### Identify Latest Upstream Release
 ```bash
 # Get latest tag from upstream
-LATEST_TAG=$(git tag --list 'v0.0.*' --sort=-version:refname | head -1)
+LATEST_TAG=$(git tag --list 'v0.0.*' --sort=-version:refname | grep -E 'v0\.0\.[0-9]+-[0-9]+$' | head -1)
 echo "Latest upstream tag: $LATEST_TAG"
 
-# Alternative: Check GitHub releases
-gh release list --repo BloopAI/vibe-kanban --limit 5
+# Alternative: Check via GitHub API
+gh api repos/BloopAI/vibe-kanban/tags --jq '.[0:5] | .[] | .name'
 ```
 
-#### Hard Reset to Upstream Main
+#### Clean WIP Files
 ```bash
-# Discard ALL local changes and match upstream exactly
-git reset --hard upstream/main
-
-# Verify no differences
-git diff upstream/main  # Should be empty
+# Remove any untracked WIP files (migrations, etc.)
+git clean -fd crates/db/migrations/
+git status  # Should show clean working tree
 ```
 
-#### Force Push to Fork
+#### Hard Reset to Upstream Tag
 ```bash
-# Mirror upstream to fork (--force is required)
+# Reset to specific upstream tag
+git reset --hard $LATEST_TAG
+
+# Verify we're at the right commit
+git log --oneline --decorate -3
+```
+
+#### Checkout Main Branch
+```bash
+# Create/reset main branch to current commit
+git checkout -B main
+
+# Verify position
+git log --oneline --decorate -3
+```
+
+### Phase 3: Mechanical Rebrand (BEFORE creating tag!)
+
+#### Navigate to automagik-forge Root
+```bash
+# Important: rebrand script must run from automagik-forge root
+cd /home/namastex/workspace/automagik-forge
+pwd  # Should be automagik-forge, not upstream/
+```
+
+#### Execute Rebrand Script
+```bash
+# Run rebrand on upstream/ directory
+./scripts/rebrand.sh
+
+# Check output for warnings
+# Note: vibe-kanban-web-companion is EXTERNAL package - warnings about it are OK
+```
+
+#### Commit Rebrand in Upstream Submodule
+```bash
+cd upstream
+git add -A
+git status  # Should show ~74 files modified
+
+git commit -m "chore: mechanical rebrand for $LATEST_TAG
+
+Automated rebrand of upstream $LATEST_TAG
+
+Changes:
+- vibe-kanban → automagik-forge (all variants)
+- Bloop AI → Namastex Labs
+- Email: genie@namastex.ai
+- GitHub org: namastexlabs
+
+Files modified: 60+
+Total replacements: 230+ occurrences
+
+Note: External package 'vibe-kanban-web-companion' references preserved
+(already aliased as AutomagikForgeWebCompanion in code)
+
+Base tag: $LATEST_TAG
+Script: scripts/rebrand.sh"
+```
+
+#### Verify Rebrand (Allow External Packages)
+```bash
+# Count remaining references EXCLUDING external packages
+REFS=$(grep -r "vibe-kanban" . 2>/dev/null | grep -v "web-companion" | grep -v ".git" | wc -l)
+echo "Remaining vibe-kanban references (excluding external packages): $REFS"
+
+if [ "$REFS" -eq 0 ]; then
+  echo "✅ Rebrand successful"
+else
+  echo "⚠️  $REFS references found (may be OK if external packages)"
+  grep -r "vibe-kanban" . 2>/dev/null | grep -v "web-companion" | grep -v ".git"
+fi
+```
+
+#### Force Push Rebranded Main to Fork
+```bash
+# Push rebranded commit to namastexlabs/vibe-kanban
 git push origin main --force
 
-# Push all tags
-git push origin --tags --force
+# Verify push succeeded
+git log --oneline --decorate -3
 ```
 
-### Phase 3: Release Creation (in namastexlabs/vibe-kanban repo)
+### Phase 4: Release Creation (in upstream/ submodule)
 
-#### Determine Tag Name
+#### Delete Old Tag (if exists)
 ```bash
-# Extract version from latest upstream tag
-UPSTREAM_TAG=$(git tag --list 'v0.0.*' --sort=-version:refname | head -1)
-# Create namastex variant: v0.0.106-20251009115922 → v0.0.106-namastex
-NAMASTEX_TAG=$(echo $UPSTREAM_TAG | sed 's/-[0-9]*$/-namastex/')
+# Determine tag name with increment: v0.0.109-namastex-1
+# Extract version: v0.0.109-20251017174643 → v0.0.109
+VERSION=$(echo $LATEST_TAG | sed -E 's/(v[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+
+# Check if v0.0.109-namastex exists
+if git tag -l "${VERSION}-namastex" | grep -q .; then
+  echo "Old tag exists, incrementing to ${VERSION}-namastex-1"
+  NAMASTEX_TAG="${VERSION}-namastex-1"
+
+  # Delete old tag locally and remotely
+  git tag -d "${VERSION}-namastex" 2>/dev/null || true
+  git push origin :refs/tags/${VERSION}-namastex 2>&1 || true
+else
+  NAMASTEX_TAG="${VERSION}-namastex-1"
+fi
+
 echo "Creating tag: $NAMASTEX_TAG"
 ```
 
-#### Create Release
+#### Create Annotated Tag on Rebranded Commit
 ```bash
-# Create annotated tag
-git tag -a $NAMASTEX_TAG -m "Namastex release based on $UPSTREAM_TAG"
+# Tag the current commit (which includes rebrand)
+git tag -a $NAMASTEX_TAG -m "Namastex release based on $LATEST_TAG with rebrand
 
+Includes mechanical rebrand:
+- vibe-kanban → automagik-forge
+- Bloop AI → Namastex Labs
+- GitHub org: namastexlabs
+
+Base: $LATEST_TAG + rebrand commit
+
+See upstream release notes for feature details."
+```
+
+#### Push Tag and Create Release
+```bash
 # Push tag
 git push origin $NAMASTEX_TAG
 
-# Create GitHub release
+# Create GitHub release with detailed notes
 gh release create $NAMASTEX_TAG \
   --repo namastexlabs/vibe-kanban \
   --title "$NAMASTEX_TAG" \
-  --notes "Release $NAMASTEX_TAG - synced from upstream BloopAI/vibe-kanban
+  --notes "Release based on upstream $LATEST_TAG with Automagik Forge rebrand
 
-Based on upstream tag: $UPSTREAM_TAG
+## Automagik Forge Rebrand
 
-Key changes:
-$(git log --oneline HEAD~5..HEAD | head -10)" \
-  --latest
+This release includes complete mechanical rebrand:
+- vibe-kanban → automagik-forge (all references)
+- Bloop AI → Namastex Labs
+- GitHub org: namastexlabs
+- Email: genie@namastex.ai
+
+## Changes from Upstream
+
+$(git log --oneline $LATEST_TAG..HEAD | head -10)
+
+See [upstream $LATEST_TAG](https://github.com/BloopAI/vibe-kanban/releases/tag/$LATEST_TAG) for complete changelog."
 ```
 
 #### Verify Release
 ```bash
-# Check release exists
+# Check release was created
 gh release list --repo namastexlabs/vibe-kanban --limit 3
 
-# Verify tag exists
-git tag -l "$NAMASTEX_TAG"
+# Verify tag points to rebranded commit
+git log --oneline --decorate -3
 ```
 
-### Phase 4: Gitmodule Update (in automagik-forge repo)
+### Phase 5: Gitmodule Update (in upstream/ submodule)
 
-#### Navigate to Upstream Submodule
+#### Fetch New Tag
 ```bash
-cd upstream
-```
+# Should still be in upstream/ directory
+pwd  # Should show .../automagik-forge/upstream
 
-#### Fetch New Tags from Fork
-```bash
-# Ensure origin points to namastexlabs/vibe-kanban
-git remote get-url origin  # Should be namastexlabs/vibe-kanban
-
-# Fetch new tags
+# Fetch the tag we just created
 git fetch origin --tags
 ```
 
-#### Checkout New Tag
+#### Checkout Rebranded Tag
 ```bash
-# Checkout the namastex tag
+# Checkout the namastex tag (already has rebrand)
 git checkout $NAMASTEX_TAG
 
-# Verify version
+# Verify we're on the rebranded commit
 git describe --tags
+git log --oneline --decorate -2
+# Should show: rebrand commit, then upstream base
 ```
 
-#### Return to Root
+#### Return to automagik-forge Root
 ```bash
 cd ..
+pwd  # Should be automagik-forge root
 ```
 
-### Phase 5: Mechanical Rebrand (in automagik-forge repo)
+### Phase 6: Type Regeneration & Verification
 
-#### Execute Rebrand Script
+#### Stage Submodule Update
 ```bash
-./scripts/rebrand.sh
+# Stage the submodule pointer change
+git add upstream
+git status  # Should show "modified: upstream"
 ```
 
-#### Verify Zero References
+#### Regenerate TypeScript Types
 ```bash
-# Count remaining vibe-kanban references (must be 0)
-REFERENCE_COUNT=$(grep -r "vibe-kanban\|Vibe Kanban" upstream frontend 2>/dev/null | wc -l)
-echo "Remaining vibe-kanban references: $REFERENCE_COUNT"
+# Upstream version changed, regenerate types
+pnpm run generate-types
 
-if [ "$REFERENCE_COUNT" -eq 0 ]; then
-  echo "✅ Rebrand successful - zero references remain"
-else
-  echo "❌ Rebrand incomplete - $REFERENCE_COUNT references found"
-  grep -r "vibe-kanban\|Vibe Kanban" upstream frontend
-fi
+# This runs both:
+# - cargo run -p server --bin generate_types
+# - cargo run -p forge-app --bin generate_forge_types
+```
+
+#### Run Clippy and Fix Warnings
+```bash
+# Check for clippy warnings
+cargo clippy --all --all-targets --all-features -- -D warnings
+
+# If clippy fails, fix warnings (common: format! → .to_string())
+# Then re-run until it passes
 ```
 
 #### Verify Build Success
 ```bash
-# Rust workspace check
+# Full workspace check
 cargo check --workspace
 
-# Frontend check
-cd frontend && pnpm run check && cd ..
+# Should pass without errors
 ```
 
-### Phase 6: Commit Changes (in automagik-forge repo)
-
-#### Stage All Changes
+#### Stage Regenerated Types
 ```bash
-git add -A
+# Stage type changes
+git add shared/types.ts shared/forge-types.ts
+
+# Also stage any clippy fixes
+git add forge-app/src/router.rs  # If you fixed format! issues
 ```
 
-#### Review Changes
+### Phase 7: Commit & Push
+
+#### Commit Submodule Update
 ```bash
-git status
-git diff --cached --stat
+# Create detailed commit for submodule update
+git commit -m "Update upstream to $NAMASTEX_TAG (with rebrand)
+
+Previous: $(git log -1 --format=%h origin/main -- upstream 2>/dev/null || echo 'unknown')
+Current: $NAMASTEX_TAG
+
+Rebrand changes:
+- vibe-kanban → automagik-forge (230+ occurrences)
+- Bloop AI → Namastex Labs
+- GitHub org: namastexlabs
+- 74 files modified in upstream
+
+Key upstream changes: $(echo $LATEST_TAG | sed 's/v//')
+See https://github.com/namastexlabs/vibe-kanban/releases/tag/$NAMASTEX_TAG
+
+All Forge overrides verified compatible."
 ```
 
-#### Commit with Descriptive Message
+#### Commit Type Regeneration (if needed)
 ```bash
-git commit -m "chore: update upstream to $NAMASTEX_TAG and rebrand
+# If types.ts changed, commit separately
+if git status --short | grep -q "shared/"; then
+  git add shared/
+  git commit -m "chore: regenerate TypeScript types after upstream update"
+fi
+```
 
-- Synced fork namastexlabs/vibe-kanban with BloopAI/vibe-kanban
-- Created release tag $NAMASTEX_TAG based on upstream $UPSTREAM_TAG
-- Updated gitmodule to use $NAMASTEX_TAG
-- Applied mechanical rebrand (vibe-kanban → automagik-forge)
-- Verified zero references remain
-- Build validation passed"
+#### Commit Clippy Fixes (if needed)
+```bash
+# If you had to fix clippy warnings, commit those too
+if git status --short | grep -q "forge-app/"; then
+  git add forge-app/
+  git commit -m "fix: address clippy warnings after upstream update"
+fi
+```
+
+#### Push to Remote
+```bash
+# Push all commits to automagik-forge
+git push origin main
+
+# Verify push succeeded
+git log --oneline -5
+```
+
+#### Create Session Continuation Document
+```bash
+# Document what was done for future sessions
+cat > .genie/reports/session-continuation-upstream-$(echo $VERSION | tr -d 'v.')-upgrade.md <<EOF
+# Session Continuation: Upstream $VERSION Upgrade Complete
+
+**Date**: $(date +%Y-%m-%d)
+**Status**: ✅ Complete
+
+## What Was Done
+
+- Fork synced: namastexlabs/vibe-kanban → BloopAI/vibe-kanban
+- Rebrand applied: 230+ occurrences updated
+- Tag created: $NAMASTEX_TAG
+- Submodule updated: automagik-forge/upstream/
+- Types regenerated: shared/types.ts, shared/forge-types.ts
+- Build verified: cargo check + cargo clippy passed
+
+## Commits Created
+
+$(git log origin/main..HEAD --oneline)
+
+## Next Steps
+
+1. Test upgraded build: \`pnpm run dev\`
+2. Review changes: Compare with previous namastex tag
+3. (Optional) Re-apply WIP migrations from .genie/backups/
+EOF
+
+git add .genie/reports/
+git commit -m "docs: add session continuation for $VERSION upgrade"
+git push origin main
 ```
 
 ## Success Criteria
