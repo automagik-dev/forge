@@ -1,6 +1,6 @@
 [package]
 name = "forge-app"
-version = "0.3.16"
+version = "0.3.17"
 edition = "2024"
 default-run = "forge-app"
 
