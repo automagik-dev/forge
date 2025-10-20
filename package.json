@@ -32,7 +32,17 @@
     "vite": "^6.3.5"
   },
   "dependencies": {
-    "@ebay/nice-modal-react": "^1.2.13"
+    "@ebay/nice-modal-react": "^1.2.13",
+    "@lexical/code": "^0.36.2",
+    "@lexical/link": "^0.36.2",
+    "@lexical/list": "^0.36.2",
+    "@lexical/markdown": "^0.36.2",
+    "@lexical/react": "^0.36.2",
+    "@lexical/rich-text": "^0.36.2",
+    "@lexical/utils": "^0.36.2",
+    "framer-motion": "^12.23.24",
+    "lexical": "^0.36.2",
+    "react-resizable-panels": "^3.0.6"
   },
   "engines": {
     "node": ">=18",
