@@ -243,11 +243,18 @@ async fn ensure_legacy_base_branch_column(pool: &SqlitePool) -> Result<()> {
     Ok(())
 }
 
-const FORGE_MIGRATIONS: &[ForgeMigration] = &[ForgeMigration {
-    version: "20251008000001",
-    description: "forge_omni_tables",
-    sql: include_str!("../../migrations/20251008000001_forge_omni_tables.sql"),
-}];
+const FORGE_MIGRATIONS: &[ForgeMigration] = &[
+    ForgeMigration {
+        version: "20251008000001",
+        description: "forge_omni_tables",
+        sql: include_str!("../../migrations/20251008000001_forge_omni_tables.sql"),
+    },
+    ForgeMigration {
+        version: "20251020000001",
+        description: "add_agent_task_status",
+        sql: include_str!("../../migrations/20251020000001_add_agent_task_status.sql"),
+    },
+];
 
 async fn apply_forge_migrations(pool: &SqlitePool) -> Result<()> {
     sqlx::query(
