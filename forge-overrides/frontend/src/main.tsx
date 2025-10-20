@@ -32,7 +32,9 @@ import {
   ProjectFormDialog,
   ProjectEditorSelectionDialog,
   RestoreLogsDialog,
+  ViewProcessesDialog,
 } from '@/components/dialogs';
+import { CreateAttemptDialog } from '@/components/dialogs/tasks/CreateAttemptDialog';
 // FORGE CUSTOMIZATION: Import Omni modal for Forge-specific feature
 import { OmniModal } from './components/omni/OmniModal';
 
@@ -57,6 +59,8 @@ NiceModal.register('delete-configuration', DeleteConfigurationDialog);
 NiceModal.register('project-form', ProjectFormDialog);
 NiceModal.register('project-editor-selection', ProjectEditorSelectionDialog);
 NiceModal.register('restore-logs', RestoreLogsDialog);
+NiceModal.register('view-processes', ViewProcessesDialog);
+NiceModal.register('create-attempt', CreateAttemptDialog);
 // FORGE CUSTOMIZATION: Register Omni modal for AI-powered prompt features
 NiceModal.register('omni-modal', OmniModal);
 // Install VS Code iframe keyboard bridge when running inside an iframe
