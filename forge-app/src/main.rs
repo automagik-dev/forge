@@ -6,8 +6,6 @@
 use std::net::{IpAddr, SocketAddr};
 use tokio::signal;
 use utils::browser::open_browser;
-
-mod mcp;
 mod router;
 mod services;
 

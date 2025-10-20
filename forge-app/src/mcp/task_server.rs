@@ -1,8 +1,8 @@
 //! Forge Task MCP Server
 //!
 //! Extends upstream TaskServer with parent_task_attempt field exposure.
-
-use db::models::task::{CreateTask, Task, TaskStatus, TaskWithAttemptStatus, UpdateTask};
+//!
+use db::models::task::{CreateTask, Task, TaskWithAttemptStatus};
 use rmcp::{
     ErrorData, ServerHandler,
     handler::server::tool::{Parameters, ToolRouter},
@@ -154,6 +154,7 @@ pub struct GetTaskResponse {
 pub struct ForgeTaskServer {
     base_url: String,
     client: reqwest::Client,
+    tool_router: ToolRouter<ForgeTaskServer>,
 }
 
 impl ForgeTaskServer {
@@ -161,6 +162,7 @@ impl ForgeTaskServer {
         Self {
             base_url: base_url.to_string(),
             client: reqwest::Client::new(),
+            tool_router: Self::tool_router(),
         }
     }
 
@@ -313,6 +315,7 @@ impl ForgeTaskServer {
     // These don't need parent_task_attempt modifications
 }
 
+#[tool_handler]
 impl ServerHandler for ForgeTaskServer {
     fn get_info(&self) -> ServerInfo {
         use rmcp::model::{Implementation, ProtocolVersion};
