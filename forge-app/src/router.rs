@@ -5,15 +5,15 @@
 
 use axum::{
     Json, Router,
-    extract::{FromRef, Path, State},
+    extract::{FromRef, Path, Query, State},
     http::{HeaderValue, Method, StatusCode, header},
     response::{Html, IntoResponse, Response},
     routing::{get, post},
 };
-use tower_http::cors::{Any, CorsLayer};
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
 use crate::services::ForgeServices;
@@ -74,7 +74,13 @@ pub fn create_router(services: ForgeServices) -> Router {
     // Configure CORS for Swagger UI and external API access
     let cors = CorsLayer::new()
         .allow_origin(Any)
-        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
         .allow_headers(Any);
 
     Router::new()
@@ -317,12 +323,103 @@ fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router
         .layer(from_fn_with_state(deployment.clone(), load_task_middleware));
 
     let inner = Router::new()
-        .route("/", get(tasks::get_tasks).post(forge_create_task)) // Forge: task creation only
+        .route("/", get(forge_get_tasks).post(forge_create_task)) // Forge: override list to exclude agent tasks; creation only
         .route("/stream/ws", get(tasks::stream_tasks_ws))
         .route("/create-and-start", post(forge_create_task_and_start)) // Forge: create + start
         .nest("/{task_id}", task_id_router);
 
     Router::new().nest("/tasks", inner)
+}
+
+#[derive(Deserialize)]
+struct GetTasksParams {
+    project_id: Uuid,
+}
+
+/// Forge override for list tasks: exclude tasks with status = 'agent'
+async fn forge_get_tasks(
+    State(deployment): State<DeploymentImpl>,
+    Query(params): Query<GetTasksParams>,
+) -> Result<Json<ApiResponse<Vec<TaskWithAttemptStatus>>>, ApiError> {
+    let pool = &deployment.db().pool;
+
+    // Mirror upstream list query but add status filter to exclude 'agent'
+    let rows = sqlx::query(
+        r#"SELECT
+  t.id                            AS "id",
+  t.project_id                    AS "project_id",
+  t.title,
+  t.description,
+  t.status                        AS "status",
+  t.parent_task_attempt           AS "parent_task_attempt",
+  t.created_at                    AS "created_at",
+  t.updated_at                    AS "updated_at",
+
+  CASE WHEN EXISTS (
+    SELECT 1
+      FROM task_attempts ta
+      JOIN execution_processes ep
+        ON ep.task_attempt_id = ta.id
+     WHERE ta.task_id       = t.id
+       AND ep.status        = 'running'
+       AND ep.run_reason IN ('setupscript','cleanupscript','codingagent')
+     LIMIT 1
+  ) THEN 1 ELSE 0 END            AS has_in_progress_attempt,
+  
+  CASE WHEN (
+    SELECT ep.status
+      FROM task_attempts ta
+      JOIN execution_processes ep
+        ON ep.task_attempt_id = ta.id
+     WHERE ta.task_id       = t.id
+     AND ep.run_reason IN ('setupscript','cleanupscript','codingagent')
+     ORDER BY ep.created_at DESC
+     LIMIT 1
+  ) IN ('failed','killed') THEN 1 ELSE 0 END
+                                 AS last_attempt_failed,
+
+  ( SELECT ta.executor
+      FROM task_attempts ta
+      WHERE ta.task_id = t.id
+     ORDER BY ta.created_at DESC
+      LIMIT 1
+    )                               AS executor
+
+FROM tasks t
+WHERE t.project_id = ? AND t.status <> 'agent'
+ORDER BY t.created_at DESC"#,
+    )
+    .bind(params.project_id)
+    .fetch_all(pool)
+    .await?;
+
+    let mut items: Vec<TaskWithAttemptStatus> = Vec::with_capacity(rows.len());
+    for row in rows {
+        let task_id: Uuid = row.try_get("id").map_err(ApiError::Database)?;
+        let task = db::models::task::Task::find_by_id(pool, task_id)
+            .await?
+            .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
+
+        let has_in_progress_attempt = row
+            .try_get::<i64, _>("has_in_progress_attempt")
+            .map(|v| v != 0)
+            .unwrap_or(false);
+        let last_attempt_failed = row
+            .try_get::<i64, _>("last_attempt_failed")
+            .map(|v| v != 0)
+            .unwrap_or(false);
+        let executor: String = row.try_get("executor").unwrap_or_else(|_| String::new());
+
+        items.push(TaskWithAttemptStatus {
+            task,
+            has_in_progress_attempt,
+            has_merged_attempt: false,
+            last_attempt_failed,
+            executor,
+        });
+    }
+
+    Ok(Json(ApiResponse::success(items)))
 }
 
 /// Build task_attempts router with forge override for create endpoint
@@ -462,7 +559,8 @@ async fn serve_openapi_spec() -> Result<Json<Value>, (StatusCode, String)> {
 
 /// Serve Swagger UI HTML
 async fn serve_swagger_ui() -> Html<String> {
-    Html(r#"<!DOCTYPE html>
+    Html(
+        r#"<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -493,7 +591,9 @@ async fn serve_swagger_ui() -> Html<String> {
         }};
     </script>
 </body>
-</html>"#.to_string())
+</html>"#
+            .to_string(),
+    )
 }
 
 /// Simple route listing - practical solution instead of broken OpenAPI
