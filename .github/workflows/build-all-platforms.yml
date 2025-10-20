@@ -278,6 +278,14 @@ jobs:
             echo "Publishing as latest version"
           fi
           
+      - name: Verify npm auth (temporary)
+        run: |
+          echo "Registry: $(npm config get registry)"
+          echo "npm whoami (to confirm token identity)"
+          npm whoami || true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Publish to NPM
         run: |
           cd npx-cli
