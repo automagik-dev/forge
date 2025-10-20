@@ -277,6 +277,27 @@ jobs:
             echo "tag=latest" >> $GITHUB_OUTPUT
             echo "Publishing as latest version"
           fi
+
+      - name: Read package metadata
+        id: pkg
+        run: |
+          NAME=$(node -e "console.log(require('./npx-cli/package.json').name)")
+          VER=$(node -e "console.log(require('./npx-cli/package.json').version)")
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "version=$VER" >> $GITHUB_OUTPUT
+          echo "Package: $NAME"
+          echo "Version: $VER"
+
+      - name: Check if version already published
+        id: check
+        run: |
+          if npm view "${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }}" version >/dev/null 2>&1; then
+            echo "published=true" >> $GITHUB_OUTPUT
+            echo "✅ ${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }} already on npm; will skip publish."
+          else
+            echo "published=false" >> $GITHUB_OUTPUT
+            echo "⏩ Version not found on npm; will publish."
+          fi
           
       - name: Verify npm auth (temporary)
         run: |
@@ -287,8 +308,14 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish to NPM
+        if: steps.check.outputs.published == 'false'
         run: |
           cd npx-cli
           npm publish --tag ${{ steps.npm-tag.outputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Skip publish (already published)
+        if: steps.check.outputs.published == 'true'
+        run: |
+          echo "Skipping npm publish: ${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }} already exists on npm."

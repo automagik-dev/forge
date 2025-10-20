@@ -913,6 +913,14 @@ This release includes various improvements and bug fixes.
                         else
                             echo " ❌"
                             echo ""
+                            # Treat as success if npm already has the new version (idempotent publish)
+                            NPM_VER=$(npm view automagik-forge version 2>/dev/null || echo "")
+                            if [ -n "$NEW_VERSION" ] && [ "$NPM_VER" = "$NEW_VERSION" ]; then
+                                echo "✅ Detected $NPM_VER on npm (expected $NEW_VERSION). Considering publish successful."
+                                BUILD_SUCCESS=true
+                                break
+                            fi
+
                             echo "❌ NPM publish workflow failed!"
                             echo "🔗 View logs: https://github.com/$REPO/actions/runs/$PUBLISH_RUN"
                             echo ""
