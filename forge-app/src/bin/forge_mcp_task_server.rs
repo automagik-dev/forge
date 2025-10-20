@@ -3,8 +3,8 @@
 //! MCP server for Automagik Forge that reads port from port file (like upstream)
 //! or falls back to BACKEND_PORT env var, then defaults to 8887.
 
+use forge_app::mcp::task_server::ForgeTaskServer;
 use rmcp::{ServiceExt, transport::stdio};
-use server::mcp::task_server::TaskServer;
 use tracing_subscriber::{EnvFilter, prelude::*};
 use utils::{
     port_file::read_port_file,
@@ -65,7 +65,7 @@ fn main() -> anyhow::Result<()> {
                 url
             };
 
-            let service = TaskServer::new(&base_url)
+            let service = ForgeTaskServer::new(&base_url)
                 .serve(stdio())
                 .await
                 .map_err(|e| {
