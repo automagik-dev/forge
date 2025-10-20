@@ -10,10 +10,10 @@ use axum::{
     response::{Html, IntoResponse, Response},
     routing::{get, post},
 };
-use tower_http::cors::{Any, CorsLayer};
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
 use crate::services::ForgeServices;
@@ -74,7 +74,13 @@ pub fn create_router(services: ForgeServices) -> Router {
     // Configure CORS for Swagger UI and external API access
     let cors = CorsLayer::new()
         .allow_origin(Any)
-        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
         .allow_headers(Any);
 
     Router::new()
@@ -462,7 +468,8 @@ async fn serve_openapi_spec() -> Result<Json<Value>, (StatusCode, String)> {
 
 /// Serve Swagger UI HTML
 async fn serve_swagger_ui() -> Html<String> {
-    Html(r#"<!DOCTYPE html>
+    Html(
+        r#"<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -493,7 +500,9 @@ async fn serve_swagger_ui() -> Html<String> {
         }};
     </script>
 </body>
-</html>"#.to_string())
+</html>"#
+            .to_string(),
+    )
 }
 
 /// Simple route listing - practical solution instead of broken OpenAPI
