@@ -1,6 +1,6 @@
-//! Forge Task MCP Server
+//! Forge Advanced MCP Server
 //!
-//! Extends upstream TaskServer with parent_task_attempt field exposure.
+//! Extends upstream TaskServer with full backend API field exposure.
 //!
 use db::models::{
     project::Project,
@@ -408,22 +408,20 @@ impl TaskAttemptSummary {
     }
 }
 
-/// Forge TaskServer - wraps upstream with parent_task_attempt support
+/// Forge Advanced Server - full backend API access
 #[derive(Clone)]
-pub struct ForgeTaskServer {
+pub struct ForgeAdvancedServer {
     base_url: String,
     client: reqwest::Client,
-    tool_router: ToolRouter<ForgeTaskServer>,
-    advanced_mode: bool,
+    tool_router: ToolRouter<ForgeAdvancedServer>,
 }
 
-impl ForgeTaskServer {
-    pub fn new(base_url: &str, advanced_mode: bool) -> Self {
+impl ForgeAdvancedServer {
+    pub fn new(base_url: &str) -> Self {
         Self {
             base_url: base_url.to_string(),
             client: reqwest::Client::new(),
             tool_router: Self::tool_router(),
-            advanced_mode,
         }
     }
 
@@ -487,7 +485,7 @@ impl ForgeTaskServer {
 }
 
 #[tool_router]
-impl ForgeTaskServer {
+impl ForgeAdvancedServer {
     #[tool(
         description = "Create a new task/ticket in a project. Always pass the `project_id` of the project you want to create the task in - it is required!"
     )]
@@ -513,7 +511,7 @@ impl ForgeTaskServer {
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&CreateTaskResponse {
+        ForgeAdvancedServer::success(&CreateTaskResponse {
             task_id: task.id.to_string(),
         })
     }
@@ -531,7 +529,7 @@ impl ForgeTaskServer {
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&GetTaskResponse {
+        ForgeAdvancedServer::success(&GetTaskResponse {
             task: TaskDetails::from_task(task),
         })
     }
@@ -559,7 +557,7 @@ impl ForgeTaskServer {
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&ListTasksResponse {
+        ForgeAdvancedServer::success(&ListTasksResponse {
             count: tasks.len(),
             tasks: tasks
                 .into_iter()
@@ -583,7 +581,7 @@ impl ForgeTaskServer {
             .map(ProjectSummary::from_project)
             .collect();
 
-        ForgeTaskServer::success(&ListProjectsResponse {
+        ForgeAdvancedServer::success(&ListProjectsResponse {
             count: project_summaries.len(),
             projects: project_summaries,
         })
@@ -627,7 +625,7 @@ impl ForgeTaskServer {
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&UpdateTaskResponse {
+        ForgeAdvancedServer::success(&UpdateTaskResponse {
             task: TaskDetails::from_task(updated_task),
         })
     }
@@ -645,7 +643,7 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&DeleteTaskResponse {
+        ForgeAdvancedServer::success(&DeleteTaskResponse {
             deleted_task_id: Some(task_id.to_string()),
         })
     }
@@ -711,7 +709,7 @@ impl ForgeTaskServer {
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&StartTaskAttemptResponse {
+        ForgeAdvancedServer::success(&StartTaskAttemptResponse {
             task_id: attempt.task_id.to_string(),
             attempt_id: attempt.id.to_string(),
         })
@@ -721,8 +719,8 @@ impl ForgeTaskServer {
     // ADVANCED MODE TOOLS - Only available with --advanced flag
     // ========================================================================
 
-    #[tool(description = "[ADVANCED] Create a new project")]
-    async fn adv_create_project(
+    #[tool(description = "Create a new project")]
+    async fn create_project(
         &self,
         Parameters(CreateProjectRequest {
             name,
@@ -732,12 +730,6 @@ impl ForgeTaskServer {
             dev_script,
         }): Parameters<CreateProjectRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let payload = serde_json::json!({
             "name": name,
             "git_repo_path": git_repo_path,
@@ -752,33 +744,27 @@ impl ForgeTaskServer {
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&CreateProjectResponse {
+        ForgeAdvancedServer::success(&CreateProjectResponse {
             project_id: project.id.to_string(),
         })
     }
 
-    #[tool(description = "[ADVANCED] Get project details by ID")]
-    async fn adv_get_project(
+    #[tool(description = "Get project details by ID")]
+    async fn get_project(
         &self,
         Parameters(GetProjectRequest { project_id }): Parameters<GetProjectRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/projects/{}", project_id));
         let project: Project = match self.send_json(self.client.get(&url)).await {
             Ok(p) => p,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&ProjectSummary::from_project(project))
+        ForgeAdvancedServer::success(&ProjectSummary::from_project(project))
     }
 
-    #[tool(description = "[ADVANCED] Update an existing project")]
-    async fn adv_update_project(
+    #[tool(description = "Update an existing project")]
+    async fn update_project(
         &self,
         Parameters(UpdateProjectRequest {
             project_id,
@@ -789,12 +775,6 @@ impl ForgeTaskServer {
             dev_script,
         }): Parameters<UpdateProjectRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let payload = serde_json::json!({
             "name": name,
             "git_repo_path": git_repo_path,
@@ -809,20 +789,14 @@ impl ForgeTaskServer {
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&ProjectSummary::from_project(project))
+        ForgeAdvancedServer::success(&ProjectSummary::from_project(project))
     }
 
-    #[tool(description = "[ADVANCED] Delete a project")]
-    async fn adv_delete_project(
+    #[tool(description = "Delete a project")]
+    async fn delete_project(
         &self,
         Parameters(DeleteProjectRequest { project_id }): Parameters<DeleteProjectRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/projects/{}", project_id));
         if let Err(e) = self
             .send_json::<serde_json::Value>(self.client.delete(&url))
@@ -831,13 +805,13 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&DeleteProjectResponse {
+        ForgeAdvancedServer::success(&DeleteProjectResponse {
             deleted_project_id: project_id.to_string(),
         })
     }
 
-    #[tool(description = "[ADVANCED] Create a task and immediately start execution")]
-    async fn adv_create_task_and_start(
+    #[tool(description = "Create a task and immediately start execution")]
+    async fn create_task_and_start(
         &self,
         Parameters(crate::mcp::advanced_tools::CreateTaskAndStartRequest {
             project_id,
@@ -849,12 +823,6 @@ impl ForgeTaskServer {
             parent_task_attempt,
         }): Parameters<crate::mcp::advanced_tools::CreateTaskAndStartRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let base_branch = base_branch.trim().to_string();
         if base_branch.is_empty() {
             return Ok(CallToolResult::error(vec![Content::text(
@@ -912,20 +880,14 @@ impl ForgeTaskServer {
                 Err(e) => return Ok(e),
             };
 
-        ForgeTaskServer::success(&result)
+        ForgeAdvancedServer::success(&result)
     }
 
-    #[tool(description = "[ADVANCED] List task attempts, optionally filtered by project_id")]
-    async fn adv_list_task_attempts(
+    #[tool(description = "List task attempts, optionally filtered by project_id")]
+    async fn list_task_attempts(
         &self,
         Parameters(ListTaskAttemptsRequest { project_id }): Parameters<ListTaskAttemptsRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let mut url = self.url("/api/task-attempts");
         if let Some(pid) = project_id {
             url.push_str(&format!("?project_id={}", pid));
@@ -936,7 +898,7 @@ impl ForgeTaskServer {
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&ListTaskAttemptsResponse {
+        ForgeAdvancedServer::success(&ListTaskAttemptsResponse {
             count: attempts.len(),
             task_attempts: attempts
                 .into_iter()
@@ -946,42 +908,30 @@ impl ForgeTaskServer {
         })
     }
 
-    #[tool(description = "[ADVANCED] Get task attempt details by ID")]
-    async fn adv_get_task_attempt(
+    #[tool(description = "Get task attempt details by ID")]
+    async fn get_task_attempt(
         &self,
         Parameters(GetTaskAttemptRequest { attempt_id }): Parameters<GetTaskAttemptRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/task-attempts/{}", attempt_id));
         let attempt: TaskAttempt = match self.send_json(self.client.get(&url)).await {
             Ok(a) => a,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&GetTaskAttemptResponse {
+        ForgeAdvancedServer::success(&GetTaskAttemptResponse {
             task_attempt: TaskAttemptSummary::from_task_attempt(attempt),
         })
     }
 
-    #[tool(description = "[ADVANCED] Send a follow-up message to a running task attempt")]
-    async fn adv_follow_up(
+    #[tool(description = "Send a follow-up message to a running task attempt")]
+    async fn follow_up(
         &self,
         Parameters(FollowUpRequest {
             attempt_id,
             message,
         }): Parameters<FollowUpRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let payload = serde_json::json!({
             "prompt": message,
         });
@@ -993,23 +943,17 @@ impl ForgeTaskServer {
                 Err(e) => return Ok(e),
             };
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "attempt_id": attempt_id.to_string(),
         }))
     }
 
-    #[tool(description = "[ADVANCED] Rebase a task attempt's branch onto its target branch")]
-    async fn adv_rebase_task_attempt(
+    #[tool(description = "Rebase a task attempt's branch onto its target branch")]
+    async fn rebase_task_attempt(
         &self,
         Parameters(RebaseTaskAttemptRequest { attempt_id }): Parameters<RebaseTaskAttemptRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/task-attempts/{}/rebase", attempt_id));
         if let Err(e) = self
             .send_json::<serde_json::Value>(self.client.post(&url).json(&serde_json::json!({})))
@@ -1018,23 +962,17 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "attempt_id": attempt_id.to_string()
         }))
     }
 
-    #[tool(description = "[ADVANCED] Merge a task attempt into its target branch")]
-    async fn adv_merge_task_attempt(
+    #[tool(description = "Merge a task attempt into its target branch")]
+    async fn merge_task_attempt(
         &self,
         Parameters(MergeTaskAttemptRequest { attempt_id }): Parameters<MergeTaskAttemptRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/task-attempts/{}/merge", attempt_id));
         if let Err(e) = self
             .send_json::<serde_json::Value>(self.client.post(&url))
@@ -1043,20 +981,14 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&MergeTaskAttemptResponse { success: true })
+        ForgeAdvancedServer::success(&MergeTaskAttemptResponse { success: true })
     }
 
-    #[tool(description = "[ADVANCED] Push task attempt branch to remote")]
-    async fn adv_push_task_attempt(
+    #[tool(description = "Push task attempt branch to remote")]
+    async fn push_task_attempt(
         &self,
         Parameters(PushTaskAttemptRequest { attempt_id }): Parameters<PushTaskAttemptRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/task-attempts/{}/push", attempt_id));
         if let Err(e) = self
             .send_json::<serde_json::Value>(self.client.post(&url))
@@ -1065,23 +997,17 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "message": "Task attempt branch pushed successfully"
         }))
     }
 
-    #[tool(description = "[ADVANCED] Stop a running task attempt execution")]
-    async fn adv_stop_task_attempt(
+    #[tool(description = "Stop a running task attempt execution")]
+    async fn stop_task_attempt(
         &self,
         Parameters(stop_req): Parameters<super::advanced_tools::StopTaskAttemptRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/task-attempts/{}/stop", stop_req.attempt_id));
         if let Err(e) = self
             .send_json::<serde_json::Value>(self.client.post(&url))
@@ -1090,14 +1016,14 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&StopTaskAttemptResponse {
+        ForgeAdvancedServer::success(&StopTaskAttemptResponse {
             stopped: true,
             attempt_id: stop_req.attempt_id.to_string(),
         })
     }
 
-    #[tool(description = "[ADVANCED] Create a GitHub pull request for a task attempt")]
-    async fn adv_create_pr(
+    #[tool(description = "Create a GitHub pull request for a task attempt")]
+    async fn create_pr(
         &self,
         Parameters(CreatePRRequest {
             attempt_id,
@@ -1105,12 +1031,6 @@ impl ForgeTaskServer {
             body,
         }): Parameters<CreatePRRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let payload = serde_json::json!({
             "title": title.unwrap_or_else(|| "Pull Request".to_string()),
             "body": body,
@@ -1124,25 +1044,19 @@ impl ForgeTaskServer {
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "pr_url": pr_url
         }))
     }
 
-    #[tool(description = "[ADVANCED] Attach an existing PR to a task attempt by PR number")]
-    async fn adv_attach_pr(
+    #[tool(description = "Attach an existing PR to a task attempt by PR number")]
+    async fn attach_pr(
         &self,
         Parameters(crate::mcp::advanced_tools::AttachPRRequest {
             attempt_id,
             pr_number,
         }): Parameters<crate::mcp::advanced_tools::AttachPRRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let payload = serde_json::json!({
             "pr_number": pr_number,
         });
@@ -1155,44 +1069,32 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "attempt_id": attempt_id.to_string(),
             "pr_number": pr_number,
         }))
     }
 
-    #[tool(description = "[ADVANCED] Get branch status for a task attempt")]
-    async fn adv_get_branch_status(
+    #[tool(description = "Get branch status for a task attempt")]
+    async fn get_branch_status(
         &self,
         Parameters(GetBranchStatusRequest { attempt_id }): Parameters<GetBranchStatusRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/task-attempts/{}/branch-status", attempt_id));
         let status: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(s) => s,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&status)
+        ForgeAdvancedServer::success(&status)
     }
 
-    #[tool(description = "[ADVANCED] Replace the execution process for a task attempt")]
-    async fn adv_replace_process(
+    #[tool(description = "Replace the execution process for a task attempt")]
+    async fn replace_process(
         &self,
         Parameters(ReplaceProcessRequest { attempt_id }): Parameters<ReplaceProcessRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!(
             "/api/task-attempts/{}/replace-process",
             attempt_id
@@ -1204,63 +1106,45 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "message": "Process replaced successfully"
         }))
     }
 
-    #[tool(description = "[ADVANCED] Get commit information for a task attempt")]
-    async fn adv_get_commit_info(
+    #[tool(description = "Get commit information for a task attempt")]
+    async fn get_commit_info(
         &self,
         Parameters(GetCommitInfoRequest { attempt_id }): Parameters<GetCommitInfoRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/task-attempts/{}/commit-info", attempt_id));
         let commit_info: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(info) => info,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&commit_info)
+        ForgeAdvancedServer::success(&commit_info)
     }
 
-    #[tool(description = "[ADVANCED] Compare commits for a task attempt")]
-    async fn adv_compare_commit(
+    #[tool(description = "Compare commits for a task attempt")]
+    async fn compare_commit(
         &self,
         Parameters(CompareCommitRequest { attempt_id }): Parameters<CompareCommitRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/task-attempts/{}/commit-compare", attempt_id));
         let comparison: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(cmp) => cmp,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&comparison)
+        ForgeAdvancedServer::success(&comparison)
     }
 
-    #[tool(description = "[ADVANCED] Start development server for a task attempt")]
-    async fn adv_start_dev_server(
+    #[tool(description = "Start development server for a task attempt")]
+    async fn start_dev_server(
         &self,
         Parameters(StartDevServerRequest { attempt_id }): Parameters<StartDevServerRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!(
             "/api/task-attempts/{}/start-dev-server",
             attempt_id
@@ -1272,23 +1156,17 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "message": "Development server started"
         }))
     }
 
-    #[tool(description = "[ADVANCED] Open editor for a task attempt")]
-    async fn adv_open_editor(
+    #[tool(description = "Open editor for a task attempt")]
+    async fn open_editor(
         &self,
         Parameters(OpenEditorRequest { attempt_id, editor }): Parameters<OpenEditorRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let payload = serde_json::json!({
             "editor": editor,
         });
@@ -1301,26 +1179,20 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "message": "Editor opened"
         }))
     }
 
-    #[tool(description = "[ADVANCED] Delete a file in a task attempt")]
-    async fn adv_delete_file(
+    #[tool(description = "Delete a file in a task attempt")]
+    async fn delete_file(
         &self,
         Parameters(DeleteFileRequest {
             attempt_id,
             file_path,
         }): Parameters<DeleteFileRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let payload = serde_json::json!({
             "file_path": file_path,
         });
@@ -1333,43 +1205,31 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "file_path": file_path,
         }))
     }
 
-    #[tool(description = "[ADVANCED] Get child task attempts for a task attempt")]
-    async fn adv_get_children(
+    #[tool(description = "Get child task attempts for a task attempt")]
+    async fn get_children(
         &self,
         Parameters(GetChildrenRequest { attempt_id }): Parameters<GetChildrenRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/task-attempts/{}/children", attempt_id));
         let children: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(c) => c,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&children)
+        ForgeAdvancedServer::success(&children)
     }
 
-    #[tool(description = "[ADVANCED] Abort merge conflicts for a task attempt")]
-    async fn adv_abort_conflicts(
+    #[tool(description = "Abort merge conflicts for a task attempt")]
+    async fn abort_conflicts(
         &self,
         Parameters(AbortConflictsRequest { attempt_id }): Parameters<AbortConflictsRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!(
             "/api/task-attempts/{}/conflicts/abort",
             attempt_id
@@ -1381,26 +1241,20 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "message": "Conflicts aborted"
         }))
     }
 
-    #[tool(description = "[ADVANCED] Change target branch for a task attempt")]
-    async fn adv_change_target_branch(
+    #[tool(description = "Change target branch for a task attempt")]
+    async fn change_target_branch(
         &self,
         Parameters(ChangeTargetBranchRequest {
             attempt_id,
             target_branch,
         }): Parameters<ChangeTargetBranchRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let payload = serde_json::json!({
             "target_branch": target_branch,
         });
@@ -1416,46 +1270,34 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "target_branch": target_branch,
         }))
     }
 
-    #[tool(description = "[ADVANCED] Get draft for a task attempt")]
-    async fn adv_get_draft(
+    #[tool(description = "Get draft for a task attempt")]
+    async fn get_draft(
         &self,
         Parameters(GetDraftRequest { attempt_id }): Parameters<GetDraftRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/task-attempts/{}/draft", attempt_id));
         let draft: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(d) => d,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&draft)
+        ForgeAdvancedServer::success(&draft)
     }
 
-    #[tool(description = "[ADVANCED] Save draft for a task attempt")]
-    async fn adv_save_draft(
+    #[tool(description = "Save draft for a task attempt")]
+    async fn save_draft(
         &self,
         Parameters(SaveDraftRequest {
             attempt_id,
             content,
         }): Parameters<SaveDraftRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let payload = serde_json::json!({
             "content": content,
         });
@@ -1468,23 +1310,17 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "message": "Draft saved successfully"
         }))
     }
 
-    #[tool(description = "[ADVANCED] Delete draft for a task attempt")]
-    async fn adv_delete_draft(
+    #[tool(description = "Delete draft for a task attempt")]
+    async fn delete_draft(
         &self,
         Parameters(DeleteDraftRequest { attempt_id }): Parameters<DeleteDraftRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/task-attempts/{}/draft", attempt_id));
         if let Err(e) = self
             .send_json::<serde_json::Value>(self.client.delete(&url))
@@ -1493,23 +1329,17 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "message": "Draft deleted successfully"
         }))
     }
 
-    #[tool(description = "[ADVANCED] Set draft queue for a task attempt")]
-    async fn adv_set_draft_queue(
+    #[tool(description = "Set draft queue for a task attempt")]
+    async fn set_draft_queue(
         &self,
         Parameters(SetDraftQueueRequest { attempt_id, queue }): Parameters<SetDraftQueueRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let payload = serde_json::json!({
             "queue": queue,
         });
@@ -1522,23 +1352,17 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "message": "Draft queue set successfully"
         }))
     }
 
-    #[tool(description = "[ADVANCED] List execution processes, optionally filtered by project_id")]
-    async fn adv_list_processes(
+    #[tool(description = "List execution processes, optionally filtered by project_id")]
+    async fn list_processes(
         &self,
         Parameters(ListProcessesRequest { project_id }): Parameters<ListProcessesRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let mut url = self.url("/api/execution-processes");
         if let Some(pid) = project_id {
             url.push_str(&format!("?project_id={}", pid));
@@ -1549,40 +1373,28 @@ impl ForgeTaskServer {
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&processes)
+        ForgeAdvancedServer::success(&processes)
     }
 
-    #[tool(description = "[ADVANCED] Get execution process details by ID")]
-    async fn adv_get_process(
+    #[tool(description = "Get execution process details by ID")]
+    async fn get_process(
         &self,
         Parameters(GetProcessRequest { process_id }): Parameters<GetProcessRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/execution-processes/{}", process_id));
         let process: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(p) => p,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&process)
+        ForgeAdvancedServer::success(&process)
     }
 
-    #[tool(description = "[ADVANCED] Stop a running execution process")]
-    async fn adv_stop_process(
+    #[tool(description = "Stop a running execution process")]
+    async fn stop_process(
         &self,
         Parameters(StopProcessRequest { process_id }): Parameters<StopProcessRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/execution-processes/{}/stop", process_id));
         if let Err(e) = self
             .send_json::<serde_json::Value>(self.client.post(&url))
@@ -1591,23 +1403,17 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "message": "Process stopped successfully"
         }))
     }
 
-    #[tool(description = "[ADVANCED] Upload an image and return its ID")]
-    async fn adv_upload_image(
+    #[tool(description = "Upload an image and return its ID")]
+    async fn upload_image(
         &self,
         Parameters(UploadImageRequest { data, mime_type }): Parameters<UploadImageRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         // Decode base64 data
         use base64::Engine;
         let image_bytes = match base64::engine::general_purpose::STANDARD.decode(&data) {
@@ -1685,59 +1491,41 @@ impl ForgeTaskServer {
             }
         };
 
-        ForgeTaskServer::success(&UploadImageResponse {
+        ForgeAdvancedServer::success(&UploadImageResponse {
             image_id: api_response.data.id,
         })
     }
 
-    #[tool(description = "[ADVANCED] Get image data by ID")]
-    async fn adv_get_image(
+    #[tool(description = "Get image data by ID")]
+    async fn get_image(
         &self,
         Parameters(GetImageRequest { image_id }): Parameters<GetImageRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/images/{}/file", image_id));
         let image_data: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(data) => data,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&image_data)
+        ForgeAdvancedServer::success(&image_data)
     }
 
-    #[tool(description = "[ADVANCED] Get application configuration")]
-    async fn adv_get_config(&self) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
+    #[tool(description = "Get application configuration")]
+    async fn get_config(&self) -> Result<CallToolResult, ErrorData> {
         let url = self.url("/api/config");
         let config: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(c) => c,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&config)
+        ForgeAdvancedServer::success(&config)
     }
 
-    #[tool(description = "[ADVANCED] Update application configuration")]
-    async fn adv_update_config(
+    #[tool(description = "Update application configuration")]
+    async fn update_config(
         &self,
         Parameters(UpdateConfigRequest { config }): Parameters<UpdateConfigRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let payload = serde_json::json!({
             "config": config,
         });
@@ -1750,34 +1538,28 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "message": "Configuration updated successfully"
         }))
     }
 
-    #[tool(description = "[ADVANCED] List all drafts for a project")]
-    async fn adv_list_drafts(
+    #[tool(description = "List all drafts for a project")]
+    async fn list_drafts(
         &self,
         Parameters(ListDraftsRequest { project_id }): Parameters<ListDraftsRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/drafts?project_id={}", project_id));
         let drafts: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(d) => d,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&drafts)
+        ForgeAdvancedServer::success(&drafts)
     }
 
-    #[tool(description = "[ADVANCED] Create a new draft")]
-    async fn adv_create_draft(
+    #[tool(description = "Create a new draft")]
+    async fn create_draft(
         &self,
         Parameters(crate::mcp::advanced_tools::CreateDraftRequest {
             project_id,
@@ -1785,12 +1567,6 @@ impl ForgeTaskServer {
             content,
         }): Parameters<crate::mcp::advanced_tools::CreateDraftRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let payload = serde_json::json!({
             "project_id": project_id,
             "title": title,
@@ -1804,34 +1580,27 @@ impl ForgeTaskServer {
                 Err(e) => return Ok(e),
             };
 
-        ForgeTaskServer::success(&result)
+        ForgeAdvancedServer::success(&result)
     }
 
-    #[tool(description = "[ADVANCED] Get draft by ID")]
-    async fn adv_get_draft_by_id(
+    #[tool(description = "Get draft by ID")]
+    async fn get_draft_by_id(
         &self,
         Parameters(crate::mcp::advanced_tools::GetDraftByIdRequest { draft_id }): Parameters<
             crate::mcp::advanced_tools::GetDraftByIdRequest,
         >,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag. Start server with --advanced to enable."
-                    .to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/drafts/{}", draft_id));
         let result: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(r) => r,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&result)
+        ForgeAdvancedServer::success(&result)
     }
 
-    #[tool(description = "[ADVANCED] Update draft by ID")]
-    async fn adv_update_draft(
+    #[tool(description = "Update draft by ID")]
+    async fn update_draft(
         &self,
         Parameters(UpdateDraftRequest {
             draft_id,
@@ -1839,12 +1608,6 @@ impl ForgeTaskServer {
             content,
         }): Parameters<UpdateDraftRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let payload = serde_json::json!({
             "title": title,
             "content": content,
@@ -1857,61 +1620,42 @@ impl ForgeTaskServer {
                 Err(e) => return Ok(e),
             };
 
-        ForgeTaskServer::success(&result)
+        ForgeAdvancedServer::success(&result)
     }
 
-    #[tool(description = "[ADVANCED] List all containers")]
-    async fn adv_list_containers(&self) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
+    #[tool(description = "List all containers")]
+    async fn list_containers(&self) -> Result<CallToolResult, ErrorData> {
         let url = self.url("/api/containers");
         let containers: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(c) => c,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&containers)
+        ForgeAdvancedServer::success(&containers)
     }
 
-    #[tool(description = "[ADVANCED] Get container details")]
-    async fn adv_get_container(
+    #[tool(description = "Get container details")]
+    async fn get_container(
         &self,
         Parameters(request): Parameters<GetContainerRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag. Start server with --advanced to enable."
-                    .to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/containers/{}", request.container_id));
         let result: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(r) => r,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&result)
+        ForgeAdvancedServer::success(&result)
     }
 
-    #[tool(description = "[ADVANCED] Get filesystem tree for a project")]
-    async fn adv_get_filesystem_tree(
+    #[tool(description = "Get filesystem tree for a project")]
+    async fn get_filesystem_tree(
         &self,
         Parameters(crate::mcp::advanced_tools::GetFilesystemTreeRequest {
             project_id,
             path,
         }): Parameters<crate::mcp::advanced_tools::GetFilesystemTreeRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let mut url = self.url(&format!("/api/filesystem/tree?project_id={}", project_id));
         if let Some(p) = path {
             url.push_str(&format!("&path={}", urlencoding::encode(&p)));
@@ -1922,23 +1666,17 @@ impl ForgeTaskServer {
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&tree)
+        ForgeAdvancedServer::success(&tree)
     }
 
-    #[tool(description = "[ADVANCED] Get file contents from a project")]
-    async fn adv_get_file(
+    #[tool(description = "Get file contents from a project")]
+    async fn get_file(
         &self,
         Parameters(GetFileRequest {
             project_id,
             file_path,
         }): Parameters<GetFileRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let mut url = self.url("/api/filesystem/file");
         url.push_str(&format!("?project_id={}", project_id));
         url.push_str(&format!("&file_path={}", urlencoding::encode(&file_path)));
@@ -1948,39 +1686,27 @@ impl ForgeTaskServer {
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&file_content)
+        ForgeAdvancedServer::success(&file_content)
     }
 
-    #[tool(description = "[ADVANCED] Get Forge configuration")]
-    async fn adv_get_forge_config(&self) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
+    #[tool(description = "Get Forge configuration")]
+    async fn get_forge_config(&self) -> Result<CallToolResult, ErrorData> {
         let url = self.url("/api/forge/config");
         let config: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(c) => c,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&config)
+        ForgeAdvancedServer::success(&config)
     }
 
-    #[tool(description = "[ADVANCED] Update Forge configuration")]
-    async fn adv_update_forge_config(
+    #[tool(description = "Update Forge configuration")]
+    async fn update_forge_config(
         &self,
         Parameters(crate::mcp::advanced_tools::UpdateForgeConfigRequest { config }): Parameters<
             crate::mcp::advanced_tools::UpdateForgeConfigRequest,
         >,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url("/api/forge/config");
         if let Err(e) = self
             .send_json::<serde_json::Value>(self.client.put(&url).json(&config))
@@ -1989,46 +1715,34 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "message": "Forge configuration updated successfully"
         }))
     }
 
-    #[tool(description = "[ADVANCED] Get project settings by ID")]
-    async fn adv_get_project_settings(
+    #[tool(description = "Get project settings by ID")]
+    async fn get_project_settings(
         &self,
         Parameters(GetProjectSettingsRequest { project_id }): Parameters<GetProjectSettingsRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/forge/projects/{}/settings", project_id));
         let settings: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(s) => s,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&settings)
+        ForgeAdvancedServer::success(&settings)
     }
 
-    #[tool(description = "[ADVANCED] Update project settings")]
-    async fn adv_update_project_settings(
+    #[tool(description = "Update project settings")]
+    async fn update_project_settings(
         &self,
         Parameters(UpdateProjectSettingsRequest {
             project_id,
             settings,
         }): Parameters<UpdateProjectSettingsRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
         let url = self.url(&format!("/api/forge/projects/{}/settings", project_id));
         if let Err(e) = self
             .send_json::<serde_json::Value>(self.client.put(&url).json(&settings))
@@ -2037,59 +1751,39 @@ impl ForgeTaskServer {
             return Ok(e);
         }
 
-        ForgeTaskServer::success(&serde_json::json!({
+        ForgeAdvancedServer::success(&serde_json::json!({
             "success": true,
             "message": "Project settings updated successfully"
         }))
     }
 
-    #[tool(description = "[ADVANCED] Get Omni status")]
-    async fn adv_get_omni_status(&self) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag. Start server with --advanced to enable."
-                    .to_string(),
-            )]));
-        }
-
+    #[tool(description = "Get Omni status")]
+    async fn get_omni_status(&self) -> Result<CallToolResult, ErrorData> {
         let url = self.url("/api/forge/omni/status");
         let result: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(r) => r,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&result)
+        ForgeAdvancedServer::success(&result)
     }
 
-    #[tool(description = "[ADVANCED] List all Omni instances")]
-    async fn adv_list_omni_instances(&self) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
+    #[tool(description = "List all Omni instances")]
+    async fn list_omni_instances(&self) -> Result<CallToolResult, ErrorData> {
         let url = self.url("/api/forge/omni/instances");
         let instances: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(i) => i,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&instances)
+        ForgeAdvancedServer::success(&instances)
     }
 
-    #[tool(description = "[ADVANCED] Validate Omni configuration")]
-    async fn adv_validate_omni_config(
+    #[tool(description = "Validate Omni configuration")]
+    async fn validate_omni_config(
         &self,
         Parameters(request): Parameters<ValidateOmniConfigRequest>,
     ) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag. Start server with --advanced to enable."
-                    .to_string(),
-            )]));
-        }
-
         let url = self.url("/api/forge/omni/validate");
         let result: serde_json::Value =
             match self.send_json(self.client.post(&url).json(&request)).await {
@@ -2097,46 +1791,36 @@ impl ForgeTaskServer {
                 Err(e) => return Ok(e),
             };
 
-        ForgeTaskServer::success(&result)
+        ForgeAdvancedServer::success(&result)
     }
 
-    #[tool(description = "[ADVANCED] List all Omni notifications")]
-    async fn adv_list_omni_notifications(&self) -> Result<CallToolResult, ErrorData> {
-        if !self.advanced_mode {
-            return Ok(CallToolResult::error(vec![Content::text(
-                "This tool requires --advanced flag".to_string(),
-            )]));
-        }
-
+    #[tool(description = "List all Omni notifications")]
+    async fn list_omni_notifications(&self) -> Result<CallToolResult, ErrorData> {
         let url = self.url("/api/forge/omni/notifications");
         let notifications: serde_json::Value = match self.send_json(self.client.get(&url)).await {
             Ok(n) => n,
             Err(e) => return Ok(e),
         };
 
-        ForgeTaskServer::success(&notifications)
+        ForgeAdvancedServer::success(&notifications)
     }
 }
 
 #[tool_handler]
-impl ServerHandler for ForgeTaskServer {
+impl ServerHandler for ForgeAdvancedServer {
     fn get_info(&self) -> ServerInfo {
         use rmcp::model::{Implementation, ProtocolVersion};
 
-        let instructions = if self.advanced_mode {
-            "A task and project management server with full backend API access. TOOLS: 'list_projects', 'list_tasks', 'create_task', 'start_task_attempt', 'get_task', 'update_task', 'delete_task', plus 49 advanced tools (adv_*). Make sure to pass `project_id` or `task_id` where required.".to_string()
-        } else {
-            "A task and project management server. Core task management tools only. TOOLS: 'list_projects', 'list_tasks', 'create_task', 'start_task_attempt', 'get_task', 'update_task', 'delete_task'. Advanced tools (adv_*) require --advanced flag. Make sure to pass `project_id` or `task_id` where required.".to_string()
-        };
-
         ServerInfo {
             protocol_version: ProtocolVersion::V_2025_03_26,
-            capabilities: ServerCapabilities::builder().enable_tools().build(),
+            capabilities: ServerCapabilities::builder()
+                .enable_tools()
+                .build(),
             server_info: Implementation {
                 name: "automagik-forge".to_string(),
                 version: env!("CARGO_PKG_VERSION").to_string(),
             },
-            instructions: Some(instructions),
+            instructions: Some("A task and project management server with full backend API access. TOOLS: 'list_projects', 'list_tasks', 'create_task', 'start_task_attempt', 'get_task', 'update_task', 'delete_task', plus 49 advanced tools for projects, task attempts, processes, drafts, containers, filesystem, and Omni integration. Make sure to pass `project_id` or `task_id` where required.".to_string()),
         }
     }
 }

@@ -1,0 +1,71 @@
+{
+  "forge": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "automagik-forge@latest",
+      "--mcp"
+    ]
+  },
+  "forge-advanced": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "automagik-forge@latest",
+      "--mcp-advanced"
+    ]
+  },
+  "genie": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "automagik-genie@next",
+      "mcp"
+    ]
+  },
+  "context7": {
+    "type": "http",
+    "url": "https://mcp.context7.com/mcp",
+    "headers": {
+      "CONTEXT7_API_KEY": "YOUR_API_KEY"
+    }
+  },
+  "playwright": {
+    "command": "npx",
+    "args": [
+      "@playwright/mcp@latest"
+    ]
+  },
+  "meta": {
+    "forge": {
+      "name": "Forge",
+      "description": "Core task management tools for Automagik Forge (7 tools)",
+      "url": "https://forge.automag.ik",
+      "icon": "forge-dark.svg"
+    },
+    "forge-advanced": {
+      "name": "Forge Advanced",
+      "description": "Full backend API access with 56 tools (projects, processes, drafts, Omni)",
+      "url": "https://forge.automag.ik",
+      "icon": "forge-dark.svg"
+    },
+    "genie": {
+      "name": "Genie",
+      "description": "Automagik Genie - AI agent orchestration and wish management",
+      "url": "https://genie.automag.ik",
+      "icon": "genie-logo.svg"
+    },
+    "context7": {
+      "name": "Context7",
+      "description": "Fetch up-to-date documentation and code examples",
+      "url": "https://github.com/upstash/context7",
+      "icon": "mcp/context7logo.png"
+    },
+    "playwright": {
+      "name": "Playwright",
+      "description": "Browser automation with Playwright",
+      "url": "https://github.com/microsoft/playwright-mcp",
+      "icon": "mcp/playwright_logo_icon.svg"
+    }
+  }
+}
