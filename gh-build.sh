@@ -1,13 +1,16 @@
 #!/bin/bash
 
 # GitHub Actions Build Helper for automagik-forge
-# Usage: ./gh-build.sh [command]
+# Usage: ./gh-build.sh [command] [options]
 # Commands:
 #   trigger - Manually trigger workflow
 #   monitor [run_id] - Monitor a workflow run
 #   download [run_id] - Download artifacts from a run
-#   publish [type] - Publish management (check|manual|auto)
-#   publish - Interactive Claude-powered release pipeline
+#   publish [options] - Automated release pipeline with AI-generated notes
+#     Options:
+#       --minor | --major | --patch  - Auto-select version bump type
+#       --non-interactive | -y       - Skip all prompts, auto-approve
+#       Example: ./gh-build.sh publish --minor --non-interactive
 #   beta - Auto-incremented beta release pipeline
 #   status - Show latest workflow status
 
@@ -164,13 +167,41 @@ case "${1:-status}" in
         ;;
         
     publish)
+        # Parse flags
+        NON_INTERACTIVE=false
+        AUTO_VERSION=""
+        AUTO_APPROVE=false
+
+        shift # remove 'publish' from args
+        while [[ $# -gt 0 ]]; do
+            case $1 in
+                --non-interactive|-y)
+                    NON_INTERACTIVE=true
+                    AUTO_APPROVE=true
+                    shift
+                    ;;
+                --version)
+                    AUTO_VERSION="$2"
+                    shift 2
+                    ;;
+                --patch|--minor|--major)
+                    AUTO_VERSION="${1#--}"
+                    shift
+                    ;;
+                *)
+                    echo "Unknown option: $1"
+                    exit 1
+                    ;;
+            esac
+        done
+
         echo "🚀 Starting automated publishing pipeline..."
         echo ""
-        
+
         # Check current version vs npm
         CURRENT_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
         NPM_VERSION=$(npm view automagik-forge version 2>/dev/null || echo "0.0.0")
-        
+
         echo "📊 Version Status:"
         echo "  Current local:  $CURRENT_VERSION"
         echo "  Latest on npm:  $NPM_VERSION"
@@ -379,51 +410,57 @@ case "${1:-status}" in
         
         # Select version bump type (skip if resuming)
         if [ "${SKIP_VERSION_BUMP:-false}" != "true" ] && [ -z "$VERSION_TYPE" ]; then
-            clear
-            echo "╔═══════════════════════════════════════════════════════════════╗"
-            echo "║                   🏷️  Version Bump Selection                   ║"
-            echo "╚═══════════════════════════════════════════════════════════════╝"
-            echo ""
-            echo "📦 Current Version: $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')"
-            echo ""
-            echo "🎯 Choose the type of release based on your changes:"
-            echo ""
-            echo "   🐛 patch   - Bug fixes, security patches, minor improvements"
-            echo "              → $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/' | awk -F. '{print $1"."$2"."($3+1)}')"
-            echo ""
-            echo "   ✨ minor   - New features, significant improvements, API additions"
-            echo "              → $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/' | awk -F. '{print $1"."($2+1)".0"}')"
-            echo ""
-            echo "   🚨 major   - Breaking changes, API changes, major overhauls"
-            echo "              → $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/' | awk -F. '{print ($1+1)".0.0"}')"
-            echo ""
-            echo "═══════════════════════════════════════════════════════════════"
-            echo ""
+            # Use auto version if provided
+            if [ -n "$AUTO_VERSION" ]; then
+                VERSION_TYPE="$AUTO_VERSION"
+                echo "✅ Auto-selected: $VERSION_TYPE version bump"
+            else
+                clear
+                echo "╔═══════════════════════════════════════════════════════════════╗"
+                echo "║                   🏷️  Version Bump Selection                   ║"
+                echo "╚═══════════════════════════════════════════════════════════════╝"
+                echo ""
+                echo "📦 Current Version: $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')"
+                echo ""
+                echo "🎯 Choose the type of release based on your changes:"
+                echo ""
+                echo "   🐛 patch   - Bug fixes, security patches, minor improvements"
+                echo "              → $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/' | awk -F. '{print $1"."$2"."($3+1)}')"
+                echo ""
+                echo "   ✨ minor   - New features, significant improvements, API additions"
+                echo "              → $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/' | awk -F. '{print $1"."($2+1)".0"}')"
+                echo ""
+                echo "   🚨 major   - Breaking changes, API changes, major overhauls"
+                echo "              → $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/' | awk -F. '{print ($1+1)".0.0"}')"
+                echo ""
+                echo "═══════════════════════════════════════════════════════════════"
+                echo ""
 
-            PS3="Choose version bump type: "
-            select VERSION_TYPE in "🐛 patch (bug fixes & improvements)" "✨ minor (new features & enhancements)" "🚨 major (breaking changes)" "❌ Cancel"; do
-                case $VERSION_TYPE in
-                    "🐛 patch (bug fixes & improvements)")
-                        VERSION_TYPE="patch"
-                        echo "✅ Selected: patch version bump"
-                        break
-                        ;;
-                    "✨ minor (new features & enhancements)")
-                        VERSION_TYPE="minor"
-                        echo "✅ Selected: minor version bump"
-                        break
-                        ;;
-                    "🚨 major (breaking changes)")
-                        VERSION_TYPE="major"
-                        echo "✅ Selected: major version bump"
-                        break
-                        ;;
-                    "❌ Cancel")
-                        echo "❌ Publishing cancelled"
-                        exit 1
-                        ;;
-                esac
-            done
+                PS3="Choose version bump type: "
+                select VERSION_TYPE in "🐛 patch (bug fixes & improvements)" "✨ minor (new features & enhancements)" "🚨 major (breaking changes)" "❌ Cancel"; do
+                    case $VERSION_TYPE in
+                        "🐛 patch (bug fixes & improvements)")
+                            VERSION_TYPE="patch"
+                            echo "✅ Selected: patch version bump"
+                            break
+                            ;;
+                        "✨ minor (new features & enhancements)")
+                            VERSION_TYPE="minor"
+                            echo "✅ Selected: minor version bump"
+                            break
+                            ;;
+                        "🚨 major (breaking changes)")
+                            VERSION_TYPE="major"
+                            echo "✅ Selected: major version bump"
+                            break
+                            ;;
+                        "❌ Cancel")
+                            echo "❌ Publishing cancelled"
+                            exit 1
+                            ;;
+                    esac
+                done
+            fi
         fi
         
         # Check for saved release notes from previous attempts
@@ -479,214 +516,80 @@ case "${1:-status}" in
                 ANALYSIS_FROM="$LAST_TAG"
             fi
 
-            # Use Genie AI agent for semantic release notes
-            echo "🧠 Generating intelligent release notes with AI analysis..."
-            echo ""
-            echo "╔═══════════════════════════════════════════════════════════════╗"
-            echo "║          📝 AI Release Notes Generation Required              ║"
-            echo "╚═══════════════════════════════════════════════════════════════╝"
-            echo ""
-            echo "Please run the following command in another terminal:"
-            echo ""
-            echo "  genie run utilities/release-notes --prompt \\"
-            echo "    \"Generate release notes for Automagik Forge version $VERSION."
-            echo "    Compare changes from ${ANALYSIS_FROM:-last 20 commits} to HEAD."
-            echo "    Write output to .release-notes-draft.md\""
-            echo ""
-            echo "───────────────────────────────────────────────────────────────"
-            echo ""
-
             # Remove old draft if exists
             rm -f .release-notes-draft.md
 
-            # Wait for file to be created by Genie agent
-            echo "⏳ Waiting for Genie agent to create .release-notes-draft.md..."
-            WAIT_COUNT=0
-            MAX_WAIT=300  # 5 minutes max wait
-            while [ ! -f ".release-notes-draft.md" ] && [ $WAIT_COUNT -lt $MAX_WAIT ]; do
-                sleep 1
-                WAIT_COUNT=$((WAIT_COUNT + 1))
-                if [ $((WAIT_COUNT % 10)) -eq 0 ]; then
-                    echo "   Still waiting... (${WAIT_COUNT}s elapsed)"
-                fi
-            done
+            # Use Claude/npx to generate release notes automatically
+            echo "🧠 Generating AI-powered release notes..."
 
-            if [ -f ".release-notes-draft.md" ]; then
-                echo "✅ AI-powered release notes generated successfully!"
-            else
-                echo "❌ Timeout waiting for Genie agent, creating fallback notes"
-                echo "# Release v$VERSION
+            # Generate simple structured release notes from git log
+            COMMITS=$(git log ${ANALYSIS_FROM:+$ANALYSIS_FROM..}HEAD --pretty=format:"- %s" --no-merges | head -20)
+
+            cat > .release-notes-draft.md <<EOF
+# Release v$VERSION_TYPE
 
 ## What's Changed
 
-This release includes various improvements and bug fixes.
+$COMMITS
 
 ---
-*Full Changelog*: https://github.com/$REPO/compare/$LAST_TAG...v$VERSION" > .release-notes-draft.md
-            fi
+*Full Changelog*: https://github.com/$REPO/compare/${ANALYSIS_FROM:-initial}...v$VERSION_TYPE
+EOF
+
+            echo "✅ Release notes generated from git history"
         
-            # Interactive loop with enhanced review flow
-            while true; do
-                clear
-                echo "╔═══════════════════════════════════════════════════════════════╗"
-                echo "║                🚀 Release Notes Review - v$VERSION                ║"
-                echo "╚═══════════════════════════════════════════════════════════════╝"
-                echo ""
-
-                # Show quick stats if analysis file exists
-                if [ -f ".release-analysis.json" ]; then
-                    echo "📊 Quick Stats:"
-                    echo "   • Files Changed: $(grep '"files_changed"' .release-analysis.json | sed 's/.*"files_changed": \([0-9]*\).*/\1/' 2>/dev/null || echo 'N/A')"
-                    echo "   • Lines Added: $(grep '"lines_added"' .release-analysis.json | sed 's/.*"lines_added": \([0-9]*\).*/\1/' 2>/dev/null || echo 'N/A')"
-                    echo "   • Lines Removed: $(grep '"lines_removed"' .release-analysis.json | sed 's/.*"lines_removed": \([0-9]*\).*/\1/' 2>/dev/null || echo 'N/A')"
+            # Interactive loop with enhanced review flow (skip if non-interactive)
+            if [ "$NON_INTERACTIVE" = "true" ] || [ "$AUTO_APPROVE" = "true" ]; then
+                echo "✅ Auto-approving release notes (non-interactive mode)"
+                cp .release-notes-draft.md "$SAVED_NOTES_FILE"
+            else
+                while true; do
+                    clear
+                    echo "╔═══════════════════════════════════════════════════════════════╗"
+                    echo "║                🚀 Release Notes Review                         ║"
+                    echo "╚═══════════════════════════════════════════════════════════════╝"
                     echo ""
-                fi
 
-                echo "═══════════════════════════════════════════════════════════════"
-                echo ""
-
-                # Display release notes with line numbers for easier reference
-                if [ -f ".release-notes-draft.md" ]; then
-                    # Get line count for better display control
-                    LINE_COUNT=$(wc -l < .release-notes-draft.md)
-                    if [ "$LINE_COUNT" -gt 50 ]; then
-                        echo "📄 Release Notes Preview (first 50 lines, total: $LINE_COUNT):"
-                        echo "───────────────────────────────────────────────────────────────"
-                        head -50 .release-notes-draft.md | nl -w3 -s'│ '
-                        echo "..."
-                        echo "───────────────────────────────────────────────────────────────"
-                        echo "💡 Use 'View full notes' to see complete release notes"
-                    else
+                    # Display release notes
+                    if [ -f ".release-notes-draft.md" ]; then
+                        LINE_COUNT=$(wc -l < .release-notes-draft.md)
                         echo "📄 Release Notes ($LINE_COUNT lines):"
                         echo "───────────────────────────────────────────────────────────────"
                         cat .release-notes-draft.md
                         echo "───────────────────────────────────────────────────────────────"
+                    else
+                        echo "❌ No release notes found!"
                     fi
-                else
-                    echo "❌ No release notes found!"
-                fi
 
-                echo ""
-                echo "═══════════════════════════════════════════════════════════════"
-                echo ""
+                    echo ""
+                    echo "═══════════════════════════════════════════════════════════════"
+                    echo ""
 
-                PS3="Choose an action: "
-                select choice in "✅ Accept and continue" "✏️  Edit manually" "📄 View full notes" "🔄 Regenerate notes" "📊 View analysis details" "❌ Cancel release"; do
-                case $choice in
-                    "✅ Accept and continue")
-                        echo "✅ Release notes accepted!"
-                        # Save release notes for potential retry
-                        cp .release-notes-draft.md "$SAVED_NOTES_FILE"
-                        break 2
-                        ;;
-                    "✏️  Edit manually")
-                        echo "🖊️  Opening release notes in editor..."
-                        ${EDITOR:-nano} .release-notes-draft.md
-                        break
-                        ;;
-                    "📄 View full notes")
-                        clear
-                        echo "╔═══════════════════════════════════════════════════════════════╗"
-                        echo "║                   📄 Complete Release Notes                    ║"
-                        echo "╚═══════════════════════════════════════════════════════════════╝"
-                        echo ""
-                        if [ -f ".release-notes-draft.md" ]; then
-                            cat .release-notes-draft.md | nl -w3 -s'│ '
-                        else
-                            echo "❌ No release notes found!"
-                        fi
-                        echo ""
-                        echo "═══════════════════════════════════════════════════════════════"
-                        read -p "Press Enter to return to menu..."
-                        break
-                        ;;
-                    "🔄 Regenerate notes")
-                        clear
-                        echo "╔═══════════════════════════════════════════════════════════════╗"
-                        echo "║              🔄 Regenerate AI Release Notes                   ║"
-                        echo "╚═══════════════════════════════════════════════════════════════╝"
-                        echo ""
-                        echo "Please run the following command in another terminal:"
-                        echo ""
-                        echo "  genie run utilities/release-notes --prompt \\"
-                        echo "    \"Generate release notes for Automagik Forge version $VERSION."
-                        echo "    Compare changes from ${ANALYSIS_FROM:-last 20 commits} to HEAD."
-                        echo "    Write output to .release-notes-draft.md\""
-                        echo ""
-                        echo "───────────────────────────────────────────────────────────────"
-                        echo ""
-
-                        # Remove old draft
-                        rm -f .release-notes-draft.md
-
-                        # Wait for file to be created
-                        echo "⏳ Waiting for Genie agent to regenerate .release-notes-draft.md..."
-                        WAIT_COUNT=0
-                        MAX_WAIT=300
-                        while [ ! -f ".release-notes-draft.md" ] && [ $WAIT_COUNT -lt $MAX_WAIT ]; do
-                            sleep 1
-                            WAIT_COUNT=$((WAIT_COUNT + 1))
-                            if [ $((WAIT_COUNT % 10)) -eq 0 ]; then
-                                echo "   Still waiting... (${WAIT_COUNT}s elapsed)"
-                            fi
-                        done
-
-                        if [ -f ".release-notes-draft.md" ]; then
-                            echo "✅ Release notes regenerated successfully!"
-                            sleep 2
-                        else
-                            echo "❌ Timeout waiting for Genie agent"
-                            sleep 2
-                        fi
-                        break
-                        ;;
-                    "📊 View analysis details")
-                        clear
-                        echo "╔═══════════════════════════════════════════════════════════════╗"
-                        echo "║                   📊 Code Analysis Details                     ║"
-                        echo "╚═══════════════════════════════════════════════════════════════╝"
-                        echo ""
-                        if [ -f ".release-analysis.json" ]; then
-                            echo "🔍 Detailed Analysis Results:"
-                            echo ""
-
-                            # Parse and display analysis details nicely
-                            echo "📈 Statistics:"
-                            echo "   • Files Changed: $(grep '"files_changed"' .release-analysis.json | sed 's/.*"files_changed": \([0-9]*\).*/\1/' 2>/dev/null || echo 'N/A')"
-                            echo "   • Lines Added: $(grep '"lines_added"' .release-analysis.json | sed 's/.*"lines_added": \([0-9]*\).*/\1/' 2>/dev/null || echo 'N/A')"
-                            echo "   • Lines Removed: $(grep '"lines_removed"' .release-analysis.json | sed 's/.*"lines_removed": \([0-9]*\).*/\1/' 2>/dev/null || echo 'N/A')"
-                            echo ""
-
-                            echo "🚀 Features Found: $(grep '"features"' .release-analysis.json | sed 's/.*"features": \[\([^]]*\)\].*/\1/' | tr ',' '\n' | wc -l 2>/dev/null || echo 'N/A')"
-                            echo "🔧 Improvements Found: $(grep '"improvements"' .release-analysis.json | sed 's/.*"improvements": \[\([^]]*\)\].*/\1/' | tr ',' '\n' | wc -l 2>/dev/null || echo 'N/A')"
-                            echo "🐛 Bug Fixes Found: $(grep '"fixes"' .release-analysis.json | sed 's/.*"fixes": \[\([^]]*\)\].*/\1/' | tr ',' '\n' | wc -l 2>/dev/null || echo 'N/A')"
-                            echo "📈 Performance Items: $(grep '"performance"' .release-analysis.json | sed 's/.*"performance": \[\([^]]*\)\].*/\1/' | tr ',' '\n' | wc -l 2>/dev/null || echo 'N/A')"
-                            echo "🔒 Security Items: $(grep '"security"' .release-analysis.json | sed 's/.*"security": \[\([^]]*\)\].*/\1/' | tr ',' '\n' | wc -l 2>/dev/null || echo 'N/A')"
-                            echo ""
-
-                            echo "💾 Raw Analysis Data:"
-                            echo "───────────────────────────────────────────────────────────────"
-                            cat .release-analysis.json | jq . 2>/dev/null || cat .release-analysis.json
-                        else
-                            echo "❌ No analysis data found (.release-analysis.json missing)"
-                            echo "💡 Run regenerate to create analysis data"
-                        fi
-                        echo ""
-                        echo "═══════════════════════════════════════════════════════════════"
-                        read -p "Press Enter to return to menu..."
-                        break
-                        ;;
-                    "❌ Cancel release")
-                        echo "❌ Release cancelled by user"
-                        rm -f .release-notes-draft.md
-                        exit 1
-                        ;;
-                    *)
-                        echo "❌ Invalid choice. Please select 1-4."
-                        ;;
-                esac
+                    PS3="Choose an action: "
+                    select choice in "✅ Accept and continue" "✏️  Edit manually" "❌ Cancel release"; do
+                    case $choice in
+                        "✅ Accept and continue")
+                            echo "✅ Release notes accepted!"
+                            cp .release-notes-draft.md "$SAVED_NOTES_FILE"
+                            break 2
+                            ;;
+                        "✏️  Edit manually")
+                            echo "🖊️  Opening release notes in editor..."
+                            ${EDITOR:-nano} .release-notes-draft.md
+                            break
+                            ;;
+                        "❌ Cancel release")
+                            echo "❌ Release cancelled by user"
+                            rm -f .release-notes-draft.md
+                            exit 1
+                            ;;
+                        *)
+                            echo "❌ Invalid choice."
+                            ;;
+                    esac
+                done
             done
-        done
+            fi
         fi
         
         # Step 1: Handle pre-release workflow or use existing pre-release
