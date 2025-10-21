@@ -188,12 +188,28 @@ Automagik Forge acts as a **Model Context Protocol (MCP) server**, enabling AI c
 2. Navigate to MCP Servers section
 3. Add Forge server configuration:
 
+**Basic Mode** (Core task management tools only):
 ```json
 {
   "mcpServers": {
     "automagik-forge": {
       "command": "npx",
-      "args": ["automagik-forge", "mcp-server"],
+      "args": ["automagik-forge", "--mcp"],
+      "env": {
+        "PROJECT_ID": "your-project-uuid-here"
+      }
+    }
+  }
+}
+```
+
+**Advanced Mode** (Full backend API access with 49+ tools):
+```json
+{
+  "mcpServers": {
+    "automagik-forge": {
+      "command": "npx",
+      "args": ["automagik-forge", "--mcp-advanced"],
       "env": {
         "PROJECT_ID": "your-project-uuid-here"
       }
@@ -205,6 +221,10 @@ Automagik Forge acts as a **Model Context Protocol (MCP) server**, enabling AI c
 4. Restart Claude Code
 5. Use natural language: "Create tasks for implementing a real-time chat feature"
 
+**Choose Your Mode:**
+- `--mcp`: Core 7 tools for task management (list_projects, list_tasks, create_task, etc.)
+- `--mcp-advanced`: All 56 tools including projects, task attempts, processes, drafts, containers, filesystem, and Omni integration
+
 </details>
 
 <details>
@@ -214,12 +234,26 @@ Automagik Forge acts as a **Model Context Protocol (MCP) server**, enabling AI c
 2. Search for "MCP" in settings
 3. Add to MCP configuration:
 
+**Basic Mode** (Core task management tools only):
 ```json
 {
   "mcp.servers": {
     "automagik-forge": {
       "command": "npx",
-      "args": ["automagik-forge", "mcp-server"],
+      "args": ["automagik-forge", "--mcp"],
+      "projectId": "your-project-uuid-here"
+    }
+  }
+}
+```
+
+**Advanced Mode** (Full backend API access with 49+ tools):
+```json
+{
+  "mcp.servers": {
+    "automagik-forge": {
+      "command": "npx",
+      "args": ["automagik-forge", "--mcp-advanced"],
       "projectId": "your-project-uuid-here"
     }
   }
