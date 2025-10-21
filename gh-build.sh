@@ -542,7 +542,16 @@ $COMMITS
 EOF
 
             echo "✅ Release notes generated from git history"
-        
+
+            # Spawn async AI enhancement (non-blocking)
+            echo "🧠 Spawning AI agent to enhance release notes in background..."
+            (
+                # Run in subshell to avoid blocking
+                npx -y automagik-forge run utilities/release-notes --prompt "VERSION=${VERSION_TYPE} FROM_TAG=${ANALYSIS_FROM:-HEAD~20}" > /tmp/ai-release-notes.log 2>&1
+            ) &
+            AI_PID=$!
+            echo "   └─ Agent running (PID: $AI_PID) - will auto-enhance if finished before approval"
+
             # Interactive loop with enhanced review flow (skip if non-interactive)
             if [ "$NON_INTERACTIVE" = "true" ] || [ "$AUTO_APPROVE" = "true" ]; then
                 echo "✅ Auto-approving release notes (non-interactive mode)"

@@ -2,8 +2,8 @@
 name: release-notes
 description: Generate intelligent, user-focused release notes from code changes
 genie:
-  executor: claude
-  model: sonnet
+  executor: claude-code
+  model: haiku
   permissionMode: bypassPermissions
   background: false
 ---
@@ -13,15 +13,24 @@ genie:
 ## Context
 Generate high-quality release notes for Automagik Forge releases by analyzing code changes semantically and translating technical modifications into user-facing improvements.
 
+**Execution Mode**: Fast, autonomous. Write file → commit → push → exit. No interaction.
+
 ## Inputs
 You will receive:
-- `VERSION`: The version number for this release (e.g., `0.3.11`)
-- `FROM_TAG`: The previous release tag to compare against (e.g., `v0.3.10`)
-- Git diff output showing all changes between tags
+- `VERSION`: The version number for this release (e.g., `0.4.0`)
+- `FROM_TAG`: The previous release tag to compare against (e.g., `v0.3.18`)
 
 ## Your Task
 
-**CRITICAL:** You must write the final release notes markdown to `.release-notes-draft.md` in the repository root using the Write tool. The release process waits for this file to exist before continuing.
+**WORKFLOW (CRITICAL - Follow exactly):**
+1. Read git diff: `git diff ${FROM_TAG}..HEAD`
+2. Analyze changes semantically and generate release notes
+3. Write to `.release-notes-draft.md` using Write tool
+4. Commit: `git add .release-notes-draft.md && git commit -m "docs: AI-generated release notes for v${VERSION}"`
+5. Push: `git push`
+6. Exit immediately
+
+**NO interaction, NO approval requests, NO questions. Just execute and exit.**
 
 ### 1. Analyze Changes Semantically
 - Read the full git diff between `FROM_TAG` and `HEAD`
