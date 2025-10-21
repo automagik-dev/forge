@@ -117,6 +117,12 @@ impl ClaudeCode {
         if let Some(model) = &self.model {
             builder = builder.extend_params(["--model", model]);
         }
+
+        // Add append-system-prompt if configured
+        if let Some(append_text) = self.append_prompt.0.as_ref() {
+            builder = builder.extend_params(["--append-system-prompt", append_text]);
+        }
+
         builder = builder.extend_params([
             "--verbose",
             "--output-format=stream-json",
@@ -142,8 +148,6 @@ impl StandardCodingAgentExecutor for ClaudeCode {
             write_python_hook(current_dir).await?
         }
 
-        let combined_prompt = self.append_prompt.combine_prompt(prompt);
-
         let mut command = Command::new(shell_cmd);
         command
             .kill_on_drop(true)
@@ -158,7 +162,7 @@ impl StandardCodingAgentExecutor for ClaudeCode {
 
         // Feed the prompt in, then close the pipe so Claude sees EOF
         if let Some(mut stdin) = child.inner().stdin.take() {
-            stdin.write_all(combined_prompt.as_bytes()).await?;
+            stdin.write_all(prompt.as_bytes()).await?;
             stdin.shutdown().await?;
         }
 
@@ -188,8 +192,6 @@ impl StandardCodingAgentExecutor for ClaudeCode {
             write_python_hook(current_dir).await?
         }
 
-        let combined_prompt = self.append_prompt.combine_prompt(prompt);
-
         let mut command = Command::new(shell_cmd);
         command
             .kill_on_drop(true)
@@ -204,7 +206,7 @@ impl StandardCodingAgentExecutor for ClaudeCode {
 
         // Feed the followup prompt in, then close the pipe
         if let Some(mut stdin) = child.inner().stdin.take() {
-            stdin.write_all(combined_prompt.as_bytes()).await?;
+            stdin.write_all(prompt.as_bytes()).await?;
             stdin.shutdown().await?;
         }
 
