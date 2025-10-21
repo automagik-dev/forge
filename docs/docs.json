@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Vibe Kanban",
+  "name": "Automagik Forge",
   "description": "A kanban board for developers to track coding tasks with AI coding agents",
 
   "colors": {
@@ -54,7 +54,7 @@
           "integrations/github-integration",
           "integrations/vscode-extension",
           "integrations/mcp-server-configuration",
-          "integrations/vibe-kanban-mcp-server"
+          "integrations/automagik-forge-mcp-server"
         ]
       }
     ]
@@ -67,7 +67,7 @@
     "links": [
       {
         "label": "GitHub",
-        "href": "https://github.com/BloopAI/vibe-kanban"
+        "href": "https://github.com/namastexlabs/automagik-forge"
       }
     ],
     "primary": {
@@ -96,7 +96,7 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/BloopAI/vibe-kanban"
+      "github": "https://github.com/namastexlabs/automagik-forge"
     }
   }
 }

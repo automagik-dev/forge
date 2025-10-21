@@ -101,11 +101,11 @@ fn normalize_macos_private_alias<P: AsRef<Path>>(p: P) -> PathBuf {
     p.to_path_buf()
 }
 
-pub fn get_vibe_kanban_temp_dir() -> std::path::PathBuf {
+pub fn get_automagik_forge_temp_dir() -> std::path::PathBuf {
     let dir_name = if cfg!(debug_assertions) {
-        "vibe-kanban-dev"
+        "automagik-forge-dev"
     } else {
-        "vibe-kanban"
+        "automagik-forge"
     };
 
     if cfg!(target_os = "macos") {
@@ -115,7 +115,7 @@ pub fn get_vibe_kanban_temp_dir() -> std::path::PathBuf {
         // Linux: use /var/tmp instead of /tmp to avoid RAM usage
         std::path::PathBuf::from("/var/tmp").join(dir_name)
     } else {
-        // Windows and other platforms: use temp dir with vibe-kanban subdirectory
+        // Windows and other platforms: use temp dir with automagik-forge subdirectory
         std::env::temp_dir().join(dir_name)
     }
 }
@@ -154,7 +154,7 @@ mod tests {
     #[test]
     fn test_make_path_relative_macos_private_alias() {
         // Simulate a worktree under /var with a path reported under /private/var
-        let worktree = "/var/folders/zz/abc123/T/vibe-kanban-dev/worktrees/vk-test";
+        let worktree = "/var/folders/zz/abc123/T/automagik-forge-dev/worktrees/af-test";
         let path_under_private = format!(
             "/private/var{}/hello-world.txt",
             worktree.strip_prefix("/var").unwrap()

@@ -1,12 +1,12 @@
 ---
-title: "Install & Run Vibe Kanban"
-description: "Complete installation guide for Vibe Kanban on macOS, Linux, and Windows"
+title: "Install & Run Automagik Forge"
+description: "Complete installation guide for Automagik Forge on macOS, Linux, and Windows"
 sidebarTitle: "Installation"
 ---
 
 ## Supported Systems
 
-We build and test Vibe Kanban on the following systems:
+We build and test Automagik Forge on the following systems:
 
 - macOS (Intel and Apple Silicon)
 - Linux
@@ -14,10 +14,10 @@ We build and test Vibe Kanban on the following systems:
 
 ## Prerequisites
 
-Before installing Vibe Kanban, ensure you have:
+Before installing Automagik Forge, ensure you have:
 
 - **Node.js**: Latest LTS version recommended
-- **Coding agent authentication**: Authenticate with your preferred coding agents outside of Vibe Kanban
+- **Coding agent authentication**: Authenticate with your preferred coding agents outside of Automagik Forge
 
 <Info>
 All supported coding agents can be used via npx without separate installation. You can find authentication instructions for each coding agent on their respective [websites](./supported-coding-agents).
@@ -26,18 +26,18 @@ All supported coding agents can be used via npx without separate installation. Y
 ## Safety Notice
 
 <Warning>
-Vibe Kanban runs AI agents with --dangerously-skip-permissions/--yolo flags by default so they can work autonomously without constant approval prompts. Each task runs in an isolated git worktree, preventing agents from interfering with each other.
+Automagik Forge runs AI agents with --dangerously-skip-permissions/--yolo flags by default so they can work autonomously without constant approval prompts. Each task runs in an isolated git worktree, preventing agents from interfering with each other.
 Agents can still perform system-level actions, so review their work and keep backups.
 </Warning>
 
 ## Installation & Setup
 
 <Steps>
-<Step title="Install and launch Vibe Kanban">
+<Step title="Install and launch Automagik Forge">
   Open a terminal and run:
 
   ```bash
-  npx vibe-kanban
+  npx automagik-forge
   ```
 
   <Check>
@@ -62,10 +62,10 @@ Agents can still perform system-level actions, so review their work and keep bac
 </Step>
 
 <Step title="Optional: Set up MCP integration">
-  Streamline task creation with coding agents by [setting up MCP integration](/integrations/vibe-kanban-mcp-server).
+  Streamline task creation with coding agents by [setting up MCP integration](/integrations/automagik-forge-mcp-server).
 </Step>
 </Steps>
 
 <Tip>
-To use a fixed port, specify the `PORT` environment variable: `PORT=8080 npx vibe-kanban`
+To use a fixed port, specify the `PORT` environment variable: `PORT=8080 npx automagik-forge`
 </Tip>

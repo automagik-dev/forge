@@ -16,18 +16,18 @@ cargo build --release --bin mcp_task_server --manifest-path Cargo.toml
 echo "📦 Creating distribution package..."
 
 # Copy the main binary
-cp target/release/server vibe-kanban
-zip -q vibe-kanban.zip vibe-kanban
-rm -f vibe-kanban 
-mv vibe-kanban.zip npx-cli/dist/macos-arm64/vibe-kanban.zip
+cp target/release/server automagik-forge
+zip -q automagik-forge.zip automagik-forge
+rm -f automagik-forge 
+mv automagik-forge.zip npx-cli/dist/macos-arm64/automagik-forge.zip
 
 # Copy the MCP binary
-cp target/release/mcp_task_server vibe-kanban-mcp
-zip -q vibe-kanban-mcp.zip vibe-kanban-mcp
-rm -f vibe-kanban-mcp
-mv vibe-kanban-mcp.zip npx-cli/dist/macos-arm64/vibe-kanban-mcp.zip
+cp target/release/mcp_task_server automagik-forge-mcp
+zip -q automagik-forge-mcp.zip automagik-forge-mcp
+rm -f automagik-forge-mcp
+mv automagik-forge-mcp.zip npx-cli/dist/macos-arm64/automagik-forge-mcp.zip
 
 echo "✅ NPM package ready!"
 echo "📁 Files created:"
-echo "   - npx-cli/dist/macos-arm64/vibe-kanban.zip"
-echo "   - npx-cli/dist/macos-arm64/vibe-kanban-mcp.zip"
+echo "   - npx-cli/dist/macos-arm64/automagik-forge.zip"
+echo "   - npx-cli/dist/macos-arm64/automagik-forge-mcp.zip"

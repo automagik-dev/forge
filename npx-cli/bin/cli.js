@@ -93,8 +93,8 @@ function extractAndRun(baseName, launch) {
     const zip = new AdmZip(zipPath);
     zip.extractAllTo(extractDir, true);
   } catch (err) {
-    console.error("❌ Failed to extract vibe-kanban archive:", err.message);
-    if (process.env.VIBE_KANBAN_DEBUG) {
+    console.error("❌ Failed to extract automagik-forge archive:", err.message);
+    if (process.env.AUTOMAGIK_FORGE_DEBUG) {
       console.error(err.stack);
     }
     process.exit(1);
@@ -116,7 +116,7 @@ function extractAndRun(baseName, launch) {
 }
 
 if (isMcpMode) {
-  extractAndRun("vibe-kanban-mcp", (bin) => {
+  extractAndRun("automagik-forge-mcp", (bin) => {
     const proc = spawn(bin, [], { stdio: "inherit" });
     proc.on("exit", (c) => process.exit(c || 0));
     proc.on("error", (e) => {
@@ -130,9 +130,9 @@ if (isMcpMode) {
     process.on("SIGTERM", () => proc.kill("SIGTERM"));
   });
 } else {
-  console.log(`📦 Extracting vibe-kanban...`);
-  extractAndRun("vibe-kanban", (bin) => {
-    console.log(`🚀 Launching vibe-kanban...`);
+  console.log(`📦 Extracting automagik-forge...`);
+  extractAndRun("automagik-forge", (bin) => {
+    console.log(`🚀 Launching automagik-forge...`);
     if (platform === "win32") {
       execSync(`"${bin}"`, { stdio: "inherit" });
     } else {

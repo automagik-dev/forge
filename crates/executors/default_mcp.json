@@ -1,9 +1,9 @@
 {
-  "vibe_kanban": {
+  "automagik_forge": {
     "command": "npx",
     "args": [
       "-y",
-      "vibe-kanban@latest",
+      "automagik-forge@latest",
       "--mcp"
     ]
   },
@@ -21,11 +21,11 @@
     ]
   },
   "meta": {
-    "vibe_kanban": {
-      "name": "Vibe Kanban",
-      "description": "Create, update and delete Vibe Kanban tasks",
-      "url": "https://www.vibekanban.com/docs/integrations/vibe-kanban-mcp-server",
-      "icon": "favicon-vk-light.svg"
+    "automagik_forge": {
+      "name": "Automagik Forge",
+      "description": "Create, update and delete Automagik Forge tasks",
+      "url": "https://www.vibekanban.com/docs/integrations/automagik-forge-mcp-server",
+      "icon": "favicon-af-light.svg"
     },
     "context7": {
       "name": "Context7",

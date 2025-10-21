@@ -19,7 +19,7 @@ use tokio::{
 use ts_rs::TS;
 use uuid::Uuid;
 use workspace_utils::{
-    msg_store::MsgStore, path::get_vibe_kanban_temp_dir, shell::get_shell_command,
+    msg_store::MsgStore, path::get_automagik_forge_temp_dir, shell::get_shell_command,
 };
 
 use crate::{
@@ -223,7 +223,7 @@ impl Copilot {
     }
 
     async fn create_temp_log_dir(current_dir: &Path) -> Result<PathBuf, ExecutorError> {
-        let base_log_dir = get_vibe_kanban_temp_dir().join("copilot_logs");
+        let base_log_dir = get_automagik_forge_temp_dir().join("copilot_logs");
         fs::create_dir_all(&base_log_dir)
             .await
             .map_err(ExecutorError::Io)?;

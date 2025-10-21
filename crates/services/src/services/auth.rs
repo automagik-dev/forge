@@ -112,7 +112,7 @@ impl AuthService {
         let client = OctocrabBuilder::new()
             .add_header(
                 HeaderName::try_from("User-Agent").unwrap(),
-                "vibe-kanban-app".to_string(),
+                "automagik-forge-app".to_string(),
             )
             .personal_token(access_token.clone())
             .build()?;

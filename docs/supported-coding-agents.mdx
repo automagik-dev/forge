@@ -1,9 +1,9 @@
 ---
 title: "Supported Coding Agents"
-description: "Complete guide to all coding agents supported by Vibe Kanban, including installation and authentication instructions"
+description: "Complete guide to all coding agents supported by Automagik Forge, including installation and authentication instructions"
 ---
 
-Vibe Kanban integrates with a variety of coding agents. These agents are available via `npx` and can be selected when creating task attempts.
+Automagik Forge integrates with a variety of coding agents. These agents are available via `npx` and can be selected when creating task attempts.
 
 <AccordionGroup>
 
@@ -14,7 +14,7 @@ Vibe Kanban integrates with a variety of coding agents. These agents are availab
 Claude Code is now available via npx - no separate installation required!
 
 ## Authentication
-You need to authenticate with Claude Code outside of Vibe Kanban before using it. Please follow the authentication instructions on the [Claude Code GitHub page](https://github.com/anthropics/claude-code).
+You need to authenticate with Claude Code outside of Automagik Forge before using it. Please follow the authentication instructions on the [Claude Code GitHub page](https://github.com/anthropics/claude-code).
 </Accordion>
 
 <Accordion title="OpenAI Codex" icon="code">
@@ -24,7 +24,7 @@ You need to authenticate with Claude Code outside of Vibe Kanban before using it
 OpenAI Codex is now available via `npx` - no separate installation required!
 
 ## Authentication
-You need to authenticate with OpenAI Codex outside of Vibe Kanban before using it. Please follow the authentication instructions from the [OpenAI help center](https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan) to use Codex with your ChatGPT plan.
+You need to authenticate with OpenAI Codex outside of Automagik Forge before using it. Please follow the authentication instructions from the [OpenAI help center](https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan) to use Codex with your ChatGPT plan.
 
 Alternatively, Codex can be used via the OpenAI API by setting the `OPENAI_API_KEY` environment variable. For more details, see the [OpenAI documentation](https://developers.openai.com/codex/pricing/#use-an-openai-api-key)
 </Accordion>
@@ -36,7 +36,7 @@ Alternatively, Codex can be used via the OpenAI API by setting the `OPENAI_API_K
 Amp is now available via npx - no separate installation required!
 
 ## Authentication
-You need to authenticate with Amp outside of Vibe Kanban before using it. Please follow the authentication instructions on the [Amp Owner's Manual](https://ampcode.com/manual#install).
+You need to authenticate with Amp outside of Automagik Forge before using it. Please follow the authentication instructions on the [Amp Owner's Manual](https://ampcode.com/manual#install).
 </Accordion>
 
 <Accordion title="GitHub Copilot" icon="code">
@@ -83,7 +83,7 @@ npx -y @musistudio/claude-code-router ui
 This launches the CCR local UI where you configure providers and models.
 
 ## Authentication
-Authenticate and configure CCR outside of Vibe Kanban. Follow the instructions on the CCR GitHub repo:
+Authenticate and configure CCR outside of Automagik Forge. Follow the instructions on the CCR GitHub repo:
 
 - GitHub: https://github.com/musistudio/claude-code-router
 
@@ -126,9 +126,9 @@ CCR can also be configured via its JSON configuration file. Refer to the CCR Git
 <img src="/images/ccr-config-example.png" alt="CCR models configuration example" />
 </Frame>
 
-## Configure Vibe Kanban
+## Configure Automagik Forge
 
-Vibe Kanban does not ship a default configuration for CCR. Add configurations to the existing Claude Code agent:
+Automagik Forge does not ship a default configuration for CCR. Add configurations to the existing Claude Code agent:
 
 1) Open the "Coding Agent Configurations" page.
 2) Add a new configuration for the Claude Code agent (or edit an existing one).
@@ -149,13 +149,13 @@ Tips:
 - Create multiple configurations if you want easy switching between different models.
 - Leave the model string empty if you want CCR to use its own routing based on your CCR UI configuration (e.g., its `default`/`longContext`/etc. mappings).
 
-### Example: Claude Code agent configuration in Vibe Kanban
+### Example: Claude Code agent configuration in Automagik Forge
 
 <Frame>
-<img src="/images/vk-ccr-agent-config.png" alt="Claude Code agent configuration in Vibe Kanban" />
+<img src="/images/af-ccr-agent-config.png" alt="Claude Code agent configuration in Automagik Forge" />
 </Frame>
 
-## Using CCR in Vibe Kanban
+## Using CCR in Automagik Forge
 
 When creating a Task Attempt, select the coding agent and configuration: choose the Claude Code agent, then pick one of your CCR-enabled configurations.
 
@@ -175,7 +175,7 @@ When creating a Task Attempt, select the coding agent and configuration: choose 
 Gemini CLI is now available via npx - no separate installation required!
 
 ## Authentication
-You need to authenticate with Gemini CLI outside of Vibe Kanban before using it. Please follow the authentication instructions on the [Gemini CLI GitHub page](https://github.com/google-gemini/gemini-cli).
+You need to authenticate with Gemini CLI outside of Automagik Forge before using it. Please follow the authentication instructions on the [Gemini CLI GitHub page](https://github.com/google-gemini/gemini-cli).
 </Accordion>
 
 <Accordion title="OpenCode" icon="code">
@@ -185,7 +185,7 @@ You need to authenticate with Gemini CLI outside of Vibe Kanban before using it.
 OpenCode is now available via `npx` - no separate installation required!
 
 ## Authentication
-You need to authenticate with OpenCode outside of Vibe Kanban before using it. Please follow the authentication instructions on the [OpenCode GitHub page](https://github.com/sst/opencode).
+You need to authenticate with OpenCode outside of Automagik Forge before using it. Please follow the authentication instructions on the [OpenCode GitHub page](https://github.com/sst/opencode).
 </Accordion>
 
 <Accordion title="Qwen Code" icon="code">
@@ -195,7 +195,7 @@ You need to authenticate with OpenCode outside of Vibe Kanban before using it. P
 Qwen Code is available via npx - no separate installation required!
 
 ## Authentication
-You need to authenticate with Qwen outside of Vibe Kanban before using it. Please follow the authentication instructions in the official Qwen documentation: https://github.com/QwenLM/qwen-code
+You need to authenticate with Qwen outside of Automagik Forge before using it. Please follow the authentication instructions in the official Qwen documentation: https://github.com/QwenLM/qwen-code
 </Accordion>
 
 </AccordionGroup>

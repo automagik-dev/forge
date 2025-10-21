@@ -244,12 +244,12 @@
   "showcases": {
     "taskPanel": {
       "companion": {
-        "title": "Vibe Kanban Companion: Apuntar y Hacer Clic",
+        "title": "Automagik Forge Companion: Apuntar y Hacer Clic",
         "description": "Haz clic en cualquier componente de la interfaz en la ventana de vista previa para seleccionarlo con precisión. El agente de codificación recibe selectores DOM exactos y jerarquía de componentes, eliminando comentarios ambiguos."
       },
       "installation": {
         "title": "Instalación del Servidor de Desarrollo y Companion",
-        "description": "Configura un comando de servidor de desarrollo para vistas previas, con un script de configuración configurable en ajustes. Usa un agente de codificación para instalar automáticamente el companion web de Vibe Kanban."
+        "description": "Configura un comando de servidor de desarrollo para vistas previas, con un script de configuración configurable en ajustes. Usa un agente de codificación para instalar automáticamente el companion web de Automagik Forge."
       },
       "codeReview": {
         "title": "Revisión de Código Integrada",

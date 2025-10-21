@@ -46,10 +46,10 @@ pub fn is_wsl2() -> bool {
 
 pub fn cache_dir() -> std::path::PathBuf {
     let proj = if cfg!(debug_assertions) {
-        ProjectDirs::from("ai", "bloop-dev", env!("CARGO_PKG_NAME"))
+        ProjectDirs::from("ai", "namastex-dev", env!("CARGO_PKG_NAME"))
             .expect("OS didn't give us a home directory")
     } else {
-        ProjectDirs::from("ai", "bloop", env!("CARGO_PKG_NAME"))
+        ProjectDirs::from("ai", "namastex", env!("CARGO_PKG_NAME"))
             .expect("OS didn't give us a home directory")
     };
 

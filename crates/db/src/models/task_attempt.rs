@@ -368,7 +368,7 @@ impl TaskAttempt {
         id: Uuid,
         task_id: Uuid,
     ) -> Result<Self, TaskAttemptError> {
-        // let prefixed_id = format!("vibe-kanban-{}", attempt_id);
+        // let prefixed_id = format!("automagik-forge-{}", attempt_id);
         // Insert the record into the database
         Ok(sqlx::query_as!(
             TaskAttempt,

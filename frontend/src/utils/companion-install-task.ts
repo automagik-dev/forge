@@ -1,5 +1,5 @@
 export const COMPANION_INSTALL_TASK_TITLE =
-  'Install and integrate Vibe Kanban Web Companion';
+  'Install and integrate Automagik Forge Web Companion';
 
 export const COMPANION_INSTALL_TASK_DESCRIPTION = `Goal: Install and integrate the vibe-kanban-web-companion so it renders at the app root in development.
 
@@ -19,8 +19,8 @@ Do:
    Confirm by reading package.json and directory structure.
 
 3) Integrate the component:
-   import { VibeKanbanWebCompanion } from 'vibe-kanban-web-companion';
-   - Vite/CRA: render <VibeKanbanWebCompanion /> at the app root.
+   import { AutomagikForgeWebCompanion } from 'vibe-kanban-web-companion';
+   - Vite/CRA: render <AutomagikForgeWebCompanion /> at the app root.
    - Next.js (pages): render in pages/_app.*
    - Next.js (app): render in app/layout.* or a client providers component.
    - For Next.js, if SSR issues arise, use dynamic import with ssr: false.

@@ -39,7 +39,7 @@ const CreatePrDialog = NiceModal.create(() => {
 
   useEffect(() => {
     if (modal.visible && data) {
-      setPrTitle(`${data.task.title} (vibe-kanban)`);
+      setPrTitle(`${data.task.title} (automagik-forge)`);
       setPrBody(data.task.description || '');
 
       // Always fetch branches for dropdown population

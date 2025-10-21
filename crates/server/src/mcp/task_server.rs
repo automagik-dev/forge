@@ -288,27 +288,27 @@ impl TaskServer {
         let resp = rb
             .send()
             .await
-            .map_err(|e| Self::err("Failed to connect to VK API", Some(&e.to_string())).unwrap())?;
+            .map_err(|e| Self::err("Failed to connect to AF API", Some(&e.to_string())).unwrap())?;
 
         if !resp.status().is_success() {
             let status = resp.status();
             return Err(
-                Self::err(format!("VK API returned error status: {}", status), None).unwrap(),
+                Self::err(format!("AF API returned error status: {}", status), None).unwrap(),
             );
         }
 
         let api_response = resp.json::<ApiResponseEnvelope<T>>().await.map_err(|e| {
-            Self::err("Failed to parse VK API response", Some(&e.to_string())).unwrap()
+            Self::err("Failed to parse AF API response", Some(&e.to_string())).unwrap()
         })?;
 
         if !api_response.success {
             let msg = api_response.message.as_deref().unwrap_or("Unknown error");
-            return Err(Self::err("VK API returned error", Some(msg)).unwrap());
+            return Err(Self::err("AF API returned error", Some(msg)).unwrap());
         }
 
         api_response
             .data
-            .ok_or_else(|| Self::err("VK API response missing data field", None).unwrap())
+            .ok_or_else(|| Self::err("AF API response missing data field", None).unwrap())
     }
 
     fn url(&self, path: &str) -> String {
@@ -597,7 +597,7 @@ impl ServerHandler for TaskServer {
                 .enable_tools()
                 .build(),
             server_info: Implementation {
-                name: "vibe-kanban".to_string(),
+                name: "automagik-forge".to_string(),
                 version: "1.0.0".to_string(),
             },
             instructions: Some("A task and project management server. If you need to create or update tickets or tasks then use these tools. Most of them absolutely require that you pass the `project_id` of the project that you are currently working on. This should be provided to you. Call `list_tasks` to fetch the `task_ids` of all the tasks in a project`. TOOLS: 'list_projects', 'list_tasks', 'create_task', 'start_task_attempt', 'get_task', 'update_task', 'delete_task'. Make sure to pass `project_id` or `task_id` where required. You can use list tools to get the available ids.".to_string()),

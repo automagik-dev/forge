@@ -9,10 +9,10 @@ description: "Live preview your web applications with embedded browser viewing a
 
 ## Overview
 
-Preview Mode provides an embedded browser experience within Vibe Kanban, allowing you to test and iterate on your web applications without leaving the development environment. This feature eliminates the need to switch between your browser and Vibe Kanban by providing live preview capabilities and precise component selection tools.
+Preview Mode provides an embedded browser experience within Automagik Forge, allowing you to test and iterate on your web applications without leaving the development environment. This feature eliminates the need to switch between your browser and Automagik Forge by providing live preview capabilities and precise component selection tools.
 
 **Key Benefits:**
-- **Embedded viewing**: See your application running directly in Vibe Kanban
+- **Embedded viewing**: See your application running directly in Automagik Forge
 - **Precise component selection**: Click to select specific UI components for targeted feedback
 - **Seamless workflows**: No context switching between tools
 
@@ -46,10 +46,10 @@ Before using Preview Mode, ensure you have:
 </Step>
 
 <Step title="Install Web Companion">
-  For precise component selection, install the `vibe-kanban-web-companion` package in your application.
+  For precise component selection, install the `automagik-forge-web-companion` package in your application.
 
   <Info>
-  **Recommended**: Use the "Install companion automatically" button in the Preview tab to have Vibe Kanban create a task that installs and configures the companion for you.
+  **Recommended**: Use the "Install companion automatically" button in the Preview tab to have Automagik Forge create a task that installs and configures the companion for you.
   
   <Frame>
   <img src="/images/preview-mode-install-companion-button.png" alt="Install companion automatically button in Preview tab" />
@@ -60,7 +60,7 @@ Before using Preview Mode, ensure you have:
 
   Add the dependency to your project:
   ```bash
-  npm install vibe-kanban-web-companion
+  npm install automagik-forge-web-companion
   ```
 
   Then add the companion to your application:
@@ -69,7 +69,7 @@ Before using Preview Mode, ensure you have:
   <Tab title="Create React App">
     Add to your `src/index.js` or `src/index.tsx`:
     ```jsx
-    import { VibeKanbanWebCompanion } from 'vibe-kanban-web-companion';
+    import { AutomagikForgeWebCompanion as AutomagikForgeWebCompanion } from 'automagik-forge-web-companion';
     import React from 'react';
     import ReactDOM from 'react-dom/client';
     import App from './App';
@@ -77,7 +77,7 @@ Before using Preview Mode, ensure you have:
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(
       <React.StrictMode>
-        <VibeKanbanWebCompanion />
+        <AutomagikForgeWebCompanion />
         <App />
       </React.StrictMode>
     );
@@ -87,13 +87,13 @@ Before using Preview Mode, ensure you have:
   <Tab title="Next.js">
     Add to your `pages/_app.js` or `pages/_app.tsx`:
     ```jsx
-    import { VibeKanbanWebCompanion } from 'vibe-kanban-web-companion'
+    import { AutomagikForgeWebCompanion as AutomagikForgeWebCompanion } from 'automagik-forge-web-companion'
     import type { AppProps } from 'next/app'
 
     function MyApp({ Component, pageProps }: AppProps) {
       return (
         <>
-          <VibeKanbanWebCompanion />
+          <AutomagikForgeWebCompanion />
           <Component {...pageProps} />
         </>
       )
@@ -104,14 +104,14 @@ Before using Preview Mode, ensure you have:
   <Tab title="Vite">
     Add to your `src/main.jsx` or `src/main.tsx`:
     ```jsx
-    import { VibeKanbanWebCompanion } from "vibe-kanban-web-companion";
+    import { AutomagikForgeWebCompanion as AutomagikForgeWebCompanion } from "automagik-forge-web-companion";
     import React from "react";
     import ReactDOM from "react-dom/client";
     import App from "./App";
 
     ReactDOM.createRoot(document.getElementById("root")).render(
       <React.StrictMode>
-        <VibeKanbanWebCompanion />
+        <AutomagikForgeWebCompanion />
         <App />
       </React.StrictMode>
     );
@@ -145,7 +145,7 @@ Once your development server is running and a URL is detected:
 
 1. **Navigate to Preview tab** in the task details panel
 2. **View embedded application** in the iframe
-3. **Interact with your app** directly within Vibe Kanban
+3. **Interact with your app** directly within Automagik Forge
 
 <Frame>
 <img src="/images/preview-mode-interface.png" alt="Preview mode showing embedded application with toolbar controls" />
@@ -169,7 +169,7 @@ When the Web Companion is installed, you can precisely select UI components for 
 
 <Steps>
 <Step title="Activate Selection Mode">
-  Click the floating Vibe Kanban companion button in the bottom-right corner of your application to activate component selection mode.
+  Click the floating Automagik Forge companion button in the bottom-right corner of your application to activate component selection mode.
 
   <Frame>
   <img src="/images/preview-mode-component-selection.png" alt="Component selection interface showing selectable elements highlighted" />
@@ -177,7 +177,7 @@ When the Web Companion is installed, you can precisely select UI components for 
 </Step>
 
 <Step title="Choose Component Depth">
-  When you click a component, Vibe Kanban shows a hierarchy of components from innermost to outermost. Select the appropriate level for your feedback:
+  When you click a component, Automagik Forge shows a hierarchy of components from innermost to outermost. Select the appropriate level for your feedback:
 
   - **Inner components**: For specific UI elements (buttons, inputs)
   - **Outer components**: For broader sections (cards, layouts)
@@ -218,4 +218,4 @@ URLs using `0.0.0.0` or `::` are automatically converted to `localhost` for embe
 - [Task Details Full Screen Mode](/core-features/task-details-full-screen) - Complete guide to full screen task management
 - [Creating Task Attempts](/core-features/creating-task-attempts) - Learn about task attempt lifecycle
 - [Reviewing Code Changes](/core-features/reviewing-code-changes) - Analyse and review code modifications
-- [Configuration & Customisation](/configuration-customisation/global-settings) - Customise Vibe Kanban settings
+- [Configuration & Customisation](/configuration-customisation/global-settings) - Customise Automagik Forge settings

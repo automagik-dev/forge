@@ -32,7 +32,7 @@ use crate::{
 static BACKEND_PORT: OnceCell<u16> = OnceCell::const_new();
 async fn get_backend_port() -> std::io::Result<u16> {
     BACKEND_PORT
-        .get_or_try_init(|| async { read_port_file("vibe-kanban").await })
+        .get_or_try_init(|| async { read_port_file("automagik-forge").await })
         .await
         .copied()
 }

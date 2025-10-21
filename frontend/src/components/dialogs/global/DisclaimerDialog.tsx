@@ -27,7 +27,7 @@ const DisclaimerDialog = NiceModal.create(() => {
           </div>
           <DialogDescription className="text-left space-y-4 pt-4">
             <p>
-              Vibe Kanban runs AI coding agents with{' '}
+              Automagik Forge runs AI coding agents with{' '}
               <code>--dangerously-skip-permissions</code> / <code>--yolo</code>{' '}
               by default, giving them unrestricted access to execute code and
               run commands on your system.

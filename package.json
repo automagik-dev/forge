@@ -1,9 +1,9 @@
 {
-  "name": "vibe-kanban",
+  "name": "automagik-forge",
   "version": "0.0.110",
   "private": true,
   "bin": {
-    "vibe-kanban": "npx-cli/bin/cli.js"
+    "automagik-forge": "npx-cli/bin/cli.js"
   },
   "files": [
     "npx-cli/bin/cli.js",
