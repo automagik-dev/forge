@@ -605,9 +605,9 @@ impl ForgeTaskServer {
             match TaskStatus::from_str(status_str) {
                 Ok(s) => Some(s),
                 Err(_) => {
-                    return Ok(CallToolResult::error(vec![Content::text(format!(
-                        "Invalid status. Valid values: 'todo', 'inprogress', 'inreview', 'done', 'cancelled'"
-                    ))]));
+                    return Ok(CallToolResult::error(vec![Content::text(
+                        "Invalid status. Valid values: 'todo', 'inprogress', 'inreview', 'done', 'cancelled'".to_string()
+                    )]));
                 }
             }
         } else {
