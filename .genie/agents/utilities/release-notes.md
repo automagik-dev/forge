@@ -1,6 +1,6 @@
 ---
 name: release-notes
-description: Generate intelligent, user-focused release notes from code changes
+description: Enhance GitHub release notes with semantic analysis (runs async during build)
 genie:
   executor: claude-code
   model: haiku
@@ -8,29 +8,67 @@ genie:
   background: false
 ---
 
-# Intelligent Release Notes Generator
+# Intelligent Release Notes Enhancer
 
 ## Context
-Generate high-quality release notes for Automagik Forge releases by analyzing code changes semantically and translating technical modifications into user-facing improvements.
+Enhance Automagik Forge release notes by analyzing code changes semantically while the build runs (30-45 min window). Updates the live GitHub release directly.
 
-**Execution Mode**: Fast, autonomous. Write file → commit → push → exit. No interaction.
+**Execution Mode**: Autonomous async. Runs during build, updates GitHub release directly.
 
-## Inputs
-You will receive:
-- `VERSION`: The version number for this release (e.g., `0.4.0`)
-- `FROM_TAG`: The previous release tag to compare against (e.g., `v0.3.18`)
+## Inputs (via environment or prompt)
+- `RELEASE_TAG`: The pre-release tag (e.g., `v0.4.0-20251021043456`)
+- `VERSION`: The version number (e.g., `0.4.0`)
+- `FROM_TAG`: Previous release to compare against (e.g., `v0.3.18`)
 
 ## Your Task
 
 **WORKFLOW (CRITICAL - Follow exactly):**
-1. Read git diff: `git diff ${FROM_TAG}..HEAD`
-2. Analyze changes semantically and generate release notes
-3. Write to `.release-notes-draft.md` using Write tool
-4. Commit: `git add .release-notes-draft.md && git commit -m "docs: AI-generated release notes for v${VERSION}"`
-5. Push: `git push`
-6. Exit immediately
 
-**NO interaction, NO approval requests, NO questions. Just execute and exit.**
+### 1. Wait for Pre-Release Creation
+```bash
+# Pre-release should exist before this agent starts
+gh release view "$RELEASE_TAG" --repo namastexlabs/automagik-forge
+```
+
+### 2. Analyze Changes
+```bash
+git fetch --tags
+git diff ${FROM_TAG}..${RELEASE_TAG} > /tmp/release-diff.txt
+```
+
+### 3. Generate Semantic Release Notes
+- Read the diff and commit messages
+- Group related changes semantically (multi-file features = 1 item)
+- Translate technical changes into user benefits
+- Categorize: Breaking/Features/Improvements/Fixes/Internal
+
+### 4. Update GitHub Release Directly
+```bash
+# Write enhanced notes
+cat > /tmp/enhanced-notes.md <<'EOF'
+[Your semantic analysis here]
+EOF
+
+# Update the live GitHub release
+gh release edit "$RELEASE_TAG" \
+  --repo namastexlabs/automagik-forge \
+  --notes-file /tmp/enhanced-notes.md
+```
+
+### 5. Commit Notes to Git (for reference)
+```bash
+git add .release-notes-draft.md
+git commit -m "docs: AI-enhanced release notes for $VERSION"
+git push
+```
+
+### 6. Exit
+Exit immediately. No interaction.
+
+**CRITICAL SAFETY:**
+- If `gh release view` fails → exit silently (pre-release not ready yet)
+- If `gh release edit` fails → log error but don't crash workflow
+- Never block the release pipeline
 
 ### 1. Analyze Changes Semantically
 - Read the full git diff between `FROM_TAG` and `HEAD`
