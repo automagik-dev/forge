@@ -1000,13 +1000,13 @@ Install with: \`npx automagik-forge@beta\`"
         
     monitor)
         RUN_ID="${2:-$(gh run list --workflow="$WORKFLOW_FILE" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')}"
-        
+
         if [ -z "$RUN_ID" ]; then
             echo "❌ No run ID provided and couldn't find latest run"
             echo "Usage: ./gh-build.sh monitor [run_id]"
             exit 1
         fi
-        
+
         echo "╔═══════════════════════════════════════════════════════════════╗"
         echo "║              📊 Monitoring Workflow Run $RUN_ID              ║"
         echo "╚═══════════════════════════════════════════════════════════════╝"
@@ -1036,7 +1036,7 @@ Install with: \`npx automagik-forge@beta\`"
             # Only show status updates when it changes or every 30 seconds
             if [ "$STATUS" != "$LAST_STATUS" ] || [ $((ELAPSED % 30)) -eq 0 ]; then
                 echo -n "[$(date +%H:%M:%S)] [${ELAPSED_MIN}m${ELAPSED_SEC}s] "
-            
+
             case "$STATUS" in
                 completed)
                     CONCLUSION=$(gh run view "$RUN_ID" --repo "$REPO" --json conclusion --jq '.conclusion')
@@ -1044,6 +1044,50 @@ Install with: \`npx automagik-forge@beta\`"
                         success)
                             echo "✅ Workflow completed successfully!"
                             echo "🔗 View details: https://github.com/$REPO/actions/runs/$RUN_ID"
+
+                            # Check if this workflow has a publish job (indicates it should publish to npm)
+                            HAS_PUBLISH_JOB=$(echo "$WORKFLOW_DATA" | jq -r '.jobs[] | select(.name == "publish") | .name' 2>/dev/null)
+
+                            if [ -n "$HAS_PUBLISH_JOB" ]; then
+                                echo ""
+                                echo "🔍 Verifying NPM publication..."
+                                echo "   Waiting 30 seconds for npm registry to update..."
+                                sleep 30
+
+                                # Try to get expected version from latest release tag (more reliable than package.json)
+                                EXPECTED_VERSION=$(gh release list --repo "$REPO" --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null | sed 's/^v//' | sed 's/-[0-9]*$//')
+
+                                # Fallback to package.json if no release found
+                                if [ -z "$EXPECTED_VERSION" ]; then
+                                    EXPECTED_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
+                                fi
+
+                                echo "   Expected version: $EXPECTED_VERSION (from latest GitHub release)"
+
+                                for i in {1..10}; do
+                                    NPM_VERSION=$(npm view automagik-forge version 2>/dev/null || echo "")
+                                    echo "  Attempt $i/10: npm shows version '$NPM_VERSION'"
+
+                                    if [ "$NPM_VERSION" = "$EXPECTED_VERSION" ]; then
+                                        echo ""
+                                        echo "✅ SUCCESS! Version $EXPECTED_VERSION published to NPM!"
+                                        echo "📦 Package ready: https://www.npmjs.com/package/automagik-forge"
+                                        echo "🚀 Users can now install with: npx automagik-forge"
+                                        break
+                                    fi
+
+                                    if [ $i -lt 10 ]; then
+                                        sleep 10
+                                    fi
+                                done
+
+                                if [ "$NPM_VERSION" != "$EXPECTED_VERSION" ]; then
+                                    echo ""
+                                    echo "⚠️  NPM still shows: '$NPM_VERSION' (expected '$EXPECTED_VERSION')"
+                                    echo "   Package may still be propagating through npm registry"
+                                    echo "   Check: https://www.npmjs.com/package/automagik-forge"
+                                fi
+                            fi
                             ;;
                         failure)
                             echo "❌ Workflow failed"
@@ -1051,13 +1095,13 @@ Install with: \`npx automagik-forge@beta\`"
                             echo ""
                             echo "Failed jobs:"
                             FAILED_JOBS=$(gh run view "$RUN_ID" --repo "$REPO" --json jobs --jq '.jobs[] | select(.conclusion == "failure") | .databaseId')
-                            
+
                             for JOB_ID in $FAILED_JOBS; do
                                 JOB_NAME=$(gh run view "$RUN_ID" --repo "$REPO" --json jobs --jq ".jobs[] | select(.databaseId == $JOB_ID) | .name")
                                 echo ""
                                 echo "❌ $JOB_NAME"
                                 echo "View logs: gh run view $RUN_ID --job $JOB_ID --log-failed"
-                                
+
                                 # Show last 20 lines of error
                                 echo ""
                                 echo "Last error lines:"
