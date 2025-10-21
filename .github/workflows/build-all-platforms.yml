@@ -31,9 +31,10 @@ jobs:
           # - os: windows-latest
           #   target: aarch64-pc-windows-msvc
           #   platform: windows-arm64
-          - os: macos-13  # Intel runner for x86_64 builds
-            target: x86_64-apple-darwin
-            platform: macos-x64
+          # macOS Intel (x64) is slow, rarely used, and wastes GitHub Actions minutes
+          # - os: macos-13  # Intel runner for x86_64 builds
+          #   target: x86_64-apple-darwin
+          #   platform: macos-x64
           - os: macos-latest  # ARM runner for ARM builds
             target: aarch64-apple-darwin
             platform: macos-arm64
