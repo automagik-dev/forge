@@ -12,12 +12,16 @@ use utils::{
 };
 
 fn main() -> anyhow::Result<()> {
+    // Parse command-line arguments for --advanced flag
+    let args: Vec<String> = std::env::args().collect();
+    let advanced_mode = args.iter().any(|arg| arg == "--advanced" || arg == "-a");
+
     sentry_utils::init_once(SentrySource::Mcp);
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .unwrap()
-        .block_on(async {
+        .block_on(async move {
             tracing_subscriber::registry()
                 .with(
                     tracing_subscriber::fmt::layer()
@@ -29,6 +33,12 @@ fn main() -> anyhow::Result<()> {
 
             let version = env!("CARGO_PKG_VERSION");
             tracing::debug!("[MCP] Starting Forge MCP task server version {version}...");
+            if advanced_mode {
+                tracing::info!("[MCP] ✨ Advanced mode enabled - exposing full backend API");
+            } else {
+                tracing::info!("[MCP] Standard mode - core task management tools only");
+                tracing::info!("[MCP] Use --advanced flag to enable all API endpoints");
+            }
 
             // Read backend URL/port from environment, port file, or default
             let base_url = if let Ok(url) = std::env::var("FORGE_BACKEND_URL") {
@@ -65,7 +75,7 @@ fn main() -> anyhow::Result<()> {
                 url
             };
 
-            let service = ForgeTaskServer::new(&base_url)
+            let service = ForgeTaskServer::new(&base_url, advanced_mode)
                 .serve(stdio())
                 .await
                 .map_err(|e| {

@@ -26,7 +26,9 @@ rust-embed = { version = "8.0", features = ["debug-embed"] }
 mime_guess = "2.0"
 ts-rs = { workspace = true }
 rmcp = { workspace = true }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "multipart"] }
+urlencoding = "2.1"
+base64 = "0.22"
 
 # OpenAPI dependencies (manual YAML spec)
 serde_yaml = "0.9"
