@@ -72,7 +72,8 @@ import {
 } from 'react-router-dom';
 
 Sentry.init({
-  dsn: 'https://1065a1d276a581316999a07d5dffee26@o4509603705192449.ingest.de.sentry.io/4509605576441937',
+  // Namastex Sentry DSN (replaced upstream BloopAI DSN)
+  dsn: 'https://fa5e961d24021da4e6df30e5beee03af@o4509714066571264.ingest.us.sentry.io/4509714113495040',
   tracesSampleRate: 1.0,
   environment: import.meta.env.MODE === 'development' ? 'dev' : 'production',
   integrations: [

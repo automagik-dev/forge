@@ -3,7 +3,8 @@ use std::sync::OnceLock;
 use sentry_tracing::{EventFilter, SentryLayer};
 use tracing::Level;
 
-const SENTRY_DSN: &str = "https://1065a1d276a581316999a07d5dffee26@o4509603705192449.ingest.de.sentry.io/4509605576441937";
+// Namastex Sentry DSN (replaced upstream BloopAI DSN)
+const SENTRY_DSN: &str = "https://fa5e961d24021da4e6df30e5beee03af@o4509714066571264.ingest.us.sentry.io/4509714113495040";
 
 static INIT_GUARD: OnceLock<sentry::ClientInitGuard> = OnceLock::new();
 
