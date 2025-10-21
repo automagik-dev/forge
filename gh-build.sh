@@ -678,17 +678,16 @@ EOF
                             
                             echo "✅ Pre-release created: $NEW_TAG (version: $NEW_VERSION)"
 
-                            # Spawn async AI release notes enhancer (runs during build, updates GitHub release)
+                            # Spawn async release notes enhancer (runs during build, updates GitHub release)
                             echo ""
-                            echo "🧠 Spawning AI agent to enhance release notes during build..."
+                            echo "🧠 Spawning release notes enhancer during build..."
                             (
-                                # Run in background - updates GitHub release directly
-                                npx -y automagik-forge run utilities/release-notes \
-                                    --prompt "RELEASE_TAG=$NEW_TAG VERSION=$NEW_VERSION FROM_TAG=${ANALYSIS_FROM:-v0.0.0}" \
-                                    > /tmp/ai-release-enhancer.log 2>&1
+                                # Run in background - categorizes commits and updates GitHub release
+                                ./scripts/enhance-release-notes.sh "$NEW_TAG" "$NEW_VERSION" "${ANALYSIS_FROM:-v0.0.0}" \
+                                    > /tmp/release-enhancer.log 2>&1
                             ) &
-                            AI_PID=$!
-                            echo "   └─ AI enhancer running (PID: $AI_PID) - will update GitHub release during 30-45min build"
+                            ENHANCER_PID=$!
+                            echo "   └─ Enhancer running (PID: $ENHANCER_PID) - will update GitHub release during 30-45min build"
 
                             # IMPORTANT: Tags pushed with GITHUB_TOKEN don't trigger workflows
                             # We need to explicitly trigger the build workflow
