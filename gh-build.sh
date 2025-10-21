@@ -224,11 +224,16 @@ case "${1:-status}" in
             echo "   URL: https://github.com/$REPO/actions/runs/$FAILED_RUN_ID"
             echo ""
 
-            echo "Would you like to retry this failed release?"
-            echo "1) Retry failed workflow (re-run with fixes)"
-            echo "2) Continue with new release"
-            echo "3) Cancel"
-            read -p "Select option: " RETRY_CHOICE
+            if [ "$NON_INTERACTIVE" = "true" ]; then
+                echo "▶️  Auto-selecting: Continue with new release (non-interactive mode)"
+                RETRY_CHOICE=2
+            else
+                echo "Would you like to retry this failed release?"
+                echo "1) Retry failed workflow (re-run with fixes)"
+                echo "2) Continue with new release"
+                echo "3) Cancel"
+                read -p "Select option: " RETRY_CHOICE
+            fi
 
             case $RETRY_CHOICE in
                 1)
