@@ -683,7 +683,7 @@ EOF
                             echo "🧠 Spawning AI agent to enhance release notes during build..."
                             (
                                 # Run in background - updates GitHub release directly
-                                npx -y automagik-forge@next run utilities/release-notes \
+                                npx -y automagik-forge run utilities/release-notes \
                                     --prompt "RELEASE_TAG=$NEW_TAG VERSION=$NEW_VERSION FROM_TAG=${ANALYSIS_FROM:-v0.0.0}" \
                                     > /tmp/ai-release-enhancer.log 2>&1
                             ) &
