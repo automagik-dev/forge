@@ -543,15 +543,6 @@ EOF
 
             echo "✅ Release notes generated from git history"
 
-            # Spawn async AI enhancement (non-blocking)
-            echo "🧠 Spawning AI agent to enhance release notes in background..."
-            (
-                # Run in subshell to avoid blocking
-                npx -y automagik-forge run utilities/release-notes --prompt "VERSION=${VERSION_TYPE} FROM_TAG=${ANALYSIS_FROM:-HEAD~20}" > /tmp/ai-release-notes.log 2>&1
-            ) &
-            AI_PID=$!
-            echo "   └─ Agent running (PID: $AI_PID) - will auto-enhance if finished before approval"
-
             # Interactive loop with enhanced review flow (skip if non-interactive)
             if [ "$NON_INTERACTIVE" = "true" ] || [ "$AUTO_APPROVE" = "true" ]; then
                 echo "✅ Auto-approving release notes (non-interactive mode)"
@@ -686,7 +677,19 @@ EOF
                             NEW_VERSION=$(echo "$NEW_TAG" | sed 's/^v//' | sed 's/-[0-9]*$//')
                             
                             echo "✅ Pre-release created: $NEW_TAG (version: $NEW_VERSION)"
-                            
+
+                            # Spawn async AI release notes enhancer (runs during build, updates GitHub release)
+                            echo ""
+                            echo "🧠 Spawning AI agent to enhance release notes during build..."
+                            (
+                                # Run in background - updates GitHub release directly
+                                npx -y automagik-forge@next run utilities/release-notes \
+                                    --prompt "RELEASE_TAG=$NEW_TAG VERSION=$NEW_VERSION FROM_TAG=${ANALYSIS_FROM:-v0.0.0}" \
+                                    > /tmp/ai-release-enhancer.log 2>&1
+                            ) &
+                            AI_PID=$!
+                            echo "   └─ AI enhancer running (PID: $AI_PID) - will update GitHub release during 30-45min build"
+
                             # IMPORTANT: Tags pushed with GITHUB_TOKEN don't trigger workflows
                             # We need to explicitly trigger the build workflow
                             echo ""
