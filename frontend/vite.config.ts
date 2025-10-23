@@ -1,7 +1,7 @@
 import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 
 // Custom resolver plugin for forge overlay pattern
 function forgeOverlayResolver(): Plugin {
@@ -131,6 +131,10 @@ export default defineConfig({
       'shared': path.resolve(__dirname, '../shared'),
     },
   },
+  optimizeDeps: {
+    // Exclude Node.js built-ins from dependency pre-bundling
+    exclude: ['node:child_process', 'node:path', 'node:fs'],
+  },
   server: {
     port: Number(process.env.FRONTEND_PORT ?? 5174),
     proxy: {
@@ -154,6 +158,9 @@ export default defineConfig({
     commonjsOptions: {
       // Ensure lodash and other CJS modules are properly resolved
       include: [/node_modules/],
+    },
+    rollupOptions: {
+      external: ['node:child_process', 'node:path', 'node:fs', 'child_process', 'path', 'fs'],
     },
   },
   test: {
