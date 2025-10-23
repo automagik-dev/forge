@@ -2,7 +2,7 @@
 name: prompt
 description: Advanced prompting guidance and prompt refinement
 genie:
-  executor: claude
+  executor: codex
   model: sonnet
   permissionMode: bypassPermissions
   background: false

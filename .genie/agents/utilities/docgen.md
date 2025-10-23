@@ -3,7 +3,7 @@ name: docgen
 description: Generate documentation outlines and drafts for target audiences
 color: gray
 genie:
-  executor: claude
+  executor: codex
   model: sonnet
   permissionMode: bypassPermissions
   background: true

@@ -3,7 +3,7 @@ name: polish
 description: Type-checking, linting, and formatting for Automagik Forge code quality
 color: purple
 genie:
-  executor: claude
+  executor: codex
   model: sonnet
   permissionMode: bypassPermissions
   background: true

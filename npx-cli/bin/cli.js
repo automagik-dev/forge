@@ -62,7 +62,8 @@ function getBinaryName(base) {
 
 const platformDir = getPlatformDir();
 const extractDir = path.join(__dirname, "..", "dist", platformDir);
-const isMcpMode = process.argv.includes("--mcp");
+const isMcpMode = process.argv.includes("--mcp") || process.argv.includes("--mcp-advanced");
+const isAdvancedMode = process.argv.includes("--mcp-advanced");
 
 // ensure output dir
 fs.mkdirSync(extractDir, { recursive: true });
@@ -100,14 +101,15 @@ function extractAndRun(baseName, launch) {
 if (isMcpMode) {
   extractAndRun("automagik-forge-mcp", (bin) => {
     const env = { ...process.env };
-    const proc = spawn(bin, [], { stdio: "inherit", env });
+    const args = isAdvancedMode ? ["--advanced"] : [];
+    const proc = spawn(bin, args, { stdio: "inherit", env });
     proc.on("exit", (c) => process.exit(c || 0));
     proc.on("error", (e) => {
       console.error("❌ MCP server error:", e.message);
       process.exit(1);
     });
     process.on("SIGINT", () => {
-      console.error("\n🛑 Shutting down MCP server...");
+      console.log("\n🛑 Shutting down MCP server...");
       proc.kill("SIGINT");
     });
     process.on("SIGTERM", () => proc.kill("SIGTERM"));

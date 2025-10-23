@@ -1,6 +1,7 @@
 ---
 name: self-learn
-description: Record violations and propagate behavioral lessons across Automagik Forge agents
+description: Record violations and propagate behavioral lessons across Automagik
+  Forge agents
 color: silver
 genie:
   executor: codex
