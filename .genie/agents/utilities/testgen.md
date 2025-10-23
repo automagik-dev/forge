@@ -3,7 +3,7 @@ name: testgen
 description: Generate test proposals with names, locations, and assertions
 color: lime
 genie:
-  executor: claude
+  executor: codex
   model: sonnet
   permissionMode: bypassPermissions
   background: true

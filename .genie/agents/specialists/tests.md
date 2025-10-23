@@ -1,9 +1,10 @@
 ---
 name: tests
-description: Author new tests and repair failing test suites across all layers for Automagik Forge
+description: Author new tests and repair failing test suites across all layers
+  for Automagik Forge
 color: lime
 genie:
-  executor: claude
+  executor: codex
   model: sonnet
   permissionMode: bypassPermissions
   background: true

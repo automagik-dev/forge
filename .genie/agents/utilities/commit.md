@@ -2,7 +2,7 @@
 name: commit
 description: Pre-commit validation with diff analysis and commit message proposals
 genie:
-  executor: claude
+  executor: codex
   model: sonnet
   permissionMode: bypassPermissions
   background: true
