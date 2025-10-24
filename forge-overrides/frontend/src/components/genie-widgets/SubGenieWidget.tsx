@@ -35,6 +35,17 @@ export const SubGenieWidget: React.FC<SubGenieWidgetProps> = ({
     }
   };
 
+  // Safe icon renderer with error boundary
+  const renderIcon = () => {
+    try {
+      const IconComponent = config.icon;
+      return <IconComponent size={20} />;
+    } catch (error) {
+      console.error('Failed to render widget icon:', error);
+      return <span className="w-5 h-5 bg-gray-300 rounded" aria-label="Icon unavailable" />;
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -42,7 +53,7 @@ export const SubGenieWidget: React.FC<SubGenieWidgetProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <config.icon size={20} />
+          {renderIcon()}
           <span className="font-semibold">{config.name}</span>
         </div>
         <button

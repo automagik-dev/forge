@@ -90,6 +90,8 @@ export class SubGenieApiService {
    * Fetches all agent tasks for a specific widget variant.
    *
    * Returns tasks with status="agent" that match the widget's variant.
+   * Filters by parsing TaskAttempt.executor format: "executor_name:variant"
+   * (e.g., "claude_code:wish", "gemini:forge").
    *
    * @param projectId - Project UUID
    * @param genieId - Widget ID (wishh, forge, review)
