@@ -4,6 +4,7 @@
 //! Provides unified API access to both upstream functionality and forge-specific features.
 
 use std::net::{IpAddr, SocketAddr};
+use std::env;
 use tokio::signal;
 use utils::browser::open_browser;
 mod router;
@@ -25,16 +26,27 @@ fn resolve_bind_address() -> SocketAddr {
     SocketAddr::from((ip, port))
 }
 
+/// Parse CLI flags from arguments
+fn parse_auth_required() -> bool {
+    env::args().any(|arg| arg == "--auth" || arg == "-a")
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
+
+    // Parse CLI flags
+    let auth_required = parse_auth_required();
+    if auth_required {
+        tracing::info!("GitHub authentication required for frontend access");
+    }
 
     // Initialize upstream deployment and forge services
     tracing::info!("Initializing forge services using upstream deployment");
     let services = services::ForgeServices::new().await?;
 
-    // Create router with services
-    let app = router::create_router(services);
+    // Create router with services and auth flag
+    let app = router::create_router(services, auth_required);
 
     let requested_addr = resolve_bind_address();
     let listener = tokio::net::TcpListener::bind(requested_addr).await?;

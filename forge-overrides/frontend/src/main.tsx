@@ -40,6 +40,8 @@ import {
 import { CreateAttemptDialog } from '@/components/dialogs/tasks/CreateAttemptDialog';
 // FORGE CUSTOMIZATION: Import Omni modal for Forge-specific feature
 import { OmniModal } from './components/omni/OmniModal';
+// FORGE CUSTOMIZATION: Import AuthGate for protecting frontend with --auth flag
+import { AuthGate } from './components/auth/AuthGate';
 
 // Register modals
 NiceModal.register('github-login', GitHubLoginDialog);
@@ -128,10 +130,14 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           fallback={<p>{i18n.t('common:states.error')}</p>}
           showDialog
         >
-          <ClickToComponent />
-          <AutomagikForgeWebCompanion />
-          <App />
-          {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+          <NiceModal.Provider>
+            <AuthGate>
+              <ClickToComponent />
+              <AutomagikForgeWebCompanion />
+              <App />
+              {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+            </AuthGate>
+          </NiceModal.Provider>
         </Sentry.ErrorBoundary>
       </PostHogProvider>
     </QueryClientProvider>
