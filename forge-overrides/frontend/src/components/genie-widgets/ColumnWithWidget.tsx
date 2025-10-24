@@ -1,5 +1,4 @@
 import React from 'react';
-import { LucideIcon } from 'lucide-react';
 import { ColumnHeader, SubGenieWidget, SubGenieConfig } from '@/components/genie-widgets';
 import { useSubGenieWidget } from '@/hooks/useSubGenieWidget';
 
