@@ -93,6 +93,9 @@ vibe-kanban-*.tgz
 # Development ports file
 .dev-ports.json
 
+# Development logs
+.dev-logs/
+
 dev_assets
 dev_assets_seed/forge-snapshot/from_home/
 dev_assets_seed/forge-snapshot/from_home/**
