@@ -42,13 +42,15 @@ struct Frontend;
 struct ForgeAppState {
     services: ForgeServices,
     deployment: DeploymentImpl,
+    auth_required: bool,
 }
 
 impl ForgeAppState {
-    fn new(services: ForgeServices, deployment: DeploymentImpl) -> Self {
+    fn new(services: ForgeServices, deployment: DeploymentImpl, auth_required: bool) -> Self {
         Self {
             services,
             deployment,
+            auth_required,
         }
     }
 }
@@ -65,9 +67,9 @@ impl FromRef<ForgeAppState> for DeploymentImpl {
     }
 }
 
-pub fn create_router(services: ForgeServices) -> Router {
+pub fn create_router(services: ForgeServices, auth_required: bool) -> Router {
     let deployment = services.deployment.as_ref().clone();
-    let state = ForgeAppState::new(services, deployment.clone());
+    let state = ForgeAppState::new(services, deployment.clone(), auth_required);
 
     let upstream_api = upstream_api_router(&deployment);
 
@@ -99,6 +101,7 @@ pub fn create_router(services: ForgeServices) -> Router {
 
 fn forge_api_routes() -> Router<ForgeAppState> {
     Router::new()
+        .route("/api/forge/auth-required", get(get_auth_required))
         .route(
             "/api/forge/config",
             get(get_forge_config).put(update_forge_config),
@@ -688,6 +691,14 @@ async fn list_routes() -> Json<Value> {
             ]
         },
         "note": "This is a simple route listing. Most endpoints require GitHub OAuth authentication via /api/auth/github/device"
+    }))
+}
+
+async fn get_auth_required(
+    State(state): State<ForgeAppState>,
+) -> Json<Value> {
+    Json(json!({
+        "auth_required": state.auth_required
     }))
 }
 
