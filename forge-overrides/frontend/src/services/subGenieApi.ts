@@ -24,7 +24,7 @@ export class SubGenieApiService {
    * Creates a task and immediately starts a task attempt with the appropriate variant.
    *
    * This is the primary method for executing workflows from widgets.
-   * Tasks created with agent variants will have status="agent" automatically.
+   * Tasks are marked with status="agent" after creation to hide from main Kanban.
    *
    * @param genieId - Widget ID (wishh, forge, review)
    * @param workflowId - Workflow identifier
@@ -59,13 +59,28 @@ export class SubGenieApiService {
 
     const { data: task } = await taskResponse.json();
 
-    // Step 2: Start task attempt with variant
+    // Step 2: Update task status to "agent" (hides from main Kanban)
+    const updateResponse = await fetch(`${this.baseUrl}/tasks/${task.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: 'agent',
+      }),
+    });
+
+    if (!updateResponse.ok) {
+      throw new Error(`Failed to update task status: ${updateResponse.status}`);
+    }
+
+    const { data: updatedTask } = await updateResponse.json();
+
+    // Step 3: Start task attempt with variant
     const variant = this.variantMap[genieId];
     const attemptResponse = await fetch(`${this.baseUrl}/task-attempts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        task_id: task.id,
+        task_id: updatedTask.id,
         executor_profile_id: {
           executor: executor,
           variant: variant,
@@ -81,7 +96,7 @@ export class SubGenieApiService {
     const { data: attempt } = await attemptResponse.json();
 
     return {
-      task,
+      task: updatedTask,
       attemptId: attempt.id,
     };
   }
