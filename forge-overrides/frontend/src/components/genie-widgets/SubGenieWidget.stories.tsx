@@ -4,8 +4,8 @@ import { SubGenieWidget } from './SubGenieWidget';
 import { SubGenieConfig } from './types';
 
 const wishConfig: SubGenieConfig = {
-  id: 'wishh',
-  name: 'Wishh',
+  id: 'wish',
+  name: 'Wish',
   columnStatus: 'todo',
   icon: Sparkles,
   color: 'purple',
@@ -14,14 +14,14 @@ const wishConfig: SubGenieConfig = {
       id: 'refine_spec',
       label: 'Refine Spec',
       description: 'Refine task specification',
-      genieType: 'wishh',
+      genieType: 'wish',
       columnStatus: 'todo',
     },
     {
       id: 'analyze_deps',
       label: 'Analyze Dependencies',
       description: 'Identify task dependencies',
-      genieType: 'wishh',
+      genieType: 'wish',
       columnStatus: 'todo',
     },
   ],
@@ -31,7 +31,7 @@ const wishConfig: SubGenieConfig = {
       name: 'Quick Analysis',
       description: 'Fast mode (skip deep analysis)',
       icon: ZapOff,
-      genieType: 'wishh',
+      genieType: 'wish',
     },
   ],
 };
@@ -61,7 +61,7 @@ export const WishOpen: Story = {
       },
       {
         id: '2',
-        sender: 'wishh',
+        sender: 'wish',
         content: 'Of course! I\'ve analyzed the requirements and updated the spec.',
         timestamp: new Date().toISOString(),
       },

@@ -9,16 +9,16 @@ interface WidgetState {
 
 interface SubGenieContextType {
   // State per sub-genie
-  widgets: Record<'wishh' | 'forge' | 'review', WidgetState>;
+  widgets: Record<'wish' | 'forge' | 'review', WidgetState>;
   // Actions
-  toggleWidget: (genieId: 'wishh' | 'forge' | 'review') => void;
-  closeWidget: (genieId: 'wishh' | 'forge' | 'review') => void;
+  toggleWidget: (genieId: 'wish' | 'forge' | 'review') => void;
+  closeWidget: (genieId: 'wish' | 'forge' | 'review') => void;
   addMessage: (
-    genieId: 'wishh' | 'forge' | 'review',
+    genieId: 'wish' | 'forge' | 'review',
     message: ChatMessage
   ) => void;
   toggleSkill: (
-    genieId: 'wishh' | 'forge' | 'review',
+    genieId: 'wish' | 'forge' | 'review',
     skillId: string,
     enabled: boolean
   ) => void;
@@ -29,13 +29,13 @@ const SubGenieContext = createContext<SubGenieContextType | undefined>(undefined
 export const SubGenieProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [widgets, setWidgets] = useState<Record<'wishh' | 'forge' | 'review', WidgetState>>({
-    wishh: { isOpen: false, chatHistory: [], skillsEnabled: {} },
+  const [widgets, setWidgets] = useState<Record<'wish' | 'forge' | 'review', WidgetState>>({
+    wish: { isOpen: false, chatHistory: [], skillsEnabled: {} },
     forge: { isOpen: false, chatHistory: [], skillsEnabled: {} },
     review: { isOpen: false, chatHistory: [], skillsEnabled: {} },
   });
 
-  const toggleWidget = useCallback((genieId: 'wishh' | 'forge' | 'review') => {
+  const toggleWidget = useCallback((genieId: 'wish' | 'forge' | 'review') => {
     setWidgets((prev) => ({
       ...prev,
       [genieId]: {
@@ -45,7 +45,7 @@ export const SubGenieProvider: React.FC<{ children: React.ReactNode }> = ({
     }));
   }, []);
 
-  const closeWidget = useCallback((genieId: 'wishh' | 'forge' | 'review') => {
+  const closeWidget = useCallback((genieId: 'wish' | 'forge' | 'review') => {
     setWidgets((prev) => ({
       ...prev,
       [genieId]: { ...prev[genieId], isOpen: false },
@@ -53,7 +53,7 @@ export const SubGenieProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const addMessage = useCallback(
-    (genieId: 'wishh' | 'forge' | 'review', message: ChatMessage) => {
+    (genieId: 'wish' | 'forge' | 'review', message: ChatMessage) => {
       setWidgets((prev) => ({
         ...prev,
         [genieId]: {
@@ -66,7 +66,7 @@ export const SubGenieProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const toggleSkill = useCallback(
-    (genieId: 'wishh' | 'forge' | 'review', skillId: string, enabled: boolean) => {
+    (genieId: 'wish' | 'forge' | 'review', skillId: string, enabled: boolean) => {
       setWidgets((prev) => ({
         ...prev,
         [genieId]: {

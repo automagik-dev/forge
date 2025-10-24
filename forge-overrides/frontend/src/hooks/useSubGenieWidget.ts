@@ -9,13 +9,13 @@ import { subGenieApi } from '@/services/subGenieApi';
  * Handles workflow execution, chat messages, and skill toggling.
  * Integrates with backend task/attempt API.
  *
- * @param genieId - Widget identifier (wishh, forge, review)
+ * @param genieId - Widget identifier (wish, forge, review)
  * @param projectId - Current project UUID
  * @param columnStatus - Column status (for backward compatibility)
  * @returns Widget state and handlers
  */
 export const useSubGenieWidget = (
-  genieId: 'wishh' | 'forge' | 'review',
+  genieId: 'wish' | 'forge' | 'review',
   projectId: string,
   columnStatus?: string
 ) => {

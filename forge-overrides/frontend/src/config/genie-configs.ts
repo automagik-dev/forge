@@ -12,10 +12,10 @@ import {
 } from 'lucide-react';
 import { SubGenieConfig } from '@/components/genie-widgets';
 
-export const GENIE_CONFIGS: Record<'wishh' | 'forge' | 'review', SubGenieConfig> = {
-  wishh: {
-    id: 'wishh',
-    name: 'Wishh (Planner)',
+export const GENIE_CONFIGS: Record<'wish' | 'forge' | 'review', SubGenieConfig> = {
+  wish: {
+    id: 'wish',
+    name: 'Wish (Planner)',
     columnStatus: 'todo',
     icon: Sparkles,
     color: 'purple',
@@ -25,7 +25,7 @@ export const GENIE_CONFIGS: Record<'wishh' | 'forge' | 'review', SubGenieConfig>
         label: 'Refine Spec',
         description: 'Refine task specification and requirements',
         icon: BookOpen,
-        genieType: 'wishh',
+        genieType: 'wish',
         columnStatus: 'todo',
       },
       {
@@ -33,7 +33,7 @@ export const GENIE_CONFIGS: Record<'wishh' | 'forge' | 'review', SubGenieConfig>
         label: 'Analyze Dependencies',
         description: 'Identify task dependencies and blockers',
         icon: Zap,
-        genieType: 'wishh',
+        genieType: 'wish',
         columnStatus: 'todo',
       },
       {
@@ -41,7 +41,7 @@ export const GENIE_CONFIGS: Record<'wishh' | 'forge' | 'review', SubGenieConfig>
         label: 'Create from Idea',
         description: 'Convert rough idea into structured task',
         icon: Sparkles,
-        genieType: 'wishh',
+        genieType: 'wish',
         columnStatus: 'todo',
       },
       {
@@ -49,7 +49,7 @@ export const GENIE_CONFIGS: Record<'wishh' | 'forge' | 'review', SubGenieConfig>
         label: 'Prioritize',
         description: 'Reorder tasks by priority',
         icon: Target,
-        genieType: 'wishh',
+        genieType: 'wish',
         columnStatus: 'todo',
       },
     ],
@@ -59,7 +59,7 @@ export const GENIE_CONFIGS: Record<'wishh' | 'forge' | 'review', SubGenieConfig>
         name: 'Quick Analysis',
         description: 'Fast mode (skip deep analysis)',
         icon: Zap,
-        genieType: 'wishh',
+        genieType: 'wish',
         defaultEnabled: false,
       },
       {
@@ -67,7 +67,7 @@ export const GENIE_CONFIGS: Record<'wishh' | 'forge' | 'review', SubGenieConfig>
         name: 'Auto-Tag',
         description: 'Automatically tag tasks by type',
         icon: BookOpen,
-        genieType: 'wishh',
+        genieType: 'wish',
         defaultEnabled: false,
       },
     ],

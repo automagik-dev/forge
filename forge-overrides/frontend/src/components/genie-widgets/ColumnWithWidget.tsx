@@ -27,7 +27,7 @@ export const ColumnWithWidget: React.FC<ColumnWithWidgetProps> = ({
     onSkillToggle,
   } = useSubGenieWidget(config.id, projectId, config.columnStatus);
 
-  // Extract column name from full name (e.g., "Wishh (Planner)" -> "Wish")
+  // Extract column name from full name (e.g., "Wish (Planner)" -> "Wish")
   const columnName = config.name.split(' ')[0] as 'Wish' | 'Forge' | 'Review' | string;
 
   return (
