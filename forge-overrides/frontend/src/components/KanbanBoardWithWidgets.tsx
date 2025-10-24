@@ -7,6 +7,7 @@ import { useFilteredTasks } from '@/hooks/useFilteredTasks';
 
 interface KanbanBoardWithWidgetsProps {
   tasks: Task[];
+  projectId: string; // Required for widget backend integration
   onTaskUpdate?: (task: Task) => void;
   className?: string;
 }
@@ -16,12 +17,14 @@ interface KanbanBoardWithWidgetsProps {
  *
  * Integration steps:
  * 1. Pass filtered tasks from your data source
- * 2. Parent component MUST be wrapped with SubGenieProvider
- * 3. Customize task rendering as needed
- * 4. Hook up task update handlers
+ * 2. Pass projectId for backend API calls
+ * 3. Parent component MUST be wrapped with SubGenieProvider
+ * 4. Customize task rendering as needed
+ * 5. Hook up task update handlers
  */
 export const KanbanBoardWithWidgets: React.FC<KanbanBoardWithWidgetsProps> = ({
   tasks,
+  projectId,
   onTaskUpdate,
   className = 'grid grid-cols-5 gap-4 p-4 bg-gray-100 h-screen overflow-hidden',
 }) => {
@@ -40,6 +43,7 @@ export const KanbanBoardWithWidgets: React.FC<KanbanBoardWithWidgetsProps> = ({
             <ColumnWithWidget
               key={status}
               config={config}
+              projectId={projectId}
               taskCount={filteredTasks.length}
             >
               {/* TODO: Replace with your actual task component */}
@@ -113,11 +117,13 @@ export const KanbanBoardWithWidgets: React.FC<KanbanBoardWithWidgetsProps> = ({
  *
  *    function YourApp() {
  *      const { data: tasks } = useQuery(...);
+ *      const projectId = "your-project-uuid";
  *
  *      return (
  *        <SubGenieProvider>
  *          <KanbanBoardWithWidgets
  *            tasks={tasks}
+ *            projectId={projectId}
  *            onTaskUpdate={handleTaskUpdate}
  *          />
  *        </SubGenieProvider>
