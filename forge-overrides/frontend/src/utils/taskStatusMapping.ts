@@ -12,8 +12,8 @@ export const COLUMN_DISPLAY_NAMES: Record<TaskStatus, string> = {
 };
 
 // Map TaskStatus to genie IDs
-export const COLUMN_STATUS_TO_GENIE: Record<TaskStatus, 'wishh' | 'forge' | 'review' | null> = {
-  todo: 'wishh',
+export const COLUMN_STATUS_TO_GENIE: Record<TaskStatus, 'wish' | 'forge' | 'review' | null> = {
+  todo: 'wish',
   inprogress: 'forge',
   inreview: 'review',
   done: null,
