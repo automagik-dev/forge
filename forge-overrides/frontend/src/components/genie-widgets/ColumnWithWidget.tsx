@@ -5,12 +5,14 @@ import { useSubGenieWidget } from '@/hooks/useSubGenieWidget';
 interface ColumnWithWidgetProps {
   config: SubGenieConfig;
   taskCount: number;
+  projectId: string; // Required for backend API integration
   children: React.ReactNode; // Tasks in column
 }
 
 export const ColumnWithWidget: React.FC<ColumnWithWidgetProps> = ({
   config,
   taskCount,
+  projectId,
   children,
 }) => {
   const {
@@ -23,7 +25,7 @@ export const ColumnWithWidget: React.FC<ColumnWithWidgetProps> = ({
     onSendMessage,
     onWorkflowClick,
     onSkillToggle,
-  } = useSubGenieWidget(config.id, config.columnStatus);
+  } = useSubGenieWidget(config.id, projectId, config.columnStatus);
 
   // Extract column name from full name (e.g., "Wishh (Planner)" -> "Wish")
   const columnName = config.name.split(' ')[0] as 'Wish' | 'Forge' | 'Review' | string;
