@@ -5,7 +5,7 @@ import { Task, TaskAttempt, BaseCodingAgent } from '@/shared/types';
  * API service for Genie widget backend integration.
  *
  * Connects widgets to the Automagik Forge task/attempt API.
- * Each widget (Wishh, Forge, Review) uses executor variants to filter tasks.
+ * Each widget (Wish, Forge, Review) uses executor variants to filter tasks.
  */
 export class SubGenieApiService {
   private baseUrl = '/api';
@@ -15,7 +15,7 @@ export class SubGenieApiService {
    * Used when creating task attempts with specific variants.
    */
   private variantMap = {
-    wishh: 'wish',
+    wish: 'wish',
     forge: 'forge',
     review: 'review',
   } as const;
@@ -26,7 +26,7 @@ export class SubGenieApiService {
    * This is the primary method for executing workflows from widgets.
    * Tasks are marked with status="agent" after creation to hide from main Kanban.
    *
-   * @param genieId - Widget ID (wishh, forge, review)
+   * @param genieId - Widget ID (wish, forge, review)
    * @param workflowId - Workflow identifier
    * @param projectId - Project UUID
    * @param description - Task description
@@ -35,7 +35,7 @@ export class SubGenieApiService {
    * @returns Created task and attempt details
    */
   async executeWorkflow(
-    genieId: 'wishh' | 'forge' | 'review',
+    genieId: 'wish' | 'forge' | 'review',
     workflowId: string,
     projectId: string,
     description: string,
@@ -109,12 +109,12 @@ export class SubGenieApiService {
    * (e.g., "claude_code:wish", "gemini:forge").
    *
    * @param projectId - Project UUID
-   * @param genieId - Widget ID (wishh, forge, review)
+   * @param genieId - Widget ID (wish, forge, review)
    * @returns Array of agent tasks for this widget
    */
   async getAgentTasks(
     projectId: string,
-    genieId: 'wishh' | 'forge' | 'review'
+    genieId: 'wish' | 'forge' | 'review'
   ): Promise<Task[]> {
     // Fetch all agent tasks
     const tasksResponse = await fetch(
@@ -221,7 +221,7 @@ export class SubGenieApiService {
    * Consider using executeWorkflow or sendFollowUp instead.
    */
   async sendMessage(
-    genieId: 'wishh' | 'forge' | 'review',
+    genieId: 'wish' | 'forge' | 'review',
     message: string,
     columnStatus: string
   ): Promise<{ response: string; action?: string }> {
@@ -239,7 +239,7 @@ export class SubGenieApiService {
    * Use executeWorkflow instead.
    */
   async triggerWorkflow(
-    genieId: 'wishh' | 'forge' | 'review',
+    genieId: 'wish' | 'forge' | 'review',
     workflowId: string,
     columnStatus: string,
     context?: Record<string, any>
@@ -255,7 +255,7 @@ export class SubGenieApiService {
    * Skill toggling (placeholder - not yet implemented in backend).
    */
   async toggleSkill(
-    genieId: 'wishh' | 'forge' | 'review',
+    genieId: 'wish' | 'forge' | 'review',
     skillId: string,
     enabled: boolean
   ): Promise<{ skillId: string; enabled: boolean }> {

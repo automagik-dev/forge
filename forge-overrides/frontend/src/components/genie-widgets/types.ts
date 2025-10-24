@@ -6,7 +6,7 @@ export interface WorkflowDefinition {
   label: string;
   description: string;
   icon?: React.ComponentType<any>;
-  genieType: 'wishh' | 'forge' | 'review';
+  genieType: 'wish' | 'forge' | 'review';
   columnStatus: 'todo' | 'inprogress' | 'inreview';
   externalAgent?: string;
 }
@@ -17,14 +17,14 @@ export interface SkillDefinition {
   name: string;
   description: string;
   icon: React.ComponentType<any>;
-  genieType: 'wishh' | 'forge' | 'review';
+  genieType: 'wish' | 'forge' | 'review';
   defaultEnabled?: boolean;
 }
 
 // Chat message
 export interface ChatMessage {
   id: string;
-  sender: 'user' | 'wishh' | 'forge' | 'review';
+  sender: 'user' | 'wish' | 'forge' | 'review';
   content: string;
   timestamp: string;
   metadata?: {
@@ -37,7 +37,7 @@ export interface ChatMessage {
 
 // Sub-genie configuration
 export interface SubGenieConfig {
-  id: 'wishh' | 'forge' | 'review';
+  id: 'wish' | 'forge' | 'review';
   name: string;
   columnStatus: 'todo' | 'inprogress' | 'inreview';
   icon: React.ComponentType<any>;

@@ -135,7 +135,7 @@ export const KanbanBoardWithWidgets: React.FC<KanbanBoardWithWidgetsProps> = ({
  *    with your actual Task component
  *
  * 3. The widget icons are automatically mapped:
- *    - todo -> Sparkles (Wishh)
+ *    - todo -> Sparkles (Wish)
  *    - inprogress -> Hammer (Forge)
  *    - inreview -> Target (Review)
  *    - done -> CheckCircle2

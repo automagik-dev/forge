@@ -10,7 +10,7 @@
 
 ## Executive Summary
 
-Integrate AI agent orchestrators (Genie and Sub-Genies) as specialized chat widgets into the Kanban board. Each column will have its own sub-genie (Wishh, Forge, Review) that manages that column's responsibilities. Workflows and skills can be triggered from the widget UI, making agent orchestration a first-class feature of the board.
+Integrate AI agent orchestrators (Genie and Sub-Genies) as specialized chat widgets into the Kanban board. Each column will have its own sub-genie (Wish, Forge, Review) that manages that column's responsibilities. Workflows and skills can be triggered from the widget UI, making agent orchestration a first-class feature of the board.
 
 ---
 
@@ -24,7 +24,7 @@ Integrate AI agent orchestrators (Genie and Sub-Genies) as specialized chat widg
 ### Desired State
 - **Genie Master Orchestrator**: Global chat widget (persistent, bottom-right) for cross-board commands
 - **Sub-Genies** (context-aware orchestrators):
-  - **Wishh** (Planner): Controls "To Do" column
+  - **Wish** (Planner): Controls "To Do" column
   - **Forge** (Executor): Controls "In Progress/Doing" column
   - **Review**: Controls "In Review" column
 - **Column Integration**:
@@ -41,7 +41,7 @@ Integrate AI agent orchestrators (Genie and Sub-Genies) as specialized chat widg
 #### Genie Hierarchy
 ```
 Genie (Master Orchestrator)
-├── Wishh (Sub-Genie) → "To Do" Column Owner
+├── Wish (Sub-Genie) → "To Do" Column Owner
 ├── Forge (Sub-Genie) → "In Progress" Column Owner
 ├── Review (Sub-Genie) → "In Review" Column Owner
 └── External Agents (Git, Tests, etc.) → Workflows injected contextually
@@ -49,7 +49,7 @@ Genie (Master Orchestrator)
 
 #### Workflows vs. Skills
 - **Workflows**: Sequences of actions tied to a sub-genie or external agent
-  - Example: Wishh's "Refine Requirement" workflow
+  - Example: Wish's "Refine Requirement" workflow
   - Example: Git Agent's "Create Feature Branch" workflow
 - **Skills**: Optional, toggleable features that enhance a sub-genie
   - Example: "Quick Validation" skill for Review agent
@@ -58,7 +58,7 @@ Genie (Master Orchestrator)
 #### Role of Each Sub-Genie
 | Sub-Genie | Column | Responsibilities | Workflows Example |
 |-----------|--------|------------------|--------------------|
-| **Wishh** | To Do | Discover tasks, refine requirements, prioritize | "Analyze Dependencies", "Refine Spec", "Create from Idea" |
+| **Wish** | To Do | Discover tasks, refine requirements, prioritize | "Analyze Dependencies", "Refine Spec", "Create from Idea" |
 | **Forge** | In Progress | Manage execution, track progress, inject Git workflows | "Start Build", "Update Status", "Create Branch", "Run Tests" |
 | **Review** | In Review | QA, validation, feedback, approval | "Run QA Suite", "Generate Summary", "Request Changes" |
 
@@ -73,7 +73,7 @@ Genie (Master Orchestrator)
    - Delegates to sub-genies or executes cross-board actions
 
 2. **Sub-Genie Column Widgets**
-   - Icon/avatar in each column header (Wishh, Forge, Review)
+   - Icon/avatar in each column header (Wish, Forge, Review)
    - Click to expand panel within the column area
    - Panel contains:
      - Chat interface (textarea + send button)
@@ -204,7 +204,7 @@ Genie (Master Orchestrator)
 2. Kanban board component exists and can be extended
 3. API endpoints exist (or will be mocked) for:
    - `/api/genie/master` (global commands)
-   - `/api/genie/wishh` (Wishh sub-genie)
+   - `/api/genie/wish` (Wish sub-genie)
    - `/api/genie/forge` (Forge sub-genie)
    - `/api/genie/review` (Review sub-genie)
 4. Project uses React 18+ and TypeScript (confirmed by tech stack)
@@ -262,7 +262,7 @@ Genie (Master Orchestrator)
 ### Column Mapping
 | Old Name | New Name | Icon | Lucide Icon | Purpose |
 |----------|----------|------|-------------|---------|
-| To Do | **Wish** | ✨ Sparkles | `<Sparkles />` | Discovery and Planning (Wishh sub-genie) |
+| To Do | **Wish** | ✨ Sparkles | `<Sparkles />` | Discovery and Planning (Wish sub-genie) |
 | In Progress | **Forge** | 🔨 Hammer | `<Hammer />` | Execution and Development (Forge sub-genie) |
 | In Review | **Review** | 🎯 Target | `<Target />` OR `<CheckCircle2 />` | QA, Validation, Approval (Review sub-genie) |
 | Done | Done | ✅ Check | `<CheckCircle2 />` | Completed tasks |
@@ -274,7 +274,7 @@ Genie (Master Orchestrator)
 
 - **Regular Tasks**: Appear in columns (To Do, In Progress, In Review, Done, Cancelled)
 - **Agent Task Attempts**: Hidden from Kanban (internal orchestration records, not user-facing)
-- Example: When Wishh, Forge, or Review agents create a task attempt, it has `status: "agent"` and is hidden
+- Example: When Wish, Forge, or Review agents create a task attempt, it has `status: "agent"` and is hidden
 
 This ensures the Kanban board shows only user-facing work; agent orchestration happens invisibly.
 
@@ -304,12 +304,12 @@ Clicking the icon (✨, 🔨, 🎯) opens a chat panel **within the column** (or
 When expanded, the widget shows:
 
 1. **Sub-Genie Chat Box**
-   - Textarea: "Ask Wishh/Forge/Review..."
+   - Textarea: "Ask Wish/Forge/Review..."
    - Send button
    - Chat history (optional)
 
 2. **Workflows** (Pre-configured buttons)
-   - Examples for Wishh: "Refine Spec", "Analyze Dependencies", "Create from Idea"
+   - Examples for Wish: "Refine Spec", "Analyze Dependencies", "Create from Idea"
    - Examples for Forge: "Start Build", "Run Tests", "Update Status", "Create Git Branch"
    - Examples for Review: "Run QA Suite", "Generate Summary", "Approve & Move"
 
