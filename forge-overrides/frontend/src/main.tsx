@@ -42,6 +42,8 @@ import { CreateAttemptDialog } from '@/components/dialogs/tasks/CreateAttemptDia
 import { OmniModal } from './components/omni/OmniModal';
 // FORGE CUSTOMIZATION: Import AuthGate for protecting frontend with --auth flag
 import { AuthGate } from './components/auth/AuthGate';
+// FORGE CUSTOMIZATION: Import SubGenieProvider for Genie Chat Widgets
+import { SubGenieProvider } from '@/context/SubGenieContext';
 
 // Register modals
 NiceModal.register('github-login', GitHubLoginDialog);
@@ -131,12 +133,15 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           showDialog
         >
           <NiceModal.Provider>
-            <AuthGate>
-              <ClickToComponent />
-              <AutomagikForgeWebCompanion />
-              <App />
-              {/* <ReactQueryDevtools initialIsOpen={false} /> */}
-            </AuthGate>
+            {/* FORGE CUSTOMIZATION: Wrap with SubGenieProvider for Genie Chat Widgets */}
+            <SubGenieProvider>
+              <AuthGate>
+                <ClickToComponent />
+                <AutomagikForgeWebCompanion />
+                <App />
+                {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+              </AuthGate>
+            </SubGenieProvider>
           </NiceModal.Provider>
         </Sentry.ErrorBoundary>
       </PostHogProvider>
