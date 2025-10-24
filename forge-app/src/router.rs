@@ -164,10 +164,17 @@ async fn forge_create_task_attempt(
     let short_id = short_uuid(&attempt_id);
     let git_branch_name = format!("forge/{}-{}", short_id, task_title_id);
 
+    // Store executor with variant for agent task filtering
+    let executor_string = if let Some(variant) = &executor_profile_id.variant {
+        format!("{}:{}", executor_profile_id.executor, variant)
+    } else {
+        executor_profile_id.executor.to_string()
+    };
+
     let task_attempt = TaskAttempt::create(
         &deployment.db().pool,
         &CreateTaskAttempt {
-            executor: executor_profile_id.executor,
+            executor: executor_string,
             base_branch: payload.base_branch.clone(),
             branch: git_branch_name.clone(),
         },
@@ -226,10 +233,17 @@ async fn forge_create_task_and_start(
     let short_id = short_uuid(&task_attempt_id);
     let branch_name = format!("forge/{}-{}", short_id, task_title_id);
 
+    // Store executor with variant for agent task filtering
+    let executor_string = if let Some(variant) = &payload.executor_profile_id.variant {
+        format!("{}:{}", payload.executor_profile_id.executor, variant)
+    } else {
+        payload.executor_profile_id.executor.to_string()
+    };
+
     let task_attempt = TaskAttempt::create(
         &deployment.db().pool,
         &CreateTaskAttempt {
-            executor: payload.executor_profile_id.executor,
+            executor: executor_string,
             base_branch: payload.base_branch.clone(),
             branch: branch_name,
         },
@@ -337,17 +351,25 @@ fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router
 #[derive(Deserialize)]
 struct GetTasksParams {
     project_id: Uuid,
+    status: Option<String>, // Optional status filter (e.g., "agent")
 }
 
-/// Forge override for list tasks: exclude tasks with status = 'agent'
+/// Forge override for list tasks: conditionally filter by status
+/// - Default behavior: exclude tasks with status = 'agent' (for main Kanban)
+/// - When status=agent: return ONLY agent tasks (for widgets)
 async fn forge_get_tasks(
     State(deployment): State<DeploymentImpl>,
     Query(params): Query<GetTasksParams>,
 ) -> Result<Json<ApiResponse<Vec<TaskWithAttemptStatus>>>, ApiError> {
     let pool = &deployment.db().pool;
 
-    // Mirror upstream list query but add status filter to exclude 'agent'
-    let rows = sqlx::query(
+    // Build status filter based on query parameter
+    let (status_condition, query_status) = match params.status.as_deref() {
+        Some("agent") => ("t.status = ?", "agent"),         // Widget requesting agent tasks
+        _ => ("t.status <> ?", "agent"),                    // Default: exclude agent tasks
+    };
+
+    let query_str = format!(
         r#"SELECT
   t.id                            AS "id",
   t.project_id                    AS "project_id",
@@ -368,7 +390,7 @@ async fn forge_get_tasks(
        AND ep.run_reason IN ('setupscript','cleanupscript','codingagent')
      LIMIT 1
   ) THEN 1 ELSE 0 END            AS has_in_progress_attempt,
-  
+
   CASE WHEN (
     SELECT ep.status
       FROM task_attempts ta
@@ -389,10 +411,14 @@ async fn forge_get_tasks(
     )                               AS executor
 
 FROM tasks t
-WHERE t.project_id = ? AND t.status <> 'agent'
+WHERE t.project_id = ? AND {}
 ORDER BY t.created_at DESC"#,
-    )
+        status_condition
+    );
+
+    let rows = sqlx::query(&query_str)
     .bind(params.project_id)
+    .bind(query_status)
     .fetch_all(pool)
     .await?;
 
