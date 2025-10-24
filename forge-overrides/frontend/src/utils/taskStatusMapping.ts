@@ -8,6 +8,7 @@ export const COLUMN_DISPLAY_NAMES: Record<TaskStatus, string> = {
   inreview: 'Review',
   done: 'Done',
   cancelled: 'Cancelled',
+  agent: 'Agent', // Background agent execution tasks
 };
 
 // Map TaskStatus to genie IDs
@@ -17,6 +18,7 @@ export const COLUMN_STATUS_TO_GENIE: Record<TaskStatus, 'wishh' | 'forge' | 'rev
   inreview: 'review',
   done: null,
   cancelled: null,
+  agent: null, // Agent tasks don't map to main Kanban columns
 };
 
 // Map TaskStatus to icons
@@ -26,6 +28,7 @@ export const COLUMN_ICONS: Record<TaskStatus, React.ComponentType<any>> = {
   inreview: Target,
   done: CheckCircle2,
   cancelled: XCircle,
+  agent: Sparkles, // Use Sparkles for agent tasks (magical execution)
 };
 
 // Check if a task should be filtered out (agent status)
