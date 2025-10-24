@@ -40,7 +40,7 @@ export type CreateTaskTemplate = { project_id: string | null, title: string, des
 
 export type UpdateTaskTemplate = { title: string | null, description: string | null, template_name: string | null, };
 
-export type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelled";
+export type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelled" | "agent";
 
 export type Task = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, created_at: string, updated_at: string, };
 
