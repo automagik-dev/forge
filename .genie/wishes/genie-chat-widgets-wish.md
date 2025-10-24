@@ -257,18 +257,140 @@ Genie (Master Orchestrator)
 
 ---
 
+## Column Naming & Icons
+
+### Column Mapping
+| Old Name | New Name | Icon | Lucide Icon | Purpose |
+|----------|----------|------|-------------|---------|
+| To Do | **Wish** | ✨ Sparkles | `<Sparkles />` | Discovery and Planning (Wishh sub-genie) |
+| In Progress | **Forge** | 🔨 Hammer | `<Hammer />` | Execution and Development (Forge sub-genie) |
+| In Review | **Review** | 🎯 Target | `<Target />` OR `<CheckCircle2 />` | QA, Validation, Approval (Review sub-genie) |
+| Done | Done | ✅ Check | `<CheckCircle2 />` | Completed tasks |
+| Cancelled | Cancelled | ❌ X | `<XCircle />` | Cancelled tasks |
+
+### Task Attempt Filtering
+
+**Critical**: Task Attempts with `status: "agent"` do NOT appear in the Kanban board.
+
+- **Regular Tasks**: Appear in columns (To Do, In Progress, In Review, Done, Cancelled)
+- **Agent Task Attempts**: Hidden from Kanban (internal orchestration records, not user-facing)
+- Example: When Wishh, Forge, or Review agents create a task attempt, it has `status: "agent"` and is hidden
+
+This ensures the Kanban board shows only user-facing work; agent orchestration happens invisibly.
+
+---
+
+## Chat Widget Integration
+
+### Column Header Widget
+
+Each column (Wish, Forge, Review) has a **click-to-chat** icon in its header:
+
+```
+┌─────────────────────────────────────┐
+│ [✨ Wish]  [Tasks...]              │
+│                                     │
+│ ┌─ Task 1                          │
+│ ├─ Task 2                          │
+│ └─ Task N                          │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+Clicking the icon (✨, 🔨, 🎯) opens a chat panel **within the column** (or as a sidebar overlay).
+
+### Chat Panel Contents
+
+When expanded, the widget shows:
+
+1. **Sub-Genie Chat Box**
+   - Textarea: "Ask Wishh/Forge/Review..."
+   - Send button
+   - Chat history (optional)
+
+2. **Workflows** (Pre-configured buttons)
+   - Examples for Wishh: "Refine Spec", "Analyze Dependencies", "Create from Idea"
+   - Examples for Forge: "Start Build", "Run Tests", "Update Status", "Create Git Branch"
+   - Examples for Review: "Run QA Suite", "Generate Summary", "Approve & Move"
+
+3. **Skills** (Toggleable icons)
+   - Optional features specific to that sub-genie
+   - Example: "Quick Validation" toggle for Review agent
+   - Displayed as small icons with tooltips
+
+### External Agent Workflows
+
+Workflows from external agents (e.g., Git Agent) are **injected contextually**:
+
+- In **Forge** column: Git workflows ("Create Feature Branch", "Sync Branch", "Rebase")
+- In **Review** column: Test/QA workflows ("Run Test Suite", "Generate Coverage")
+
+No separate UI for external agents; their workflows blend into the column's widget.
+
+---
+
+## Genie Master Widget
+
+**Status**: Future consideration (out of scope for Phase 1)
+
+- Global orchestrator always accessible (persistent chat bubble, bottom-right)
+- Commands that cross columns or affect global state
+- Example: "Genie, move all approved items in Review to Done"
+- Phase 1 focuses on column sub-genie widgets; Master widget can follow in Phase 2
+
+---
+
 ## Notes
 
 - This wish focuses on **UX and frontend integration**, not backend orchestration logic
 - Each workflow button will eventually trigger backend actions; that logic is out of scope
 - Skills are toggles; their actual behavior depends on backend support
-- The Genie Master widget is always visible; column widgets expand/collapse on demand
+- Column widgets are click-to-expand; they don't bloat the board layout
+- Task Attempts with `status: "agent"` are filtered out (not visible on board)
 
 ---
 
-**Questions for You:**
-1. Does the hierarchy and workflow matrix match your vision?
-2. Should the Genie Master widget be a chat bubble (like Zendesk) or a panel?
-3. Do you have existing Kanban board component we should extend, or build from scratch?
-4. Are there specific workflows or skills you want prioritized?
+## Updated Specification
+
+### Visual Design: Column Header
+```
+Header Layout:
+┌──────────────────────────────────────────┐
+│ [Icon + Label] [Count] [Filter/Sort]    │
+│ Example: [✨ Wish]     (5)  [⋮]        │
+└──────────────────────────────────────────┘
+```
+
+Clicking the icon opens the chat panel inline or as a sidebar.
+
+### Phase 1 Success Criteria (Revised)
+
+1. **Column Renaming**: Update TaskStatus UI mapping
+   - `todo` → "Wish"
+   - `inprogress` → "Forge"
+   - `inreview` → "Review"
+
+2. **Icon Integration**: Lucide icons in column headers
+   - Sparkles (Wish)
+   - Hammer (Forge)
+   - Target or CheckCircle2 (Review)
+
+3. **Widget Component**: Chat interface for each sub-genie
+   - Expandable panel
+   - Chat textarea + send
+   - Workflow buttons
+   - Skills toggles
+
+4. **Task Filtering**: Hide agent task attempts
+   - Only show `status` ≠ "agent" in Kanban
+   - Agent attempts tracked separately (if needed for debugging)
+
+5. **Responsive**: Widgets fit within column bounds, don't break layout
+
+---
+
+**Next Steps (Ready for Forge):**
+1. Confirm icon choices and column names
+2. Clarify: Should workflow buttons make API calls, or just log/demo?
+3. Define: What data shape do we expect from sub-genie APIs?
 
