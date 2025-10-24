@@ -164,10 +164,17 @@ async fn forge_create_task_attempt(
     let short_id = short_uuid(&attempt_id);
     let git_branch_name = format!("forge/{}-{}", short_id, task_title_id);
 
+    // Store executor with variant for agent task filtering
+    let executor_string = if let Some(variant) = &executor_profile_id.variant {
+        format!("{}:{}", executor_profile_id.executor, variant)
+    } else {
+        executor_profile_id.executor.to_string()
+    };
+
     let task_attempt = TaskAttempt::create(
         &deployment.db().pool,
         &CreateTaskAttempt {
-            executor: executor_profile_id.executor,
+            executor: executor_string,
             base_branch: payload.base_branch.clone(),
             branch: git_branch_name.clone(),
         },
@@ -226,10 +233,17 @@ async fn forge_create_task_and_start(
     let short_id = short_uuid(&task_attempt_id);
     let branch_name = format!("forge/{}-{}", short_id, task_title_id);
 
+    // Store executor with variant for agent task filtering
+    let executor_string = if let Some(variant) = &payload.executor_profile_id.variant {
+        format!("{}:{}", payload.executor_profile_id.executor, variant)
+    } else {
+        payload.executor_profile_id.executor.to_string()
+    };
+
     let task_attempt = TaskAttempt::create(
         &deployment.db().pool,
         &CreateTaskAttempt {
-            executor: payload.executor_profile_id.executor,
+            executor: executor_string,
             base_branch: payload.base_branch.clone(),
             branch: branch_name,
         },

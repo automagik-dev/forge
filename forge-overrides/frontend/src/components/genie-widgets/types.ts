@@ -29,7 +29,9 @@ export interface ChatMessage {
   timestamp: string;
   metadata?: {
     workflowId?: string;
-    status?: 'sent' | 'processing' | 'error';
+    status?: 'sent' | 'processing' | 'error' | 'started';
+    taskId?: string;      // Task UUID for workflow executions
+    attemptId?: string;   // Task attempt UUID for follow-ups
   };
 }
 
