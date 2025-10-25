@@ -3,7 +3,7 @@ name: qa
 description: End-to-end and manual validation of wishes and deliveries for Automagik Forge
 color: blue
 genie:
-  executor: codex
+  executor: claude
   model: sonnet
   permissionMode: bypassPermissions
   background: true

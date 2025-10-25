@@ -2,7 +2,7 @@
 name: issue-creator
 description: GitHub issue creation specialist with template awareness
 genie:
-  executor: codex
+  executor: claude
   model: sonnet
   permissionMode: acceptEdits
   background: false
