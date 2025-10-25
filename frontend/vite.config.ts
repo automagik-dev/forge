@@ -1,7 +1,7 @@
 import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'node:path';
-import fs from 'node:fs';
+import path from 'path';
+import fs from 'fs';
 
 // Custom resolver plugin for forge overlay pattern
 function forgeOverlayResolver(): Plugin {
@@ -43,12 +43,18 @@ function forgeOverlayResolver(): Plugin {
       // Try forge-overrides first
       const overrideResult = tryResolve(overridePath, relativePath);
       if (overrideResult) {
+        if (relativePath === 'main' || relativePath === 'App.tsx') {
+          console.log(`[forge-overlay] ✅ Using forge override: @/${relativePath} -> ${overrideResult}`);
+        }
         return overrideResult;
       }
 
       // Fallback to upstream
       const upstreamResult = tryResolve(upstreamPath, relativePath);
       if (upstreamResult) {
+        if (relativePath === 'main' || relativePath === 'App.tsx') {
+          console.log(`[forge-overlay] ⬇️  Using upstream: @/${relativePath} -> ${upstreamResult}`);
+        }
         return upstreamResult;
       }
 
@@ -131,10 +137,6 @@ export default defineConfig({
       'shared': path.resolve(__dirname, '../shared'),
     },
   },
-  optimizeDeps: {
-    // Exclude Node.js built-ins from dependency pre-bundling
-    exclude: ['node:child_process', 'node:path', 'node:fs'],
-  },
   server: {
     port: Number(process.env.FRONTEND_PORT ?? 5174),
     proxy: {
@@ -160,7 +162,17 @@ export default defineConfig({
       include: [/node_modules/],
     },
     rollupOptions: {
-      external: ['node:child_process', 'node:path', 'node:fs', 'child_process', 'path', 'fs'],
+      // Suppress false warnings from @types/node in dependencies
+      onwarn(warning, warn) {
+        // Ignore externalized module warnings for Node built-ins from type definitions
+        if (
+          warning.code === 'UNRESOLVED_IMPORT' &&
+          /^node:/.test(warning.exporter || '')
+        ) {
+          return;
+        }
+        warn(warning);
+      },
     },
   },
   test: {

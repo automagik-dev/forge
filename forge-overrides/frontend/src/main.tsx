@@ -44,6 +44,11 @@ import { OmniModal } from './components/omni/OmniModal';
 import { AuthGate } from './components/auth/AuthGate';
 // FORGE CUSTOMIZATION: Import SubGenieProvider for Genie Chat Widgets
 import { SubGenieProvider } from '@/context/SubGenieContext';
+// Import UserSystemProvider to wrap AuthGate
+import { UserSystemProvider } from '@/components/config-provider';
+// Import KeyboardShortcutsProvider and HotkeysProvider to wrap modals
+import { KeyboardShortcutsProvider } from '@/contexts/keyboard-shortcuts-context';
+import { HotkeysProvider } from 'react-hotkeys-hook';
 
 // Register modals
 NiceModal.register('github-login', GitHubLoginDialog);
@@ -132,17 +137,25 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           fallback={<p>{i18n.t('common:states.error')}</p>}
           showDialog
         >
-          <NiceModal.Provider>
-            {/* FORGE CUSTOMIZATION: Wrap with SubGenieProvider for Genie Chat Widgets */}
-            <SubGenieProvider>
-              <AuthGate>
-                <ClickToComponent />
-                <AutomagikForgeWebCompanion />
-                <App />
-                {/* <ReactQueryDevtools initialIsOpen={false} /> */}
-              </AuthGate>
-            </SubGenieProvider>
-          </NiceModal.Provider>
+          {/* Keyboard shortcuts must wrap NiceModal.Provider so modals can use shortcuts */}
+          <HotkeysProvider initiallyActiveScopes={['*', 'global', 'kanban']}>
+            <KeyboardShortcutsProvider>
+              <NiceModal.Provider>
+                {/* FORGE CUSTOMIZATION: UserSystemProvider must wrap AuthGate since AuthGate uses useUserSystem() */}
+                <UserSystemProvider>
+                  {/* FORGE CUSTOMIZATION: Wrap with SubGenieProvider for Genie Chat Widgets */}
+                  <SubGenieProvider>
+                    <AuthGate>
+                      <ClickToComponent />
+                      <AutomagikForgeWebCompanion />
+                      <App />
+                      {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+                    </AuthGate>
+                  </SubGenieProvider>
+                </UserSystemProvider>
+              </NiceModal.Provider>
+            </KeyboardShortcutsProvider>
+          </HotkeysProvider>
         </Sentry.ErrorBoundary>
       </PostHogProvider>
     </QueryClientProvider>
