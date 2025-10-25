@@ -141,16 +141,42 @@ if (isMcpMode) {
     } catch (e) {
       console.warn(`⚠️  Failed to load .env: ${e.message}`);
     }
-    
+
     // Set default environment variables if not already set
     if (!env.BACKEND_PORT && !env.PORT) {
       env.BACKEND_PORT = "8887";
     }
-    
-    if (platform === "win32") {
-      execSync(`"${bin}"`, { stdio: "inherit", env });
-    } else {
-      execSync(`"${bin}"`, { stdio: "inherit", env });
+
+    // Try to launch, catch port conflict errors
+    try {
+      if (platform === "win32") {
+        execSync(`"${bin}"`, { stdio: "inherit", env });
+      } else {
+        execSync(`"${bin}"`, { stdio: "inherit", env });
+      }
+    } catch (error) {
+      // Check if it's a port conflict error (EADDRINUSE)
+      const isPortError = error.message && (
+        error.message.includes('Address already in use') ||
+        error.message.includes('EADDRINUSE') ||
+        error.status === 1
+      );
+
+      if (isPortError) {
+        // Use advanced port conflict handler with task detection
+        const port = env.BACKEND_PORT || env.PORT || '8887';
+        const handler = require('./port-conflict-handler.js');
+
+        handler.handlePortConflict(port)
+          .then(() => process.exit(1))
+          .catch((err) => {
+            console.error('Error checking port status:', err.message);
+            console.error(`\nPort ${port} is in use. Please stop the existing instance or use a different port.\n`);
+            process.exit(1);
+          });
+      } else {
+        throw error;
+      }
     }
   });
 }
