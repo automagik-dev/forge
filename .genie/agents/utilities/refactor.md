@@ -3,7 +3,7 @@ name: refactor
 description: Plan staged refactors with risk assessment and verification
 color: brown
 genie:
-  executor: codex
+  executor: claude
   model: sonnet
   permissionMode: bypassPermissions
   background: true

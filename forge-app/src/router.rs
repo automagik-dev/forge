@@ -164,17 +164,10 @@ async fn forge_create_task_attempt(
     let short_id = short_uuid(&attempt_id);
     let git_branch_name = format!("forge/{}-{}", short_id, task_title_id);
 
-    // Store executor with variant for agent task filtering
-    let executor_string = if let Some(variant) = &executor_profile_id.variant {
-        format!("{}:{}", executor_profile_id.executor, variant)
-    } else {
-        executor_profile_id.executor.to_string()
-    };
-
-    let task_attempt = TaskAttempt::create(
+    let mut task_attempt = TaskAttempt::create(
         &deployment.db().pool,
         &CreateTaskAttempt {
-            executor: executor_string,
+            executor: executor_profile_id.executor,
             base_branch: payload.base_branch.clone(),
             branch: git_branch_name.clone(),
         },
@@ -182,6 +175,19 @@ async fn forge_create_task_attempt(
         payload.task_id,
     )
     .await?;
+
+    // Store executor with variant for agent task filtering
+    if let Some(variant) = &executor_profile_id.variant {
+        let executor_with_variant = format!("{}:{}", executor_profile_id.executor, variant);
+        sqlx::query(
+            "UPDATE task_attempts SET executor = ?, updated_at = datetime('now') WHERE id = ?"
+        )
+        .bind(&executor_with_variant)
+        .bind(attempt_id)
+        .execute(&deployment.db().pool)
+        .await?;
+        task_attempt.executor = executor_with_variant;
+    }
 
     let _execution_process = deployment
         .container()
@@ -233,17 +239,10 @@ async fn forge_create_task_and_start(
     let short_id = short_uuid(&task_attempt_id);
     let branch_name = format!("forge/{}-{}", short_id, task_title_id);
 
-    // Store executor with variant for agent task filtering
-    let executor_string = if let Some(variant) = &payload.executor_profile_id.variant {
-        format!("{}:{}", payload.executor_profile_id.executor, variant)
-    } else {
-        payload.executor_profile_id.executor.to_string()
-    };
-
-    let task_attempt = TaskAttempt::create(
+    let mut task_attempt = TaskAttempt::create(
         &deployment.db().pool,
         &CreateTaskAttempt {
-            executor: executor_string,
+            executor: payload.executor_profile_id.executor,
             base_branch: payload.base_branch.clone(),
             branch: branch_name,
         },
@@ -251,6 +250,19 @@ async fn forge_create_task_and_start(
         task.id,
     )
     .await?;
+
+    // Store executor with variant for agent task filtering
+    if let Some(variant) = &payload.executor_profile_id.variant {
+        let executor_with_variant = format!("{}:{}", payload.executor_profile_id.executor, variant);
+        sqlx::query(
+            "UPDATE task_attempts SET executor = ?, updated_at = datetime('now') WHERE id = ?"
+        )
+        .bind(&executor_with_variant)
+        .bind(task_attempt_id)
+        .execute(&deployment.db().pool)
+        .await?;
+        task_attempt.executor = executor_with_variant;
+    }
 
     let execution_process = deployment
         .container()
