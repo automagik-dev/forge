@@ -1,10 +1,9 @@
 ---
 name: implementor
-description: End-to-end Forge feature implementation and production bug fixes
-  with TDD discipline
+description: End-to-end Forge feature implementation and production bug fixes with TDD discipline
 color: green
 genie:
-  executor: codex
+  executor: claude
   model: sonnet
   permissionMode: bypassPermissions
   background: true
