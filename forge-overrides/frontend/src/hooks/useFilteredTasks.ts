@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Task, TaskStatus } from '@/shared/types';
+import { Task, TaskStatus } from 'shared/types';
 import { isAgentStatus } from '@/utils/taskStatusMapping';
 
 export const useFilteredTasks = (

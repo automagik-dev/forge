@@ -1,5 +1,5 @@
 import { ChatMessage } from '@/components/genie-widgets';
-import { Task, TaskAttempt, BaseCodingAgent } from '@/shared/types';
+import { Task, TaskAttempt, BaseCodingAgent } from 'shared/types';
 
 /**
  * API service for Genie widget backend integration.

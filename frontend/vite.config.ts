@@ -2,6 +2,10 @@ import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import fs from 'fs';
+import { builtinModules } from 'module';
+
+const nodeEmptyShim = path.resolve(__dirname, 'src/shims/node-empty.ts');
+const nodePathShim = path.resolve(__dirname, 'src/shims/node-path.ts');
 
 // Custom resolver plugin for forge overlay pattern
 function forgeOverlayResolver(): Plugin {
@@ -109,14 +113,48 @@ export default schemas;
   };
 }
 
+function stripPosthogNodeBuiltins(): Plugin {
+  const targetPattern = /posthog-js\/dist\/module(?:\.(?:full|no-external))?\.js$/;
+  const stripPattern = /(?:import|require)\(["']node:(?:child_process|fs|path)["']\);?/g;
+
+  return {
+    name: 'strip-posthog-node-builtins',
+    enforce: 'pre',
+    load(id) {
+      const normalizedId = id.split('?')[0]?.replace(/\\/g, '/');
+      if (!normalizedId || !targetPattern.test(normalizedId)) {
+        return null;
+      }
+
+      const source = fs.readFileSync(normalizedId, 'utf8');
+      if (!stripPattern.test(source)) {
+        return null;
+      }
+
+      const cleaned = source.replace(stripPattern, '');
+      return {
+        code: cleaned,
+        map: null,
+      };
+    },
+  };
+}
+
 // Force all bare imports to resolve from workspace root
 function forceWorkspaceResolution(): Plugin {
   const buildRoot = path.resolve(__dirname, 'package.json');
+  const nodeBuiltinSpecifiers = new Set([
+    ...builtinModules,
+    ...builtinModules.map((name) => `node:${name}`),
+  ]);
 
   return {
     name: 'force-workspace-resolution',
     enforce: 'pre',
     async resolveId(source) {
+      if (nodeBuiltinSpecifiers.has(source)) {
+        return null;
+      }
       // Only handle bare imports (not relative/absolute paths, not aliases)
       if (!source.startsWith('.') && !source.startsWith('/') && !source.startsWith('@/') && source !== 'shared' && !source.startsWith('shared/')) {
         // Force resolution from workspace root via frontend/package.json
@@ -131,10 +169,13 @@ function forceWorkspaceResolution(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), executorSchemasPlugin(), forgeOverlayResolver(), forceWorkspaceResolution()],
+  plugins: [react(), stripPosthogNodeBuiltins(), executorSchemasPlugin(), forgeOverlayResolver(), forceWorkspaceResolution()],
   resolve: {
     alias: {
       'shared': path.resolve(__dirname, '../shared'),
+      'node:child_process': nodeEmptyShim,
+      'node:fs': nodeEmptyShim,
+      'node:path': nodePathShim,
     },
   },
   server: {

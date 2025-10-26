@@ -147,36 +147,44 @@ if (isMcpMode) {
       env.BACKEND_PORT = "8887";
     }
 
-    // Try to launch, catch port conflict errors
-    try {
-      if (platform === "win32") {
-        execSync(`"${bin}"`, { stdio: "inherit", env });
-      } else {
-        execSync(`"${bin}"`, { stdio: "inherit", env });
-      }
-    } catch (error) {
-      // Check if it's a port conflict error (EADDRINUSE)
-      const isPortError = error.message && (
-        error.message.includes('Address already in use') ||
-        error.message.includes('EADDRINUSE') ||
-        error.status === 1
-      );
+    const handler = require('./port-conflict-handler.js');
 
-      if (isPortError) {
-        // Use advanced port conflict handler with task detection
+    const runBinary = () => {
+      try {
+        execSync(`"${bin}"`, { stdio: "inherit", env });
+        return Promise.resolve();
+      } catch (error) {
+        const isPortError = error && error.message && (
+          error.message.includes('Address already in use') ||
+          error.message.includes('EADDRINUSE') ||
+          error.status === 1
+        );
+
+        if (!isPortError) {
+          return Promise.reject(error);
+        }
+
         const port = env.BACKEND_PORT || env.PORT || '8887';
-        const handler = require('./port-conflict-handler.js');
-
-        handler.handlePortConflict(port)
-          .then(() => process.exit(1))
+        return handler.handlePortConflict(port)
+          .then((result) => {
+            if (result && result.action === 'retry') {
+              return runBinary();
+            }
+            process.exit(1);
+            return undefined;
+          })
           .catch((err) => {
             console.error('Error checking port status:', err.message);
             console.error(`\nPort ${port} is in use. Please stop the existing instance or use a different port.\n`);
             process.exit(1);
+            return undefined;
           });
-      } else {
-        throw error;
       }
-    }
+    };
+
+    runBinary().catch((err) => {
+      console.error(err && err.message ? `❌ ${err.message}` : err);
+      process.exit(1);
+    });
   });
 }

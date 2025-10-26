@@ -1,5 +1,5 @@
 import { Sparkles, Hammer, Target, CheckCircle2, XCircle } from 'lucide-react';
-import { TaskStatus } from '@/shared/types';
+import { TaskStatus } from 'shared/types';
 
 // Map TaskStatus to display names
 export const COLUMN_DISPLAY_NAMES: Record<TaskStatus, string> = {
