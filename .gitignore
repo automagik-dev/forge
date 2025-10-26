@@ -1,3 +1,5 @@
+# Add to existing .gitignore
+scripts/.dev-ports.json
 # Rust
 /target
 **/*.rs.bk
