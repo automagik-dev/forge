@@ -111,19 +111,20 @@ async function waitForBackend(port, maxAttempts = 60) {
 }
 
 /**
- * Start backend server
+ * Start backend server with cargo watch for auto-reload
  */
 function startBackend(port) {
-  console.log(`🔨 Compiling and starting backend on port ${port}...`);
+  console.log(`🔨 Compiling and starting backend on port ${port} (with auto-reload)...`);
   console.log('');
 
-  const backend = spawn('cargo', ['run', '-p', 'forge-app', '--bin', 'forge-app'], {
+  const backend = spawn('cargo', ['watch', '-w', 'forge-app', '-x', 'run -p forge-app --bin forge-app'], {
     cwd: path.join(__dirname, '..'),
     env: {
       ...process.env,
       BACKEND_PORT: port.toString(),
-      RUST_LOG: process.env.RUST_LOG || 'info',
-      DISABLE_WORKTREE_ORPHAN_CLEANUP: '1'
+      RUST_LOG: process.env.RUST_LOG || 'debug',
+      DISABLE_WORKTREE_ORPHAN_CLEANUP: '1',
+      DISABLE_BROWSER_OPEN: '1' // Don't auto-open backend in development
     },
     stdio: ['ignore', 'inherit', 'inherit']
   });
@@ -140,12 +141,13 @@ function startBackend(port) {
  * Start frontend server
  */
 function startFrontend(frontendPort, backendPort) {
-  const frontend = spawn('pnpm', ['run', 'dev', '--', '--port', frontendPort.toString(), '--host'], {
+  const frontend = spawn('pnpm', ['run', 'dev', '--', '--port', frontendPort.toString(), '--host', '--open'], {
     cwd: path.join(__dirname, '../frontend'),
     env: {
       ...process.env,
       FRONTEND_PORT: frontendPort.toString(),
-      BACKEND_PORT: backendPort.toString()
+      BACKEND_PORT: backendPort.toString(),
+      VITE_OPEN: 'true' // Auto-open frontend dev server
     },
     stdio: ['ignore', 'inherit', 'inherit']
   });
@@ -210,16 +212,19 @@ async function main() {
   await new Promise(resolve => setTimeout(resolve, 2000));
 
   console.log('');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('✨ Development Environment Ready');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('');
-  console.log(`   🌐 Frontend: http://localhost:${ports.frontend}`);
-  console.log(`   ⚙️  Backend:  http://localhost:${ports.backend}`);
+  console.log(`   🎨 Frontend Dev:  http://localhost:${ports.frontend}  (USE THIS - has HMR)`);
+  console.log(`   ⚙️  Backend API:   http://localhost:${ports.backend}`);
   console.log('');
-  console.log('   Press Ctrl+C to stop');
+  console.log('   💡 The frontend dev server should auto-open in your browser');
+  console.log('   💡 Changes to frontend code will hot-reload automatically');
   console.log('');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('   Press Ctrl+C to stop both servers');
+  console.log('');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('');
 
   // Handle shutdown
