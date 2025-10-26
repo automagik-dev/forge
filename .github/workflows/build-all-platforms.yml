@@ -186,6 +186,7 @@ jobs:
           SQLX_OFFLINE: true
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
+          MACOSX_DEPLOYMENT_TARGET: '11.0'
         run: |
           cargo build --release --target ${{ matrix.target }}
           cargo build --release --target ${{ matrix.target }} --bin forge-mcp-task-server
