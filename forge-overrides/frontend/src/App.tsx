@@ -4,7 +4,9 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n';
 import { Projects } from '@/pages/projects';
 import { ProjectTasks } from '@/pages/project-tasks';
+import ReleaseNotesPage from '@/pages/release-notes';
 import { NormalLayout } from '@/components/layout/NormalLayout';
+import { Footer } from '@/components/layout/Footer';
 import { usePostHog } from 'posthog-js/react';
 
 import {
@@ -159,35 +161,43 @@ function AppContent() {
             <div className="h-screen flex flex-col bg-background">
               <WebviewContextMenu />
 
-              <SentryRoutes>
-                <Route element={<NormalLayout />}>
-                  <Route path="/" element={<Projects />} />
-                  <Route path="/projects" element={<Projects />} />
-                  <Route path="/projects/:projectId" element={<Projects />} />
-                  <Route
-                    path="/projects/:projectId/tasks"
-                    element={<ProjectTasks />}
-                  />
-                  <Route path="/settings/*" element={<SettingsLayout />}>
-                    <Route index element={<Navigate to="general" replace />} />
-                    <Route path="general" element={<GeneralSettings />} />
-                    <Route path="agents" element={<AgentSettings />} />
-                    <Route path="mcp" element={<McpSettings />} />
+              <div className="flex-1 overflow-hidden">
+                <SentryRoutes>
+                  <Route element={<NormalLayout />}>
+                    <Route path="/" element={<Projects />} />
+                    <Route path="/projects" element={<Projects />} />
+                    <Route path="/projects/:projectId" element={<Projects />} />
+                    <Route
+                      path="/projects/:projectId/tasks"
+                      element={<ProjectTasks />}
+                    />
+                    <Route path="/settings/*" element={<SettingsLayout />}>
+                      <Route index element={<Navigate to="general" replace />} />
+                      <Route path="general" element={<GeneralSettings />} />
+                      <Route path="agents" element={<AgentSettings />} />
+                      <Route path="mcp" element={<McpSettings />} />
+                    </Route>
+                    <Route
+                      path="/mcp-servers"
+                      element={<Navigate to="/settings/mcp" replace />}
+                    />
+                    <Route
+                      path="/release-notes"
+                      element={<ReleaseNotesPage />}
+                    />
+                    <Route
+                      path="/projects/:projectId/tasks/:taskId"
+                      element={<ProjectTasks />}
+                    />
+                    <Route
+                      path="/projects/:projectId/tasks/:taskId/attempts/:attemptId"
+                      element={<ProjectTasks />}
+                    />
                   </Route>
-                  <Route
-                    path="/mcp-servers"
-                    element={<Navigate to="/settings/mcp" replace />}
-                  />
-                  <Route
-                    path="/projects/:projectId/tasks/:taskId"
-                    element={<ProjectTasks />}
-                  />
-                  <Route
-                    path="/projects/:projectId/tasks/:taskId/attempts/:attemptId"
-                    element={<ProjectTasks />}
-                  />
-                </Route>
-              </SentryRoutes>
+                </SentryRoutes>
+              </div>
+
+              <Footer />
             </div>
             <ShortcutsHelp />
           </SearchProvider>
