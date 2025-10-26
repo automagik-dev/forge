@@ -1,0 +1,55 @@
+{
+  "buttons": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "send": "Enviar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "create": "Criar",
+    "continue": "Continuar",
+    "reset": "Redefinir",
+    "manage": "Gerenciar",
+    "connect": "Conectar",
+    "disconnect": "Desconectar",
+    "close": "Fechar",
+    "replay": "Repetir"
+  },
+  "states": {
+    "loading": "Carregando...",
+    "saving": "Salvando...",
+    "error": "Erro",
+    "success": "Sucesso",
+    "reconnecting": "Reconectando"
+  },
+  "language": {
+    "browserDefault": "Padrão do Navegador"
+  },
+  "conversation": {
+    "plan": "Plano",
+    "planToggle": {
+      "show": "Mostrar plano",
+      "hide": "Ocultar plano"
+    },
+    "toolDetailsToggle": {
+      "show": "Mostrar detalhes",
+      "hide": "Ocultar detalhes"
+    },
+    "args": "Argumentos",
+    "output": "Saída",
+    "result": "Resultado",
+    "deniedByUser": "{{toolName}} negado pelo usuário"
+  },
+  "branchSelector": {
+    "placeholder": "Selecione um branch",
+    "searchPlaceholder": "Buscar branches...",
+    "empty": "Nenhum branch encontrado",
+    "badges": {
+      "current": "atual",
+      "remote": "remoto"
+    },
+    "currentDisabled": "Não é possível selecionar o branch atual"
+  },
+  "breadcrumb": {
+    "more": "Mais"
+  }
+}
