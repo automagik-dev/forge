@@ -42,13 +42,15 @@ struct Frontend;
 struct ForgeAppState {
     services: ForgeServices,
     deployment: DeploymentImpl,
+    auth_required: bool,
 }
 
 impl ForgeAppState {
-    fn new(services: ForgeServices, deployment: DeploymentImpl) -> Self {
+    fn new(services: ForgeServices, deployment: DeploymentImpl, auth_required: bool) -> Self {
         Self {
             services,
             deployment,
+            auth_required,
         }
     }
 }
@@ -65,9 +67,9 @@ impl FromRef<ForgeAppState> for DeploymentImpl {
     }
 }
 
-pub fn create_router(services: ForgeServices) -> Router {
+pub fn create_router(services: ForgeServices, auth_required: bool) -> Router {
     let deployment = services.deployment.as_ref().clone();
-    let state = ForgeAppState::new(services, deployment.clone());
+    let state = ForgeAppState::new(services, deployment.clone(), auth_required);
 
     let upstream_api = upstream_api_router(&deployment);
 
@@ -99,6 +101,7 @@ pub fn create_router(services: ForgeServices) -> Router {
 
 fn forge_api_routes() -> Router<ForgeAppState> {
     Router::new()
+        .route("/api/forge/auth-required", get(get_auth_required))
         .route(
             "/api/forge/config",
             get(get_forge_config).put(update_forge_config),
@@ -161,7 +164,7 @@ async fn forge_create_task_attempt(
     let short_id = short_uuid(&attempt_id);
     let git_branch_name = format!("forge/{}-{}", short_id, task_title_id);
 
-    let task_attempt = TaskAttempt::create(
+    let mut task_attempt = TaskAttempt::create(
         &deployment.db().pool,
         &CreateTaskAttempt {
             executor: executor_profile_id.executor,
@@ -172,6 +175,19 @@ async fn forge_create_task_attempt(
         payload.task_id,
     )
     .await?;
+
+    // Store executor with variant for agent task filtering
+    if let Some(variant) = &executor_profile_id.variant {
+        let executor_with_variant = format!("{}:{}", executor_profile_id.executor, variant);
+        sqlx::query(
+            "UPDATE task_attempts SET executor = ?, updated_at = datetime('now') WHERE id = ?"
+        )
+        .bind(&executor_with_variant)
+        .bind(attempt_id)
+        .execute(&deployment.db().pool)
+        .await?;
+        task_attempt.executor = executor_with_variant;
+    }
 
     let _execution_process = deployment
         .container()
@@ -223,7 +239,7 @@ async fn forge_create_task_and_start(
     let short_id = short_uuid(&task_attempt_id);
     let branch_name = format!("forge/{}-{}", short_id, task_title_id);
 
-    let task_attempt = TaskAttempt::create(
+    let mut task_attempt = TaskAttempt::create(
         &deployment.db().pool,
         &CreateTaskAttempt {
             executor: payload.executor_profile_id.executor,
@@ -234,6 +250,19 @@ async fn forge_create_task_and_start(
         task.id,
     )
     .await?;
+
+    // Store executor with variant for agent task filtering
+    if let Some(variant) = &payload.executor_profile_id.variant {
+        let executor_with_variant = format!("{}:{}", payload.executor_profile_id.executor, variant);
+        sqlx::query(
+            "UPDATE task_attempts SET executor = ?, updated_at = datetime('now') WHERE id = ?"
+        )
+        .bind(&executor_with_variant)
+        .bind(task_attempt_id)
+        .execute(&deployment.db().pool)
+        .await?;
+        task_attempt.executor = executor_with_variant;
+    }
 
     let execution_process = deployment
         .container()
@@ -334,17 +363,25 @@ fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router
 #[derive(Deserialize)]
 struct GetTasksParams {
     project_id: Uuid,
+    status: Option<String>, // Optional status filter (e.g., "agent")
 }
 
-/// Forge override for list tasks: exclude tasks with status = 'agent'
+/// Forge override for list tasks: conditionally filter by status
+/// - Default behavior: exclude tasks with status = 'agent' (for main Kanban)
+/// - When status=agent: return ONLY agent tasks (for widgets)
 async fn forge_get_tasks(
     State(deployment): State<DeploymentImpl>,
     Query(params): Query<GetTasksParams>,
 ) -> Result<Json<ApiResponse<Vec<TaskWithAttemptStatus>>>, ApiError> {
     let pool = &deployment.db().pool;
 
-    // Mirror upstream list query but add status filter to exclude 'agent'
-    let rows = sqlx::query(
+    // Build status filter based on query parameter
+    let (status_condition, query_status) = match params.status.as_deref() {
+        Some("agent") => ("t.status = ?", "agent"),         // Widget requesting agent tasks
+        _ => ("t.status <> ?", "agent"),                    // Default: exclude agent tasks
+    };
+
+    let query_str = format!(
         r#"SELECT
   t.id                            AS "id",
   t.project_id                    AS "project_id",
@@ -365,7 +402,7 @@ async fn forge_get_tasks(
        AND ep.run_reason IN ('setupscript','cleanupscript','codingagent')
      LIMIT 1
   ) THEN 1 ELSE 0 END            AS has_in_progress_attempt,
-  
+
   CASE WHEN (
     SELECT ep.status
       FROM task_attempts ta
@@ -386,10 +423,14 @@ async fn forge_get_tasks(
     )                               AS executor
 
 FROM tasks t
-WHERE t.project_id = ? AND t.status <> 'agent'
+WHERE t.project_id = ? AND {}
 ORDER BY t.created_at DESC"#,
-    )
+        status_condition
+    );
+
+    let rows = sqlx::query(&query_str)
     .bind(params.project_id)
+    .bind(query_status)
     .fetch_all(pool)
     .await?;
 
@@ -688,6 +729,14 @@ async fn list_routes() -> Json<Value> {
             ]
         },
         "note": "This is a simple route listing. Most endpoints require GitHub OAuth authentication via /api/auth/github/device"
+    }))
+}
+
+async fn get_auth_required(
+    State(state): State<ForgeAppState>,
+) -> Json<Value> {
+    Json(json!({
+        "auth_required": state.auth_required
     }))
 }
 

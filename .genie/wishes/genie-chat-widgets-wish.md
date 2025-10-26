@@ -1,481 +1,396 @@
-# Wish: Genie Chat Widgets Integration
+# Wish: Genie Chat Widgets on Kanban Board
 
-**Status:** DRAFT
-**Created:** 2025-10-21
-**Agent:** wish
-**Project:** Automagik Forge
-**Branch Strategy:** `feat/genie-chat-widgets`
-
----
-
-## Vision
-
-Transform the Automagik Forge Kanban board into a conversational orchestration interface where each column is augmented with its specialized agent (Genie sub-agents), creating an intuitive UX where users can interact with Wishh (Planner), Forge (Execution), and Review agents directly in context, plus access the master orchestrator Genie globally.
+**Status**: 🟡 Planning
+**Created**: 2025-10-23
+**Updated**: 2025-10-23
+**Owner**: GENIE (Wish Manager)
+**Tracking ID**: GCW-001
 
 ---
 
-## Context
+## Executive Summary
+
+Integrate AI agent orchestrators (Genie and Sub-Genies) as specialized chat widgets into the Kanban board. Each column will have its own sub-genie (Wish, Forge, Review) that manages that column's responsibilities. Workflows and skills can be triggered from the widget UI, making agent orchestration a first-class feature of the board.
+
+---
+
+## Discovery Phase
 
 ### Current State
-- Kanban board with columns: To Do, In Progress, In Review, Done, Cancelled
-- Tasks move through workflow stages manually
-- No direct agent interaction within the board interface
-- Genie MCP integration exists but requires external tooling
+- Kanban board with columns: **To Do**, **In Progress (Doing)**, **In Review**, **Done**, **Cancelled**
+- No agent integration on the board UI
+- Agent orchestration happens externally (CLI, chat interfaces)
 
-### Target State
-- **Master Orchestrator (Genie)**: Global chat widget accessible from anywhere (bottom-right corner)
-- **Column-Specific Sub-Genies**:
-  - **Wishh (Planner)**: Attached to "To Do" column - discovers, plans, refines wishes
-  - **Forge (Execution)**: Attached to "In Progress" column - manages execution, workflows, monitoring
-  - **Review Agent**: Attached to "In Review" column - QA validation, feedback, approval flows
-- **Workflow Integration**: Each sub-genie exposes its workflows as quick-action buttons
-- **Skill Activation**: Toggle-able skills represented as contextual icons
-- **Cross-Agent Workflows**: Git agent workflows appear in relevant contexts (e.g., "Create Branch" in Forge)
+### Desired State
+- **Genie Master Orchestrator**: Global chat widget (persistent, bottom-right) for cross-board commands
+- **Sub-Genies** (context-aware orchestrators):
+  - **Wish** (Planner): Controls "To Do" column
+  - **Forge** (Executor): Controls "In Progress/Doing" column
+  - **Review**: Controls "In Review" column
+- **Column Integration**:
+  - Each column header has a sub-genie icon/avatar
+  - Clicking expands a widget panel with:
+    - **Chat interface** for conversational prompts
+    - **Workflows** (action buttons): Pre-configured sequences
+    - **Skills** (toggles/icons): Optional features that enhance orchestration
+- **External Agent Workflows**: Git Agent and other specialists can inject their workflows into columns
+- **Seamless UX**: Widgets feel like part of the column, not floating overlays
 
----
+### Key Concepts Clarified
 
-## Agent Hierarchy (CORRECTED)
+#### Genie Hierarchy
+```
+Genie (Master Orchestrator)
+├── Wish (Sub-Genie) → "To Do" Column Owner
+├── Forge (Sub-Genie) → "In Progress" Column Owner
+├── Review (Sub-Genie) → "In Review" Column Owner
+└── External Agents (Git, Tests, etc.) → Workflows injected contextually
+```
 
-### 🧞 Genie - Master Orchestrator
-- **Role**: Global orchestration, cross-column commands, delegation to sub-genies
-- **Location**: Persistent floating widget (bottom-right, global)
-- **Capabilities**:
-  - Execute commands across entire board ("Move all reviewed items to Done")
-  - Delegate to sub-genies ("Wishh, prioritize high-urgency items")
-  - Access to all workflows and skills
-  - Session management for all sub-genies
+#### Workflows vs. Skills
+- **Workflows**: Sequences of actions tied to a sub-genie or external agent
+  - Example: Wish's "Refine Requirement" workflow
+  - Example: Git Agent's "Create Feature Branch" workflow
+- **Skills**: Optional, toggleable features that enhance a sub-genie
+  - Example: "Quick Validation" skill for Review agent
+  - Activated/deactivated from skill icons
 
-### 🎯 Wishh - Planner Sub-Genie
-- **Role**: Discovery, planning, wish refinement for "To Do" column
-- **Location**: Column header icon/widget in "To Do"
-- **Capabilities**:
-  - Create new wishes from natural language
-  - Refine requirements and acceptance criteria
-  - Prioritize task queue
-  - Analyze dependencies
-- **Workflows**:
-  - "Discover Ideas" - Extract actionable tasks from discussions
-  - "Refine Requirement" - Clarify specifications
-  - "Prioritize Queue" - Reorder based on criteria
-  - "Analyze Dependencies" - Map task relationships
-
-### ⚙️ Forge - Execution Sub-Genie
-- **Role**: Execution management, status updates, workflow orchestration for "In Progress"
-- **Location**: Column header icon/widget in "In Progress"
-- **Capabilities**:
-  - Monitor task progress
-  - Execute builds/tests
-  - Update status automatically
-  - Manage worktree lifecycles
-  - Coordinate with Git Agent
-- **Workflows**:
-  - "Start Build" - Trigger CI/build process
-  - "Update Status" - Report progress
-  - "Create Branch" (Git Agent) - Initialize feature branch
-  - "Run Tests" - Execute test suite
-  - "Monitor Execution" - Real-time progress tracking
-
-### ✅ Review - QA Sub-Genie
-- **Role**: Quality assurance, validation, feedback for "In Review"
-- **Location**: Column header icon/widget in "In Review"
-- **Capabilities**:
-  - Run QA validation plans
-  - Generate feedback reports
-  - Approve/reject with evidence
-  - Suggest fixes
-- **Workflows**:
-  - "Run QA Checklist" - Execute validation plan
-  - "Generate Feedback" - Create detailed review
-  - "Quick Validation" - Fast-track simple changes
-  - "Request Changes" - Document required fixes
+#### Role of Each Sub-Genie
+| Sub-Genie | Column | Responsibilities | Workflows Example |
+|-----------|--------|------------------|--------------------|
+| **Wish** | To Do | Discover tasks, refine requirements, prioritize | "Analyze Dependencies", "Refine Spec", "Create from Idea" |
+| **Forge** | In Progress | Manage execution, track progress, inject Git workflows | "Start Build", "Update Status", "Create Branch", "Run Tests" |
+| **Review** | In Review | QA, validation, feedback, approval | "Run QA Suite", "Generate Summary", "Request Changes" |
 
 ---
 
-<spec_contract>
+## Spec Contract
 
-## Functional Requirements
+### In Scope ✅
+1. **Genie Master Widget**
+   - Persistent chat widget (bottom-right corner)
+   - Receives global commands ("list high-priority reviews", "move approved items to Done")
+   - Delegates to sub-genies or executes cross-board actions
 
-### FR1: Master Orchestrator Widget (Genie)
-- **FR1.1**: Persistent floating chat widget in bottom-right corner
-- **FR1.2**: Always accessible across all pages
-- **FR1.3**: Input supports natural language commands
-- **FR1.4**: Command parsing and delegation to appropriate sub-genie
-- **FR1.5**: Session history and conversation continuity
-- **FR1.6**: Visual indicator when processing commands
-- **FR1.7**: Minimizable/expandable state
+2. **Sub-Genie Column Widgets**
+   - Icon/avatar in each column header (Wish, Forge, Review)
+   - Click to expand panel within the column area
+   - Panel contains:
+     - Chat interface (textarea + send button)
+     - Workflows list (buttons)
+     - Skills toggles (small icons)
 
-**Success Criteria:**
-- Widget renders on all pages
-- Commands are correctly routed to sub-genies
-- Session state persists across page navigation
-- Response time < 2s for command parsing
+3. **Workflow Integration**
+   - Workflows are pre-configured action buttons
+   - Each button triggers a sub-genie action or workflow
+   - External agent workflows (e.g., Git) can be injected into columns
+   - Workflow buttons show loading state and results
 
-### FR2: Column Sub-Genie Widgets (Wishh, Forge, Review)
-- **FR2.1**: Icon/button in column header to open sub-genie interface
-- **FR2.2**: Click expands floating panel within column context
-- **FR2.3**: Panel contains:
-  - Chat interface for natural language prompts
-  - Quick-action workflow buttons
-  - Skill activation toggles
-- **FR2.4**: Panel dismissible/collapsible
-- **FR2.5**: Visual distinction between sub-genies (icon, color accent)
+4. **Skills System**
+   - Small toggle icons below workflows
+   - Enable/disable optional features for that sub-genie
+   - Example: "High-Speed Validation" toggle for Review agent
 
-**Success Criteria:**
-- Each column has visible sub-genie access point
-- Panel opens/closes smoothly
-- Workflows are contextually relevant to column
-- Skills toggle correctly
+5. **Visual Design**
+   - Mockups/wireframes showing widget placement and interaction flow
+   - Responsive design that works on desktop (mobile out of scope)
+   - Consistent with existing Kanban board UI
 
-### FR3: Workflow Integration
-- **FR3.1**: Each sub-genie exposes 3-5 primary workflows
-- **FR3.2**: Workflows rendered as action buttons in sub-genie panel
-- **FR3.3**: External agent workflows (Git) injected into relevant sub-genies
-- **FR3.4**: Workflow execution triggers backend actions
-- **FR3.5**: Progress feedback during workflow execution
-- **FR3.6**: Success/failure notifications
-
-**Success Criteria:**
-- All workflows listed in agent hierarchy are accessible
-- Workflow buttons execute correct backend endpoints
-- User receives feedback within 1s of workflow completion
-
-### FR4: Skill Activation System
-- **FR4.1**: Skills represented as toggle icons in sub-genie panel footer
-- **FR4.2**: Toggle activates/deactivates skill mode
-- **FR4.3**: Active skills modify agent behavior
-- **FR4.4**: Visual indicator for active skills
-- **FR4.5**: Skills persist per session
-
-**Success Criteria:**
-- Skills toggle on/off correctly
-- Active skills affect agent responses
-- Visual state reflects activation status
-
-### FR5: Backend MCP Integration
-- **FR5.1**: Chat messages routed to `mcp__genie__run` or `mcp__genie__resume`
-- **FR5.2**: Session management via `mcp__genie__list_sessions`
-- **FR5.3**: Workflow execution via MCP tools
-- **FR5.4**: Real-time streaming of agent responses (SSE)
-- **FR5.5**: Error handling and retry logic
-
-**Success Criteria:**
-- MCP calls succeed with <5% error rate
-- Responses stream in real-time
-- Sessions resume correctly after page reload
-
-### FR6: UX/UI Design
-- **FR6.1**: Consistent design language across all widgets
-- **FR6.2**: Responsive layout (desktop primary, mobile graceful degradation)
-- **FR6.3**: Accessibility (keyboard navigation, ARIA labels)
-- **FR6.4**: Smooth animations for panel open/close
-- **FR6.5**: Dark mode support
-
-**Success Criteria:**
-- Passes WCAG 2.1 AA compliance
-- Animations run at 60fps
-- Works on viewport widths ≥1024px
+### Out of Scope ❌
+- Actual backend agent implementation (assumed to exist)
+- Backend API changes (assumed endpoint support exists)
+- Mobile responsiveness (desktop only)
+- Real-time agent execution (UI only, no agent logic)
+- Database migrations or data model changes
+- Authentication/authorization logic
+- Persistence of widget state (localStorage or backend)
 
 ---
 
-## Quality Gates
+## Success Metrics
 
-### QG1: Visual Design Review
-- [ ] Mockups approved by product owner
-- [ ] Design system components identified
-- [ ] Color palette and iconography finalized
+| Metric | Definition | How to Validate |
+|--------|-----------|-----------------|
+| **Visual Clarity** | Users can identify which sub-genie owns each column at a glance | Mockup review shows clear icons/labels |
+| **Accessibility** | Clicking a sub-genie icon opens/closes its panel without confusion | Storybook interactive demo works smoothly |
+| **Workflow Integration** | Pre-configured workflows appear as buttons and are clickable | Component tests confirm buttons render and trigger callbacks |
+| **Skills Activation** | Skills can be toggled on/off visually | Toggle icons respond to clicks with visual feedback |
+| **Responsive Layout** | Widget panels don't break the column layout, resizable/collapsible | Desktop view shows panels fitting within column bounds |
+| **Code Quality** | Components follow Automagik Forge standards (naming, structure, tests) | Linting + type checks pass, tests cover new components |
 
-### QG2: Technical Architecture Review
-- [ ] Component structure documented
-- [ ] API endpoints defined
-- [ ] State management strategy approved
-- [ ] MCP integration pattern validated
+---
 
-### QG3: Implementation Validation
-- [ ] All functional requirements met
-- [ ] Unit tests for React components (>80% coverage)
-- [ ] Integration tests for MCP flows
-- [ ] E2E test for full workflow
+## Orchestration Strategy
 
-### QG4: UX Validation
-- [ ] User can complete workflow from each sub-genie
-- [ ] Master orchestrator correctly delegates commands
-- [ ] No UI regressions on existing Kanban board
-- [ ] Accessibility audit passes
+### Phases
 
-### QG5: Performance Validation
-- [ ] Widget load time <500ms
-- [ ] MCP response streaming <100ms latency
-- [ ] No memory leaks after 1hr session
-- [ ] Lighthouse score >90
+#### Phase 1: Planning & Design (Mockup)
+**Agent**: `specialists/implementor` (design/mockup focus)
+**Deliverable**: Figma mockup or high-fidelity wireframes
+**Tasks**:
+- Create Genie Master widget mockup (bottom-right chat bubble)
+- Create Sub-Genie column widget mockups (icon → expanded panel)
+- Show workflow buttons and skills toggles
+- Define interaction flow (click → expand, type → send, button click → action)
+
+#### Phase 2: Frontend Components
+**Agents**: `specialists/implementor`, `specialists/tests`
+**Deliverable**: React components in `frontend-forge/src/components/`
+**Tasks**:
+- Build `GenieMasterWidget` component (persistent chat)
+- Build `SubGenieColumnWidget` component (icon + expanded panel)
+- Build `WorkflowButton` component
+- Build `SkillsToggle` component
+- Storybook stories for all components
+- Unit tests for interactions
+
+#### Phase 3: Integration & Polish
+**Agents**: `specialists/implementor`, `specialists/polish`
+**Deliverable**: Integrated widgets on the Kanban board
+**Tasks**:
+- Wire widgets to Kanban columns
+- Connect to mock API endpoints (or real endpoints if available)
+- Test responsiveness and layout
+- Polish animations and styling
+- Run linting and type checks
+
+#### Phase 4: QA & Validation
+**Agent**: `specialists/qa`
+**Deliverable**: QA report and evidence
+**Tasks**:
+- Validate workflow buttons trigger expected actions
+- Validate skills toggles persist state (if applicable)
+- Cross-browser testing (Chrome, Firefox, Safari)
+- Accessibility review (keyboard navigation, ARIA labels)
 
 ---
 
 ## Evidence Requirements
 
-All validation evidence stored in: `.genie/wishes/genie-chat-widgets/qa/`
+### Discovery Phase Evidence
+- [ ] This wish document (you're reading it!)
+- [ ] Clarified hierarchy diagram (Genie → Sub-Genies → Columns)
+- [ ] Workflow matrix (which workflows per sub-genie)
 
-### Required Artifacts
-1. **Design Assets**: Mockups, component wireframes, icon sets
-2. **API Documentation**: Endpoint specs, MCP integration flows
-3. **Test Reports**: Unit test coverage, integration test results, E2E screenshots
-4. **Performance Metrics**: Lighthouse reports, memory profiling, response time logs
-5. **Accessibility Report**: WCAG compliance audit
-6. **User Acceptance**: Demo recording, stakeholder sign-off
+### Mockup/Design Evidence
+- [ ] Figma link or image files of mockups
+- [ ] Interaction flow diagram (click → expand, type → send)
+- [ ] Decision log: why this placement and not another
 
----
+### Component Evidence
+- [ ] React component files in `frontend-forge/src/components/`
+- [ ] Storybook stories (`.stories.tsx` files)
+- [ ] Unit test files (`.test.tsx`)
+- [ ] Type definitions (`.types.ts`)
+- [ ] TypeScript compilation passes (`pnpm run check`)
+- [ ] Linting passes (`pnpm run lint`)
 
-## Out of Scope
+### Integration Evidence
+- [ ] Screenshots of widgets on the Kanban board
+- [ ] Video walkthrough of user interactions
+- [ ] Test results (unit tests passing)
 
-- ❌ Mobile-first responsive design (graceful degradation only)
-- ❌ Voice input for chat widgets
-- ❌ Multi-user collaborative chat
-- ❌ Chat history export/import
-- ❌ Custom agent creation UI
-- ❌ Integration with external chat platforms (Slack, Discord)
-
----
-
-</spec_contract>
-
-## Orchestration Strategy
-
-### Phase 1: Discovery & Design (Group A)
-**Agent:** Wishh + Twin (design validation)
-
-**Tasks:**
-1. Create UX mockups for all widget states (collapsed, expanded, active)
-2. Define component hierarchy and state management approach
-3. Map MCP endpoints to widget actions
-4. Document accessibility requirements
-
-**Evidence:** Mockups, component tree diagram, API contract, a11y checklist
-
-**Approval Gate:** Human reviews mockups and approves design direction
+### QA Evidence
+- [ ] QA report (validation matrix, bug list, resolved)
+- [ ] Accessibility checklist
+- [ ] Browser compatibility matrix
 
 ---
 
-### Phase 2: Backend Integration (Group B)
-**Agent:** Implementor + Tests
+## Blockers & Assumptions
 
-**Tasks:**
-1. Create API endpoints for widget state management
-2. Implement MCP proxy layer for chat routing
-3. Add SSE endpoints for streaming responses
-4. Create session management service
-5. Write integration tests for MCP flows
+### Assumptions
+1. Genie agent backend already supports the orchestration logic (sub-genies, workflows, skills)
+2. Kanban board component exists and can be extended
+3. API endpoints exist (or will be mocked) for:
+   - `/api/genie/master` (global commands)
+   - `/api/genie/wish` (Wish sub-genie)
+   - `/api/genie/forge` (Forge sub-genie)
+   - `/api/genie/review` (Review sub-genie)
+4. Project uses React 18+ and TypeScript (confirmed by tech stack)
 
-**Evidence:** API test results, MCP integration logs, session state validation
-
-**Approval Gate:** Backend validation passes, integration tests green
-
----
-
-### Phase 3: Frontend Components (Group C)
-**Agent:** Implementor + Tests
-
-**Tasks:**
-1. Build `GenieWidget` component (master orchestrator)
-2. Build `SubGeniePanel` component (reusable for all sub-genies)
-3. Build `WorkflowButton` component
-4. Build `SkillToggle` component
-5. Integrate with Kanban board columns
-6. Add state management (Zustand/Context)
-7. Write component unit tests
-
-**Evidence:** Storybook stories, unit test coverage report, component screenshots
-
-**Approval Gate:** Component library complete, unit tests >80% coverage
+### Potential Blockers
+- **Unknown API Contract**: If API endpoints don't match expected shape, integration will fail
+  - **Mitigation**: Clarify API endpoints early (Phase 1)
+- **Design System Alignment**: If widgets don't match existing Kanban design, they'll look out of place
+  - **Mitigation**: Review with design team during mockup phase
+- **Performance**: If workflows trigger heavy backend operations, UI might feel sluggish
+  - **Mitigation**: Add loading states and debounce workflow button clicks
 
 ---
 
-### Phase 4: Integration & Workflows (Group D)
-**Agent:** Implementor + Git-Workflow
+## Branch Strategy
 
-**Tasks:**
-1. Connect widgets to MCP backend
-2. Implement workflow execution logic
-3. Add skill activation/deactivation
-4. Implement session persistence
-5. Add error handling and retry logic
-6. Wire up Git Agent workflows into Forge sub-genie
-
-**Evidence:** Integration test results, workflow execution logs, error handling test cases
-
-**Approval Gate:** All workflows executable, error handling robust
+**Base Branch**: `main`
+**Feature Branch**: `forge/genie-chat-widgets`
+**Subdirectory**: `frontend-forge/src/components/genie-widgets/`
 
 ---
 
-### Phase 5: Polish & Accessibility (Group E)
-**Agent:** Polish + QA
-
-**Tasks:**
-1. Run ESLint/Prettier on all new code
-2. Add ARIA labels and keyboard navigation
-3. Test with screen reader (NVDA/JAWS)
-4. Optimize animations and transitions
-5. Add dark mode support
-6. Fix any visual regressions
-
-**Evidence:** Lint reports, a11y audit results, dark mode screenshots
-
-**Approval Gate:** WCAG 2.1 AA compliance, Lighthouse score >90
-
----
-
-### Phase 6: QA & Validation (Group F)
-**Agent:** QA + Review
-
-**Tasks:**
-1. Execute full QA checklist from spec_contract
-2. Run E2E tests for complete workflows
-3. Performance testing (memory, response time)
-4. User acceptance demo
-5. Create Done Report with evidence
-
-**Evidence:** QA checklist (completed), E2E test recordings, performance logs, demo video
-
-**Approval Gate:** All quality gates passed, human approves for merge
-
----
-
-## Risks & Mitigations
-
-### Risk 1: MCP Integration Complexity
-**Impact:** High
-**Probability:** Medium
-**Mitigation:** Create MCP proxy layer early (Group B), validate with integration tests before frontend work
-
-### Risk 2: UX Complexity (Too Many Widgets)
-**Impact:** Medium
-**Probability:** High
-**Mitigation:** Start with minimal viable widgets, iterate based on user feedback, use Twin agent for UX validation
-
-### Risk 3: Performance Degradation (Streaming)
-**Impact:** Medium
-**Probability:** Medium
-**Mitigation:** Implement efficient SSE handling, add performance tests to Group F, monitor memory leaks
-
-### Risk 4: Accessibility Overlooked
-**Impact:** Low
-**Probability:** Medium
-**Mitigation:** Include a11y requirements in Group A design, dedicated testing in Group E
-
-### Risk 5: Session State Management Bugs
-**Impact:** High
-**Probability:** Medium
-**Mitigation:** Extensive session persistence tests in Group D, use proven state management library
-
----
-
-## Tracker Plan
-
-### Forge MCP Task Groups
-1. **Group A**: Discovery & Design → `task-a.md`
-2. **Group B**: Backend Integration → `task-b.md`
-3. **Group C**: Frontend Components → `task-c.md`
-4. **Group D**: Integration & Workflows → `task-d.md`
-5. **Group E**: Polish & Accessibility → `task-e.md`
-6. **Group F**: QA & Validation → `task-f.md`
-
-### Dependencies
-- Group B independent (can start immediately)
-- Group C depends on Group A (design approval)
-- Group D depends on Group B + Group C (backend + components ready)
-- Group E depends on Group D (integration complete)
-- Group F depends on Group E (polish complete)
-
-### Parallel Execution Opportunities
-- Group A + Group B can run in parallel
-- Within Group C, individual components can be built in parallel
-
----
-
-## Evaluation Matrix (100 Points)
+## Success Evaluation Matrix (100 Points)
 
 ### Discovery Phase (30 pts)
-- **Context Completeness (10 pts):**
-  - [ ] Agent hierarchy clearly documented (3 pts)
-  - [ ] UX mockups cover all widget states (4 pts)
-  - [ ] MCP integration patterns identified (3 pts)
-
-- **Scope Clarity (10 pts):**
-  - [ ] All functional requirements have success criteria (4 pts)
-  - [ ] Out-of-scope items explicitly listed (3 pts)
-  - [ ] Component boundaries defined (3 pts)
-
-- **Evidence Planning (10 pts):**
-  - [ ] Validation commands documented per group (4 pts)
-  - [ ] Artifact storage paths defined (3 pts)
-  - [ ] Approval checkpoints identified (3 pts)
+- [ ] Context & Clarity (10 pts): Genie hierarchy, workflows, skills clearly defined
+- [ ] Scope Definition (10 pts): In-scope vs. out-of-scope items explicit
+- [ ] Evidence Planning (10 pts): Clear evidence requirements per phase
 
 ### Implementation Phase (40 pts)
-- **Code Quality (15 pts):**
-  - [ ] Follows Automagik Forge React/TypeScript standards (5 pts)
-  - [ ] Component composition is clean and reusable (5 pts)
-  - [ ] State management is predictable (5 pts)
-
-- **Test Coverage (10 pts):**
-  - [ ] Unit tests >80% coverage (5 pts)
-  - [ ] Integration tests for MCP flows (3 pts)
-  - [ ] E2E test for full workflow (2 pts)
-
-- **Documentation (5 pts):**
-  - [ ] Component API documented (2 pts)
-  - [ ] MCP integration guide updated (2 pts)
-  - [ ] Storybook stories added (1 pt)
-
-- **Execution Alignment (10 pts):**
-  - [ ] All functional requirements implemented (5 pts)
-  - [ ] No scope creep beyond spec_contract (3 pts)
-  - [ ] Dependencies honored (2 pts)
+- [ ] Component Quality (15 pts): Components follow Forge standards, TypeScript strict, clean abstractions
+- [ ] Test Coverage (10 pts): Unit tests cover happy path and edge cases
+- [ ] Storybook Stories (5 pts): Interactive stories showcase all component states
+- [ ] Integration (10 pts): Widgets appear on board, workflows trigger, no layout breaks
 
 ### Verification Phase (30 pts)
-- **Validation Completeness (15 pts):**
-  - [ ] All quality gates executed (5 pts)
-  - [ ] Evidence artifacts captured (5 pts)
-  - [ ] Edge cases tested (5 pts)
-
-- **Evidence Quality (10 pts):**
-  - [ ] Command outputs (failures → fixes) documented (4 pts)
-  - [ ] Screenshots/videos captured (3 pts)
-  - [ ] Performance metrics logged (3 pts)
-
-- **Review Thoroughness (5 pts):**
-  - [ ] Human approval at all gates (3 pts)
-  - [ ] All blockers resolved (2 pts)
+- [ ] Design Validation (10 pts): Mockups approved, interaction flow smooth
+- [ ] QA Evidence (10 pts): All validation commands pass, bugs resolved
+- [ ] Code Quality (5 pts): Linting, type checks, formatting all pass
+- [ ] Documentation (5 pts): Component README, usage examples, inline comments
 
 ---
 
-## Status Log
+## Next Steps
 
-**2025-10-21 (Initial Draft):**
-- Wish created based on user discussion
-- Agent hierarchy corrected (Genie = master, Wishh/Forge/Review = sub-genies)
-- UX approach defined (global widget + column widgets)
-- Functional requirements documented
-- 6 execution groups planned
-
-**Pending Actions:**
-- [ ] Human reviews and approves wish
-- [ ] Forge breaks down into task files
-- [ ] Project Manager coordinates group execution
+1. **Wish Approval**: You (the human) review and approve/iterate this wish
+2. **Forge Execution**: Once approved, I'll use Forge to generate task files (`.genie/wishes/genie-chat-widgets/task-*.md`)
+3. **Agent Delegation**: Phase 1 (Design) goes to `specialists/implementor`, etc.
+4. **Tracking**: Updates logged in this wish and in Done Reports
 
 ---
 
-## Human Follow-Ups
+## Column Naming & Icons
 
-### Immediate Questions
-1. **Design Approval**: Should we start with mockups or go straight to implementation?
-2. **Widget Library**: Prefer shadcn/ui components or custom-built widgets?
-3. **MCP Session Strategy**: Single session per sub-genie or session-per-interaction?
-4. **Priority**: Which sub-genie to implement first (Wishh/Forge/Review)?
+### Column Mapping
+| Old Name | New Name | Icon | Lucide Icon | Purpose |
+|----------|----------|------|-------------|---------|
+| To Do | **Wish** | ✨ Sparkles | `<Sparkles />` | Discovery and Planning (Wish sub-genie) |
+| In Progress | **Forge** | 🔨 Hammer | `<Hammer />` | Execution and Development (Forge sub-genie) |
+| In Review | **Review** | 🎯 Target | `<Target />` OR `<CheckCircle2 />` | QA, Validation, Approval (Review sub-genie) |
+| Done | Done | ✅ Check | `<CheckCircle2 />` | Completed tasks |
+| Cancelled | Cancelled | ❌ X | `<XCircle />` | Cancelled tasks |
 
-### Future Considerations
-1. Add more skills to sub-genies based on usage patterns
-2. Explore voice input integration (out of scope now, but valuable later)
-3. Consider mobile-first redesign after desktop validation
-4. Evaluate multi-user collaborative chat features
+### Task Attempt Filtering
+
+**Critical**: Task Attempts with `status: "agent"` do NOT appear in the Kanban board.
+
+- **Regular Tasks**: Appear in columns (To Do, In Progress, In Review, Done, Cancelled)
+- **Agent Task Attempts**: Hidden from Kanban (internal orchestration records, not user-facing)
+- Example: When Wish, Forge, or Review agents create a task attempt, it has `status: "agent"` and is hidden
+
+This ensures the Kanban board shows only user-facing work; agent orchestration happens invisibly.
 
 ---
 
-**Done Report Path (After Completion):** `.genie/reports/done-review-genie-chat-widgets-<timestamp>.md`
+## Chat Widget Integration
+
+### Column Header Widget
+
+Each column (Wish, Forge, Review) has a **click-to-chat** icon in its header:
+
+```
+┌─────────────────────────────────────┐
+│ [✨ Wish]  [Tasks...]              │
+│                                     │
+│ ┌─ Task 1                          │
+│ ├─ Task 2                          │
+│ └─ Task N                          │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+Clicking the icon (✨, 🔨, 🎯) opens a chat panel **within the column** (or as a sidebar overlay).
+
+### Chat Panel Contents
+
+When expanded, the widget shows:
+
+1. **Sub-Genie Chat Box**
+   - Textarea: "Ask Wish/Forge/Review..."
+   - Send button
+   - Chat history (optional)
+
+2. **Workflows** (Pre-configured buttons)
+   - Examples for Wish: "Refine Spec", "Analyze Dependencies", "Create from Idea"
+   - Examples for Forge: "Start Build", "Run Tests", "Update Status", "Create Git Branch"
+   - Examples for Review: "Run QA Suite", "Generate Summary", "Approve & Move"
+
+3. **Skills** (Toggleable icons)
+   - Optional features specific to that sub-genie
+   - Example: "Quick Validation" toggle for Review agent
+   - Displayed as small icons with tooltips
+
+### External Agent Workflows
+
+Workflows from external agents (e.g., Git Agent) are **injected contextually**:
+
+- In **Forge** column: Git workflows ("Create Feature Branch", "Sync Branch", "Rebase")
+- In **Review** column: Test/QA workflows ("Run Test Suite", "Generate Coverage")
+
+No separate UI for external agents; their workflows blend into the column's widget.
+
+---
+
+## Genie Master Widget
+
+**Status**: Future consideration (out of scope for Phase 1)
+
+- Global orchestrator always accessible (persistent chat bubble, bottom-right)
+- Commands that cross columns or affect global state
+- Example: "Genie, move all approved items in Review to Done"
+- Phase 1 focuses on column sub-genie widgets; Master widget can follow in Phase 2
+
+---
+
+## Notes
+
+- This wish focuses on **UX and frontend integration**, not backend orchestration logic
+- Each workflow button will eventually trigger backend actions; that logic is out of scope
+- Skills are toggles; their actual behavior depends on backend support
+- Column widgets are click-to-expand; they don't bloat the board layout
+- Task Attempts with `status: "agent"` are filtered out (not visible on board)
+
+---
+
+## Updated Specification
+
+### Visual Design: Column Header
+```
+Header Layout:
+┌──────────────────────────────────────────┐
+│ [Icon + Label] [Count] [Filter/Sort]    │
+│ Example: [✨ Wish]     (5)  [⋮]        │
+└──────────────────────────────────────────┘
+```
+
+Clicking the icon opens the chat panel inline or as a sidebar.
+
+### Phase 1 Success Criteria (Revised)
+
+1. **Column Renaming**: Update TaskStatus UI mapping
+   - `todo` → "Wish"
+   - `inprogress` → "Forge"
+   - `inreview` → "Review"
+
+2. **Icon Integration**: Lucide icons in column headers
+   - Sparkles (Wish)
+   - Hammer (Forge)
+   - Target or CheckCircle2 (Review)
+
+3. **Widget Component**: Chat interface for each sub-genie
+   - Expandable panel
+   - Chat textarea + send
+   - Workflow buttons
+   - Skills toggles
+
+4. **Task Filtering**: Hide agent task attempts
+   - Only show `status` ≠ "agent" in Kanban
+   - Agent attempts tracked separately (if needed for debugging)
+
+5. **Responsive**: Widgets fit within column bounds, don't break layout
+
+---
+
+**Next Steps (Ready for Forge):**
+1. Confirm icon choices and column names
+2. Clarify: Should workflow buttons make API calls, or just log/demo?
+3. Define: What data shape do we expect from sub-genie APIs?
+

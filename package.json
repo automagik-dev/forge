@@ -1,6 +1,6 @@
 {
   "name": "automagik-forge",
-  "version": "0.3.16",
+  "version": "0.4.5",
   "private": false,
   "bin": {
     "automagik-forge": "npx-cli/bin/cli.js"
@@ -13,13 +13,13 @@
     "format": "cargo fmt --all && cd frontend && pnpm run format",
     "check": "pnpm run frontend:check && pnpm run backend:check",
     "sync-assets": "node scripts/sync-upstream-assets.js",
-    "dev": "pnpm run sync-assets && export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend) && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && concurrently \"pnpm run backend:dev:watch\" \"pnpm run frontend:dev\"",
+    "dev": "node scripts/dev-with-dynamic-ports.js",
     "test:npm": "./test-npm-package.sh",
-    "frontend:dev": "cd frontend && pnpm run dev -- --port ${FRONTEND_PORT:-3000} --host",
+    "frontend:dev": "cd frontend && pnpm run dev -- --port ${FRONTEND_PORT:-3000} --host --open",
     "frontend:check": "cd frontend && pnpm run check",
     "backend:dev": "BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) pnpm run backend:dev:watch",
     "backend:check": "cargo check",
-    "backend:dev:watch": "DISABLE_WORKTREE_ORPHAN_CLEANUP=1 RUST_LOG=debug cargo watch -w forge-app -x 'run -p forge-app --bin forge-app'",
+    "backend:dev:watch": "DISABLE_BROWSER_OPEN=1 DISABLE_WORKTREE_ORPHAN_CLEANUP=1 RUST_LOG=debug cargo watch -w forge-app -x 'run -p forge-app --bin forge-app'",
     "generate-types": "cargo run --bin generate_types",
     "generate-types:check": "cargo run --bin generate_types -- --check",
     "prepare-db": "node scripts/prepare-db.js",
