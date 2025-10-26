@@ -53,14 +53,19 @@ async fn main() -> anyhow::Result<()> {
     let actual_addr = listener.local_addr()?;
     tracing::info!("Forge app listening on {}", actual_addr);
 
-    // Open browser automatically with localhost instead of 0.0.0.0
-    let browser_url = if actual_addr.ip().is_unspecified() {
-        format!("http://localhost:{}", actual_addr.port())
+    // Open browser automatically (unless disabled via env var for development)
+    let should_open_browser = env::var("DISABLE_BROWSER_OPEN").is_err();
+    if should_open_browser {
+        let browser_url = if actual_addr.ip().is_unspecified() {
+            format!("http://localhost:{}", actual_addr.port())
+        } else {
+            format!("http://{}", actual_addr)
+        };
+        if let Err(e) = open_browser(&browser_url).await {
+            tracing::warn!("Failed to open browser: {}", e);
+        }
     } else {
-        format!("http://{}", actual_addr)
-    };
-    if let Err(e) = open_browser(&browser_url).await {
-        tracing::warn!("Failed to open browser: {}", e);
+        tracing::info!("Browser auto-open disabled (development mode)");
     }
 
     // Graceful shutdown on Ctrl+C
