@@ -52,7 +52,7 @@ const makeRequest = async (url: string, options: RequestInit = {}) => {
 };
 
 /**
- * process the API response 
+ * Process the API response
  * @template T
  * @template E
  * @param {Response} response - The response object
@@ -124,7 +124,7 @@ const handleApiResponse = async <T, E = T>(response: Response): Promise<T> => {
 export const forgeApi = {
   // Global forge settings
   /**
-   * get the global Forge settings
+   * Get the global Forge settings
    * @returns {Promise<ForgeProjectSettings>} - The global Forge settings
    * @throws {ApiError<ForgeProjectSettings>} - Throws an ApiError if the request fails
    * @example
@@ -138,7 +138,7 @@ export const forgeApi = {
 
 
   /**
-   * set the global Forge settings
+   * Set the global Forge settings
    * @param {ForgeProjectSettings} settings - The Forge settings to set 
    * @returns {Promise<void>} - A promise that resolves when the settings are set
    * @throws {ApiError} - Throws an ApiError if the request fails
@@ -165,7 +165,7 @@ export const forgeApi = {
 
   // Omni instances
   /**
-   * list the Omni instances\
+   * List the Omni instances
    * @returns {Promise<{ instances: any[] }>} - A promise that resolves to the Omni instances
    * @throws {ApiError} - Throws an ApiError if the request fails
    * @example
