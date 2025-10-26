@@ -31,20 +31,27 @@ export function Footer() {
         setHealth({ status: 'unhealthy', version: '0.0.0' });
       });
 
-    // Fetch latest stable release from GitHub
-    fetch('https://api.github.com/repos/namastexlabs/automagik-forge/releases/latest')
+    // Fetch latest stable release from backend API
+    fetch('/api/forge/releases')
       .then(res => res.json())
-      .then(data => {
-        setLatestRelease(data);
+      .then(response => {
+        // Backend returns ApiResponse wrapper: { success: true, data: [...] }
+        const releases = response.data || response;
+        // Find latest stable (non-prerelease) release
+        const latestStable = releases.find((r: LatestRelease & { prerelease: boolean }) => !r.prerelease);
 
-        // Compare with current version
-        if (health && data.tag_name) {
-          const currentVersion = health.version.replace(/^v/, '');
-          const latestVersion = data.tag_name.replace(/^v/, '');
+        if (latestStable) {
+          setLatestRelease(latestStable);
 
-          // Simple version comparison (works for semver)
-          if (latestVersion > currentVersion) {
-            setUpdateAvailable(true);
+          // Compare with current version
+          if (health && latestStable.tag_name) {
+            const currentVersion = health.version.replace(/^v/, '');
+            const latestVersion = latestStable.tag_name.replace(/^v/, '');
+
+            // Simple version comparison (works for semver)
+            if (latestVersion > currentVersion) {
+              setUpdateAvailable(true);
+            }
           }
         }
       })

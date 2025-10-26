@@ -117,6 +117,7 @@ fn forge_api_routes() -> Router<ForgeAppState> {
             "/api/forge/omni/notifications",
             get(list_omni_notifications),
         )
+        .route("/api/forge/releases", get(get_github_releases))
     // Branch-templates extension removed - using simple forge/ prefix
 }
 
@@ -706,7 +707,8 @@ async fn list_routes() -> Json<Value> {
                 "GET /api/forge/omni/status",
                 "GET /api/forge/omni/instances",
                 "POST /api/forge/omni/validate",
-                "GET /api/forge/omni/notifications"
+                "GET /api/forge/omni/notifications",
+                "GET /api/forge/releases"
             ],
             "filesystem": [
                 "GET /api/filesystem/tree",
@@ -936,6 +938,49 @@ async fn validate_omni_config(
             instances: vec![],
             error: Some(format!("Configuration validation failed: {}", e)),
         })),
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct GitHubRelease {
+    tag_name: String,
+    name: String,
+    body: Option<String>,
+    prerelease: bool,
+    created_at: String,
+    published_at: Option<String>,
+    html_url: String,
+}
+
+/// Fetch GitHub releases from the repository
+async fn get_github_releases() -> Result<Json<ApiResponse<Vec<GitHubRelease>>>, StatusCode> {
+    let client = reqwest::Client::new();
+
+    match client
+        .get("https://api.github.com/repos/namastexlabs/automagik-forge/releases")
+        .header("User-Agent", "automagik-forge")
+        .header("Accept", "application/vnd.github+json")
+        .send()
+        .await
+    {
+        Ok(response) => {
+            if response.status().is_success() {
+                match response.json::<Vec<GitHubRelease>>().await {
+                    Ok(releases) => Ok(Json(ApiResponse::success(releases))),
+                    Err(e) => {
+                        tracing::error!("Failed to parse GitHub releases: {}", e);
+                        Err(StatusCode::INTERNAL_SERVER_ERROR)
+                    }
+                }
+            } else {
+                tracing::error!("GitHub API returned error: {}", response.status());
+                Err(StatusCode::BAD_GATEWAY)
+            }
+        }
+        Err(e) => {
+            tracing::error!("Failed to fetch GitHub releases: {}", e);
+            Err(StatusCode::BAD_GATEWAY)
+        }
     }
 }
 
