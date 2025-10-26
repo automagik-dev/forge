@@ -172,8 +172,8 @@ jobs:
           cargo zigbuild --release --target ${{ matrix.target }} --bin forge-mcp-task-server
         shell: bash
 
-      - name: Build Rust binaries (non-Windows, native)
-        if: runner.os != 'Windows' && !matrix.use-zigbuild
+      - name: Build Rust binaries (macOS, native)
+        if: runner.os == 'macOS' && !matrix.use-zigbuild
         env:
           OPENSSL_STATIC: 1
           DEP_OPENSSL_VENDORED: 1
@@ -188,6 +188,25 @@ jobs:
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
           MACOSX_DEPLOYMENT_TARGET: '11.0'
           RUSTFLAGS: '-C link-arg=-framework -C link-arg=AppKit'
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+          cargo build --release --target ${{ matrix.target }} --bin forge-mcp-task-server
+        shell: bash
+
+      - name: Build Rust binaries (Linux, native)
+        if: runner.os == 'Linux' && !matrix.use-zigbuild
+        env:
+          OPENSSL_STATIC: 1
+          DEP_OPENSSL_VENDORED: 1
+          OPENSSL_VENDORED: 1
+          OPENSSL_NO_VENDOR: 0
+          LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
+          LIBSQLITE3_SYS_BUNDLED: 1
+          LIBSQLITE3_SYS_STATIC: 1
+          LIBZ_SYS_STATIC: 1
+          SQLX_OFFLINE: true
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |
           cargo build --release --target ${{ matrix.target }}
           cargo build --release --target ${{ matrix.target }} --bin forge-mcp-task-server
