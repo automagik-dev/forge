@@ -20,6 +20,10 @@ import koCommon from './locales/ko/common.json';
 import koSettings from './locales/ko/settings.json';
 import koProjects from './locales/ko/projects.json';
 import koTasks from './locales/ko/tasks.json';
+import ptBRCommon from './locales/pt-BR/common.json';
+import ptBRSettings from './locales/pt-BR/settings.json';
+import ptBRProjects from './locales/pt-BR/projects.json';
+import ptBRTasks from './locales/pt-BR/tasks.json';
 
 const resources = {
   en: {
@@ -45,6 +49,12 @@ const resources = {
     settings: koSettings,
     projects: koProjects,
     tasks: koTasks,
+  },
+  'pt-BR': {
+    common: ptBRCommon,
+    settings: ptBRSettings,
+    projects: ptBRProjects,
+    tasks: ptBRTasks,
   },
 };
 
