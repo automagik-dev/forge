@@ -168,7 +168,6 @@ jobs:
             --tag "v$VERSION" \
             --publish \
             --github-release \
-            --skip-tests \
             --skip-build
 
           echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -189,7 +188,7 @@ jobs:
             node scripts/unified-release.cjs --promote --publish --github-release
           elif [ "$ACTION" = "manual-tag" ]; then
             TAG="${{ github.event.inputs.tag }}"
-            node scripts/unified-release.cjs --tag "$TAG" --publish --github-release --skip-tests --skip-build
+            node scripts/unified-release.cjs --tag "$TAG" --publish --github-release --skip-build
           fi
 
           VERSION=$(node -p "require('./package.json').version")
