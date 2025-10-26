@@ -77,6 +77,13 @@ async function main() {
     log('magenta', '📌', `Promoting RC → Stable: ${pkg.version} → ${version}`);
   } else if (opts['bump']) {
     bumpType = opts['bump'];
+
+    // Auto-detect: if bump=rc but current version is stable, use patch instead
+    if (bumpType === 'rc' && !version.includes('-rc.')) {
+      log('yellow', '⚠️', `Current version ${version} is stable, using patch bump instead of rc increment`);
+      bumpType = 'patch';
+    }
+
     exec(`pnpm run bump:${bumpType}`);
     version = JSON.parse(fs.readFileSync(PKG_PATH, 'utf8')).version;
     log('magenta', '📌', `Bumped to: ${version}`);
