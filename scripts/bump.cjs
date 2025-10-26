@@ -205,6 +205,8 @@ function main() {
   // Push to trigger CI (unless --no-push flag is set)
   if (!NO_PUSH) {
     log('blue', '📤', 'Pushing to remote...');
+    // Pull with rebase first to avoid conflicts if remote has new commits
+    exec('git pull --rebase --no-verify');
     exec('git push --no-verify');
     exec('git push --no-verify --tags');
 
