@@ -96,8 +96,18 @@ async function main() {
   log('blue', '📝', 'Generating changelog...');
   const changelogContent = generateMechanicalChangelog(version);
 
-  // Run tests (skip for RC builds in CI to save time)
-  if (!opts['skip-tests'] && !process.env.CI) {
+  // Build frontend (required for Rust tests - RustEmbed needs frontend/dist)
+  log('blue', '🏗️', 'Building frontend for tests...');
+  try {
+    exec('cd frontend && pnpm run build');
+    log('green', '✅', 'Frontend built');
+  } catch (e) {
+    log('red', '❌', 'Frontend build failed. Aborting release.');
+    process.exit(1);
+  }
+
+  // Run tests (always run unless explicitly skipped)
+  if (!opts['skip-tests']) {
     log('blue', '🧪', 'Running tests...');
     try {
       exec('cargo test --workspace --quiet');
@@ -107,8 +117,8 @@ async function main() {
       log('red', '❌', 'Tests failed. Aborting release.');
       process.exit(1);
     }
-  } else if (process.env.CI) {
-    log('yellow', '⚠️', 'Skipping tests in CI environment');
+  } else {
+    log('yellow', '⚠️', 'Tests skipped (--skip-tests flag)');
   }
 
   // Build binaries (only for stable releases or when explicitly requested)
