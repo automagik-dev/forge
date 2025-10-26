@@ -53,6 +53,11 @@ jobs:
       - name: 🔧 Setup Node
         uses: ./.github/actions/setup-node
 
+      - name: ⚙️ Configure Git
+        run: |
+          git config --global user.email "genie@namastex.ai"
+          git config --global user.name "Automagik Genie"
+
       - name: 🔍 Determine Release Type
         id: detect
         run: |
