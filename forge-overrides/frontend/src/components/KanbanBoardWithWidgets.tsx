@@ -1,5 +1,5 @@
 import React from 'react';
-import { Task, TaskStatus } from '@/shared/types';
+import { Task, TaskStatus } from 'shared/types';
 import { GENIE_CONFIGS } from '@/config/genie-configs';
 import { COLUMN_DISPLAY_NAMES, COLUMN_STATUS_TO_GENIE, COLUMN_ICONS } from '@/utils/taskStatusMapping';
 import { ColumnWithWidget } from '@/components/genie-widgets';
