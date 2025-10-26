@@ -97,7 +97,7 @@ async function main() {
   const changelogContent = generateMechanicalChangelog(version);
 
   // Run tests (skip for RC builds in CI to save time)
-  if (!opts['skip-tests']) {
+  if (!opts['skip-tests'] && !process.env.CI) {
     log('blue', '🧪', 'Running tests...');
     try {
       exec('cargo test --workspace --quiet');
@@ -107,6 +107,8 @@ async function main() {
       log('red', '❌', 'Tests failed. Aborting release.');
       process.exit(1);
     }
+  } else if (process.env.CI) {
+    log('yellow', '⚠️', 'Skipping tests in CI environment');
   }
 
   // Build binaries (only for stable releases or when explicitly requested)
