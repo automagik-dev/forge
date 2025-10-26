@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Windsurf IDE icon -->
+  <defs>
+    <linearGradient id="windsurfGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#9d4edd;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7209b7;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="128" height="128" fill="url(#windsurfGradient)" rx="24"/>
+
+  <!-- Outer circle border -->
+  <circle cx="64" cy="64" r="56" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.2"/>
+
+  <!-- Windsurf wave symbol -->
+  <g transform="translate(64, 64)">
+    <!-- Wave pattern -->
+    <path d="M -20 5 Q -10 -8 0 -5 Q 10 -2 20 -8"
+          fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+
+    <path d="M -20 15 Q -10 2 0 5 Q 10 8 20 2"
+          fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+
+    <path d="M -20 25 Q -10 12 0 15 Q 10 18 20 12"
+          fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  </g>
+</svg>

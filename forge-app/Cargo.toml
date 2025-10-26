@@ -1,6 +1,6 @@
 [package]
 name = "forge-app"
-version = "0.3.16"
+version = "0.4.5"
 edition = "2024"
 default-run = "forge-app"
 
@@ -11,6 +11,10 @@ path = "src/main.rs"
 [[bin]]
 name = "forge-mcp-task-server"
 path = "src/bin/forge_mcp_task_server.rs"
+
+[[bin]]
+name = "forge-mcp-advanced-server"
+path = "src/bin/forge_mcp_advanced_server.rs"
 
 [dependencies]
 # Framework dependencies
@@ -26,7 +30,9 @@ rust-embed = { version = "8.0", features = ["debug-embed"] }
 mime_guess = "2.0"
 ts-rs = { workspace = true }
 rmcp = { workspace = true }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "multipart"] }
+urlencoding = "2.1"
+base64 = "0.22"
 
 # OpenAPI dependencies (manual YAML spec)
 serde_yaml = "0.9"

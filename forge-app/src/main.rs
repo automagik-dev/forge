@@ -4,10 +4,9 @@
 //! Provides unified API access to both upstream functionality and forge-specific features.
 
 use std::net::{IpAddr, SocketAddr};
+use std::env;
 use tokio::signal;
 use utils::browser::open_browser;
-
-mod mcp;
 mod router;
 mod services;
 
@@ -27,30 +26,46 @@ fn resolve_bind_address() -> SocketAddr {
     SocketAddr::from((ip, port))
 }
 
+/// Parse CLI flags from arguments
+fn parse_auth_required() -> bool {
+    env::args().any(|arg| arg == "--auth" || arg == "-a")
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
+
+    // Parse CLI flags
+    let auth_required = parse_auth_required();
+    if auth_required {
+        tracing::info!("GitHub authentication required for frontend access");
+    }
 
     // Initialize upstream deployment and forge services
     tracing::info!("Initializing forge services using upstream deployment");
     let services = services::ForgeServices::new().await?;
 
-    // Create router with services
-    let app = router::create_router(services);
+    // Create router with services and auth flag
+    let app = router::create_router(services, auth_required);
 
     let requested_addr = resolve_bind_address();
     let listener = tokio::net::TcpListener::bind(requested_addr).await?;
     let actual_addr = listener.local_addr()?;
     tracing::info!("Forge app listening on {}", actual_addr);
 
-    // Open browser automatically with localhost instead of 0.0.0.0
-    let browser_url = if actual_addr.ip().is_unspecified() {
-        format!("http://localhost:{}", actual_addr.port())
+    // Open browser automatically (unless disabled via env var for development)
+    let should_open_browser = env::var("DISABLE_BROWSER_OPEN").is_err();
+    if should_open_browser {
+        let browser_url = if actual_addr.ip().is_unspecified() {
+            format!("http://localhost:{}", actual_addr.port())
+        } else {
+            format!("http://{}", actual_addr)
+        };
+        if let Err(e) = open_browser(&browser_url).await {
+            tracing::warn!("Failed to open browser: {}", e);
+        }
     } else {
-        format!("http://{}", actual_addr)
-    };
-    if let Err(e) = open_browser(&browser_url).await {
-        tracing::warn!("Failed to open browser: {}", e);
+        tracing::info!("Browser auto-open disabled (development mode)");
     }
 
     // Graceful shutdown on Ctrl+C

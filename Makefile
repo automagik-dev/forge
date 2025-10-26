@@ -11,10 +11,13 @@ help:
 	@echo "Automagik Forge Build Automation"
 	@echo ""
 	@echo "Available targets:"
+	@echo "  dev                 - Start dev server with dynamic ports (Backend: 12000+, Frontend: 13000+)"
+	@echo "  dev-standard        - Start dev server with configured ports (3001/3002)"
 	@echo "  publish             - Complete release pipeline (auto version bump + build + npm)"
 	@echo "  beta                - Auto-incremented beta release"
 	@echo "  build               - Build frontend and Rust binaries (current platform only)"
 	@echo "  clean               - Clean build artifacts"
+	@echo "  test                - Run comprehensive test suite"
 	@echo "  version             - Show current version info"
 	@echo "  help                - Show this help message"
 	@echo ""
@@ -125,8 +128,13 @@ publish:
 beta:
 	@./gh-build.sh beta
 
-# Development helpers
+# Development helpers (dynamic port allocation)
 dev:
+	@echo "🚀 Starting development environment with dynamic ports..."
+	@node scripts/dev-with-dynamic-ports.js
+
+# Original dev command (uses configured ports from setup script)
+dev-standard:
 	@echo "🚀 Starting development environment..."
 	@pnpm run dev
 
