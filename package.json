@@ -24,7 +24,12 @@
     "generate-types:check": "cargo run --bin generate_types -- --check",
     "prepare-db": "node scripts/prepare-db.js",
     "build:npx": "bash ./local-build.sh",
-    "prepack": "pnpm run build:npx"
+    "prepack": "pnpm run build:npx",
+    "bump:patch": "node scripts/bump.cjs patch",
+    "bump:minor": "node scripts/bump.cjs minor",
+    "bump:major": "node scripts/bump.cjs major",
+    "bump:rc": "node scripts/bump.cjs rc-increment",
+    "release:stable": "node scripts/unified-release.cjs --promote --publish --github-release"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
