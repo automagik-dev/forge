@@ -99,7 +99,8 @@ async function main() {
   // Install dependencies and build frontend (required for Rust tests - RustEmbed needs frontend/dist)
   log('blue', '📦', 'Installing dependencies...');
   try {
-    exec('pnpm install --frozen-lockfile');
+    // Don't use --frozen-lockfile in CI since bump script creates commit before this runs
+    exec('pnpm install');
     log('green', '✅', 'Dependencies installed');
   } catch (e) {
     log('red', '❌', 'Dependency installation failed. Aborting release.');
