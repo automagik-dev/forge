@@ -12,4 +12,5 @@ export const statusBoardColors: Record<TaskStatus, string> = {
   inreview: '--warning',
   done: '--success',
   cancelled: '--destructive',
+  agent: '--purple-500',
 };

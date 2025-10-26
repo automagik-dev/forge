@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Task, TaskAttempt } from '@/shared/types';
+import { Task, TaskAttempt } from 'shared/types';
 
 /**
  * Filters tasks that should appear in widget views.
