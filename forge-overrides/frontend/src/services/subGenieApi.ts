@@ -262,6 +262,105 @@ export class SubGenieApiService {
     console.warn('toggleSkill not yet implemented in backend');
     return { skillId, enabled };
   }
+
+  /**
+   * Ensures a Master Genie task exists for a project, creating it if needed.
+   *
+   * Master Genie is a special task that orchestrates other agents.
+   * There should be exactly one Master Genie per project.
+   *
+   * @param projectId - Project UUID
+   * @returns Master Genie task with optional active attempt
+   */
+  async ensureMasterGenie(
+    projectId: string
+  ): Promise<{ task: Task; attempt?: TaskAttempt }> {
+    // Check if Master Genie task already exists
+    const tasksResponse = await fetch(
+      `${this.baseUrl}/tasks?project_id=${projectId}&status=agent`
+    );
+
+    if (!tasksResponse.ok) {
+      throw new Error(`Failed to fetch tasks: ${tasksResponse.status}`);
+    }
+
+    const { data: tasks } = await tasksResponse.json();
+
+    // Find existing Master Genie task (title starts with "Master Genie")
+    let masterTask = tasks.find((t: Task) =>
+      t.title.toLowerCase().startsWith('master genie')
+    );
+
+    // Create if it doesn't exist
+    if (!masterTask) {
+      const createResponse = await fetch(`${this.baseUrl}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: projectId,
+          title: 'Master Genie',
+          description: 'Orchestrator agent that coordinates other specialists',
+          status: 'agent',
+        }),
+      });
+
+      if (!createResponse.ok) {
+        throw new Error(`Failed to create Master Genie task: ${createResponse.status}`);
+      }
+
+      const { data } = await createResponse.json();
+      masterTask = data;
+    }
+
+    // Get latest attempt for this task
+    const attemptsResponse = await fetch(
+      `${this.baseUrl}/task-attempts?project_id=${projectId}`
+    );
+
+    if (!attemptsResponse.ok) {
+      throw new Error(`Failed to fetch task attempts: ${attemptsResponse.status}`);
+    }
+
+    const { data: attempts } = await attemptsResponse.json();
+    const masterAttempt = attempts
+      .filter((a: TaskAttempt) => a.task_id === masterTask.id)
+      .sort((a: TaskAttempt, b: TaskAttempt) =>
+        b.created_at.localeCompare(a.created_at)
+      )[0];
+
+    return {
+      task: masterTask,
+      attempt: masterAttempt,
+    };
+  }
+
+  /**
+   * Creates a new task attempt for the Master Genie.
+   *
+   * @param taskId - Master Genie task UUID
+   * @returns Created task attempt
+   */
+  async createMasterGenieAttempt(taskId: string): Promise<TaskAttempt> {
+    const response = await fetch(`${this.baseUrl}/task-attempts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        task_id: taskId,
+        executor_profile_id: {
+          executor: BaseCodingAgent.CLAUDE_CODE,
+          variant: 'master',
+        },
+        base_branch: 'main',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to create Master Genie attempt: ${response.status}`);
+    }
+
+    const { data } = await response.json();
+    return data;
+  }
 }
 
 export const subGenieApi = new SubGenieApiService();
