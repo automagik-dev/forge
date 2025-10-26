@@ -1,4 +1,3 @@
--- Add 'agent' state to task status CHECK constraint
 -- This allows tasks to be marked as agent runs, which are excluded from kanban views
 
 -- SQLite doesn't support ALTER COLUMN with CHECK constraint modifications
@@ -7,6 +6,9 @@
 -- 2. Copy data
 -- 3. Drop old table
 -- 4. Rename new table
+
+-- Drop Omni trigger to avoid referencing tasks during rebuild
+DROP TRIGGER IF EXISTS omni_execution_completed;
 
 -- Create temporary table with new constraint
 CREATE TABLE tasks_new (
@@ -35,3 +37,5 @@ ALTER TABLE tasks_new RENAME TO tasks;
 
 -- Recreate indexes if any existed
 -- (None in the original schema, but adding this comment for future reference)
+
+-- Trigger will be recreated by forge services after migrations apply

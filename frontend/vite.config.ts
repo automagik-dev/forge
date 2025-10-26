@@ -43,12 +43,18 @@ function forgeOverlayResolver(): Plugin {
       // Try forge-overrides first
       const overrideResult = tryResolve(overridePath, relativePath);
       if (overrideResult) {
+        if (relativePath === 'main' || relativePath === 'App.tsx') {
+          console.log(`[forge-overlay] ✅ Using forge override: @/${relativePath} -> ${overrideResult}`);
+        }
         return overrideResult;
       }
 
       // Fallback to upstream
       const upstreamResult = tryResolve(upstreamPath, relativePath);
       if (upstreamResult) {
+        if (relativePath === 'main' || relativePath === 'App.tsx') {
+          console.log(`[forge-overlay] ⬇️  Using upstream: @/${relativePath} -> ${upstreamResult}`);
+        }
         return upstreamResult;
       }
 
@@ -154,6 +160,19 @@ export default defineConfig({
     commonjsOptions: {
       // Ensure lodash and other CJS modules are properly resolved
       include: [/node_modules/],
+    },
+    rollupOptions: {
+      // Suppress false warnings from @types/node in dependencies
+      onwarn(warning, warn) {
+        // Ignore externalized module warnings for Node built-ins from type definitions
+        if (
+          warning.code === 'UNRESOLVED_IMPORT' &&
+          /^node:/.test(warning.exporter || '')
+        ) {
+          return;
+        }
+        warn(warning);
+      },
     },
   },
   test: {

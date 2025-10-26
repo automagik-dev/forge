@@ -8,6 +8,9 @@ import { VibeKanbanWebCompanion as AutomagikForgeWebCompanion } from 'vibe-kanba
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
 import NiceModal from '@ebay/nice-modal-react';
+import i18n from '@/i18n';
+import posthog from 'posthog-js';
+import { PostHogProvider } from 'posthog-js/react';
 // Import modal type definitions
 import '@/types/modals';
 // Import and register modals
@@ -37,6 +40,15 @@ import {
 import { CreateAttemptDialog } from '@/components/dialogs/tasks/CreateAttemptDialog';
 // FORGE CUSTOMIZATION: Import Omni modal for Forge-specific feature
 import { OmniModal } from './components/omni/OmniModal';
+// FORGE CUSTOMIZATION: Import AuthGate for protecting frontend with --auth flag
+import { AuthGate } from './components/auth/AuthGate';
+// FORGE CUSTOMIZATION: Import SubGenieProvider for Genie Chat Widgets
+import { SubGenieProvider } from '@/context/SubGenieContext';
+// Import UserSystemProvider to wrap AuthGate
+import { UserSystemProvider } from '@/components/config-provider';
+// Import KeyboardShortcutsProvider and HotkeysProvider to wrap modals
+import { KeyboardShortcutsProvider } from '@/contexts/keyboard-shortcuts-context';
+import { HotkeysProvider } from 'react-hotkeys-hook';
 
 // Register modals
 NiceModal.register('github-login', GitHubLoginDialog);
@@ -74,7 +86,8 @@ import {
 } from 'react-router-dom';
 
 Sentry.init({
-  dsn: 'https://1065a1d276a581316999a07d5dffee26@o4509603705192449.ingest.de.sentry.io/4509605576441937',
+  // Namastex Sentry DSN (replaced upstream BloopAI DSN)
+  dsn: 'https://fa5e961d24021da4e6df30e5beee03af@o4509714066571264.ingest.us.sentry.io/4509714113495040',
   tracesSampleRate: 1.0,
   environment: import.meta.env.MODE === 'development' ? 'dev' : 'production',
   integrations: [
@@ -89,6 +102,24 @@ Sentry.init({
 });
 Sentry.setTag('source', 'frontend');
 
+if (
+  import.meta.env.VITE_POSTHOG_API_KEY &&
+  import.meta.env.VITE_POSTHOG_API_ENDPOINT
+) {
+  posthog.init(import.meta.env.VITE_POSTHOG_API_KEY, {
+    api_host: import.meta.env.VITE_POSTHOG_API_ENDPOINT,
+    capture_pageview: false,
+    capture_pageleave: true,
+    capture_performance: true,
+    autocapture: false,
+    opt_out_capturing_by_default: true,
+  });
+} else {
+  console.warn(
+    'PostHog API key or endpoint not set. Analytics will be disabled.'
+  );
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -101,12 +132,32 @@ const queryClient = new QueryClient({
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <Sentry.ErrorBoundary fallback={<p>An error has occurred</p>} showDialog>
-        <ClickToComponent />
-        <AutomagikForgeWebCompanion />
-        <App />
-        {/* <ReactQueryDevtools initialIsOpen={false} /> */}
-      </Sentry.ErrorBoundary>
+      <PostHogProvider client={posthog}>
+        <Sentry.ErrorBoundary
+          fallback={<p>{i18n.t('common:states.error')}</p>}
+          showDialog
+        >
+          {/* Keyboard shortcuts must wrap NiceModal.Provider so modals can use shortcuts */}
+          <HotkeysProvider initiallyActiveScopes={['*', 'global', 'kanban']}>
+            <KeyboardShortcutsProvider>
+              <NiceModal.Provider>
+                {/* FORGE CUSTOMIZATION: UserSystemProvider must wrap AuthGate since AuthGate uses useUserSystem() */}
+                <UserSystemProvider>
+                  {/* FORGE CUSTOMIZATION: Wrap with SubGenieProvider for Genie Chat Widgets */}
+                  <SubGenieProvider>
+                    <AuthGate>
+                      <ClickToComponent />
+                      <AutomagikForgeWebCompanion />
+                      <App />
+                      {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+                    </AuthGate>
+                  </SubGenieProvider>
+                </UserSystemProvider>
+              </NiceModal.Provider>
+            </KeyboardShortcutsProvider>
+          </HotkeysProvider>
+        </Sentry.ErrorBoundary>
+      </PostHogProvider>
     </QueryClientProvider>
   </React.StrictMode>
 );

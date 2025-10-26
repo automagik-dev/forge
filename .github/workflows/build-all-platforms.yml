@@ -31,9 +31,10 @@ jobs:
           # - os: windows-latest
           #   target: aarch64-pc-windows-msvc
           #   platform: windows-arm64
-          - os: macos-13  # Intel runner for x86_64 builds
-            target: x86_64-apple-darwin
-            platform: macos-x64
+          # macOS Intel (x64) is slow, rarely used, and wastes GitHub Actions minutes
+          # - os: macos-13  # Intel runner for x86_64 builds
+          #   target: x86_64-apple-darwin
+          #   platform: macos-x64
           - os: macos-latest  # ARM runner for ARM builds
             target: aarch64-apple-darwin
             platform: macos-arm64
@@ -277,10 +278,45 @@ jobs:
             echo "tag=latest" >> $GITHUB_OUTPUT
             echo "Publishing as latest version"
           fi
+
+      - name: Read package metadata
+        id: pkg
+        run: |
+          NAME=$(node -e "console.log(require('./npx-cli/package.json').name)")
+          VER=$(node -e "console.log(require('./npx-cli/package.json').version)")
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "version=$VER" >> $GITHUB_OUTPUT
+          echo "Package: $NAME"
+          echo "Version: $VER"
+
+      - name: Check if version already published
+        id: check
+        run: |
+          if npm view "${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }}" version >/dev/null 2>&1; then
+            echo "published=true" >> $GITHUB_OUTPUT
+            echo "✅ ${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }} already on npm; will skip publish."
+          else
+            echo "published=false" >> $GITHUB_OUTPUT
+            echo "⏩ Version not found on npm; will publish."
+          fi
           
+      - name: Verify npm auth (temporary)
+        run: |
+          echo "Registry: $(npm config get registry)"
+          echo "npm whoami (to confirm token identity)"
+          npm whoami || true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Publish to NPM
+        if: steps.check.outputs.published == 'false'
         run: |
           cd npx-cli
           npm publish --tag ${{ steps.npm-tag.outputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Skip publish (already published)
+        if: steps.check.outputs.published == 'true'
+        run: |
+          echo "Skipping npm publish: ${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }} already exists on npm."
