@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import { shadcnTheme } from './rjsf';
+import { shadcnTheme } from '@/components/rjsf';
 // Using custom shadcn/ui widgets instead of @rjsf/shadcn theme
 
 type ExecutorType =

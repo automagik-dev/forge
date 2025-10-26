@@ -5,6 +5,9 @@
  */
 
 const http = require('http');
+const net = require('net');
+const readline = require('readline');
+const { exec } = require('child_process');
 
 /**
  * Check if the service on the port is a healthy Forge instance
@@ -128,7 +131,7 @@ async function handlePortConflict(port) {
     console.error(`   1. Stop the service using port ${port}`);
     console.error(`   2. Use a different port: BACKEND_PORT=8888 npx automagik-forge`);
     console.error(`   3. Use dynamic port allocation: make dev (auto-assigns from 13000+)\n`);
-    return;
+    return { action: 'cancel' };
   }
 
   console.error(`✅ Found a healthy Forge instance on port ${port}`);
@@ -148,7 +151,23 @@ async function handlePortConflict(port) {
     console.error('   1. Use the existing instance (recommended)');
     console.error('   2. Stop it and start a new one');
     console.error(`   3. Use a different port: BACKEND_PORT=8888 npx automagik-forge\n`);
-    return;
+    const takeover = await promptForTakeover();
+    if (!takeover) {
+      return { action: 'cancel' };
+    }
+
+    const takeoverResult = await attemptTakeover(port);
+    if (takeoverResult.success) {
+      console.error(`\n✅ Existing process terminated. Retrying launch...\n`);
+      return { action: 'retry' };
+    }
+
+    console.error('\n❌ Unable to terminate the existing Forge instance automatically.');
+    if (takeoverResult.reason) {
+      console.error(`   ${takeoverResult.reason}`);
+    }
+    console.error(`\n🔁 Please stop the process manually or choose a different port before retrying.\n`);
+    return { action: 'cancel' };
   }
 
   // Show running tasks with details
@@ -196,6 +215,134 @@ async function handlePortConflict(port) {
   console.error('   Alternative:');
   console.error(`   - Use a different port: BACKEND_PORT=8888 npx automagik-forge`);
   console.error('   - Use dynamic ports: make dev (for parallel instances)\n');
+  return { action: 'cancel' };
+}
+
+function promptForTakeover() {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    rl.question('➡️  Press Enter to take over (terminate existing process) or type "n" to cancel: ', (answer) => {
+      rl.close();
+      const trimmed = answer.trim().toLowerCase();
+      resolve(trimmed === '' || trimmed === 'y' || trimmed === 'yes');
+    });
+  });
+}
+
+function getPortPids(port) {
+  return new Promise((resolve) => {
+    if (process.platform === 'win32') {
+      exec(`netstat -ano | findstr :${port}`, (error, stdout) => {
+        if (error || !stdout) {
+          return resolve([]);
+        }
+        const lines = stdout.split(/\r?\n/).filter(Boolean);
+        const pids = new Set();
+        for (const line of lines) {
+          const parts = line.trim().split(/\s+/);
+          const pid = parts[parts.length - 1];
+          if (pid && /^\d+$/.test(pid)) {
+            pids.add(pid);
+          }
+        }
+        resolve(Array.from(pids));
+      });
+      return;
+    }
+
+    exec(`lsof -ti tcp:${port}`, (error, stdout) => {
+      if (error || !stdout) {
+        return resolve([]);
+      }
+      const pids = stdout.split(/\r?\n/).filter(Boolean);
+      resolve(pids);
+    });
+  });
+}
+
+function terminatePid(pid) {
+  return new Promise((resolve) => {
+    if (process.platform === 'win32') {
+      exec(`taskkill /PID ${pid} /T /F`, (error) => {
+        resolve(!error);
+      });
+      return;
+    }
+
+    exec(`kill -TERM ${pid}`, (error) => {
+      if (!error) {
+        return resolve(true);
+      }
+      exec(`kill -KILL ${pid}`, (forceError) => {
+        resolve(!forceError);
+      });
+    });
+  });
+}
+
+function isPortFree(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.unref();
+
+    server.once('error', () => {
+      resolve(false);
+    });
+
+    server.once('listening', () => {
+      server.close(() => resolve(true));
+    });
+
+    server.listen(port, '127.0.0.1');
+  });
+}
+
+async function waitForPortRelease(port) {
+  const retries = 10;
+  const delay = 300;
+
+  for (let attempt = 0; attempt < retries; attempt += 1) {
+    const free = await isPortFree(port);
+    if (free) {
+      return true;
+    }
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+  return false;
+}
+
+async function attemptTakeover(port) {
+  const pids = await getPortPids(port);
+  if (pids.length === 0) {
+    return { success: false, reason: `No process IDs found for port ${port}.` };
+  }
+
+  console.error(`\n🔪 Attempting to terminate Forge process${pids.length > 1 ? 'es' : ''}: ${pids.join(', ')}`);
+
+  let terminated = 0;
+  for (const pid of pids) {
+    const success = await terminatePid(pid);
+    if (success) {
+      terminated += 1;
+    } else {
+      console.error(`   ⚠️  Failed to terminate PID ${pid}`);
+    }
+  }
+
+  if (terminated === 0) {
+    return { success: false, reason: 'Process termination failed.' };
+  }
+
+  const released = await waitForPortRelease(port);
+  if (!released) {
+    return { success: false, reason: `Port ${port} is still in use after attempting termination.` };
+  }
+
+  return { success: true };
 }
 
 module.exports = { handlePortConflict };
