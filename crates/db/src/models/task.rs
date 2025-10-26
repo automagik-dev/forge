@@ -17,6 +17,7 @@ pub enum TaskStatus {
     InReview,
     Done,
     Cancelled,
+    Agent,
 }
 
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize, TS)]
