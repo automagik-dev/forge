@@ -96,7 +96,16 @@ async function main() {
   log('blue', '📝', 'Generating changelog...');
   const changelogContent = generateMechanicalChangelog(version);
 
-  // Build frontend (required for Rust tests - RustEmbed needs frontend/dist)
+  // Install dependencies and build frontend (required for Rust tests - RustEmbed needs frontend/dist)
+  log('blue', '📦', 'Installing dependencies...');
+  try {
+    exec('pnpm install --frozen-lockfile');
+    log('green', '✅', 'Dependencies installed');
+  } catch (e) {
+    log('red', '❌', 'Dependency installation failed. Aborting release.');
+    process.exit(1);
+  }
+
   log('blue', '🏗️', 'Building frontend for tests...');
   try {
     exec('cd frontend && pnpm run build');
