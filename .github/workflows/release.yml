@@ -26,6 +26,11 @@ on:
         required: false
         type: string
 
+# Cancel ongoing releases when new ones start
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   pull-requests: write
