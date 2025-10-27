@@ -81,7 +81,7 @@ pub(super) enum SoundFile {
     AbstractSound2,
     AbstractSound3,
     AbstractSound4,
-    CowMooing,
+    GenieNotify1,
     PhoneVibration,
-    Rooster,
+    GenieNotify2,
 }

@@ -118,10 +118,14 @@ impl ClaudeCode {
             builder = builder.extend_params(["--model", model]);
         }
 
+        // TODO(bug): Re-enable append-system-prompt after fixing the bug
+        // Bug: The --append-system-prompt flag causes issues with Claude Code execution
+        // See GitHub issue: https://github.com/namastexlabs/automagik-forge/issues/47
+        //
         // Add append-system-prompt if configured
-        if let Some(append_text) = self.append_prompt.0.as_ref() {
-            builder = builder.extend_params(["--append-system-prompt", append_text]);
-        }
+        // if let Some(append_text) = self.append_prompt.0.as_ref() {
+        //     builder = builder.extend_params(["--append-system-prompt", append_text]);
+        // }
 
         builder = builder.extend_params([
             "--verbose",
