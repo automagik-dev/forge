@@ -315,12 +315,12 @@ jobs:
         run: |
           if npm view "${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }}" version >/dev/null 2>&1; then
             echo "published=true" >> $GITHUB_OUTPUT
-            echo "✅ ${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }} already on npm; will skip publish."
+            echo "⚠️ ${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }} already on npm; will force republish with binaries."
           else
             echo "published=false" >> $GITHUB_OUTPUT
             echo "⏩ Version not found on npm; will publish."
           fi
-          
+
       - name: Verify npm auth (temporary)
         run: |
           echo "Registry: $(npm config get registry)"
@@ -329,7 +329,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish to NPM
+      - name: Publish to NPM (first time)
         if: steps.check.outputs.published == 'false'
         run: |
           cd npx-cli
@@ -337,7 +337,11 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Skip publish (already published)
+      - name: Force republish with binaries (if already published)
         if: steps.check.outputs.published == 'true'
         run: |
-          echo "Skipping npm publish: ${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }} already exists on npm."
+          cd npx-cli
+          echo "Force republishing to update with binaries..."
+          npm publish --tag ${{ steps.npm-tag.outputs.tag }} --force
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
