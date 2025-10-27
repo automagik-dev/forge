@@ -8,7 +8,7 @@ import { X, Minimize2, Maximize2, Loader2, Send } from 'lucide-react';
 import { Lamp } from '@/components/icons/Lamp';
 import { useProject } from '@/contexts/project-context';
 import { subGenieApi } from '@/services/subGenieApi';
-import type { Task, TaskAttempt } from 'shared/types';
+import type { Task, TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
 import VirtualizedList from '@/components/logs/VirtualizedList';
 import { TaskFollowUpSection } from '@/components/tasks/TaskFollowUpSection';
 import { EntriesProvider } from '@/contexts/EntriesContext';
@@ -43,6 +43,22 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [initialMessage, setInitialMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+
+  // Don't render widget if not in a project context
+  if (!projectId) {
+    return null;
+  }
+
+  // Convert Task to TaskWithAttemptStatus for components that need it
+  const taskWithStatus: TaskWithAttemptStatus | null = masterGenie
+    ? {
+        ...masterGenie.task,
+        has_in_progress_attempt: !!masterGenie.attempt,
+        has_merged_attempt: false,
+        last_attempt_failed: false,
+        executor: masterGenie.attempt?.executor || '',
+      }
+    : null;
 
   // Load Master Genie task when widget is opened
   useEffect(() => {
@@ -153,10 +169,10 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
           </Button>
         </div>
         {/* Reuse task chat components for minimized state */}
-        {masterGenie && masterGenie.attempt && (
+        {taskWithStatus && masterGenie && masterGenie.attempt && (
           <div className="border-t">
             <TaskFollowUpSection
-              task={masterGenie.task}
+              task={taskWithStatus}
               selectedAttemptId={masterGenie.attempt.id}
               jumpToLogsTab={() => {}}
             />
@@ -294,13 +310,15 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                     </div>
 
                     {/* Chat input area */}
-                    <div className="shrink-0 border-t">
-                      <TaskFollowUpSection
-                        task={masterGenie.task}
-                        selectedAttemptId={masterGenie.attempt.id}
-                        jumpToLogsTab={() => {}}
-                      />
-                    </div>
+                    {taskWithStatus && (
+                      <div className="shrink-0 border-t">
+                        <TaskFollowUpSection
+                          task={taskWithStatus}
+                          selectedAttemptId={masterGenie.attempt.id}
+                          jumpToLogsTab={() => {}}
+                        />
+                      </div>
+                    )}
                   </RetryUiProvider>
                 </EntriesProvider>
               </ExecutionProcessesProvider>
