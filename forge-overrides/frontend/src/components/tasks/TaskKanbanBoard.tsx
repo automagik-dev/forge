@@ -53,12 +53,17 @@ function TaskKanbanBoard({
 
         const {
           isOpen = false,
+          chatHistory = [],
+          skillsState = {},
           isLoading = false,
           activeNeuron = null,
           subtasks = [],
+          refreshNeuronData = async () => {},
           toggleWidget = () => {},
           closeWidget = () => {},
-          refreshNeuronData = () => Promise.resolve(),
+          onSendMessage = () => Promise.resolve(),
+          onWorkflowClick = () => Promise.resolve(),
+          onSkillToggle = () => {},
         } = widgetHook || {};
 
         return (
@@ -89,11 +94,16 @@ function TaskKanbanBoard({
                   config={config}
                   isOpen={isOpen}
                   onClose={closeWidget}
+                  onSendMessage={onSendMessage}
+                  onWorkflowClick={onWorkflowClick}
+                  onSkillToggle={onSkillToggle}
+                  chatHistory={chatHistory}
+                  skillsState={skillsState}
+                  isLoading={isLoading}
                   activeNeuron={activeNeuron}
                   subtasks={subtasks}
-                  isLoading={isLoading}
-                  onTaskClick={onViewTaskDetails}
                   onRefresh={refreshNeuronData}
+                  onTaskClick={(task) => onViewTaskDetails(task as TaskWithAttemptStatus)}
                 />
               </div>
             )}
