@@ -23,4 +23,15 @@ module.exports = {
     ...((upstreamConfig.content ?? []).map(toAbsoluteGlob)),
     path.join(overridesDir, 'src/**/*.{ts,tsx,js,jsx,mdx}')
   ],
+  theme: {
+    ...upstreamConfig.theme,
+    extend: {
+      ...upstreamConfig.theme.extend,
+      fontFamily: {
+        ...upstreamConfig.theme.extend.fontFamily,
+        sans: ['Manrope', 'sans-serif'],
+        display: ['Alegreya Sans', 'sans-serif'],
+      },
+    },
+  },
 };

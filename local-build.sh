@@ -47,7 +47,12 @@ echo "🔨 Building frontend with pnpm..."
   pnpm run build
 )
 
-echo "🔨 Building Rust binaries..."
+echo "🔨 Cleaning Rust build cache to pick up fresh frontend..."
+# Remove the embedded frontend from the build cache
+rm -rf target/release/build/forge-app-*/
+rm -rf target/release/.fingerprint/forge-app-*/
+
+echo "🔨 Building Rust binaries with fresh frontend embed..."
 cargo build --release
 cargo build --release --bin forge-mcp-task-server
 
