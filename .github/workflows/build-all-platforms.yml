@@ -333,15 +333,17 @@ jobs:
         if: steps.check.outputs.published == 'false'
         run: |
           cd npx-cli
-          npm publish --tag ${{ steps.npm-tag.outputs.tag }}
+          npm publish --tag ${{ steps.npm-tag.outputs.tag }} --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Force republish with binaries (if already published)
+      - name: Unpublish and republish with binaries (if already published)
         if: steps.check.outputs.published == 'true'
         run: |
           cd npx-cli
-          echo "Force republishing to update with binaries..."
-          npm publish --tag ${{ steps.npm-tag.outputs.tag }} --force
+          echo "Unpublishing ${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }}..."
+          npm unpublish "${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }}" || echo "Unpublish failed, continuing..."
+          echo "Publishing with binaries..."
+          npm publish --tag ${{ steps.npm-tag.outputs.tag }} --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
