@@ -33,7 +33,7 @@ export class SubGenieApiService {
    * Creates a task and immediately starts a task attempt with the appropriate variant.
    *
    * This is the primary method for executing workflows from widgets.
-   * Tasks are marked with status="agent" after creation to hide from main Kanban.
+   * Tasks are tracked via forge_agents table (not status field).
    *
    * @param genieId - Widget ID (wish, forge, review)
    * @param workflowId - Workflow identifier
@@ -51,37 +51,30 @@ export class SubGenieApiService {
     executor: BaseCodingAgent = BaseCodingAgent.CLAUDE_CODE,
     baseBranch: string = 'main'
   ): Promise<{ task: Task; attemptId: string }> {
-    // Step 1: Create the task
-    const taskResponse = await fetch(`${this.baseUrl}/tasks`, {
+    // Step 1: Create agent entry and its fixed task via forge_agents API
+    const agentResponse = await fetch(`${this.baseUrl}/forge/agents`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         project_id: projectId,
-        title: `${genieId}: ${workflowId}`,
-        description: description,
+        agent_type: genieId,
       }),
     });
 
+    if (!agentResponse.ok) {
+      throw new Error(`Failed to create agent: ${agentResponse.status}`);
+    }
+
+    const { data: agent } = await agentResponse.json();
+
+    // Step 2: Get the task that was created with the agent
+    const taskResponse = await fetch(`${this.baseUrl}/tasks/${agent.task_id}`);
+
     if (!taskResponse.ok) {
-      throw new Error(`Failed to create task: ${taskResponse.status}`);
+      throw new Error(`Failed to fetch task: ${taskResponse.status}`);
     }
 
     const { data: task } = await taskResponse.json();
-
-    // Step 2: Update task status to "agent" (hides from main Kanban)
-    const updateResponse = await fetch(`${this.baseUrl}/tasks/${task.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        status: 'agent',
-      }),
-    });
-
-    if (!updateResponse.ok) {
-      throw new Error(`Failed to update task status: ${updateResponse.status}`);
-    }
-
-    const { data: updatedTask } = await updateResponse.json();
 
     // Step 3: Start task attempt with variant
     const variant = this.variantMap[genieId];
@@ -89,7 +82,7 @@ export class SubGenieApiService {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        task_id: updatedTask.id,
+        task_id: task.id,
         executor_profile_id: {
           executor: executor,
           variant: variant,
@@ -105,7 +98,7 @@ export class SubGenieApiService {
     const { data: attempt } = await attemptResponse.json();
 
     return {
-      task: updatedTask,
+      task: task,
       attemptId: attempt.id,
     };
   }
@@ -113,9 +106,7 @@ export class SubGenieApiService {
   /**
    * Fetches all agent tasks for a specific widget variant.
    *
-   * Returns tasks with status="agent" that match the widget's variant.
-   * Filters by parsing TaskAttempt.executor format: "executor_name:variant"
-   * (e.g., "claude_code:wish", "gemini:forge").
+   * Returns tasks tracked in forge_agents table for this agent type.
    *
    * @param projectId - Project UUID
    * @param genieId - Widget ID (wish, forge, review)
@@ -125,38 +116,28 @@ export class SubGenieApiService {
     projectId: string,
     genieId: 'wish' | 'forge' | 'review'
   ): Promise<Task[]> {
-    // Fetch all agent tasks
-    const tasksResponse = await fetch(
-      `${this.baseUrl}/tasks?project_id=${projectId}&status=agent`
+    // Fetch agents for this project and type from forge_agents table
+    const agentsResponse = await fetch(
+      `${this.baseUrl}/forge/agents?project_id=${projectId}&agent_type=${genieId}`
     );
 
-    if (!tasksResponse.ok) {
-      throw new Error(`Failed to fetch tasks: ${tasksResponse.status}`);
+    if (!agentsResponse.ok) {
+      throw new Error(`Failed to fetch agents: ${agentsResponse.status}`);
     }
 
-    const { data: tasks } = await tasksResponse.json();
+    const { data: agents } = await agentsResponse.json();
 
-    // Fetch task attempts to filter by variant
-    const attemptsResponse = await fetch(
-      `${this.baseUrl}/task-attempts?project_id=${projectId}`
-    );
-
-    if (!attemptsResponse.ok) {
-      throw new Error(`Failed to fetch task attempts: ${attemptsResponse.status}`);
+    // Fetch the task for each agent
+    const tasks: Task[] = [];
+    for (const agent of agents) {
+      const taskResponse = await fetch(`${this.baseUrl}/tasks/${agent.task_id}`);
+      if (taskResponse.ok) {
+        const { data: task } = await taskResponse.json();
+        tasks.push(task);
+      }
     }
 
-    const { data: attempts } = await attemptsResponse.json();
-
-    // Filter tasks by variant
-    const variant = this.variantMap[genieId];
-    return tasks.filter((task: Task) => {
-      const attempt = attempts.find((a: TaskAttempt) => a.task_id === task.id);
-      if (!attempt) return false;
-
-      // Parse executor string (e.g., "claude_code:wish" → "wish")
-      const [, attemptVariant] = attempt.executor.split(':');
-      return attemptVariant === variant;
-    });
+    return tasks;
   }
 
   /**
@@ -273,10 +254,11 @@ export class SubGenieApiService {
   }
 
   /**
-   * Ensures a Master Genie task exists for a project, creating it if needed.
+   * Ensures a Master Genie agent exists for a project, creating it if needed.
    *
-   * Master Genie is a special task that orchestrates other agents.
+   * Master Genie is a special agent that orchestrates other specialists.
    * There should be exactly one Master Genie per project.
+   * Uses forge_agents table to track the fixed task per agent type.
    *
    * @param projectId - Project UUID
    * @returns Master Genie task with optional active attempt
@@ -284,42 +266,44 @@ export class SubGenieApiService {
   async ensureMasterGenie(
     projectId: string
   ): Promise<{ task: Task; attempt?: TaskAttempt }> {
-    // Check if Master Genie task already exists
-    const tasksResponse = await fetch(
-      `${this.baseUrl}/tasks?project_id=${projectId}&status=agent`
+    // Check if Master Genie agent already exists in forge_agents table
+    const agentResponse = await fetch(
+      `${this.baseUrl}/forge/agents?project_id=${projectId}&agent_type=master`
     );
 
-    if (!tasksResponse.ok) {
-      throw new Error(`Failed to fetch tasks: ${tasksResponse.status}`);
+    if (!agentResponse.ok) {
+      throw new Error(`Failed to fetch agents: ${agentResponse.status}`);
     }
 
-    const { data: tasks } = await tasksResponse.json();
+    const { data: agents } = await agentResponse.json();
 
-    // Find existing Master Genie task (title starts with "Master Genie")
-    let masterTask = tasks.find((t: Task) =>
-      t.title.toLowerCase().startsWith('master genie')
-    );
-
-    // Create if it doesn't exist
-    if (!masterTask) {
-      const createResponse = await fetch(`${this.baseUrl}/tasks`, {
+    // Get or create the agent entry
+    let agent = agents?.[0];
+    if (!agent) {
+      // Create both agent entry and task
+      const createResponse = await fetch(`${this.baseUrl}/forge/agents`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           project_id: projectId,
-          title: 'Master Genie',
-          description: 'Orchestrator agent that coordinates other specialists',
-          status: 'agent',
+          agent_type: 'master',
         }),
       });
 
       if (!createResponse.ok) {
-        throw new Error(`Failed to create Master Genie task: ${createResponse.status}`);
+        throw new Error(`Failed to create Master Genie agent: ${createResponse.status}`);
       }
 
       const { data } = await createResponse.json();
-      masterTask = data;
+      agent = data;
     }
+
+    // Fetch the task
+    const taskResponse = await fetch(`${this.baseUrl}/tasks/${agent.task_id}`);
+    if (!taskResponse.ok) {
+      throw new Error(`Failed to fetch Master Genie task: ${taskResponse.status}`);
+    }
+    const { data: task } = await taskResponse.json();
 
     // Get latest attempt for this task
     const attemptsResponse = await fetch(
@@ -332,13 +316,13 @@ export class SubGenieApiService {
 
     const { data: attempts } = await attemptsResponse.json();
     const masterAttempt = attempts
-      .filter((a: TaskAttempt) => a.task_id === masterTask.id)
+      .filter((a: TaskAttempt) => a.task_id === task.id)
       .sort((a: TaskAttempt, b: TaskAttempt) =>
         b.created_at.localeCompare(a.created_at)
       )[0];
 
     return {
-      task: masterTask,
+      task: task,
       attempt: masterAttempt,
     };
   }
@@ -357,7 +341,6 @@ export class SubGenieApiService {
         task_id: taskId,
         executor_profile_id: {
           executor: BaseCodingAgent.CLAUDE_CODE,
-          variant: 'master',
         },
         base_branch: 'main',
       }),

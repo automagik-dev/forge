@@ -126,16 +126,35 @@ fn forge_api_routes() -> Router<ForgeAppState> {
             "/api/forge/neurons/{neuron_attempt_id}/subtasks",
             get(get_neuron_subtasks),
         )
+        .route("/api/forge/agents", get(get_forge_agents).post(create_forge_agent))
     // Branch-templates extension removed - using simple forge/ prefix
 }
 
-/// Forge override: create task only (no execution)
+/// Forge-specific CreateTask that includes is_agent field
+#[derive(Debug, Serialize, Deserialize)]
+struct ForgeCreateTask {
+    pub project_id: Uuid,
+    pub title: String,
+    pub description: Option<String>,
+    pub parent_task_attempt: Option<Uuid>,
+    pub image_ids: Option<Vec<Uuid>>,
+    pub is_agent: Option<bool>, // Forge extension: mark as agent-managed task
+}
+
+/// Forge override: create task (standard behavior, no special status handling)
+/// The is_agent field is kept for future use but not currently used in task creation
 async fn forge_create_task(
     State(deployment): State<DeploymentImpl>,
-    Json(payload): Json<db::models::task::CreateTask>,
+    Json(payload): Json<ForgeCreateTask>,
 ) -> Result<Json<ApiResponse<Task>>, ApiError> {
     let task_id = Uuid::new_v4();
-    let task = Task::create(&deployment.db().pool, &payload, task_id).await?;
+    let task = Task::create(&deployment.db().pool, &db::models::task::CreateTask {
+        project_id: payload.project_id,
+        title: payload.title,
+        description: payload.description,
+        parent_task_attempt: payload.parent_task_attempt,
+        image_ids: payload.image_ids.clone(),
+    }, task_id).await?;
 
     if let Some(image_ids) = &payload.image_ids {
         TaskImage::associate_many(&deployment.db().pool, task.id, image_ids).await?;
@@ -312,7 +331,8 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
 
     let dep_clone = deployment.clone();
 
-    router = router.merge(upstream_config::router().with_state::<ForgeAppState>(dep_clone.clone()));
+    // Forge override: config router with increased body limit for /profiles
+    router = router.merge(forge_config_router().with_state::<ForgeAppState>(dep_clone.clone()));
     router =
         router.merge(containers::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
     router =
@@ -342,7 +362,7 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
 
     router.nest(
         "/images",
-        images::routes().with_state::<ForgeAppState>(dep_clone),
+        forge_images_router().with_state::<ForgeAppState>(dep_clone),
     )
 }
 
@@ -372,26 +392,18 @@ fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router
 #[derive(Deserialize)]
 struct GetTasksParams {
     project_id: Uuid,
-    status: Option<String>, // Optional status filter (e.g., "agent")
 }
 
-/// Forge override for list tasks: conditionally filter by status
-/// - Default behavior: exclude tasks with status = 'agent' (for main Kanban)
-/// - When status=agent: return ONLY agent tasks (for widgets)
+/// Forge override for list tasks: Exclude agent tasks (those in forge_agents table)
+/// Agent tasks are managed separately via /api/forge/agents
 async fn forge_get_tasks(
     State(deployment): State<DeploymentImpl>,
     Query(params): Query<GetTasksParams>,
 ) -> Result<Json<ApiResponse<Vec<TaskWithAttemptStatus>>>, ApiError> {
     let pool = &deployment.db().pool;
 
-    // Build status filter based on query parameter
-    let (status_condition, query_status) = match params.status.as_deref() {
-        Some("agent") => ("t.status = ?", "agent"),         // Widget requesting agent tasks
-        _ => ("t.status <> ?", "agent"),                    // Default: exclude agent tasks
-    };
-
-    let query_str = format!(
-        r#"SELECT
+    // Exclude tasks that are registered as agent tasks in forge_agents table
+    let query_str = r#"SELECT
   t.id                            AS "id",
   t.project_id                    AS "project_id",
   t.title,
@@ -432,14 +444,12 @@ async fn forge_get_tasks(
     )                               AS executor
 
 FROM tasks t
-WHERE t.project_id = ? AND {}
-ORDER BY t.created_at DESC"#,
-        status_condition
-    );
+WHERE t.project_id = ?
+  AND t.id NOT IN (SELECT task_id FROM forge_agents)
+ORDER BY t.created_at DESC"#;
 
-    let rows = sqlx::query(&query_str)
+    let rows = sqlx::query(query_str)
     .bind(params.project_id)
-    .bind(query_status)
     .fetch_all(pool)
     .await?;
 
@@ -537,6 +547,26 @@ fn build_task_attempts_router_with_forge_override(
         .nest("/{id}", task_attempt_id_router);
 
     Router::new().nest("/task-attempts", task_attempts_router)
+}
+
+/// Build config router with forge override for increased body limit on /profiles
+fn forge_config_router() -> Router<DeploymentImpl> {
+    use axum::extract::DefaultBodyLimit;
+
+    // Use upstream router and layer on increased body limit globally for config routes
+    // This affects all config routes, but /profiles is the only one with large payloads
+    upstream_config::router()
+        .layer(DefaultBodyLimit::max(20 * 1024 * 1024)) // 20MB limit for 37 agent profiles
+}
+
+/// Build images router with forge override for increased body limit on uploads
+fn forge_images_router() -> Router<DeploymentImpl> {
+    use axum::extract::DefaultBodyLimit;
+
+    // Use upstream router and layer on increased body limit globally for image routes
+    // Upstream has 20MB limits on upload routes, we increase to 100MB for large images
+    images::routes()
+        .layer(DefaultBodyLimit::max(100 * 1024 * 1024)) // 100MB limit for image uploads
 }
 
 async fn frontend_handler(uri: axum::http::Uri) -> Response {
@@ -1066,6 +1096,109 @@ async fn get_neuron_subtasks(
     .await?;
 
     Ok(Json(ApiResponse::success(subtasks)))
+}
+
+/// Forge Agent model
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+struct ForgeAgent {
+    id: String,
+    project_id: String,
+    agent_type: String, // 'master', 'wish', 'forge', 'review'
+    task_id: String,
+    created_at: String,
+    updated_at: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct GetForgeAgentsParams {
+    project_id: Uuid,
+    agent_type: Option<String>,
+}
+
+/// Get forge agents for a project
+async fn get_forge_agents(
+    State(deployment): State<DeploymentImpl>,
+    Query(params): Query<GetForgeAgentsParams>,
+) -> Result<Json<ApiResponse<Vec<ForgeAgent>>>, ApiError> {
+    let pool = &deployment.db().pool;
+
+    let agents = if let Some(agent_type) = params.agent_type {
+        sqlx::query_as::<_, ForgeAgent>(
+            "SELECT * FROM forge_agents WHERE project_id = ? AND agent_type = ?"
+        )
+        .bind(params.project_id.to_string())
+        .bind(agent_type)
+        .fetch_all(pool)
+        .await?
+    } else {
+        sqlx::query_as::<_, ForgeAgent>(
+            "SELECT * FROM forge_agents WHERE project_id = ?"
+        )
+        .bind(params.project_id.to_string())
+        .fetch_all(pool)
+        .await?
+    };
+
+    Ok(Json(ApiResponse::success(agents)))
+}
+
+#[derive(Debug, Deserialize)]
+struct CreateForgeAgentBody {
+    project_id: Uuid,
+    agent_type: String,
+}
+
+/// Create a forge agent (and its fixed task)
+async fn create_forge_agent(
+    State(deployment): State<DeploymentImpl>,
+    Json(payload): Json<CreateForgeAgentBody>,
+) -> Result<Json<ApiResponse<ForgeAgent>>, ApiError> {
+    let pool = &deployment.db().pool;
+    let agent_id = Uuid::new_v4();
+    let task_id = Uuid::new_v4();
+
+    // Create the fixed task
+    let title = format!("{} Genie",
+        payload.agent_type.chars().next().unwrap().to_uppercase().to_string() +
+        &payload.agent_type[1..]
+    );
+    let description = format!("{} agent for project orchestration",
+        payload.agent_type.chars().next().unwrap().to_uppercase().to_string() +
+        &payload.agent_type[1..]
+    );
+
+    sqlx::query(
+        r#"INSERT INTO tasks (id, project_id, title, description, status, created_at, updated_at)
+           VALUES (?, ?, ?, ?, 'todo', datetime('now'), datetime('now'))"#
+    )
+    .bind(task_id.to_string())
+    .bind(payload.project_id.to_string())
+    .bind(&title)
+    .bind(&description)
+    .execute(pool)
+    .await?;
+
+    // Create the agent entry
+    sqlx::query(
+        r#"INSERT INTO forge_agents (id, project_id, agent_type, task_id, created_at, updated_at)
+           VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))"#
+    )
+    .bind(agent_id.to_string())
+    .bind(payload.project_id.to_string())
+    .bind(&payload.agent_type)
+    .bind(task_id.to_string())
+    .execute(pool)
+    .await?;
+
+    // Fetch the created agent
+    let agent: ForgeAgent = sqlx::query_as(
+        "SELECT * FROM forge_agents WHERE id = ?"
+    )
+    .bind(agent_id.to_string())
+    .fetch_one(pool)
+    .await?;
+
+    Ok(Json(ApiResponse::success(agent)))
 }
 
 #[cfg(test)]

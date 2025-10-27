@@ -30,7 +30,7 @@ export const useSubGenieWidget = (
 
   /**
    * Executes a workflow by creating a task and starting a task attempt.
-   * The task will be created with status="agent" and the appropriate variant.
+   * The task will be tracked in the forge_agents table with the appropriate variant.
    */
   const handleWorkflowClick = useCallback(
     async (workflowId: string, description?: string) => {

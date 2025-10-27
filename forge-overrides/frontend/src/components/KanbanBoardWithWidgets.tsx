@@ -148,7 +148,7 @@ export const KanbanBoardWithWidgets: React.FC<KanbanBoardWithWidgetsProps> = ({
  *    - done -> "Done"
  *    - cancelled -> "Cancelled"
  *
- * 5. Agent tasks (status: "agent") are automatically filtered out
+ * 5. Agent tasks (tracked in forge_agents table) are automatically filtered out
  *    via useFilteredTasks hook
  *
  * 6. Genie widgets (ColumnWithWidget) automatically appear for Wish/Forge/Review

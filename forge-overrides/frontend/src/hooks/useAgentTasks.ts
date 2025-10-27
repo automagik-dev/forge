@@ -4,10 +4,10 @@ import { Task, TaskAttempt } from 'shared/types';
 /**
  * Filters tasks that should appear in widget views.
  *
- * Shows tasks with status="agent" that match the widget's variant.
+ * Shows tasks tracked in forge_agents table that match the widget's variant.
  *
  * How it works:
- * 1. Filters tasks where status === "agent"
+ * 1. Filters tasks tracked in forge_agents table
  * 2. Finds matching task attempts
  * 3. Parses executor string to extract variant (e.g., "claude_code:wish" → "wish")
  * 4. Returns only tasks where variant matches the widget
@@ -19,7 +19,7 @@ import { Task, TaskAttempt } from 'shared/types';
  *
  * @example
  * const agentTasks = useAgentTasks(allTasks, allAttempts, 'wish');
- * // Returns only tasks with status="agent" and executor variant="wish"
+ * // Returns only tasks tracked in forge_agents table with executor variant="wish"
  */
 export const useAgentTasks = (
   tasks: Task[],
