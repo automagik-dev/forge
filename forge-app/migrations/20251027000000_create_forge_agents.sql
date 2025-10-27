@@ -1,11 +1,12 @@
 -- Forge Agents Table
--- Each agent type (master, wish, forge, review) has ONE fixed task per project
+-- Each agent type (wish, forge, review) has ONE fixed task per project
+-- These are master orchestrators for the Genie MCP neural network
 -- Subtasks and attempts are created normally with parent_task_attempt references
 
 CREATE TABLE IF NOT EXISTS forge_agents (
     id TEXT PRIMARY KEY NOT NULL,
     project_id TEXT NOT NULL,
-    agent_type TEXT NOT NULL, -- 'master', 'wish', 'forge', 'review'
+    agent_type TEXT NOT NULL, -- 'wish', 'forge', 'review' (WorkflowType from automagik-genie MCP)
     task_id TEXT NOT NULL, -- Reference to the fixed task in tasks table
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
