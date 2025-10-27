@@ -228,6 +228,8 @@ function AppContent() {
 // FORGE CUSTOMIZATION: Root provider stack lives here so BrowserRouter wraps
 // UserSystem, NiceModal, AuthGate, keyboard scopes, and SubGenie contexts.
 // This keeps modals and widgets in sync with routing and authentication state.
+// NOTE: NiceModal.Provider must be OUTSIDE AuthGate so modals can be shown
+// even when AuthGate is blocking access (e.g., login dialog).
 function App() {
   return (
     <BrowserRouter>
@@ -237,11 +239,11 @@ function App() {
             <HotkeysProvider initiallyActiveScopes={['*', 'global', 'kanban']}>
               <KeyboardShortcutsProvider>
                 <SubGenieProvider>
-                  <AuthGate>
-                    <NiceModal.Provider>
+                  <NiceModal.Provider>
+                    <AuthGate>
                       <AppContent />
-                    </NiceModal.Provider>
-                  </AuthGate>
+                    </AuthGate>
+                  </NiceModal.Provider>
                 </SubGenieProvider>
               </KeyboardShortcutsProvider>
             </HotkeysProvider>
