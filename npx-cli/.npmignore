@@ -1,0 +1,15 @@
+# NPM Ignore - Allow dist folder with binaries
+# By default npm respects .gitignore, but we NEED dist/ folder published
+# So we create this .npmignore to override the root .gitignore
+
+# Allow everything (don't ignore anything by default)
+!*
+
+# Explicitly ignore only development files
+.DS_Store
+*.log
+*.tmp
+.env
+.env.*
+!.env.example
+node_modules/
