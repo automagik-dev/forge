@@ -209,7 +209,7 @@ case "${1:-status}" in
 
         # Check for recent failed workflows (regardless of version state)
         echo "🔍 Checking for recent failed workflows..."
-        RECENT_FAILED=$(gh run list --workflow="pre-release-simple.yml" --repo "$REPO" --status failure --limit 1 --json databaseId,createdAt,headBranch,conclusion --jq '.[0]' 2>/dev/null || echo "null")
+        RECENT_FAILED=$(gh run list --workflow="release.yml" --repo "$REPO" --status failure --limit 1 --json databaseId,createdAt,headBranch,conclusion --jq '.[0]' 2>/dev/null || echo "null")
 
         if [ -n "$RECENT_FAILED" ] && [ "$RECENT_FAILED" != "null" ]; then
             FAILED_RUN_ID=$(echo "$RECENT_FAILED" | jq -r '.databaseId')
@@ -244,7 +244,7 @@ case "${1:-status}" in
                     sleep 5
 
                     # Find the retry run
-                    RETRY_RUN=$(gh run list --workflow="pre-release-simple.yml" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')
+                    RETRY_RUN=$(gh run list --workflow="release.yml" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')
                     if [ -n "$RETRY_RUN" ]; then
                         ./gh-build.sh monitor "$RETRY_RUN"
                     fi
@@ -306,7 +306,7 @@ case "${1:-status}" in
                 echo ""
                 
                 # Check for recent failed workflows
-                RECENT_FAILED=$(gh run list --workflow="Create GitHub Pre-Release" --repo "$REPO" --status failure --limit 1 --json databaseId,createdAt,headBranch --jq '.[0]')
+                RECENT_FAILED=$(gh run list --workflow="release.yml" --repo "$REPO" --status failure --limit 1 --json databaseId,createdAt,headBranch --jq '.[0]')
                 if [ -n "$RECENT_FAILED" ] && [ "$RECENT_FAILED" != "null" ]; then
                     FAILED_RUN_ID=$(echo "$RECENT_FAILED" | jq -r '.databaseId')
                     FAILED_TIME=$(echo "$RECENT_FAILED" | jq -r '.createdAt')
