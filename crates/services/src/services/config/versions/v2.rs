@@ -258,9 +258,9 @@ impl From<v1::SoundFile> for SoundFile {
             v1::SoundFile::AbstractSound2 => SoundFile::AbstractSound2,
             v1::SoundFile::AbstractSound3 => SoundFile::AbstractSound3,
             v1::SoundFile::AbstractSound4 => SoundFile::AbstractSound4,
-            v1::SoundFile::CowMooing => SoundFile::GenieNotify1,
+            v1::SoundFile::GenieNotify1 => SoundFile::GenieNotify1,
             v1::SoundFile::PhoneVibration => SoundFile::PhoneVibration,
-            v1::SoundFile::Rooster => SoundFile::GenieNotify2,
+            v1::SoundFile::GenieNotify2 => SoundFile::GenieNotify2,
         }
     }
 }
