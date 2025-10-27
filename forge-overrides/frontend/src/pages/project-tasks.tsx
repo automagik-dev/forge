@@ -649,15 +649,17 @@ export function ProjectTasks() {
         </Card>
       </div>
     ) : (
-      <div className="w-full h-full overflow-x-auto overflow-y-auto overscroll-x-contain touch-pan-y">
-        <TaskKanbanBoard
-          groupedTasks={groupedFilteredTasks}
-          onDragEnd={handleDragEnd}
-          onViewTaskDetails={handleViewTaskDetails}
-          selectedTask={selectedTask || undefined}
-          onCreateTask={handleCreateNewTask}
-          projectId={projectId} // ← CHANGE: Pass projectId for widget functionality
-        />
+      <div className="w-full h-full min-h-0 flex flex-col overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto overscroll-x-contain touch-pan-y">
+          <TaskKanbanBoard
+            groupedTasks={groupedFilteredTasks}
+            onDragEnd={handleDragEnd}
+            onViewTaskDetails={handleViewTaskDetails}
+            selectedTask={selectedTask || undefined}
+            onCreateTask={handleCreateNewTask}
+            projectId={projectId} // ← CHANGE: Pass projectId for widget functionality
+          />
+        </div>
       </div>
     );
 
@@ -796,7 +798,7 @@ export function ProjectTasks() {
   );
 
   return (
-    <div className="min-h-full h-full flex flex-col">
+    <div className="h-full flex flex-col">
       {streamError && (
         <Alert className="w-full z-30 xl:sticky xl:top-0">
           <AlertTitle className="flex items-center gap-2">
