@@ -254,7 +254,8 @@ function getPortPids(port) {
       return;
     }
 
-    exec(`lsof -ti tcp:${port}`, (error, stdout) => {
+    // Only get the process LISTENING on the specific port, not connections
+    exec(`lsof -ti :${port} -sTCP:LISTEN`, (error, stdout) => {
       if (error || !stdout) {
         return resolve([]);
       }
