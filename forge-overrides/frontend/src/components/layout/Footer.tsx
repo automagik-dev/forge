@@ -68,17 +68,36 @@ export function Footer() {
   return (
     <footer className="flex-shrink-0 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex items-center justify-between px-4 py-1 text-xs text-muted-foreground">
-        {/* Left: NamastEx Labs signature */}
-        <div className="flex items-center gap-2">
-          <span>Powered by</span>
+        {/* Left: Logo, Tagline & Credits */}
+        <div className="flex items-center gap-3">
           <a
-            href="https://namastex.com"
+            href="https://namastex.ai"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium hover:text-foreground transition-colors"
+            className="flex items-center hover:opacity-80 transition-opacity"
           >
-            NamastEx Labs
+            <img
+              src="/nmstx-logo.svg"
+              alt="Namastex Labs"
+              className="h-3.5 w-auto opacity-50 dark:opacity-100"
+            />
           </a>
+          <span className="text-muted-foreground/60">•</span>
+          <span className="italic text-muted-foreground/80">
+            AI that elevates human potential, not replaces it
+          </span>
+          <span className="text-muted-foreground/60">•</span>
+          <span className="text-muted-foreground/70">
+            Crafted with 💙 by{' '}
+            <a
+              href="https://namastex.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium hover:text-foreground transition-colors"
+            >
+              Automagik Genie
+            </a>
+          </span>
         </div>
 
         {/* Right: Version, Health, Update */}

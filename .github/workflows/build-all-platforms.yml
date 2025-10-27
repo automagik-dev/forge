@@ -138,7 +138,15 @@ jobs:
 
       - name: Build frontend
         run: pnpm --filter automagik-forge-frontend run build
-      
+
+      - name: Clean Rust build cache for forge-app (force fresh frontend embed)
+        shell: bash
+        run: |
+          # Remove forge-app build artifacts to force re-embedding of fresh frontend
+          rm -rf target/*/build/forge-app-*
+          rm -rf target/*/.fingerprint/forge-app-*
+          echo "✅ Cleaned forge-app build cache to pick up fresh frontend"
+
       - name: Build Rust binaries (Windows)
         if: runner.os == 'Windows'
         env:
