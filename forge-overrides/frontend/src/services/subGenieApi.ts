@@ -2,6 +2,15 @@ import { ChatMessage } from '@/components/genie-widgets';
 import { Task, TaskAttempt, BaseCodingAgent } from 'shared/types';
 
 /**
+ * Neuron type for Master Genie neural network
+ */
+export interface Neuron {
+  type: 'wish' | 'forge' | 'review';
+  task: Task;
+  attempt: TaskAttempt;
+}
+
+/**
  * API service for Genie widget backend integration.
  *
  * Connects widgets to the Automagik Forge task/attempt API.
@@ -356,6 +365,49 @@ export class SubGenieApiService {
 
     if (!response.ok) {
       throw new Error(`Failed to create Master Genie attempt: ${response.status}`);
+    }
+
+    const { data } = await response.json();
+    return data;
+  }
+
+  /**
+   * Get neurons for a Master Genie task attempt.
+   *
+   * Fetches Wish, Forge, and Review neurons (tasks with parent_task_attempt = master_attempt_id).
+   *
+   * @param masterAttemptId - Master Genie attempt UUID
+   * @returns Array of neurons with their tasks and attempts
+   */
+  async getNeurons(masterAttemptId: string): Promise<Neuron[]> {
+    const response = await fetch(
+      `${this.baseUrl}/forge/master-genie/${masterAttemptId}/neurons`
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch neurons: ${response.status}`);
+    }
+
+    const { data } = await response.json();
+    return data;
+  }
+
+  /**
+   * Get subtasks for a neuron.
+   *
+   * Fetches workflow executions spawned by this neuron
+   * (tasks with parent_task_attempt = neuron_attempt_id).
+   *
+   * @param neuronAttemptId - Neuron attempt UUID
+   * @returns Array of subtasks
+   */
+  async getSubtasks(neuronAttemptId: string): Promise<Task[]> {
+    const response = await fetch(
+      `${this.baseUrl}/forge/neurons/${neuronAttemptId}/subtasks`
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch subtasks: ${response.status}`);
     }
 
     const { data } = await response.json();
