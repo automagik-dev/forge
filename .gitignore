@@ -109,3 +109,4 @@ vibe-kanban-cloud/
 
 # Synced upstream assets (now included in forge for IDE icons)
 docs/regression/logs/*.log
+frontend/shared/
