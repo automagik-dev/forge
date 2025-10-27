@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
 import { useSubGenie } from '@/context/SubGenieContext';
 import { ChatMessage } from '@/components/genie-widgets';
-import { subGenieApi } from '@/services/subGenieApi';
+import { subGenieApi, Neuron } from '@/services/subGenieApi';
+import { Task } from 'shared/types';
 
 /**
  * Hook for managing Genie widget state and API interactions.
@@ -23,6 +24,9 @@ export const useSubGenieWidget = (
     useSubGenie();
   const [isLoading, setIsLoading] = useState(false);
   const [activeAttemptId, setActiveAttemptId] = useState<string | null>(null);
+  const [activeNeuron, setActiveNeuron] = useState<Neuron | null>(null);
+  const [subtasks, setSubtasks] = useState<Task[]>([]);
+  const [masterAttemptId, setMasterAttemptId] = useState<string | null>(null);
 
   /**
    * Executes a workflow by creating a task and starting a task attempt.
@@ -154,12 +158,61 @@ export const useSubGenieWidget = (
     [genieId, toggleSkill, addMessage]
   );
 
+  /**
+   * Refreshes neuron data from the backend.
+   *
+   * Fetches the neuron for this widget's type and its subtasks.
+   * Requires a master attempt ID to know which Master Genie to query.
+   *
+   * @param masterAttemptId - Master Genie attempt UUID (optional)
+   */
+  const refreshNeuronData = useCallback(
+    async (masterAttemptId?: string) => {
+      if (!masterAttemptId) return;
+
+      try {
+        // Fetch all neurons for this Master Genie
+        const neurons = await subGenieApi.getNeurons(masterAttemptId);
+
+        // Find the neuron matching this widget's type
+        const neuron = neurons.find((n) => n.type === genieId);
+        setActiveNeuron(neuron || null);
+
+        // If neuron exists, fetch its subtasks
+        if (neuron?.attempt) {
+          const tasks = await subGenieApi.getSubtasks(neuron.attempt.id);
+          setSubtasks(tasks);
+        } else {
+          setSubtasks([]);
+        }
+      } catch (error) {
+        console.error('Error refreshing neuron data:', error);
+        setActiveNeuron(null);
+        setSubtasks([]);
+      }
+    },
+    [genieId]
+  );
+
+  /**
+   * Wrapper function that calls refreshNeuronData with stored masterAttemptId.
+   */
+  const handleRefresh = useCallback(async () => {
+    if (masterAttemptId) {
+      await refreshNeuronData(masterAttemptId);
+    }
+  }, [masterAttemptId, refreshNeuronData]);
+
   return {
     isOpen: widgets[genieId].isOpen,
     chatHistory: widgets[genieId].chatHistory,
     skillsState: widgets[genieId].skillsEnabled,
     isLoading,
     activeAttemptId,
+    activeNeuron,
+    subtasks,
+    refreshNeuronData: handleRefresh,
+    setMasterAttemptId, // Expose for setting master attempt ID
     toggleWidget: () => toggleWidget(genieId),
     closeWidget: () => closeWidget(genieId),
     onSendMessage: handleSendMessage,

@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { ChatMessage, WorkflowDefinition, SkillDefinition, SubGenieConfig } from './types';
 import { WorkflowButton } from './WorkflowButton';
 import { SkillToggle } from './SkillToggle';
+import { Neuron } from '@/services/subGenieApi';
+import { Task, TaskWithAttemptStatus } from 'shared/types';
+import { RefreshCw } from 'lucide-react';
 
 interface SubGenieWidgetProps {
   config: SubGenieConfig;
@@ -13,6 +16,10 @@ interface SubGenieWidgetProps {
   chatHistory?: ChatMessage[];
   skillsState?: Record<string, boolean>;
   isLoading?: boolean;
+  activeNeuron?: Neuron | null;
+  subtasks?: Task[];
+  onRefresh?: () => Promise<void>;
+  onTaskClick?: (task: Task | TaskWithAttemptStatus) => void;
 }
 
 export const SubGenieWidget: React.FC<SubGenieWidgetProps> = ({
@@ -25,6 +32,10 @@ export const SubGenieWidget: React.FC<SubGenieWidgetProps> = ({
   chatHistory = [],
   skillsState = {},
   isLoading = false,
+  activeNeuron,
+  subtasks,
+  onRefresh,
+  onTaskClick,
 }) => {
   const [message, setMessage] = useState('');
 
@@ -129,6 +140,63 @@ export const SubGenieWidget: React.FC<SubGenieWidgetProps> = ({
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Neural Network Visualization */}
+      {activeNeuron && (
+        <div className="border-t pt-4 mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-gray-600">Active Neuron</p>
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                className="p-1 hover:bg-gray-100 rounded"
+                aria-label="Refresh neuron data"
+                title="Refresh neuron data"
+              >
+                <RefreshCw className="h-4 w-4 text-gray-500" />
+              </button>
+            )}
+          </div>
+
+          <div className="bg-gray-50 rounded p-2 mb-3">
+            <p className="text-xs text-gray-600">
+              <span className="font-medium">Status:</span>{' '}
+              {activeNeuron.attempt?.executor || 'unknown'}
+            </p>
+            <p className="text-xs text-gray-600">
+              <span className="font-medium">Branch:</span>{' '}
+              {activeNeuron.attempt?.branch || 'N/A'}
+            </p>
+          </div>
+
+          {subtasks && subtasks.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-gray-600 mb-2">
+                Subtasks ({subtasks.length})
+              </p>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {subtasks.map((task) => (
+                  <button
+                    key={task.id}
+                    onClick={() => onTaskClick?.(task)}
+                    className="w-full text-left text-xs p-2 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
+                    title={task.description || task.title}
+                  >
+                    <p className="font-medium truncate">{task.title}</p>
+                    {task.description && (
+                      <p className="text-gray-500 truncate">{task.description}</p>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(!subtasks || subtasks.length === 0) && (
+            <p className="text-xs text-gray-400 italic">No subtasks yet</p>
+          )}
         </div>
       )}
     </div>

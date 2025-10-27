@@ -56,6 +56,9 @@ function TaskKanbanBoard({
           chatHistory = [],
           skillsState = {},
           isLoading = false,
+          activeNeuron = null,
+          subtasks = [],
+          refreshNeuronData = async () => {},
           toggleWidget = () => {},
           closeWidget = () => {},
           onSendMessage = () => Promise.resolve(),
@@ -97,6 +100,10 @@ function TaskKanbanBoard({
                   chatHistory={chatHistory}
                   skillsState={skillsState}
                   isLoading={isLoading}
+                  activeNeuron={activeNeuron}
+                  subtasks={subtasks}
+                  onRefresh={refreshNeuronData}
+                  onTaskClick={(task) => onViewTaskDetails(task as TaskWithAttemptStatus)}
                 />
               </div>
             )}
