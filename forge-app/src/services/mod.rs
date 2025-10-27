@@ -254,6 +254,11 @@ const FORGE_MIGRATIONS: &[ForgeMigration] = &[
         description: "add_agent_task_status",
         sql: include_str!("../../migrations/20251020000001_add_agent_task_status.sql"),
     },
+    ForgeMigration {
+        version: "20251027000000",
+        description: "create_forge_agents",
+        sql: include_str!("../../migrations/20251027000000_create_forge_agents.sql"),
+    },
 ];
 
 async fn apply_forge_migrations(pool: &SqlitePool) -> Result<()> {
