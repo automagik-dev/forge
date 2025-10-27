@@ -2,6 +2,14 @@
 
 set -euo pipefail  # Exit on error, unset var, or failed pipe
 
+# Load .env file if it exists
+if [ -f .env ]; then
+  echo "📝 Loading environment from .env..."
+  set -a  # automatically export all variables
+  source .env
+  set +a
+fi
+
 echo "🧹 Cleaning previous builds..."
 rm -rf npx-cli/dist
 
