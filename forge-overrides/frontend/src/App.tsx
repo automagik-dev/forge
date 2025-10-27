@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n';
@@ -33,10 +33,13 @@ import { WebviewContextMenu } from '@/vscode/ContextMenu';
 import NiceModal from '@ebay/nice-modal-react';
 import { OnboardingResult } from '@/components/dialogs/global/OnboardingDialog';
 import { ClickedElementsProvider } from '@/contexts/ClickedElementsProvider';
+import { GenieMasterWidget } from '@/components/genie-widgets/GenieMasterWidget';
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 function AppContent() {
+  const [isGenieOpen, setIsGenieOpen] = useState(false);
+  const [isGenieMinimized, setIsGenieMinimized] = useState(false);
   const { config, analyticsUserId, updateAndSaveConfig, loading } =
     useUserSystem();
   const posthog = usePostHog();
@@ -200,6 +203,16 @@ function AppContent() {
               <Footer />
             </div>
             <ShortcutsHelp />
+            <GenieMasterWidget
+              isOpen={isGenieOpen}
+              isMinimized={isGenieMinimized}
+              onToggle={() => setIsGenieOpen(!isGenieOpen)}
+              onMinimize={() => setIsGenieMinimized(!isGenieMinimized)}
+              onClose={() => {
+                setIsGenieOpen(false);
+                setIsGenieMinimized(false);
+              }}
+            />
           </SearchProvider>
         </AppWithStyleOverride>
       </ThemeProvider>
