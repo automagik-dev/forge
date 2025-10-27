@@ -38,17 +38,9 @@ import {
   ViewProcessesDialog,
 } from '@/components/dialogs';
 import { CreateAttemptDialog } from '@/components/dialogs/tasks/CreateAttemptDialog';
+import { ForgeCreateAttemptDialog } from './components/dialogs/tasks/ForgeCreateAttemptDialog';
 // FORGE CUSTOMIZATION: Import Omni modal for Forge-specific feature
 import { OmniModal } from './components/omni/OmniModal';
-// FORGE CUSTOMIZATION: Import AuthGate for protecting frontend with --auth flag
-import { AuthGate } from './components/auth/AuthGate';
-// FORGE CUSTOMIZATION: Import SubGenieProvider for Genie Chat Widgets
-import { SubGenieProvider } from '@/context/SubGenieContext';
-// Import UserSystemProvider to wrap AuthGate
-import { UserSystemProvider } from '@/components/config-provider';
-// Import KeyboardShortcutsProvider and HotkeysProvider to wrap modals
-import { KeyboardShortcutsProvider } from '@/contexts/keyboard-shortcuts-context';
-import { HotkeysProvider } from 'react-hotkeys-hook';
 
 // Register modals
 NiceModal.register('github-login', GitHubLoginDialog);
@@ -73,6 +65,7 @@ NiceModal.register('project-editor-selection', ProjectEditorSelectionDialog);
 NiceModal.register('restore-logs', RestoreLogsDialog);
 NiceModal.register('view-processes', ViewProcessesDialog);
 NiceModal.register('create-attempt', CreateAttemptDialog);
+NiceModal.register('forge-create-attempt', ForgeCreateAttemptDialog);
 // FORGE CUSTOMIZATION: Register Omni modal for AI-powered prompt features
 NiceModal.register('omni-modal', OmniModal);
 // Install VS Code iframe keyboard bridge when running inside an iframe
@@ -137,25 +130,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           fallback={<p>{i18n.t('common:states.error')}</p>}
           showDialog
         >
-          {/* Keyboard shortcuts must wrap NiceModal.Provider so modals can use shortcuts */}
-          <HotkeysProvider initiallyActiveScopes={['*', 'global', 'kanban']}>
-            <KeyboardShortcutsProvider>
-              <NiceModal.Provider>
-                {/* FORGE CUSTOMIZATION: UserSystemProvider must wrap AuthGate since AuthGate uses useUserSystem() */}
-                <UserSystemProvider>
-                  {/* FORGE CUSTOMIZATION: Wrap with SubGenieProvider for Genie Chat Widgets */}
-                  <SubGenieProvider>
-                    <AuthGate>
-                      <ClickToComponent />
-                      <AutomagikForgeWebCompanion />
-                      <App />
-                      {/* <ReactQueryDevtools initialIsOpen={false} /> */}
-                    </AuthGate>
-                  </SubGenieProvider>
-                </UserSystemProvider>
-              </NiceModal.Provider>
-            </KeyboardShortcutsProvider>
-          </HotkeysProvider>
+          <ClickToComponent />
+          <AutomagikForgeWebCompanion />
+          <App />
+          {/* <ReactQueryDevtools initialIsOpen={false} /> */}
         </Sentry.ErrorBoundary>
       </PostHogProvider>
     </QueryClientProvider>

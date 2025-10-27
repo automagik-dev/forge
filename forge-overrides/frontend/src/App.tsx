@@ -17,6 +17,7 @@ import {
 } from '@/pages/settings/';
 import {
   useUserSystem,
+  UserSystemProvider,
 } from '@/components/config-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { SearchProvider } from '@/contexts/search-context';
@@ -34,6 +35,10 @@ import NiceModal from '@ebay/nice-modal-react';
 import { OnboardingResult } from '@/components/dialogs/global/OnboardingDialog';
 import { ClickedElementsProvider } from '@/contexts/ClickedElementsProvider';
 import { GenieMasterWidget } from '@/components/genie-widgets/GenieMasterWidget';
+import { HotkeysProvider } from 'react-hotkeys-hook';
+import { KeyboardShortcutsProvider } from '@/contexts/keyboard-shortcuts-context';
+import { SubGenieProvider } from '@/context/SubGenieContext';
+import { AuthGate } from '@/components/auth/AuthGate';
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
@@ -164,7 +169,7 @@ function AppContent() {
             <div className="h-screen flex flex-col bg-background">
               <WebviewContextMenu />
 
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 min-h-0 flex flex-col">
                 <SentryRoutes>
                   <Route element={<NormalLayout />}>
                     <Route path="/" element={<Projects />} />
@@ -220,18 +225,29 @@ function AppContent() {
   );
 }
 
-// FORGE CUSTOMIZATION: Remove UserSystemProvider wrapper since it's now in main.tsx
-// This prevents duplicate providers when AuthGate is used
-// FORGE CUSTOMIZATION: Remove HotkeysProvider and KeyboardShortcutsProvider since they're now in main.tsx
-// This allows modals to use keyboard shortcuts before the App component mounts
+// FORGE CUSTOMIZATION: Root provider stack lives here so BrowserRouter wraps
+// UserSystem, NiceModal, AuthGate, keyboard scopes, and SubGenie contexts.
+// This keeps modals and widgets in sync with routing and authentication state.
 function App() {
   return (
     <BrowserRouter>
-      <ClickedElementsProvider>
-        <ProjectProvider>
-          <AppContent />
-        </ProjectProvider>
-      </ClickedElementsProvider>
+      <UserSystemProvider>
+        <ClickedElementsProvider>
+          <ProjectProvider>
+            <HotkeysProvider initiallyActiveScopes={['*', 'global', 'kanban']}>
+              <KeyboardShortcutsProvider>
+                <SubGenieProvider>
+                  <AuthGate>
+                    <NiceModal.Provider>
+                      <AppContent />
+                    </NiceModal.Provider>
+                  </AuthGate>
+                </SubGenieProvider>
+              </KeyboardShortcutsProvider>
+            </HotkeysProvider>
+          </ProjectProvider>
+        </ClickedElementsProvider>
+      </UserSystemProvider>
     </BrowserRouter>
   );
 }

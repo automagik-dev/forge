@@ -66,6 +66,10 @@ export {
   CreateAttemptDialog,
   type CreateAttemptDialogProps,
 } from '@/components/dialogs/tasks/CreateAttemptDialog';
+export {
+  ForgeCreateAttemptDialog,
+  type ForgeCreateAttemptDialogProps,
+} from './tasks/ForgeCreateAttemptDialog';
 
 // Settings dialogs
 export {

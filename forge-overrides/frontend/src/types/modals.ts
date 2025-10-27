@@ -7,6 +7,7 @@ import type {
   EditorSelectionDialogProps,
 } from '@/components/dialogs';
 import type { CreateAttemptDialogProps } from '@/components/dialogs/tasks/CreateAttemptDialog';
+import type { ForgeCreateAttemptDialogProps } from '../components/dialogs/tasks/ForgeCreateAttemptDialog';
 import type { ViewProcessesDialogProps } from '@/components/dialogs/tasks/ViewProcessesDialog';
 
 // Type definitions for nice-modal-react modal arguments
@@ -35,6 +36,7 @@ declare module '@ebay/nice-modal-react' {
     'delete-task-confirmation': DeleteTaskConfirmationDialogProps;
     'editor-selection': EditorSelectionDialogProps;
     'create-attempt': CreateAttemptDialogProps;
+    'forge-create-attempt': ForgeCreateAttemptDialogProps;
     'view-processes': ViewProcessesDialogProps;
 
     // FORGE CUSTOMIZATION: Omni modal for AI-powered messaging
