@@ -11,6 +11,11 @@ on:
     tags:
       - 'v*'
 
+# Auto-cancel previous runs if a new one starts (prevents race conditions during 30min builds)
+concurrency:
+  group: build-all-platforms-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     timeout-minutes: 60  # Increase timeout for slower macOS runners
