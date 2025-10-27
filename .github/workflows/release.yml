@@ -30,6 +30,7 @@ permissions:
   contents: write
   pull-requests: write
   packages: write
+  actions: write  # Required to trigger build-all-platforms workflow
 
 env:
   NODE_VERSION: 22
