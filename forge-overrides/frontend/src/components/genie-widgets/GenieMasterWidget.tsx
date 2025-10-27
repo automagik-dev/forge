@@ -44,11 +44,6 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   const [initialMessage, setInitialMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
 
-  // Don't render widget if not in a project context
-  if (!projectId) {
-    return null;
-  }
-
   // Convert Task to TaskWithAttemptStatus for components that need it
   const taskWithStatus: TaskWithAttemptStatus | null = masterGenie
     ? {
@@ -116,6 +111,11 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
       setIsSending(false);
     }
   };
+
+  // Don't render widget if not in a project context
+  if (!projectId) {
+    return null;
+  }
 
   if (!isOpen) {
     // Floating chat bubble

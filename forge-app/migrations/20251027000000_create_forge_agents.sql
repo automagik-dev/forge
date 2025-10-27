@@ -4,10 +4,10 @@
 -- Subtasks and attempts are created normally with parent_task_attempt references
 
 CREATE TABLE IF NOT EXISTS forge_agents (
-    id TEXT PRIMARY KEY NOT NULL,
-    project_id TEXT NOT NULL,
-    agent_type TEXT NOT NULL, -- 'wish', 'forge', 'review' (WorkflowType from automagik-genie MCP)
-    task_id TEXT NOT NULL, -- Reference to the fixed task in tasks table
+    id BLOB PRIMARY KEY NOT NULL,
+    project_id BLOB NOT NULL,
+    agent_type TEXT NOT NULL, -- 'wish', 'forge', 'review', 'master' (WorkflowType from automagik-genie MCP)
+    task_id BLOB NOT NULL, -- Reference to the fixed task in tasks table
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
 

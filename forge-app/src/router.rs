@@ -5,11 +5,12 @@
 
 use axum::{
     Json, Router,
-    extract::{FromRef, Path, Query, State},
+    extract::{FromRef, Path, Query, State, ws::{WebSocket, WebSocketUpgrade}},
     http::{HeaderValue, Method, StatusCode, header},
     response::{Html, IntoResponse, Response},
     routing::{get, post},
 };
+use futures_util::{StreamExt, SinkExt, TryStreamExt};
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -31,6 +32,7 @@ use server::routes::{
 use server::{DeploymentImpl, error::ApiError, routes::tasks::CreateAndStartTaskRequest};
 use services::services::container::ContainerService;
 use sqlx::{self, Error as SqlxError, Row};
+use utils::log_msg::LogMsg;
 use utils::response::ApiResponse;
 use utils::text::{git_branch_id, short_uuid};
 
@@ -382,7 +384,7 @@ fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router
 
     let inner = Router::new()
         .route("/", get(forge_get_tasks).post(forge_create_task)) // Forge: override list to exclude agent tasks; creation only
-        .route("/stream/ws", get(tasks::stream_tasks_ws))
+        .route("/stream/ws", get(forge_stream_tasks_ws)) // Forge: WebSocket stream with agent filtering
         .route("/create-and-start", post(forge_create_task_and_start)) // Forge: create + start
         .nest("/{task_id}", task_id_router);
 
@@ -480,6 +482,166 @@ ORDER BY t.created_at DESC"#;
     }
 
     Ok(Json(ApiResponse::success(items)))
+}
+
+/// Forge WebSocket stream handler with agent task filtering
+/// Streams tasks for a project via WebSocket, excluding agent tasks
+#[derive(Deserialize)]
+struct TaskQuery {
+    project_id: Uuid,
+}
+
+async fn forge_stream_tasks_ws(
+    ws: WebSocketUpgrade,
+    State(deployment): State<DeploymentImpl>,
+    Query(query): Query<TaskQuery>,
+) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| async move {
+        if let Err(e) = handle_forge_tasks_ws(socket, deployment, query.project_id).await {
+            tracing::warn!("forge tasks WS closed: {}", e);
+        }
+    })
+}
+
+async fn handle_forge_tasks_ws(
+    socket: WebSocket,
+    deployment: DeploymentImpl,
+    project_id: Uuid,
+) -> anyhow::Result<()> {
+    // Get the raw stream from upstream (includes initial snapshot + live updates)
+    let db_pool = deployment.db().pool.clone();
+    let stream = deployment
+        .events()
+        .stream_tasks_raw(project_id)
+        .await?
+        .filter_map(move |msg_result| {
+            let db_pool = db_pool.clone();
+            async move {
+                match msg_result {
+                    Ok(LogMsg::JsonPatch(patch)) => {
+                        // Check if this patch contains agent tasks we need to filter out
+                        if let Some(patch_op) = patch.0.first() {
+                            // Handle direct task patches (new format)
+                            if patch_op.path().starts_with("/tasks/") {
+                                match patch_op {
+                                    json_patch::PatchOperation::Add(op) => {
+                                        if let Ok(task_with_status) =
+                                            serde_json::from_value::<TaskWithAttemptStatus>(op.value.clone())
+                                        {
+                                            // Check if this task is an agent task
+                                            let is_agent: bool = sqlx::query_scalar(
+                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
+                                            )
+                                            .bind(task_with_status.task.id)
+                                            .fetch_one(&db_pool)
+                                            .await
+                                            .unwrap_or(false);
+
+                                            if !is_agent {
+                                                return Some(Ok(LogMsg::JsonPatch(patch)));
+                                            }
+                                            // Filter out agent tasks
+                                            return None;
+                                        }
+                                    }
+                                    json_patch::PatchOperation::Replace(op) => {
+                                        if let Ok(task_with_status) =
+                                            serde_json::from_value::<TaskWithAttemptStatus>(op.value.clone())
+                                        {
+                                            // Check if this task is an agent task
+                                            let is_agent: bool = sqlx::query_scalar(
+                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
+                                            )
+                                            .bind(task_with_status.task.id)
+                                            .fetch_one(&db_pool)
+                                            .await
+                                            .unwrap_or(false);
+
+                                            if !is_agent {
+                                                return Some(Ok(LogMsg::JsonPatch(patch)));
+                                            }
+                                            // Filter out agent tasks
+                                            return None;
+                                        }
+                                    }
+                                    json_patch::PatchOperation::Remove(_) => {
+                                        // Allow all remove operations
+                                        return Some(Ok(LogMsg::JsonPatch(patch)));
+                                    }
+                                    _ => {}
+                                }
+                            }
+                            // Handle initial snapshot (replace /tasks with map)
+                            else if patch_op.path() == "/tasks" {
+                                if let json_patch::PatchOperation::Replace(op) = patch_op {
+                                    if let Some(tasks_obj) = op.value.as_object() {
+                                        // Filter out agent tasks from the initial snapshot
+                                        let mut filtered_tasks = serde_json::Map::new();
+                                        for (task_id_str, task_value) in tasks_obj {
+                                            if let Ok(task_with_status) =
+                                                serde_json::from_value::<TaskWithAttemptStatus>(task_value.clone())
+                                            {
+                                                let is_agent: bool = sqlx::query_scalar(
+                                                    "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
+                                                )
+                                                .bind(task_with_status.task.id)
+                                                .fetch_one(&db_pool)
+                                                .await
+                                                .unwrap_or(false);
+
+                                                if !is_agent {
+                                                    filtered_tasks.insert(task_id_str.to_string(), task_value.clone());
+                                                }
+                                            }
+                                        }
+
+                                        // Return filtered snapshot
+                                        let filtered_patch = json!([{
+                                            "op": "replace",
+                                            "path": "/tasks",
+                                            "value": filtered_tasks
+                                        }]);
+                                        return Some(Ok(LogMsg::JsonPatch(
+                                            serde_json::from_value(filtered_patch).unwrap()
+                                        )));
+                                    }
+                                }
+                            }
+                        }
+                        // Pass through non-task patches
+                        Some(Ok(LogMsg::JsonPatch(patch)))
+                    }
+                    Ok(other) => Some(Ok(other)),
+                    Err(e) => Some(Err(e)),
+                }
+            }
+        })
+        .map_ok(|msg| msg.to_ws_message_unchecked());
+
+    // Pin the stream for iteration
+    futures_util::pin_mut!(stream);
+
+    // Split socket into sender and receiver
+    let (mut sender, mut receiver) = socket.split();
+
+    // Drain (and ignore) any client->server messages so pings/pongs work
+    tokio::spawn(async move { while let Some(Ok(_)) = receiver.next().await {} });
+
+    // Forward server messages
+    while let Some(item) = stream.next().await {
+        match item {
+            Ok(msg) => {
+                if sender.send(msg).await.is_err() {
+                    break; // client disconnected
+                }
+            }
+            Err(e) => {
+                tracing::error!("stream error: {}", e);
+                break;
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Build task_attempts router with forge override for create endpoint
@@ -1101,10 +1263,10 @@ async fn get_neuron_subtasks(
 /// Forge Agent model
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 struct ForgeAgent {
-    id: String,
-    project_id: String,
+    id: Uuid,
+    project_id: Uuid,
     agent_type: String, // 'master', 'wish', 'forge', 'review'
-    task_id: String,
+    task_id: Uuid,
     created_at: String,
     updated_at: String,
 }
@@ -1126,7 +1288,7 @@ async fn get_forge_agents(
         sqlx::query_as::<_, ForgeAgent>(
             "SELECT * FROM forge_agents WHERE project_id = ? AND agent_type = ?"
         )
-        .bind(params.project_id.to_string())
+        .bind(params.project_id)
         .bind(agent_type)
         .fetch_all(pool)
         .await?
@@ -1134,7 +1296,7 @@ async fn get_forge_agents(
         sqlx::query_as::<_, ForgeAgent>(
             "SELECT * FROM forge_agents WHERE project_id = ?"
         )
-        .bind(params.project_id.to_string())
+        .bind(params.project_id)
         .fetch_all(pool)
         .await?
     };
@@ -1169,10 +1331,10 @@ async fn create_forge_agent(
 
     sqlx::query(
         r#"INSERT INTO tasks (id, project_id, title, description, status, created_at, updated_at)
-           VALUES (?, ?, ?, ?, 'todo', datetime('now'), datetime('now'))"#
+           VALUES (?, ?, ?, ?, 'agent', datetime('now'), datetime('now'))"#
     )
-    .bind(task_id.to_string())
-    .bind(payload.project_id.to_string())
+    .bind(task_id)
+    .bind(payload.project_id)
     .bind(&title)
     .bind(&description)
     .execute(pool)
@@ -1183,10 +1345,10 @@ async fn create_forge_agent(
         r#"INSERT INTO forge_agents (id, project_id, agent_type, task_id, created_at, updated_at)
            VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))"#
     )
-    .bind(agent_id.to_string())
-    .bind(payload.project_id.to_string())
+    .bind(agent_id)
+    .bind(payload.project_id)
     .bind(&payload.agent_type)
-    .bind(task_id.to_string())
+    .bind(task_id)
     .execute(pool)
     .await?;
 
@@ -1194,7 +1356,7 @@ async fn create_forge_agent(
     let agent: ForgeAgent = sqlx::query_as(
         "SELECT * FROM forge_agents WHERE id = ?"
     )
-    .bind(agent_id.to_string())
+    .bind(agent_id)
     .fetch_one(pool)
     .await?;
 
