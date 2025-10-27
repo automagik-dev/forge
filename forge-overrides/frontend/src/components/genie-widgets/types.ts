@@ -1,11 +1,12 @@
 import { ReactNode } from 'react';
+import { LucideIcon } from 'lucide-react';
 
 // Workflow definition
 export interface WorkflowDefinition {
   id: string;
   label: string;
   description: string;
-  icon?: React.ComponentType<any>;
+  icon?: LucideIcon;
   genieType: 'wish' | 'forge' | 'review';
   columnStatus: 'todo' | 'inprogress' | 'inreview';
   externalAgent?: string;
@@ -16,7 +17,7 @@ export interface SkillDefinition {
   id: string;
   name: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: LucideIcon;
   genieType: 'wish' | 'forge' | 'review';
   defaultEnabled?: boolean;
 }
@@ -40,7 +41,7 @@ export interface SubGenieConfig {
   id: 'wish' | 'forge' | 'review';
   name: string;
   columnStatus: 'todo' | 'inprogress' | 'inreview';
-  icon: React.ComponentType<any>;
+  icon: LucideIcon;
   color: string; // Tailwind color for UI theming
   workflows: WorkflowDefinition[];
   skills: SkillDefinition[];

@@ -17,10 +17,11 @@ export default function ReleaseNotesPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('https://api.github.com/repos/namastexlabs/automagik-forge/releases')
+    fetch('/api/forge/releases')
       .then(res => res.json())
       .then(data => {
-        setReleases(data);
+        // Backend returns ApiResponse wrapper: { success: true, data: [...] }
+        setReleases(data.data || data);
         setLoading(false);
       })
       .catch(err => {
