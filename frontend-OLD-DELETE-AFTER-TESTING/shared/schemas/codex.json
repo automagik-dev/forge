@@ -1,0 +1,156 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "properties": {
+    "append_prompt": {
+      "title": "Append Prompt",
+      "description": "Extra text appended to the prompt",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "textarea",
+      "default": null
+    },
+    "sandbox": {
+      "description": "Sandbox policy modes for Codex",
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "auto",
+        "read-only",
+        "workspace-write",
+        "danger-full-access",
+        null
+      ]
+    },
+    "ask_for_approval": {
+      "anyOf": [
+        {
+          "description": "Determines when the user is consulted to approve Codex actions.",
+          "oneOf": [
+            {
+              "description": "Read-only commands are auto-approved. Everything else will ask the user to approve.",
+              "type": "string",
+              "const": "unless-trusted"
+            },
+            {
+              "description": "All commands run in a restricted sandbox initially.\nIf the command fails, the user is asked to approve execution without the sandbox.",
+              "type": "string",
+              "const": "on-failure"
+            },
+            {
+              "description": "The model decides when to ask the user for approval.",
+              "type": "string",
+              "const": "on-request"
+            },
+            {
+              "description": "Never ask the user to approve commands. Commands that fail in the restricted sandbox will not be retried.",
+              "type": "string",
+              "const": "never"
+            }
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "oss": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "model": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "model_reasoning_effort": {
+      "description": "Reasoning effort for the underlying model",
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        null
+      ]
+    },
+    "model_reasoning_summary": {
+      "description": "Model reasoning summary style",
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "auto",
+        "concise",
+        "detailed",
+        "none",
+        null
+      ]
+    },
+    "model_reasoning_summary_format": {
+      "description": "Format for model reasoning summaries",
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "none",
+        "experimental",
+        null
+      ]
+    },
+    "profile": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "base_instructions": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "include_plan_tool": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "include_apply_patch_tool": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "base_command_override": {
+      "title": "Base Command Override",
+      "description": "Override the base command with a custom command",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "additional_params": {
+      "title": "Additional Parameters",
+      "description": "Additional parameters to append to the base command",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "type": "object"
+}

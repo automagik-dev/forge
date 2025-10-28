@@ -1,0 +1,200 @@
+{
+  "settings": {
+    "layout": {
+      "nav": {
+        "title": "Configurações",
+        "general": "Geral",
+        "generalDesc": "Tema, notificações e preferências",
+        "agents": "Agentes",
+        "agentsDesc": "Configurações dos agentes de código",
+        "mcp": "Servidores MCP",
+        "mcpDesc": "Servidores Model Context Protocol"
+      }
+    },
+    "general": {
+      "loading": "Carregando configurações...",
+      "loadError": "Falha ao carregar configuração.",
+      "save": {
+        "button": "Salvar Configurações",
+        "success": "✓ Configurações salvas com sucesso!",
+        "error": "Falha ao salvar configuração",
+        "unsavedChanges": "• Você tem alterações não salvas",
+        "discard": "Descartar"
+      },
+      "appearance": {
+        "title": "Aparência",
+        "description": "Personalize a aparência e sensação da aplicação.",
+        "theme": {
+          "label": "Tema",
+          "placeholder": "Selecione o tema",
+          "helper": "Escolha seu esquema de cores preferido."
+        },
+        "language": {
+          "label": "Idioma",
+          "placeholder": "Selecione o idioma",
+          "helper": "Escolha seu idioma preferido. Padrão do Navegador segue o idioma do sistema."
+        }
+      },
+      "taskExecution": {
+        "title": "Execução de Tarefas",
+        "description": "Configure como as tarefas são executadas e processadas.",
+        "executor": {
+          "label": "Configuração Padrão do Agente",
+          "placeholder": "Selecione o perfil",
+          "helper": "Escolha a configuração padrão do agente ao criar uma tentativa de tarefa."
+        },
+        "variant": "PADRÃO",
+        "defaultLabel": "Padrão"
+      },
+      "editor": {
+        "title": "Editor",
+        "description": "Configure sua experiência de edição de código.",
+        "type": {
+          "label": "Tipo de Editor",
+          "placeholder": "Selecione o editor",
+          "helper": "Escolha sua interface de editor de código preferida."
+        }
+      },
+      "github": {
+        "title": "Integração GitHub",
+        "connected": "Conectado como {{username}}",
+        "connectButton": "Conectar Conta GitHub",
+        "manage": "Gerenciar",
+        "disconnect": "Desconectar",
+        "helper": "Conecte sua conta GitHub para acessar repositórios privados e habilitar operações Git avançadas.",
+        "or": "OU",
+        "pat": {
+          "label": "Token de Acesso Pessoal",
+          "helper": "Token de Acesso Pessoal do GitHub com permissões 'repo'. Use isso se as permissões OAuth forem insuficientes para repositórios privados e repositórios de organizações.",
+          "createTokenLink": "Criar token aqui"
+        }
+      },
+      "git": {
+        "title": "Git",
+        "description": "Configure preferências de nomenclatura de branches",
+        "branchPrefix": {
+          "label": "Prefixo do Branch",
+          "placeholder": "vk",
+          "helper": "Prefixo para nomes de branch gerados automaticamente. Deixe vazio para sem prefixo.",
+          "preview": "Visualizar:",
+          "previewWithPrefix": "{{prefix}}/1a2b-nome-tarefa",
+          "previewNoPrefix": "1a2b-nome-tarefa",
+          "errors": {
+            "slash": "Prefixo não pode conter '/'.",
+            "startsWithDot": "Prefixo não pode começar com '.'.",
+            "endsWithDot": "Prefixo não pode terminar com '.' ou '.lock'.",
+            "invalidSequence": "Contém sequência inválida (.., @{).",
+            "invalidChars": "Contém caracteres inválidos.",
+            "controlChars": "Contém caracteres de controle."
+          }
+        }
+      },
+      "notifications": {
+        "title": "Notificações",
+        "description": "Controle quando e como você recebe notificações.",
+        "sound": {
+          "label": "Notificações Sonoras",
+          "helper": "Reproduzir som quando tentativas de tarefa terminarem de executar.",
+          "fileLabel": "Som",
+          "filePlaceholder": "Selecione o som",
+          "fileHelper": "Escolha o som a reproduzir quando tarefas completarem. Clique no botão de volume para visualizar."
+        },
+        "push": {
+          "label": "Notificações Push",
+          "helper": "Mostrar notificações do sistema quando tentativas de tarefa terminarem de executar."
+        }
+      },
+      "privacy": {
+        "title": "Privacidade",
+        "description": "Ajude a melhorar o Vibe-Kanban compartilhando dados de uso anônimos.",
+        "telemetry": {
+          "label": "Habilitar Telemetria",
+          "helper": "Habilita rastreamento de eventos de uso anônimos para ajudar a melhorar a aplicação. Nenhum prompt ou informação de projeto é coletada."
+        }
+      },
+      "taskTemplates": {
+        "title": "Modelos de Tarefa",
+        "description": "Gerencie modelos de tarefa globais que podem ser usados em todos os projetos."
+      },
+      "safety": {
+        "title": "Segurança e Avisos",
+        "description": "Redefinir confirmações de avisos de segurança e integração.",
+        "disclaimer": {
+          "title": "Confirmação de Aviso",
+          "description": "Redefinir o aviso de segurança.",
+          "button": "Redefinir"
+        },
+        "onboarding": {
+          "title": "Integração",
+          "description": "Redefinir o fluxo de integração.",
+          "button": "Redefinir"
+        }
+      }
+    },
+    "agents": {
+      "title": "Configurações de Agentes de Código",
+      "description": "Personalize o comportamento dos agentes de código com diferentes configurações.",
+      "loading": "Carregando configurações de agentes...",
+      "save": {
+        "button": "Salvar Configurações de Agentes",
+        "success": "✓ Configurações do executor salvas com sucesso!"
+      },
+      "editor": {
+        "formLabel": "Editar JSON",
+        "agentLabel": "Agente",
+        "agentPlaceholder": "Selecione o tipo de executor",
+        "configLabel": "Configuração",
+        "configPlaceholder": "Selecione a configuração",
+        "createNew": "Criar novo...",
+        "deleteTitle": "Não é possível excluir a última configuração",
+        "deleteButton": "Excluir {{name}}",
+        "deleteText": "Excluir",
+        "jsonLabel": "Configuração do Agente (JSON)",
+        "jsonPlaceholder": "Carregando perfis...",
+        "jsonLoading": "Carregando...",
+        "pathLabel": "Local do arquivo de configuração:"
+      },
+      "errors": {
+        "deleteFailed": "Falha ao excluir configuração. Por favor, tente novamente.",
+        "saveFailed": "Falha ao salvar configurações de agente. Por favor, tente novamente.",
+        "saveConfigFailed": "Falha ao salvar configuração. Por favor, tente novamente."
+      }
+    },
+    "mcp": {
+      "title": "Configuração do Servidor MCP",
+      "description": "Configure servidores Model Context Protocol para estender capacidades dos agentes de código com ferramentas e recursos personalizados.",
+      "loading": "Carregando configuração MCP...",
+      "applying": "Aplicando configuração...",
+      "labels": {
+        "agent": "Agente",
+        "agentPlaceholder": "Selecione o executor",
+        "agentHelper": "Escolha qual agente configurar servidores MCP.",
+        "serverConfig": "Configuração do Servidor (JSON)",
+        "popularServers": "Servidores populares",
+        "serverHelper": "Clique em um cartão para inserir esse Servidor MCP no JSON acima.",
+        "saveLocation": "Alterações serão salvas em:"
+      },
+      "loadingStates": {
+        "jsonEditor": "Carregando...",
+        "configuration": "Carregando configuração atual do servidor MCP..."
+      },
+      "errors": {
+        "loadFailed": "Falha ao carregar configuração.",
+        "invalidJson": "Formato JSON inválido",
+        "validationError": "Erro de validação",
+        "saveFailed": "Falha ao salvar servidores MCP",
+        "applyFailed": "Falha ao aplicar configuração do servidor MCP",
+        "addServerFailed": "Falha ao adicionar servidor pré-configurado",
+        "mcpError": "Erro de Configuração MCP: {{error}}",
+        "notSupported": "MCP Não Suportado",
+        "supportMessage": "Para usar servidores MCP, selecione um executor diferente que suporte MCP (Claude, Amp, Gemini, Codex ou Opencode) acima."
+      },
+      "save": {
+        "button": "Salvar Configuração MCP",
+        "success": "Configurações Salvas!",
+        "successMessage": "✓ Configuração MCP salva com sucesso!",
+        "loading": "Carregando configuração atual do servidor MCP..."
+      }
+    }
+  }
+}
