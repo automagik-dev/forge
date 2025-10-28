@@ -138,22 +138,10 @@ async function main() {
     log('blue', '💡', 'Trigger manually: gh workflow run build-all-platforms.yml');
   }
 
-  // Publish to npm
+  // NPM publishing happens in build-all-platforms.yml after binaries are built
   if (opts['publish']) {
-    log('blue', '📦', 'Publishing to npm...');
-    const tag = version.includes('-rc.') ? 'next' : 'latest';
-
-    // Build NPX CLI package (without binaries for RC, binaries added in CI)
-    if (version.includes('-rc.')) {
-      log('yellow', '⚠️', 'RC release: binaries will be added by CI workflow');
-    }
-
-    try {
-      exec(`cd npx-cli && npm publish --tag ${tag} --access public`, false);
-      log('green', '✅', `Published to @${tag}`);
-    } catch (e) {
-      log('yellow', '⚠️', 'Publish failed (may already exist)');
-    }
+    log('yellow', '⚠️', 'NPM publish skipped - handled by build-all-platforms workflow after binaries are ready');
+    log('blue', '💡', 'The build-all-platforms.yml workflow will publish to npm once all platform binaries are built');
   }
 
   // Create GitHub release
