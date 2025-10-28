@@ -138,10 +138,6 @@ async function main() {
     log('magenta', '📌', `Using version: ${version}`);
   }
 
-  // Generate changelog
-  log('blue', '📝', 'Generating changelog...');
-  const changelogContent = generateMechanicalChangelog(version);
-
   // Install dependencies and build frontend (required for Rust tests - RustEmbed needs frontend/dist)
   log('blue', '📦', 'Installing dependencies...');
   try {
@@ -193,7 +189,7 @@ async function main() {
   // Create GitHub release
   if (opts['github-release']) {
     log('blue', '🏷️', 'Creating GitHub release...');
-    createGitHubRelease(version, changelogContent);
+    createGitHubRelease(version);
   }
 
   log('green', '🎉', `Release v${version} complete!`);
@@ -294,22 +290,16 @@ function generateMechanicalChangelog(version) {
   return changelog;
 }
 
-function createGitHubRelease(version, changelog) {
+function createGitHubRelease(version) {
   const isRc = version.includes('-rc.');
   const prerelease = isRc ? '--prerelease' : '';
 
-  const notesFile = path.join(os.tmpdir(), `release-notes-${Date.now()}.md`);
-  fs.writeFileSync(notesFile, changelog);
-
   try {
-    exec(`gh release create v${version} -F "${notesFile}" --title "v${version}" ${prerelease}`);
-    log('green', '✅', 'GitHub release created');
+    // Use GitHub's auto-generated release notes instead of manual changelog
+    exec(`gh release create v${version} --title "v${version}" ${prerelease} --generate-notes`);
+    log('green', '✅', 'GitHub release created with auto-generated notes');
   } catch (e) {
     log('yellow', '⚠️', 'GitHub release creation failed (may already exist)');
-  } finally {
-    try {
-      fs.unlinkSync(notesFile);
-    } catch (e) {}
   }
 }
 
