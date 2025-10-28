@@ -5,8 +5,9 @@ on:
   # push:
   #   branches:
   #     - main
-  tags:
-    - 'v*'
+  # tags disabled - workflow expects inputs, not tag triggers
+  # tags:
+  #   - 'v*'
   # pull_request disabled to save resources - use 'make publish' instead
   # pull_request:
   #   types: [closed]
