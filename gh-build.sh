@@ -413,60 +413,29 @@ case "${1:-status}" in
             fi
         fi
         
-        # Select version bump type (skip if resuming)
-        if [ "${SKIP_VERSION_BUMP:-false}" != "true" ] && [ -z "$VERSION_TYPE" ]; then
-            # Use auto version if provided
-            if [ -n "$AUTO_VERSION" ]; then
-                VERSION_TYPE="$AUTO_VERSION"
-                echo "✅ Auto-selected: $VERSION_TYPE version bump"
-            else
-                clear
-                echo "╔═══════════════════════════════════════════════════════════════╗"
-                echo "║                   🏷️  Version Bump Selection                   ║"
-                echo "╚═══════════════════════════════════════════════════════════════╝"
-                echo ""
-                echo "📦 Current Version: $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')"
-                echo ""
-                echo "🎯 Choose the type of release based on your changes:"
-                echo ""
-                echo "   🐛 patch   - Bug fixes, security patches, minor improvements"
-                echo "              → $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/' | awk -F. '{print $1"."$2"."($3+1)}')"
-                echo ""
-                echo "   ✨ minor   - New features, significant improvements, API additions"
-                echo "              → $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/' | awk -F. '{print $1"."($2+1)".0"}')"
-                echo ""
-                echo "   🚨 major   - Breaking changes, API changes, major overhauls"
-                echo "              → $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/' | awk -F. '{print ($1+1)".0.0"}')"
-                echo ""
-                echo "═══════════════════════════════════════════════════════════════"
-                echo ""
+        # RC-only workflow - no version selection needed
+        echo ""
+        echo "📦 Current Version: $CURRENT_VERSION"
 
-                PS3="Choose version bump type: "
-                select VERSION_TYPE in "🐛 patch (bug fixes & improvements)" "✨ minor (new features & enhancements)" "🚨 major (breaking changes)" "❌ Cancel"; do
-                    case $VERSION_TYPE in
-                        "🐛 patch (bug fixes & improvements)")
-                            VERSION_TYPE="patch"
-                            echo "✅ Selected: patch version bump"
-                            break
-                            ;;
-                        "✨ minor (new features & enhancements)")
-                            VERSION_TYPE="minor"
-                            echo "✅ Selected: minor version bump"
-                            break
-                            ;;
-                        "🚨 major (breaking changes)")
-                            VERSION_TYPE="major"
-                            echo "✅ Selected: major version bump"
-                            break
-                            ;;
-                        "❌ Cancel")
-                            echo "❌ Publishing cancelled"
-                            exit 1
-                            ;;
-                    esac
-                done
-            fi
+        # Calculate next RC version
+        if [[ "$CURRENT_VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-rc\.([0-9]+)$ ]]; then
+            BASE_VERSION="${BASH_REMATCH[1]}"
+            RC_NUM="${BASH_REMATCH[2]}"
+            NEXT_RC_NUM=$((RC_NUM + 1))
+            NEXT_VERSION="$BASE_VERSION-rc.$NEXT_RC_NUM"
+        elif [[ "$CURRENT_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            MAJOR="${BASH_REMATCH[1]}"
+            MINOR="${BASH_REMATCH[2]}"
+            PATCH="${BASH_REMATCH[3]}"
+            NEXT_PATCH=$((PATCH + 1))
+            NEXT_VERSION="$MAJOR.$MINOR.$NEXT_PATCH-rc.1"
+        else
+            echo "❌ Invalid version format: $CURRENT_VERSION"
+            exit 1
         fi
+
+        echo "📈 Next RC Version: $NEXT_VERSION"
+        echo ""
         
         # Check for saved release notes from previous attempts
         SAVED_NOTES_FILE=".release-notes-v${CURRENT_VERSION}.saved"
@@ -611,40 +580,37 @@ EOF
             exit 1
         else
             echo ""
-            echo "🏗️  Step 1: Triggering pre-release workflow..."
+            echo "🏗️  Triggering RC release workflow..."
             echo "This will:"
-            if [ "${SKIP_VERSION_BUMP:-false}" != "true" ]; then
-                echo "  • Bump version ($VERSION_TYPE)"
-            else
-                echo "  • Use existing version $CURRENT_VERSION"
-            fi
-            echo "  • Build all platforms"
-            echo "  • Create pre-release with .tgz package"
+            echo "  • Auto-increment RC version (0.5.0-rc.3 → 0.5.0-rc.4)"
+            echo "  • Build all platforms via GitHub Actions"
+            echo "  • Publish to npm @next tag"
+            echo "  • Create GitHub pre-release"
             echo ""
-            
-            # Trigger the version bump workflow
-            gh workflow run "Version Bump and Tag" --repo "$REPO" -f version_type="$VERSION_TYPE" || {
-                echo "❌ Failed to trigger version bump workflow"
+
+            # Trigger the simplified RC-only release workflow
+            gh workflow run "🚀 Unified Release" --repo "$REPO" -f action="bump-rc" || {
+                echo "❌ Failed to trigger release workflow"
                 rm -f .release-notes-draft.md
                 exit 1
             }
-            
-            echo "⏳ Waiting for version bump workflow to start..."
+
+            echo "⏳ Waiting for release workflow to start..."
             sleep 10
-            
+
             # Find the workflow run
-            PRERELEASE_RUN=$(gh run list --workflow="Version Bump and Tag" --repo "$REPO" --limit 1 --json databaseId,status --jq '.[0] | select(.status != "completed") | .databaseId')
-            
+            PRERELEASE_RUN=$(gh run list --workflow="release.yml" --repo "$REPO" --limit 1 --json databaseId,status --jq '.[0] | select(.status != "completed") | .databaseId')
+
             if [ -z "$PRERELEASE_RUN" ]; then
-                echo "⚠️  Could not find the pre-release workflow run"
+                echo "⚠️  Could not find the release workflow run"
                 echo "Check manually at: https://github.com/$REPO/actions"
                 exit 1
             fi
-            
-            echo "📋 Version bump workflow started: Run ID $PRERELEASE_RUN"
+
+            echo "📋 Release workflow started: Run ID $PRERELEASE_RUN"
             echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$PRERELEASE_RUN"
             echo ""
-            echo "⏳ Monitoring version bump..."
+            echo "⏳ Monitoring RC release..."
             
             # Monitor the pre-release build and get the new version
             NEW_VERSION=""
