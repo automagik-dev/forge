@@ -23,7 +23,7 @@ export async function triggerWorkflow(workflow, inputs = {}) {
     .map(([key, value]) => `-f ${key}="${value}"`)
     .join(' ');
 
-  exec(`gh workflow run ${workflow} --repo ${config.repo} ${inputArgs}`);
+  exec(`gh workflow run "${workflow}" --repo ${config.repo} ${inputArgs}`);
 
   // Wait for workflow to start
   await new Promise(resolve => setTimeout(resolve, 10000));
