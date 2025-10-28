@@ -259,9 +259,9 @@ const PendingApprovalEntry = ({
         setHasResponded(true);
         setIsEnteringReason(false);
         setDenyReason('');
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error('Approval respond failed:', e);
-        setError(e?.message || 'Failed to send response');
+        setError(e instanceof Error ? e.message : 'Failed to send response');
       } finally {
         setIsResponding(false);
       }

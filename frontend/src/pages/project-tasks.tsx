@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { AlertTriangle, Plus } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import { tasksApi } from '@/lib/api';
-import type { GitBranch } from 'shared/types';
+import type { GitBranch, TaskAttempt, Task, BranchStatus } from 'shared/types';
 import { openTaskForm } from '@/lib/openTaskForm';
 import { FeatureShowcaseModal } from '@/components/showcase/FeatureShowcaseModal';
 import { showcases } from '@/config/showcases';
@@ -80,10 +80,10 @@ function DiffsPanelContainer({
   branches,
   setGitError,
 }: {
-  attempt: any;
-  selectedTask: any;
+  attempt: TaskAttempt | undefined;
+  selectedTask: Task | undefined;
   projectId: string;
-  branchStatus: any;
+  branchStatus: BranchStatus | undefined;
   branches: GitBranch[];
   setGitError: (error: string | null) => void;
 }) {
@@ -201,6 +201,7 @@ export function ProjectTasks() {
     isAttemptsLoading,
     latestAttemptId,
     navigate,
+    navigateWithSearch,
   ]);
 
   useEffect(() => {

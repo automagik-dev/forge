@@ -18,13 +18,22 @@ export type Props = Readonly<{
 const MAX_VISIBLE_ELEMENTS = 5;
 const MAX_BADGES = 6;
 
+interface ComponentInfo {
+  name: string;
+  pathToSource: string;
+  source?: {
+    lineNumber?: number;
+    columnNumber?: number;
+  };
+}
+
 // Build component chain from inner-most to outer-most for banner display
 function buildChainInnerToOuterForBanner(entry: ClickedEntry) {
   const comps = entry.payload.components ?? [];
   const s = entry.payload.selected;
 
   // Start with selected as innermost, cast to ComponentInfo for uniform handling
-  const innerToOuter = [s as any];
+  const innerToOuter: ComponentInfo[] = [s as ComponentInfo];
 
   // Add components that aren't duplicates
   const selectedKey = `${s.name}|${s.pathToSource}|${s.source?.lineNumber}|${s.source?.columnNumber}`;

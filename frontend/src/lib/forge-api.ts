@@ -166,14 +166,14 @@ export const forgeApi = {
   // Omni instances
   /**
    * List the Omni instances
-   * @returns {Promise<{ instances: any[] }>} - A promise that resolves to the Omni instances
+   * @returns {Promise<{ instances: Array<Record<string, unknown>> }>} - A promise that resolves to the Omni instances
    * @throws {ApiError} - Throws an ApiError if the request fails
    * @example
    * const instances = await forgeApi.listOmniInstances();
    * return instances;
    */
-  listOmniInstances: async (): Promise<{ instances: any[] }> => {
+  listOmniInstances: async (): Promise<{ instances: Array<Record<string, unknown>> }> => {
     const response = await makeRequest('/api/forge/omni/instances');
-    return handleApiResponse<{ instances: any[] }>(response);
+    return handleApiResponse<{ instances: Array<Record<string, unknown>> }>(response);
   },
 };

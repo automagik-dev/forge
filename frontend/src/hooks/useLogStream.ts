@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import type { PatchType } from 'shared/types';
+import type { Operation } from 'rfc6902';
 
 type LogEntry = Extract<PatchType, { type: 'STDOUT' } | { type: 'STDERR' }>;
 
@@ -52,10 +53,10 @@ export const useLogStream = (processId: string): UseLogStreamResult => {
 
           // Handle different message types based on LogMsg enum
           if ('JsonPatch' in data) {
-            const patches = data.JsonPatch;
-            patches.forEach((patch: any) => {
-              const value = patch?.value;
-              if (!value || !value.type) return;
+            const patches = data.JsonPatch as Operation[];
+            patches.forEach((patch) => {
+              const value = patch?.value as PatchType | undefined;
+              if (!value || !('type' in value)) return;
 
               switch (value.type) {
                 case 'STDOUT':

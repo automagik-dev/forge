@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ export function ProjectList() {
   const [error, setError] = useState('');
   const [focusedProjectId, setFocusedProjectId] = useState<string | null>(null);
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     setLoading(true);
     setError('');
 
@@ -31,7 +31,7 @@ export function ProjectList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   const handleCreateProject = async () => {
     try {
@@ -67,7 +67,7 @@ export function ProjectList() {
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [fetchProjects]);
 
   return (
     <div className="space-y-6 p-8 pb-16 md:pb-8 h-full overflow-auto">

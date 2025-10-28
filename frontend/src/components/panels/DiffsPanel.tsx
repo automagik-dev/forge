@@ -124,8 +124,13 @@ export function DiffsPanel({ selectedAttempt, gitOps }: DiffsPanelProps) {
   );
 }
 
+interface DiffData {
+  filePath: string;
+  [key: string]: unknown;
+}
+
 interface DiffsPanelContentProps {
-  diffs: any[];
+  diffs: DiffData[];
   fileCount: number;
   added: number;
   deleted: number;
@@ -136,7 +141,7 @@ interface DiffsPanelContentProps {
   selectedAttempt: TaskAttempt | null;
   gitOps?: GitOperationsInputs;
   loading: boolean;
-  t: (key: string, params?: any) => string;
+  t: (key: string, params?: Record<string, unknown>) => string;
 }
 
 function DiffsPanelContent({

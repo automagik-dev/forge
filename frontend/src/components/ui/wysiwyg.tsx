@@ -132,7 +132,7 @@ function MarkdownOnChangePlugin({
 }: {
   onMarkdownChange?: (md: string) => void;
   onEditorStateChange?: (s: EditorState) => void;
-  exportTransformers: any[];
+  exportTransformers: unknown[];
   lastMdRef: React.MutableRefObject<string>;
 }) {
   const [editor] = useLexicalComposerContext();
@@ -165,7 +165,7 @@ function MarkdownValuePlugin({
   lastMdRef,
 }: {
   value?: string;
-  importTransformers: any[];
+  importTransformers: unknown[];
   lastMdRef: React.MutableRefObject<string>;
 }) {
   const [editor] = useLexicalComposerContext();
@@ -188,7 +188,7 @@ function MarkdownDefaultValuePlugin({
   lastMdRef,
 }: {
   defaultValue: string;
-  importTransformers: any[];
+  importTransformers: unknown[];
   lastMdRef: React.MutableRefObject<string>;
 }) {
   const [editor] = useLexicalComposerContext();

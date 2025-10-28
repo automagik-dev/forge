@@ -63,8 +63,8 @@ const OmniModalImpl = ({ forgeSettings, onChange }: OmniModalProps) => {
       } else {
         setError(result.error || 'Invalid configuration');
       }
-    } catch (e: any) {
-      setError(e.message || 'Failed to validate configuration');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to validate configuration');
     } finally {
       setValidating(false);
     }
@@ -89,7 +89,7 @@ const OmniModalImpl = ({ forgeSettings, onChange }: OmniModalProps) => {
           api_key: formData.api_key,
           instance: formData.instance,
           recipient: formData.recipient,
-          recipient_type: formData.recipient_type as any,
+          recipient_type: formData.recipient_type as string,
         },
       };
 
@@ -110,8 +110,8 @@ const OmniModalImpl = ({ forgeSettings, onChange }: OmniModalProps) => {
       // Update parent state with saved settings
       onChange(savedSettings.data || updatedSettings);
       modal.hide();
-    } catch (e: any) {
-      setError(e.message || 'Failed to save configuration');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to save configuration');
     } finally {
       setLoading(false);
     }

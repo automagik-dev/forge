@@ -120,6 +120,7 @@ export const useJsonPatchWsStream = <T>(
             dataRef.current = structuredClone(dataRef.current);
 
             // Apply patch (mutates the clone in place)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             applyPatch(dataRef.current as any, filtered);
 
             // React re-render: dataRef.current is already a new object
@@ -187,8 +188,7 @@ export const useJsonPatchWsStream = <T>(
     endpoint,
     enabled,
     initialData,
-    options.injectInitialEntry,
-    options.deduplicatePatches,
+    options,
     retryNonce,
   ]);
 

@@ -58,7 +58,7 @@ export function Footer() {
       .catch(() => {
         // Silently fail - update check is optional
       });
-  }, [health?.version]);
+  }, [health]);
 
   const getHealthColor = () => {
     if (!health) return 'bg-gray-400';

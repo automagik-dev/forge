@@ -51,7 +51,7 @@ export function AgentSettings() {
     useState<string>('CLAUDE_CODE');
   const [selectedConfiguration, setSelectedConfiguration] =
     useState<string>('DEFAULT');
-  const [localParsedProfiles, setLocalParsedProfiles] = useState<any>(null);
+  const [localParsedProfiles, setLocalParsedProfiles] = useState<unknown>(null);
   const [isDirty, setIsDirty] = useState(false);
 
   // Sync server state to local state when not dirty
@@ -509,7 +509,17 @@ export function AgentSettings() {
                 selectedConfiguration
               ]?.[selectedExecutorType] && (
                 <ExecutorConfigForm
-                  executor={selectedExecutorType as any}
+                  executor={
+                    selectedExecutorType as
+                      | 'AMP'
+                      | 'CLAUDE_CODE'
+                      | 'GEMINI'
+                      | 'CODEX'
+                      | 'CURSOR'
+                      | 'COPILOT'
+                      | 'OPENCODE'
+                      | 'QWEN_CODE'
+                  }
                   value={
                     localParsedProfiles.executors[selectedExecutorType][
                       selectedConfiguration

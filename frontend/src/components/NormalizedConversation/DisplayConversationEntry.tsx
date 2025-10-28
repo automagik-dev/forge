@@ -6,6 +6,7 @@ import {
   TaskAttempt,
   ToolStatus,
   type NormalizedEntryType,
+  type JsonValue,
 } from 'shared/types.ts';
 import type { ProcessStartPayload } from '@/types/logs';
 import FileChangeRenderer from './FileChangeRenderer';
@@ -41,7 +42,6 @@ type Props = {
 };
 
 type FileEditAction = Extract<ActionType, { action: 'file_edit' }>;
-type JsonValue = any;
 
 const renderJson = (v: JsonValue) => (
   <pre className="whitespace-pre-wrap">{JSON.stringify(v, null, 2)}</pre>
@@ -418,7 +418,7 @@ const PlanPresentationCard: React.FC<{
 
 const ToolCallCard: React.FC<{
   entryType?: Extract<NormalizedEntryType, { type: 'tool_use' }>;
-  action?: any;
+  action?: ActionType;
   expansionKey: string;
   content?: string;
   entryContent?: string;
@@ -436,7 +436,7 @@ const ToolCallCard: React.FC<{
   forceExpanded = false,
 }) => {
   const { t } = useTranslation('common');
-  const at: any = entryType?.action_type || action;
+  const at: ActionType | undefined = entryType?.action_type || action;
   const [expanded, toggle] = useExpandable(
     `tool-entry:${expansionKey}`,
     defaultExpanded
@@ -621,11 +621,11 @@ function DisplayConversationEntry({
   const greyed = isProcessGreyed(executionProcessId);
 
   if (isProcessStart(entry)) {
-    const toolAction: any = entry.action ?? null;
+    const toolAction: ActionType | null = entry.action ?? null;
     return (
       <div className={greyed ? 'opacity-50 pointer-events-none' : undefined}>
         <ToolCallCard
-          action={toolAction}
+          action={toolAction ?? undefined}
           expansionKey={expansionKey}
           content={toolAction?.message ?? toolAction?.summary ?? undefined}
         />

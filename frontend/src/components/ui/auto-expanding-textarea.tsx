@@ -8,7 +8,7 @@ interface AutoExpandingTextareaProps extends React.ComponentProps<'textarea'> {
 const AutoExpandingTextarea = React.forwardRef<
   HTMLTextAreaElement,
   AutoExpandingTextareaProps
->(({ className, maxRows = 10, ...props }, ref) => {
+>(({ className, maxRows = 10, onInput, ...props }, ref) => {
   const internalRef = React.useRef<HTMLTextAreaElement>(null);
 
   // Get the actual ref to use
@@ -34,7 +34,7 @@ const AutoExpandingTextarea = React.forwardRef<
     // Set the height to scrollHeight, but cap at maxHeight
     const newHeight = Math.min(textarea.scrollHeight, maxHeight);
     textarea.style.height = `${newHeight}px`;
-  }, [maxRows]);
+  }, [maxRows, textareaRef]);
 
   // Adjust height on mount and when content changes
   React.useEffect(() => {
@@ -45,11 +45,11 @@ const AutoExpandingTextarea = React.forwardRef<
   const handleInput = React.useCallback(
     (e: React.FormEvent<HTMLTextAreaElement>) => {
       adjustHeight();
-      if (props.onInput) {
-        props.onInput(e);
+      if (onInput) {
+        onInput(e);
       }
     },
-    [adjustHeight, props.onInput]
+    [adjustHeight, onInput]
   );
 
   return (

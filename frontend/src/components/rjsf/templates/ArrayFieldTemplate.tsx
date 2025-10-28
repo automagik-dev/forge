@@ -51,7 +51,7 @@ interface ArrayItemProps {
 
 const ArrayItem = ({ element, disabled, readonly }: ArrayItemProps) => {
   const { children } = element;
-  const elementAny = element as any; // Type assertion needed for RJSF v6 beta properties
+  const elementAny = element as unknown as { hasRemove?: boolean; onRemoveIndexClick?: (index: number) => void; index: number };
 
   return (
     <div className="flex items-center gap-2">

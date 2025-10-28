@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { useAttemptExecution } from '@/hooks/useAttemptExecution';
 import { useBranchStatus } from '@/hooks/useBranchStatus';
 import { attemptsApi, executionProcessesApi } from '@/lib/api';
-import type { ExecutionProcess, TaskAttempt } from 'shared/types';
+import type { ExecutionProcess, TaskAttempt, ExecutorAction } from 'shared/types';
 
 /**
  * Reusable hook to retry a process given its executionProcessId and a new prompt.
@@ -64,9 +64,10 @@ export function useProcessRetry(attempt: TaskAttempt | undefined) {
       try {
         const details =
           await executionProcessesApi.getDetails(executionProcessId);
-        const typ: any = details?.executor_action?.typ as any;
+        const typ = details?.executor_action?.typ as ExecutorAction['typ'];
         if (
           typ &&
+          ('type' in typ) &&
           (typ.type === 'CodingAgentInitialRequest' ||
             typ.type === 'CodingAgentFollowUpRequest')
         ) {
@@ -83,7 +84,7 @@ export function useProcessRetry(attempt: TaskAttempt | undefined) {
           prompt: newPrompt,
           variant,
           image_ids: [],
-          version: null as any,
+          version: null,
         });
       } finally {
         setBusy(false);

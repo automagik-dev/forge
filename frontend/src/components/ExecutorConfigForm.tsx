@@ -23,10 +23,10 @@ type ExecutorType =
 
 interface ExecutorConfigFormProps {
   executor: ExecutorType;
-  value: any;
-  onSubmit?: (formData: any) => void;
-  onChange?: (formData: any) => void;
-  onSave?: (formData: any) => Promise<void>;
+  value: Record<string, unknown>;
+  onSubmit?: (formData: Record<string, unknown>) => void;
+  onChange?: (formData: Record<string, unknown>) => void;
+  onSave?: (formData: Record<string, unknown>) => Promise<void>;
   disabled?: boolean;
   isSaving?: boolean;
   isDirty?: boolean;
@@ -58,14 +58,14 @@ export function ExecutorConfigForm({
     setValidationErrors([]);
   }, [value, executor]);
 
-  const handleChange = ({ formData: newFormData }: any) => {
+  const handleChange = ({ formData: newFormData }: { formData: Record<string, unknown> }) => {
     setFormData(newFormData);
     if (onChange) {
       onChange(newFormData);
     }
   };
 
-  const handleSubmit = async ({ formData: submitData }: any) => {
+  const handleSubmit = async ({ formData: submitData }: { formData: Record<string, unknown> }) => {
     setValidationErrors([]);
     if (onSave) {
       await onSave(submitData);

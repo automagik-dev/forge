@@ -3,10 +3,11 @@ import { useEffect, useState } from 'react';
 
 export function Logo({ className = '' }: { className?: string }) {
   const { theme } = useTheme();
-  const themeValue = String(theme);
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
+    const themeValue = String(theme);
+
     const updateTheme = () => {
       if (themeValue === 'LIGHT' || themeValue === 'ALUCARD') {
         setIsDark(false);

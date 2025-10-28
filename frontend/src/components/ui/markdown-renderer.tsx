@@ -85,7 +85,13 @@ function LinkOverride({
   );
 }
 
-function InlineCodeOverride({ children, className, ...props }: any) {
+interface InlineCodeOverrideProps {
+  children: React.ReactNode;
+  className?: string;
+  [key: string]: unknown;
+}
+
+function InlineCodeOverride({ children, className, ...props }: InlineCodeOverrideProps) {
   // Only highlight inline code, not fenced code blocks
   const hasLanguage =
     typeof className === 'string' && /\blanguage-/.test(className);
@@ -118,33 +124,38 @@ function MarkdownRenderer({
   className = '',
   enableCopyButton = false,
 }: MarkdownRendererProps) {
+  interface ComponentProps {
+    children: React.ReactNode;
+    [key: string]: unknown;
+  }
+
   const overrides = useMemo(
     () => ({
       a: { component: LinkOverride },
       code: { component: InlineCodeOverride },
       strong: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps) => (
           <span {...props} className="">
             {children}
           </span>
         ),
       },
       em: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps) => (
           <em {...props} className="italic">
             {children}
           </em>
         ),
       },
       p: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps) => (
           <p {...props} className="leading-tight my-2">
             {children}
           </p>
         ),
       },
       h1: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps) => (
           <h1
             {...props}
             className="text-lg font-medium leading-tight mt-4 mb-2"
@@ -154,7 +165,7 @@ function MarkdownRenderer({
         ),
       },
       h2: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps) => (
           <h2
             {...props}
             className="text-base font-medium leading-tight mt-4 mb-2"
@@ -164,14 +175,14 @@ function MarkdownRenderer({
         ),
       },
       h3: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps) => (
           <h3 {...props} className="text-sm leading-tight mt-3 mb-2">
             {children}
           </h3>
         ),
       },
       ul: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps) => (
           <ul
             {...props}
             className="list-disc list-outside ps-6 my-3 space-y-1.5"
@@ -181,7 +192,7 @@ function MarkdownRenderer({
         ),
       },
       ol: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps) => (
           <ol
             {...props}
             className="list-decimal list-outside ps-6 my-3 space-y-1.5"
@@ -191,14 +202,14 @@ function MarkdownRenderer({
         ),
       },
       li: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps) => (
           <li {...props} className="leading-tight">
             {children}
           </li>
         ),
       },
       pre: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: ComponentProps) => (
           <pre
             {...props}
             className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-sm bg-muted/50 rounded-sm p-2 my-2"

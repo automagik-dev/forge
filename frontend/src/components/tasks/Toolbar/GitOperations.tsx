@@ -120,18 +120,25 @@ function GitOperations({
         latestMerge: null,
       };
 
+    interface MergeInfo {
+      type: string;
+      pr_info?: {
+        status: string;
+      };
+    }
+
     const openPR = branchStatus.merges.find(
-      (m: any) => m.type === 'pr' && m.pr_info.status === 'open'
+      (m: MergeInfo) => m.type === 'pr' && m.pr_info?.status === 'open'
     );
 
     const mergedPR = branchStatus.merges.find(
-      (m: any) => m.type === 'pr' && m.pr_info.status === 'merged'
+      (m: MergeInfo) => m.type === 'pr' && m.pr_info?.status === 'merged'
     );
 
     const merges = branchStatus.merges.filter(
-      (m: any) =>
+      (m: MergeInfo) =>
         m.type === 'direct' ||
-        (m.type === 'pr' && m.pr_info.status === 'merged')
+        (m.type === 'pr' && m.pr_info?.status === 'merged')
     );
 
     return {
@@ -178,8 +185,8 @@ function GitOperations({
       setError(null); // Clear any previous errors on success
       setPushSuccess(true);
       setTimeout(() => setPushSuccess(false), 2000);
-    } catch (error: any) {
-      setError(error.message || t('git.errors.pushChanges'));
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : t('git.errors.pushChanges'));
     } finally {
       setPushing(false);
     }
