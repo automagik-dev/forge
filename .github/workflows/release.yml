@@ -73,8 +73,9 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           components: rustfmt, clippy
 
-      - name: 🔧 Verify Rust Toolchain
+      - name: 🔧 Set Project Override
         run: |
+          rustup override set ${{ env.RUST_TOOLCHAIN }}
           rustc --version
           cargo --version
 
