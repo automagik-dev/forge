@@ -1320,23 +1320,15 @@ async fn create_forge_agent(
     let task_id = Uuid::new_v4();
 
     // Create the fixed task
-    let title = format!("{} Genie",
-        payload.agent_type.chars().next().unwrap().to_uppercase().to_string() +
-        &payload.agent_type[1..]
-    );
-    let description = format!("{} agent for project orchestration",
-        payload.agent_type.chars().next().unwrap().to_uppercase().to_string() +
-        &payload.agent_type[1..]
-    );
+    let title = "Genie".to_string();
 
     sqlx::query(
         r#"INSERT INTO tasks (id, project_id, title, description, status, created_at, updated_at)
-           VALUES (?, ?, ?, ?, 'agent', datetime('now'), datetime('now'))"#
+           VALUES (?, ?, ?, NULL, 'agent', datetime('now'), datetime('now'))"#
     )
     .bind(task_id)
     .bind(payload.project_id)
     .bind(&title)
-    .bind(&description)
     .execute(pool)
     .await?;
 

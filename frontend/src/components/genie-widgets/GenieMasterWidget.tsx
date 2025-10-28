@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { X, Maximize2, Loader2, Send } from 'lucide-react';
+import { X, Loader2, Send } from 'lucide-react';
 import { Lamp } from '@/components/icons/Lamp';
 import { useProject } from '@/contexts/project-context';
 import { subGenieApi } from '@/services/subGenieApi';
@@ -107,13 +107,6 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onClose]);
 
-  // Navigate to diffs view when maximizing
-  const handleMaximize = () => {
-    if (!projectId || !masterGenie || !masterGenie.attempt) return;
-    navigate(
-      `${paths.attempt(projectId, masterGenie.task.id, masterGenie.attempt.id)}?view=diffs`
-    );
-  };
 
   // Handle sending the initial message (creates attempt)
   const handleSendInitialMessage = async () => {
@@ -175,34 +168,17 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Lamp className="h-5 w-5 text-blue-500" />
-            <CardTitle className="text-sm font-semibold">Genie Master</CardTitle>
-            {masterGenie && (
-              <Badge variant="outline" className="ml-2">
-                {masterGenie.task.status}
-              </Badge>
-            )}
+            <CardTitle className="text-sm font-semibold">Genie</CardTitle>
           </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleMaximize}
-              className="h-6 w-6 p-0"
-              aria-label="Maximize to full screen"
-              disabled={!masterGenie || !masterGenie.attempt}
-            >
-              <Maximize2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="h-6 w-6 p-0"
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="h-6 w-6 p-0"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       </CardHeader>
 
@@ -210,12 +186,12 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-            <span className="ml-2 text-muted-foreground">Loading Master Genie...</span>
+            <span className="ml-2 text-muted-foreground">Loading Genie...</span>
           </div>
         ) : error ? (
           <div className="flex-1 flex items-center justify-center p-4">
             <div className="text-center text-destructive">
-              <p className="font-semibold">Error loading Master Genie</p>
+              <p className="font-semibold">Error loading Genie</p>
               <p className="text-sm mt-1">{error}</p>
             </div>
           </div>
@@ -223,7 +199,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
           <div className="flex-1 flex items-center justify-center p-4">
             <div className="text-center text-muted-foreground">
               <Lamp className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-              <p className="font-semibold">No Master Genie available</p>
+              <p className="font-semibold">No Genie available</p>
               <p className="text-sm mt-1">Select a project to activate Genie</p>
             </div>
           </div>
@@ -231,7 +207,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
           <div className="flex-1 flex flex-col p-4">
             <div className="flex-1 flex flex-col items-center justify-center">
               <Lamp className="h-12 w-12 mb-3 text-blue-500" />
-              <p className="font-semibold text-lg text-center">Master Genie Ready</p>
+              <p className="font-semibold text-lg text-center">Genie Ready</p>
               <p className="text-sm mt-2 text-center text-muted-foreground">
                 Send a message to start your first session
               </p>
