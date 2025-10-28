@@ -14,6 +14,8 @@ scripts/release/
 ├── github.js              # GitHub API wrapper (using gh CLI)
 ├── version.js             # Version management utilities
 ├── publish.js             # Main entry point (orchestrates workflow)
+├── monitor.js             # Monitor workflow runs
+├── status.js              # Show release/workflow status
 ├── steps/
 │   ├── step1-trigger-rc.js    # Trigger RC release workflow
 │   ├── step2-build-platforms.js  # Build all platforms
@@ -31,6 +33,23 @@ make publish
 
 # Or directly
 node scripts/release/publish.js
+```
+
+### Monitor Workflow Run
+
+```bash
+# Monitor latest workflow run
+node scripts/release/monitor.js
+
+# Monitor specific run by ID
+node scripts/release/monitor.js 18882820971
+```
+
+### Check Release Status
+
+```bash
+# Show latest workflows and status
+node scripts/release/status.js
 ```
 
 **This runs the complete workflow:**
@@ -93,20 +112,31 @@ All config in one place (`config.js`):
 
 The old `gh-build.sh` is still available for reference, but the Makefile now uses these scripts by default.
 
-**Removed features from old script:**
-- Manual release notes generation (now GitHub auto-generates)
-- Beta releases (can be added as separate module if needed)
-- Interactive prompts for resuming failed releases (simplified workflow)
-- Release notes enhancer script (GitHub --generate-notes handles this)
+**Migrated features:**
+- ✅ `publish` - Full RC release pipeline (publish.js)
+- ✅ `monitor [run_id]` - Monitor workflow runs (monitor.js)
+- ✅ `status` - Show release/workflow status (status.js)
+
+**Removed features (no longer needed):**
+- ❌ Manual release notes generation (GitHub auto-generates)
+- ❌ Beta releases (simplified workflow)
+- ❌ Interactive prompts for resuming failed releases
+- ❌ Artifact download commands (use `gh run download` directly)
+- ❌ Manual npm publish commands (automated in workflow)
 
 **Equivalent commands:**
 ```bash
 # Old
 ./gh-build.sh publish
+./gh-build.sh monitor [run_id]
+./gh-build.sh status
 
 # New
 node scripts/release/publish.js
-# or
+node scripts/release/monitor.js [run_id]
+node scripts/release/status.js
+
+# Or via Makefile
 make publish
 ```
 
