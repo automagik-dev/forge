@@ -7,10 +7,11 @@ import { config, log } from './config.js';
 
 function exec(command, silent = false) {
   try {
-    return execSync(command, {
+    const result = execSync(command, {
       encoding: 'utf8',
       stdio: silent ? 'pipe' : 'inherit',
-    }).trim();
+    });
+    return result ? result.trim() : '';
   } catch (error) {
     if (!silent) throw error;
     return null;
