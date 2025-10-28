@@ -121,7 +121,7 @@ publish:
 	@echo "  2. Build all platforms via GitHub Actions"
 	@echo "  3. Publish to npm @next tag"
 	@echo ""
-	@./gh-build.sh publish
+	@node scripts/release/publish.js
 
 # Promote RC to stable (no rebuild, just retag)
 stable:
