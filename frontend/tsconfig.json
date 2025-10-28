@@ -18,14 +18,8 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "../forge-overrides/frontend/src/*",
-        "../upstream/frontend/src/*"
-      ],
-      "@dialogs/*": [
-        "../forge-overrides/frontend/src/components/dialogs/*",
-        "../upstream/frontend/src/components/dialogs/*"
-      ],
+      "@/*": ["./src/*"],
+      "@dialogs/*": ["./src/components/dialogs/*"],
       "shared/*": ["../shared/*"],
       "shared/forge-types": [
         "../shared/forge-types"
@@ -69,10 +63,6 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": [
-    "src",
-    "../forge-overrides/frontend/src",
-    "../upstream/frontend/src"
-  ],
+  "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

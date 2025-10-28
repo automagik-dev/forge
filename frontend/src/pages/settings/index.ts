@@ -1,5 +1,6 @@
 // FORGE CUSTOMIZATION: Re-exports settings components
-// GeneralSettings is customized for Forge (OmniCard integration)
-// Other components come from upstream
+// All settings components are now in unified frontend/
 export { GeneralSettings } from './GeneralSettings';
-export { SettingsLayout, AgentSettings, McpSettings } from '../../../../../upstream/frontend/src/pages/settings';
+export { SettingsLayout } from './SettingsLayout';
+export { AgentSettings } from './AgentSettings';
+export { McpSettings } from './McpSettings';

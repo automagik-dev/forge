@@ -1,14 +1,59 @@
-import { defineConfig } from 'vite';
+import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import fs from 'fs';
 
 const nodeEmptyShim = path.resolve(__dirname, 'src/shims/node-empty.ts');
 const nodePathShim = path.resolve(__dirname, 'src/shims/node-path.ts');
 
+// Virtual module plugin for executor schemas
+function executorSchemasPlugin(): Plugin {
+  const VIRTUAL_ID = 'virtual:executor-schemas';
+  const RESOLVED_VIRTUAL_ID = '\0' + VIRTUAL_ID;
+
+  return {
+    name: 'executor-schemas-plugin',
+    resolveId(id) {
+      if (id === VIRTUAL_ID) return RESOLVED_VIRTUAL_ID;
+      return null;
+    },
+    load(id) {
+      if (id !== RESOLVED_VIRTUAL_ID) return null;
+
+      const schemasDir = path.resolve(__dirname, '../shared/schemas');
+      const files = fs.existsSync(schemasDir)
+        ? fs.readdirSync(schemasDir).filter((f) => f.endsWith('.json'))
+        : [];
+
+      const imports: string[] = [];
+      const entries: string[] = [];
+
+      files.forEach((file, i) => {
+        const varName = `__schema_${i}`;
+        const importPath = `shared/schemas/${file}`;
+        const key = file.replace(/\.json$/, '').toUpperCase();
+        imports.push(`import ${varName} from "${importPath}";`);
+        entries.push(`  "${key}": ${varName}`);
+      });
+
+      const code = `
+${imports.join('\n')}
+
+export const schemas = {
+${entries.join(',\n')}
+};
+
+export default schemas;
+`;
+      return code;
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   base: './',
-  plugins: [react()],
+  plugins: [react(), executorSchemasPlugin()],
   resolve: {
     alias: {
       // Simple alias - @/ resolves to ./src/ (NO MORE OVERLAY COMPLEXITY!)
@@ -20,9 +65,10 @@ export default defineConfig({
       os: nodeEmptyShim,
       child_process: nodeEmptyShim,
 
-      // Shared types from parent directory
+      // Shared types and schemas from parent directory
       'shared/types': path.resolve(__dirname, '../shared/types.ts'),
       'shared/forge-types': path.resolve(__dirname, '../shared/forge-types.ts'),
+      'shared/schemas': path.resolve(__dirname, '../shared/schemas'),
     },
   },
   server: {
