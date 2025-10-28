@@ -1,15 +1,17 @@
 name: 🚀 Unified Release
 
 on:
-  push:
-    branches:
-      - main
-    tags:
-      - 'v*'
-  pull_request:
-    types: [closed]
-    branches:
-      - main
+  # push to main disabled to save resources - use 'make publish' instead
+  # push:
+  #   branches:
+  #     - main
+  tags:
+    - 'v*'
+  # pull_request disabled to save resources - use 'make publish' instead
+  # pull_request:
+  #   types: [closed]
+  #   branches:
+  #     - main
   workflow_dispatch:
     inputs:
       action:
@@ -116,49 +118,23 @@ jobs:
         if: steps.detect.outputs.action == 'skip'
         run: echo "No release needed for this event"
 
-      - name: 📌 Bump RC (Auto)
-        if: steps.detect.outputs.action == 'auto-bump-rc'
+      - name: 📌 Bump RC (Auto) - DISABLED
+        if: false  # Disabled to save resources - use 'make publish' instead
         id: release
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          node scripts/unified-release.cjs \
-            --bump rc \
-            --publish \
-            --github-release \
-            --skip-build
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "released=true" >> $GITHUB_OUTPUT
+          echo "Auto-bump disabled"
 
-      - name: 📌 Bump RC (Merge to main)
-        if: steps.detect.outputs.action == 'merge-rc'
+      - name: 📌 Bump RC (Merge to main) - DISABLED
+        if: false  # Disabled to save resources - use 'make publish' instead
         id: merge_rc
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Clean conflicting RC tags
-          CURRENT=$(node -p "require('./package.json').version")
-          if [[ $CURRENT =~ ^([0-9]+\.[0-9]+\.[0-9]+)-rc\.([0-9]+)$ ]]; then
-            BASE="${BASH_REMATCH[1]}"
-            RC_NUM="${BASH_REMATCH[2]}"
-            NEXT_RC=$((RC_NUM + 1))
-            NEXT_TAG="v${BASE}-rc.${NEXT_RC}"
-            git tag -d "$NEXT_TAG" 2>/dev/null || true
-            git push origin ":refs/tags/$NEXT_TAG" 2>/dev/null || true
-          fi
-
-          node scripts/unified-release.cjs \
-            --bump rc \
-            --publish \
-            --github-release \
-            --skip-build
-
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "released=true" >> $GITHUB_OUTPUT
+          echo "Merge auto-bump disabled"
 
       - name: 📌 Tag Push (Publish Existing)
         if: steps.detect.outputs.action == 'tag-push'

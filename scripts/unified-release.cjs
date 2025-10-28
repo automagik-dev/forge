@@ -78,15 +78,61 @@ async function main() {
   } else if (opts['bump']) {
     bumpType = opts['bump'];
 
-    // Auto-detect: if bump=rc but current version is stable, use patch instead
-    if (bumpType === 'rc' && !version.includes('-rc.')) {
-      log('yellow', '⚠️', `Current version ${version} is stable, using patch bump instead of rc increment`);
-      bumpType = 'patch';
-    }
+    // Auto-increment RC logic
+    if (bumpType === 'rc') {
+      if (version.includes('-rc.')) {
+        // Already an RC, increment RC number
+        const match = version.match(/^(\d+\.\d+\.\d+)-rc\.(\d+)$/);
+        if (match) {
+          const base = match[1];
+          const rcNum = parseInt(match[2], 10) + 1;
+          version = `${base}-rc.${rcNum}`;
 
-    exec(`pnpm run bump:${bumpType}`);
-    version = JSON.parse(fs.readFileSync(PKG_PATH, 'utf8')).version;
-    log('magenta', '📌', `Bumped to: ${version}`);
+          // Update all package files manually
+          const pkgPath = path.join(__dirname, '..', 'package.json');
+          const npxCliPkgPath = path.join(__dirname, '..', 'npx-cli', 'package.json');
+
+          const pkgContent = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+          pkgContent.version = version;
+          fs.writeFileSync(pkgPath, JSON.stringify(pkgContent, null, 2) + '\n');
+
+          const npxPkgContent = JSON.parse(fs.readFileSync(npxCliPkgPath, 'utf8'));
+          npxPkgContent.version = version;
+          fs.writeFileSync(npxCliPkgPath, JSON.stringify(npxPkgContent, null, 2) + '\n');
+
+          log('magenta', '📌', `Auto-incremented RC: ${version}`);
+        }
+      } else {
+        // Stable version, create first RC of next patch
+        const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/);
+        if (match) {
+          const major = match[1];
+          const minor = match[2];
+          const patch = parseInt(match[3], 10) + 1;
+          version = `${major}.${minor}.${patch}-rc.1`;
+
+          // Update all package files manually
+          const pkgPath = path.join(__dirname, '..', 'package.json');
+          const npxCliPkgPath = path.join(__dirname, '..', 'npx-cli', 'package.json');
+
+          const pkgContent = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+          pkgContent.version = version;
+          fs.writeFileSync(pkgPath, JSON.stringify(pkgContent, null, 2) + '\n');
+
+          const npxPkgContent = JSON.parse(fs.readFileSync(npxCliPkgPath, 'utf8'));
+          npxPkgContent.version = version;
+          fs.writeFileSync(npxCliPkgPath, JSON.stringify(npxPkgContent, null, 2) + '\n');
+
+          log('magenta', '📌', `Created new RC from stable: ${version}`);
+        }
+      }
+
+      // Don't run pnpm bump for RC, we handled it manually
+    } else {
+      exec(`pnpm run bump:${bumpType}`);
+      version = JSON.parse(fs.readFileSync(PKG_PATH, 'utf8')).version;
+      log('magenta', '📌', `Bumped to: ${version}`);
+    }
   } else if (opts['tag']) {
     version = opts['tag'].replace(/^v/, '');
     log('magenta', '📌', `Using version: ${version}`);
