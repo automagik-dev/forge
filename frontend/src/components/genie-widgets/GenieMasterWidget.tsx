@@ -152,7 +152,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
         className="fixed z-50 transition-all duration-300"
         style={{
           bottom: '46px', // 30px up from original bottom-4 (16px)
-          right: isHovering ? '8px' : '-50px',
+          right: isHovering ? '20px' : '-20px',
         }}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
@@ -168,9 +168,9 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     );
   }
 
-  // Full chat widget with logs (bottom-left)
+  // Full chat widget with logs (bottom-right)
   return (
-    <Card ref={widgetRef} className="fixed bottom-4 left-4 w-[600px] h-[600px] shadow-xl z-50 flex flex-col">
+    <Card ref={widgetRef} className="fixed bottom-4 right-4 w-[600px] h-[600px] shadow-xl z-50 flex flex-col">
       <CardHeader className="pb-3 border-b">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
