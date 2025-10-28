@@ -598,8 +598,8 @@ EOF
             echo "⏳ Waiting for release workflow to start..."
             sleep 10
 
-            # Find the workflow run
-            PRERELEASE_RUN=$(gh run list --workflow="release.yml" --repo "$REPO" --limit 1 --json databaseId,status --jq '.[0] | select(.status != "completed") | .databaseId')
+            # Find the workflow run - get the most recent one regardless of status
+            PRERELEASE_RUN=$(gh run list --workflow="release.yml" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')
 
             if [ -z "$PRERELEASE_RUN" ]; then
                 echo "⚠️  Could not find the release workflow run"
