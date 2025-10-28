@@ -59,11 +59,15 @@ export default defineConfig({
       // Simple alias - @/ resolves to ./src/ (NO MORE OVERLAY COMPLEXITY!)
       '@': path.resolve(__dirname, './src'),
 
-      // Node shims for browser compatibility
+      // Node shims for browser compatibility (both bare and node: protocol)
       path: nodePathShim,
+      'node:path': nodePathShim,
       fs: nodeEmptyShim,
+      'node:fs': nodeEmptyShim,
       os: nodeEmptyShim,
+      'node:os': nodeEmptyShim,
       child_process: nodeEmptyShim,
+      'node:child_process': nodeEmptyShim,
 
       // Shared types and schemas from parent directory
       'shared/types': path.resolve(__dirname, '../shared/types.ts'),
