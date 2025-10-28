@@ -14,6 +14,9 @@ use futures_util::{StreamExt, SinkExt, TryStreamExt};
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+use tokio::sync::RwLock;
 use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
@@ -40,11 +43,27 @@ use utils::text::{git_branch_id, short_uuid};
 #[folder = "../frontend/dist"]
 struct Frontend;
 
+/// Cache entry for GitHub releases with TTL
+#[derive(Clone)]
+struct CachedReleases {
+    data: Vec<GitHubRelease>,
+    cached_at: Instant,
+}
+
+impl CachedReleases {
+    const TTL: Duration = Duration::from_secs(15 * 60); // 15 minutes
+
+    fn is_expired(&self) -> bool {
+        self.cached_at.elapsed() > Self::TTL
+    }
+}
+
 #[derive(Clone)]
 struct ForgeAppState {
     services: ForgeServices,
     deployment: DeploymentImpl,
     auth_required: bool,
+    releases_cache: Arc<RwLock<Option<CachedReleases>>>,
 }
 
 impl ForgeAppState {
@@ -53,6 +72,7 @@ impl ForgeAppState {
             services,
             deployment,
             auth_required,
+            releases_cache: Arc::new(RwLock::new(None)),
         }
     }
 }
@@ -1143,7 +1163,7 @@ async fn validate_omni_config(
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct GitHubRelease {
     tag_name: String,
     name: String,
@@ -1154,10 +1174,24 @@ struct GitHubRelease {
     html_url: String,
 }
 
-/// Fetch GitHub releases from the repository
-async fn get_github_releases() -> Result<Json<ApiResponse<Vec<GitHubRelease>>>, StatusCode> {
-    let client = reqwest::Client::new();
+/// Fetch GitHub releases from the repository (with 15-minute cache)
+async fn get_github_releases(
+    State(state): State<ForgeAppState>,
+) -> Result<Json<ApiResponse<Vec<GitHubRelease>>>, StatusCode> {
+    // Check cache first (read lock)
+    {
+        let cache = state.releases_cache.read().await;
+        if let Some(cached) = cache.as_ref() {
+            if !cached.is_expired() {
+                tracing::debug!("Returning cached GitHub releases (age: {:?})", cached.cached_at.elapsed());
+                return Ok(Json(ApiResponse::success(cached.data.clone())));
+            }
+            tracing::debug!("Cache expired (age: {:?}), fetching fresh data", cached.cached_at.elapsed());
+        }
+    }
 
+    // Fetch from GitHub API
+    let client = reqwest::Client::new();
     match client
         .get("https://api.github.com/repos/namastexlabs/automagik-forge/releases")
         .header("User-Agent", "automagik-forge")
@@ -1166,21 +1200,62 @@ async fn get_github_releases() -> Result<Json<ApiResponse<Vec<GitHubRelease>>>, 
         .await
     {
         Ok(response) => {
-            if response.status().is_success() {
+            let status = response.status();
+
+            if status.is_success() {
                 match response.json::<Vec<GitHubRelease>>().await {
-                    Ok(releases) => Ok(Json(ApiResponse::success(releases))),
+                    Ok(releases) => {
+                        // Update cache (write lock)
+                        {
+                            let mut cache = state.releases_cache.write().await;
+                            *cache = Some(CachedReleases {
+                                data: releases.clone(),
+                                cached_at: Instant::now(),
+                            });
+                            tracing::info!("GitHub releases cache updated ({} releases)", releases.len());
+                        }
+                        Ok(Json(ApiResponse::success(releases)))
+                    }
                     Err(e) => {
                         tracing::error!("Failed to parse GitHub releases: {}", e);
+                        // Return stale cache if available
+                        let cache = state.releases_cache.read().await;
+                        if let Some(cached) = cache.as_ref() {
+                            tracing::warn!("Returning stale cache due to parse error");
+                            return Ok(Json(ApiResponse::success(cached.data.clone())));
+                        }
                         Err(StatusCode::INTERNAL_SERVER_ERROR)
                     }
                 }
+            } else if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+                // Rate limited - return stale cache if available
+                tracing::warn!("GitHub API rate limit exceeded (429)");
+                let cache = state.releases_cache.read().await;
+                if let Some(cached) = cache.as_ref() {
+                    tracing::info!("Returning stale cache due to rate limit (age: {:?})", cached.cached_at.elapsed());
+                    return Ok(Json(ApiResponse::success(cached.data.clone())));
+                }
+                tracing::error!("No cached data available during rate limit");
+                Err(StatusCode::SERVICE_UNAVAILABLE)
             } else {
-                tracing::error!("GitHub API returned error: {}", response.status());
+                tracing::error!("GitHub API returned error: {}", status);
+                // Return stale cache if available
+                let cache = state.releases_cache.read().await;
+                if let Some(cached) = cache.as_ref() {
+                    tracing::warn!("Returning stale cache due to API error");
+                    return Ok(Json(ApiResponse::success(cached.data.clone())));
+                }
                 Err(StatusCode::BAD_GATEWAY)
             }
         }
         Err(e) => {
             tracing::error!("Failed to fetch GitHub releases: {}", e);
+            // Return stale cache if available
+            let cache = state.releases_cache.read().await;
+            if let Some(cached) = cache.as_ref() {
+                tracing::warn!("Returning stale cache due to network error");
+                return Ok(Json(ApiResponse::success(cached.data.clone())));
+            }
             Err(StatusCode::BAD_GATEWAY)
         }
     }
