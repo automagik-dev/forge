@@ -77,19 +77,21 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     }
   }, [projectId, isOpen]);
 
-  // ESC key listener to close widget
+  // ESC key listener to close widget or hide button
   useEffect(() => {
-    if (!isOpen) return;
-
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose();
+        if (isOpen) {
+          onClose();
+        } else if (isHovering) {
+          setIsHovering(false);
+        }
       }
     };
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+  }, [isOpen, isHovering, onClose]);
 
   // Click-outside detection to auto-close
   useEffect(() => {
@@ -144,22 +146,23 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   }
 
   if (!isOpen) {
-    // Edge sliding lamp button - hidden at edge, slides in on hover
+    // Edge sliding lamp button - hidden at edge, slides in on hover from right
     return (
       <div
-        className="fixed bottom-4 z-50 transition-all duration-300"
+        className="fixed z-50 transition-all duration-300"
         style={{
-          left: isHovering ? '16px' : '-40px',
+          bottom: '46px', // 30px up from original bottom-4 (16px)
+          right: isHovering ? '8px' : '-50px',
         }}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
       >
         <button
           onClick={onToggle}
-          className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+          className="p-2 transition-all hover:scale-110"
           aria-label="Open Genie chat"
         >
-          <Lamp className="h-6 w-6" />
+          <Lamp className="h-10 w-10 text-foreground drop-shadow-lg" />
         </button>
       </div>
     );
