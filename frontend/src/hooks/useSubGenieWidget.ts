@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import { useSubGenie } from '@/context/SubGenieContext';
-import { ChatMessage } from '@/components/genie-widgets';
 import { subGenieApi, Neuron } from '@/services/subGenieApi';
 import { Task } from 'shared/types';
 
@@ -12,13 +11,11 @@ import { Task } from 'shared/types';
  *
  * @param genieId - Widget identifier (wish, forge, review)
  * @param projectId - Current project UUID
- * @param columnStatus - Column status (for backward compatibility)
  * @returns Widget state and handlers
  */
 export const useSubGenieWidget = (
   genieId: 'wish' | 'forge' | 'review',
-  projectId: string,
-  columnStatus?: string
+  projectId: string
 ) => {
   const { widgets, toggleWidget, closeWidget, addMessage, toggleSkill } =
     useSubGenie();

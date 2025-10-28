@@ -12,8 +12,11 @@ export interface KeyboardShortcutOptions {
 }
 
 export function useKeyboardShortcut(
-  _config: ShortcutConfig,
-  _options: KeyboardShortcutOptions = {}
+  config: ShortcutConfig,
+  options?: KeyboardShortcutOptions
 ): void {
   // no-op — shortcuts disabled in Forge override
+  // Reference parameters to avoid unused variable warnings
+  void config;
+  void options;
 }

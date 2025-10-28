@@ -8,7 +8,7 @@ interface AuthGateProps {
 }
 
 export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
-  const { config, loading, githubTokenInvalid, reloadSystem } = useUserSystem();
+  const { config, loading, githubTokenInvalid } = useUserSystem();
   const [authRequired, setAuthRequired] = useState<boolean | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 

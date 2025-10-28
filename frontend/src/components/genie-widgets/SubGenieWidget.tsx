@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChatMessage, WorkflowDefinition, SkillDefinition, SubGenieConfig } from './types';
+import { ChatMessage, SubGenieConfig } from './types';
 import { WorkflowButton } from './WorkflowButton';
 import { SkillToggle } from './SkillToggle';
 import { Neuron } from '@/services/subGenieApi';

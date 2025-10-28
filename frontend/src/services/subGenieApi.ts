@@ -1,4 +1,3 @@
-import { ChatMessage } from '@/components/genie-widgets';
 import { Task, TaskAttempt, BaseCodingAgent } from 'shared/types';
 
 /**
@@ -212,8 +211,7 @@ export class SubGenieApiService {
    */
   async sendMessage(
     genieId: 'wish' | 'forge' | 'review',
-    message: string,
-    columnStatus: string
+    message: string
   ): Promise<{ response: string; action?: string }> {
     console.warn(
       'sendMessage is deprecated. Use executeWorkflow for new tasks or sendFollowUp for existing attempts.'
@@ -230,11 +228,12 @@ export class SubGenieApiService {
    */
   async triggerWorkflow(
     genieId: 'wish' | 'forge' | 'review',
-    workflowId: string,
-    columnStatus: string,
-    context?: Record<string, any>
-  ): Promise<{ status: string; result?: any }> {
+    workflowId: string
+  ): Promise<{ status: string; result?: unknown }> {
     console.warn('triggerWorkflow is deprecated. Use executeWorkflow instead.');
+    // Reference parameters to avoid unused variable warnings
+    void genieId;
+    void workflowId;
     return {
       status: 'deprecated',
       result: 'Use executeWorkflow method',

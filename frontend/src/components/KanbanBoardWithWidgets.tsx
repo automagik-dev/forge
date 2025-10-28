@@ -25,16 +25,30 @@ interface KanbanBoardWithWidgetsProps {
 export const KanbanBoardWithWidgets: React.FC<KanbanBoardWithWidgetsProps> = ({
   tasks,
   projectId,
-  onTaskUpdate,
   className = 'grid grid-cols-5 gap-4 p-4 bg-gray-100 h-screen overflow-hidden',
 }) => {
   const columnStatuses: TaskStatus[] = ['todo', 'inprogress', 'inreview', 'done', 'cancelled'];
+
+  // Hook must be called at the top level, not inside map
+  const todoTasks = useFilteredTasks(tasks, 'todo');
+  const inprogressTasks = useFilteredTasks(tasks, 'inprogress');
+  const inreviewTasks = useFilteredTasks(tasks, 'inreview');
+  const doneTasks = useFilteredTasks(tasks, 'done');
+  const cancelledTasks = useFilteredTasks(tasks, 'cancelled');
+
+  const tasksByStatus: Record<TaskStatus, Task[]> = {
+    todo: todoTasks,
+    inprogress: inprogressTasks,
+    inreview: inreviewTasks,
+    done: doneTasks,
+    cancelled: cancelledTasks,
+  };
 
   return (
     <div className={className}>
       {columnStatuses.map((status) => {
         const genieId = COLUMN_STATUS_TO_GENIE[status];
-        const filteredTasks = useFilteredTasks(tasks, status);
+        const filteredTasks = tasksByStatus[status];
         const config = genieId ? GENIE_CONFIGS[genieId] : null;
 
         // Column with Genie widget

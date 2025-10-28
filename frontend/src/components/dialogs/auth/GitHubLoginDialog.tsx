@@ -39,9 +39,10 @@ const GitHubLoginDialog = NiceModal.create(() => {
       const data = await githubAuthApi.start();
       setDeviceState(data);
       setPolling(true);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      setError(e?.message || 'Network error');
+      const error = e as { message?: string };
+      setError(error?.message || 'Network error');
     } finally {
       setFetching(false);
     }
@@ -69,14 +70,15 @@ const GitHubLoginDialog = NiceModal.create(() => {
             case DevicePollStatus.SLOW_DOWN:
               timer = setTimeout(poll, (deviceState.interval + 5) * 1000);
           }
-        } catch (e: any) {
-          if (e?.message === 'expired_token') {
+        } catch (e: unknown) {
+          const error = e as { message?: string };
+          if (error?.message === 'expired_token') {
             setPolling(false);
             setError('Device code expired. Please try again.');
             setDeviceState(null);
           } else {
             setPolling(false);
-            setError(e?.message || 'Login failed.');
+            setError(error?.message || 'Login failed.');
             setDeviceState(null);
           }
         }
@@ -86,7 +88,7 @@ const GitHubLoginDialog = NiceModal.create(() => {
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [polling, deviceState]);
+  }, [polling, deviceState, modal, reloadSystem]);
 
   // Automatically copy code to clipboard and open GitHub URL when deviceState is set
   useEffect(() => {

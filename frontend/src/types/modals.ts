@@ -1,4 +1,5 @@
 import type { TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
+import type { ForgeProjectSettings } from 'shared/forge-types';
 import type {
   ConfirmDialogProps,
   ProvidePatDialogProps,
@@ -41,8 +42,8 @@ declare module '@ebay/nice-modal-react' {
 
     // FORGE CUSTOMIZATION: Omni modal for AI-powered messaging
     'omni-modal': {
-      forgeSettings: any;
-      onChange: (settings: any) => void;
+      forgeSettings: ForgeProjectSettings;
+      onChange: (settings: ForgeProjectSettings) => void;
     };
   }
 }

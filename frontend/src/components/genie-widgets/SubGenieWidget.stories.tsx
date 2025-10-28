@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Sparkles, Hammer, Target, ZapOff, AlertCircle } from 'lucide-react';
+import { Sparkles, ZapOff } from 'lucide-react';
 import { SubGenieWidget } from './SubGenieWidget';
 import { SubGenieConfig } from './types';
 

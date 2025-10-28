@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "tsc --noEmit",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 110",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 99",
     "test": "vitest run",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",

@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { X, Loader2, Send } from 'lucide-react';
 import { Lamp } from '@/components/icons/Lamp';
@@ -16,7 +14,6 @@ import { RetryUiProvider } from '@/contexts/RetryUiContext';
 import { ExecutionProcessesProvider } from '@/contexts/ExecutionProcessesContext';
 import { ReviewProvider } from '@/contexts/ReviewProvider';
 import { ClickedElementsProvider } from '@/contexts/ClickedElementsProvider';
-import { paths } from '@/lib/paths';
 
 interface GenieMasterWidgetProps {
   isOpen: boolean;
@@ -30,7 +27,6 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   onClose,
 }) => {
   const [isHovering, setIsHovering] = useState(false);
-  const navigate = useNavigate();
   const { projectId } = useProject();
   const [masterGenie, setMasterGenie] = useState<{
     task: Task;
@@ -75,7 +71,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     if (!masterGenie) {
       loadMasterGenie();
     }
-  }, [projectId, isOpen]);
+  }, [projectId, isOpen, masterGenie]);
 
   // ESC key listener to close widget or hide button
   useEffect(() => {

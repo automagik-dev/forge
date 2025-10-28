@@ -22,7 +22,7 @@ export const COLUMN_STATUS_TO_GENIE: Record<TaskStatus, 'wish' | 'forge' | 'revi
 };
 
 // Map TaskStatus to icons
-export const COLUMN_ICONS: Record<TaskStatus, React.ComponentType<any>> = {
+export const COLUMN_ICONS: Record<TaskStatus, React.ComponentType<{ size?: number; className?: string }>> = {
   todo: Sparkles,
   inprogress: Hammer,
   inreview: Target,
@@ -32,6 +32,6 @@ export const COLUMN_ICONS: Record<TaskStatus, React.ComponentType<any>> = {
 };
 
 // Check if a task should be filtered out (agent status)
-export const isAgentStatus = (status: any): boolean => {
+export const isAgentStatus = (status: string): boolean => {
   return status === 'agent';
 };
