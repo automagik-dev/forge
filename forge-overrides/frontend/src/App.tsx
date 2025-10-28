@@ -44,7 +44,6 @@ const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 function AppContent() {
   const [isGenieOpen, setIsGenieOpen] = useState(false);
-  const [isGenieMinimized, setIsGenieMinimized] = useState(false);
   const { config, analyticsUserId, updateAndSaveConfig, loading } =
     useUserSystem();
   const posthog = usePostHog();
@@ -210,13 +209,8 @@ function AppContent() {
             <ShortcutsHelp />
             <GenieMasterWidget
               isOpen={isGenieOpen}
-              isMinimized={isGenieMinimized}
               onToggle={() => setIsGenieOpen(!isGenieOpen)}
-              onMinimize={() => setIsGenieMinimized(!isGenieMinimized)}
-              onClose={() => {
-                setIsGenieOpen(false);
-                setIsGenieMinimized(false);
-              }}
+              onClose={() => setIsGenieOpen(false)}
             />
           </SearchProvider>
         </AppWithStyleOverride>

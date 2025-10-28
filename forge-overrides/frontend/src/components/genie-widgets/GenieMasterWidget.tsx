@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { X, Minimize2, Maximize2, Loader2, Send } from 'lucide-react';
+import { X, Maximize2, Loader2, Send } from 'lucide-react';
 import { Lamp } from '@/components/icons/Lamp';
 import { useProject } from '@/contexts/project-context';
 import { subGenieApi } from '@/services/subGenieApi';
@@ -20,19 +20,16 @@ import { paths } from '@/lib/paths';
 
 interface GenieMasterWidgetProps {
   isOpen: boolean;
-  isMinimized: boolean;
   onToggle: () => void;
-  onMinimize: () => void;
   onClose: () => void;
 }
 
 export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   isOpen,
-  isMinimized,
   onToggle,
-  onMinimize,
   onClose,
 }) => {
+  const [isHovering, setIsHovering] = useState(false);
   const navigate = useNavigate();
   const { projectId } = useProject();
   const [masterGenie, setMasterGenie] = useState<{
@@ -80,33 +77,33 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     }
   }, [projectId, isOpen]);
 
-  // ESC key listener to minimize widget
+  // ESC key listener to close widget
   useEffect(() => {
-    if (!isOpen || !isMinimized) {
-      const handleEscape = (event: KeyboardEvent) => {
-        if (event.key === 'Escape' && isOpen && !isMinimized) {
-          onMinimize();
-        }
-      };
+    if (!isOpen) return;
 
-      document.addEventListener('keydown', handleEscape);
-      return () => document.removeEventListener('keydown', handleEscape);
-    }
-  }, [isOpen, isMinimized, onMinimize]);
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
 
-  // Click-outside detection to auto-minimize
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
+  // Click-outside detection to auto-close
   useEffect(() => {
-    if (!isOpen || isMinimized) return;
+    if (!isOpen) return;
 
     const handleClickOutside = (event: MouseEvent) => {
       if (widgetRef.current && !widgetRef.current.contains(event.target as Node)) {
-        onMinimize();
+        onClose();
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, isMinimized, onMinimize]);
+  }, [isOpen, onClose]);
 
   // Navigate to diffs view when maximizing
   const handleMaximize = () => {
@@ -147,58 +144,23 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   }
 
   if (!isOpen) {
-    // Floating chat bubble (bottom-left, less intrusive)
+    // Edge sliding lamp button - hidden at edge, slides in on hover
     return (
-      <button
-        onClick={onToggle}
-        className="fixed bottom-4 left-4 w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all z-50"
-        aria-label="Open Genie chat"
+      <div
+        className="fixed bottom-4 z-50 transition-all duration-300"
+        style={{
+          left: isHovering ? '16px' : '-40px',
+        }}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
       >
-        <Lamp className="h-6 w-6" />
-      </button>
-    );
-  }
-
-  if (isMinimized) {
-    // Minimized bar (bottom-left)
-    return (
-      <div ref={widgetRef} className="fixed bottom-4 left-4 bg-background border rounded-lg shadow-lg z-50">
-        <div className="flex items-center gap-2 p-3">
-          <Lamp className="h-5 w-5 text-blue-500" />
-          <span className="text-sm font-semibold">Genie</span>
-          {masterGenie && (
-            <Badge variant="outline" className="ml-2">
-              {masterGenie.task.status}
-            </Badge>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleMaximize}
-            className="h-6 w-6 p-0 ml-auto"
-            disabled={!masterGenie || !masterGenie.attempt}
-          >
-            <Maximize2 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="h-6 w-6 p-0"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        {/* Reuse task chat components for minimized state */}
-        {taskWithStatus && masterGenie && masterGenie.attempt && (
-          <div className="border-t">
-            <TaskFollowUpSection
-              task={taskWithStatus}
-              selectedAttemptId={masterGenie.attempt.id}
-              jumpToLogsTab={() => {}}
-            />
-          </div>
-        )}
+        <button
+          onClick={onToggle}
+          className="w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+          aria-label="Open Genie chat"
+        >
+          <Lamp className="h-6 w-6" />
+        </button>
       </div>
     );
   }
@@ -227,15 +189,6 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
               disabled={!masterGenie || !masterGenie.attempt}
             >
               <Maximize2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onMinimize}
-              className="h-6 w-6 p-0"
-              aria-label="Minimize"
-            >
-              <Minimize2 className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
