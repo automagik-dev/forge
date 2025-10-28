@@ -436,135 +436,8 @@ case "${1:-status}" in
 
         echo "📈 Next RC Version: $NEXT_VERSION"
         echo ""
-        
-        # Check for saved release notes from previous attempts
-        SAVED_NOTES_FILE=".release-notes-v${CURRENT_VERSION}.saved"
-        
-        # Skip release notes generation if resuming with existing pre-release
-        if [ "${SKIP_WORKFLOW:-false}" = "true" ] && [ -n "$PRERELEASE_TAG" ]; then
-            echo ""
-            echo "📋 Using existing pre-release, fetching its release notes..."
-            
-            # Get the existing release notes from the pre-release
-            EXISTING_NOTES=$(gh release view "$PRERELEASE_TAG" --repo "$REPO" --json body --jq '.body' 2>/dev/null || echo "")
-            
-            if [ -n "$EXISTING_NOTES" ]; then
-                echo "$EXISTING_NOTES" > .release-notes-draft.md
-                echo "✅ Retrieved existing release notes"
-            else
-                # Fallback to simple notes if can't retrieve
-                echo "# Release v$CURRENT_VERSION" > .release-notes-draft.md
-                echo "" >> .release-notes-draft.md
-                echo "Converting pre-release $PRERELEASE_TAG to full release" >> .release-notes-draft.md
-            fi
-        elif [ -f "$SAVED_NOTES_FILE" ] && [ "${SKIP_VERSION_BUMP:-false}" = "false" ]; then
-            echo ""
-            echo "📋 Found saved release notes from previous attempt"
-            cp "$SAVED_NOTES_FILE" .release-notes-draft.md
-            cat .release-notes-draft.md
-            echo ""
-            echo "═══════════════════════════════════════════════════════════════"
-            read -p "Use these saved release notes? (y/n): " USE_SAVED
-            if [ "$USE_SAVED" = "y" ] || [ "$USE_SAVED" = "Y" ]; then
-                echo "✅ Using saved release notes"
-            else
-                rm -f "$SAVED_NOTES_FILE"
-                # Continue to generate new notes
-                GENERATE_NEW_NOTES=true
-            fi
-        else
-            GENERATE_NEW_NOTES=true
-        fi
-        
-        if [ "${GENERATE_NEW_NOTES:-false}" = "true" ]; then
-            echo ""
-            echo "📈 Selected: $VERSION_TYPE version bump"
-
-            # Get last tag for analysis
-            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-            if [ -z "$LAST_TAG" ]; then
-                echo "📝 No previous tags found, analyzing last 20 commits"
-                ANALYSIS_FROM=""
-            else
-                echo "📝 Analyzing code changes since $LAST_TAG"
-                ANALYSIS_FROM="$LAST_TAG"
-            fi
-
-            # Remove old draft if exists
-            rm -f .release-notes-draft.md
-
-            # Use Claude/npx to generate release notes automatically
-            echo "🧠 Generating AI-powered release notes..."
-
-            # Generate simple structured release notes from git log
-            COMMITS=$(git log ${ANALYSIS_FROM:+$ANALYSIS_FROM..}HEAD --pretty=format:"- %s" --no-merges | head -20)
-
-            cat > .release-notes-draft.md <<EOF
-# Release v$VERSION_TYPE
-
-## What's Changed
-
-$COMMITS
-
----
-*Full Changelog*: https://github.com/$REPO/compare/${ANALYSIS_FROM:-initial}...v$VERSION_TYPE
-EOF
-
-            echo "✅ Release notes generated from git history"
-
-            # Interactive loop with enhanced review flow (skip if non-interactive)
-            if [ "$NON_INTERACTIVE" = "true" ] || [ "$AUTO_APPROVE" = "true" ]; then
-                echo "✅ Auto-approving release notes (non-interactive mode)"
-                cp .release-notes-draft.md "$SAVED_NOTES_FILE"
-            else
-                while true; do
-                    clear
-                    echo "╔═══════════════════════════════════════════════════════════════╗"
-                    echo "║                🚀 Release Notes Review                         ║"
-                    echo "╚═══════════════════════════════════════════════════════════════╝"
-                    echo ""
-
-                    # Display release notes
-                    if [ -f ".release-notes-draft.md" ]; then
-                        LINE_COUNT=$(wc -l < .release-notes-draft.md)
-                        echo "📄 Release Notes ($LINE_COUNT lines):"
-                        echo "───────────────────────────────────────────────────────────────"
-                        cat .release-notes-draft.md
-                        echo "───────────────────────────────────────────────────────────────"
-                    else
-                        echo "❌ No release notes found!"
-                    fi
-
-                    echo ""
-                    echo "═══════════════════════════════════════════════════════════════"
-                    echo ""
-
-                    PS3="Choose an action: "
-                    select choice in "✅ Accept and continue" "✏️  Edit manually" "❌ Cancel release"; do
-                    case $choice in
-                        "✅ Accept and continue")
-                            echo "✅ Release notes accepted!"
-                            cp .release-notes-draft.md "$SAVED_NOTES_FILE"
-                            break 2
-                            ;;
-                        "✏️  Edit manually")
-                            echo "🖊️  Opening release notes in editor..."
-                            ${EDITOR:-nano} .release-notes-draft.md
-                            break
-                            ;;
-                        "❌ Cancel release")
-                            echo "❌ Release cancelled by user"
-                            rm -f .release-notes-draft.md
-                            exit 1
-                            ;;
-                        *)
-                            echo "❌ Invalid choice."
-                            ;;
-                    esac
-                done
-            done
-            fi
-        fi
+        echo "📋 Release notes will be auto-generated by GitHub (--generate-notes)"
+        echo ""
         
         # Step 1: Handle pre-release workflow or use existing pre-release
         if [ "${SKIP_WORKFLOW:-false}" = "true" ] && [ -n "$PRERELEASE_TAG" ]; then
@@ -643,17 +516,6 @@ EOF
                             NEW_VERSION=$(echo "$NEW_TAG" | sed 's/^v//' | sed 's/-[0-9]*$//')
                             
                             echo "✅ Pre-release created: $NEW_TAG (version: $NEW_VERSION)"
-
-                            # Spawn async release notes enhancer (runs during build, updates GitHub release)
-                            echo ""
-                            echo "🧠 Spawning release notes enhancer during build..."
-                            (
-                                # Run in background - categorizes commits and updates GitHub release
-                                ./scripts/enhance-release-notes.sh "$NEW_TAG" "$NEW_VERSION" "${ANALYSIS_FROM:-v0.0.0}" \
-                                    > /tmp/release-enhancer.log 2>&1
-                            ) &
-                            ENHANCER_PID=$!
-                            echo "   └─ Enhancer running (PID: $ENHANCER_PID) - will update GitHub release during 30-45min build"
 
                             # IMPORTANT: Tags pushed with GITHUB_TOKEN don't trigger workflows
                             # We need to explicitly trigger the build workflow
@@ -751,21 +613,16 @@ EOF
         echo "🔄 Step 2: Converting pre-release to full release..."
         echo "This will trigger the npm publish workflow."
         echo ""
-        
-        # Update the pre-release with our release notes and convert to full release
-        echo "📝 Converting to full release with custom release notes..."
+
+        # Update the pre-release and convert to full release (keeping auto-generated notes)
+        echo "📝 Converting to full release (keeping GitHub's auto-generated notes)..."
         gh release edit "$NEW_TAG" --repo "$REPO" \
             --title "Release v$NEW_VERSION" \
-            --notes-file .release-notes-draft.md \
             --prerelease=false \
             --latest || {
             echo "❌ Failed to convert pre-release to full release"
-            rm -f .release-notes-draft.md
             exit 1
         }
-        
-        rm -f .release-notes-draft.md
-        rm -f "$SAVED_NOTES_FILE"  # Clean up saved notes after successful release
         
         echo "✅ Release v$NEW_VERSION published!"
         echo ""
