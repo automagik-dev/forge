@@ -1,7 +1,7 @@
 import { Diff } from 'shared/types';
-import { DiffModeEnum, DiffView, SplitSide } from '@git-diff-view/react';
+import { DiffModeEnum, SplitSide } from '@git-diff-view/react';
 import { generateDiffFile, type DiffFile } from '@git-diff-view/file';
-import { useMemo } from 'react';
+import { useMemo, memo, lazy, Suspense } from 'react';
 import { useUserSystem } from '@/components/config-provider';
 import { getHighLightLanguageFromPath } from '@/utils/extToLanguage';
 import { getActualTheme } from '@/utils/theme';
@@ -22,11 +22,21 @@ import {
 import '@/styles/diff-style-overrides.css';
 import { attemptsApi } from '@/lib/api';
 import type { TaskAttempt } from 'shared/types';
-import { useReview, type ReviewDraft } from '@/contexts/ReviewProvider';
+import {
+  useReview,
+  type ReviewDraft,
+  type ReviewComment,
+} from '@/contexts/ReviewProvider';
 import { CommentWidgetLine } from '@/components/diff/CommentWidgetLine';
 import { ReviewCommentRenderer } from '@/components/diff/ReviewCommentRenderer';
 import { useDiffViewMode } from '@/stores/useDiffViewStore';
 import { useProject } from '@/contexts/project-context';
+import { Loader } from '@/components/ui/loader';
+
+// OPTIMIZATION: Code-split @git-diff-view library (lazy load ~200KB bundle)
+const DiffView = lazy(() =>
+  import('@git-diff-view/react').then((mod) => ({ default: mod.DiffView }))
+);
 
 type Props = {
   diff: Diff;
@@ -66,7 +76,8 @@ function readPlainLine(
   }
 }
 
-export default function DiffCard({
+// OPTIMIZATION: Memoize component to prevent unnecessary re-renders
+const DiffCard = memo(function DiffCard({
   diff,
   expanded,
   onToggle,
@@ -92,7 +103,10 @@ export default function DiffCard({
   const newContentSafe = diff.newContent || '';
   const isContentEqual = oldContentSafe === newContentSafe;
 
+  // OPTIMIZATION: Only parse diff when expanded (lazy loading)
   const diffFile = useMemo(() => {
+    // Don't parse if collapsed - massive CPU savings
+    if (!expanded) return null;
     if (isContentEqual || isOmitted) return null;
     try {
       const oldFileName = oldName || newName || 'unknown';
@@ -112,6 +126,7 @@ export default function DiffCard({
       return null;
     }
   }, [
+    expanded, // CRITICAL: Only recompute when expanded changes
     isContentEqual,
     isOmitted,
     oldName,
@@ -122,12 +137,18 @@ export default function DiffCard({
     newContentSafe,
   ]);
 
-  const add = isOmitted
-    ? (diff.additions ?? 0)
-    : (diffFile?.additionLength ?? 0);
-  const del = isOmitted
-    ? (diff.deletions ?? 0)
-    : (diffFile?.deletionLength ?? 0);
+  // OPTIMIZATION: Memoize expensive stat calculations
+  const add = useMemo(() => {
+    if (isOmitted) return diff.additions ?? 0;
+    if (!expanded || !diffFile) return diff.additions ?? 0;
+    return diffFile.additionLength ?? 0;
+  }, [isOmitted, expanded, diffFile, diff.additions]);
+
+  const del = useMemo(() => {
+    if (isOmitted) return diff.deletions ?? 0;
+    if (!expanded || !diffFile) return diff.deletions ?? 0;
+    return diffFile.deletionLength ?? 0;
+  }, [isOmitted, expanded, diffFile, diff.deletions]);
 
   // Review functionality
   const filePath = newName || oldName || 'unknown';
@@ -185,10 +206,17 @@ export default function DiffCard({
     );
   };
 
-  const renderExtendLine = (lineData: { data: ReviewComment }) => {
-    return (
-      <ReviewCommentRenderer comment={lineData.data} projectId={projectId} />
-    );
+  const renderExtendLine = ({
+    data,
+  }: {
+    lineNumber: number;
+    side: SplitSide;
+    data: unknown;
+    diffFile: DiffFile;
+    onUpdate: () => void;
+  }) => {
+    const comment = data as ReviewComment;
+    return <ReviewCommentRenderer comment={comment} projectId={projectId} />;
   };
 
   // Title row
@@ -275,23 +303,33 @@ export default function DiffCard({
       </div>
 
       {expanded && diffFile && (
-        <div>
-          <DiffView
-            diffFile={diffFile}
-            diffViewWrap={false}
-            diffViewTheme={theme}
-            diffViewHighlight
-            diffViewMode={
-              globalMode === 'split' ? DiffModeEnum.Split : DiffModeEnum.Unified
-            }
-            diffViewFontSize={12}
-            diffViewAddWidget
-            onAddWidgetClick={handleAddWidgetClick}
-            renderWidgetLine={renderWidgetLine}
-            extendData={extendData}
-            renderExtendLine={renderExtendLine}
-          />
-        </div>
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center p-8">
+              <Loader />
+            </div>
+          }
+        >
+          <div>
+            <DiffView
+              diffFile={diffFile}
+              diffViewWrap={false}
+              diffViewTheme={theme}
+              diffViewHighlight
+              diffViewMode={
+                globalMode === 'split'
+                  ? DiffModeEnum.Split
+                  : DiffModeEnum.Unified
+              }
+              diffViewFontSize={12}
+              diffViewAddWidget
+              onAddWidgetClick={handleAddWidgetClick}
+              renderWidgetLine={renderWidgetLine}
+              extendData={extendData}
+              renderExtendLine={renderExtendLine}
+            />
+          </div>
+        </Suspense>
       )}
       {expanded && !diffFile && (
         <div
@@ -311,4 +349,6 @@ export default function DiffCard({
       )}
     </div>
   );
-}
+});
+
+export default DiffCard;

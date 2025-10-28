@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { applyPatch } from 'rfc6902';
 import type { Operation } from 'rfc6902';
 
@@ -41,6 +41,39 @@ export const useJsonPatchWsStream = <T>(
   const retryAttemptsRef = useRef<number>(0);
   const [retryNonce, setRetryNonce] = useState(0);
   const finishedRef = useRef<boolean>(false);
+
+  // OPTIMIZATION: Batch patch applications with requestAnimationFrame
+  const pendingPatchesRef = useRef<Operation[]>([]);
+  const rafIdRef = useRef<number | null>(null);
+
+  // OPTIMIZATION: Flush batched patches in next animation frame
+  const flushPatches = useCallback(() => {
+    rafIdRef.current = null;
+    if (pendingPatchesRef.current.length === 0 || !dataRef.current) return;
+
+    // Apply deduplicated patches if configured
+    const filtered = options.deduplicatePatches
+      ? options.deduplicatePatches(pendingPatchesRef.current)
+      : pendingPatchesRef.current;
+
+    if (filtered.length === 0) {
+      pendingPatchesRef.current = [];
+      return;
+    }
+
+    // Deep clone current state before mutating
+    dataRef.current = structuredClone(dataRef.current);
+
+    // Apply all batched patches at once
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    applyPatch(dataRef.current as any, filtered);
+
+    // Trigger React re-render
+    setData(dataRef.current);
+
+    // Clear batch
+    pendingPatchesRef.current = [];
+  }, [options]);
 
   function scheduleReconnect() {
     if (retryTimerRef.current) return; // already scheduled
@@ -110,26 +143,27 @@ export const useJsonPatchWsStream = <T>(
           // Handle JsonPatch messages (same as SSE json_patch event)
           if ('JsonPatch' in msg) {
             const patches: Operation[] = msg.JsonPatch;
-            const filtered = options.deduplicatePatches
-              ? options.deduplicatePatches(patches)
-              : patches;
+            if (!patches.length || !dataRef.current) return;
 
-            if (!filtered.length || !dataRef.current) return;
+            // OPTIMIZATION: Batch patches and flush on next animation frame
+            pendingPatchesRef.current.push(...patches);
 
-            // Deep clone the current state before mutating it
-            dataRef.current = structuredClone(dataRef.current);
-
-            // Apply patch (mutates the clone in place)
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            applyPatch(dataRef.current as any, filtered);
-
-            // React re-render: dataRef.current is already a new object
-            setData(dataRef.current);
+            // Schedule flush if not already scheduled
+            if (rafIdRef.current === null) {
+              rafIdRef.current = requestAnimationFrame(flushPatches);
+            }
           }
 
           // Handle finished messages ({finished: true})
           // Treat finished as terminal - do NOT reconnect
           if ('finished' in msg) {
+            // Flush any pending patches immediately before finishing
+            if (rafIdRef.current !== null) {
+              cancelAnimationFrame(rafIdRef.current);
+              rafIdRef.current = null;
+              flushPatches();
+            }
+
             finishedRef.current = true;
             ws.close(1000, 'finished');
             wsRef.current = null;
@@ -163,6 +197,12 @@ export const useJsonPatchWsStream = <T>(
     }
 
     return () => {
+      // OPTIMIZATION: Cancel any pending animation frame
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+
       if (wsRef.current) {
         const ws = wsRef.current;
 
@@ -182,6 +222,7 @@ export const useJsonPatchWsStream = <T>(
       }
       finishedRef.current = false;
       dataRef.current = undefined;
+      pendingPatchesRef.current = [];
       setData(undefined);
     };
   }, [
@@ -190,6 +231,7 @@ export const useJsonPatchWsStream = <T>(
     initialData,
     options,
     retryNonce,
+    flushPatches,
   ]);
 
   return { data, isConnected, error };

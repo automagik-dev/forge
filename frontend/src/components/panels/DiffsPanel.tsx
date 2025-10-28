@@ -1,5 +1,5 @@
 import { useDiffStream } from '@/hooks/useDiffStream';
-import { useMemo, useCallback, useState, useEffect } from 'react';
+import { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader } from '@/components/ui/loader';
 import { Button } from '@/components/ui/button';
@@ -14,10 +14,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import type { TaskAttempt } from 'shared/types';
+import type { TaskAttempt, Diff } from 'shared/types';
 import GitOperations, {
   type GitOperationsInputs,
 } from '@/components/tasks/Toolbar/GitOperations.tsx';
+import { VariableSizeList as List } from 'react-window';
 
 interface DiffsPanelProps {
   selectedAttempt: TaskAttempt | null;
@@ -124,13 +125,8 @@ export function DiffsPanel({ selectedAttempt, gitOps }: DiffsPanelProps) {
   );
 }
 
-interface DiffData {
-  filePath: string;
-  [key: string]: unknown;
-}
-
 interface DiffsPanelContentProps {
-  diffs: DiffData[];
+  diffs: Diff[];
   fileCount: number;
   added: number;
   deleted: number;
@@ -158,6 +154,70 @@ function DiffsPanelContent({
   loading,
   t,
 }: DiffsPanelContentProps) {
+  // OPTIMIZATION: Virtual scrolling with react-window
+  const listRef = useRef<List>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerHeight, setContainerHeight] = useState(600);
+
+  // Measure container height for virtual list
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        setContainerHeight(entry.contentRect.height);
+      }
+    });
+    resizeObserver.observe(containerRef.current);
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  // Calculate item size dynamically based on collapsed state
+  const getItemSize = useCallback(
+    (index: number) => {
+      const diff = diffs[index];
+      const id = diff.newPath || diff.oldPath || String(index);
+      const isExpanded = !collapsedIds.has(id);
+
+      // Collapsed items are ~70px (header only)
+      if (!isExpanded) return 70;
+
+      // Expanded items: estimate based on diff size
+      const additions = diff.additions ?? 0;
+      const deletions = diff.deletions ?? 0;
+      const totalLines = additions + deletions;
+
+      // Each line is ~20px, plus 70px for header, plus padding
+      // Cap at 2000px to avoid huge items
+      return Math.min(2000, 70 + totalLines * 20 + 40);
+    },
+    [diffs, collapsedIds]
+  );
+
+  // Reset item sizes when collapse state changes
+  useEffect(() => {
+    listRef.current?.resetAfterIndex(0);
+  }, [collapsedIds]);
+
+  // Row renderer for virtual list
+  const Row = useCallback(
+    ({ index, style }: { index: number; style: React.CSSProperties }) => {
+      const diff = diffs[index];
+      const id = diff.newPath || diff.oldPath || String(index);
+      return (
+        <div style={style}>
+          <DiffCard
+            diff={diff}
+            expanded={!collapsedIds.has(id)}
+            onToggle={() => toggle(id)}
+            selectedAttempt={selectedAttempt}
+          />
+        </div>
+      );
+    },
+    [diffs, collapsedIds, toggle, selectedAttempt]
+  );
+
   return (
     <div className="h-full flex flex-col relative">
       {diffs.length > 0 && (
@@ -214,7 +274,7 @@ function DiffsPanelContent({
           <GitOperations selectedAttempt={selectedAttempt} {...gitOps} />
         </div>
       )}
-      <div className="flex-1 overflow-y-auto px-3">
+      <div ref={containerRef} className="flex-1 overflow-hidden px-3">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <Loader />
@@ -224,18 +284,16 @@ function DiffsPanelContent({
             {t('diff.noChanges')}
           </div>
         ) : (
-          diffs.map((diff, idx) => {
-            const id = diff.newPath || diff.oldPath || String(idx);
-            return (
-              <DiffCard
-                key={id}
-                diff={diff}
-                expanded={!collapsedIds.has(id)}
-                onToggle={() => toggle(id)}
-                selectedAttempt={selectedAttempt}
-              />
-            );
-          })
+          <List
+            ref={listRef}
+            height={containerHeight}
+            itemCount={diffs.length}
+            itemSize={getItemSize}
+            width="100%"
+            overscanCount={2}
+          >
+            {Row}
+          </List>
         )}
       </div>
     </div>
