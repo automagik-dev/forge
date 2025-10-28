@@ -129,8 +129,12 @@ impl LocalContainerService {
 
     /// Finalize task execution by updating status to InReview and sending notifications
     async fn finalize_task(db: &DBService, config: &Arc<RwLock<Config>>, ctx: &ExecutionContext) {
-        if let Err(e) = Task::update_status(&db.pool, ctx.task.id, TaskStatus::InReview).await {
-            tracing::error!("Failed to update task status to InReview: {e}");
+        // Only transition to InReview if task is InProgress
+        // Preserve Agent status for agent-owned tasks
+        if ctx.task.status == TaskStatus::InProgress {
+            if let Err(e) = Task::update_status(&db.pool, ctx.task.id, TaskStatus::InReview).await {
+                tracing::error!("Failed to update task status to InReview: {e}");
+            }
         }
         let notify_cfg = config.read().await.notifications.clone();
         NotificationService::notify_execution_halted(notify_cfg, ctx).await;
@@ -874,11 +878,13 @@ impl ContainerService for LocalContainerService {
         }
 
         // Update task status to InReview when execution is stopped
+        // Only transition InProgress tasks; preserve Agent status
         if let Ok(ctx) = ExecutionProcess::load_context(&self.db.pool, execution_process.id).await
             && !matches!(
                 ctx.execution_process.run_reason,
                 ExecutionProcessRunReason::DevServer
             )
+            && ctx.task.status == TaskStatus::InProgress
             && let Err(e) =
                 Task::update_status(&self.db.pool, ctx.task.id, TaskStatus::InReview).await
         {

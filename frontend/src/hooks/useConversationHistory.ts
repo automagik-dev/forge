@@ -94,8 +94,10 @@ export const useConversationHistory = ({
           resolve(allEntries);
         },
         onError: (err) => {
-          console.warn!(
-            `Error loading entries for historic execution process ${executionProcess.id}`,
+          // WebSocket failures for historic processes are expected and harmless
+          // Use console.debug to avoid console spam during normal operation
+          console.debug(
+            `WebSocket connection failed for historic execution process ${executionProcess.id} (expected for completed processes)`,
             err
           );
           controller.close();
@@ -171,7 +173,8 @@ export const useConversationHistory = ({
         p.run_reason !== 'devserver'
     );
     if (activeProcesses.length > 1) {
-      console.error('More than one active execution process found');
+      const processIds = activeProcesses.map(p => p.id).join(', ');
+      console.error(`More than one active execution process found. Process IDs: ${processIds}`);
     }
     return activeProcesses[0] || null;
   };

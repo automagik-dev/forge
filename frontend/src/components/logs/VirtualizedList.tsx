@@ -108,6 +108,9 @@ const VirtualizedList = ({ attempt }: VirtualizedListProps) => {
 
   return (
     <>
+      {/* VirtuosoMessageList license warning is expected in development.
+          This is a dev-only warning and does not affect production builds.
+          See: https://virtuoso.dev/pricing/ for licensing information. */}
       <VirtuosoMessageListLicense
         licenseKey={import.meta.env.VITE_PUBLIC_REACT_VIRTUOSO_LICENSE_KEY}
       >
