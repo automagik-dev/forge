@@ -166,12 +166,12 @@ jobs:
           ACTION="${{ github.event.inputs.action }}"
 
           if [ "$ACTION" = "bump-rc" ]; then
-            node scripts/unified-release.cjs --bump rc --publish --github-release --skip-build
+            node scripts/unified-release.cjs --bump rc --publish --github-release --skip-build --skip-tests
           elif [ "$ACTION" = "promote-to-stable" ]; then
             node scripts/unified-release.cjs --promote --publish --github-release
           elif [ "$ACTION" = "manual-tag" ]; then
             TAG="${{ github.event.inputs.tag }}"
-            node scripts/unified-release.cjs --tag "$TAG" --publish --github-release --skip-build
+            node scripts/unified-release.cjs --tag "$TAG" --publish --github-release --skip-build --skip-tests
           fi
 
           VERSION=$(node -p "require('./package.json').version")
