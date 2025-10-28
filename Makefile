@@ -113,16 +113,24 @@ clean:
 	@rm -f *.zip
 	@echo "✅ Clean complete!"
 
-# Complete release pipeline: version bump + build + publish + release notes
+# Create RC release (always RC, never stable directly)
 publish:
-	@echo "🚀 Complete Release Pipeline"
+	@echo "🚀 RC Release Pipeline"
 	@echo "This will:"
-	@echo "  1. Let you choose version bump type (patch/minor/major)"
-	@echo "  2. Trigger GitHub Actions to bump version and build all platforms"
-	@echo "  3. Generate AI-powered release notes with Genie (semantic analysis)"
-	@echo "  4. Create GitHub release and publish to npm"
+	@echo "  1. Create next RC version (auto-increments)"
+	@echo "  2. Build all platforms via GitHub Actions"
+	@echo "  3. Publish to npm @next tag"
 	@echo ""
 	@./gh-build.sh publish
+
+# Promote RC to stable (no rebuild, just retag)
+stable:
+	@if [ -z "$(RC)" ]; then \
+		echo "❌ Error: RC version required"; \
+		echo "Usage: make stable RC=0.5.1-rc.1"; \
+		exit 1; \
+	fi
+	@./scripts/promote-rc-to-stable.sh $(RC)
 
 # Beta release with auto-incremented version
 beta:
