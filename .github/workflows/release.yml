@@ -67,6 +67,12 @@ jobs:
           git config --global user.email "genie@namastex.ai"
           git config --global user.name "Automagik Genie"
 
+      - name: 🦀 Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          components: rustfmt, clippy
+
       - name: 🔍 Determine Release Type
         id: detect
         run: |
