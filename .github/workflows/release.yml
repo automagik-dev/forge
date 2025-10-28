@@ -73,9 +73,8 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           components: rustfmt, clippy
 
-      - name: 🔧 Set Rust Toolchain as Default
+      - name: 🔧 Verify Rust Toolchain
         run: |
-          rustup default ${{ env.RUST_TOOLCHAIN }}
           rustc --version
           cargo --version
 
