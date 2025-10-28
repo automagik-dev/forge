@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [initialMessage, setInitialMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const widgetRef = useRef<HTMLDivElement>(null);
 
   // Convert Task to TaskWithAttemptStatus for components that need it
   const taskWithStatus: TaskWithAttemptStatus | null = masterGenie
@@ -78,6 +79,34 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
       loadMasterGenie();
     }
   }, [projectId, isOpen]);
+
+  // ESC key listener to minimize widget
+  useEffect(() => {
+    if (!isOpen || !isMinimized) {
+      const handleEscape = (event: KeyboardEvent) => {
+        if (event.key === 'Escape' && isOpen && !isMinimized) {
+          onMinimize();
+        }
+      };
+
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, isMinimized, onMinimize]);
+
+  // Click-outside detection to auto-minimize
+  useEffect(() => {
+    if (!isOpen || isMinimized) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (widgetRef.current && !widgetRef.current.contains(event.target as Node)) {
+        onMinimize();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, isMinimized, onMinimize]);
 
   // Navigate to diffs view when maximizing
   const handleMaximize = () => {
@@ -118,11 +147,11 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   }
 
   if (!isOpen) {
-    // Floating chat bubble
+    // Floating chat bubble (bottom-left, less intrusive)
     return (
       <button
         onClick={onToggle}
-        className="fixed bottom-4 right-4 w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all z-50"
+        className="fixed bottom-4 left-4 w-14 h-14 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all z-50"
         aria-label="Open Genie chat"
       >
         <Lamp className="h-6 w-6" />
@@ -131,9 +160,9 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   }
 
   if (isMinimized) {
-    // Minimized bar
+    // Minimized bar (bottom-left)
     return (
-      <div className="fixed bottom-4 right-4 bg-background border rounded-lg shadow-lg z-50">
+      <div ref={widgetRef} className="fixed bottom-4 left-4 bg-background border rounded-lg shadow-lg z-50">
         <div className="flex items-center gap-2 p-3">
           <Lamp className="h-5 w-5 text-blue-500" />
           <span className="text-sm font-semibold">Genie</span>
@@ -150,14 +179,6 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
             disabled={!masterGenie || !masterGenie.attempt}
           >
             <Maximize2 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onMinimize}
-            className="h-6 w-6 p-0"
-          >
-            <Minimize2 className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
@@ -182,9 +203,9 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     );
   }
 
-  // Full chat widget with logs
+  // Full chat widget with logs (bottom-left)
   return (
-    <Card className="fixed bottom-4 right-4 w-[600px] h-[600px] shadow-xl z-50 flex flex-col">
+    <Card ref={widgetRef} className="fixed bottom-4 left-4 w-[600px] h-[600px] shadow-xl z-50 flex flex-col">
       <CardHeader className="pb-3 border-b">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -262,11 +283,13 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
             <div className="mt-4 flex flex-col gap-2">
               <Textarea
                 value={initialMessage}
-                onChange={(e) => setInitialMessage(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setInitialMessage(e.target.value)
+                }
                 placeholder="Type your message to Genie..."
                 className="min-h-[100px] resize-none"
                 disabled={isSending}
-                onKeyDown={(e) => {
+                onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     handleSendInitialMessage();
