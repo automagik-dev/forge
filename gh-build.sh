@@ -589,7 +589,7 @@ EOF
             echo ""
 
             # Trigger the simplified RC-only release workflow
-            gh workflow run "🚀 Unified Release" --repo "$REPO" -f action="bump-rc" || {
+            gh workflow run release.yml --repo "$REPO" -f action="bump-rc" || {
                 echo "❌ Failed to trigger release workflow"
                 rm -f .release-notes-draft.md
                 exit 1
