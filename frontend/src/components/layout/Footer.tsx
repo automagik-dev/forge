@@ -31,12 +31,10 @@ export function Footer() {
         setHealth({ status: 'unhealthy', version: '0.0.0' });
       });
 
-    // Fetch latest stable release from backend API
-    fetch('/api/forge/releases')
+    // Fetch latest stable release from static releases.json
+    fetch('/releases.json')
       .then(res => res.json())
-      .then(response => {
-        // Backend returns ApiResponse wrapper: { success: true, data: [...] }
-        const releases = response.data || response;
+      .then(releases => {
         // Find latest stable (non-prerelease) release
         const latestStable = releases.find((r: LatestRelease & { prerelease: boolean }) => !r.prerelease);
 
