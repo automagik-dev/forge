@@ -26,7 +26,7 @@ import {
   EditorSelectionDialog,
   DeleteTaskConfirmationDialog,
   FolderPickerDialog,
-  TaskTemplateEditDialog,
+  TagEditDialog,
   ChangeTargetBranchDialog,
   RebaseDialog,
   CreateConfigurationDialog,
@@ -35,6 +35,7 @@ import {
   ProjectEditorSelectionDialog,
   RestoreLogsDialog,
   ViewProcessesDialog,
+  GitActionsDialog,
 } from './components/dialogs';
 import { CreateAttemptDialog } from './components/dialogs/tasks/CreateAttemptDialog';
 
@@ -51,7 +52,7 @@ NiceModal.register('delete-task-confirmation', DeleteTaskConfirmationDialog);
 NiceModal.register('task-form', TaskFormDialog);
 NiceModal.register('editor-selection', EditorSelectionDialog);
 NiceModal.register('folder-picker', FolderPickerDialog);
-NiceModal.register('task-template-edit', TaskTemplateEditDialog);
+NiceModal.register('tag-edit', TagEditDialog);
 NiceModal.register('change-target-branch-dialog', ChangeTargetBranchDialog);
 NiceModal.register('rebase-dialog', RebaseDialog);
 NiceModal.register('create-configuration', CreateConfigurationDialog);
@@ -61,8 +62,7 @@ NiceModal.register('project-editor-selection', ProjectEditorSelectionDialog);
 NiceModal.register('restore-logs', RestoreLogsDialog);
 NiceModal.register('view-processes', ViewProcessesDialog);
 NiceModal.register('create-attempt', CreateAttemptDialog);
-// Install VS Code iframe keyboard bridge when running inside an iframe
-import './vscode/bridge';
+NiceModal.register('git-actions', GitActionsDialog);
 
 import {
   useLocation,
@@ -72,8 +72,7 @@ import {
 } from 'react-router-dom';
 
 Sentry.init({
-  // Namastex Sentry DSN (replaced upstream BloopAI DSN)
-  dsn: 'https://fa5e961d24021da4e6df30e5beee03af@o4509714066571264.ingest.us.sentry.io/4509714113495040',
+  dsn: 'https://1065a1d276a581316999a07d5dffee26@o4509603705192449.ingest.de.sentry.io/4509605576441937',
   tracesSampleRate: 1.0,
   environment: import.meta.env.MODE === 'development' ? 'dev' : 'production',
   integrations: [
