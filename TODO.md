@@ -19,77 +19,67 @@ This document tracks all remaining differences between v0.5.0-rc.3 (our custom v
 11. **ForgeCreateAttemptDialog** - Removed (use upstream)
 12. **Shims** - Removed (not needed)
 
-## 🔴 Critical Missing Backend (Omni Integration)
+## 🔴 Critical Missing Backend (`forge-app/` Crate)
 
-### ⚠️ IMPORTANT FINDINGS:
+### ⚠️ MAJOR DISCOVERY:
 
-1. **Upstream MCP server ALREADY calls these endpoints** in `upstream/crates/server/src/mcp/task_server.rs`
-2. **Endpoints are NOT implemented yet** - they need to be created
-3. **Omni config is stored in JSON** - No separate `forge_config` table needed!
-   - Stored in `projects` table, `forge_config` JSON column
-   - Type: `ForgeProjectSettings` with `omni_config: OmniConfig | null`
-4. **Types already exist** in `shared/forge-types.ts` (auto-generated from Rust)
+**WE HAD AN ENTIRE `forge-app/` CRATE THAT WAS LOST IN THE UPSTREAM SYNC!**
 
-### Required Backend Endpoints
+In v0.5.0, we had:
+- `forge-app/` - Separate Rust crate that wraps upstream
+- `forge-app/migrations/` - Our own migrations with `forge_` prefixed tables
+- `forge-app/src/router.rs` - Router that mounts `/api/forge/*` routes alongside upstream `/api/*`
+- `forge-app/src/mcp/` - MCP server wrappers
+- `forge-app/src/bin/generate_forge_types.rs` - Type generator for `shared/forge-types.ts`
+- `forge-app/src/services/` - Forge-specific services
 
-**File**: `upstream/crates/server/src/routes/forge.rs` (needs creation in upstream submodule)
+### Architecture Pattern (v0.5.0):
 
-MCP server calls these endpoints (found in `task_server.rs:1658`):
-
-1. **GET `/api/forge/config`**
-   - Global Forge settings (not project-specific)
-   - May not be needed - check if we only use per-project config
-
-2. **GET `/api/forge/projects/{id}/settings`**
-   - Get project-specific Forge settings (Omni config)
-   - Returns `ForgeProjectSettings` from `projects.forge_config` JSON column
-
-3. **PUT `/api/forge/projects/{id}/settings`**
-   - Update project-specific Forge settings
-   - Updates `projects.forge_config` JSON column
-
-4. **GET `/api/forge/omni/instances`**
-   - List available Omni instances from configured server
-   - Proxies to Omni server's `/instances` endpoint
-
-5. **POST `/api/forge/omni/validate`**
-   - Validate Omni host and API key
-   - Called by MCP tool `validate_omni_config`
-   - Should test connection to Omni server
-
-6. **GET `/api/forge/omni/status`**
-   - Get Omni connection status
-
-7. **POST `/api/forge/omni/notifications`**
-   - Send notification via Omni
-
-### Database Schema Updates
-
-**✅ NO DATABASE MIGRATION NEEDED!**
-
-- Omni config is already stored in `projects.forge_config` JSON column
-- Schema already supports this via upstream migrations
-- Type definitions exist in:
-  - Rust: (needs to be found/created)
-  - TypeScript: `shared/forge-types.ts` (auto-generated)
-
-### Backend Services
-
-**File**: `upstream/crates/services/src/omni.rs` (needs creation in upstream submodule)
-
-```rust
-// OmniService for HTTP client to Omni server
-pub struct OmniService {
-    client: reqwest::Client,
-}
-
-impl OmniService {
-    pub async fn list_instances(&self, config: &OmniConfig) -> Result<Vec<OmniInstance>>;
-    pub async fn validate_connection(&self, host: &str, api_key: &str) -> Result<bool>;
-    pub async fn get_status(&self, config: &OmniConfig) -> Result<OmniStatus>;
-    pub async fn send_notification(&self, config: &OmniConfig, request: SendTextRequest) -> Result<SendTextResponse>;
-}
 ```
+forge-app/              ← Our extension layer
+├── migrations/         ← forge_global_settings, forge_project_settings, forge_omni_notifications
+├── src/
+│   ├── router.rs      ← /api/forge/* + wraps /api/* from upstream
+│   ├── mcp/           ← MCP server wrappers
+│   └── services/      ← Forge services
+└── upstream/          ← Git submodule (unchanged)
+    └── crates/        ← Upstream code
+```
+
+This is a **LAYERED ARCHITECTURE** - not modifying upstream, but wrapping it!
+
+### What Needs to be Restored:
+
+**✅ We had all of this in v0.5.0:**
+
+1. **`forge-app/Cargo.toml`** - Separate crate
+2. **`forge-app/migrations/`** (3 files):
+   - `20251008000001_forge_omni_tables.sql` - Forge tables (forge_global_settings, forge_project_settings, forge_omni_notifications)
+   - `20251020000001_add_agent_task_status.sql` - Added 'agent' status
+   - `20251027000000_create_forge_agents.sql` - Forge agents tables
+
+3. **`forge-app/src/router.rs`** - Had these routes:
+   - GET `/api/forge/auth-required`
+   - GET/PUT `/api/forge/config`
+   - GET/PUT `/api/forge/projects/{project_id}/settings`
+   - GET `/api/forge/omni/status`
+   - GET `/api/forge/omni/instances`
+   - POST `/api/forge/omni/validate`
+   - GET `/api/forge/omni/notifications`
+   - GET `/api/forge/releases`
+   - GET `/api/forge/master-genie/{attempt_id}/neurons`
+   - GET `/api/forge/neurons/{neuron_attempt_id}/subtasks`
+   - GET/POST `/api/forge/agents`
+
+4. **`forge-app/src/mcp/`** - MCP server wrappers
+5. **`forge-app/src/bin/generate_forge_types.rs`** - Type generator
+6. **`forge-app/src/services/notification_hook.rs`** - Omni notification service
+
+### Action Required:
+
+**Restore the entire `forge-app/` directory from v0.5.0!**
+
+This is not about modifying upstream - it's about restoring our wrapper layer.
 
 ## 📋 Frontend Files to Review
 
