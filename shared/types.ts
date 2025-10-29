@@ -42,7 +42,7 @@ export type UpdateTag = { tag_name: string | null, content: string | null, };
 
 export type TagSearchParams = { search: string | null, };
 
-export type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelled";
+export type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelled" | "agent";
 
 export type Task = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, created_at: string, updated_at: string, };
 
@@ -108,7 +108,7 @@ export type GitHubConfig = { pat: string | null, oauth_token: string | null, use
 
 export enum SoundFile { ABSTRACT_SOUND1 = "ABSTRACT_SOUND1", ABSTRACT_SOUND2 = "ABSTRACT_SOUND2", ABSTRACT_SOUND3 = "ABSTRACT_SOUND3", ABSTRACT_SOUND4 = "ABSTRACT_SOUND4", COW_MOOING = "COW_MOOING", PHONE_VIBRATION = "PHONE_VIBRATION", ROOSTER = "ROOSTER" }
 
-export type UiLanguage = "BROWSER" | "EN" | "JA" | "ES" | "KO";
+export type UiLanguage = "BROWSER" | "EN" | "JA" | "ES" | "KO" | "PT_BR";
 
 export type ShowcaseState = { seen_features: Array<string>, };
 
