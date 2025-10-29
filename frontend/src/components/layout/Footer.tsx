@@ -31,20 +31,20 @@ export function Footer() {
         setHealth({ status: 'unhealthy', version: '0.0.0' });
       });
 
-    // Fetch latest stable release from static releases.json
-    fetch('/releases.json')
+    // Fetch latest version from NPM registry
+    fetch('https://registry.npmjs.org/automagik-forge/latest')
       .then(res => res.json())
-      .then(releases => {
-        // Find latest stable (non-prerelease) release
-        const latestStable = releases.find((r: LatestRelease & { prerelease: boolean }) => !r.prerelease);
-
-        if (latestStable) {
-          setLatestRelease(latestStable);
+      .then(data => {
+        if (data.version) {
+          setLatestRelease({
+            tag_name: `v${data.version}`,
+            html_url: `https://www.npmjs.com/package/automagik-forge/v/${data.version}`,
+          });
 
           // Compare with current version
-          if (health && latestStable.tag_name) {
+          if (health) {
             const currentVersion = health.version.replace(/^v/, '');
-            const latestVersion = latestStable.tag_name.replace(/^v/, '');
+            const latestVersion = data.version;
 
             // Simple version comparison (works for semver)
             if (latestVersion > currentVersion) {
