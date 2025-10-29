@@ -18,6 +18,7 @@ import type { TaskAttempt } from 'shared/types';
 import GitOperations, {
   type GitOperationsInputs,
 } from '@/components/tasks/Toolbar/GitOperations.tsx';
+import { Virtuoso } from 'react-virtuoso';
 
 interface DiffsPanelProps {
   selectedAttempt: TaskAttempt | null;
@@ -209,7 +210,7 @@ function DiffsPanelContent({
           <GitOperations selectedAttempt={selectedAttempt} {...gitOps} />
         </div>
       )}
-      <div className="flex-1 overflow-y-auto px-3">
+      <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <Loader />
@@ -219,18 +220,24 @@ function DiffsPanelContent({
             {t('diff.noChanges')}
           </div>
         ) : (
-          diffs.map((diff, idx) => {
-            const id = diff.newPath || diff.oldPath || String(idx);
-            return (
-              <DiffCard
-                key={id}
-                diff={diff}
-                expanded={!collapsedIds.has(id)}
-                onToggle={() => toggle(id)}
-                selectedAttempt={selectedAttempt}
-              />
-            );
-          })
+          <Virtuoso
+            style={{ height: '100%' }}
+            data={diffs}
+            itemContent={(idx, diff) => {
+              const id = diff.newPath || diff.oldPath || String(idx);
+              return (
+                <div className="px-3">
+                  <DiffCard
+                    key={id}
+                    diff={diff}
+                    expanded={!collapsedIds.has(id)}
+                    onToggle={() => toggle(id)}
+                    selectedAttempt={selectedAttempt}
+                  />
+                </div>
+              );
+            }}
+          />
         )}
       </div>
     </div>
