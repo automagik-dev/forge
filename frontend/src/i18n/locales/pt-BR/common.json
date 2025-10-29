@@ -1,55 +1,55 @@
 {
   "buttons": {
-    "save": "Salvar",
-    "cancel": "Cancelar",
-    "send": "Enviar",
-    "delete": "Excluir",
-    "edit": "Editar",
-    "create": "Criar",
-    "continue": "Continuar",
-    "reset": "Redefinir",
-    "manage": "Gerenciar",
-    "connect": "Conectar",
-    "disconnect": "Desconectar",
-    "close": "Fechar",
-    "replay": "Repetir"
+    "save": "Save",
+    "cancel": "Cancel",
+    "send": "Send",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "continue": "Continue",
+    "reset": "Reset",
+    "manage": "Manage",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "close": "Close",
+    "replay": "Replay"
   },
   "states": {
-    "loading": "Carregando...",
-    "saving": "Salvando...",
-    "error": "Erro",
-    "success": "Sucesso",
-    "reconnecting": "Reconectando"
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "error": "Error",
+    "success": "Success",
+    "reconnecting": "Reconnecting"
   },
   "language": {
-    "browserDefault": "Padrão do Navegador"
+    "browserDefault": "Browser Default"
   },
   "conversation": {
-    "plan": "Plano",
+    "plan": "Plan",
     "planToggle": {
-      "show": "Mostrar plano",
-      "hide": "Ocultar plano"
+      "show": "Show plan",
+      "hide": "Hide plan"
     },
     "toolDetailsToggle": {
-      "show": "Mostrar detalhes",
-      "hide": "Ocultar detalhes"
+      "show": "Show details",
+      "hide": "Hide details"
     },
-    "args": "Argumentos",
-    "output": "Saída",
-    "result": "Resultado",
-    "deniedByUser": "{{toolName}} negado pelo usuário"
+    "args": "Args",
+    "output": "Output",
+    "result": "Result",
+    "deniedByUser": "{{toolName}} denied by user"
   },
   "branchSelector": {
-    "placeholder": "Selecione um branch",
-    "searchPlaceholder": "Buscar branches...",
-    "empty": "Nenhum branch encontrado",
+    "placeholder": "Select a branch",
+    "searchPlaceholder": "Search branches...",
+    "empty": "No branches found",
     "badges": {
-      "current": "atual",
-      "remote": "remoto"
+      "current": "current",
+      "remote": "remote"
     },
-    "currentDisabled": "Não é possível selecionar o branch atual"
+    "currentDisabled": "Cannot select the current branch"
   },
   "breadcrumb": {
-    "more": "Mais"
+    "more": "More"
   }
 }

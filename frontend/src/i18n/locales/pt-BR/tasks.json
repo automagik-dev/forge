@@ -1,269 +1,280 @@
 {
-  "loading": "Carregando tarefas...",
+  "loading": "Loading tasks...",
   "empty": {
-    "noTasks": "Nenhuma tarefa encontrada para este projeto.",
-    "createFirst": "Criar Primeira Tarefa",
-    "noSearchResults": "Nenhuma tarefa corresponde à sua busca."
+    "noTasks": "No tasks found for this project.",
+    "createFirst": "Create First Task",
+    "noSearchResults": "No tasks match your search."
   },
   "actions": {
-    "addTask": "Adicionar tarefa"
+    "addTask": "Add task"
   },
   "rebase": {
     "common": {
       "action": "Rebase",
-      "inProgress": "Fazendo rebase...",
-      "withTarget": "Rebase em {{branch}}"
+      "inProgress": "Rebasing...",
+      "withTarget": "Rebase onto {{branch}}"
     },
     "dialog": {
-      "title": "Rebase da Tentativa de Tarefa",
-      "description": "Escolha um novo branch base para fazer rebase desta tentativa de tarefa.",
-      "upstreamLabel": "Branch Upstream",
-      "upstreamPlaceholder": "Selecione um branch upstream",
-      "targetLabel": "Branch Alvo",
-      "targetPlaceholder": "Selecione um branch alvo",
-      "advanced": "Avançado"
+      "title": "Rebase Task Attempt",
+      "description": "Choose a new base branch to rebase this task attempt onto.",
+      "upstreamLabel": "Upstream Branch",
+      "upstreamPlaceholder": "Select an upstream branch",
+      "targetLabel": "Target Branch",
+      "targetPlaceholder": "Select a target branch",
+      "advanced": "Advanced"
     },
     "status": {
-      "inProgress": "Rebase em andamento{{counts}}",
-      "needed": "Rebase necessário{{dirty}}{{counts}}",
-      "dirtyMarker": " (modificado)"
+      "inProgress": "Rebase in progress{{counts}}",
+      "needed": "Rebase needed{{dirty}}{{counts}}",
+      "dirtyMarker": " (dirty)"
     }
   },
   "branches": {
     "changeTarget": {
       "dialog": {
-        "title": "Alterar branch alvo",
-        "description": "Escolha um novo branch alvo para a tentativa de tarefa.",
-        "placeholder": "Selecione um branch alvo",
-        "action": "Alterar Branch",
-        "inProgress": "Alterando..."
+        "title": "Change target branch",
+        "description": "Choose a new target branch for the task attempt.",
+        "placeholder": "Select a target branch",
+        "action": "Change Branch",
+        "inProgress": "Changing..."
       }
     }
   },
   "preview": {
-    "title": "Visualização",
-    "selectAttempt": "Selecione uma tentativa para ver a visualização",
+    "title": "Preview",
+    "selectAttempt": "Select an attempt to see preview",
     "troubleAlert": {
-      "title": "Estamos tendo problemas para visualizar sua aplicação:",
-      "item1": "O servidor de desenvolvimento iniciou com sucesso? Pode haver um bug que você precisa resolver, ou talvez dependências precisem ser instaladas.",
-      "item2": "Seu servidor de desenvolvimento imprimiu a URL e porta no terminal no formato",
-      "item2Suffix": "? (é assim que sabemos que está rodando)",
-      "item3": "Você instalou o Web Companion (necessário para clicar-para-editar)? Se não, por favor",
-      "item3Link": "siga as instruções de instalação aqui"
+      "title": "We're having trouble previewing your application:",
+      "item1": "Did the dev server start successfully? There may be a bug you need to resolve, or perhaps dependencies need to be installed.",
+      "item2": "Did your dev server print the URL and port to the terminal in the format",
+      "item2Suffix": "? (this is how we know it's running)",
+      "item3": "Have you installed the Web Companion (required for click-to-edit)? If not, please",
+      "item3Link": "follow the installation instructions here"
     },
     "noServer": {
-      "title": "Nenhum servidor de desenvolvimento rodando",
-      "startPrompt": "Por favor, inicie um servidor de desenvolvimento para ver a visualização",
-      "setupPrompt": "Para usar a visualização ao vivo e clicar-para-editar, adicione um script de servidor de desenvolvimento a este projeto.",
-      "companionPrompt": "Para funcionalidade de clicar-para-editar, adicione o companion do navegador ao seu projeto.",
-      "companionLink": "Ver guia de instalação",
-      "startButton": "Iniciar Servidor Dev",
-      "editButton": "Editar Script Dev",
-      "stopAndEditButton": "Parar Servidor Dev e Resolver Problemas"
+      "title": "No dev server running",
+      "startPrompt": "Please start a dev server to see the preview",
+      "setupPrompt": "To use the live preview and click-to-edit, please add a dev server script to this project.",
+      "companionPrompt": "For click-to-edit functionality, add the browser companion to your project.",
+      "companionLink": "View installation guide",
+      "startButton": "Start Dev Server",
+      "editButton": "Edit Dev Script",
+      "stopAndEditButton": "Stop Dev Server & Resolve Issues"
     },
     "devScript": {
-      "saveAndStart": "Salvar e Iniciar",
-      "saveOnly": "Apenas Salvar",
-      "saveChanges": "Salvar Alterações",
-      "cancel": "Cancelar",
+      "saveAndStart": "Save & Start",
+      "saveOnly": "Save Only",
+      "saveChanges": "Save Changes",
+      "cancel": "Cancel",
       "errors": {
-        "notLoaded": "Projeto não carregado",
-        "empty": "Script dev não pode estar vazio"
+        "notLoaded": "Project not loaded",
+        "empty": "Dev script cannot be empty"
       }
     },
     "logs": {
-      "title": "Logs do Servidor Dev",
-      "hide": "Ocultar",
-      "show": "Mostrar"
+      "title": "Dev Server Logs",
+      "hide": "Hide",
+      "show": "Show"
     },
     "iframe": {
-      "title": "Visualização do servidor dev"
+      "title": "Dev server preview"
     },
     "toolbar": {
-      "refresh": "Atualizar visualização",
-      "copyUrl": "Copiar URL",
-      "openInTab": "Abrir em nova aba",
-      "stopDevServer": "Parar servidor dev"
+      "refresh": "Refresh preview",
+      "copyUrl": "Copy URL",
+      "openInTab": "Open in new tab",
+      "stopDevServer": "Stop dev server"
     }
   },
   "diff": {
     "viewModes": {
-      "inline": "Visualização inline",
-      "split": "Visualização dividida"
+      "inline": "Inline view",
+      "split": "Split view"
     },
-    "errorLoadingDiff": "Falha ao carregar diff: {{error}}",
-    "expandAll": "Expandir todos os diffs",
-    "collapseAll": "Recolher todos os diffs",
-    "filesChanged_one": "{{count}} arquivo alterado",
-    "filesChanged_other": "{{count}} arquivos alterados",
-    "noChanges": "Nenhuma alteração foi feita ainda"
+    "ignoreWhitespace": "Ignore whitespace changes",
+    "errorLoadingDiff": "Failed to load diff: {{error}}",
+    "expandAll": "Expand all diffs",
+    "collapseAll": "Collapse all diffs",
+    "filesChanged_one": "{{count}} file changed",
+    "filesChanged_other": "{{count}} files changed",
+    "noChanges": "No changes have been made yet"
   },
   "taskPanel": {
-    "noTaskSelected": "Nenhuma tarefa selecionada",
-    "loadingAttempts": "Carregando tentativas...",
-    "errorLoadingAttempts": "Falha ao carregar tentativas",
-    "attemptsCount": "Tentativas ({{count}})",
-    "noAttempts": "Nenhuma tentativa ainda"
+    "noTaskSelected": "No task selected",
+    "loadingAttempts": "Loading attempts...",
+    "errorLoadingAttempts": "Failed to load attempts",
+    "attemptsCount": "Attempts ({{count}})",
+    "noAttempts": "No attempts yet"
   },
   "processes": {
-    "selectAttempt": "Selecione uma tentativa para visualizar processos de execução.",
-    "errorLoadingUpdates": "Falha ao carregar atualizações ao vivo dos processos.",
-    "reconnecting": "Reconectando...",
-    "loading": "Carregando processos de execução...",
-    "noProcesses": "Nenhum processo de execução encontrado para esta tentativa.",
-    "processId": "ID do Processo: {{id}}",
-    "deleted": "Excluído",
-    "deletedTooltip": "Excluído por restauração: linha do tempo foi restaurada para um ponto de verificação e execuções posteriores foram removidas",
-    "agent": "Agente:",
-    "exit": "Saída: {{code}}",
-    "started": "Iniciado: {{date}}",
-    "completed": "Concluído: {{date}}",
-    "detailsTitle": "Detalhes do Processo",
-    "backToList": "Voltar para lista",
-    "loadingDetails": "Carregando detalhes do processo...",
-    "errorLoadingDetails": "Falha ao carregar detalhes do processo. Por favor, tente novamente."
+    "selectAttempt": "Select an attempt to view execution processes.",
+    "errorLoadingUpdates": "Failed to load live updates for processes.",
+    "reconnecting": "Reconnecting...",
+    "loading": "Loading execution processes...",
+    "noProcesses": "No execution processes found for this attempt.",
+    "processId": "Process ID: {{id}}",
+    "deleted": "Deleted",
+    "deletedTooltip": "Deleted by restore: timeline was restored to a checkpoint and later executions were removed",
+    "agent": "Agent:",
+    "exit": "Exit: {{code}}",
+    "started": "Started: {{date}}",
+    "completed": "Completed: {{date}}",
+    "detailsTitle": "Process Details",
+    "backToList": "Back to list",
+    "loadingDetails": "Loading process details...",
+    "errorLoadingDetails": "Failed to load process details. Please try again."
   },
   "taskHeader": {
-    "editTask": "Editar tarefa",
-    "deleteTask": "Excluir tarefa",
-    "closePanel": "Fechar painel"
+    "editTask": "Edit task",
+    "deleteTask": "Delete task",
+    "closePanel": "Close panel"
   },
   "toolbar": {
-    "actions": "Ações",
-    "noAttempts": "Nenhuma tentativa ainda",
-    "startFirstAttempt": "Inicie sua primeira tentativa para começar a trabalhar nesta tarefa",
-    "startAttempt": "Iniciar Tentativa"
+    "actions": "Actions",
+    "noAttempts": "No attempts yet",
+    "startFirstAttempt": "Start your first attempt to begin working on this task",
+    "startAttempt": "Start Attempt"
   },
   "followUp": {
-    "stop": "Parar",
-    "clearReviewComments": "Limpar Comentários de Revisão",
-    "resolveConflicts": "Resolver conflitos",
-    "send": "Enviar",
-    "unqueuing": "Removendo da fila…",
-    "edit": "Editar",
-    "queuing": "Adicionando à fila…",
-    "queueForNextTurn": "Adicionar à fila para próximo turno"
+    "stop": "Stop",
+    "clearReviewComments": "Clear Review Comments",
+    "resolveConflicts": "Resolve conflicts",
+    "send": "Send",
+    "unqueuing": "Unqueuing…",
+    "edit": "Edit",
+    "queuing": "Queuing…",
+    "queueForNextTurn": "Queue for next turn"
   },
   "todos": {
-    "title_one": "Tarefas ({{count}})",
-    "title_other": "Tarefas ({{count}})"
+    "title_one": "Todos ({{count}})",
+    "title_other": "Todos ({{count}})"
   },
   "attempt": {
     "actions": {
-      "openInIde": "Abrir no IDE",
-      "openMenu": "Abrir menu",
-      "startDevServer": "Iniciar servidor dev",
-      "stopDevServer": "Parar servidor dev"
+      "openInIde": "Open in IDE",
+      "openMenu": "Open menu",
+      "startDevServer": "Start dev server",
+      "stopDevServer": "Stop dev server"
     },
     "labels": {
-      "attempt": "Tentativa",
-      "agent": "Agente",
+      "attempt": "Attempt",
+      "agent": "Agent",
       "branch": "Branch",
-      "diffs": "Diffs"
+      "diffs": "Diffs",
+      "summaryAndActions": "Summary & Actions"
     },
-    "agent": "Agente",
-    "path": "Caminho",
-    "openInEditor": "Abrir em {{editor}}",
-    "copied": "Copiado!",
-    "clickToCopy": "Clique para copiar caminho da worktree",
-    "stopDev": "Parar Dev",
-    "startDev": "Iniciar Dev",
-    "viewDevLogs": "Ver logs do servidor dev",
-    "stopping": "Parando...",
-    "stopAttempt": "Parar Tentativa",
-    "newAttempt": "Nova Tentativa",
-    "viewHistory": "Ver histórico de tentativas",
-    "createSubtask": "Criar Subtarefa",
-    "preview": "Visualização",
-    "diffs": "Diffs"
+    "agent": "Agent",
+    "path": "Path",
+    "openInEditor": "See changes in {{editor}}",
+    "copied": "Copied!",
+    "clickToCopy": "Copy worktree path",
+    "stopDev": "Stop Dev",
+    "pauseDev": "Pause Dev",
+    "startDev": "Start Dev",
+    "viewDevLogs": "View dev server logs",
+    "stopping": "Stopping...",
+    "stopAttempt": "Stop Attempt",
+    "newAttempt": "New Attempt",
+    "viewHistory": "View attempt history",
+    "createSubtask": "Create Subtask",
+    "preview": "Preview",
+    "diffs": "Diffs",
+    "gitActions": "Git Actions",
+    "tryAgain": "Try Again",
+    "devScriptMissingTooltip": "To start the dev server, add a dev script to this project"
   },
   "git": {
     "labels": {
-      "taskBranch": "Branch da Tarefa"
+      "taskBranch": "Task Branch"
     },
     "branch": {
-      "current": "atual"
+      "current": "current"
     },
     "status": {
       "commits_one": "commit",
       "commits_other": "commits",
-      "conflicts": "Conflitos",
-      "upToDate": "Atualizado",
-      "ahead": "à frente",
-      "behind": "atrás"
+      "conflicts": "Conflicts",
+      "upToDate": "Up to date",
+      "ahead": "ahead",
+      "behind": "behind"
     },
     "states": {
       "merged": "Merged!",
-      "merging": "Fazendo merge...",
+      "merging": "Merging...",
       "merge": "Merge",
-      "rebasing": "Fazendo rebase...",
+      "rebasing": "Rebasing...",
       "rebase": "Rebase",
       "pushed": "Pushed!",
-      "pushing": "Fazendo push...",
+      "pushing": "Pushing...",
       "push": "Push",
-      "creating": "Criando...",
-      "createPr": "Criar PR"
+      "creating": "Creating...",
+      "createPr": "Create PR"
     },
     "errors": {
-      "changeTargetBranch": "Falha ao alterar branch alvo",
-      "pushChanges": "Falha ao fazer push das alterações",
-      "mergeChanges": "Falha ao fazer merge das alterações",
-      "rebaseBranch": "Falha ao fazer rebase do branch"
+      "changeTargetBranch": "Failed to change target branch",
+      "pushChanges": "Failed to push changes",
+      "mergeChanges": "Failed to merge changes",
+      "rebaseBranch": "Failed to rebase branch"
     },
     "pr": {
-      "open": "Abrir PR #{{number}}",
+      "open": "Open PR #{{number}}",
       "number": "PR #{{number}}"
+    },
+    "actions": {
+      "title": "Git Actions",
+      "prMerged": "PR #{{number}} is already merged"
     }
   },
   "createAttemptDialog": {
-    "title": "Criar Tentativa",
-    "description": "Inicie uma nova tentativa com um agente de código. Uma worktree git e branch de tarefa serão criados.",
-    "baseBranch": "Branch base",
-    "loadingBranches": "Carregando branches...",
-    "selectBranch": "Selecione o branch",
-    "error": "Falha ao criar tentativa. Por favor, tente novamente.",
-    "creating": "Criando...",
-    "start": "Iniciar"
+    "title": "Create Attempt",
+    "description": "Start a new attempt with a coding agent. A git worktree and task branch will be created.",
+    "baseBranch": "Base branch",
+    "loadingBranches": "Loading branches...",
+    "selectBranch": "Select branch",
+    "error": "Failed to create attempt. Please try again.",
+    "creating": "Creating...",
+    "start": "Start"
   },
   "viewProcessesDialog": {
-    "title": "Processos de execução"
+    "title": "Execution processes"
   },
   "attemptHeaderActions": {
-    "preview": "Visualização",
+    "preview": "Preview",
     "diffs": "Diffs"
   },
   "actionsMenu": {
-    "attempt": "Tentativa",
-    "openInIde": "Abrir tentativa no IDE",
-    "viewProcesses": "Ver processos",
-    "createNewAttempt": "Criar nova tentativa",
-    "createSubtask": "Criar subtarefa",
-    "task": "Tarefa",
-    "duplicate": "Duplicar"
+    "attempt": "Attempt",
+    "openInIde": "Open attempt in IDE",
+    "viewProcesses": "View processes",
+    "createNewAttempt": "Create new attempt",
+    "createSubtask": "Create subtask",
+    "gitActions": "Git actions",
+    "task": "Task",
+    "duplicate": "Duplicate"
   },
   "showcases": {
     "taskPanel": {
       "companion": {
-        "title": "Automagik Forge Companion Apontar-e-Clicar",
-        "description": "Clique em qualquer componente da UI na janela de visualização para selecioná-lo precisamente. O agente de código recebe seletores DOM exatos e hierarquia de componentes, eliminando feedback ambíguo."
+        "title": "Automagik Forge Companion Point-and-Click",
+        "description": "Click any UI component in the preview window to select it precisely. The coding agent receives exact DOM selectors and component hierarchy, eliminating ambiguous feedback."
       },
       "installation": {
-        "title": "Instalação do Servidor Dev e Companion",
-        "description": "Defina um comando de servidor dev para visualizações, com script de configuração configurável nas configurações. Use um agente de código para instalar automaticamente o companion web Automagik Forge."
+        "title": "Dev Server & Companion Installation",
+        "description": "Set a dev server command for previews, with a setup script configurable in settings. Use a coding agent to automatically install the Automagik Forge web companion."
       },
       "codeReview": {
-        "title": "Revisão de Código Integrada",
-        "description": "Adicione comentários específicos de linha diretamente na visualização de diffs com o ícone de mais. Todo feedback é coletado e enviado como uma revisão completa para o agente de código."
+        "title": "Built-in Code Review",
+        "description": "Add line-specific comments directly in the diffs view with the plus icon. All feedback is collected and sent as a complete review to the coding agent."
       },
       "pullRequest": {
-        "title": "Criar PR a partir da Tarefa",
-        "description": "Faça merge de suas alterações ou crie pull requests diretamente das tentativas de tarefa. O diálogo PR pré-preenche título e descrição dos detalhes da sua tarefa para fluxos de trabalho simplificados."
+        "title": "Create PR from Task",
+        "description": "Merge your changes or create pull requests directly from task attempts. The PR dialog pre-fills title and description from your task details for streamlined workflows."
       }
     },
     "buttons": {
-      "previous": "Anterior",
-      "next": "Próximo",
-      "finish": "Concluir"
+      "previous": "Previous",
+      "next": "Next",
+      "finish": "Finish"
     }
   }
 }
