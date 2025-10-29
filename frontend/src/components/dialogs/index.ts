@@ -1,86 +1,86 @@
 // Global app dialogs
-export { DisclaimerDialog } from './global/DisclaimerDialog';
-export { OnboardingDialog } from './global/OnboardingDialog';
-export { PrivacyOptInDialog } from './global/PrivacyOptInDialog';
-export { ReleaseNotesDialog } from './global/ReleaseNotesDialog';
+export { DisclaimerDialog } from '@/components/dialogs/global/DisclaimerDialog';
+export { OnboardingDialog } from '@/components/dialogs/global/OnboardingDialog';
+export { PrivacyOptInDialog } from '@/components/dialogs/global/PrivacyOptInDialog';
+export { ReleaseNotesDialog } from '@/components/dialogs/global/ReleaseNotesDialog';
 
 // Authentication dialogs
-export { GitHubLoginDialog } from './auth/GitHubLoginDialog';
+export { GitHubLoginDialog } from '@/components/dialogs/auth/GitHubLoginDialog';
 export {
   ProvidePatDialog,
   type ProvidePatDialogProps,
-} from './auth/ProvidePatDialog';
+} from '@/components/dialogs/auth/ProvidePatDialog';
 
 // Project-related dialogs
 export {
   ProjectFormDialog,
   type ProjectFormDialogProps,
   type ProjectFormDialogResult,
-} from './projects/ProjectFormDialog';
+} from '@/components/dialogs/projects/ProjectFormDialog';
 export {
   ProjectEditorSelectionDialog,
   type ProjectEditorSelectionDialogProps,
-} from './projects/ProjectEditorSelectionDialog';
+} from '@/components/dialogs/projects/ProjectEditorSelectionDialog';
 
 // Task-related dialogs
 export {
   TaskFormDialog,
   type TaskFormDialogProps,
-} from './tasks/TaskFormDialog';
+} from '@/components/dialogs/tasks/TaskFormDialog';
 
-export { CreatePRDialog } from './tasks/CreatePRDialog';
+export { CreatePRDialog } from '@/components/dialogs/tasks/CreatePRDialog';
 export {
   EditorSelectionDialog,
   type EditorSelectionDialogProps,
-} from './tasks/EditorSelectionDialog';
+} from '@/components/dialogs/tasks/EditorSelectionDialog';
 export {
   DeleteTaskConfirmationDialog,
   type DeleteTaskConfirmationDialogProps,
-} from './tasks/DeleteTaskConfirmationDialog';
+} from '@/components/dialogs/tasks/DeleteTaskConfirmationDialog';
 export {
-  TagEditDialog,
-  type TagEditDialogProps,
-  type TagEditResult,
-} from './tasks/TagEditDialog';
+  TaskTemplateEditDialog,
+  type TaskTemplateEditDialogProps,
+  type TaskTemplateEditResult,
+} from '@/components/dialogs/tasks/TaskTemplateEditDialog';
 export {
   ChangeTargetBranchDialog,
   type ChangeTargetBranchDialogProps,
   type ChangeTargetBranchDialogResult,
-} from './tasks/ChangeTargetBranchDialog';
+} from '@/components/dialogs/tasks/ChangeTargetBranchDialog';
 export {
   RebaseDialog,
   type RebaseDialogProps,
   type RebaseDialogResult,
-} from './tasks/RebaseDialog';
+} from '@/components/dialogs/tasks/RebaseDialog';
 export {
   RestoreLogsDialog,
   type RestoreLogsDialogProps,
   type RestoreLogsDialogResult,
-} from './tasks/RestoreLogsDialog';
+} from '@/components/dialogs/tasks/RestoreLogsDialog';
 export {
   ViewProcessesDialog,
   type ViewProcessesDialogProps,
-} from './tasks/ViewProcessesDialog';
+} from '@/components/dialogs/tasks/ViewProcessesDialog';
 export {
   GitActionsDialog,
   type GitActionsDialogProps,
-} from './tasks/GitActionsDialog';
+} from '@/components/dialogs/tasks/GitActionsDialog';
 
 // Settings dialogs
 export {
   CreateConfigurationDialog,
   type CreateConfigurationDialogProps,
   type CreateConfigurationResult,
-} from './settings/CreateConfigurationDialog';
+} from '@/components/dialogs/settings/CreateConfigurationDialog';
 export {
   DeleteConfigurationDialog,
   type DeleteConfigurationDialogProps,
   type DeleteConfigurationResult,
-} from './settings/DeleteConfigurationDialog';
+} from '@/components/dialogs/settings/DeleteConfigurationDialog';
 
 // Shared/Generic dialogs
-export { ConfirmDialog, type ConfirmDialogProps } from './shared/ConfirmDialog';
+export { ConfirmDialog, type ConfirmDialogProps } from '@/components/dialogs/shared/ConfirmDialog';
 export {
   FolderPickerDialog,
   type FolderPickerDialogProps,
-} from './shared/FolderPickerDialog';
+} from '@/components/dialogs/shared/FolderPickerDialog';
