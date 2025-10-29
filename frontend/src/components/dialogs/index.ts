@@ -38,10 +38,10 @@ export {
   type DeleteTaskConfirmationDialogProps,
 } from './tasks/DeleteTaskConfirmationDialog';
 export {
-  TaskTemplateEditDialog,
-  type TaskTemplateEditDialogProps,
-  type TaskTemplateEditResult,
-} from './tasks/TaskTemplateEditDialog';
+  TagEditDialog,
+  type TagEditDialogProps,
+  type TagEditResult,
+} from './tasks/TagEditDialog';
 export {
   ChangeTargetBranchDialog,
   type ChangeTargetBranchDialogProps,
@@ -61,6 +61,10 @@ export {
   ViewProcessesDialog,
   type ViewProcessesDialogProps,
 } from './tasks/ViewProcessesDialog';
+export {
+  GitActionsDialog,
+  type GitActionsDialogProps,
+} from './tasks/GitActionsDialog';
 
 // Settings dialogs
 export {

@@ -50,6 +50,37 @@ interface UseConversationHistoryResult {}
 const MIN_INITIAL_ENTRIES = 10;
 const REMAINING_BATCH_SIZE = 50;
 
+const loadingPatch: PatchTypeWithKey = {
+  type: 'NORMALIZED_ENTRY',
+  content: {
+    entry_type: {
+      type: 'loading',
+    },
+    content: '',
+    timestamp: null,
+  },
+  patchKey: 'loading',
+  executionProcessId: '',
+};
+
+const nextActionPatch: (
+  failed: boolean,
+  execution_processes: number
+) => PatchTypeWithKey = (failed, execution_processes) => ({
+  type: 'NORMALIZED_ENTRY',
+  content: {
+    entry_type: {
+      type: 'next_action',
+      failed: failed,
+      execution_processes: execution_processes,
+    },
+    content: '',
+    timestamp: null,
+  },
+  patchKey: 'next_action',
+  executionProcessId: '',
+});
+
 export const useConversationHistory = ({
   attempt,
   onEntriesUpdated,
@@ -74,7 +105,12 @@ export const useConversationHistory = ({
 
   // Keep executionProcesses up to date
   useEffect(() => {
-    executionProcesses.current = executionProcessesRaw;
+    executionProcesses.current = executionProcessesRaw.filter(
+      (ep) =>
+        ep.run_reason === 'setupscript' ||
+        ep.run_reason === 'cleanupscript' ||
+        ep.run_reason === 'codingagent'
+    );
   }, [executionProcessesRaw]);
 
   const loadEntriesForHistoricExecutionProcess = (
@@ -94,10 +130,8 @@ export const useConversationHistory = ({
           resolve(allEntries);
         },
         onError: (err) => {
-          // WebSocket failures for historic processes are expected and harmless
-          // Use console.debug to avoid console spam during normal operation
-          console.debug(
-            `WebSocket connection failed for historic execution process ${executionProcess.id} (expected for completed processes)`,
+          console.warn!(
+            `Error loading entries for historic execution process ${executionProcess.id}`,
             err
           );
           controller.close();
@@ -173,8 +207,7 @@ export const useConversationHistory = ({
         p.run_reason !== 'devserver'
     );
     if (activeProcesses.length > 1) {
-      const processIds = activeProcesses.map(p => p.id).join(', ');
-      console.error(`More than one active execution process found. Process IDs: ${processIds}`);
+      console.error('More than one active execution process found');
     }
     return activeProcesses[0] || null;
   };
@@ -200,22 +233,14 @@ export const useConversationHistory = ({
       .flatMap((p) => p.entries);
   };
 
-  const loadingPatch: PatchTypeWithKey = {
-    type: 'NORMALIZED_ENTRY',
-    content: {
-      entry_type: {
-        type: 'loading',
-      },
-      content: '',
-      timestamp: null,
-    },
-    patchKey: 'loading',
-    executionProcessId: '',
-  };
-
   const flattenEntriesForEmit = (
     executionProcessState: ExecutionProcessStateStore
   ): PatchTypeWithKey[] => {
+    // Flags to control Next Action bar emit
+    let hasPendingApproval = false;
+    let hasRunningProcess = false;
+    let lastProcessFailedOrKilled = false;
+
     // Create user messages + tool calls for setup/cleanup scripts
     const allEntries = Object.values(executionProcessState)
       .sort(
@@ -225,7 +250,7 @@ export const useConversationHistory = ({
           ).getTime() -
           new Date(b.executionProcess.created_at as unknown as string).getTime()
       )
-      .flatMap((p) => {
+      .flatMap((p, index) => {
         const entries: PatchTypeWithKey[] = [];
         if (
           p.executionProcess.executor_action.typ.type ===
@@ -268,10 +293,31 @@ export const useConversationHistory = ({
             );
           });
 
+          if (hasPendingApprovalEntry) {
+            hasPendingApproval = true;
+          }
+
           entries.push(...entriesExcludingUser);
+
+          const liveProcessStatus = getLiveExecutionProcess(
+            p.executionProcess.id
+          )?.status;
           const isProcessRunning =
-            getLiveExecutionProcess(p.executionProcess.id)?.status ===
-            ExecutionProcessStatus.running;
+            liveProcessStatus === ExecutionProcessStatus.running;
+          const processFailedOrKilled =
+            liveProcessStatus === ExecutionProcessStatus.failed ||
+            liveProcessStatus === ExecutionProcessStatus.killed;
+
+          if (isProcessRunning) {
+            hasRunningProcess = true;
+          }
+
+          if (
+            processFailedOrKilled &&
+            index === Object.keys(executionProcessState).length - 1
+          ) {
+            lastProcessFailedOrKilled = true;
+          }
 
           if (isProcessRunning && !hasPendingApprovalEntry) {
             entries.push(loadingPatch);
@@ -295,6 +341,18 @@ export const useConversationHistory = ({
           const executionProcess = getLiveExecutionProcess(
             p.executionProcess.id
           );
+
+          if (executionProcess?.status === ExecutionProcessStatus.running) {
+            hasRunningProcess = true;
+          }
+
+          if (
+            (executionProcess?.status === ExecutionProcessStatus.failed ||
+              executionProcess?.status === ExecutionProcessStatus.killed) &&
+            index === Object.keys(executionProcessState).length - 1
+          ) {
+            lastProcessFailedOrKilled = true;
+          }
 
           const exitCode = Number(executionProcess?.exit_code) || 0;
           const exit_status: CommandExitStatus | null =
@@ -346,6 +404,16 @@ export const useConversationHistory = ({
 
         return entries;
       });
+
+    // Emit the next action bar if no process running
+    if (!hasRunningProcess && !hasPendingApproval) {
+      allEntries.push(
+        nextActionPatch(
+          lastProcessFailedOrKilled,
+          Object.keys(executionProcessState).length
+        )
+      );
+    }
 
     return allEntries;
   };

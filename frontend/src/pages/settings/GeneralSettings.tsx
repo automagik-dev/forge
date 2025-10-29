@@ -40,7 +40,7 @@ import { getLanguageOptions } from '@/i18n/languages';
 import { toPrettyCase } from '@/utils/string';
 import { useTheme } from '@/components/theme-provider';
 import { useUserSystem } from '@/components/config-provider';
-import { TaskTemplateManager } from '@/components/TaskTemplateManager';
+import { TagManager } from '@/components/TagManager';
 import NiceModal from '@ebay/nice-modal-react';
 
 export function GeneralSettings() {
@@ -467,6 +467,30 @@ export function GeneralSettings() {
               {t('settings.general.editor.type.helper')}
             </p>
           </div>
+
+          {draft?.editor.editor_type === EditorType.CUSTOM && (
+            <div className="space-y-2">
+              <Label htmlFor="custom-command">
+                {t('settings.general.editor.customCommand.label')}
+              </Label>
+              <Input
+                id="custom-command"
+                placeholder="e.g., code, subl, vim"
+                value={draft?.editor.custom_command || ''}
+                onChange={(e) =>
+                  updateDraft({
+                    editor: {
+                      ...draft!.editor,
+                      custom_command: e.target.value || null,
+                    },
+                  })
+                }
+              />
+              <p className="text-sm text-muted-foreground">
+                {t('settings.general.editor.customCommand.helper')}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -741,7 +765,7 @@ export function GeneralSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <TaskTemplateManager isGlobal={true} />
+          <TagManager />
         </CardContent>
       </Card>
 

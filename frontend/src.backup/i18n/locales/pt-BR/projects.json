@@ -1,0 +1,14 @@
+{
+  "title": "Projetos",
+  "subtitle": "Gerencie seus projetos e acompanhe seu progresso",
+  "createProject": "Criar Projeto",
+  "loading": "Carregando projetos...",
+  "errors": {
+    "fetchFailed": "Falha ao buscar projetos"
+  },
+  "empty": {
+    "title": "Nenhum projeto ainda",
+    "description": "Comece criando seu primeiro projeto.",
+    "createFirst": "Criar seu primeiro projeto"
+  }
+}
