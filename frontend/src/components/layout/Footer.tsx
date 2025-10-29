@@ -43,8 +43,8 @@ export function Footer() {
               const latest = npmData.version;
 
               // Split versions and compare numerically
-              const currentParts = current.split(/[.-]/).map(p => parseInt(p) || 0);
-              const latestParts = latest.split(/[.-]/).map(p => parseInt(p) || 0);
+              const currentParts = current.split(/[.-]/).map((p: string) => parseInt(p) || 0);
+              const latestParts = latest.split(/[.-]/).map((p: string) => parseInt(p) || 0);
 
               // Compare major.minor.patch
               for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
