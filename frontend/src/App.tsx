@@ -1,11 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n';
 import { Projects } from '@/pages/projects';
 import { ProjectTasks } from '@/pages/project-tasks';
 import { FullAttemptLogsPage } from '@/pages/full-attempt-logs';
+import ReleaseNotesPage from '@/pages/release-notes';
 import { NormalLayout } from '@/components/layout/NormalLayout';
+import { Footer } from '@/components/layout/Footer';
 import { usePostHog } from 'posthog-js/react';
 
 import {
@@ -30,12 +32,15 @@ import * as Sentry from '@sentry/react';
 import { Loader } from '@/components/ui/loader';
 
 import NiceModal from '@ebay/nice-modal-react';
-import { OnboardingResult } from './components/dialogs/global/OnboardingDialog';
-import { ClickedElementsProvider } from './contexts/ClickedElementsProvider';
+import { OnboardingResult } from '@/components/dialogs/global/OnboardingDialog';
+import { ClickedElementsProvider } from '@/contexts/ClickedElementsProvider';
+import { GenieMasterWidget } from '@/components/genie-widgets/GenieMasterWidget';
+import { SubGenieProvider } from '@/context/SubGenieContext';
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 function AppContent() {
+  const [isGenieOpen, setIsGenieOpen] = useState(false);
   const { config, analyticsUserId, updateAndSaveConfig, loading } =
     useUserSystem();
   const posthog = usePostHog();
@@ -142,7 +147,7 @@ function AppContent() {
     return () => {
       cancelled = true;
     };
-  }, [config]);
+  }, [config, updateAndSaveConfig]);
 
   if (loading) {
     return (
@@ -184,6 +189,10 @@ function AppContent() {
                   element={<Navigate to="/settings/mcp" replace />}
                 />
                 <Route
+                  path="/release-notes"
+                  element={<ReleaseNotesPage />}
+                />
+                <Route
                   path="/projects/:projectId/tasks/:taskId"
                   element={<ProjectTasks />}
                 />
@@ -193,13 +202,21 @@ function AppContent() {
                 />
               </Route>
             </SentryRoutes>
+            <Footer />
           </div>
+          <GenieMasterWidget
+            isOpen={isGenieOpen}
+            onToggle={() => setIsGenieOpen(!isGenieOpen)}
+            onClose={() => setIsGenieOpen(false)}
+          />
         </SearchProvider>
       </ThemeProvider>
     </I18nextProvider>
   );
 }
 
+// FORGE CUSTOMIZATION: Root provider stack with SubGenie context for Genie Widgets.
+// SubGenieProvider wraps NiceModal so Genie chat widgets can show modals.
 function App() {
   return (
     <BrowserRouter>
@@ -207,9 +224,11 @@ function App() {
         <ClickedElementsProvider>
           <ProjectProvider>
             <HotkeysProvider initiallyActiveScopes={['*', 'global', 'kanban']}>
-              <NiceModal.Provider>
-                <AppContent />
-              </NiceModal.Provider>
+              <SubGenieProvider>
+                <NiceModal.Provider>
+                  <AppContent />
+                </NiceModal.Provider>
+              </SubGenieProvider>
             </HotkeysProvider>
           </ProjectProvider>
         </ClickedElementsProvider>
