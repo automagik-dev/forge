@@ -285,18 +285,13 @@ export function TasksLayout({
         </div>
 
         <div
-          className="min-w-0 min-h-0 overflow-hidden border-l flex flex-col"
+          className="min-w-0 min-h-0 overflow-hidden border-l"
           aria-hidden={!isAttemptVisible}
           aria-label="Details"
           role="region"
           style={{ pointerEvents: isAttemptVisible ? 'auto' : 'none' }}
         >
-          {rightHeader && (
-            <div className="shrink-0 sticky top-0 z-20 bg-background border-b">
-              {rightHeader}
-            </div>
-          )}
-          <div className="flex-1 min-h-0">{attempt}</div>
+          {attempt}
         </div>
 
         <div
