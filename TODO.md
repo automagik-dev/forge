@@ -18,6 +18,9 @@ This document tracks all remaining differences between v0.5.0-rc.3 (our custom v
 10. **Keyboard Shortcuts** - Removed custom version (use upstream)
 11. **ForgeCreateAttemptDialog** - Removed (use upstream)
 12. **Shims** - Removed (not needed)
+13. **forge-app/** - RESTORED without MCP (using upstream's 51 integrated tools)
+14. **forge-extensions/** - RESTORED (config + omni crates)
+15. **forge-overrides/** - RESTORED
 
 ## 🔴 Critical Missing Backend (`forge-app/` Crate)
 
