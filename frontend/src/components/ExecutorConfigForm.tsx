@@ -1,14 +1,13 @@
 import { useMemo, useEffect, useState } from 'react';
 import Form from '@rjsf/core';
 import { RJSFValidationError } from '@rjsf/utils';
-// FORGE CUSTOMIZATION: Use custom validator to suppress "unknown format" warnings
-import customValidator from '@/utils/customValidator';
+import validator from '@rjsf/validator-ajv8';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import { shadcnTheme } from '@/components/rjsf';
+import { shadcnTheme } from './rjsf';
 // Using custom shadcn/ui widgets instead of @rjsf/shadcn theme
 
 type ExecutorType =
@@ -16,17 +15,17 @@ type ExecutorType =
   | 'CLAUDE_CODE'
   | 'GEMINI'
   | 'CODEX'
-  | 'CURSOR'
+  | 'CURSOR_AGENT'
   | 'COPILOT'
   | 'OPENCODE'
   | 'QWEN_CODE';
 
 interface ExecutorConfigFormProps {
   executor: ExecutorType;
-  value: Record<string, unknown>;
-  onSubmit?: (formData: Record<string, unknown>) => void;
-  onChange?: (formData: Record<string, unknown>) => void;
-  onSave?: (formData: Record<string, unknown>) => Promise<void>;
+  value: any;
+  onSubmit?: (formData: any) => void;
+  onChange?: (formData: any) => void;
+  onSave?: (formData: any) => Promise<void>;
   disabled?: boolean;
   isSaving?: boolean;
   isDirty?: boolean;
@@ -58,14 +57,14 @@ export function ExecutorConfigForm({
     setValidationErrors([]);
   }, [value, executor]);
 
-  const handleChange = ({ formData: newFormData }: { formData: Record<string, unknown> }) => {
+  const handleChange = ({ formData: newFormData }: any) => {
     setFormData(newFormData);
     if (onChange) {
       onChange(newFormData);
     }
   };
 
-  const handleSubmit = async ({ formData: submitData }: { formData: Record<string, unknown> }) => {
+  const handleSubmit = async ({ formData: submitData }: any) => {
     setValidationErrors([]);
     if (onSave) {
       await onSave(submitData);
@@ -98,7 +97,7 @@ export function ExecutorConfigForm({
             onChange={handleChange}
             onSubmit={handleSubmit}
             onError={handleError}
-            validator={customValidator}
+            validator={validator}
             disabled={disabled}
             liveValidate
             showErrorList={false}
