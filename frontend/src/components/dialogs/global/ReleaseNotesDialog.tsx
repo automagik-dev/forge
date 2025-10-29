@@ -33,9 +33,9 @@ export const ReleaseNotesDialog = NiceModal.create(() => {
 
   const fetchLatestStableRelease = async () => {
     try {
-      const response = await fetch('/api/forge/releases');
-      const data = await response.json();
-      const releases = data.data || data;
+      // Fetch from static releases.json to avoid GitHub API rate limits
+      const response = await fetch('/releases.json');
+      const releases = await response.json();
 
       // Find the first stable (non-prerelease) release
       const stableRelease = releases.find((r: GitHubRelease) => !r.prerelease);
