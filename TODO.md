@@ -21,54 +21,75 @@ This document tracks all remaining differences between v0.5.0-rc.3 (our custom v
 
 ## 🔴 Critical Missing Backend (Omni Integration)
 
+### ⚠️ IMPORTANT FINDINGS:
+
+1. **Upstream MCP server ALREADY calls these endpoints** in `upstream/crates/server/src/mcp/task_server.rs`
+2. **Endpoints are NOT implemented yet** - they need to be created
+3. **Omni config is stored in JSON** - No separate `forge_config` table needed!
+   - Stored in `projects` table, `forge_config` JSON column
+   - Type: `ForgeProjectSettings` with `omni_config: OmniConfig | null`
+4. **Types already exist** in `shared/forge-types.ts` (auto-generated from Rust)
+
 ### Required Backend Endpoints
 
-**File**: `crates/server/src/routes/forge.rs` (needs creation)
+**File**: `upstream/crates/server/src/routes/forge.rs` (needs creation in upstream submodule)
+
+MCP server calls these endpoints (found in `task_server.rs:1658`):
 
 1. **GET `/api/forge/config`**
-   - Retrieve global Forge project settings including Omni configuration
-   - Response: `{ omni: { serverUrl: string, defaultModel: string } }`
+   - Global Forge settings (not project-specific)
+   - May not be needed - check if we only use per-project config
 
-2. **PUT `/api/forge/config`**
-   - Update global Forge project settings
-   - Body: `{ omni?: { serverUrl?: string, defaultModel?: string } }`
+2. **GET `/api/forge/projects/{id}/settings`**
+   - Get project-specific Forge settings (Omni config)
+   - Returns `ForgeProjectSettings` from `projects.forge_config` JSON column
 
-3. **GET `/api/forge/omni/instances`**
+3. **PUT `/api/forge/projects/{id}/settings`**
+   - Update project-specific Forge settings
+   - Updates `projects.forge_config` JSON column
+
+4. **GET `/api/forge/omni/instances`**
    - List available Omni instances from configured server
    - Proxies to Omni server's `/instances` endpoint
 
-4. **POST `/api/forge/omni/chat`**
-   - Send chat message to Omni instance
-   - Body: `{ instanceId: string, message: string }`
-   - Returns SSE stream of responses
+5. **POST `/api/forge/omni/validate`**
+   - Validate Omni host and API key
+   - Called by MCP tool `validate_omni_config`
+   - Should test connection to Omni server
 
-5. **DELETE `/api/forge/omni/instances/:id`**
-   - Delete an Omni instance
+6. **GET `/api/forge/omni/status`**
+   - Get Omni connection status
+
+7. **POST `/api/forge/omni/notifications`**
+   - Send notification via Omni
 
 ### Database Schema Updates
 
-**File**: `crates/db/migrations/` (new migration needed)
+**✅ NO DATABASE MIGRATION NEEDED!**
 
-```sql
--- Add forge_config table for global settings
-CREATE TABLE forge_config (
-  id INTEGER PRIMARY KEY CHECK (id = 1), -- singleton table
-  omni_server_url TEXT,
-  omni_default_model TEXT,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- Insert default config
-INSERT INTO forge_config (id) VALUES (1);
-```
+- Omni config is already stored in `projects.forge_config` JSON column
+- Schema already supports this via upstream migrations
+- Type definitions exist in:
+  - Rust: (needs to be found/created)
+  - TypeScript: `shared/forge-types.ts` (auto-generated)
 
 ### Backend Services
 
-**File**: `crates/services/src/omni.rs` (needs creation)
+**File**: `upstream/crates/services/src/omni.rs` (needs creation in upstream submodule)
 
-- OmniService for HTTP client to Omni server
-- Methods: list_instances(), create_instance(), delete_instance(), send_message()
+```rust
+// OmniService for HTTP client to Omni server
+pub struct OmniService {
+    client: reqwest::Client,
+}
+
+impl OmniService {
+    pub async fn list_instances(&self, config: &OmniConfig) -> Result<Vec<OmniInstance>>;
+    pub async fn validate_connection(&self, host: &str, api_key: &str) -> Result<bool>;
+    pub async fn get_status(&self, config: &OmniConfig) -> Result<OmniStatus>;
+    pub async fn send_notification(&self, config: &OmniConfig, request: SendTextRequest) -> Result<SendTextResponse>;
+}
+```
 
 ## 📋 Frontend Files to Review
 
