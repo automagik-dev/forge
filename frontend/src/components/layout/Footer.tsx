@@ -18,45 +18,55 @@ export function Footer() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
 
   useEffect(() => {
-    // Fetch health status
+    // Fetch health status once on mount
     fetch('/health')
       .then(res => res.json())
       .then(data => {
+        const currentVersion = data.version || '0.0.0';
         setHealth({
           status: data.status === 'ok' ? 'healthy' : 'unhealthy',
-          version: data.version || '0.0.0',
+          version: currentVersion,
         });
+
+        // Fetch latest version from NPM registry (once per page load)
+        fetch('https://registry.npmjs.org/automagik-forge/latest')
+          .then(res => res.json())
+          .then(npmData => {
+            if (npmData.version) {
+              setLatestRelease({
+                tag_name: `v${npmData.version}`,
+                html_url: `https://www.npmjs.com/package/automagik-forge/v/${npmData.version}`,
+              });
+
+              // Proper semver comparison using localeCompare
+              const current = currentVersion.replace(/^v/, '');
+              const latest = npmData.version;
+
+              // Split versions and compare numerically
+              const currentParts = current.split(/[.-]/).map(p => parseInt(p) || 0);
+              const latestParts = latest.split(/[.-]/).map(p => parseInt(p) || 0);
+
+              // Compare major.minor.patch
+              for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
+                const curr = currentParts[i] || 0;
+                const lat = latestParts[i] || 0;
+                if (lat > curr) {
+                  setUpdateAvailable(true);
+                  break;
+                } else if (lat < curr) {
+                  break;
+                }
+              }
+            }
+          })
+          .catch(() => {
+            // Silently fail - update check is optional
+          });
       })
       .catch(() => {
         setHealth({ status: 'unhealthy', version: '0.0.0' });
       });
-
-    // Fetch latest version from NPM registry
-    fetch('https://registry.npmjs.org/automagik-forge/latest')
-      .then(res => res.json())
-      .then(data => {
-        if (data.version) {
-          setLatestRelease({
-            tag_name: `v${data.version}`,
-            html_url: `https://www.npmjs.com/package/automagik-forge/v/${data.version}`,
-          });
-
-          // Compare with current version
-          if (health) {
-            const currentVersion = health.version.replace(/^v/, '');
-            const latestVersion = data.version;
-
-            // Simple version comparison (works for semver)
-            if (latestVersion > currentVersion) {
-              setUpdateAvailable(true);
-            }
-          }
-        }
-      })
-      .catch(() => {
-        // Silently fail - update check is optional
-      });
-  }, [health]);
+  }, []); // Run only once on mount
 
   const getHealthColor = () => {
     if (!health) return 'bg-gray-400';
