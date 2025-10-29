@@ -17,11 +17,11 @@ export default function ReleaseNotesPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/forge/releases')
+    // Fetch from static releases.json to avoid GitHub API rate limits
+    fetch('/releases.json')
       .then(res => res.json())
       .then(data => {
-        // Backend returns ApiResponse wrapper: { success: true, data: [...] }
-        setReleases(data.data || data);
+        setReleases(data);
         setLoading(false);
       })
       .catch(err => {
