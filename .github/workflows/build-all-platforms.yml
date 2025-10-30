@@ -1,0 +1,322 @@
+name: Build All Platforms
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build and publish (e.g., v0.3.8-20250903203030)'
+        required: false
+        type: string
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    timeout-minutes: 60  # Increase timeout for slower macOS runners
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04  # Use 22.04 for GLIBC 2.35 compatibility (works on 22.04 AND 24.04)
+            target: x86_64-unknown-linux-gnu
+            platform: linux-x64
+          - os: ubuntu-22.04  # Use 22.04 for GLIBC 2.35 compatibility (works on 22.04 AND 24.04)
+            target: aarch64-unknown-linux-gnu
+            platform: linux-arm64
+            use-zigbuild: true
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            platform: windows-x64
+          # Windows ARM64 is not well supported, commenting out for now
+          # - os: windows-latest
+          #   target: aarch64-pc-windows-msvc
+          #   platform: windows-arm64
+          # macOS Intel (x64) is slow, rarely used, and wastes GitHub Actions minutes
+          # - os: macos-13  # Intel runner for x86_64 builds
+          #   target: x86_64-apple-darwin
+          #   platform: macos-x64
+          - os: macos-latest  # ARM runner for ARM builds
+            target: aarch64-apple-darwin
+            platform: macos-arm64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      
+      - name: Verify cargo
+        run: cargo -V || (source "$HOME/.cargo/env" && cargo -V)
+          
+      - name: Add Rust target (additional step for reliability)
+        run: rustup target add ${{ matrix.target }}
+          
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ matrix.target }}-
+            ${{ runner.os }}-cargo-
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install workspace dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Install Windows build tools for vendored OpenSSL
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install strawberryperl nasm -y
+          Start-Sleep -Seconds 5
+          # Install missing Perl modules required by OpenSSL build
+          cpan -T Locale::Maketext::Simple
+          cpan -T IPC::Cmd
+          cpan -T Params::Check
+
+      - name: Configure vendored OpenSSL (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          echo "OPENSSL_STATIC=1"        >> $env:GITHUB_ENV
+          echo "OPENSSL_VENDORED=1"      >> $env:GITHUB_ENV
+          echo "OPENSSL_NO_VENDOR=0"     >> $env:GITHUB_ENV
+          # Additional env vars to help with vendored build
+          echo "PERL=$((Get-Command perl).Path)" >> $env:GITHUB_ENV
+          
+      - name: Install cargo-zigbuild
+        if: matrix.use-zigbuild
+        shell: bash
+        run: |
+          if cargo zigbuild --version >/dev/null 2>&1; then
+            echo "cargo-zigbuild already installed: $(cargo zigbuild --version)"
+          else
+            cargo install cargo-zigbuild --locked
+          fi
+
+      - name: Install Zig toolchain
+        if: runner.os == 'Linux' && matrix.use-zigbuild
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.13.0
+
+      - name: Build frontend
+        run: pnpm --filter automagik-forge-frontend run build
+      
+      - name: Build Rust binaries (Windows)
+        if: runner.os == 'Windows'
+        env:
+          LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
+          LIBZ_SYS_STATIC: 1
+          OPENSSL_STATIC: 1
+          SQLX_OFFLINE: true
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+          cargo build --release --target ${{ matrix.target }} --bin forge-mcp-task-server
+        shell: bash
+
+      - name: Build Rust binaries (Linux zigbuild)
+        if: runner.os == 'Linux' && matrix.use-zigbuild
+        env:
+          OPENSSL_STATIC: 1
+          DEP_OPENSSL_VENDORED: 1
+          OPENSSL_VENDORED: 1
+          OPENSSL_NO_VENDOR: 0
+          LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
+          LIBSQLITE3_SYS_BUNDLED: 1
+          LIBSQLITE3_SYS_STATIC: 1
+          SQLX_OFFLINE: true
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
+        run: |
+          # Use cargo-zigbuild (via zig toolchain) for Linux cross targets
+          cargo zigbuild --release --target ${{ matrix.target }}
+          cargo zigbuild --release --target ${{ matrix.target }} --bin forge-mcp-task-server
+        shell: bash
+
+      - name: Build Rust binaries (non-Windows, native)
+        if: runner.os != 'Windows' && !matrix.use-zigbuild
+        env:
+          OPENSSL_STATIC: 1
+          DEP_OPENSSL_VENDORED: 1
+          OPENSSL_VENDORED: 1
+          OPENSSL_NO_VENDOR: 0
+          LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
+          LIBSQLITE3_SYS_BUNDLED: 1
+          LIBSQLITE3_SYS_STATIC: 1
+          LIBZ_SYS_STATIC: 1
+          SQLX_OFFLINE: true
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+          cargo build --release --target ${{ matrix.target }} --bin forge-mcp-task-server
+        shell: bash
+      
+      - name: Package binaries (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "npx-cli/dist/${{ matrix.platform }}" | Out-Null
+
+          Copy-Item "target/${{ matrix.target }}/release/forge-app.exe" "automagik-forge.exe"
+          Compress-Archive -Path "automagik-forge.exe" -DestinationPath "automagik-forge.zip" -Force
+          Move-Item "automagik-forge.zip" "npx-cli/dist/${{ matrix.platform }}/"
+          Remove-Item "automagik-forge.exe"
+
+          Copy-Item "target/${{ matrix.target }}/release/forge-mcp-task-server.exe" "automagik-forge-mcp.exe"
+          Compress-Archive -Path "automagik-forge-mcp.exe" -DestinationPath "automagik-forge-mcp.zip" -Force
+          Move-Item "automagik-forge-mcp.zip" "npx-cli/dist/${{ matrix.platform }}/"
+          Remove-Item "automagik-forge-mcp.exe"
+
+      - name: Package binaries (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p npx-cli/dist/${{ matrix.platform }}
+
+          cp target/${{ matrix.target }}/release/forge-app automagik-forge
+          zip -q automagik-forge.zip automagik-forge
+          mv automagik-forge.zip npx-cli/dist/${{ matrix.platform }}/
+          rm automagik-forge
+
+          cp target/${{ matrix.target }}/release/forge-mcp-task-server automagik-forge-mcp
+          zip -q automagik-forge-mcp.zip automagik-forge-mcp
+          mv automagik-forge-mcp.zip npx-cli/dist/${{ matrix.platform }}/
+          rm automagik-forge-mcp
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.platform }}
+          path: npx-cli/dist/${{ matrix.platform }}/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '')
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: npx-cli/dist/
+          pattern: binaries-*
+          merge-multiple: false
+      
+      - name: Reorganize artifacts
+        run: |
+          cd npx-cli/dist
+          for dir in binaries-*; do
+            platform=${dir#binaries-}
+            # Ensure target directory exists
+            mkdir -p $platform
+            # Move all files (if any)
+            if [ -d "$dir" ] && [ "$(ls -A $dir)" ]; then
+              mv $dir/* $platform/ 2>/dev/null || true
+            fi
+            # Remove the now-empty directory
+            rm -rf $dir
+          done
+          ls -la *
+      
+      - name: Determine NPM tag
+        id: npm-tag
+        run: |
+          if [[ ${{ github.ref_name }} =~ -beta\. ]]; then
+            echo "tag=beta" >> $GITHUB_OUTPUT
+            echo "Publishing as beta version"
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "Publishing as latest version"
+          fi
+
+      - name: Read package metadata
+        id: pkg
+        run: |
+          NAME=$(node -e "console.log(require('./npx-cli/package.json').name)")
+          VER=$(node -e "console.log(require('./npx-cli/package.json').version)")
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "version=$VER" >> $GITHUB_OUTPUT
+          echo "Package: $NAME"
+          echo "Version: $VER"
+
+      - name: Check if version already published
+        id: check
+        run: |
+          if npm view "${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }}" version >/dev/null 2>&1; then
+            echo "published=true" >> $GITHUB_OUTPUT
+            echo "✅ ${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }} already on npm; will skip publish."
+          else
+            echo "published=false" >> $GITHUB_OUTPUT
+            echo "⏩ Version not found on npm; will publish."
+          fi
+          
+      - name: Verify npm auth (temporary)
+        run: |
+          echo "Registry: $(npm config get registry)"
+          echo "npm whoami (to confirm token identity)"
+          npm whoami || true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to NPM
+        if: steps.check.outputs.published == 'false'
+        run: |
+          cd npx-cli
+          npm publish --tag ${{ steps.npm-tag.outputs.tag }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Skip publish (already published)
+        if: steps.check.outputs.published == 'true'
+        run: |
+          echo "Skipping npm publish: ${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }} already exists on npm."

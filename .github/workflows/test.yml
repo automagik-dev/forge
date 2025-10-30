@@ -2,9 +2,7 @@ name: Test
 
 on:
   pull_request:
-    branches:
-      - main
-      - louis/fe-revision
+    branches: [ main ]
   workflow_dispatch:
 
 concurrency:
@@ -14,13 +12,14 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   NODE_VERSION: 22
-  PNPM_VERSION: 10.8.1
 
 jobs:
   test:
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Setup Node
         uses: ./.github/actions/setup-node
@@ -31,10 +30,8 @@ jobs:
       - name: Lint frontend
         run: cd frontend && npm run lint
 
-      - name: Check i18n regressions
-        env:
-          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
-        run: ./scripts/check-i18n.sh
+      - name: Lint forge frontend
+        run: pnpm --filter frontend-forge lint
 
       - name: Format check frontend
         run: cd frontend && npm run format:check
@@ -61,6 +58,12 @@ jobs:
 
       - name: Build frontend
         run: cd frontend && npm run build
+
+      - name: Build forge frontend
+        run: pnpm --filter frontend-forge build
+
+      - name: Check upstream alignment
+        run: ./scripts/check-upstream-alignment.sh
 
       - name: Checks
         run: |
