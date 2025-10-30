@@ -355,8 +355,6 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     router = router.merge(
         execution_processes::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()),
     );
-    router = router
-        .merge(task_templates::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
     router = router.merge(auth::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
     router = router.merge(filesystem::router().with_state::<ForgeAppState>(dep_clone.clone()));
     router =
