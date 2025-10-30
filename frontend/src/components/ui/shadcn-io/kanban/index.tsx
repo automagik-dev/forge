@@ -150,6 +150,7 @@ export type KanbanHeaderProps =
       color: Status['color'];
       className?: string;
       onAddTask?: () => void;
+      icon?: React.ComponentType<{ className?: string }>;
     };
 
 export const KanbanHeader = (props: KanbanHeaderProps) => {
@@ -175,7 +176,7 @@ export const KanbanHeader = (props: KanbanHeaderProps) => {
           className="h-2 w-2 rounded-full"
           style={{ backgroundColor: `hsl(var(${props.color}))` }}
         />
-
+        {props.icon && <props.icon className="h-4 w-4" />}
         <p className="m-0 text-sm">{props.name}</p>
       </span>
       <TooltipProvider>
