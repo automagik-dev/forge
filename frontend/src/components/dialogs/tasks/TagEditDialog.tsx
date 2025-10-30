@@ -100,7 +100,8 @@ export const TagEditDialog = NiceModal.create<TagEditDialogProps>(({ tag }) => {
         content: '',
       });
       setError(null);
-      handleCancel();
+      setTagNameError(null);
+      modal.hide();
     }
   };
 
