@@ -84,3 +84,6 @@ dev_assets
 
 vibe-kanban-cloud/
 .playwright-mcp/
+
+# Release notes drafts
+.release-notes*
