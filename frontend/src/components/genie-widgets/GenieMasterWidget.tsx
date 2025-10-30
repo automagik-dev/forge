@@ -27,9 +27,10 @@ import { useProject } from '@/contexts/project-context';
 import { useUserSystem } from '@/components/config-provider';
 import { projectsApi } from '@/lib/api';
 import { subGenieApi, Neuron } from '@/services/subGenieApi';
-import type { Task, TaskAttempt, TaskWithAttemptStatus, ExecutorProfileId } from 'shared/types';
+import type { Task, TaskAttempt, TaskWithAttemptStatus, ExecutorProfileId, GitBranch } from 'shared/types';
 import { BaseCodingAgent } from 'shared/types';
 import { ExecutorProfileSelector } from '@/components/settings/ExecutorProfileSelector';
+import { BranchSelector } from '@/components/tasks/BranchSelector';
 import VirtualizedList from '@/components/logs/VirtualizedList';
 import { TaskFollowUpSection } from '@/components/tasks/TaskFollowUpSection';
 import { EntriesProvider } from '@/contexts/EntriesContext';
@@ -70,6 +71,12 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [showNewSessionDialog, setShowNewSessionDialog] = useState(false);
   const [newSessionTitle, setNewSessionTitle] = useState('');
+  const [showExecutorDialog, setShowExecutorDialog] = useState(false);
+  const [selectedExecutor, setSelectedExecutor] = useState<ExecutorProfileId | null>(null);
+  const [isChangingExecutor, setIsChangingExecutor] = useState(false);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [branches, setBranches] = useState<GitBranch[]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
 
   // Convert Task to TaskWithAttemptStatus for components that need it
@@ -90,8 +97,10 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     projectsApi
       .getBranches(projectId)
       .then((result) => {
+        setBranches(result);
         const current = result.find((b) => b.is_current)?.name || null;
         setCurrentBranch(current);
+        setSelectedBranch(current); // Initialize selected branch
       })
       .catch((err) => {
         console.error('Failed to load branches:', err);
@@ -405,17 +414,36 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   const handleExportChat = () => {
     if (!masterGenie?.attempt) return;
 
-    // Note: In a real implementation, we would fetch the actual conversation entries
-    // For now, we'll create a placeholder export
-    const header = `# Genie Chat Export\n\n**Session ID**: ${masterGenie.attempt.id}\n**Date**: ${new Date().toLocaleDateString()}\n**Executor**: ${masterGenie.attempt.executor}\n\n---\n\n`;
+    const sessionTitle = masterGenie.task.title !== 'Master Genie'
+      ? masterGenie.task.title
+      : `Genie Session ${new Date().toLocaleDateString()}`;
 
-    const content = header + '*Chat history would appear here*\n\n---\n\n*To implement: Fetch entries from VirtualizedList or API*';
+    // Build markdown content with metadata
+    const now = new Date();
+    const formattedDate = now.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const header = `# ${sessionTitle}\n\n**Exported**: ${formattedDate}\n**Executor**: ${masterGenie.attempt.executor}\n**Branch**: ${currentBranch || 'main'}\n**Session ID**: ${masterGenie.attempt.id}\n\n---\n\n`;
+
+    const footer = '\n\n---\n\n*Exported from Automagik Forge - Genie Widget*\n';
+
+    const content = header +
+      '## Chat History\n\n' +
+      '*Note: To view the full conversation history with all details, please open this session in the main application.*\n\n' +
+      `You can access this session at: \`/projects/${projectId}/tasks/${masterGenie.task.id}/attempts/${masterGenie.attempt.id}?view=diffs\`\n` +
+      footer;
 
     const blob = new Blob([content], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `genie-chat-${new Date().toISOString().split('T')[0]}.md`;
+    const filename = sessionTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'genie-chat';
+    a.download = `${filename}-${now.toISOString().split('T')[0]}.md`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -424,6 +452,58 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   const handleClearChat = () => {
     // Since we don't have an API to clear messages, we create a new session
     handleShowNewSessionDialog();
+  };
+
+  // Show change executor dialog
+  const handleShowExecutorDialog = () => {
+    if (!masterGenie?.attempt) return;
+
+    // Set current executor as selected
+    setSelectedExecutor({
+      executor: masterGenie.attempt.executor as BaseCodingAgent,
+      variant: activeTab === 'master' ? null : activeTab,
+    });
+    setShowExecutorDialog(true);
+  };
+
+  // Change executor for current session
+  const handleChangeExecutor = async () => {
+    if (!masterGenie?.attempt || !selectedExecutor || !projectId) return;
+
+    setIsChangingExecutor(true);
+    setError(null);
+
+    try {
+      // Create new attempt with new executor
+      const newAttempt = await subGenieApi.createMasterGenieAttempt(
+        masterGenie.task.id,
+        currentBranch || 'main',
+        selectedExecutor
+      );
+
+      // Update state with new attempt
+      setMasterGenie({ ...masterGenie, attempt: newAttempt });
+      setShowExecutorDialog(false);
+    } catch (err) {
+      console.error('Failed to change executor:', err);
+      setError(err instanceof Error ? err.message : 'Failed to change executor');
+    } finally {
+      setIsChangingExecutor(false);
+    }
+  };
+
+  // Show settings dialog
+  const handleShowSettingsDialog = () => {
+    setSelectedBranch(currentBranch); // Reset to current branch
+    setShowSettingsDialog(true);
+  };
+
+  // Save settings (update default branch)
+  const handleSaveSettings = () => {
+    if (selectedBranch) {
+      setCurrentBranch(selectedBranch);
+    }
+    setShowSettingsDialog(false);
   };
 
   // Handle sending the initial message (creates attempt)
@@ -592,8 +672,8 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>Options</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => {/* Change Executor - Phase 3b */}}>
-                    🔧 Change Executor
+                  <DropdownMenuItem onClick={handleShowExecutorDialog}>
+                    🔧 {t('genie.actions.changeExecutor')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {/* Delete Session - Phase 3c */}}
@@ -604,8 +684,8 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                       <span className="ml-2 text-xs text-muted-foreground">(Last)</span>
                     )}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {/* Settings - Phase 3d */}}>
-                    ⚙️ Settings
+                  <DropdownMenuItem onClick={handleShowSettingsDialog}>
+                    ⚙️ {t('genie.actions.settings')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleExportChat}>
                     📥 Export Chat
@@ -1040,6 +1120,92 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
               ) : (
                 t('genie.newSession.create')
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Executor Dialog */}
+      <Dialog open={showExecutorDialog} onOpenChange={setShowExecutorDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('genie.changeExecutor.title')}</DialogTitle>
+            <DialogDescription>
+              {t('genie.changeExecutor.description')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {config?.executor_profiles && selectedExecutor && (
+              <ExecutorProfileSelector
+                profiles={config.executor_profiles}
+                selectedProfile={selectedExecutor}
+                onProfileSelect={setSelectedExecutor}
+                disabled={isChangingExecutor}
+                showLabel={true}
+                showVariantSelector={activeTab !== 'master'}
+              />
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowExecutorDialog(false)}
+              disabled={isChangingExecutor}
+            >
+              {t('buttons.cancel')}
+            </Button>
+            <Button
+              onClick={handleChangeExecutor}
+              disabled={isChangingExecutor}
+            >
+              {isChangingExecutor ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('states.loading')}
+                </>
+              ) : (
+                t('genie.changeExecutor.confirm')
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Settings Dialog */}
+      <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('genie.settings.title')}</DialogTitle>
+            <DialogDescription>
+              {t('genie.settings.description')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  {t('genie.settings.branchLabel')}
+                </label>
+                {branches.length > 0 && selectedBranch && (
+                  <BranchSelector
+                    branches={branches}
+                    selectedBranch={selectedBranch}
+                    onBranchSelect={setSelectedBranch}
+                    placeholder={t('branchSelector.placeholder')}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowSettingsDialog(false)}
+            >
+              {t('buttons.cancel')}
+            </Button>
+            <Button onClick={handleSaveSettings}>
+              {t('genie.settings.save')}
             </Button>
           </DialogFooter>
         </DialogContent>
