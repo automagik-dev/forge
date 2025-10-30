@@ -506,6 +506,51 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     setShowSettingsDialog(false);
   };
 
+  // Delete current session and create new one (transparent to user)
+  const handleDeleteSession = async () => {
+    if (!masterGenie?.attempt || !projectId || allAttempts.length <= 1) return;
+
+    setIsCreatingSession(true);
+    setError(null);
+
+    try {
+      // Step 1: Create new session first
+      const baseBranch = currentBranch || 'main';
+      const executorProfile = config?.executor_profile || {
+        executor: BaseCodingAgent.CLAUDE_CODE as BaseCodingAgent,
+        variant: activeTab === 'master' ? null : activeTab,
+      };
+
+      const newAttempt = await subGenieApi.createMasterGenieAttempt(
+        masterGenie.task.id,
+        baseBranch,
+        executorProfile
+      );
+
+      // Step 2: Switch to new attempt
+      setMasterGenie({ ...masterGenie, attempt: newAttempt });
+      setInitialMessage('');
+
+      // Step 3: Delete the old attempt's draft (optional cleanup)
+      try {
+        await fetch(`/api/task-attempts/${masterGenie.attempt.id}/draft`, {
+          method: 'DELETE',
+        });
+      } catch (draftErr) {
+        console.warn('Failed to delete old draft:', draftErr);
+        // Not critical - continue anyway
+      }
+
+      // Refresh history to show new attempt
+      await handleLoadHistory();
+    } catch (err) {
+      console.error('Failed to delete session:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete session');
+    } finally {
+      setIsCreatingSession(false);
+    }
+  };
+
   // Handle sending the initial message (creates attempt)
   const handleSendInitialMessage = async () => {
     if (!masterGenie || !projectId || !initialMessage.trim()) return;
@@ -676,22 +721,24 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                     🔧 {t('genie.actions.changeExecutor')}
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => {/* Delete Session - Phase 3c */}}
-                    disabled={allAttempts.length <= 1}
+                    onClick={handleDeleteSession}
+                    disabled={allAttempts.length <= 1 || isCreatingSession}
                   >
-                    🗑️ Delete Session
+                    🗑️ {t('genie.actions.deleteSession')}
                     {allAttempts.length <= 1 && (
-                      <span className="ml-2 text-xs text-muted-foreground">(Last)</span>
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {t('genie.history.lastSession')}
+                      </span>
                     )}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleShowSettingsDialog}>
                     ⚙️ {t('genie.actions.settings')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleExportChat}>
-                    📥 Export Chat
+                    📥 {t('genie.actions.exportChat')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleClearChat}>
-                    🔄 Clear Chat
+                    🔄 {t('genie.actions.clearChat')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
