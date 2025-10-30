@@ -37,7 +37,7 @@ export function TaskCard({
     (e: React.MouseEvent) => {
       e.stopPropagation();
       if (!projectId || !task) return;
-      navigate(`${paths.task(projectId, task.id)}/attempts/latest`);
+      navigate(`${paths.task(projectId, task.id)}/attempts/latest?view=diffs`);
     },
     [projectId, task, navigate]
   );
