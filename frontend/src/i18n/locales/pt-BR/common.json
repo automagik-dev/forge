@@ -50,6 +50,77 @@
     "currentDisabled": "Cannot select the current branch"
   },
   "breadcrumb": {
-    "more": "More"
+    "more": "Mais"
+  },
+  "genie": {
+    "title": "Genie",
+    "tabs": {
+      "genie": "Genie",
+      "wish": "Wish",
+      "forge": "Forge",
+      "review": "Review"
+    },
+    "states": {
+      "loading": "Carregando Genie...",
+      "loadingNeuron": "Carregando neurônio {{neuron}}...",
+      "creatingNeuron": "Criando neurônio {{neuron}}...",
+      "starting": "Iniciando...",
+      "ready": "Genie Pronto"
+    },
+    "messages": {
+      "noGenieAvailable": "Nenhum Genie disponível",
+      "selectProjectToActivate": "Selecione um projeto para ativar o Genie",
+      "sendMessageToStart": "Envie uma mensagem para iniciar sua primeira sessão",
+      "errorLoading": "Erro ao carregar Genie",
+      "placeholder": "Digite sua mensagem para o Genie..."
+    },
+    "neurons": {
+      "wish": {
+        "name": "Wish",
+        "description": "Este é seu especialista em planejamento"
+      },
+      "forge": {
+        "name": "Forge",
+        "description": "Este é seu especialista em execução"
+      },
+      "review": {
+        "name": "Review",
+        "description": "Este é seu especialista em validação"
+      }
+    },
+    "actions": {
+      "newSession": "Nova Sessão",
+      "history": "Histórico",
+      "options": "Opções",
+      "maximize": "Abrir em Tela Cheia",
+      "changeExecutor": "Trocar Executor",
+      "deleteSession": "Deletar Sessão",
+      "settings": "Configurações",
+      "exportChat": "Exportar Chat",
+      "clearChat": "Limpar Chat"
+    },
+    "history": {
+      "title": "Histórico de Sessões",
+      "noSessions": "Nenhuma sessão anterior",
+      "session": "Sessão {{number}}",
+      "current": "Atual",
+      "lastSession": "(Última)"
+    },
+    "time": {
+      "justNow": "agora mesmo",
+      "minutesAgo": "{{count}}min atrás",
+      "hoursAgo": "{{count}}h atrás",
+      "daysAgo": "{{count}}d atrás"
+    },
+    "newSession": {
+      "title": "Nova Sessão de Chat",
+      "description": "Dê um título a esta sessão para ajudá-lo a lembrar do que se trata. Isso é opcional - você pode deixar em branco.",
+      "placeholder": "ex: Corrigir bug de login, Adicionar modo escuro, etc.",
+      "create": "Criar Sessão"
+    },
+    "aria": {
+      "open": "Abrir chat do Genie",
+      "close": "Fechar"
+    }
   }
 }
