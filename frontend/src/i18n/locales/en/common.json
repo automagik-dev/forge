@@ -54,6 +54,7 @@
   },
   "genie": {
     "title": "Genie",
+    "description": "Your AI orchestrator for planning, execution, and validation",
     "tabs": {
       "genie": "Genie",
       "wish": "Wish",
@@ -72,7 +73,8 @@
       "selectProjectToActivate": "Select a project to activate Genie",
       "sendMessageToStart": "Send a message to start your first session",
       "errorLoading": "Error loading Genie",
-      "placeholder": "Type your message to Genie..."
+      "placeholder": "Type your message to Genie...",
+      "enterMessage": "Enter your message..."
     },
     "neurons": {
       "wish": {
