@@ -54,11 +54,11 @@ export function getWorkflowStatus(runId) {
 export function getLatestRelease(prerelease = false) {
   const filter = prerelease ? 'select(.isPrerelease == true)' : 'select(.isPrerelease == false)';
   const data = exec(
-    `gh release list --repo ${config.repo} --limit 10 --json tagName,isPrerelease,name --jq '.[] | ${filter}' | head -1`,
+    `gh release list --repo ${config.repo} --limit 50 --json tagName,isPrerelease,name --jq '[.[] | ${filter}] | .[0]'`,
     true
   );
 
-  if (!data) return null;
+  if (!data || data === 'null') return null;
 
   return JSON.parse(data);
 }
