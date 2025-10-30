@@ -15,7 +15,7 @@
  */
 
 import { log } from './config.js';
-import { displayVersionInfo, getPackageVersion } from './version.js';
+import { displayVersionInfo } from './version.js';
 import { getLatestRelease } from './github.js';
 import { execSync } from 'child_process';
 
