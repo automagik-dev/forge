@@ -27,7 +27,7 @@ use deployment::Deployment;
 use forge_config::ForgeProjectSettings;
 use server::routes::{
     self as upstream, auth, config as upstream_config, containers, drafts, events,
-    execution_processes, filesystem, images, projects, task_attempts, task_templates, tasks,
+    execution_processes, filesystem, images, projects, task_attempts, tasks,
 };
 use server::{DeploymentImpl, error::ApiError, routes::tasks::CreateAndStartTaskRequest};
 use services::services::container::ContainerService;
