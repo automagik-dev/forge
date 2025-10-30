@@ -53,7 +53,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   const { t } = useTranslation('common');
   const [isHovering, setIsHovering] = useState(false);
   const { projectId } = useProject();
-  const { config } = useUserSystem();
+  const { config, profiles } = useUserSystem();
   const [masterGenie, setMasterGenie] = useState<{
     task: Task;
     attempt?: TaskAttempt;
@@ -1182,9 +1182,9 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            {config?.executor_profiles && selectedExecutor && (
+            {profiles && selectedExecutor && (
               <ExecutorProfileSelector
-                profiles={config.executor_profiles}
+                profiles={profiles}
                 selectedProfile={selectedExecutor}
                 onProfileSelect={setSelectedExecutor}
                 disabled={isChangingExecutor}
