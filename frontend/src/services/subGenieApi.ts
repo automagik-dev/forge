@@ -330,18 +330,22 @@ export class SubGenieApiService {
    * Creates a new task attempt for the Master Genie.
    *
    * @param taskId - Master Genie task UUID
+   * @param baseBranch - Git branch to use (defaults to current branch)
+   * @param executorProfileId - Executor configuration (defaults to user's profile)
    * @returns Created task attempt
    */
-  async createMasterGenieAttempt(taskId: string): Promise<TaskAttempt> {
+  async createMasterGenieAttempt(
+    taskId: string,
+    baseBranch: string,
+    executorProfileId: { executor: BaseCodingAgent; variant?: string | null }
+  ): Promise<TaskAttempt> {
     const response = await fetch(`${this.baseUrl}/task-attempts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         task_id: taskId,
-        executor_profile_id: {
-          executor: BaseCodingAgent.CLAUDE_CODE,
-        },
-        base_branch: 'main',
+        executor_profile_id: executorProfileId,
+        base_branch: baseBranch,
       }),
     });
 
