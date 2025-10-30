@@ -89,6 +89,13 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
       }
     : null;
 
+  // Initialize selected executor from config
+  useEffect(() => {
+    if (config?.executor_profile && !selectedExecutor) {
+      setSelectedExecutor(config.executor_profile);
+    }
+  }, [config?.executor_profile, selectedExecutor]);
+
   // Load branches when widget opens
   useEffect(() => {
     if (!projectId || !isOpen) return;
@@ -465,20 +472,10 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   const handleChangeExecutor = async () => {
     if (!selectedExecutor || !projectId) return;
 
-    setIsChangingExecutor(true);
-    setError(null);
-
-    try {
-      // Just update the executor preference - don't create attempt yet
-      // The attempt will be created with this executor when user sends first message
-      // For now, just close the dialog - the selected executor is already in state
-      setShowExecutorDialog(false);
-    } catch (err) {
-      console.error('Failed to change executor:', err);
-      setError(err instanceof Error ? err.message : 'Failed to change executor');
-    } finally {
-      setIsChangingExecutor(false);
-    }
+    // The selectedExecutor state is already updated by the dialog selector
+    // Just close the dialog - the executor will be used when creating next attempt
+    setShowExecutorDialog(false);
+    setIsChangingExecutor(false);
   };
 
   // Show settings dialog
@@ -534,8 +531,8 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     // Get current branch (fallback to 'main' if not detected)
     const baseBranch = currentBranch || 'main';
 
-    // Get user's executor profile (fallback to CLAUDE_CODE)
-    const executorProfile = config?.executor_profile || {
+    // Use selected executor if set by user, otherwise fall back to config default
+    const executorProfile = selectedExecutor || config?.executor_profile || {
       executor: BaseCodingAgent.CLAUDE_CODE as BaseCodingAgent,
       variant: null,
     };
@@ -916,14 +913,14 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
                             setIsSending(true);
                             try {
+                              // Use selected executor if set, otherwise config default
+                              const executorProfile = selectedExecutor || config.executor_profile;
+
                               // Create attempt for master genie
                               const attempt = await subGenieApi.createMasterGenieAttempt(
                                 masterGenie.task.id,
                                 currentBranch,
-                                {
-                                  executor: config.executor_profile.executor,
-                                  variant: null,
-                                }
+                                executorProfile
                               );
 
                               // Send the initial message as follow-up
@@ -1040,14 +1037,16 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
                             setIsSending(true);
                             try {
+                              // Use selected executor if set, otherwise config default (with wish variant)
+                              const executorProfile = selectedExecutor ?
+                                { ...selectedExecutor, variant: 'wish' } :
+                                { ...config.executor_profile, variant: 'wish' };
+
                               // Create attempt for this neuron
                               const attempt = await subGenieApi.createMasterGenieAttempt(
                                 wishNeuron.task.id,
                                 currentBranch,
-                                {
-                                  executor: config.executor_profile.executor,
-                                  variant: 'wish',
-                                }
+                                executorProfile
                               );
 
                               // Send the initial message as follow-up
@@ -1173,14 +1172,16 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
                             setIsSending(true);
                             try {
+                              // Use selected executor if set, otherwise config default (with forge variant)
+                              const executorProfile = selectedExecutor ?
+                                { ...selectedExecutor, variant: 'forge' } :
+                                { ...config.executor_profile, variant: 'forge' };
+
                               // Create attempt for this neuron
                               const attempt = await subGenieApi.createMasterGenieAttempt(
                                 forgeNeuron.task.id,
                                 currentBranch,
-                                {
-                                  executor: config.executor_profile.executor,
-                                  variant: 'forge',
-                                }
+                                executorProfile
                               );
 
                               // Send the initial message as follow-up
