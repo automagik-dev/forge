@@ -106,7 +106,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
       });
   }, [projectId, isOpen]);
 
-  // Load Master Genie task when widget is opened
+  // Load Master Genie task when widget is opened and auto-create attempt
   useEffect(() => {
     if (!projectId || !isOpen) return;
 
@@ -115,7 +115,25 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
       setError(null);
       try {
         const genie = await subGenieApi.ensureMasterGenie(projectId);
-        setMasterGenie(genie);
+
+        // If there's no attempt yet, create one automatically
+        if (!genie.attempt) {
+          const baseBranch = currentBranch || 'main';
+          const executorProfile = config?.executor_profile || {
+            executor: BaseCodingAgent.CLAUDE_CODE as BaseCodingAgent,
+            variant: null,
+          };
+
+          const attempt = await subGenieApi.createMasterGenieAttempt(
+            genie.task.id,
+            baseBranch,
+            executorProfile
+          );
+
+          setMasterGenie({ task: genie.task, attempt });
+        } else {
+          setMasterGenie(genie);
+        }
       } catch (err) {
         console.error('Error loading Master Genie:', err);
         setError(err instanceof Error ? err.message : 'Failed to load Master Genie');
@@ -128,7 +146,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     if (!masterGenie) {
       loadMasterGenie();
     }
-  }, [projectId, isOpen, masterGenie]);
+  }, [projectId, isOpen, masterGenie, currentBranch, config]);
 
   // Load neurons when Master Genie has an active attempt
   useEffect(() => {
