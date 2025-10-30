@@ -33,7 +33,7 @@ COPY . .
 # Build application
 RUN npm run generate-types
 RUN cd frontend && pnpm run build
-RUN cargo build --release --bin server
+RUN cargo build --release --bin forge-app
 
 # Runtime stage
 FROM alpine:latest AS runtime
@@ -50,7 +50,7 @@ RUN addgroup -g 1001 -S appgroup && \
     adduser -u 1001 -S appuser -G appgroup
 
 # Copy binary from builder
-COPY --from=builder /app/target/release/server /usr/local/bin/server
+COPY --from=builder /app/target/release/forge-app /usr/local/bin/forge-app
 
 # Create repos directory and set permissions
 RUN mkdir -p /repos && \
@@ -73,4 +73,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Run the application
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["server"]
+CMD ["forge-app"]

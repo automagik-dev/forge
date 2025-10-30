@@ -6,7 +6,7 @@ set -e
 echo "🧪 Testing NPM package locally..."
 
 # Build the package first
-./build-npm-package.sh
+./local-build.sh
 
 cd npx-cli
 

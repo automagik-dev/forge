@@ -6,7 +6,7 @@ import { Task, TaskAttempt, BaseCodingAgent } from 'shared/types';
 export interface Neuron {
   type: 'wish' | 'forge' | 'review';
   task: Task;
-  attempt: TaskAttempt;
+  attempt?: TaskAttempt;
 }
 
 /**

@@ -57,11 +57,11 @@ echo "🔨 Building frontend with pnpm..."
 
 echo "🔨 Cleaning Rust build cache to pick up fresh frontend..."
 # Remove the embedded frontend from the build cache
-rm -rf target/release/build/server-*/
-rm -rf target/release/.fingerprint/server-*/
+rm -rf target/release/build/forge-app-*/
+rm -rf target/release/.fingerprint/forge-app-*/
 
 echo "🔨 Building Rust binaries with fresh frontend embed..."
-cargo build --release
+cargo build --release --bin forge-app
 cargo build --release --bin mcp_task_server
 
 echo "📦 Creating distribution package..."
@@ -87,8 +87,8 @@ zip_one() {
 echo "📦 Packaging binaries for $PLATFORM_DIR..."
 mkdir -p "npx-cli/dist/$PLATFORM_DIR"
 
-# Copy and zip the main server binary
-cp "target/release/server${BIN_EXT}" "automagik-forge${BIN_EXT}"
+# Copy and zip the main forge-app binary
+cp "target/release/forge-app${BIN_EXT}" "automagik-forge${BIN_EXT}"
 zip_one "automagik-forge${BIN_EXT}" "automagik-forge.zip"
 rm -f "automagik-forge${BIN_EXT}"
 mv "automagik-forge.zip" "npx-cli/dist/$PLATFORM_DIR/automagik-forge.zip"

@@ -106,34 +106,20 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
       });
   }, [projectId, isOpen]);
 
-  // Load Master Genie task when widget is opened and auto-create attempt
+  // Load Master Genie task when widget is opened (don't auto-create attempt)
   useEffect(() => {
     if (!projectId || !isOpen) return;
+    // Skip if already loaded
+    if (masterGenie) return;
 
     const loadMasterGenie = async () => {
+      console.log('[GenieMaster] Loading Master Genie...');
       setIsLoading(true);
       setError(null);
       try {
         const genie = await subGenieApi.ensureMasterGenie(projectId);
-
-        // If there's no attempt yet, create one automatically
-        if (!genie.attempt) {
-          const baseBranch = currentBranch || 'main';
-          const executorProfile = config?.executor_profile || {
-            executor: BaseCodingAgent.CLAUDE_CODE as BaseCodingAgent,
-            variant: null,
-          };
-
-          const attempt = await subGenieApi.createMasterGenieAttempt(
-            genie.task.id,
-            baseBranch,
-            executorProfile
-          );
-
-          setMasterGenie({ task: genie.task, attempt });
-        } else {
-          setMasterGenie(genie);
-        }
+        console.log('[GenieMaster] Master Genie loaded:', genie);
+        setMasterGenie(genie);
       } catch (err) {
         console.error('Error loading Master Genie:', err);
         setError(err instanceof Error ? err.message : 'Failed to load Master Genie');
@@ -142,11 +128,8 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
       }
     };
 
-    // Only load if not already loaded
-    if (!masterGenie) {
-      loadMasterGenie();
-    }
-  }, [projectId, isOpen, masterGenie, currentBranch, config]);
+    loadMasterGenie();
+  }, [projectId, isOpen]);
 
   // Load neurons when Master Genie has an active attempt
   useEffect(() => {
@@ -178,13 +161,25 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, isHovering, onClose]);
 
-  // Click-outside detection to auto-close
+  // Click-outside detection to auto-close (ignore Portal elements like dropdowns)
   useEffect(() => {
     if (!isOpen) return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (widgetRef.current && !widgetRef.current.contains(event.target as Node)) {
-        onClose();
+      const target = event.target as Node;
+
+      // Check if widget ref contains the target
+      if (widgetRef.current && !widgetRef.current.contains(target)) {
+        // Check if click is inside a Radix UI Portal (dropdown menu)
+        // Portals are rendered with data-radix-portal attribute
+        const isInPortal = (target as Element).closest('[data-radix-popper-content-wrapper]') !== null ||
+                          (target as Element).closest('[role="dialog"]') !== null ||
+                          (target as Element).closest('[data-radix-portal]') !== null;
+
+        // Only close if not clicking inside a portal
+        if (!isInPortal) {
+          onClose();
+        }
       }
     };
 
@@ -193,11 +188,11 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   }, [isOpen, onClose]);
 
 
-  // Ensure a neuron exists and has an active attempt
-  const ensureNeuronAttempt = async (
+  // Ensure a neuron task exists (doesn't create attempt until user sends message)
+  const ensureNeuron = async (
     neuronType: 'wish' | 'forge' | 'review'
   ): Promise<Neuron | null> => {
-    if (!projectId || !masterGenie?.attempt) return null;
+    if (!projectId) return null;
 
     setCreatingNeuron(neuronType);
     setError(null);
@@ -205,41 +200,50 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     try {
       // Check if neuron already exists in state
       const existingNeuron = neurons.find((n) => n.type === neuronType);
-      if (existingNeuron?.attempt) {
+      if (existingNeuron) {
         return existingNeuron;
       }
 
-      // Get current branch (fallback to 'main' if not detected)
-      const baseBranch = currentBranch || 'main';
-
-      // Get user's executor profile (fallback to CLAUDE_CODE)
-      const executorProfile = config?.executor_profile || {
-        executor: BaseCodingAgent.CLAUDE_CODE as BaseCodingAgent,
-        variant: neuronType, // Use neuron type as variant
-      };
-
-      // If neuron doesn't have executor variant set, add it
-      if (!executorProfile.variant) {
-        executorProfile.variant = neuronType;
+      // Check if neuron agent exists in backend (just the agent, not attempt)
+      const agentResponse = await fetch(`/api/forge/agents?project_id=${projectId}&agent_type=${neuronType}`);
+      if (!agentResponse.ok) {
+        throw new Error(`Failed to fetch agents: ${agentResponse.status}`);
       }
-
-      // Check if neuron agent exists in backend
-      const agentTasks = await subGenieApi.getAgentTasks(projectId, neuronType);
+      const { data: agents } = await agentResponse.json();
 
       let neuronTask: Task;
-      if (agentTasks.length === 0) {
-        // Create agent (which creates the task automatically)
-        const { task } = await subGenieApi.executeWorkflow(
-          neuronType,
-          `${neuronType}-workflow`,
-          projectId,
-          `${neuronType.charAt(0).toUpperCase() + neuronType.slice(1)} Neuron`,
-          executorProfile.executor,
-          baseBranch
-        );
+      if (agents.length === 0) {
+        // Create agent entry (which creates the task)
+        const createResponse = await fetch('/api/forge/agents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project_id: projectId,
+            agent_type: neuronType,
+          }),
+        });
+
+        if (!createResponse.ok) {
+          throw new Error(`Failed to create ${neuronType} agent: ${createResponse.status}`);
+        }
+
+        const { data: agent } = await createResponse.json();
+
+        // Fetch the task
+        const taskResponse = await fetch(`/api/tasks/${agent.task_id}`);
+        if (!taskResponse.ok) {
+          throw new Error(`Failed to fetch task: ${taskResponse.status}`);
+        }
+        const { data: task } = await taskResponse.json();
         neuronTask = task;
       } else {
-        neuronTask = agentTasks[0];
+        // Fetch existing task
+        const taskResponse = await fetch(`/api/tasks/${agents[0].task_id}`);
+        if (!taskResponse.ok) {
+          throw new Error(`Failed to fetch task: ${taskResponse.status}`);
+        }
+        const { data: task } = await taskResponse.json();
+        neuronTask = task;
       }
 
       // Check if neuron has an active attempt
@@ -248,23 +252,11 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
         .filter((a) => a.task_id === neuronTask.id)
         .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
 
-      let finalAttempt: TaskAttempt;
-      if (!neuronAttempt) {
-        // Create a new attempt for this neuron
-        finalAttempt = await subGenieApi.createMasterGenieAttempt(
-          neuronTask.id,
-          baseBranch,
-          executorProfile
-        );
-      } else {
-        finalAttempt = neuronAttempt;
-      }
-
-      // Create neuron object
+      // Create neuron object (with or without attempt)
       const neuron: Neuron = {
         type: neuronType,
         task: neuronTask,
-        attempt: finalAttempt,
+        attempt: neuronAttempt,
       };
 
       // Update neurons state
@@ -287,11 +279,11 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   const handleTabChange = async (tab: 'master' | 'wish' | 'forge' | 'review') => {
     setActiveTab(tab);
 
-    // If switching to a neuron tab, ensure it exists
-    if (tab !== 'master' && masterGenie?.attempt) {
+    // If switching to a neuron tab, ensure it exists (but don't create attempt yet)
+    if (tab !== 'master') {
       const neuron = neurons.find((n) => n.type === tab);
-      if (!neuron?.attempt) {
-        await ensureNeuronAttempt(tab);
+      if (!neuron) {
+        await ensureNeuron(tab);
       }
     }
   };
@@ -961,17 +953,35 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
             {/* Render Wish neuron tab */}
             {activeTab === 'wish' && (() => {
               const wishNeuron = neurons.find((n) => n.type === 'wish');
-              if (!wishNeuron || !wishNeuron.attempt) {
+
+              // Show loading state while neuron is being created
+              if (!wishNeuron) {
                 return (
                   <div className="flex-1 flex items-center justify-center p-4">
                     <div className="text-center text-muted-foreground">
                       <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-purple-500" />
                       <p className="font-semibold">
-                        {creatingNeuron === 'wish'
-                          ? t('genie.states.creatingNeuron', { neuron: t('genie.neurons.wish.name') })
-                          : t('genie.states.loadingNeuron', { neuron: t('genie.neurons.wish.name') })}
+                        {t('genie.states.loadingNeuron', { neuron: t('genie.neurons.wish.name') })}
                       </p>
                       <p className="text-xs mt-1">{t('genie.neurons.wish.description')}</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Show empty state when neuron exists but has no attempt
+              if (!wishNeuron.attempt) {
+                return (
+                  <div className="flex-1 flex flex-col p-4">
+                    <div className="flex-1 flex flex-col items-center justify-center">
+                      <Lamp className="h-12 w-12 mb-3 text-purple-500" />
+                      <p className="font-semibold text-lg text-center">{t('genie.neurons.wish.name')}</p>
+                      <p className="text-sm mt-2 text-center text-muted-foreground">
+                        {t('genie.neurons.wish.description')}
+                      </p>
+                      <p className="text-xs mt-2 text-center text-muted-foreground">
+                        {t('genie.messages.sendMessageToStart')}
+                      </p>
                     </div>
                   </div>
                 );
@@ -1021,17 +1031,35 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
             {/* Render Forge neuron tab */}
             {activeTab === 'forge' && (() => {
               const forgeNeuron = neurons.find((n) => n.type === 'forge');
-              if (!forgeNeuron || !forgeNeuron.attempt) {
+
+              // Show loading state while neuron is being created
+              if (!forgeNeuron) {
                 return (
                   <div className="flex-1 flex items-center justify-center p-4">
                     <div className="text-center text-muted-foreground">
                       <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-orange-500" />
                       <p className="font-semibold">
-                        {creatingNeuron === 'forge'
-                          ? t('genie.states.creatingNeuron', { neuron: t('genie.neurons.forge.name') })
-                          : t('genie.states.loadingNeuron', { neuron: t('genie.neurons.forge.name') })}
+                        {t('genie.states.loadingNeuron', { neuron: t('genie.neurons.forge.name') })}
                       </p>
                       <p className="text-xs mt-1">{t('genie.neurons.forge.description')}</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Show empty state when neuron exists but has no attempt
+              if (!forgeNeuron.attempt) {
+                return (
+                  <div className="flex-1 flex flex-col p-4">
+                    <div className="flex-1 flex flex-col items-center justify-center">
+                      <Lamp className="h-12 w-12 mb-3 text-orange-500" />
+                      <p className="font-semibold text-lg text-center">{t('genie.neurons.forge.name')}</p>
+                      <p className="text-sm mt-2 text-center text-muted-foreground">
+                        {t('genie.neurons.forge.description')}
+                      </p>
+                      <p className="text-xs mt-2 text-center text-muted-foreground">
+                        {t('genie.messages.sendMessageToStart')}
+                      </p>
                     </div>
                   </div>
                 );
@@ -1081,17 +1109,35 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
             {/* Render Review neuron tab */}
             {activeTab === 'review' && (() => {
               const reviewNeuron = neurons.find((n) => n.type === 'review');
-              if (!reviewNeuron || !reviewNeuron.attempt) {
+
+              // Show loading state while neuron is being created
+              if (!reviewNeuron) {
                 return (
                   <div className="flex-1 flex items-center justify-center p-4">
                     <div className="text-center text-muted-foreground">
                       <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-blue-600" />
                       <p className="font-semibold">
-                        {creatingNeuron === 'review'
-                          ? t('genie.states.creatingNeuron', { neuron: t('genie.neurons.review.name') })
-                          : t('genie.states.loadingNeuron', { neuron: t('genie.neurons.review.name') })}
+                        {t('genie.states.loadingNeuron', { neuron: t('genie.neurons.review.name') })}
                       </p>
                       <p className="text-xs mt-1">{t('genie.neurons.review.description')}</p>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Show empty state when neuron exists but has no attempt
+              if (!reviewNeuron.attempt) {
+                return (
+                  <div className="flex-1 flex flex-col p-4">
+                    <div className="flex-1 flex flex-col items-center justify-center">
+                      <Lamp className="h-12 w-12 mb-3 text-blue-600" />
+                      <p className="font-semibold text-lg text-center">{t('genie.neurons.review.name')}</p>
+                      <p className="text-sm mt-2 text-center text-muted-foreground">
+                        {t('genie.neurons.review.description')}
+                      </p>
+                      <p className="text-xs mt-2 text-center text-muted-foreground">
+                        {t('genie.messages.sendMessageToStart')}
+                      </p>
                     </div>
                   </div>
                 );
