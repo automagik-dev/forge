@@ -19,7 +19,7 @@ Do:
    Confirm by reading package.json and directory structure.
 
 3) Integrate the component:
-   import { AutomagikForgeWebCompanion } from 'vibe-kanban-web-companion';
+   import { VibeKanbanWebCompanion as AutomagikForgeWebCompanion } from 'vibe-kanban-web-companion';
    - Vite/CRA: render <AutomagikForgeWebCompanion /> at the app root.
    - Next.js (pages): render in pages/_app.*
    - Next.js (app): render in app/layout.* or a client providers component.

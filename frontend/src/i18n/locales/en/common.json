@@ -51,5 +51,89 @@
   },
   "breadcrumb": {
     "more": "More"
+  },
+  "genie": {
+    "title": "Genie",
+    "description": "Your AI orchestrator for planning, execution, and validation",
+    "tabs": {
+      "genie": "Genie",
+      "wish": "Wish",
+      "forge": "Forge",
+      "review": "Review"
+    },
+    "states": {
+      "loading": "Loading Genie...",
+      "loadingNeuron": "Loading {{neuron}} neuron...",
+      "creatingNeuron": "Creating {{neuron}} neuron...",
+      "starting": "Starting...",
+      "ready": "Genie Ready"
+    },
+    "messages": {
+      "noGenieAvailable": "No Genie available",
+      "selectProjectToActivate": "Select a project to activate Genie",
+      "sendMessageToStart": "Send a message to start your first session",
+      "errorLoading": "Error loading Genie",
+      "placeholder": "Type your message to Genie...",
+      "enterMessage": "Enter your message..."
+    },
+    "neurons": {
+      "wish": {
+        "name": "Wish",
+        "description": "This is your planning specialist"
+      },
+      "forge": {
+        "name": "Forge",
+        "description": "This is your execution specialist"
+      },
+      "review": {
+        "name": "Review",
+        "description": "This is your validation specialist"
+      }
+    },
+    "actions": {
+      "newSession": "New Session",
+      "history": "History",
+      "options": "Options",
+      "maximize": "Open in Full View",
+      "changeExecutor": "Change Executor",
+      "deleteSession": "Delete Session",
+      "settings": "Settings",
+      "exportChat": "Export Chat",
+      "clearChat": "Clear Chat"
+    },
+    "history": {
+      "title": "Session History",
+      "noSessions": "No previous sessions",
+      "session": "Session {{number}}",
+      "current": "Current",
+      "lastSession": "(Last)"
+    },
+    "time": {
+      "justNow": "just now",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "daysAgo": "{{count}}d ago"
+    },
+    "newSession": {
+      "title": "New Chat Session",
+      "description": "Give this session a title to help you remember what it's about. This is optional - you can leave it blank.",
+      "placeholder": "e.g., Fix login bug, Add dark mode, etc.",
+      "create": "Create Session"
+    },
+    "changeExecutor": {
+      "title": "Change AI Executor",
+      "description": "Select a different AI executor for this session. This will create a new session with the selected executor.",
+      "confirm": "Change Executor"
+    },
+    "settings": {
+      "title": "Session Settings",
+      "description": "Configure default settings for new sessions.",
+      "branchLabel": "Default Branch",
+      "save": "Save Settings"
+    },
+    "aria": {
+      "open": "Open Genie chat",
+      "close": "Close"
+    }
   }
 }

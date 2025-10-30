@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Copy } from 'lucide-react';
 import type { TaskWithAttemptStatus, TaskAttempt } from 'shared/types';
 import { useOpenInEditor } from '@/hooks/useOpenInEditor';
 import NiceModal from '@ebay/nice-modal-react';
@@ -81,6 +81,16 @@ export function ActionsDropdown({ task, attempt }: ActionsDropdownProps) {
     });
   };
 
+  const handleGitActions = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!attempt?.id || !task) return;
+    NiceModal.show('git-actions', {
+      attemptId: attempt.id,
+      task,
+      projectId,
+    });
+  };
+
   return (
     <>
       <DropdownMenu>
@@ -118,6 +128,12 @@ export function ActionsDropdown({ task, attempt }: ActionsDropdownProps) {
               >
                 {t('actionsMenu.createSubtask')}
               </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!attempt?.id || !task}
+                onClick={handleGitActions}
+              >
+                {t('actionsMenu.gitActions')}
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>
           )}
@@ -129,6 +145,7 @@ export function ActionsDropdown({ task, attempt }: ActionsDropdownProps) {
                 {t('common:buttons.edit')}
               </DropdownMenuItem>
               <DropdownMenuItem disabled={!projectId} onClick={handleDuplicate}>
+                <Copy className="h-4 w-4 mr-2" />
                 {t('actionsMenu.duplicate')}
               </DropdownMenuItem>
               <DropdownMenuItem

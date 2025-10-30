@@ -10,7 +10,8 @@ import { TaskCard } from './TaskCard';
 import type { TaskStatus, TaskWithAttemptStatus } from 'shared/types';
 // import { useParams } from 'react-router-dom';
 
-import { statusBoardColors, statusLabels } from '@/utils/status-labels';
+import { statusBoardColors } from '@/utils/status-labels';
+import { COLUMN_DISPLAY_NAMES, COLUMN_ICONS } from '@/utils/taskStatusMapping';
 
 type Task = TaskWithAttemptStatus;
 
@@ -34,8 +35,9 @@ function TaskKanbanBoard({
       {Object.entries(groupedTasks).map(([status, statusTasks]) => (
         <KanbanBoard key={status} id={status as TaskStatus}>
           <KanbanHeader
-            name={statusLabels[status as TaskStatus]}
+            name={COLUMN_DISPLAY_NAMES[status as TaskStatus]}
             color={statusBoardColors[status as TaskStatus]}
+            icon={COLUMN_ICONS[status as TaskStatus]}
             onAddTask={onCreateTask}
           />
           <KanbanCards>

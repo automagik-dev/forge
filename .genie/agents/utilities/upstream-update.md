@@ -13,15 +13,46 @@ genie:
 # Upstream Update Agent
 
 ## Role
-Automate the complete process of syncing the namastexlabs/vibe-kanban fork with upstream BloopAI/vibe-kanban, creating a release tag, updating the automagik-forge gitmodule to use the new tag, and applying mechanical rebranding.
+Automate the complete process of syncing the namastexlabs/vibe-kanban fork with upstream BloopAI/vibe-kanban, creating a release tag AND release branch, updating the automagik-forge .gitmodules to track the release branch, and applying mechanical rebranding.
+
+---
+
+## 🚨 CRITICAL REQUIREMENT (THE LAW) 🚨
+
+**RELEASE BRANCHES ARE MANDATORY AND NON-NEGOTIABLE**
+
+Every namastex release MUST have:
+1. **Annotated tag**: `v0.0.XXX-namastex-N` (e.g., `v0.0.113-namastex-3`)
+2. **Matching release branch**: `release/v0.0.XXX-namastex-N` (e.g., `release/v0.0.113-namastex-3`)
+
+**Why**: Git submodules cannot track tags via the `.gitmodules` `branch` field. Only branches work.
+
+**What happens without release branches**:
+- ❌ `git submodule update --remote` fails with "unable to find revision" error
+- ❌ New team members cannot clone the repo with `--recursive`
+- ❌ Automated CI/CD pipelines fail
+- ❌ Hours of debugging headaches
+
+**Correct .gitmodules format**:
+```ini
+[submodule "upstream"]
+    path = upstream
+    url = https://github.com/namastexlabs/vibe-kanban.git
+    branch = release/v0.0.113-namastex-3  # ✅ BRANCH, not tag
+```
+
+---
 
 ## Overview
 
 This agent orchestrates the full upstream update workflow:
 1. **Fork Sync**: Pull latest from BloopAI/vibe-kanban → namastexlabs/vibe-kanban
-2. **Release Creation**: Create namastex-tagged release in the fork
-3. **Gitmodule Update**: Update automagik-forge to use the new fork tag
+2. **Release Creation**: Create namastex-tagged release AND release branch in the fork
+3. **Gitmodule Update**: Update automagik-forge .gitmodules to track the release branch
 4. **Mechanical Rebrand**: Apply vibe-kanban → automagik-forge transformations
+
+**CRITICAL**: Release branches (e.g., `release/v0.0.113-namastex-3`) are REQUIRED for .gitmodules tracking.
+Tags alone do not work with git submodule's `branch` field.
 
 ## Workflow
 <task_breakdown>
@@ -62,14 +93,17 @@ This agent orchestrates the full upstream update workflow:
    - Delete old namastex tag if it exists (locally and remotely)
    - Create new annotated tag on rebranded commit
    - Push tag to namastexlabs/vibe-kanban
+   - **CRITICAL**: Create matching release branch (e.g., release/v0.0.106-namastex-1)
+   - Push release branch to namastexlabs/vibe-kanban
    - Create GitHub release with detailed notes
    - Verify release exists
 
 6. [Gitmodule Update]
-   - Fetch new tags in upstream/ submodule
-   - Checkout new namastex tag (with rebrand already applied)
+   - Update .gitmodules to track release branch (NOT tag)
+   - Fetch release branch in upstream/ submodule
+   - Verify submodule is on correct release branch
    - Return to automagik-forge root
-   - Stage submodule pointer change
+   - Stage .gitmodules and submodule pointer changes
 
 7. [Type Regeneration & Verification]
    - Run `pnpm run generate-types` (upstream version changed)
@@ -569,24 +603,20 @@ git log --oneline --decorate -3
 
 ### Phase 4: Release Creation (in upstream/ submodule)
 
-#### Delete Old Tag (if exists)
+#### Determine Tag Name and Increment
 ```bash
-# Determine tag name with increment: v0.0.109-namastex-1
 # Extract version: v0.0.109-20251017174643 → v0.0.109
 VERSION=$(echo $LATEST_TAG | sed -E 's/(v[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
 
-# Check if v0.0.109-namastex exists
-if git tag -l "${VERSION}-namastex" | grep -q .; then
-  echo "Old tag exists, incrementing to ${VERSION}-namastex-1"
-  NAMASTEX_TAG="${VERSION}-namastex-1"
-
-  # Delete old tag locally and remotely
-  git tag -d "${VERSION}-namastex" 2>/dev/null || true
-  git push origin :refs/tags/${VERSION}-namastex 2>&1 || true
+# Find next increment for namastex tag
+LAST_INCREMENT=$(git tag -l "${VERSION}-namastex-*" | sed -E "s/${VERSION}-namastex-//" | sort -n | tail -1)
+if [ -z "$LAST_INCREMENT" ]; then
+  NEXT_INCREMENT=1
 else
-  NAMASTEX_TAG="${VERSION}-namastex-1"
+  NEXT_INCREMENT=$((LAST_INCREMENT + 1))
 fi
 
+NAMASTEX_TAG="${VERSION}-namastex-${NEXT_INCREMENT}"
 echo "Creating tag: $NAMASTEX_TAG"
 ```
 
@@ -605,11 +635,31 @@ Base: $LATEST_TAG + rebrand commit
 See upstream release notes for feature details."
 ```
 
-#### Push Tag and Create Release
+#### Push Tag
 ```bash
-# Push tag
+# Push tag to remote
 git push origin $NAMASTEX_TAG
 
+# Verify tag was pushed
+git ls-remote --tags origin | grep $NAMASTEX_TAG
+```
+
+#### Create Matching Release Branch (CRITICAL)
+```bash
+# Create release branch from the same commit as the tag
+git checkout -b release/$NAMASTEX_TAG
+
+# Push release branch to remote
+git push -u origin release/$NAMASTEX_TAG
+
+# Verify branch was created
+git ls-remote --heads origin | grep release/$NAMASTEX_TAG
+
+echo "✅ Release branch created: release/$NAMASTEX_TAG"
+```
+
+#### Create GitHub Release
+```bash
 # Create GitHub release with detailed notes
 gh release create $NAMASTEX_TAG \
   --repo namastexlabs/vibe-kanban \
@@ -636,46 +686,57 @@ See [upstream $LATEST_TAG](https://github.com/BloopAI/vibe-kanban/releases/tag/$
 # Check release was created
 gh release list --repo namastexlabs/vibe-kanban --limit 3
 
-# Verify tag points to rebranded commit
-git log --oneline --decorate -3
+# Verify tag and branch point to same commit
+git rev-parse $NAMASTEX_TAG
+git rev-parse release/$NAMASTEX_TAG
+# These should match
 ```
 
-### Phase 5: Gitmodule Update (in upstream/ submodule)
+### Phase 5: Gitmodule Update (in automagik-forge root)
 
-#### Fetch New Tag
+#### Update .gitmodules to Track Release Branch
 ```bash
-# Should still be in upstream/ directory
-pwd  # Should show .../automagik-forge/upstream
+# Should already be on release branch in upstream/ from Phase 4
+cd /path/to/automagik-forge  # Navigate to parent repo root
+pwd  # Should show automagik-forge root
 
-# Fetch the tag we just created
-git fetch origin --tags
+# Update .gitmodules to track the release branch
+sed -i "s|branch = .*|branch = release/${NAMASTEX_TAG}|" .gitmodules
+
+# Verify the change
+cat .gitmodules
+# Should show: branch = release/v0.0.XXX-namastex-N
 ```
 
-#### Checkout Rebranded Tag
+#### Update Submodule to Track Release Branch
 ```bash
-# Checkout the namastex tag (already has rebrand)
-git checkout $NAMASTEX_TAG
+# Update submodule to track the new release branch
+git submodule update --remote --init upstream
 
-# Verify we're on the rebranded commit
+# Verify submodule is on correct branch
+cd upstream
+git branch --show-current
+# Should output: release/v0.0.XXX-namastex-N
+
 git describe --tags
-git log --oneline --decorate -2
-# Should show: rebrand commit, then upstream base
+# Should output: v0.0.XXX-namastex-N
+
+cd ..
 ```
 
-#### Return to automagik-forge Root
+#### Stage Changes
 ```bash
-cd ..
-pwd  # Should be automagik-forge root
+# Stage .gitmodules and submodule pointer
+git add .gitmodules upstream
+
+# Verify what's staged
+git status
+# Should show:
+#   modified: .gitmodules
+#   modified: upstream (new commits)
 ```
 
 ### Phase 6: Type Regeneration & Verification
-
-#### Stage Submodule Update
-```bash
-# Stage the submodule pointer change
-git add upstream
-git status  # Should show "modified: upstream"
-```
 
 #### Regenerate TypeScript Types
 ```bash
@@ -1269,13 +1330,17 @@ git push origin main
 - ✅ Force push to namastexlabs/vibe-kanban succeeded
 
 ### Release Creation
-- ✅ Namastex tag created (e.g., v0.0.106-namastex)
+- ✅ Namastex tag created with increment (e.g., v0.0.106-namastex-3)
+- ✅ Matching release branch created (e.g., release/v0.0.106-namastex-3)
+- ✅ Both tag and branch pushed to namastexlabs/vibe-kanban
 - ✅ GitHub release exists on namastexlabs/vibe-kanban
 - ✅ Release notes reference upstream tag
 
 ### Gitmodule Update
-- ✅ automagik-forge upstream/ submodule points to namastex tag
-- ✅ `git describe --tags` in upstream/ shows correct tag
+- ✅ .gitmodules updated to track release branch (NOT tag)
+- ✅ automagik-forge upstream/ submodule on correct release branch
+- ✅ `git branch --show-current` in upstream/ shows release/v0.0.XXX-namastex-N
+- ✅ `git describe --tags` in upstream/ shows matching tag v0.0.XXX-namastex-N
 
 ### Mechanical Rebrand
 - ✅ Zero vibe-kanban references in upstream/ and frontend/
@@ -1348,30 +1413,69 @@ gh auth login
 
 ## Usage Examples
 
-### Full Workflow
+### Full Workflow (LAW - MUST FOLLOW)
 ```bash
-# 1. In namastexlabs/vibe-kanban fork:
-git remote add upstream https://github.com/BloopAI/vibe-kanban.git
+# 1. In namastexlabs/vibe-kanban fork (upstream/ submodule):
+cd /path/to/automagik-forge/upstream
+
+# Setup and fetch
+git remote add upstream https://github.com/BloopAI/vibe-kanban.git 2>/dev/null || true
 git fetch upstream --tags
-LATEST_TAG=$(git tag --list 'v0.0.*' --sort=-version:refname | head -1)
-git reset --hard upstream/main
+LATEST_TAG=$(git tag --list 'v0.0.*' --sort=-version:refname | grep -E 'v0\.0\.[0-9]+-[0-9]+$' | head -1)
+
+# Sync to upstream
+git reset --hard $LATEST_TAG
+git checkout -B main
 git push origin main --force
 
-NAMASTEX_TAG="${LATEST_TAG%-*}-namastex"
-git tag -a $NAMASTEX_TAG -m "Namastex release based on $LATEST_TAG"
-git push origin $NAMASTEX_TAG
-gh release create $NAMASTEX_TAG --repo namastexlabs/vibe-kanban --title "$NAMASTEX_TAG" --notes "Based on $LATEST_TAG"
-
-# 2. In automagik-forge repo:
-cd upstream
-git fetch origin --tags
-git checkout $NAMASTEX_TAG
+# Apply rebrand BEFORE tagging
 cd ..
 ./scripts/rebrand.sh
-grep -r "vibe-kanban" upstream frontend | wc -l  # Should be 0
+cd upstream
+git add -A
+git commit -m "chore: mechanical rebrand for $LATEST_TAG"
+git push origin main --force
+
+# Determine next increment
+VERSION=$(echo $LATEST_TAG | sed -E 's/(v[0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+LAST_INCREMENT=$(git tag -l "${VERSION}-namastex-*" | sed -E "s/${VERSION}-namastex-//" | sort -n | tail -1)
+NEXT_INCREMENT=$((LAST_INCREMENT + 1))
+NAMASTEX_TAG="${VERSION}-namastex-${NEXT_INCREMENT}"
+
+# Create tag
+git tag -a $NAMASTEX_TAG -m "Namastex release based on $LATEST_TAG with rebrand"
+git push origin $NAMASTEX_TAG
+
+# CRITICAL: Create release branch
+git checkout -b release/$NAMASTEX_TAG
+git push -u origin release/$NAMASTEX_TAG
+
+# Create GitHub release
+gh release create $NAMASTEX_TAG --repo namastexlabs/vibe-kanban \
+  --title "$NAMASTEX_TAG" --notes "Based on $LATEST_TAG with Automagik Forge rebrand"
+
+# 2. In automagik-forge repo (parent):
+cd ..
+
+# Update .gitmodules to track release branch
+sed -i "s|branch = .*|branch = release/${NAMASTEX_TAG}|" .gitmodules
+
+# Update submodule
+git submodule update --remote --init upstream
+
+# Verify
+cd upstream && git branch --show-current  # Should show: release/v0.0.XXX-namastex-N
+cd ..
+
+# Regenerate types and verify build
+pnpm run generate-types
 cargo check --workspace
 cd frontend && pnpm run check && cd ..
-git add -A && git commit -m "chore: update upstream to $NAMASTEX_TAG and rebrand"
+
+# Commit everything
+git add .gitmodules upstream shared/
+git commit -m "chore: update upstream to $NAMASTEX_TAG via release branch"
+git push origin main
 ```
 
 ### Automated via Agent
@@ -1399,13 +1503,32 @@ Store outputs in `.genie/wishes/mechanical-rebrand/qa/group-c/`:
 - `verification.log` - Build and reference count checks
 - `git-diff.txt` - Changes made by rebrand and submodule update
 
-## Important Notes
+## Important Notes (THE LAW)
+
+- **RELEASE BRANCHES ARE MANDATORY**: Tags alone CANNOT be tracked in .gitmodules `branch` field
+  - Every tag MUST have a matching `release/` branch (e.g., `release/v0.0.113-namastex-3`)
+  - .gitmodules MUST reference the release branch, NOT the tag
+  - This ensures `git submodule update --remote` works correctly for all users
 
 - **Fork Operations**: Always use `--force` when pushing to namastexlabs/vibe-kanban (exact mirror)
-- **Tag Format**: Namastex tags follow pattern: `v{VERSION}-namastex` (e.g., v0.0.106-namastex)
+
+- **Tag Format**: Namastex tags follow pattern: `v{VERSION}-namastex-{INCREMENT}`
+  - Example: v0.0.106-namastex-1, v0.0.106-namastex-2, etc.
+  - INCREMENT is auto-determined from existing tags
+
+- **Branch Format**: Release branches follow pattern: `release/v{VERSION}-namastex-{INCREMENT}`
+  - Example: release/v0.0.106-namastex-1
+  - MUST match the tag name exactly
+
 - **No Local Changes**: Fork should never have local modifications (always reset to upstream)
-- **Submodule Pointer**: automagik-forge upstream/ must point to namastex tag, not upstream tag
-- **Verification Critical**: Always verify zero vibe-kanban references and build success before committing
+
+- **Submodule Tracking**: automagik-forge .gitmodules tracks release branch, NOT tag or main
+
+- **Verification Critical**: Always verify:
+  - Zero vibe-kanban references (excluding external packages)
+  - Build success before committing
+  - Submodule is on correct release branch
+  - .gitmodules contains correct branch reference
 
 ## Total Time
 ~3-5 minutes for complete workflow:

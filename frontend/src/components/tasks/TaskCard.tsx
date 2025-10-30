@@ -1,8 +1,12 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { KanbanCard } from '@/components/ui/shadcn-io/kanban';
-import { CheckCircle, Loader2, XCircle } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle, Maximize2 } from 'lucide-react';
 import type { TaskWithAttemptStatus } from 'shared/types';
 import { ActionsDropdown } from '@/components/ui/ActionsDropdown';
+import { useNavigate } from 'react-router-dom';
+import { useProject } from '@/contexts/project-context';
+import { paths } from '@/lib/paths';
+import { Button } from '@/components/ui/button';
 
 type Task = TaskWithAttemptStatus;
 
@@ -21,9 +25,22 @@ export function TaskCard({
   onViewDetails,
   isOpen,
 }: TaskCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
+  const { projectId } = useProject();
+
   const handleClick = useCallback(() => {
     onViewDetails(task);
   }, [task, onViewDetails]);
+
+  const handleMaximize = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!projectId || !task) return;
+      navigate(`${paths.task(projectId, task.id)}/attempts/latest?view=diffs`);
+    },
+    [projectId, task, navigate]
+  );
 
   const localRef = useRef<HTMLDivElement>(null);
 
@@ -40,16 +57,20 @@ export function TaskCard({
   }, [isOpen]);
 
   return (
-    <KanbanCard
-      key={task.id}
-      id={task.id}
-      name={task.title}
-      index={index}
-      parent={status}
-      onClick={handleClick}
-      isOpen={isOpen}
-      forwardedRef={localRef}
+    <div
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
+      <KanbanCard
+        key={task.id}
+        id={task.id}
+        name={task.title}
+        index={index}
+        parent={status}
+        onClick={handleClick}
+        isOpen={isOpen}
+        forwardedRef={localRef}
+      >
       <div className="flex flex-1 gap-2 items-center min-w-0">
         <h4 className="flex-1 min-w-0 line-clamp-2 font-light text-sm">
           {task.title}
@@ -66,6 +87,24 @@ export function TaskCard({
           {/* Failed Indicator */}
           {task.last_attempt_failed && !task.has_merged_attempt && (
             <XCircle className="h-3 w-3 text-destructive" />
+          )}
+          {/* Maximize Button (on hover) */}
+          {isHovered && (
+            <div
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={handleMaximize}
+                aria-label="Maximize"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+            </div>
           )}
           {/* Actions Menu */}
           <div
@@ -85,5 +124,6 @@ export function TaskCard({
         </p>
       )}
     </KanbanCard>
+    </div>
   );
 }

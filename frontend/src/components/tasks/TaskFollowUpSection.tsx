@@ -451,8 +451,10 @@ export function TaskFollowUpSection({
 
             {/* Review comments preview */}
             {reviewMarkdown && (
-              <div className="text-sm mb-4">
-                <div className="whitespace-pre-wrap">{reviewMarkdown}</div>
+              <div className="mb-4">
+                <div className="text-sm whitespace-pre-wrap break-words max-h-[40vh] overflow-y-auto rounded-md border bg-muted p-3">
+                  {reviewMarkdown}
+                </div>
               </div>
             )}
 
@@ -481,8 +483,8 @@ export function TaskFollowUpSection({
                   isQueued
                     ? 'Type your follow-up… It will auto-send when ready.'
                     : reviewMarkdown || conflictResolutionInstructions
-                      ? '(Optional) Add additional instructions... Type @ to search files.'
-                      : 'Continue working on this task attempt... Type @ to search files.'
+                      ? '(Optional) Add additional instructions... Type @ to insert tags or search files.'
+                      : 'Continue working on this task attempt... Type @ to insert tags or search files.'
                 }
                 value={followUpMessage}
                 onChange={(value) => {
