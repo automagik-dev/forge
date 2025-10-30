@@ -1037,6 +1037,39 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                           placeholder={t('genie.messages.enterMessage')}
                           className="flex-1 min-h-[60px] resize-none"
                           disabled={isSending || creatingNeuron === 'wish'}
+                          onKeyDown={async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              if (!initialMessage.trim() || !currentBranch || !config) return;
+
+                              setIsSending(true);
+                              try {
+                                const executorProfile = selectedExecutor ?
+                                  { ...selectedExecutor, variant: 'WISH' } :
+                                  { ...config.executor_profile, variant: 'WISH' };
+
+                                const attempt = await subGenieApi.createMasterGenieAttempt(
+                                  wishNeuron.task.id,
+                                  currentBranch,
+                                  executorProfile
+                                );
+
+                                await subGenieApi.sendFollowUp(attempt.id, initialMessage);
+
+                                if (masterGenie?.attempt) {
+                                  const updatedNeurons = await subGenieApi.getNeurons(masterGenie.attempt.id);
+                                  setNeurons(updatedNeurons);
+                                }
+
+                                setInitialMessage('');
+                              } catch (err) {
+                                console.error('Error starting wish neuron:', err);
+                                setError(err instanceof Error ? err.message : 'Failed to start wish neuron');
+                              } finally {
+                                setIsSending(false);
+                              }
+                            }
+                          }}
                         />
                         <Button
                           size="icon"
@@ -1172,6 +1205,39 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                           placeholder={t('genie.messages.enterMessage')}
                           className="flex-1 min-h-[60px] resize-none"
                           disabled={isSending || creatingNeuron === 'forge'}
+                          onKeyDown={async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              if (!initialMessage.trim() || !currentBranch || !config) return;
+
+                              setIsSending(true);
+                              try {
+                                const executorProfile = selectedExecutor ?
+                                  { ...selectedExecutor, variant: 'FORGE' } :
+                                  { ...config.executor_profile, variant: 'FORGE' };
+
+                                const attempt = await subGenieApi.createMasterGenieAttempt(
+                                  forgeNeuron.task.id,
+                                  currentBranch,
+                                  executorProfile
+                                );
+
+                                await subGenieApi.sendFollowUp(attempt.id, initialMessage);
+
+                                if (masterGenie?.attempt) {
+                                  const updatedNeurons = await subGenieApi.getNeurons(masterGenie.attempt.id);
+                                  setNeurons(updatedNeurons);
+                                }
+
+                                setInitialMessage('');
+                              } catch (err) {
+                                console.error('Error starting forge neuron:', err);
+                                setError(err instanceof Error ? err.message : 'Failed to start forge neuron');
+                              } finally {
+                                setIsSending(false);
+                              }
+                            }
+                          }}
                         />
                         <Button
                           size="icon"
@@ -1283,11 +1349,11 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                 );
               }
 
-              // Show empty state when neuron exists but has no attempt
+              // Show empty state with chat input when neuron exists but has no attempt
               if (!reviewNeuron.attempt) {
                 return (
-                  <div className="flex-1 flex flex-col p-4">
-                    <div className="flex-1 flex flex-col items-center justify-center">
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex-1 flex flex-col items-center justify-center p-4">
                       <Lamp className="h-12 w-12 mb-3 text-blue-600" />
                       <p className="font-semibold text-lg text-center">{t('genie.neurons.review.name')}</p>
                       <p className="text-sm mt-2 text-center text-muted-foreground">
@@ -1296,6 +1362,96 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                       <p className="text-xs mt-2 text-center text-muted-foreground">
                         {t('genie.messages.sendMessageToStart')}
                       </p>
+                    </div>
+
+                    {/* Chat input for starting neuron */}
+                    <div className="shrink-0 border-t p-4">
+                      <div className="flex gap-2">
+                        <Textarea
+                          value={initialMessage}
+                          onChange={(e) => setInitialMessage(e.target.value)}
+                          placeholder={t('genie.messages.enterMessage')}
+                          className="flex-1 min-h-[60px] resize-none"
+                          disabled={isSending || creatingNeuron === 'review'}
+                          onKeyDown={async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              if (!initialMessage.trim() || !currentBranch || !config) return;
+
+                              setIsSending(true);
+                              try {
+                                const executorProfile = selectedExecutor ?
+                                  { ...selectedExecutor, variant: 'REVIEW' } :
+                                  { ...config.executor_profile, variant: 'REVIEW' };
+
+                                const attempt = await subGenieApi.createMasterGenieAttempt(
+                                  reviewNeuron.task.id,
+                                  currentBranch,
+                                  executorProfile
+                                );
+
+                                await subGenieApi.sendFollowUp(attempt.id, initialMessage);
+
+                                if (masterGenie?.attempt) {
+                                  const updatedNeurons = await subGenieApi.getNeurons(masterGenie.attempt.id);
+                                  setNeurons(updatedNeurons);
+                                }
+
+                                setInitialMessage('');
+                              } catch (err) {
+                                console.error('Error starting review neuron:', err);
+                                setError(err instanceof Error ? err.message : 'Failed to start review neuron');
+                              } finally {
+                                setIsSending(false);
+                              }
+                            }
+                          }}
+                        />
+                        <Button
+                          size="icon"
+                          onClick={async () => {
+                            if (!initialMessage.trim() || !currentBranch || !config) return;
+
+                            setIsSending(true);
+                            try {
+                              // Use selected executor if set, otherwise config default (with REVIEW variant - uppercase!)
+                              const executorProfile = selectedExecutor ?
+                                { ...selectedExecutor, variant: 'REVIEW' } :
+                                { ...config.executor_profile, variant: 'REVIEW' };
+
+                              // Create attempt for this neuron
+                              const attempt = await subGenieApi.createMasterGenieAttempt(
+                                reviewNeuron.task.id,
+                                currentBranch,
+                                executorProfile
+                              );
+
+                              // Send the initial message as follow-up
+                              await subGenieApi.sendFollowUp(attempt.id, initialMessage);
+
+                              // Refresh neurons to get the new attempt
+                              if (masterGenie?.attempt) {
+                                const updatedNeurons = await subGenieApi.getNeurons(masterGenie.attempt.id);
+                                setNeurons(updatedNeurons);
+                              }
+
+                              setInitialMessage('');
+                            } catch (err) {
+                              console.error('Failed to start review neuron:', err);
+                              setError(err instanceof Error ? err.message : 'Failed to start review neuron');
+                            } finally {
+                              setIsSending(false);
+                            }
+                          }}
+                          disabled={!initialMessage.trim() || isSending || creatingNeuron === 'review'}
+                        >
+                          {isSending || creatingNeuron === 'review' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 );
