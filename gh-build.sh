@@ -415,6 +415,9 @@ case "${1:-status}" in
         
         # Select version bump type (skip if resuming)
         if [ "${SKIP_VERSION_BUMP:-false}" != "true" ] && [ -z "$VERSION_TYPE" ]; then
+            # Get current version
+            CURRENT_VER=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
+
             # Use auto version if provided
             if [ -n "$AUTO_VERSION" ]; then
                 VERSION_TYPE="$AUTO_VERSION"
@@ -425,46 +428,78 @@ case "${1:-status}" in
                 echo "║                   🏷️  Version Bump Selection                   ║"
                 echo "╚═══════════════════════════════════════════════════════════════╝"
                 echo ""
-                echo "📦 Current Version: $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')"
-                echo ""
-                echo "🎯 Choose the type of release based on your changes:"
-                echo ""
-                echo "   🐛 patch   - Bug fixes, security patches, minor improvements"
-                echo "              → $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/' | awk -F. '{print $1"."$2"."($3+1)}')"
-                echo ""
-                echo "   ✨ minor   - New features, significant improvements, API additions"
-                echo "              → $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/' | awk -F. '{print $1"."($2+1)".0"}')"
-                echo ""
-                echo "   🚨 major   - Breaking changes, API changes, major overhauls"
-                echo "              → $(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/' | awk -F. '{print ($1+1)".0.0"}')"
-                echo ""
-                echo "═══════════════════════════════════════════════════════════════"
+                echo "📦 Current Version: $CURRENT_VER"
                 echo ""
 
-                PS3="Choose version bump type: "
-                select VERSION_TYPE in "🐛 patch (bug fixes & improvements)" "✨ minor (new features & enhancements)" "🚨 major (breaking changes)" "❌ Cancel"; do
-                    case $VERSION_TYPE in
-                        "🐛 patch (bug fixes & improvements)")
-                            VERSION_TYPE="patch"
-                            echo "✅ Selected: patch version bump"
-                            break
-                            ;;
-                        "✨ minor (new features & enhancements)")
-                            VERSION_TYPE="minor"
-                            echo "✅ Selected: minor version bump"
-                            break
-                            ;;
-                        "🚨 major (breaking changes)")
-                            VERSION_TYPE="major"
-                            echo "✅ Selected: major version bump"
-                            break
-                            ;;
-                        "❌ Cancel")
-                            echo "❌ Publishing cancelled"
-                            exit 1
-                            ;;
-                    esac
-                done
+                # Check if this is an RC version
+                if [[ "$CURRENT_VER" =~ -rc\.([0-9]+)$ ]]; then
+                    RC_NUM="${BASH_REMATCH[1]}"
+                    STABLE_VER=$(echo "$CURRENT_VER" | sed 's/-rc\.[0-9]*$//')
+                    NEXT_RC_VER=$(echo "$CURRENT_VER" | sed "s/-rc\.$RC_NUM$/-rc.$((RC_NUM + 1))/")
+
+                    echo "🎯 RC Version Detected - Choose release path:"
+                    echo ""
+                    echo "   ✅ stable  - Promote to stable release"
+                    echo "              → $STABLE_VER"
+                    echo ""
+                    echo "   🧪 rc      - Continue with next release candidate"
+                    echo "              → $NEXT_RC_VER"
+                    echo ""
+                    echo "═══════════════════════════════════════════════════════════════"
+                    echo ""
+
+                    PS3="Choose release type: "
+                    select VERSION_TYPE in "✅ stable (promote to stable)" "🧪 rc (next release candidate)" "❌ Cancel"; do
+                        case $VERSION_TYPE in
+                            "✅ stable (promote to stable)")
+                                VERSION_TYPE="stable"
+                                echo "✅ Selected: Promote to stable ($STABLE_VER)"
+                                break
+                                ;;
+                            "🧪 rc (next release candidate)")
+                                VERSION_TYPE="rc"
+                                echo "✅ Selected: Continue RC ($NEXT_RC_VER)"
+                                break
+                                ;;
+                            "❌ Cancel")
+                                echo "❌ Publishing cancelled"
+                                exit 1
+                                ;;
+                        esac
+                    done
+                else
+                    # Normal version - show patch/minor only (major is too dangerous)
+                    echo "🎯 Choose the type of release based on your changes:"
+                    echo ""
+                    echo "   🐛 patch   - Bug fixes, security patches, minor improvements"
+                    echo "              → $(echo "$CURRENT_VER" | awk -F. '{print $1"."$2"."($3+1)}')"
+                    echo ""
+                    echo "   ✨ minor   - New features, significant improvements, API additions"
+                    echo "              → $(echo "$CURRENT_VER" | awk -F. '{print $1"."($2+1)".0"}')"
+                    echo ""
+                    echo "═══════════════════════════════════════════════════════════════"
+                    echo ""
+
+                    PS3="Choose version bump type: "
+                    select VERSION_TYPE in "🐛 patch (bug fixes & improvements)" "✨ minor (new features & enhancements)" "❌ Cancel"; do
+                        case $VERSION_TYPE in
+                            "🐛 patch (bug fixes & improvements)")
+                                VERSION_TYPE="patch"
+                                echo "✅ Selected: patch version bump"
+                                break
+                                ;;
+                            "✨ minor (new features & enhancements)")
+                                VERSION_TYPE="minor"
+                                echo "✅ Selected: minor version bump"
+                                break
+                                ;;
+                            "❌ Cancel")
+                                echo "❌ Publishing cancelled"
+                                exit 1
+                                ;;
+                        esac
+                    done
+                fi
             fi
         fi
         
