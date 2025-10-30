@@ -52,9 +52,10 @@ pub async fn install_notification_trigger(pool: &SqlitePool) -> Result<()> {
             JOIN tasks t ON t.id = ta.task_id
             WHERE ta.id = NEW.task_attempt_id
               AND NOT EXISTS (
-                  -- Prevent duplicate notifications for the same execution
+                  -- Prevent duplicate notifications for the same task attempt
                   SELECT 1 FROM forge_omni_notifications
-                  WHERE metadata LIKE '%' || NEW.id || '%'
+                  WHERE metadata LIKE '%' || lower(hex(NEW.task_attempt_id)) || '%'
+                    AND notification_type = 'execution_completed'
               );
         END;
         "#,
