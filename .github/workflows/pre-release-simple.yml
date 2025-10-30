@@ -141,13 +141,25 @@ jobs:
             git push --tags
           fi
 
+      - name: Determine release type
+        id: release_type
+        run: |
+          # Check if this is an RC version
+          if [[ "${{ steps.version.outputs.new_version }}" =~ -rc\. ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "release_name=Pre-release ${{ steps.version.outputs.new_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "release_name=Release ${{ steps.version.outputs.new_tag }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.new_tag }}
-          name: Release ${{ steps.version.outputs.new_tag }}
-          prerelease: false
-          make_latest: true
+          name: ${{ steps.release_type.outputs.release_name }}
+          prerelease: ${{ steps.release_type.outputs.is_prerelease }}
+          make_latest: ${{ steps.release_type.outputs.is_prerelease == 'false' }}
           generate_release_notes: true
           body: |
             🚀 **Release v${{ steps.version.outputs.new_version }}**
