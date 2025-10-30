@@ -9,9 +9,10 @@ on:
         default: "patch"
         type: choice
         options:
+          - stable
+          - rc
           - patch
           - minor
-          - major
 
 permissions:
   contents: write
@@ -54,30 +55,39 @@ jobs:
           current_version=$(node -p "require('./package.json').version")
           echo "Current local version: $current_version"
 
-          # Check if this is an RC version
-          if [[ "$current_version" =~ -rc\. ]]; then
-            # RC version - just strip suffix to get stable version
-            new_version=$(echo "$current_version" | sed 's/-rc\.[0-9]*$//')
-            echo "Stabilizing RC: $current_version → $new_version"
-          else
-            # Not RC - bump version based on type
-            case "${{ github.event.inputs.version_type }}" in
-              patch)
-                new_version=$(node -p "const semver = require('semver'); semver.inc('$current_version', 'patch')")
-                ;;
-              minor)
-                new_version=$(node -p "const semver = require('semver'); semver.inc('$current_version', 'minor')")
-                ;;
-              major)
-                new_version=$(node -p "const semver = require('semver'); semver.inc('$current_version', 'major')")
-                ;;
-              *)
-                echo "Invalid version type: ${{ github.event.inputs.version_type }}"
+          # Handle version bump based on input type
+          case "${{ github.event.inputs.version_type }}" in
+            stable)
+              # Stabilize RC: strip -rc.N suffix
+              if [[ "$current_version" =~ -rc\.[0-9]+$ ]]; then
+                new_version=$(echo "$current_version" | sed 's/-rc\.[0-9]*$//')
+                echo "Stabilizing RC: $current_version → $new_version"
+              else
+                echo "Error: 'stable' type requires RC version, but current is: $current_version"
                 exit 1
-                ;;
-            esac
-            echo "Version bump: $current_version → $new_version"
-          fi
+              fi
+              ;;
+            rc)
+              # Increment RC number: 0.5.1-rc.1 → 0.5.1-rc.2
+              if [[ "$current_version" =~ -rc\.([0-9]+)$ ]]; then
+                RC_NUM="${BASH_REMATCH[1]}"
+                new_version=$(echo "$current_version" | sed "s/-rc\.$RC_NUM$/-rc.$((RC_NUM + 1))/")
+                echo "Incrementing RC: $current_version → $new_version"
+              else
+                echo "Error: 'rc' type requires RC version, but current is: $current_version"
+                exit 1
+              fi
+              ;;
+            patch|minor|major)
+              # Normal semver bump
+              new_version=$(node -p "const semver = require('semver'); semver.inc('$current_version', '${{ github.event.inputs.version_type }}')")
+              echo "Version bump: $current_version → $new_version"
+              ;;
+            *)
+              echo "Invalid version type: ${{ github.event.inputs.version_type }}"
+              exit 1
+              ;;
+          esac
 
           # Update root package.json
           npm version "$new_version" --no-git-tag-version --allow-same-version
