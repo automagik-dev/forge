@@ -697,21 +697,26 @@ EOF
                             
                             # Get the new version/tag from the workflow output
                             echo ""
-                            echo "🔍 Finding created pre-release..."
-                            
-                            # Get the most recent pre-release
-                            RELEASE_INFO=$(gh release list --repo "$REPO" --limit 1 --json tagName,isPrerelease,name --jq '.[] | select(.isPrerelease == true)')
+                            echo "🔍 Finding created release..."
+
+                            # Get the most recent release (stable or pre-release)
+                            RELEASE_INFO=$(gh release list --repo "$REPO" --limit 1 --json tagName,isPrerelease,name --jq '.[0]')
                             NEW_TAG=$(echo "$RELEASE_INFO" | jq -r '.tagName')
-                            
-                            if [ -z "$NEW_TAG" ]; then
-                                echo "❌ Could not find the created pre-release"
+                            IS_PRERELEASE=$(echo "$RELEASE_INFO" | jq -r '.isPrerelease')
+
+                            if [ -z "$NEW_TAG" ] || [ "$NEW_TAG" = "null" ]; then
+                                echo "❌ Could not find the created release"
                                 exit 1
                             fi
-                            
-                            # Extract version from tag (remove timestamp suffix)
+
+                            # Extract version from tag (strip v prefix and optional timestamp suffix)
                             NEW_VERSION=$(echo "$NEW_TAG" | sed 's/^v//' | sed 's/-[0-9]*$//')
-                            
-                            echo "✅ Pre-release created: $NEW_TAG (version: $NEW_VERSION)"
+
+                            if [ "$IS_PRERELEASE" = "true" ]; then
+                                echo "✅ Pre-release created: $NEW_TAG (version: $NEW_VERSION)"
+                            else
+                                echo "✅ Stable release created: $NEW_TAG (version: $NEW_VERSION)"
+                            fi
 
                             # Spawn async release notes enhancer (runs during build, updates GitHub release)
                             echo ""
