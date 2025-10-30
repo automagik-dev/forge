@@ -24,15 +24,39 @@ export async function triggerWorkflow(workflow, inputs = {}) {
 
   exec(`gh workflow run ${workflow} --repo ${config.repo} ${inputArgs}`);
 
-  // Wait for workflow to start
-  await new Promise(resolve => setTimeout(resolve, 10000));
+  // Wait and retry to find the workflow run
+  log('blue', '⏳', 'Waiting for workflow to start...');
 
-  // Get the latest run ID
-  const runId = exec(
-    `gh run list --workflow="${workflow}" --repo ${config.repo} --limit 1 --json databaseId --jq '.[0].databaseId'`,
-    true
-  );
+  let runId = null;
+  let attempts = 0;
+  const maxAttempts = 12; // 1 minute total (5 seconds * 12)
 
+  while (attempts < maxAttempts && !runId) {
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    const result = exec(
+      `gh run list --workflow="${workflow}" --repo ${config.repo} --limit 1 --json databaseId --jq '.[0].databaseId'`,
+      true
+    );
+
+    if (result && result !== 'null') {
+      runId = result.trim();
+    }
+
+    attempts++;
+    if (!runId && attempts < maxAttempts) {
+      process.stdout.write('.');
+    }
+  }
+
+  if (!runId) {
+    console.log('');
+    log('yellow', '⚠️', 'Could not find workflow run. It may take longer to start.');
+    log('blue', '💡', 'Check manually with: gh run list --workflow=' + workflow);
+    return null;
+  }
+
+  console.log('');
   return runId;
 }
 

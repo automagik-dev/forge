@@ -44,7 +44,14 @@ async function main() {
     });
 
     if (!runId) {
-      throw new Error('Failed to trigger pre-release workflow');
+      log('yellow', '⚠️', 'Could not automatically track the workflow.');
+      log('blue', '💡', 'Monitor manually with:');
+      console.log('     gh run list --workflow=pre-release.yml');
+      console.log('     gh run watch');
+      console.log('');
+      log('cyan', '📋', 'The workflow was triggered successfully and is building in the background.');
+      console.log('');
+      process.exit(0);
     }
 
     log('green', '✅', `Workflow triggered: Run ID ${runId}`);
