@@ -373,14 +373,28 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
   // Load history when dropdown opens
   const handleLoadHistory = async () => {
-    if (!masterGenie?.task || !projectId) return;
+    if (!projectId) return;
 
     setIsLoadingHistory(true);
     try {
+      // Determine which task to load history for based on active tab
+      let taskId: string | undefined;
+
+      if (activeTab === 'master') {
+        taskId = masterGenie?.task?.id;
+      } else {
+        // Find the neuron for the active tab
+        const uppercaseTab = toUppercaseNeuronType(activeTab);
+        const neuron = neurons.find((n) => n.type === uppercaseTab);
+        taskId = neuron?.task?.id;
+      }
+
+      if (!taskId) return;
+
       // Fetch all attempts for this task
       const attempts = await subGenieApi.getTaskAttempts(projectId);
       const taskAttempts = attempts
-        .filter((a) => a.task_id === masterGenie.task.id)
+        .filter((a) => a.task_id === taskId)
         .sort((a, b) => b.created_at.localeCompare(a.created_at));
 
       setAllAttempts(taskAttempts);
@@ -394,12 +408,22 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
   // Switch to a different attempt
   const handleSwitchAttempt = (attemptId: string) => {
-    if (!masterGenie) return;
-
     const selectedAttempt = allAttempts.find((a) => a.id === attemptId);
     if (!selectedAttempt) return;
 
-    setMasterGenie({ ...masterGenie, attempt: selectedAttempt });
+    // Update the appropriate entity based on active tab
+    if (activeTab === 'master') {
+      if (!masterGenie) return;
+      setMasterGenie({ ...masterGenie, attempt: selectedAttempt });
+    } else {
+      // Update the neuron's attempt
+      const uppercaseTab = toUppercaseNeuronType(activeTab);
+      setNeurons((prev) =>
+        prev.map((n) =>
+          n.type === uppercaseTab ? { ...n, attempt: selectedAttempt } : n
+        )
+      );
+    }
   };
 
   // Format relative time for history display
