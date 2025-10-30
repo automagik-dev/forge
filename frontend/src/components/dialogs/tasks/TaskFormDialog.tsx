@@ -422,21 +422,21 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     const handlePrimarySubmit = useCallback(
       (e?: KeyboardEvent) => {
         e?.preventDefault();
-        if (isEditMode) {
-          handleSubmit();
-        } else {
-          handleCreateAndStart();
-        }
+        // Primary action is always "Create" (not "Create & Start")
+        handleSubmit();
       },
-      [isEditMode, handleSubmit, handleCreateAndStart]
+      [handleSubmit]
     );
 
     const handleAlternativeSubmit = useCallback(
       (e?: KeyboardEvent) => {
         e?.preventDefault();
-        handleSubmit();
+        // Alternative action is "Create & Start" in create mode
+        if (!isEditMode) {
+          handleCreateAndStart();
+        }
       },
-      [handleSubmit]
+      [isEditMode, handleCreateAndStart]
     );
 
     // Register keyboard shortcuts
@@ -489,10 +489,10 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                   className="mt-1.5"
                   disabled={isSubmitting || isSubmittingAndStart}
                   autoFocus
-                  onCommandEnter={
-                    isEditMode ? handleSubmit : handleCreateAndStart
+                  onCommandEnter={handleSubmit}
+                  onCommandShiftEnter={
+                    isEditMode ? undefined : handleCreateAndStart
                   }
-                  onCommandShiftEnter={handleSubmit}
                 />
               </div>
 
