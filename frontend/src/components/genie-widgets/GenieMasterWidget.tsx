@@ -916,39 +916,111 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
         ) : (
           <>
             {/* Render Master Genie tab */}
-            {activeTab === 'master' && (
-              <ClickedElementsProvider attempt={masterGenie.attempt}>
-                <ReviewProvider key={masterGenie.attempt.id}>
-                  <ExecutionProcessesProvider
-                    key={masterGenie.attempt.id}
-                    attemptId={masterGenie.attempt.id}
-                  >
-                    <EntriesProvider key={masterGenie.attempt.id}>
-                      <RetryUiProvider attemptId={masterGenie.attempt.id}>
-                        {/* Logs area */}
-                        <div className="flex-1 min-h-0 overflow-auto">
-                          <VirtualizedList
-                            key={masterGenie.attempt.id}
-                            attempt={masterGenie.attempt}
-                          />
-                        </div>
+            {activeTab === 'master' && (() => {
+              // Show empty state with chat input when master genie has no attempt
+              if (!masterGenie.attempt) {
+                return (
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex-1 flex flex-col items-center justify-center p-4">
+                      <Lamp className="h-12 w-12 mb-3 text-blue-500" />
+                      <p className="font-semibold text-lg text-center">{t('genie.title')}</p>
+                      <p className="text-sm mt-2 text-center text-muted-foreground">
+                        {t('genie.description')}
+                      </p>
+                      <p className="text-xs mt-2 text-center text-muted-foreground">
+                        {t('genie.messages.sendMessageToStart')}
+                      </p>
+                    </div>
 
-                        {/* Chat input area */}
-                        {taskWithStatus && (
-                          <div className="shrink-0 border-t">
-                            <TaskFollowUpSection
-                              task={taskWithStatus}
-                              selectedAttemptId={masterGenie.attempt.id}
-                              jumpToLogsTab={() => {}}
+                    {/* Chat input for starting master genie */}
+                    <div className="shrink-0 border-t p-4">
+                      <div className="flex gap-2">
+                        <Textarea
+                          value={initialMessage}
+                          onChange={(e) => setInitialMessage(e.target.value)}
+                          placeholder={t('genie.messages.enterMessage')}
+                          className="flex-1 min-h-[60px] resize-none"
+                          disabled={isSending}
+                        />
+                        <Button
+                          size="icon"
+                          onClick={async () => {
+                            if (!initialMessage.trim() || !currentBranch || !config) return;
+
+                            setIsSending(true);
+                            try {
+                              // Create attempt for master genie
+                              const attempt = await subGenieApi.createMasterGenieAttempt(
+                                masterGenie.task.id,
+                                currentBranch,
+                                {
+                                  executor: config.executor as BaseCodingAgent,
+                                  variant: null,
+                                }
+                              );
+
+                              // Send the initial message as follow-up
+                              await subGenieApi.sendFollowUp(attempt.id, initialMessage);
+
+                              // Update master genie with new attempt
+                              setMasterGenie({ task: masterGenie.task, attempt });
+
+                              setInitialMessage('');
+                            } catch (err) {
+                              console.error('Failed to start master genie:', err);
+                              setError(err instanceof Error ? err.message : 'Failed to start master genie');
+                            } finally {
+                              setIsSending(false);
+                            }
+                          }}
+                          disabled={!initialMessage.trim() || isSending}
+                        >
+                          {isSending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <ClickedElementsProvider attempt={masterGenie.attempt}>
+                  <ReviewProvider key={masterGenie.attempt.id}>
+                    <ExecutionProcessesProvider
+                      key={masterGenie.attempt.id}
+                      attemptId={masterGenie.attempt.id}
+                    >
+                      <EntriesProvider key={masterGenie.attempt.id}>
+                        <RetryUiProvider attemptId={masterGenie.attempt.id}>
+                          {/* Logs area */}
+                          <div className="flex-1 min-h-0 overflow-auto">
+                            <VirtualizedList
+                              key={masterGenie.attempt.id}
+                              attempt={masterGenie.attempt}
                             />
                           </div>
-                        )}
-                      </RetryUiProvider>
-                    </EntriesProvider>
-                  </ExecutionProcessesProvider>
-                </ReviewProvider>
-              </ClickedElementsProvider>
-            )}
+
+                          {/* Chat input area */}
+                          {taskWithStatus && (
+                            <div className="shrink-0 border-t">
+                              <TaskFollowUpSection
+                                task={taskWithStatus}
+                                selectedAttemptId={masterGenie.attempt.id}
+                                jumpToLogsTab={() => {}}
+                              />
+                            </div>
+                          )}
+                        </RetryUiProvider>
+                      </EntriesProvider>
+                    </ExecutionProcessesProvider>
+                  </ReviewProvider>
+                </ClickedElementsProvider>
+              );
+            })()}
 
             {/* Render Wish neuron tab */}
             {activeTab === 'wish' && (() => {
@@ -969,11 +1041,11 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                 );
               }
 
-              // Show empty state when neuron exists but has no attempt
+              // Show empty state with chat input when neuron exists but has no attempt
               if (!wishNeuron.attempt) {
                 return (
-                  <div className="flex-1 flex flex-col p-4">
-                    <div className="flex-1 flex flex-col items-center justify-center">
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex-1 flex flex-col items-center justify-center p-4">
                       <Lamp className="h-12 w-12 mb-3 text-purple-500" />
                       <p className="font-semibold text-lg text-center">{t('genie.neurons.wish.name')}</p>
                       <p className="text-sm mt-2 text-center text-muted-foreground">
@@ -982,6 +1054,61 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                       <p className="text-xs mt-2 text-center text-muted-foreground">
                         {t('genie.messages.sendMessageToStart')}
                       </p>
+                    </div>
+
+                    {/* Chat input for starting neuron */}
+                    <div className="shrink-0 border-t p-4">
+                      <div className="flex gap-2">
+                        <Textarea
+                          value={initialMessage}
+                          onChange={(e) => setInitialMessage(e.target.value)}
+                          placeholder={t('genie.messages.enterMessage')}
+                          className="flex-1 min-h-[60px] resize-none"
+                          disabled={isSending || creatingNeuron === 'wish'}
+                        />
+                        <Button
+                          size="icon"
+                          onClick={async () => {
+                            if (!initialMessage.trim() || !currentBranch || !config) return;
+
+                            setIsSending(true);
+                            try {
+                              // Create attempt for this neuron
+                              const attempt = await subGenieApi.createMasterGenieAttempt(
+                                wishNeuron.task.id,
+                                currentBranch,
+                                {
+                                  executor: config.executor as BaseCodingAgent,
+                                  variant: 'wish',
+                                }
+                              );
+
+                              // Send the initial message as follow-up
+                              await subGenieApi.sendFollowUp(attempt.id, initialMessage);
+
+                              // Refresh neurons to get the new attempt
+                              if (masterGenie?.attempt) {
+                                const updatedNeurons = await subGenieApi.getNeurons(masterGenie.attempt.id);
+                                setNeurons(updatedNeurons);
+                              }
+
+                              setInitialMessage('');
+                            } catch (err) {
+                              console.error('Failed to start wish neuron:', err);
+                              setError(err instanceof Error ? err.message : 'Failed to start wish neuron');
+                            } finally {
+                              setIsSending(false);
+                            }
+                          }}
+                          disabled={!initialMessage.trim() || isSending || creatingNeuron === 'wish'}
+                        >
+                          {isSending || creatingNeuron === 'wish' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -1047,11 +1174,11 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                 );
               }
 
-              // Show empty state when neuron exists but has no attempt
+              // Show empty state with chat input when neuron exists but has no attempt
               if (!forgeNeuron.attempt) {
                 return (
-                  <div className="flex-1 flex flex-col p-4">
-                    <div className="flex-1 flex flex-col items-center justify-center">
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex-1 flex flex-col items-center justify-center p-4">
                       <Lamp className="h-12 w-12 mb-3 text-orange-500" />
                       <p className="font-semibold text-lg text-center">{t('genie.neurons.forge.name')}</p>
                       <p className="text-sm mt-2 text-center text-muted-foreground">
@@ -1060,6 +1187,61 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                       <p className="text-xs mt-2 text-center text-muted-foreground">
                         {t('genie.messages.sendMessageToStart')}
                       </p>
+                    </div>
+
+                    {/* Chat input for starting neuron */}
+                    <div className="shrink-0 border-t p-4">
+                      <div className="flex gap-2">
+                        <Textarea
+                          value={initialMessage}
+                          onChange={(e) => setInitialMessage(e.target.value)}
+                          placeholder={t('genie.messages.enterMessage')}
+                          className="flex-1 min-h-[60px] resize-none"
+                          disabled={isSending || creatingNeuron === 'forge'}
+                        />
+                        <Button
+                          size="icon"
+                          onClick={async () => {
+                            if (!initialMessage.trim() || !currentBranch || !config) return;
+
+                            setIsSending(true);
+                            try {
+                              // Create attempt for this neuron
+                              const attempt = await subGenieApi.createMasterGenieAttempt(
+                                forgeNeuron.task.id,
+                                currentBranch,
+                                {
+                                  executor: config.executor as BaseCodingAgent,
+                                  variant: 'forge',
+                                }
+                              );
+
+                              // Send the initial message as follow-up
+                              await subGenieApi.sendFollowUp(attempt.id, initialMessage);
+
+                              // Refresh neurons to get the new attempt
+                              if (masterGenie?.attempt) {
+                                const updatedNeurons = await subGenieApi.getNeurons(masterGenie.attempt.id);
+                                setNeurons(updatedNeurons);
+                              }
+
+                              setInitialMessage('');
+                            } catch (err) {
+                              console.error('Failed to start forge neuron:', err);
+                              setError(err instanceof Error ? err.message : 'Failed to start forge neuron');
+                            } finally {
+                              setIsSending(false);
+                            }
+                          }}
+                          disabled={!initialMessage.trim() || isSending || creatingNeuron === 'forge'}
+                        >
+                          {isSending || creatingNeuron === 'forge' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 );
