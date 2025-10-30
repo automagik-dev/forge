@@ -171,8 +171,9 @@ export const useSubGenieWidget = (
         // Fetch all neurons for this Master Genie
         const neurons = await subGenieApi.getNeurons(masterAttemptId);
 
-        // Find the neuron matching this widget's type
-        const neuron = neurons.find((n) => n.type === genieId);
+        // Find the neuron matching this widget's type (convert to uppercase)
+        const uppercaseGenieId = genieId.toUpperCase() as 'WISH' | 'FORGE' | 'REVIEW';
+        const neuron = neurons.find((n) => n.type === uppercaseGenieId);
         setActiveNeuron(neuron || null);
 
         // If neuron exists, fetch its subtasks

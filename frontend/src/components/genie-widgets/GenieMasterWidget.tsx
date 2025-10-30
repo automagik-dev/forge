@@ -194,6 +194,10 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onClose]);
 
+  // Helper to convert lowercase neuron type to uppercase Neuron type
+  const toUppercaseNeuronType = (type: 'wish' | 'forge' | 'review'): 'WISH' | 'FORGE' | 'REVIEW' => {
+    return type.toUpperCase() as 'WISH' | 'FORGE' | 'REVIEW';
+  };
 
   // Ensure a neuron task exists (doesn't create attempt until user sends message)
   const ensureNeuron = async (
@@ -206,7 +210,8 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
     try {
       // Check if neuron already exists in state
-      const existingNeuron = neurons.find((n) => n.type === neuronType);
+      const uppercaseType = toUppercaseNeuronType(neuronType);
+      const existingNeuron = neurons.find((n) => n.type === uppercaseType);
       if (existingNeuron) {
         return existingNeuron;
       }
@@ -261,14 +266,14 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
       // Create neuron object (with or without attempt)
       const neuron: Neuron = {
-        type: neuronType,
+        type: uppercaseType,
         task: neuronTask,
         attempt: neuronAttempt,
       };
 
       // Update neurons state
       setNeurons((prev) => {
-        const filtered = prev.filter((n) => n.type !== neuronType);
+        const filtered = prev.filter((n) => n.type !== uppercaseType);
         return [...filtered, neuron];
       });
 
@@ -288,7 +293,8 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
     // If switching to a neuron tab, ensure it exists (but don't create attempt yet)
     if (tab !== 'master') {
-      const neuron = neurons.find((n) => n.type === tab);
+      const uppercaseTab = toUppercaseNeuronType(tab);
+      const neuron = neurons.find((n) => n.type === uppercaseTab);
       if (!neuron) {
         await ensureNeuron(tab);
       }
