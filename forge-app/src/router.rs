@@ -1218,9 +1218,9 @@ async fn get_master_genie_neurons(
         // Get latest attempt for this neuron task (fetch_all returns newest first)
         if let Ok(attempts) = TaskAttempt::fetch_all(pool, Some(task.id)).await {
             if let Some(attempt) = attempts.into_iter().next() {
-                // Parse executor to get variant (e.g., "claude_code:wish" → "wish")
+                // Parse executor to get variant (e.g., "CLAUDE_CODE:WISH" → "WISH")
                 let neuron_type = if let Some((_base, variant)) = attempt.executor.split_once(':') {
-                    variant.to_string()
+                    variant.to_string() // Keep uppercase to match profile variants
                 } else {
                     "unknown".to_string()
                 };

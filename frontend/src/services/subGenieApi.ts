@@ -4,7 +4,7 @@ import { Task, TaskAttempt, BaseCodingAgent } from 'shared/types';
  * Neuron type for Master Genie neural network
  */
 export interface Neuron {
-  type: 'wish' | 'forge' | 'review';
+  type: 'WISH' | 'FORGE' | 'REVIEW';
   task: Task;
   attempt?: TaskAttempt;
 }
@@ -23,9 +23,9 @@ export class SubGenieApiService {
    * Used when creating task attempts with specific variants.
    */
   private variantMap = {
-    wish: 'wish',
-    forge: 'forge',
-    review: 'review',
+    wish: 'WISH',
+    forge: 'FORGE',
+    review: 'REVIEW',
   } as const;
 
   /**
