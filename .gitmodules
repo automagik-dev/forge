@@ -1,8 +1,5 @@
-[submodule "upstream"]
-	path = upstream
-	url = https://github.com/namastexlabs/vibe-kanban.git
-	branch = namastex2
-[submodule "research/automagik-genie"]
-	path = research/automagik-genie
-	url = https://github.com/namastexlabs/automagik-genie.git
-	branch = main
+ [submodule "upstream"]
+      path = upstream
+      url = https://github.com/namastexlabs/vibe-kanban.git
+      branch = v0.0.113-namastex-3
+
