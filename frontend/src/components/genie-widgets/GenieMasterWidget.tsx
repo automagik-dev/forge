@@ -1056,10 +1056,12 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
                                 await subGenieApi.sendFollowUp(attempt.id, initialMessage);
 
-                                if (masterGenie?.attempt) {
-                                  const updatedNeurons = await subGenieApi.getNeurons(masterGenie.attempt.id);
-                                  setNeurons(updatedNeurons);
-                                }
+                                // Update neurons state with the new attempt
+                                setNeurons((prev) =>
+                                  prev.map((n) =>
+                                    n.type === 'WISH' ? { ...n, attempt } : n
+                                  )
+                                );
 
                                 setInitialMessage('');
                               } catch (err) {
@@ -1093,11 +1095,12 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                               // Send the initial message as follow-up
                               await subGenieApi.sendFollowUp(attempt.id, initialMessage);
 
-                              // Refresh neurons to get the new attempt
-                              if (masterGenie?.attempt) {
-                                const updatedNeurons = await subGenieApi.getNeurons(masterGenie.attempt.id);
-                                setNeurons(updatedNeurons);
-                              }
+                              // Update neurons state with the new attempt
+                              setNeurons((prev) =>
+                                prev.map((n) =>
+                                  n.type === 'WISH' ? { ...n, attempt } : n
+                                )
+                              );
 
                               setInitialMessage('');
                             } catch (err) {
@@ -1224,10 +1227,12 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
                                 await subGenieApi.sendFollowUp(attempt.id, initialMessage);
 
-                                if (masterGenie?.attempt) {
-                                  const updatedNeurons = await subGenieApi.getNeurons(masterGenie.attempt.id);
-                                  setNeurons(updatedNeurons);
-                                }
+                                // Update neurons state with the new attempt
+                                setNeurons((prev) =>
+                                  prev.map((n) =>
+                                    n.type === 'FORGE' ? { ...n, attempt } : n
+                                  )
+                                );
 
                                 setInitialMessage('');
                               } catch (err) {
@@ -1261,11 +1266,12 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                               // Send the initial message as follow-up
                               await subGenieApi.sendFollowUp(attempt.id, initialMessage);
 
-                              // Refresh neurons to get the new attempt
-                              if (masterGenie?.attempt) {
-                                const updatedNeurons = await subGenieApi.getNeurons(masterGenie.attempt.id);
-                                setNeurons(updatedNeurons);
-                              }
+                              // Update neurons state with the new attempt
+                              setNeurons((prev) =>
+                                prev.map((n) =>
+                                  n.type === 'FORGE' ? { ...n, attempt } : n
+                                )
+                              );
 
                               setInitialMessage('');
                             } catch (err) {
@@ -1392,10 +1398,12 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
                                 await subGenieApi.sendFollowUp(attempt.id, initialMessage);
 
-                                if (masterGenie?.attempt) {
-                                  const updatedNeurons = await subGenieApi.getNeurons(masterGenie.attempt.id);
-                                  setNeurons(updatedNeurons);
-                                }
+                                // Update neurons state with the new attempt
+                                setNeurons((prev) =>
+                                  prev.map((n) =>
+                                    n.type === 'REVIEW' ? { ...n, attempt } : n
+                                  )
+                                );
 
                                 setInitialMessage('');
                               } catch (err) {
@@ -1429,11 +1437,12 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                               // Send the initial message as follow-up
                               await subGenieApi.sendFollowUp(attempt.id, initialMessage);
 
-                              // Refresh neurons to get the new attempt
-                              if (masterGenie?.attempt) {
-                                const updatedNeurons = await subGenieApi.getNeurons(masterGenie.attempt.id);
-                                setNeurons(updatedNeurons);
-                              }
+                              // Update neurons state with the new attempt
+                              setNeurons((prev) =>
+                                prev.map((n) =>
+                                  n.type === 'REVIEW' ? { ...n, attempt } : n
+                                )
+                              );
 
                               setInitialMessage('');
                             } catch (err) {
