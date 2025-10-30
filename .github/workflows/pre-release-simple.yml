@@ -50,32 +50,54 @@ jobs:
       - name: Determine and update versions
         id: version
         run: |
-          # Get the latest version from npm registry
-          latest_npm_version=$(npm view automagik-forge version 2>/dev/null || echo "0.0.0")
-          echo "Latest npm version: $latest_npm_version"
+          # USE LOCAL VERSION AS SOURCE OF TRUTH
+          current_version=$(node -p "require('./package.json').version")
+          echo "Current local version: $current_version"
 
-          timestamp=$(date +%Y%m%d%H%M%S)
+          # Check if this is an RC version
+          if [[ "$current_version" =~ -rc\. ]]; then
+            # RC version - just strip suffix to get stable version
+            new_version=$(echo "$current_version" | sed 's/-rc\.[0-9]*$//')
+            echo "Stabilizing RC: $current_version → $new_version"
+          else
+            # Not RC - bump version based on type
+            case "${{ github.event.inputs.version_type }}" in
+              patch)
+                new_version=$(node -p "const semver = require('semver'); semver.inc('$current_version', 'patch')")
+                ;;
+              minor)
+                new_version=$(node -p "const semver = require('semver'); semver.inc('$current_version', 'minor')")
+                ;;
+              major)
+                new_version=$(node -p "const semver = require('semver'); semver.inc('$current_version', 'major')")
+                ;;
+              *)
+                echo "Invalid version type: ${{ github.event.inputs.version_type }}"
+                exit 1
+                ;;
+            esac
+            echo "Version bump: $current_version → $new_version"
+          fi
 
-          # For regular releases, use npm version and bump it
-          npm version $latest_npm_version --no-git-tag-version --allow-same-version
-          npm version ${{ github.event.inputs.version_type }} --no-git-tag-version
+          # Update root package.json
+          npm version "$new_version" --no-git-tag-version --allow-same-version
 
-          new_version=$(node -p "require('./package.json').version")
-          new_tag="v${new_version}-${timestamp}"
-
-          # Update npx-cli package.json to match
+          # Update npx-cli package.json
           cd npx-cli
-          npm version $new_version --no-git-tag-version --allow-same-version --no-workspaces-update
+          npm version "$new_version" --no-git-tag-version --allow-same-version --no-workspaces-update
           cd ..
-          
-          # Update frontend package.json to match
+
+          # Update frontend package.json
           cd frontend
           node -e "const fs = require('fs'); const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')); pkg.version = '$new_version'; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\\n');"
           cd ..
 
+          # Update all Cargo.toml files
           cargo set-version --workspace "$new_version"
 
-          echo "New version: $new_version"
+          # Create tag
+          new_tag="v${new_version}"
+
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
           echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
 
@@ -109,16 +131,15 @@ jobs:
             git push --tags
           fi
 
-      - name: Create GitHub Pre-Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.new_tag }}
-          name: Pre-release ${{ steps.version.outputs.new_tag }}
-          prerelease: true
+          name: Release ${{ steps.version.outputs.new_tag }}
+          prerelease: false
+          make_latest: true
           generate_release_notes: true
           body: |
-            🚀 **Pre-release v${{ steps.version.outputs.new_version }}**
-            
-            This pre-release is being built. Artifacts will be uploaded once the build completes.
-            
-            The build workflow will automatically start after this pre-release is created.
+            🚀 **Release v${{ steps.version.outputs.new_version }}**
+
+            Build in progress. Artifacts will be uploaded once the build completes.
