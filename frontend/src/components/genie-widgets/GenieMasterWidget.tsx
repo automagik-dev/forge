@@ -29,7 +29,6 @@ import { projectsApi } from '@/lib/api';
 import { subGenieApi, Neuron } from '@/services/subGenieApi';
 import type { Task, TaskAttempt, TaskWithAttemptStatus, ExecutorProfileId, GitBranch } from 'shared/types';
 import { BaseCodingAgent } from 'shared/types';
-import ExecutorProfileSelector from '@/components/settings/ExecutorProfileSelector';
 import BranchSelector from '@/components/tasks/BranchSelector';
 import VirtualizedList from '@/components/logs/VirtualizedList';
 import { TaskFollowUpSection } from '@/components/tasks/TaskFollowUpSection';
@@ -53,7 +52,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   const { t } = useTranslation('common');
   const [isHovering, setIsHovering] = useState(false);
   const { projectId } = useProject();
-  const { config, profiles } = useUserSystem();
+  const { config } = useUserSystem();
   const [masterGenie, setMasterGenie] = useState<{
     task: Task;
     attempt?: TaskAttempt;
@@ -1182,15 +1181,39 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            {profiles && selectedExecutor && (
-              <ExecutorProfileSelector
-                profiles={profiles}
-                selectedProfile={selectedExecutor}
-                onProfileSelect={setSelectedExecutor}
-                disabled={isChangingExecutor}
-                showLabel={true}
-                showVariantSelector={activeTab !== 'master'}
-              />
+            {selectedExecutor && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Executor
+                </label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                      disabled={isChangingExecutor}
+                    >
+                      {selectedExecutor.executor}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-full">
+                    {Object.values(BaseCodingAgent).map((executor) => (
+                      <DropdownMenuItem
+                        key={executor}
+                        onClick={() => setSelectedExecutor({
+                          executor,
+                          variant: activeTab === 'master' ? null : activeTab
+                        })}
+                      >
+                        {executor}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <p className="text-xs text-muted-foreground">
+                  Profile: <span className="font-medium">{activeTab === 'master' ? 'default' : activeTab}</span>
+                </p>
+              </div>
             )}
           </div>
           <DialogFooter>
