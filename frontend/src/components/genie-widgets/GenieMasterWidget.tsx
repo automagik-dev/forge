@@ -299,24 +299,10 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   const handleNewSession = async (title?: string) => {
     if (!masterGenie || !projectId) return;
 
-    // Get current branch and executor
-    const baseBranch = currentBranch || 'main';
-    const executorProfile = config?.executor_profile || {
-      executor: BaseCodingAgent.CLAUDE_CODE as BaseCodingAgent,
-      variant: activeTab === 'master' ? null : activeTab,
-    };
-
     setIsCreatingSession(true);
     setError(null);
 
     try {
-      // Create new attempt for current agent
-      const newAttempt = await subGenieApi.createMasterGenieAttempt(
-        masterGenie.task.id,
-        baseBranch,
-        executorProfile
-      );
-
       // If title was provided, update the task
       if (title && title.trim()) {
         try {
@@ -332,19 +318,19 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
             }),
           });
 
-          // Update local state with new title
+          // Clear attempt to start fresh session (don't create attempt until user sends message)
           setMasterGenie({
             task: { ...masterGenie.task, title: title.trim() },
-            attempt: newAttempt,
+            attempt: undefined,
           });
         } catch (titleErr) {
           console.warn('Failed to update task title:', titleErr);
-          // Still update with new attempt even if title update fails
-          setMasterGenie({ ...masterGenie, attempt: newAttempt });
+          // Still clear attempt even if title update fails
+          setMasterGenie({ task: masterGenie.task, attempt: undefined });
         }
       } else {
-        // Update state with new attempt
-        setMasterGenie({ ...masterGenie, attempt: newAttempt });
+        // Clear attempt to start fresh session (don't create attempt until user sends message)
+        setMasterGenie({ task: masterGenie.task, attempt: undefined });
       }
 
       setInitialMessage('');
@@ -477,21 +463,15 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
   // Change executor for current session
   const handleChangeExecutor = async () => {
-    if (!masterGenie?.attempt || !selectedExecutor || !projectId) return;
+    if (!selectedExecutor || !projectId) return;
 
     setIsChangingExecutor(true);
     setError(null);
 
     try {
-      // Create new attempt with new executor
-      const newAttempt = await subGenieApi.createMasterGenieAttempt(
-        masterGenie.task.id,
-        currentBranch || 'main',
-        selectedExecutor
-      );
-
-      // Update state with new attempt
-      setMasterGenie({ ...masterGenie, attempt: newAttempt });
+      // Just update the executor preference - don't create attempt yet
+      // The attempt will be created with this executor when user sends first message
+      setSelectedExecutorProfile(selectedExecutor);
       setShowExecutorDialog(false);
     } catch (err) {
       console.error('Failed to change executor:', err);
@@ -515,32 +495,15 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     setShowSettingsDialog(false);
   };
 
-  // Delete current session and create new one (transparent to user)
+  // Delete current session and clear state (don't create new attempt yet)
   const handleDeleteSession = async () => {
-    if (!masterGenie?.attempt || !projectId || allAttempts.length <= 1) return;
+    if (!masterGenie?.attempt || !projectId) return;
 
     setIsCreatingSession(true);
     setError(null);
 
     try {
-      // Step 1: Create new session first
-      const baseBranch = currentBranch || 'main';
-      const executorProfile = config?.executor_profile || {
-        executor: BaseCodingAgent.CLAUDE_CODE as BaseCodingAgent,
-        variant: activeTab === 'master' ? null : activeTab,
-      };
-
-      const newAttempt = await subGenieApi.createMasterGenieAttempt(
-        masterGenie.task.id,
-        baseBranch,
-        executorProfile
-      );
-
-      // Step 2: Switch to new attempt
-      setMasterGenie({ ...masterGenie, attempt: newAttempt });
-      setInitialMessage('');
-
-      // Step 3: Delete the old attempt's draft (optional cleanup)
+      // Delete the old attempt's draft
       try {
         await fetch(`/api/task-attempts/${masterGenie.attempt.id}/draft`, {
           method: 'DELETE',
@@ -550,7 +513,11 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
         // Not critical - continue anyway
       }
 
-      // Refresh history to show new attempt
+      // Clear attempt from state (don't create new attempt until user sends message)
+      setMasterGenie({ task: masterGenie.task, attempt: undefined });
+      setInitialMessage('');
+
+      // Refresh history
       await handleLoadHistory();
     } catch (err) {
       console.error('Failed to delete session:', err);
