@@ -954,7 +954,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                                 masterGenie.task.id,
                                 currentBranch,
                                 {
-                                  executor: config.executor as BaseCodingAgent,
+                                  executor: config.executor_profile.executor,
                                   variant: null,
                                 }
                               );
@@ -1078,7 +1078,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                                 wishNeuron.task.id,
                                 currentBranch,
                                 {
-                                  executor: config.executor as BaseCodingAgent,
+                                  executor: config.executor_profile.executor,
                                   variant: 'wish',
                                 }
                               );
@@ -1211,7 +1211,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
                                 forgeNeuron.task.id,
                                 currentBranch,
                                 {
-                                  executor: config.executor as BaseCodingAgent,
+                                  executor: config.executor_profile.executor,
                                   variant: 'forge',
                                 }
                               );
