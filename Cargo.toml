@@ -30,6 +30,11 @@ openssl-sys = { version = "0.9", features = ["vendored"] }
 ts-rs = { git = "https://github.com/xazukx/ts-rs.git", branch = "use-ts-enum", features = ["uuid-impl", "chrono-impl", "no-serde-warnings", "serde-json-impl"] }
 schemars = { version = "1.0.4", features = ["derive", "chrono04", "uuid1", "preserve_order"] }
 
+# Pin icu_decimal to 2.0.0 to avoid thread-safety bug in 2.1.1
+# https://github.com/unicode-org/icu4x/issues/XXXXX
+[patch.crates-io]
+icu_decimal = "=2.0.0"
+
 [profile.release]
 debug = true
 split-debuginfo = "packed"
