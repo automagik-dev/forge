@@ -913,8 +913,10 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
                             setIsSending(true);
                             try {
-                              // Use selected executor if set, otherwise config default
-                              const executorProfile = selectedExecutor || config.executor_profile;
+                              // Use selected executor if set, otherwise config default (with MASTER variant - uppercase!)
+                              const executorProfile = selectedExecutor ?
+                                { ...selectedExecutor, variant: 'MASTER' } :
+                                { ...config.executor_profile, variant: 'MASTER' };
 
                               // Create attempt for master genie
                               const attempt = await subGenieApi.createMasterGenieAttempt(
@@ -988,7 +990,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
             {/* Render Wish neuron tab */}
             {activeTab === 'wish' && (() => {
-              const wishNeuron = neurons.find((n) => n.type === 'wish');
+              const wishNeuron = neurons.find((n) => n.type === 'WISH');
 
               // Show loading state while neuron is being created
               if (!wishNeuron) {
@@ -1037,10 +1039,10 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
                             setIsSending(true);
                             try {
-                              // Use selected executor if set, otherwise config default (with wish variant)
+                              // Use selected executor if set, otherwise config default (with WISH variant - uppercase!)
                               const executorProfile = selectedExecutor ?
-                                { ...selectedExecutor, variant: 'wish' } :
-                                { ...config.executor_profile, variant: 'wish' };
+                                { ...selectedExecutor, variant: 'WISH' } :
+                                { ...config.executor_profile, variant: 'WISH' };
 
                               // Create attempt for this neuron
                               const attempt = await subGenieApi.createMasterGenieAttempt(
@@ -1123,7 +1125,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
             {/* Render Forge neuron tab */}
             {activeTab === 'forge' && (() => {
-              const forgeNeuron = neurons.find((n) => n.type === 'forge');
+              const forgeNeuron = neurons.find((n) => n.type === 'FORGE');
 
               // Show loading state while neuron is being created
               if (!forgeNeuron) {
@@ -1172,10 +1174,10 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
                             setIsSending(true);
                             try {
-                              // Use selected executor if set, otherwise config default (with forge variant)
+                              // Use selected executor if set, otherwise config default (with FORGE variant - uppercase!)
                               const executorProfile = selectedExecutor ?
-                                { ...selectedExecutor, variant: 'forge' } :
-                                { ...config.executor_profile, variant: 'forge' };
+                                { ...selectedExecutor, variant: 'FORGE' } :
+                                { ...config.executor_profile, variant: 'FORGE' };
 
                               // Create attempt for this neuron
                               const attempt = await subGenieApi.createMasterGenieAttempt(
@@ -1258,7 +1260,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
 
             {/* Render Review neuron tab */}
             {activeTab === 'review' && (() => {
-              const reviewNeuron = neurons.find((n) => n.type === 'review');
+              const reviewNeuron = neurons.find((n) => n.type === 'REVIEW');
 
               // Show loading state while neuron is being created
               if (!reviewNeuron) {
