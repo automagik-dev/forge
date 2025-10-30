@@ -471,7 +471,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     try {
       // Just update the executor preference - don't create attempt yet
       // The attempt will be created with this executor when user sends first message
-      setSelectedExecutorProfile(selectedExecutor);
+      // For now, just close the dialog - the selected executor is already in state
       setShowExecutorDialog(false);
     } catch (err) {
       console.error('Failed to change executor:', err);
