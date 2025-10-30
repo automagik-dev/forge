@@ -118,6 +118,17 @@
       "placeholder": "e.g., Fix login bug, Add dark mode, etc.",
       "create": "Create Session"
     },
+    "changeExecutor": {
+      "title": "Change AI Executor",
+      "description": "Select a different AI executor for this session. This will create a new session with the selected executor.",
+      "confirm": "Change Executor"
+    },
+    "settings": {
+      "title": "Session Settings",
+      "description": "Configure default settings for new sessions.",
+      "branchLabel": "Default Branch",
+      "save": "Save Settings"
+    },
     "aria": {
       "open": "Open Genie chat",
       "close": "Close"

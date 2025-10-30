@@ -118,6 +118,17 @@
       "placeholder": "ex: Corrigir bug de login, Adicionar modo escuro, etc.",
       "create": "Criar Sessão"
     },
+    "changeExecutor": {
+      "title": "Trocar Executor de IA",
+      "description": "Selecione um executor de IA diferente para esta sessão. Isso criará uma nova sessão com o executor selecionado.",
+      "confirm": "Trocar Executor"
+    },
+    "settings": {
+      "title": "Configurações da Sessão",
+      "description": "Configure as configurações padrão para novas sessões.",
+      "branchLabel": "Branch Padrão",
+      "save": "Salvar Configurações"
+    },
     "aria": {
       "open": "Abrir chat do Genie",
       "close": "Fechar"
