@@ -127,3 +127,169 @@ Runtime:
 - `FRONTEND_PORT`: Frontend dev port (default: 3000)
 - `HOST`: Backend host (default: 127.0.0.1)
 - `DISABLE_WORKTREE_ORPHAN_CLEANUP`: Debug flag for worktrees
+
+## Upstream Submodule Update Protocol
+
+**CRITICAL**: This is the LAW for updating the `upstream/` submodule (vibe-kanban fork).
+
+### Architecture
+```
+automagik-forge/                    ← Parent repo (THIS REPO)
+├── crates/executors/
+│   └── default_profiles.json      ← Namastex custom executor profiles (overrides upstream)
+├── frontend/                       ← Namastex custom frontend
+├── .gitmodules                     ← Points to release branch, NOT main
+└── upstream/                       ← Submodule: clean vibe-kanban fork
+    ├── crates/executors/
+    │   ├── default_mcp.json        ← Generic MCP config
+    │   └── default_profiles.json   ← Clean upstream defaults only
+    └── frontend/                   ← Upstream frontend (NOT used by parent)
+```
+
+### Release Branch Protocol
+
+**Rule**: Parent repo ALWAYS tracks a **release branch** in the upstream submodule, NEVER `main`.
+
+**Why**: Pinning to a release branch prevents breaking changes in upstream `main` from affecting the production parent app.
+
+### Step-by-Step Update Process
+
+#### 1. Consolidate Work in Upstream Main
+```bash
+cd upstream/
+git checkout main
+
+# Merge all feature branches/fixes to main
+git merge fix/some-feature
+git merge release/v0.0.113-namastex-4  # If needed
+git push origin main
+```
+
+#### 2. Create Namastex Release Branch
+```bash
+# From main, create new release branch
+git checkout -b release/v0.0.113-namastex-N  # Increment N
+
+# Push to origin
+git push -u origin release/v0.0.113-namastex-N
+```
+
+#### 3. Tag the Release
+```bash
+# Create annotated tag
+git tag -a v0.0.113-namastex-N -m "Release v0.0.113-namastex-N
+
+Features:
+- Feature 1
+- Feature 2
+
+Fixes:
+- Fix 1
+- Fix 2"
+
+# Push tag
+git push origin v0.0.113-namastex-N
+```
+
+#### 4. Update .gitmodules in Parent Repo
+```bash
+cd ..  # Back to parent automagik-forge/
+
+# Edit .gitmodules
+vim .gitmodules
+
+# Change branch to new release:
+[submodule "upstream"]
+    path = upstream
+    url = https://github.com/namastexlabs/vibe-kanban.git
+    branch = release/v0.0.113-namastex-N  # ← Update this
+```
+
+#### 5. Update Git Config and Submodule
+```bash
+# Update .git/config
+git config -f .git/config submodule.upstream.branch release/v0.0.113-namastex-N
+
+# Update submodule to track new release branch
+git submodule update --remote upstream
+
+# Verify upstream is on release branch
+cd upstream && git branch --show-current
+# Should output: release/v0.0.113-namastex-N
+```
+
+#### 6. Commit Parent Repo Changes
+```bash
+cd ..  # Back to parent
+
+# Stage changes
+git add .gitmodules upstream
+
+# Commit
+git commit -m "chore: update upstream to release/v0.0.113-namastex-N
+
+Updates upstream submodule from release/v0.0.113-namastex-(N-1) to v0.0.113-namastex-N.
+
+Changes:
+- List key changes from upstream
+- Feature additions
+- Bug fixes"
+
+# Push
+git push origin <current-branch>
+```
+
+#### 7. Merge to Parent Main (If Appropriate)
+```bash
+# Switch to main
+git checkout main
+
+# Merge feature branch with upstream updates
+git merge <current-branch>
+
+# Push
+git push origin main
+```
+
+### Common Mistakes to Avoid
+
+❌ **DO NOT** work on upstream `main` and forget to create release branch
+❌ **DO NOT** point `.gitmodules` to `main` branch
+❌ **DO NOT** commit changes to parent without updating `.gitmodules`
+❌ **DO NOT** push upstream changes without creating release branch first
+❌ **DO NOT** modify `upstream/crates/executors/default_profiles.json` (use parent's version)
+
+✅ **DO** always create release branch before updating parent
+✅ **DO** keep upstream clean and generic (no Namastex IP in upstream)
+✅ **DO** update `.gitmodules` and git config together
+✅ **DO** verify upstream is on release branch after update
+✅ **DO** keep Namastex customizations in parent repo
+
+### Quick Reference
+
+```bash
+# Check current upstream branch
+cd upstream && git branch --show-current
+
+# Check .gitmodules configuration
+cat .gitmodules
+
+# Check submodule status
+git submodule status
+
+# Force submodule to track configured branch
+git submodule update --remote upstream
+```
+
+### File Ownership
+
+**Parent Repo Owns:**
+- `crates/executors/default_profiles.json` - Namastex executor profiles (MASTER, WISH, FORGE, REVIEW)
+- `frontend/` - Namastex custom frontend
+- All Namastex branding and IP
+
+**Upstream Owns:**
+- Backend/API code
+- `crates/executors/default_mcp.json` - Generic MCP server config
+- `crates/executors/default_profiles.json` - Clean defaults only (no Namastex profiles)
+- Generic upstream frontend (not used by parent)

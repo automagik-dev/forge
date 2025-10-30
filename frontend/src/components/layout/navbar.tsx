@@ -25,8 +25,8 @@ import { openTaskForm } from '@/lib/openTaskForm';
 import { useProject } from '@/contexts/project-context';
 import { showProjectForm } from '@/lib/modals';
 import { useOpenProjectInEditor } from '@/hooks/useOpenProjectInEditor';
-import { OpenInIdeButton } from '@/components/ide/OpenInIdeButton';
 import { useDiscordOnlineCount } from '@/hooks/useDiscordOnlineCount';
+import { Breadcrumb } from '@/components/breadcrumb';
 
 const INTERNAL_NAV = [
   { label: 'Projects', icon: FolderOpen, to: '/projects' },
@@ -37,7 +37,7 @@ const EXTERNAL_LINKS = [
   {
     label: 'Docs',
     icon: BookOpen,
-    href: 'https://vibekanban.com/docs',
+    href: 'https://forge.automag.ik/',
   },
   {
     label: 'Support',
@@ -76,11 +76,8 @@ export function Navbar() {
   };
 
   const handleProjectSettings = async () => {
-    try {
+    if (project) {
       await showProjectForm({ project });
-      // Settings saved successfully - no additional action needed
-    } catch (error) {
-      // User cancelled - do nothing
     }
   };
 
@@ -133,7 +130,14 @@ export function Navbar() {
           <div className="flex-1 flex justify-end">
             {projectId && (
               <>
-                <OpenInIdeButton onClick={handleOpenInIDE} />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleOpenInIDE}
+                  aria-label="Open project in IDE"
+                >
+                  <FolderOpen className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -165,13 +169,13 @@ export function Navbar() {
 
               <DropdownMenuContent align="end">
                 {INTERNAL_NAV.map((item) => {
-                  const active = location.pathname.startsWith(item.to);
+                  const activeItem = location.pathname.startsWith(item.to);
                   const Icon = item.icon;
                   return (
                     <DropdownMenuItem
                       key={item.to}
                       asChild
-                      className={active ? 'bg-accent' : ''}
+                      className={activeItem ? 'bg-accent' : ''}
                     >
                       <Link to={item.to}>
                         <Icon className="mr-2 h-4 w-4" />
@@ -187,11 +191,7 @@ export function Navbar() {
                   const Icon = item.icon;
                   return (
                     <DropdownMenuItem key={item.href} asChild>
-                      <a
-                        href={item.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                      <a href={item.href} target="_blank" rel="noopener noreferrer">
                         <Icon className="mr-2 h-4 w-4" />
                         {item.label}
                       </a>
@@ -202,6 +202,8 @@ export function Navbar() {
             </DropdownMenu>
           </div>
         </div>
+        {/* Breadcrumb section - shows project context */}
+        <Breadcrumb />
       </div>
     </div>
   );

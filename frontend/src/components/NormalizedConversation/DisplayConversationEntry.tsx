@@ -29,6 +29,7 @@ import {
 import RawLogText from '../common/RawLogText';
 import UserMessage from './UserMessage';
 import PendingApprovalEntry from './PendingApprovalEntry';
+import { NextActionCard } from './NextActionCard';
 import { cn } from '@/lib/utils';
 import { useRetryUi } from '@/contexts/RetryUiContext';
 
@@ -38,6 +39,7 @@ type Props = {
   diffDeletable?: boolean;
   executionProcessId?: string;
   taskAttempt?: TaskAttempt;
+  task?: any;
 };
 
 type FileEditAction = Extract<ActionType, { action: 'file_edit' }>;
@@ -497,16 +499,14 @@ const ToolCallCard: React.FC<{
     <div className="inline-block w-full flex flex-col gap-4">
       <HeaderWrapper {...headerProps} className={headerClassName}>
         <span className=" min-w-0 flex items-center gap-1.5">
-          {entryType ? (
-            <span>
-              {getStatusIndicator(entryType)}
-              {getEntryIcon(entryType)}
-            </span>
-          ) : (
-            <span className="font-normal flex">{label}</span>
-          )}
-          {showInlineSummary && (
+          <span>
+            {entryType && getStatusIndicator(entryType)}
+            {entryType && getEntryIcon(entryType)}
+          </span>
+          {showInlineSummary ? (
             <span className="font-light">{inlineText}</span>
+          ) : (
+            <span className="font-normal">{label}</span>
           )}
         </span>
       </HeaderWrapper>
@@ -607,6 +607,7 @@ function DisplayConversationEntry({
   expansionKey,
   executionProcessId,
   taskAttempt,
+  task,
 }: Props) {
   const { t } = useTranslation('common');
   const isNormalizedEntry = (
@@ -779,6 +780,20 @@ function DisplayConversationEntry({
     return (
       <div className="px-4 py-2 text-sm">
         <LoadingCard />
+      </div>
+    );
+  }
+
+  if (entry.entry_type.type === 'next_action') {
+    return (
+      <div className="px-4 py-2 text-sm">
+        <NextActionCard
+          attemptId={taskAttempt?.id}
+          containerRef={taskAttempt?.container_ref}
+          failed={entry.entry_type.failed}
+          execution_processes={entry.entry_type.execution_processes}
+          task={task}
+        />
       </div>
     );
   }

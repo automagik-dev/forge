@@ -42,7 +42,7 @@ export type UpdateTag = { tag_name: string | null, content: string | null, };
 
 export type TagSearchParams = { search: string | null, };
 
-export type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelled";
+export type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelled" | "agent";
 
 export type Task = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, created_at: string, updated_at: string, };
 
@@ -106,9 +106,9 @@ export enum EditorType { VS_CODE = "VS_CODE", CURSOR = "CURSOR", WINDSURF = "WIN
 
 export type GitHubConfig = { pat: string | null, oauth_token: string | null, username: string | null, primary_email: string | null, default_pr_base: string | null, };
 
-export enum SoundFile { ABSTRACT_SOUND1 = "ABSTRACT_SOUND1", ABSTRACT_SOUND2 = "ABSTRACT_SOUND2", ABSTRACT_SOUND3 = "ABSTRACT_SOUND3", ABSTRACT_SOUND4 = "ABSTRACT_SOUND4", COW_MOOING = "COW_MOOING", PHONE_VIBRATION = "PHONE_VIBRATION", ROOSTER = "ROOSTER" }
+export enum SoundFile { ABSTRACT_SOUND1 = "ABSTRACT_SOUND1", ABSTRACT_SOUND2 = "ABSTRACT_SOUND2", ABSTRACT_SOUND3 = "ABSTRACT_SOUND3", ABSTRACT_SOUND4 = "ABSTRACT_SOUND4", GENIE_NOTIFY1 = "GENIE_NOTIFY1", GENIE_NOTIFY2 = "GENIE_NOTIFY2", PHONE_VIBRATION = "PHONE_VIBRATION" }
 
-export type UiLanguage = "BROWSER" | "EN" | "JA" | "ES" | "KO";
+export type UiLanguage = "BROWSER" | "EN" | "JA" | "ES" | "KO" | "PT_BR";
 
 export type ShowcaseState = { seen_features: Array<string>, };
 

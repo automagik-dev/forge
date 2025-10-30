@@ -1,16 +1,20 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n';
 import { Projects } from '@/pages/projects';
 import { ProjectTasks } from '@/pages/project-tasks';
+import { FullAttemptLogsPage } from '@/pages/full-attempt-logs';
+import ReleaseNotesPage from '@/pages/release-notes';
 import { NormalLayout } from '@/components/layout/NormalLayout';
+import { Footer } from '@/components/layout/Footer';
 import { usePostHog } from 'posthog-js/react';
 
 import {
   AgentSettings,
   GeneralSettings,
   McpSettings,
+  ProjectSettings,
   SettingsLayout,
 } from '@/pages/settings/';
 import {
@@ -19,9 +23,7 @@ import {
 } from '@/components/config-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { SearchProvider } from '@/contexts/search-context';
-import { KeyboardShortcutsProvider } from '@/contexts/keyboard-shortcuts-context';
 
-import { ShortcutsHelp } from '@/components/shortcuts-help';
 import { HotkeysProvider } from 'react-hotkeys-hook';
 
 import { ProjectProvider } from '@/contexts/project-context';
@@ -29,15 +31,16 @@ import { ThemeMode } from 'shared/types';
 import * as Sentry from '@sentry/react';
 import { Loader } from '@/components/ui/loader';
 
-import { AppWithStyleOverride } from '@/utils/style-override';
-import { WebviewContextMenu } from '@/vscode/ContextMenu';
 import NiceModal from '@ebay/nice-modal-react';
-import { OnboardingResult } from './components/dialogs/global/OnboardingDialog';
-import { ClickedElementsProvider } from './contexts/ClickedElementsProvider';
+import { OnboardingResult } from '@/components/dialogs/global/OnboardingDialog';
+import { ClickedElementsProvider } from '@/contexts/ClickedElementsProvider';
+import { GenieMasterWidget } from '@/components/genie-widgets/GenieMasterWidget';
+import { SubGenieProvider } from '@/context/SubGenieContext';
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 function AppContent() {
+  const [isGenieOpen, setIsGenieOpen] = useState(false);
   const { config, analyticsUserId, updateAndSaveConfig, loading } =
     useUserSystem();
   const posthog = usePostHog();
@@ -144,7 +147,7 @@ function AppContent() {
     return () => {
       cancelled = true;
     };
-  }, [config]);
+  }, [config, updateAndSaveConfig]);
 
   if (loading) {
     return (
@@ -157,49 +160,63 @@ function AppContent() {
   return (
     <I18nextProvider i18n={i18n}>
       <ThemeProvider initialTheme={config?.theme || ThemeMode.SYSTEM}>
-        <AppWithStyleOverride>
-          <SearchProvider>
-            <div className="h-screen flex flex-col bg-background">
-              <WebviewContextMenu />
+        <SearchProvider>
+          <div className="h-screen flex flex-col bg-background">
+            <SentryRoutes>
+              {/* VS Code full-page logs route (outside NormalLayout for minimal UI) */}
+              <Route
+                path="/projects/:projectId/tasks/:taskId/attempts/:attemptId/full"
+                element={<FullAttemptLogsPage />}
+              />
 
-              <SentryRoutes>
-                <Route element={<NormalLayout />}>
-                  <Route path="/" element={<Projects />} />
-                  <Route path="/projects" element={<Projects />} />
-                  <Route path="/projects/:projectId" element={<Projects />} />
-                  <Route
-                    path="/projects/:projectId/tasks"
-                    element={<ProjectTasks />}
-                  />
-                  <Route path="/settings/*" element={<SettingsLayout />}>
-                    <Route index element={<Navigate to="general" replace />} />
-                    <Route path="general" element={<GeneralSettings />} />
-                    <Route path="agents" element={<AgentSettings />} />
-                    <Route path="mcp" element={<McpSettings />} />
-                  </Route>
-                  <Route
-                    path="/mcp-servers"
-                    element={<Navigate to="/settings/mcp" replace />}
-                  />
-                  <Route
-                    path="/projects/:projectId/tasks/:taskId"
-                    element={<ProjectTasks />}
-                  />
-                  <Route
-                    path="/projects/:projectId/tasks/:taskId/attempts/:attemptId"
-                    element={<ProjectTasks />}
-                  />
+              <Route element={<NormalLayout />}>
+                <Route path="/" element={<Projects />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/projects/:projectId" element={<Projects />} />
+                <Route
+                  path="/projects/:projectId/tasks"
+                  element={<ProjectTasks />}
+                />
+                <Route path="/settings/*" element={<SettingsLayout />}>
+                  <Route index element={<Navigate to="general" replace />} />
+                  <Route path="general" element={<GeneralSettings />} />
+                  <Route path="projects" element={<ProjectSettings />} />
+                  <Route path="agents" element={<AgentSettings />} />
+                  <Route path="mcp" element={<McpSettings />} />
                 </Route>
-              </SentryRoutes>
-            </div>
-            <ShortcutsHelp />
-          </SearchProvider>
-        </AppWithStyleOverride>
+                <Route
+                  path="/mcp-servers"
+                  element={<Navigate to="/settings/mcp" replace />}
+                />
+                <Route
+                  path="/release-notes"
+                  element={<ReleaseNotesPage />}
+                />
+                <Route
+                  path="/projects/:projectId/tasks/:taskId"
+                  element={<ProjectTasks />}
+                />
+                <Route
+                  path="/projects/:projectId/tasks/:taskId/attempts/:attemptId"
+                  element={<ProjectTasks />}
+                />
+              </Route>
+            </SentryRoutes>
+            <Footer />
+          </div>
+          <GenieMasterWidget
+            isOpen={isGenieOpen}
+            onToggle={() => setIsGenieOpen(!isGenieOpen)}
+            onClose={() => setIsGenieOpen(false)}
+          />
+        </SearchProvider>
       </ThemeProvider>
     </I18nextProvider>
   );
 }
 
+// FORGE CUSTOMIZATION: Root provider stack with SubGenie context for Genie Widgets.
+// SubGenieProvider wraps NiceModal so Genie chat widgets can show modals.
 function App() {
   return (
     <BrowserRouter>
@@ -207,11 +224,11 @@ function App() {
         <ClickedElementsProvider>
           <ProjectProvider>
             <HotkeysProvider initiallyActiveScopes={['*', 'global', 'kanban']}>
-              <KeyboardShortcutsProvider>
+              <SubGenieProvider>
                 <NiceModal.Provider>
                   <AppContent />
                 </NiceModal.Provider>
-              </KeyboardShortcutsProvider>
+              </SubGenieProvider>
             </HotkeysProvider>
           </ProjectProvider>
         </ClickedElementsProvider>
