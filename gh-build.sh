@@ -262,23 +262,32 @@ case "${1:-status}" in
                         BUILD_CONCLUSION=$(echo "$BUILD_RUN" | jq -r '.conclusion')
 
                         echo "📦 Build workflow detected: Run ID $BUILD_ID"
+                        echo "   Status: $BUILD_STATUS"
 
-                        if [ "$BUILD_STATUS" = "in_progress" ] || [ "$BUILD_STATUS" = "queued" ]; then
-                            echo "⏳ Build is running, monitoring..."
-                            ./gh-build.sh monitor "$BUILD_ID"
-                        elif [ "$BUILD_CONCLUSION" = "failure" ]; then
-                            echo "❌ Build workflow failed"
-                            echo "🔗 View logs: https://github.com/$REPO/actions/runs/$BUILD_ID"
-                            echo ""
-                            read -p "Retry the build workflow? (y/n): " RETRY_BUILD
-                            if [ "$RETRY_BUILD" = "y" ] || [ "$RETRY_BUILD" = "Y" ]; then
-                                echo "🔄 Retrying build workflow..."
-                                gh run rerun "$BUILD_ID" --repo "$REPO" --failed
-                                sleep 5
-                                NEW_BUILD=$(gh run list --workflow="build-all-platforms.yml" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')
-                                ./gh-build.sh monitor "$NEW_BUILD"
+                        # Always monitor the build, regardless of initial status
+                        if [ "$BUILD_STATUS" = "completed" ]; then
+                            if [ "$BUILD_CONCLUSION" = "failure" ]; then
+                                echo "❌ Build workflow failed"
+                                echo "🔗 View logs: https://github.com/$REPO/actions/runs/$BUILD_ID"
+                                echo ""
+                                read -p "Retry the build workflow? (y/n): " RETRY_BUILD
+                                if [ "$RETRY_BUILD" = "y" ] || [ "$RETRY_BUILD" = "Y" ]; then
+                                    echo "🔄 Retrying build workflow..."
+                                    gh run rerun "$BUILD_ID" --repo "$REPO" --failed
+                                    sleep 5
+                                    NEW_BUILD=$(gh run list --workflow="build-all-platforms.yml" --repo "$REPO" --limit 1 --json databaseId --jq '.[0].databaseId')
+                                    ./gh-build.sh monitor "$NEW_BUILD"
+                                fi
+                            elif [ "$BUILD_CONCLUSION" = "success" ]; then
+                                echo "✅ Build already completed successfully"
                             fi
+                        else
+                            # Build is queued, pending, or in_progress - monitor it
+                            echo "⏳ Build is $BUILD_STATUS, monitoring..."
+                            ./gh-build.sh monitor "$BUILD_ID"
                         fi
+                    else
+                        echo "⚠️  No build workflow detected"
                     fi
                     exit 0
                     ;;
