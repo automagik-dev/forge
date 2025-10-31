@@ -48,6 +48,9 @@ jobs:
             cargo install cargo-edit
           fi
 
+      - name: Install semver
+        run: npm install -g semver
+
       - name: Determine and update versions
         id: version
         run: |
