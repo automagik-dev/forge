@@ -5,12 +5,15 @@
 
 use axum::{
     Json, Router,
-    extract::{FromRef, Path, Query, State, ws::{WebSocket, WebSocketUpgrade}},
+    extract::{
+        FromRef, Path, Query, State,
+        ws::{WebSocket, WebSocketUpgrade},
+    },
     http::{HeaderValue, Method, StatusCode, header},
     response::{Html, IntoResponse, Response},
     routing::{get, post},
 };
-use futures_util::{StreamExt, SinkExt, TryStreamExt};
+use futures_util::{SinkExt, StreamExt, TryStreamExt};
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -26,7 +29,7 @@ use db::models::{
 use deployment::Deployment;
 use forge_config::ForgeProjectSettings;
 use server::routes::{
-    self as upstream, auth, config as upstream_config, containers, drafts, events,
+    self as upstream, approvals, auth, config as upstream_config, containers, drafts, events,
     execution_processes, filesystem, images, projects, task_attempts, tasks,
 };
 use server::{DeploymentImpl, error::ApiError, routes::tasks::CreateAndStartTaskRequest};
@@ -128,7 +131,10 @@ fn forge_api_routes() -> Router<ForgeAppState> {
             "/api/forge/neurons/{neuron_attempt_id}/subtasks",
             get(get_neuron_subtasks),
         )
-        .route("/api/forge/agents", get(get_forge_agents).post(create_forge_agent))
+        .route(
+            "/api/forge/agents",
+            get(get_forge_agents).post(create_forge_agent),
+        )
     // Branch-templates extension removed - using simple forge/ prefix
 }
 
@@ -150,13 +156,18 @@ async fn forge_create_task(
     Json(payload): Json<ForgeCreateTask>,
 ) -> Result<Json<ApiResponse<Task>>, ApiError> {
     let task_id = Uuid::new_v4();
-    let task = Task::create(&deployment.db().pool, &db::models::task::CreateTask {
-        project_id: payload.project_id,
-        title: payload.title,
-        description: payload.description,
-        parent_task_attempt: payload.parent_task_attempt,
-        image_ids: payload.image_ids.clone(),
-    }, task_id).await?;
+    let task = Task::create(
+        &deployment.db().pool,
+        &db::models::task::CreateTask {
+            project_id: payload.project_id,
+            title: payload.title,
+            description: payload.description,
+            parent_task_attempt: payload.parent_task_attempt,
+            image_ids: payload.image_ids.clone(),
+        },
+        task_id,
+    )
+    .await?;
 
     if let Some(image_ids) = &payload.image_ids {
         TaskImage::associate_many(&deployment.db().pool, task.id, image_ids).await?;
@@ -210,7 +221,7 @@ async fn forge_create_task_attempt(
     if let Some(variant) = &executor_profile_id.variant {
         let executor_with_variant = format!("{}:{}", executor_profile_id.executor, variant);
         sqlx::query(
-            "UPDATE task_attempts SET executor = ?, updated_at = datetime('now') WHERE id = ?"
+            "UPDATE task_attempts SET executor = ?, updated_at = datetime('now') WHERE id = ?",
         )
         .bind(&executor_with_variant)
         .bind(attempt_id)
@@ -285,7 +296,7 @@ async fn forge_create_task_and_start(
     if let Some(variant) = &payload.executor_profile_id.variant {
         let executor_with_variant = format!("{}:{}", payload.executor_profile_id.executor, variant);
         sqlx::query(
-            "UPDATE task_attempts SET executor = ?, updated_at = datetime('now') WHERE id = ?"
+            "UPDATE task_attempts SET executor = ?, updated_at = datetime('now') WHERE id = ?",
         )
         .bind(&executor_with_variant)
         .bind(task_attempt_id)
@@ -359,6 +370,7 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     router = router.merge(filesystem::router().with_state::<ForgeAppState>(dep_clone.clone()));
     router =
         router.merge(events::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+    router = router.merge(approvals::router().with_state::<ForgeAppState>(dep_clone.clone()));
 
     router.nest(
         "/images",
@@ -449,9 +461,9 @@ WHERE t.project_id = ?
 ORDER BY t.created_at DESC"#;
 
     let rows = sqlx::query(query_str)
-    .bind(params.project_id)
-    .fetch_all(pool)
-    .await?;
+        .bind(params.project_id)
+        .fetch_all(pool)
+        .await?;
 
     let mut items: Vec<TaskWithAttemptStatus> = Vec::with_capacity(rows.len());
     for row in rows {
@@ -715,8 +727,7 @@ fn forge_config_router() -> Router<DeploymentImpl> {
 
     // Use upstream router and layer on increased body limit globally for config routes
     // This affects all config routes, but /profiles is the only one with large payloads
-    upstream_config::router()
-        .layer(DefaultBodyLimit::max(20 * 1024 * 1024)) // 20MB limit for 37 agent profiles
+    upstream_config::router().layer(DefaultBodyLimit::max(20 * 1024 * 1024)) // 20MB limit for 37 agent profiles
 }
 
 /// Build images router with forge override for increased body limit on uploads
@@ -725,8 +736,7 @@ fn forge_images_router() -> Router<DeploymentImpl> {
 
     // Use upstream router and layer on increased body limit globally for image routes
     // Upstream has 20MB limits on upload routes, we increase to 100MB for large images
-    images::routes()
-        .layer(DefaultBodyLimit::max(100 * 1024 * 1024)) // 100MB limit for image uploads
+    images::routes().layer(DefaultBodyLimit::max(100 * 1024 * 1024)) // 100MB limit for image uploads
 }
 
 async fn frontend_handler(uri: axum::http::Uri) -> Response {
@@ -928,15 +938,19 @@ async fn list_routes() -> Json<Value> {
             "containers": [
                 "GET /api/containers",
                 "GET /api/containers/{id}"
+            ],
+            "approvals": [
+                "POST /api/approvals/create",
+                "GET /api/approvals/{id}/status",
+                "POST /api/approvals/{id}/respond",
+                "GET /api/approvals/pending"
             ]
         },
         "note": "This is a simple route listing. Most endpoints require GitHub OAuth authentication via /api/auth/github/device"
     }))
 }
 
-async fn get_auth_required(
-    State(state): State<ForgeAppState>,
-) -> Json<Value> {
+async fn get_auth_required(State(state): State<ForgeAppState>) -> Json<Value> {
     Json(json!({
         "auth_required": state.auth_required
     }))
@@ -1284,19 +1298,17 @@ async fn get_forge_agents(
 
     let agents = if let Some(agent_type) = params.agent_type {
         sqlx::query_as::<_, ForgeAgent>(
-            "SELECT * FROM forge_agents WHERE project_id = ? AND agent_type = ?"
+            "SELECT * FROM forge_agents WHERE project_id = ? AND agent_type = ?",
         )
         .bind(params.project_id)
         .bind(agent_type)
         .fetch_all(pool)
         .await?
     } else {
-        sqlx::query_as::<_, ForgeAgent>(
-            "SELECT * FROM forge_agents WHERE project_id = ?"
-        )
-        .bind(params.project_id)
-        .fetch_all(pool)
-        .await?
+        sqlx::query_as::<_, ForgeAgent>("SELECT * FROM forge_agents WHERE project_id = ?")
+            .bind(params.project_id)
+            .fetch_all(pool)
+            .await?
     };
 
     Ok(Json(ApiResponse::success(agents)))
@@ -1322,7 +1334,7 @@ async fn create_forge_agent(
 
     sqlx::query(
         r#"INSERT INTO tasks (id, project_id, title, description, status, created_at, updated_at)
-           VALUES (?, ?, ?, NULL, 'agent', datetime('now'), datetime('now'))"#
+           VALUES (?, ?, ?, NULL, 'agent', datetime('now'), datetime('now'))"#,
     )
     .bind(task_id)
     .bind(payload.project_id)
@@ -1333,7 +1345,7 @@ async fn create_forge_agent(
     // Create the agent entry
     sqlx::query(
         r#"INSERT INTO forge_agents (id, project_id, agent_type, task_id, created_at, updated_at)
-           VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))"#
+           VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))"#,
     )
     .bind(agent_id)
     .bind(payload.project_id)
@@ -1343,12 +1355,10 @@ async fn create_forge_agent(
     .await?;
 
     // Fetch the created agent
-    let agent: ForgeAgent = sqlx::query_as(
-        "SELECT * FROM forge_agents WHERE id = ?"
-    )
-    .bind(agent_id)
-    .fetch_one(pool)
-    .await?;
+    let agent: ForgeAgent = sqlx::query_as("SELECT * FROM forge_agents WHERE id = ?")
+        .bind(agent_id)
+        .fetch_one(pool)
+        .await?;
 
     Ok(Json(ApiResponse::success(agent)))
 }
