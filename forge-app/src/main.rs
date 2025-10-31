@@ -10,6 +10,68 @@ use utils::browser::open_browser;
 mod router;
 mod services;
 
+/// Find which process is using a given port
+#[cfg(target_os = "linux")]
+fn find_process_using_port(port: u16) -> Option<String> {
+    use std::process::Command;
+
+    // Try using ss command first (more modern)
+    if let Ok(output) = Command::new("ss")
+        .args(["-tulpn"])
+        .output()
+    {
+        if let Ok(stdout) = String::from_utf8(output.stdout) {
+            for line in stdout.lines() {
+                if line.contains(&format!(":{}", port)) {
+                    // Extract PID from ss output (format: users:(("process",pid=12345,fd=3)))
+                    if let Some(pid_start) = line.find("pid=") {
+                        let pid_str = &line[pid_start + 4..];
+                        if let Some(pid_end) = pid_str.find(',') {
+                            let pid = &pid_str[..pid_end];
+                            return Some(format!("Process with PID {} is using port {}", pid, port));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Fallback to lsof if ss didn't work
+    if let Ok(output) = Command::new("lsof")
+        .args(["-i", &format!(":{}", port), "-t"])
+        .output()
+    {
+        if let Ok(pid_str) = String::from_utf8(output.stdout) {
+            let pid = pid_str.trim();
+            if !pid.is_empty() {
+                return Some(format!("Process with PID {} is using port {}", pid, port));
+            }
+        }
+    }
+
+    None
+}
+
+#[cfg(not(target_os = "linux"))]
+fn find_process_using_port(port: u16) -> Option<String> {
+    use std::process::Command;
+
+    // Try lsof on macOS and other Unix-like systems
+    if let Ok(output) = Command::new("lsof")
+        .args(["-i", &format!(":{}", port), "-t"])
+        .output()
+    {
+        if let Ok(pid_str) = String::from_utf8(output.stdout) {
+            let pid = pid_str.trim();
+            if !pid.is_empty() {
+                return Some(format!("Process with PID {} is using port {}", pid, port));
+            }
+        }
+    }
+
+    None
+}
+
 fn resolve_bind_address() -> SocketAddr {
     let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
 
@@ -49,7 +111,32 @@ async fn main() -> anyhow::Result<()> {
     let app = router::create_router(services, auth_required);
 
     let requested_addr = resolve_bind_address();
-    let listener = tokio::net::TcpListener::bind(requested_addr).await?;
+    let listener = match tokio::net::TcpListener::bind(requested_addr).await {
+        Ok(listener) => listener,
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::AddrInUse {
+                let port = requested_addr.port();
+                let error_msg = if let Some(process_info) = find_process_using_port(port) {
+                    format!(
+                        "Failed to bind to {}:{}\n{}\n\nPlease stop the process or use a different port by setting the PORT or BACKEND_PORT environment variable.",
+                        requested_addr.ip(),
+                        port,
+                        process_info
+                    )
+                } else {
+                    format!(
+                        "Failed to bind to {}:{}\nPort {} is already in use by another process.\n\nPlease stop the process or use a different port by setting the PORT or BACKEND_PORT environment variable.",
+                        requested_addr.ip(),
+                        port,
+                        port
+                    )
+                };
+                tracing::error!("{}", error_msg);
+                return Err(anyhow::anyhow!("{}", error_msg));
+            }
+            return Err(e.into());
+        }
+    };
     let actual_addr = listener.local_addr()?;
     tracing::info!("Forge app listening on {}", actual_addr);
 
