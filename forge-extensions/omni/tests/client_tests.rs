@@ -102,7 +102,10 @@ async fn test_send_text_with_api_key_header() {
         .await;
 
     // Create client with API key
-    let client = OmniClient::new(mock_server.uri(), Some("test-api-key-fake-value".to_string()));
+    let client = OmniClient::new(
+        mock_server.uri(),
+        Some("test-api-key-fake-value".to_string()),
+    );
 
     let request = SendTextRequest {
         phone_number: Some("9876543210".to_string()),
@@ -187,7 +190,10 @@ async fn test_send_text_http_error_5xx() {
 #[tokio::test]
 async fn test_send_text_connection_failure() {
     // Use an invalid URL that will fail to connect
-    let client = OmniClient::new("http://invalid-host-that-does-not-exist:9999".to_string(), None);
+    let client = OmniClient::new(
+        "http://invalid-host-that-does-not-exist:9999".to_string(),
+        None,
+    );
 
     let request = SendTextRequest {
         phone_number: Some("1234567890".to_string()),
@@ -277,7 +283,10 @@ async fn test_list_instances_with_api_key() {
         .mount(&mock_server)
         .await;
 
-    let client = OmniClient::new(mock_server.uri(), Some("fake-key-for-testing-only".to_string()));
+    let client = OmniClient::new(
+        mock_server.uri(),
+        Some("fake-key-for-testing-only".to_string()),
+    );
 
     let instances = client
         .list_instances()

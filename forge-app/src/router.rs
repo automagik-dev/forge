@@ -25,7 +25,7 @@ use db::models::{
 use deployment::Deployment;
 use forge_config::ForgeProjectSettings;
 use server::routes::{
-    self as upstream, auth, config as upstream_config, containers, drafts, events,
+    self as upstream, approvals, auth, config as upstream_config, containers, drafts, events,
     execution_processes, filesystem, images, projects, task_attempts, task_templates, tasks,
 };
 use server::{DeploymentImpl, error::ApiError, routes::tasks::CreateAndStartTaskRequest};
@@ -189,7 +189,7 @@ async fn forge_create_task_attempt(
     if let Some(variant) = &executor_profile_id.variant {
         let executor_with_variant = format!("{}:{}", executor_profile_id.executor, variant);
         sqlx::query(
-            "UPDATE task_attempts SET executor = ?, updated_at = datetime('now') WHERE id = ?"
+            "UPDATE task_attempts SET executor = ?, updated_at = datetime('now') WHERE id = ?",
         )
         .bind(&executor_with_variant)
         .bind(attempt_id)
@@ -264,7 +264,7 @@ async fn forge_create_task_and_start(
     if let Some(variant) = &payload.executor_profile_id.variant {
         let executor_with_variant = format!("{}:{}", payload.executor_profile_id.executor, variant);
         sqlx::query(
-            "UPDATE task_attempts SET executor = ?, updated_at = datetime('now') WHERE id = ?"
+            "UPDATE task_attempts SET executor = ?, updated_at = datetime('now') WHERE id = ?",
         )
         .bind(&executor_with_variant)
         .bind(task_attempt_id)
@@ -339,6 +339,7 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     router = router.merge(filesystem::router().with_state::<ForgeAppState>(dep_clone.clone()));
     router =
         router.merge(events::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+    router = router.merge(approvals::router().with_state::<ForgeAppState>(dep_clone.clone()));
 
     router.nest(
         "/images",
@@ -386,8 +387,8 @@ async fn forge_get_tasks(
 
     // Build status filter based on query parameter
     let (status_condition, query_status) = match params.status.as_deref() {
-        Some("agent") => ("t.status = ?", "agent"),         // Widget requesting agent tasks
-        _ => ("t.status <> ?", "agent"),                    // Default: exclude agent tasks
+        Some("agent") => ("t.status = ?", "agent"), // Widget requesting agent tasks
+        _ => ("t.status <> ?", "agent"),            // Default: exclude agent tasks
     };
 
     let query_str = format!(
@@ -438,10 +439,10 @@ ORDER BY t.created_at DESC"#,
     );
 
     let rows = sqlx::query(&query_str)
-    .bind(params.project_id)
-    .bind(query_status)
-    .fetch_all(pool)
-    .await?;
+        .bind(params.project_id)
+        .bind(query_status)
+        .fetch_all(pool)
+        .await?;
 
     let mut items: Vec<TaskWithAttemptStatus> = Vec::with_capacity(rows.len());
     for row in rows {
@@ -738,15 +739,19 @@ async fn list_routes() -> Json<Value> {
             "containers": [
                 "GET /api/containers",
                 "GET /api/containers/{id}"
+            ],
+            "approvals": [
+                "POST /api/approvals/create",
+                "GET /api/approvals/{id}/status",
+                "POST /api/approvals/{id}/respond",
+                "GET /api/approvals/pending"
             ]
         },
         "note": "This is a simple route listing. Most endpoints require GitHub OAuth authentication via /api/auth/github/device"
     }))
 }
 
-async fn get_auth_required(
-    State(state): State<ForgeAppState>,
-) -> Json<Value> {
+async fn get_auth_required(State(state): State<ForgeAppState>) -> Json<Value> {
     Json(json!({
         "auth_required": state.auth_required
     }))

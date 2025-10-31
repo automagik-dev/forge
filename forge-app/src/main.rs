@@ -3,8 +3,8 @@
 //! Main application binary that composes upstream services with forge extensions.
 //! Provides unified API access to both upstream functionality and forge-specific features.
 
-use std::net::{IpAddr, SocketAddr};
 use std::env;
+use std::net::{IpAddr, SocketAddr};
 use tokio::signal;
 use utils::browser::open_browser;
 mod router;
