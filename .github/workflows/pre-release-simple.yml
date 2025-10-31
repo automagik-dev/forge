@@ -48,9 +48,6 @@ jobs:
             cargo install cargo-edit
           fi
 
-      - name: Install semver
-        run: npm install -g semver
-
       - name: Determine and update versions
         id: version
         run: |
@@ -82,8 +79,8 @@ jobs:
               fi
               ;;
             patch|minor|major)
-              # Normal semver bump
-              new_version=$(node -p "const semver = require('semver'); semver.inc('$current_version', '${{ github.event.inputs.version_type }}')")
+              # Normal semver bump using CLI
+              new_version=$(npx semver -i ${{ github.event.inputs.version_type }} $current_version)
               echo "Version bump: $current_version → $new_version"
               ;;
             *)
