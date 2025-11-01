@@ -144,7 +144,7 @@ export function Navbar() {
                   onClick={handleProjectSettings}
                   aria-label="Project settings"
                 >
-                  <Settings className="h-4 w-4" />
+                  <Settings className="h-4 w-4 -scale-x-100" />
                 </Button>
                 <Button
                   variant="ghost"
