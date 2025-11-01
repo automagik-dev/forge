@@ -656,24 +656,130 @@ case "${1:-status}" in
             # Remove old draft if exists
             rm -f .release-notes-draft.md
 
-            # Use Claude/npx to generate release notes automatically
+            # Use AI to generate professional release notes
             echo "🧠 Generating AI-powered release notes..."
 
-            # Generate simple structured release notes from git log
-            COMMITS=$(git log ${ANALYSIS_FROM:+$ANALYSIS_FROM..}HEAD --pretty=format:"- %s" --no-merges | head -20)
+            # Get the next version based on bump type
+            CURRENT_VER=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
+            case "$VERSION_TYPE" in
+                patch)
+                    NEXT_VER=$(echo "$CURRENT_VER" | awk -F. '{print $1"."$2"."($3+1)}')
+                    ;;
+                minor)
+                    NEXT_VER=$(echo "$CURRENT_VER" | awk -F. '{print $1"."($2+1)".0"}')
+                    ;;
+                major)
+                    NEXT_VER=$(echo "$CURRENT_VER" | awk -F. '{print ($1+1)".0.0"}')
+                    ;;
+                stable)
+                    # Remove -rc suffix
+                    NEXT_VER=$(echo "$CURRENT_VER" | sed 's/-rc\.[0-9]*$//')
+                    ;;
+                rc)
+                    # Increment RC number
+                    RC_NUM=$(echo "$CURRENT_VER" | sed 's/.*-rc\.\([0-9]*\)$/\1/')
+                    NEXT_VER=$(echo "$CURRENT_VER" | sed "s/-rc\.$RC_NUM$/-rc.$((RC_NUM + 1))/")
+                    ;;
+                *)
+                    NEXT_VER="$CURRENT_VER"
+                    ;;
+            esac
 
-            cat > .release-notes-draft.md <<EOF
-# Release v$VERSION_TYPE
+            # Generate release notes with Claude using conventional commit format
+            # Use Haiku for speed and cost efficiency
+            if command -v claude &> /dev/null; then
+                echo "📝 Using Claude AI to analyze git changes and generate professional release notes..."
 
-## What's Changed
+                AI_PROMPT="Generate comprehensive GitHub release notes for version $NEXT_VER (comparing current HEAD to ${LAST_TAG:-previous commits}).
+
+Analyze the git diff and commits to create professional release notes following this structure:
+
+# Release v$NEXT_VER
+
+## 📋 Overview
+[1-2 sentence summary of the release - what's the main theme/focus?]
+
+## ✨ Features
+[List NEW features/capabilities added in this release]
+- Feature 1 with brief description
+- Feature 2 with brief description
+
+## 🔧 Improvements
+[List enhancements to existing features]
+- Improvement 1
+- Improvement 2
+
+## 🐛 Bug Fixes
+[List bugs fixed]
+- Fix 1
+- Fix 2
+
+## 📊 Statistics
+- **Files Changed:** [count from git diff --stat]
+- **Lines Added:** [count]
+- **Lines Removed:** [count]
+
+## 🚀 Deployment
+[If there are environment variable changes or deployment considerations, list them here]
+
+## 📝 Migration Notes
+**Breaking Changes:** [List any breaking changes or write 'None']
+**Recommended Actions:** [List any actions users should take]
+
+---
+**Full Changelog**: https://github.com/$REPO/compare/${LAST_TAG:-initial}...v$NEXT_VER
+
+IMPORTANT RULES:
+1. Analyze ACTUAL code changes (git diff), NOT commit messages
+2. IGNORE commits starting with: 'Perfect!', 'Excellent!', 'I see', 'Let me', 'Now', '---'
+3. Focus on user-facing changes
+4. Be concise but informative
+5. Use proper markdown formatting
+6. If a section is empty, omit it entirely
+7. Write in present tense (e.g., 'Adds support' not 'Added support')
+8. Group related changes together
+9. Prioritize clarity over completeness"
+
+                claude -p --model haiku "$AI_PROMPT" > .release-notes-draft.md 2>/dev/null || {
+                    echo "⚠️  Claude AI failed, falling back to simple method"
+                    # Fallback: filter out AI agent commit messages
+                    COMMITS=$(git log ${ANALYSIS_FROM:+$ANALYSIS_FROM..}HEAD --pretty=format:"%s" --no-merges | \
+                        grep -v -E "^(Perfect!|Excellent!|Great!|I see|Let me|Now|I'll|I've|---|Merge pull request)" | \
+                        sed 's/^/- /' | head -20)
+
+                    cat > .release-notes-draft.md <<EOF
+# Release v$NEXT_VER
+
+## 📋 What's Changed
 
 $COMMITS
 
 ---
-*Full Changelog*: https://github.com/$REPO/compare/${ANALYSIS_FROM:-initial}...v$VERSION_TYPE
+**Full Changelog**: https://github.com/$REPO/compare/${ANALYSIS_FROM:-initial}...v$NEXT_VER
+EOF
+                }
+
+                echo "✅ AI-powered release notes generated"
+            else
+                echo "⚠️  Claude CLI not available, using fallback method"
+                # Fallback: filter out AI agent commit messages
+                COMMITS=$(git log ${ANALYSIS_FROM:+$ANALYSIS_FROM..}HEAD --pretty=format:"%s" --no-merges | \
+                    grep -v -E "^(Perfect!|Excellent!|Great!|I see|Let me|Now|I'll|I've|---|Merge pull request)" | \
+                    sed 's/^/- /' | head -20)
+
+                cat > .release-notes-draft.md <<EOF
+# Release v$NEXT_VER
+
+## 📋 What's Changed
+
+$COMMITS
+
+---
+**Full Changelog**: https://github.com/$REPO/compare/${ANALYSIS_FROM:-initial}...v$NEXT_VER
 EOF
 
-            echo "✅ Release notes generated from git history"
+                echo "✅ Release notes generated (install Claude CLI for AI-powered notes: npm install -g @anthropic-ai/claude-cli)"
+            fi
 
             # Interactive loop with enhanced review flow (skip if non-interactive)
             if [ "$NON_INTERACTIVE" = "true" ] || [ "$AUTO_APPROVE" = "true" ]; then
@@ -814,17 +920,6 @@ EOF
                             else
                                 echo "✅ Stable release created: $NEW_TAG (version: $NEW_VERSION)"
                             fi
-
-                            # Spawn async release notes enhancer (runs during build, updates GitHub release)
-                            echo ""
-                            echo "🧠 Spawning release notes enhancer during build..."
-                            (
-                                # Run in background - categorizes commits and updates GitHub release
-                                ./scripts/enhance-release-notes.sh "$NEW_TAG" "$NEW_VERSION" "${ANALYSIS_FROM:-v0.0.0}" \
-                                    > /tmp/release-enhancer.log 2>&1
-                            ) &
-                            ENHANCER_PID=$!
-                            echo "   └─ Enhancer running (PID: $ENHANCER_PID) - will update GitHub release during 30-45min build"
 
                             # IMPORTANT: Tags pushed with GITHUB_TOKEN don't trigger workflows
                             # We need to explicitly trigger the build workflow
