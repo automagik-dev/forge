@@ -295,9 +295,31 @@ case "${1:-status}" in
         echo "  Latest on npm:  $NPM_VERSION"
         echo ""
 
-        # Check for recent failed workflows (regardless of version state)
-        echo "🔍 Checking for recent failed workflows..."
-        RECENT_FAILED=$(gh run list --workflow="pre-release-simple.yml" --repo "$REPO" --status failure --limit 1 --json databaseId,createdAt,headBranch,conclusion --jq '.[0]' 2>/dev/null || echo "null")
+        # Only check for recent failed workflows if versions don't match (indicating incomplete publish)
+        # or if there's a very recent failure (< 1 hour old)
+        RECENT_FAILED=""
+        if [ "$CURRENT_VERSION" != "$NPM_VERSION" ]; then
+            echo "🔍 Version mismatch detected - checking for related failed workflows..."
+            RECENT_FAILED=$(gh run list --workflow="pre-release-simple.yml" --repo "$REPO" --status failure --limit 1 --json databaseId,createdAt,headBranch,conclusion --jq '.[0]' 2>/dev/null || echo "null")
+        else
+            # Versions match - only check for very recent failures (< 1 hour)
+            echo "🔍 Checking for very recent failed workflows (< 1 hour)..."
+            RECENT_FAILED=$(gh run list --workflow="pre-release-simple.yml" --repo "$REPO" --status failure --limit 1 --json databaseId,createdAt,headBranch,conclusion --jq '.[0]' 2>/dev/null || echo "null")
+
+            # Check if failure is recent (< 1 hour)
+            if [ -n "$RECENT_FAILED" ] && [ "$RECENT_FAILED" != "null" ]; then
+                FAILED_TIME=$(echo "$RECENT_FAILED" | jq -r '.createdAt')
+                FAILED_TIMESTAMP=$(date -d "$FAILED_TIME" +%s 2>/dev/null || echo "0")
+                CURRENT_TIMESTAMP=$(date +%s)
+                TIME_DIFF=$((CURRENT_TIMESTAMP - FAILED_TIMESTAMP))
+
+                # If failure is older than 1 hour (3600 seconds), ignore it
+                if [ "$TIME_DIFF" -gt 3600 ]; then
+                    echo "✅ No recent failures (last failure was $(($TIME_DIFF / 3600)) hours ago)"
+                    RECENT_FAILED="null"
+                fi
+            fi
+        fi
 
         if [ -n "$RECENT_FAILED" ] && [ "$RECENT_FAILED" != "null" ]; then
             FAILED_RUN_ID=$(echo "$RECENT_FAILED" | jq -r '.databaseId')
