@@ -144,14 +144,25 @@ if (isMcpMode) {
   extractAndRun("automagik-forge", (bin) => {
     // Log port configuration
     const backendPort = process.env.BACKEND_PORT || process.env.PORT;
+    const displayPort = backendPort || "8887";
     if (backendPort) {
       console.log(`🔌 Using port: ${backendPort}`);
     } else {
-      console.log(`🔌 Using default port (3001)`);
+      console.log(`🔌 Using default port: 8887`);
     }
 
     console.log(`🚀 Launching automagik-forge...`);
     console.log();
+
+    // Ensure RUST_LOG is set to show logs (default to info level)
+    if (!process.env.RUST_LOG) {
+      process.env.RUST_LOG = "info";
+    }
+
+    const host = process.env.HOST || "127.0.0.1";
+    console.log(`http://${host}:${displayPort}/`);
+    console.log();
+
     if (platform === "win32") {
       execSync(`"${bin}"`, { stdio: "inherit" });
     } else {
