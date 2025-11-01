@@ -79,7 +79,7 @@ fn resolve_bind_address() -> SocketAddr {
         .or_else(|_| std::env::var("PORT"))
         .ok()
         .and_then(|raw| raw.trim().parse::<u16>().ok())
-        .unwrap_or(0);
+        .unwrap_or(8887);
 
     let ip = host
         .parse::<IpAddr>()
