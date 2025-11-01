@@ -198,6 +198,94 @@ case "${1:-status}" in
         echo "🚀 Starting automated publishing pipeline..."
         echo ""
 
+        # Restrict to main branch only
+        CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+        if [ "$CURRENT_BRANCH" != "main" ]; then
+            echo "❌ ERROR: Publishing is only allowed on the 'main' branch"
+            echo "   Current branch: $CURRENT_BRANCH"
+            echo ""
+            echo "   Please switch to main branch first:"
+            echo "   git checkout main"
+            exit 1
+        fi
+
+        # Validate all version files are in sync BEFORE any operations
+        echo "🔍 Validating version consistency across all files..."
+        echo ""
+
+        # Get versions from all files
+        ROOT_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
+        NPX_VERSION=$(grep '"version"' npx-cli/package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
+        FRONTEND_VERSION=$(grep '"version"' frontend/package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
+        CARGO_VERSION=$(grep '^version' forge-app/Cargo.toml | head -1 | sed 's/version = "\([^"]*\)".*/\1/')
+
+        echo "📋 Current versions:"
+        echo "   package.json:          $ROOT_VERSION"
+        echo "   npx-cli/package.json:  $NPX_VERSION"
+        echo "   frontend/package.json: $FRONTEND_VERSION"
+        echo "   forge-app/Cargo.toml:  $CARGO_VERSION"
+        echo ""
+
+        # Check if all versions match
+        if [ "$ROOT_VERSION" != "$NPX_VERSION" ] || [ "$ROOT_VERSION" != "$FRONTEND_VERSION" ] || [ "$ROOT_VERSION" != "$CARGO_VERSION" ]; then
+            echo "❌ ERROR: Version mismatch detected!"
+            echo ""
+            echo "All version files must be in sync before publishing."
+            echo "The GitHub Actions workflow will bump ALL files together."
+            echo ""
+            echo "To fix this, manually sync all versions to the same value:"
+            echo "  1. Choose the correct version (likely: $ROOT_VERSION)"
+            echo "  2. Update all mismatched files to that version"
+            echo "  3. Commit the changes"
+            echo ""
+            echo "Files to update:"
+            [ "$ROOT_VERSION" != "$NPX_VERSION" ] && echo "  - npx-cli/package.json (currently $NPX_VERSION, should be $ROOT_VERSION)"
+            [ "$ROOT_VERSION" != "$FRONTEND_VERSION" ] && echo "  - frontend/package.json (currently $FRONTEND_VERSION, should be $ROOT_VERSION)"
+            [ "$ROOT_VERSION" != "$CARGO_VERSION" ] && echo "  - forge-app/Cargo.toml (currently $CARGO_VERSION, should be $ROOT_VERSION)"
+            exit 1
+        fi
+
+        echo "✅ All versions are in sync at $ROOT_VERSION"
+        echo ""
+
+        # Check for uncommitted changes and auto-commit them
+        if ! git diff --quiet || ! git diff --staged --quiet; then
+            echo "⚠️  Detected uncommitted changes"
+            echo "📝 Changed files:"
+            git status --short
+            echo ""
+
+            # Auto-commit uncommitted package.json changes
+            if git status --short | grep -E "package\.json|Cargo\.toml|Cargo\.lock"; then
+                echo "🔄 Auto-committing version-related changes..."
+                git add package.json npx-cli/package.json frontend/package.json 2>/dev/null || true
+                git add forge-app/Cargo.toml forge-extensions/*/Cargo.toml Cargo.lock 2>/dev/null || true
+
+                CURRENT_VERSION_FOR_MSG=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
+                git commit -m "chore: prepare v${CURRENT_VERSION_FOR_MSG} for release" || {
+                    echo "❌ Failed to commit changes"
+                    echo "Please commit your changes manually and try again"
+                    exit 1
+                }
+
+                # Push the commit
+                CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+                echo "📤 Pushing commit to $CURRENT_BRANCH..."
+                git push origin "$CURRENT_BRANCH" || {
+                    echo "❌ Failed to push changes"
+                    echo "Please push your changes manually and try again"
+                    exit 1
+                }
+
+                echo "✅ Changes committed and pushed"
+                echo ""
+            else
+                echo "❌ You have uncommitted changes that are not version files"
+                echo "Please commit or stash your changes before publishing"
+                exit 1
+            fi
+        fi
+
         # Check current version vs npm
         CURRENT_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
         NPM_VERSION=$(npm view automagik-forge version 2>/dev/null || echo "0.0.0")
