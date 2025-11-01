@@ -4,6 +4,16 @@ const { execSync, spawn } = require("child_process");
 const AdmZip = require("adm-zip");
 const path = require("path");
 const fs = require("fs");
+const dotenv = require("dotenv");
+
+// Load .env from current working directory if present
+const envPath = path.join(process.cwd(), ".env");
+if (fs.existsSync(envPath)) {
+  const result = dotenv.config({ path: envPath });
+  if (!result.error) {
+    console.log("📝 Loaded environment from .env");
+  }
+}
 
 // Resolve effective arch for our published 64-bit binaries only.
 // Any ARM → arm64; anything else → x64. On macOS, handle Rosetta.
@@ -132,7 +142,16 @@ if (isMcpMode) {
 } else {
   console.log(`📦 Extracting automagik-forge...`);
   extractAndRun("automagik-forge", (bin) => {
+    // Log port configuration
+    const backendPort = process.env.BACKEND_PORT || process.env.PORT;
+    if (backendPort) {
+      console.log(`🔌 Using port: ${backendPort}`);
+    } else {
+      console.log(`🔌 Using default port (3001)`);
+    }
+
     console.log(`🚀 Launching automagik-forge...`);
+    console.log();
     if (platform === "win32") {
       execSync(`"${bin}"`, { stdio: "inherit" });
     } else {
