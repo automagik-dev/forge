@@ -23,7 +23,6 @@ import { SearchBar } from '@/components/search-bar';
 import { useSearch } from '@/contexts/search-context';
 import { openTaskForm } from '@/lib/openTaskForm';
 import { useProject } from '@/contexts/project-context';
-import { showProjectForm } from '@/lib/modals';
 import { useOpenProjectInEditor } from '@/hooks/useOpenProjectInEditor';
 import { useDiscordOnlineCount } from '@/hooks/useDiscordOnlineCount';
 import { Breadcrumb } from '@/components/breadcrumb';
@@ -73,12 +72,6 @@ export function Navbar() {
 
   const handleOpenInIDE = () => {
     handleOpenInEditor();
-  };
-
-  const handleProjectSettings = async () => {
-    if (project) {
-      await showProjectForm({ project });
-    }
   };
 
   return (
@@ -138,13 +131,16 @@ export function Navbar() {
                 >
                   <FolderOpen className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleProjectSettings}
-                  aria-label="Project settings"
-                >
-                  <Settings className="h-4 w-4" />
+                <Button variant="ghost" size="icon" asChild aria-label="Settings">
+                  <Link
+                    to={
+                      projectId
+                        ? `/settings/projects?projectId=${projectId}`
+                        : '/settings'
+                    }
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Link>
                 </Button>
                 <Button
                   variant="ghost"
