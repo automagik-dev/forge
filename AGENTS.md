@@ -18,6 +18,7 @@ Do not manually edit shared/types.ts, instead edit crates/server/src/bin/generat
 ## Build, Test, and Development Commands
 - Install: `pnpm i`
 - Run dev (frontend + backend with ports auto-assigned): `pnpm run dev`
+  - Auto-initializes git submodules if needed (important for worktrees)
 - Backend (watch): `npm run backend:dev:watch`
 - Frontend (dev): `npm run frontend:dev`
 - Type checks: `npm run check` (frontend) and `npm run backend:check` (Rust cargo check)
@@ -25,6 +26,8 @@ Do not manually edit shared/types.ts, instead edit crates/server/src/bin/generat
 - Generate TS types from Rust: `npm run generate-types` (or `generate-types:check` in CI)
 - Prepare SQLx (offline): `npm run prepare-db`
 - Local NPX build: `npm run build:npx` then `npm pack` in `npx-cli/`
+
+**Note on Git Worktrees:** The `pnpm run dev` command automatically detects and initializes the `upstream/` submodule if it's missing. This is handled by the `predev` script hook, which runs `scripts/ensure-submodules.js` before starting the dev server.
 
 ## Coding Style & Naming Conventions
 - Rust: `rustfmt` enforced (`rustfmt.toml`); group imports by crate; snake_case modules, PascalCase types.
