@@ -739,7 +739,7 @@ export function ProjectTasks() {
           tasksById={tasksById}
           onNavigateToTask={handleNavigateToTask}
         >
-          {({ breadcrumb, logs, followUp, relationships }) => (
+          {({ breadcrumb, logs, followUp }) => (
             <>
               {gitError && (
                 <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded">
@@ -757,11 +757,6 @@ export function ProjectTasks() {
 
               <div className="shrink-0 border-t">
                 <div className="mx-auto w-full max-w-[50rem]">{followUp}</div>
-              </div>
-
-              {/* Keep old relationships viewer for now (can be removed later) */}
-              <div className="shrink-0 border-t">
-                <div className="mx-auto w-full max-w-[50rem]">{relationships}</div>
               </div>
             </>
           )}

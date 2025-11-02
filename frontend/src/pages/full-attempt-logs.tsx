@@ -44,7 +44,7 @@ export function FullAttemptLogsPage() {
                     task={task}
                     tasksById={tasksById}
                   >
-                    {({ breadcrumb, logs, followUp, relationships }) => (
+                    {({ breadcrumb, logs, followUp }) => (
                       <div className="h-full flex flex-col">
                         {breadcrumb}
                         <div className="flex-1 min-h-0 flex flex-col">
@@ -53,11 +53,6 @@ export function FullAttemptLogsPage() {
                         <div className="border-t shrink-0">
                           <div className="mx-auto w-full max-w-[50rem]">
                             {followUp}
-                          </div>
-                        </div>
-                        <div className="border-t shrink-0">
-                          <div className="mx-auto w-full max-w-[50rem]">
-                            {relationships}
                           </div>
                         </div>
                       </div>
@@ -72,18 +67,13 @@ export function FullAttemptLogsPage() {
               task={task}
               tasksById={tasksById}
             >
-              {({ breadcrumb, logs, followUp, relationships }) => (
+              {({ breadcrumb, logs, followUp }) => (
                 <div className="h-full flex flex-col">
                   {breadcrumb}
                   <div className="flex-1 min-h-0 flex flex-col">{logs}</div>
                   <div className="border-t shrink-0">
                     <div className="mx-auto w-full max-w-[50rem]">
                       {followUp}
-                    </div>
-                  </div>
-                  <div className="border-t shrink-0">
-                    <div className="mx-auto w-full max-w-[50rem]">
-                      {relationships}
                     </div>
                   </div>
                 </div>
