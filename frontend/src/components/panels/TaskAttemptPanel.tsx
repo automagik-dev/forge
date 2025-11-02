@@ -1,6 +1,7 @@
 import type { TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
 import VirtualizedList from '@/components/logs/VirtualizedList';
 import { TaskFollowUpSection } from '@/components/tasks/TaskFollowUpSection';
+import { TaskRelationshipViewer } from '@/components/tasks/TaskRelationshipViewer';
 import { EntriesProvider } from '@/contexts/EntriesContext';
 import { RetryUiProvider } from '@/contexts/RetryUiContext';
 import type { ReactNode } from 'react';
@@ -8,12 +9,16 @@ import type { ReactNode } from 'react';
 interface TaskAttemptPanelProps {
   attempt: TaskAttempt | undefined;
   task: TaskWithAttemptStatus | null;
-  children: (sections: { logs: ReactNode; followUp: ReactNode }) => ReactNode;
+  tasksById?: Record<string, TaskWithAttemptStatus>;
+  onNavigateToTask?: (taskId: string) => void;
+  children: (sections: { logs: ReactNode; followUp: ReactNode; relationships: ReactNode }) => ReactNode;
 }
 
 const TaskAttemptPanel = ({
   attempt,
   task,
+  tasksById,
+  onNavigateToTask,
   children,
 }: TaskAttemptPanelProps) => {
   if (!attempt) {
@@ -36,6 +41,14 @@ const TaskAttemptPanel = ({
               task={task}
               selectedAttemptId={attempt.id}
               jumpToLogsTab={() => {}}
+            />
+          ),
+          relationships: (
+            <TaskRelationshipViewer
+              selectedAttempt={attempt}
+              task={task}
+              tasksById={tasksById}
+              onNavigateToTask={onNavigateToTask}
             />
           ),
         })}

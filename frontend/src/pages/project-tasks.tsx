@@ -480,6 +480,14 @@ export function ProjectTasks() {
     [projectId, navigateWithSearch]
   );
 
+  const handleNavigateToTask = useCallback(
+    (taskId: string) => {
+      if (!projectId) return;
+      navigateWithSearch(`${paths.task(projectId, taskId)}/attempts/latest`);
+    },
+    [projectId, navigateWithSearch]
+  );
+
   const selectNextTask = useCallback(() => {
     if (selectedTask) {
       const tasksInStatus = groupedFilteredTasks[selectedTask.status] || [];
@@ -724,8 +732,13 @@ export function ProjectTasks() {
       {isTaskView ? (
         <TaskPanel task={selectedTask} />
       ) : (
-        <TaskAttemptPanel attempt={attempt} task={selectedTask}>
-          {({ logs, followUp }) => (
+        <TaskAttemptPanel
+          attempt={attempt}
+          task={selectedTask}
+          tasksById={tasksById}
+          onNavigateToTask={handleNavigateToTask}
+        >
+          {({ logs, followUp, relationships }) => (
             <>
               {gitError && (
                 <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded">
@@ -742,6 +755,10 @@ export function ProjectTasks() {
 
               <div className="shrink-0 border-t">
                 <div className="mx-auto w-full max-w-[50rem]">{followUp}</div>
+              </div>
+
+              <div className="shrink-0 border-t">
+                <div className="mx-auto w-full max-w-[50rem]">{relationships}</div>
               </div>
             </>
           )}
