@@ -42,6 +42,8 @@ export const AttemptHeaderActions = ({
         selectedAttempt={attempt || null}
         onNavigateToTask={onNavigateToTask}
       />
+      {/* Separator after badges (always visible if badges exist) */}
+      <div className="h-4 w-px bg-border shrink-0" />
       {typeof mode !== 'undefined' && onModeChange && isXL && (
         <TooltipProvider>
           <ToggleGroup
