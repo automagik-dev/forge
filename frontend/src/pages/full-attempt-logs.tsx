@@ -39,8 +39,12 @@ export function FullAttemptLogsPage() {
                   key={attempt.id}
                   attemptId={attempt.id}
                 >
-                  <TaskAttemptPanel attempt={attempt} task={task}>
-                    {({ logs, followUp }) => (
+                  <TaskAttemptPanel
+                    attempt={attempt}
+                    task={task}
+                    tasksById={tasksById}
+                  >
+                    {({ logs, followUp, relationships }) => (
                       <div className="h-full flex flex-col">
                         <div className="flex-1 min-h-0 flex flex-col">
                           {logs}
@@ -50,6 +54,11 @@ export function FullAttemptLogsPage() {
                             {followUp}
                           </div>
                         </div>
+                        <div className="border-t shrink-0">
+                          <div className="mx-auto w-full max-w-[50rem]">
+                            {relationships}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </TaskAttemptPanel>
@@ -57,13 +66,22 @@ export function FullAttemptLogsPage() {
               </ReviewProvider>
             </ClickedElementsProvider>
           ) : (
-            <TaskAttemptPanel attempt={attempt} task={task}>
-              {({ logs, followUp }) => (
+            <TaskAttemptPanel
+              attempt={attempt}
+              task={task}
+              tasksById={tasksById}
+            >
+              {({ logs, followUp, relationships }) => (
                 <div className="h-full flex flex-col">
                   <div className="flex-1 min-h-0 flex flex-col">{logs}</div>
                   <div className="border-t shrink-0">
                     <div className="mx-auto w-full max-w-[50rem]">
                       {followUp}
+                    </div>
+                  </div>
+                  <div className="border-t shrink-0">
+                    <div className="mx-auto w-full max-w-[50rem]">
+                      {relationships}
                     </div>
                   </div>
                 </div>
