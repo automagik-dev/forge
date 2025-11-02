@@ -685,6 +685,7 @@ export function ProjectTasks() {
             onModeChange={setMode}
             task={selectedTask}
             attempt={attempt ?? null}
+            onNavigateToTask={handleNavigateToTask}
             onClose={() =>
               navigate(`/projects/${projectId}/tasks`, { replace: true })
             }
@@ -738,13 +739,14 @@ export function ProjectTasks() {
           tasksById={tasksById}
           onNavigateToTask={handleNavigateToTask}
         >
-          {({ logs, followUp, relationships }) => (
+          {({ breadcrumb, logs, followUp, relationships }) => (
             <>
               {gitError && (
                 <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded">
                   <div className="text-destructive text-sm">{gitError}</div>
                 </div>
               )}
+              {breadcrumb}
               <div className="flex-1 min-h-0 flex flex-col">{logs}</div>
 
               <div className="shrink-0 border-t">
@@ -757,6 +759,7 @@ export function ProjectTasks() {
                 <div className="mx-auto w-full max-w-[50rem]">{followUp}</div>
               </div>
 
+              {/* Keep old relationships viewer for now (can be removed later) */}
               <div className="shrink-0 border-t">
                 <div className="mx-auto w-full max-w-[50rem]">{relationships}</div>
               </div>

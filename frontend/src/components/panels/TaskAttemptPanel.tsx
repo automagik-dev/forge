@@ -2,6 +2,7 @@ import type { TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
 import VirtualizedList from '@/components/logs/VirtualizedList';
 import { TaskFollowUpSection } from '@/components/tasks/TaskFollowUpSection';
 import { TaskRelationshipViewer } from '@/components/tasks/TaskRelationshipViewer';
+import { TaskRelationshipBreadcrumb } from '@/components/tasks/TaskRelationshipBreadcrumb';
 import { EntriesProvider } from '@/contexts/EntriesContext';
 import { RetryUiProvider } from '@/contexts/RetryUiContext';
 import type { ReactNode } from 'react';
@@ -11,7 +12,7 @@ interface TaskAttemptPanelProps {
   task: TaskWithAttemptStatus | null;
   tasksById?: Record<string, TaskWithAttemptStatus>;
   onNavigateToTask?: (taskId: string) => void;
-  children: (sections: { logs: ReactNode; followUp: ReactNode; relationships: ReactNode }) => ReactNode;
+  children: (sections: { logs: ReactNode; followUp: ReactNode; relationships: ReactNode; breadcrumb: ReactNode }) => ReactNode;
 }
 
 const TaskAttemptPanel = ({
@@ -33,6 +34,13 @@ const TaskAttemptPanel = ({
     <EntriesProvider key={attempt.id}>
       <RetryUiProvider attemptId={attempt.id}>
         {children({
+          breadcrumb: (
+            <TaskRelationshipBreadcrumb
+              selectedAttempt={attempt}
+              currentTask={task}
+              onNavigateToTask={onNavigateToTask}
+            />
+          ),
           logs: (
             <VirtualizedList key={attempt.id} attempt={attempt} task={task} />
           ),
