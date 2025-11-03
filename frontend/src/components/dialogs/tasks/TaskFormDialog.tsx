@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Settings2, ChevronRight, GitBranch } from 'lucide-react';
+import { Settings2, ChevronRight, GitBranch as GitBranchIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   ImageUploadSection,
@@ -502,7 +502,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
               {isSubtaskMode && parentTask && parentAttempt && (
                 <div className="bg-muted/50 border border-border rounded-md p-3 -mt-2">
                   <div className="flex items-start gap-2">
-                    <GitBranch className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                    <GitBranchIcon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-muted-foreground mb-1">
                         Creating subtask for:
