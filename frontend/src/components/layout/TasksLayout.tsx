@@ -1,14 +1,6 @@
-import { ReactNode, useState, useRef } from 'react';
-import { PanelGroup, Panel, PanelResizeHandle, ImperativePanelHandle } from 'react-resizable-panels';
+import { ReactNode, useState } from 'react';
+import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { AnimatePresence, motion } from 'framer-motion';
-import { PanelLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
 export type LayoutMode = 'chat' | 'preview' | 'diffs' | 'kanban' | null;
 
@@ -75,39 +67,23 @@ function AuxRouter({ mode, aux }: { mode: LayoutMode; aux: ReactNode }) {
 }
 
 /**
- * RightWorkArea - Contains header and Attempt/Aux content.
- * Shows just Attempt when mode is 'chat' or null, or Attempt | Aux split when mode is preview/diffs.
+ * SplitView - Two-column layout (Chat LEFT | Content RIGHT)
+ * Used for: mode=null (Chat|Kanban), mode='kanban' (Chat|Kanban), mode='preview' (Chat|Preview), mode='diffs' (Chat|Diffs)
  */
-function RightWorkArea({
+function SplitView({
   attempt,
-  aux,
-  mode,
+  rightContent,
   rightHeader,
-  kanban,
+  rightLabel,
 }: {
   attempt: ReactNode;
-  aux: ReactNode;
-  mode: LayoutMode;
+  rightContent: ReactNode;
   rightHeader?: ReactNode;
-  kanban: ReactNode;
+  rightLabel: string;
 }) {
-  const attemptPanelRef = useRef<ImperativePanelHandle>(null);
-  const [isAttemptCollapsed, setIsAttemptCollapsed] = useState(false);
-
-  const [innerSizes] = useState<SplitSizes>(() =>
+  const [sizes] = useState<SplitSizes>(() =>
     loadSizes(STORAGE_KEYS.ATTEMPT_AUX, DEFAULT_ATTEMPT_AUX)
   );
-
-  const toggleAttempt = () => {
-    if (attemptPanelRef.current) {
-      if (isAttemptCollapsed) {
-        attemptPanelRef.current.expand();
-      } else {
-        attemptPanelRef.current.collapse();
-      }
-      setIsAttemptCollapsed(!isAttemptCollapsed);
-    }
-  };
 
   return (
     <div className="h-full min-h-0 flex flex-col">
@@ -117,90 +93,67 @@ function RightWorkArea({
         </div>
       )}
       <div className="flex-1 min-h-0">
-        {mode === null || mode === 'chat' || mode === 'kanban' ? (
-          mode === 'kanban' ? kanban : attempt
-        ) : (
-          <PanelGroup
-            direction="horizontal"
-            className="h-full min-h-0"
-            onLayout={(layout) => {
-              if (layout.length === 2) {
-                saveSizes(STORAGE_KEYS.ATTEMPT_AUX, [layout[0], layout[1]]);
-              }
-            }}
+        <PanelGroup
+          direction="horizontal"
+          className="h-full min-h-0"
+          onLayout={(layout) => {
+            if (layout.length === 2) {
+              saveSizes(STORAGE_KEYS.ATTEMPT_AUX, [layout[0], layout[1]]);
+            }
+          }}
+        >
+          <Panel
+            id="attempt"
+            order={1}
+            defaultSize={sizes[0]}
+            minSize={MIN_PANEL_SIZE}
+            collapsible={false}
+            className="min-w-0 min-h-0 overflow-hidden"
+            role="region"
+            aria-label="Chat"
           >
-            <Panel
-              ref={attemptPanelRef}
-              id="attempt"
-              order={1}
-              defaultSize={innerSizes[0]}
-              minSize={MIN_PANEL_SIZE}
-              collapsible
-              collapsedSize={0}
-              className="min-w-0 min-h-0 overflow-hidden"
-              role="region"
-              aria-label="Details"
-              onCollapse={() => setIsAttemptCollapsed(true)}
-              onExpand={() => setIsAttemptCollapsed(false)}
-            >
-              {attempt}
-            </Panel>
+            {attempt}
+          </Panel>
 
-            <PanelResizeHandle
-              id="handle-aa"
-              className="relative z-30 w-1 bg-border cursor-col-resize group touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-1 focus-visible:ring-offset-background"
-              aria-label="Resize panels"
-              role="separator"
-              aria-orientation="vertical"
-            >
-              <div className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-border" />
-              <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 bg-muted/90 border border-border rounded-full px-1.5 py-3 opacity-70 group-hover:opacity-100 group-focus:opacity-100 transition-opacity shadow-sm">
-                <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-                <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-                <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-              </div>
-              {/* Chat toggle button with lamp-style animation */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="pointer-events-auto absolute top-4 left-0 -translate-x-3/4 group-hover:translate-x-[-50%] h-7 w-7 bg-background/95 border border-border hover:bg-accent shadow-sm z-10 transition-transform duration-300 ease-out opacity-40 group-hover:opacity-100"
-                      onClick={toggleAttempt}
-                      aria-label={isAttemptCollapsed ? 'Show chat' : 'Hide chat'}
-                    >
-                      <PanelLeft className={`h-4 w-4 transition-transform duration-200 ${isAttemptCollapsed ? 'rotate-180' : ''}`} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    {isAttemptCollapsed ? 'Show chat' : 'Hide chat'}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </PanelResizeHandle>
+          <PanelResizeHandle
+            id="handle-split"
+            className="relative z-30 w-1 bg-border cursor-col-resize group touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+            aria-label="Resize panels"
+            role="separator"
+            aria-orientation="vertical"
+          >
+            <div className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-border" />
+            <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 bg-muted/90 border border-border rounded-full px-1.5 py-3 opacity-70 group-hover:opacity-100 group-focus:opacity-100 transition-opacity shadow-sm">
+              <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+              <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+              <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+            </div>
+          </PanelResizeHandle>
 
-            <Panel
-              id="aux"
-              order={2}
-              defaultSize={innerSizes[1]}
-              minSize={MIN_PANEL_SIZE}
-              collapsible={false}
-              className="min-w-0 min-h-0 overflow-hidden"
-              role="region"
-              aria-label={mode === 'preview' ? 'Preview' : mode === 'diffs' ? 'Diffs' : 'Kanban'}
-            >
-              {mode === 'kanban' ? kanban : <AuxRouter mode={mode} aux={aux} />}
-            </Panel>
-          </PanelGroup>
-        )}
+          <Panel
+            id="right"
+            order={2}
+            defaultSize={sizes[1]}
+            minSize={MIN_PANEL_SIZE}
+            collapsible={false}
+            className="min-w-0 min-h-0 overflow-hidden"
+            role="region"
+            aria-label={rightLabel}
+          >
+            {rightContent}
+          </Panel>
+        </PanelGroup>
       </div>
     </div>
   );
 }
 
 /**
- * DesktopSimple - Fullscreen RightWorkArea that handles all view modes
+ * DesktopSimple - Handles all desktop view modes
+ * mode=null or mode='kanban' → Chat LEFT | Kanban RIGHT
+ * mode='chat' → Chat only (full screen)
+ * mode='preview' → Chat LEFT | Preview RIGHT
+ * mode='diffs' → Chat LEFT | Diffs RIGHT
  */
 function DesktopSimple({
   kanban,
@@ -215,15 +168,58 @@ function DesktopSimple({
   mode: LayoutMode;
   rightHeader?: ReactNode;
 }) {
-  return (
-    <RightWorkArea
-      attempt={attempt}
-      aux={aux}
-      mode={mode}
-      rightHeader={rightHeader}
-      kanban={kanban}
-    />
-  );
+  // mode='chat' → Full screen chat only
+  if (mode === 'chat') {
+    return (
+      <div className="h-full min-h-0 flex flex-col">
+        {rightHeader && (
+          <div className="shrink-0 sticky top-0 z-20 bg-background border-b">
+            {rightHeader}
+          </div>
+        )}
+        <div className="flex-1 min-h-0">{attempt}</div>
+      </div>
+    );
+  }
+
+  // mode=null or mode='kanban' → Chat LEFT | Kanban RIGHT
+  if (mode === null || mode === 'kanban') {
+    return (
+      <SplitView
+        attempt={attempt}
+        rightContent={kanban}
+        rightHeader={rightHeader}
+        rightLabel="Kanban board"
+      />
+    );
+  }
+
+  // mode='preview' → Chat LEFT | Preview RIGHT
+  if (mode === 'preview') {
+    return (
+      <SplitView
+        attempt={attempt}
+        rightContent={<AuxRouter mode={mode} aux={aux} />}
+        rightHeader={rightHeader}
+        rightLabel="Preview"
+      />
+    );
+  }
+
+  // mode='diffs' → Chat LEFT | Diffs RIGHT
+  if (mode === 'diffs') {
+    return (
+      <SplitView
+        attempt={attempt}
+        rightContent={<AuxRouter mode={mode} aux={aux} />}
+        rightHeader={rightHeader}
+        rightLabel="Diffs"
+      />
+    );
+  }
+
+  // Fallback (shouldn't reach here)
+  return <>{attempt}</>;
 }
 
 export function TasksLayout({
