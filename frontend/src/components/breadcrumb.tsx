@@ -29,6 +29,7 @@ import { showModal } from '@/lib/modals';
 import NiceModal from '@ebay/nice-modal-react';
 import type { LayoutMode } from '@/components/layout/TasksLayout';
 import type { Task, GitBranch as GitBranchType } from '@/shared/types';
+import { projectsApi } from '@/lib/api';
 
 export function Breadcrumb() {
   const location = useLocation();
@@ -60,18 +61,12 @@ export function Breadcrumb() {
 
   // Fetch branches when attempt is available
   useEffect(() => {
-    if (!attempt?.id) return;
+    if (!attempt?.id || !projectId) return;
 
-    fetch(`/api/projects/${projectId}/git/branches`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && Array.isArray(data.data)) {
-          setBranches(data.data);
-        }
-      })
-      .catch((err) => {
-        // Silently handle error - on-demand fetch will handle it
-      });
+    projectsApi
+      .getBranches(projectId)
+      .then(setBranches)
+      .catch(() => setBranches([]));
   }, [attempt?.id, projectId]);
 
   // Calculate conflicts for disabling change target branch button
@@ -237,14 +232,11 @@ export function Breadcrumb() {
     let branchesToUse = branches;
     if (branchesToUse.length === 0 && projectId) {
       try {
-        const res = await fetch(`/api/projects/${projectId}/git/branches`);
-        const data = await res.json();
-        if (data.success && Array.isArray(data.data)) {
-          branchesToUse = data.data;
-          setBranches(data.data); // Update state for future use
-        }
+        branchesToUse = await projectsApi.getBranches(projectId);
+        setBranches(branchesToUse); // Update state for future use
       } catch (err) {
-        // Silently handle error - backend API issue
+        // Silently handle error
+        branchesToUse = [];
       }
     }
 
