@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowUp, ArrowDown } from 'lucide-react';
+import { Network, GitFork } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -69,7 +69,7 @@ export function TaskRelationshipBadges({
                 onClick={() => onNavigateToTask?.(relationships.parent_task!.id)}
                 className="inline-flex items-center h-6 px-2 py-0 text-xs border border-border rounded-md bg-background cursor-pointer hover:bg-green-50 hover:border-green-500 hover:text-green-700 transition-colors"
               >
-                <ArrowUp className="w-3 h-3 mr-1" />
+                <Network className="w-3 h-3 mr-1" />
                 Parent
               </button>
             </TooltipTrigger>
@@ -90,7 +90,7 @@ export function TaskRelationshipBadges({
               <button
                 className="inline-flex items-center h-6 px-2 py-0 text-xs border border-border rounded-md bg-background cursor-pointer hover:bg-blue-50 hover:border-blue-500 hover:text-blue-700 transition-colors"
               >
-                <ArrowDown className="w-3 h-3 mr-1" />
+                <GitFork className="w-3 h-3 mr-1" />
                 {childCount} {childCount === 1 ? 'Child' : 'Children'}
               </button>
             </DropdownMenuTrigger>

@@ -38,11 +38,10 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
     isError: isAttemptsError,
   } = useTaskAttempts(task?.id);
 
-  // Fetch parent and children task relationships
+  // Fetch parent task relationship
   useEffect(() => {
     if (!task) {
       setParentTask(null);
-      setChildrenTasks([]);
       return;
     }
 
@@ -55,6 +54,14 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
         .catch(() => setParentTask(null));
     } else {
       setParentTask(null);
+    }
+  }, [task]);
+
+  // Fetch children tasks (subtasks) - separate effect to wait for attempts to load
+  useEffect(() => {
+    if (!task) {
+      setChildrenTasks([]);
+      return;
     }
 
     // Fetch children tasks (subtasks)
