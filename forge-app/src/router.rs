@@ -239,9 +239,35 @@ async fn forge_create_task_attempt(
 
     // Load workspace-specific .genie profiles and inject into global cache just-in-time
     if let Ok(workspace_profiles) = forge_services.load_profiles_for_workspace(&project.git_repo_path).await {
+        // Log profile details for validation
+        let variant_summary: Vec<String> = workspace_profiles.executors.iter()
+            .flat_map(|(executor, config)| {
+                config.configurations.iter().map(move |(variant, cfg)| {
+                    let prompt_preview = cfg.append_prompt.get()
+                        .map(|p| {
+                            let trimmed = p.trim();
+                            if trimmed.len() > 80 {
+                                format!("{}...", &trimmed[..80])
+                            } else {
+                                trimmed.to_string()
+                            }
+                        })
+                        .unwrap_or_else(|| "<no prompt>".to_string());
+                    format!("{}:{} (prompt: {})", executor, variant, prompt_preview)
+                })
+            })
+            .collect();
+
+        tracing::info!(
+            "🔧 Injected .genie profiles for workspace: {} | Variants: [{}]",
+            project.git_repo_path.display(),
+            variant_summary.join(", ")
+        );
+
         executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
-        tracing::debug!(
-            "Injected .genie profiles for workspace: {}",
+    } else {
+        tracing::warn!(
+            "⚠️  Failed to load .genie profiles for workspace: {}, using defaults",
             project.git_repo_path.display()
         );
     }
@@ -330,9 +356,35 @@ async fn forge_create_task_and_start(
 
     // Load workspace-specific .genie profiles and inject into global cache just-in-time
     if let Ok(workspace_profiles) = forge_services.load_profiles_for_workspace(&project.git_repo_path).await {
+        // Log profile details for validation
+        let variant_summary: Vec<String> = workspace_profiles.executors.iter()
+            .flat_map(|(executor, config)| {
+                config.configurations.iter().map(move |(variant, cfg)| {
+                    let prompt_preview = cfg.append_prompt.get()
+                        .map(|p| {
+                            let trimmed = p.trim();
+                            if trimmed.len() > 80 {
+                                format!("{}...", &trimmed[..80])
+                            } else {
+                                trimmed.to_string()
+                            }
+                        })
+                        .unwrap_or_else(|| "<no prompt>".to_string());
+                    format!("{}:{} (prompt: {})", executor, variant, prompt_preview)
+                })
+            })
+            .collect();
+
+        tracing::info!(
+            "🔧 Injected .genie profiles for workspace: {} | Variants: [{}]",
+            project.git_repo_path.display(),
+            variant_summary.join(", ")
+        );
+
         executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
-        tracing::debug!(
-            "Injected .genie profiles for workspace: {}",
+    } else {
+        tracing::warn!(
+            "⚠️  Failed to load .genie profiles for workspace: {}, using defaults",
             project.git_repo_path.display()
         );
     }
@@ -704,9 +756,35 @@ async fn forge_follow_up(
 
     // Load workspace-specific .genie profiles and inject into global cache just-in-time
     if let Ok(workspace_profiles) = forge_services.load_profiles_for_workspace(&project.git_repo_path).await {
+        // Log profile details for validation
+        let variant_summary: Vec<String> = workspace_profiles.executors.iter()
+            .flat_map(|(executor, config)| {
+                config.configurations.iter().map(move |(variant, cfg)| {
+                    let prompt_preview = cfg.append_prompt.get()
+                        .map(|p| {
+                            let trimmed = p.trim();
+                            if trimmed.len() > 80 {
+                                format!("{}...", &trimmed[..80])
+                            } else {
+                                trimmed.to_string()
+                            }
+                        })
+                        .unwrap_or_else(|| "<no prompt>".to_string());
+                    format!("{}:{} (prompt: {})", executor, variant, prompt_preview)
+                })
+            })
+            .collect();
+
+        tracing::info!(
+            "🔧 Injected .genie profiles for workspace: {} (follow-up) | Variants: [{}]",
+            project.git_repo_path.display(),
+            variant_summary.join(", ")
+        );
+
         executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
-        tracing::debug!(
-            "Injected .genie profiles for workspace: {} (follow-up)",
+    } else {
+        tracing::warn!(
+            "⚠️  Failed to load .genie profiles for workspace: {} (follow-up), using defaults",
             project.git_repo_path.display()
         );
     }
