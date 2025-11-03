@@ -677,8 +677,8 @@ export function ProjectTasks() {
       </div>
     );
 
-  // Show breadcrumb in fullscreen mode (when mode is not default two-panel layout)
-  const rightHeader = mode !== null && mode !== 'chat' ? <Breadcrumb /> : null;
+  // Show breadcrumb only for preview/diffs modes (not for chat/kanban)
+  const rightHeader = mode === 'preview' || mode === 'diffs' ? <Breadcrumb /> : null;
 
   const attemptContent = selectedTask ? (
     <NewCard className="h-full min-h-0 flex flex-col bg-diagonal-lines bg-muted border-0">
