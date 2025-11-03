@@ -103,7 +103,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="font-medium hover:text-foreground transition-colors"
             >
-              Automagik Genie
+              Namastex Labs
             </a>
           </span>
         </div>
