@@ -739,14 +739,13 @@ export function ProjectTasks() {
           tasksById={tasksById}
           onNavigateToTask={handleNavigateToTask}
         >
-          {({ breadcrumb, logs, followUp }) => (
+          {({ logs, followUp }) => (
             <>
               {gitError && (
                 <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded">
                   <div className="text-destructive text-sm">{gitError}</div>
                 </div>
               )}
-              {breadcrumb}
               <div className="flex-1 min-h-0 flex flex-col">{logs}</div>
 
               <div className="shrink-0 border-t">
