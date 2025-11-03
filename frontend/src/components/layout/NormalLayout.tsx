@@ -5,7 +5,7 @@ import { Navbar } from '@/components/layout/navbar';
 export function NormalLayout() {
   const [searchParams] = useSearchParams();
   const view = searchParams.get('view');
-  const shouldHideNavbar = view === 'preview' || view === 'diffs';
+  const shouldHideNavbar = view === 'preview' || view === 'diffs' || view === 'kanban';
 
   return (
     <>

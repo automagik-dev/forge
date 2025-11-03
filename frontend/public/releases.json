@@ -1,10 +1,18 @@
 [
   {
+    "tag_name": "v0.5.7",
+    "name": "Automagik Forge v0.5.7",
+    "body": "Hey there! 👋 I've got some exciting updates for you in this release.\n\nFirst off, I've made it way easier to set up Automagik Forge however you like. Whether you're running it locally, using a Cloudflare tunnel, or self-hosting it somewhere, I've documented all the configuration options you need in a new `.env.example` file. Just copy it, customize it for your setup, and you're good to go!\n\nI've also gotten smarter about how I generate release notes. Instead of just dumping git logs (which can be pretty noisy), I now use Claude to analyze the actual code changes and write professional, meaningful release notes that highlight what really matters. Pretty cool, right? 🧠\n\nFor those of you using the NPX CLI, I've added support for `.env` files so your configuration travels with you wherever you use the package.\n\nLastly, I've fixed some false alarms in the release pipeline—no more unnecessary warnings about old workflow failures when everything's actually fine.\n\nThanks for using Automagik Forge! As always, I'm here to help you build amazing things. Let me know if you have any questions! 🚀",
+    "html_url": "https://github.com/namastexlabs/automagik-forge/releases/tag/v0.5.7",
+    "published_at": "2025-11-01T19:54:00Z",
+    "prerelease": false
+  },
+  {
     "tag_name": "v0.5.1-rc.1",
     "name": "Automagik Forge v0.5.1-rc.1",
     "body": "## ✨ What's New\n\n### Genie Widgets System\n- **Wish (Planner)**: AI-powered task planning and specification refinement\n- **Forge (Executor)**: Automated code generation and build execution\n- **Review (Validator)**: QA automation and code review assistance\n- Integrated Genie chat widgets directly into Kanban columns\n- Master Genie orchestration for complex workflows\n\n### Omni Integration\n- WhatsApp messaging integration for notifications\n- Configure Omni instances for task updates\n- Real-time messaging capabilities\n\n### UI/UX Improvements\n- Custom Release Notes dialog with local data (no GitHub API rate limits)\n- Enhanced Kanban board with widget integration\n- Improved task status mapping and filtering\n- Custom breadcrumb navigation\n- Footer with version information\n\n### Developer Experience\n- Restored pt-BR localization\n- Advanced MCP tools integration (58 tools total)\n- Custom API utilities for Forge-specific operations\n- Improved type safety with shared forge-types\n\n## 🔧 Technical Details\n\n- Upgraded from upstream v0.0.110 to v0.0.113\n- Fixed ICU thread safety issues\n- Optimized frontend build configuration\n- Enhanced backend MCP server capabilities\n\n## 📦 Installation\n\nRefer to the main README for installation instructions.\n\n## 🐛 Bug Fixes\n\n- Fixed frontend asset embedding path\n- Resolved TypeScript compilation errors\n- Fixed task status type compatibility\n\n---\n\n**Full Changelog**: https://github.com/namastexlabs/automagik-forge/compare/v0.5.0...v0.5.1-rc.1",
     "html_url": "https://github.com/namastexlabs/automagik-forge/releases/tag/v0.5.1-rc.1",
     "published_at": "2025-10-29T00:00:00Z",
-    "prerelease": true
+    "prerelease": false
   }
 ]

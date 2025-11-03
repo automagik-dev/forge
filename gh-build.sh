@@ -12,6 +12,8 @@
 #       --non-interactive | -y       - Skip all prompts, auto-approve
 #       Example: ./gh-build.sh publish --minor --non-interactive
 #   beta - Auto-incremented beta release pipeline
+#   update-releases [tag] - Update releases.json with Genie-style message for a release
+#     Example: ./gh-build.sh update-releases v0.5.1-rc.1
 #   status - Show latest workflow status
 
 set -e
@@ -20,6 +22,164 @@ REPO="namastexlabs/automagik-forge"
 WORKFLOW_FILE=".github/workflows/build-all-platforms.yml"
 
 case "${1:-status}" in
+    update-releases)
+        TAG="${2:-}"
+
+        if [ -z "$TAG" ]; then
+            echo "📋 Fetching latest release..."
+            TAG=$(gh release list --repo "$REPO" --limit 1 --json tagName --jq '.[0].tagName')
+
+            if [ -z "$TAG" ] || [ "$TAG" = "null" ]; then
+                echo "❌ No releases found. Please specify a tag:"
+                echo "Usage: ./gh-build.sh update-releases <tag>"
+                exit 1
+            fi
+
+            echo "✅ Using latest release: $TAG"
+        fi
+
+        echo "🔍 Fetching release information for $TAG..."
+
+        # Get release data from GitHub
+        RELEASE_DATA=$(gh release view "$TAG" --repo "$REPO" --json tagName,name,body,url,publishedAt,isPrerelease 2>/dev/null)
+
+        if [ -z "$RELEASE_DATA" ] || [ "$RELEASE_DATA" = "null" ]; then
+            echo "❌ Release $TAG not found"
+            exit 1
+        fi
+
+        # Extract version from tag
+        VERSION=$(echo "$TAG" | sed 's/^v//')
+        RELEASE_BODY=$(echo "$RELEASE_DATA" | jq -r '.body')
+        RELEASE_URL=$(echo "$RELEASE_DATA" | jq -r '.url')
+        PUBLISHED_AT=$(echo "$RELEASE_DATA" | jq -r '.publishedAt')
+        IS_PRERELEASE=$(echo "$RELEASE_DATA" | jq -r '.isPrerelease')
+
+        echo "📝 Release: $TAG"
+        echo "   Version: $VERSION"
+        echo "   URL: $RELEASE_URL"
+        echo "   Published: $PUBLISHED_AT"
+        echo "   Prerelease: $IS_PRERELEASE"
+        echo ""
+
+        # Generate Genie-style message
+        echo "🧞 Generating Genie-style welcome message..."
+
+        if ! command -v claude &> /dev/null; then
+            echo "❌ Claude CLI not found. Install it first:"
+            echo "   npm install -g @anthropic-ai/claude-cli"
+            exit 1
+        fi
+
+        # Create temporary file with release notes
+        echo "$RELEASE_BODY" > .temp-release-notes.md
+
+        GENIE_PROMPT="You are Genie, the friendly AI assistant for Automagik Forge. Convert the following technical release notes into a warm, conversational message for users opening the app.
+
+Technical Release Notes:
+$(cat .temp-release-notes.md)
+
+Create a JSON object with this structure:
+{
+  \"tag_name\": \"$TAG\",
+  \"name\": \"Automagik Forge $TAG\",
+  \"body\": \"[Your conversational message here - write as if Genie is talking directly to the user about this release. Be warm, friendly, and highlight the most exciting changes. Use emojis sparingly but effectively. Keep it concise but informative.]\",
+  \"html_url\": \"$RELEASE_URL\",
+  \"published_at\": \"$PUBLISHED_AT\",
+  \"prerelease\": $IS_PRERELEASE
+}
+
+IMPORTANT RULES:
+1. Write in first person as Genie ('I', 'me', 'my')
+2. Be conversational and warm, not formal
+3. Focus on user benefits, not technical details
+4. Use simple language that anyone can understand
+5. Highlight 2-3 most exciting features/improvements
+6. Keep the tone upbeat and encouraging
+7. The body should be plain text with markdown formatting (no HTML)
+8. Return ONLY valid JSON, no other text or explanation"
+
+        # Generate Genie message
+        claude -p --model haiku "$GENIE_PROMPT" > .genie-welcome-draft-raw.json 2>/dev/null || {
+            echo "❌ Claude failed to generate Genie message"
+            rm -f .temp-release-notes.md
+            exit 1
+        }
+
+        rm -f .temp-release-notes.md
+
+        # Strip markdown code blocks if present
+        if grep -q '```json' .genie-welcome-draft-raw.json; then
+            sed -n '/```json/,/```/p' .genie-welcome-draft-raw.json | sed '1d;$d' > .genie-welcome-draft.json
+        else
+            cp .genie-welcome-draft-raw.json .genie-welcome-draft.json
+        fi
+        rm -f .genie-welcome-draft-raw.json
+
+        # Validate JSON
+        if ! jq empty .genie-welcome-draft.json 2>/dev/null; then
+            echo "❌ Generated invalid JSON. Contents:"
+            cat .genie-welcome-draft.json
+            rm -f .genie-welcome-draft.json
+            exit 1
+        fi
+
+        echo "✅ Genie message generated!"
+        echo ""
+        echo "Preview:"
+        echo "───────────────────────────────────────────────────────────────"
+        jq -r '.body' .genie-welcome-draft.json
+        echo "───────────────────────────────────────────────────────────────"
+        echo ""
+
+        # Update releases.json
+        if [ ! -f "frontend/public/releases.json" ]; then
+            echo "❌ frontend/public/releases.json not found"
+            rm -f .genie-welcome-draft.json
+            exit 1
+        fi
+
+        echo "📝 Updating frontend/public/releases.json..."
+
+        # Read existing releases
+        EXISTING_RELEASES=$(cat frontend/public/releases.json)
+        NEW_RELEASE=$(cat .genie-welcome-draft.json)
+
+        # Check if this release already exists (by tag_name)
+        EXISTING_TAG=$(echo "$EXISTING_RELEASES" | jq -r --arg tag "$TAG" '.[] | select(.tag_name == $tag) | .tag_name')
+
+        if [ "$EXISTING_TAG" = "$TAG" ]; then
+            echo "⚠️  Release $TAG already exists in releases.json"
+            read -p "Replace it? (y/n): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                echo "❌ Cancelled"
+                rm -f .genie-welcome-draft.json
+                exit 1
+            fi
+
+            # Remove existing entry and add new one
+            echo "$EXISTING_RELEASES" | jq --arg tag "$TAG" 'map(select(.tag_name != $tag))' | \
+                jq --argjson new "$NEW_RELEASE" '. = [$new] + .' > frontend/public/releases.json.tmp
+        else
+            # Add new release to the beginning of the array
+            echo "$EXISTING_RELEASES" | jq --argjson new "$NEW_RELEASE" '. = [$new] + .' > frontend/public/releases.json.tmp
+        fi
+
+        mv frontend/public/releases.json.tmp frontend/public/releases.json
+
+        echo "✅ Updated releases.json"
+        echo ""
+        echo "📦 Releases in file:"
+        jq -r '.[] | "  - \(.tag_name) (\(if .prerelease then "pre-release" else "stable" end))"' frontend/public/releases.json
+
+        # Clean up
+        rm -f .genie-welcome-draft.json
+
+        echo ""
+        echo "✨ Done! The welcome modal will now show Genie's message for $TAG"
+        ;;
+
     trigger)
         echo "🚀 Triggering GitHub Actions build..."
         TAG="${2:-}"
@@ -855,8 +1015,90 @@ EOF
                 done
             done
             fi
+
+            # Generate Genie-style welcome message for releases.json
+            echo ""
+            echo "🧞 Generating Genie-style welcome message for frontend..."
+
+            if command -v claude &> /dev/null; then
+                GENIE_PROMPT="You are Genie, the friendly AI assistant for Automagik Forge. Convert the following technical release notes into a warm, conversational message for users opening the app.
+
+Technical Release Notes:
+$(cat .release-notes-draft.md)
+
+Create a JSON object with this structure:
+{
+  \"tag_name\": \"v$NEXT_VER\",
+  \"name\": \"Automagik Forge v$NEXT_VER\",
+  \"body\": \"[Your conversational message here - write as if Genie is talking directly to the user about this release. Be warm, friendly, and highlight the most exciting changes. Use emojis sparingly but effectively. Keep it concise but informative.]\",
+  \"html_url\": \"https://github.com/$REPO/releases/tag/v$NEXT_VER\",
+  \"published_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+  \"prerelease\": false
+}
+
+IMPORTANT RULES:
+1. Write in first person as Genie ('I', 'me', 'my')
+2. Be conversational and warm, not formal
+3. Focus on user benefits, not technical details
+4. Use simple language that anyone can understand
+5. Highlight 2-3 most exciting features/improvements
+6. Keep the tone upbeat and encouraging
+7. The body should be plain text with markdown formatting (no HTML)
+8. Return ONLY valid JSON, no other text or explanation"
+
+                # Generate Genie message
+                claude -p --model haiku "$GENIE_PROMPT" > .genie-welcome-draft-raw.json 2>/dev/null || {
+                    echo "⚠️  Claude failed to generate Genie message, using fallback"
+                    # Fallback to simple JSON
+                    cat > .genie-welcome-draft.json <<EOF
+{
+  "tag_name": "v$NEXT_VER",
+  "name": "Automagik Forge v$NEXT_VER",
+  "body": "$(cat .release-notes-draft.md | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')",
+  "html_url": "https://github.com/$REPO/releases/tag/v$NEXT_VER",
+  "published_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "prerelease": false
+}
+EOF
+                }
+
+                # Strip markdown code blocks if present
+                if [ -f ".genie-welcome-draft-raw.json" ]; then
+                    if grep -q '```json' .genie-welcome-draft-raw.json; then
+                        sed -n '/```json/,/```/p' .genie-welcome-draft-raw.json | sed '1d;$d' > .genie-welcome-draft.json
+                    else
+                        cp .genie-welcome-draft-raw.json .genie-welcome-draft.json
+                    fi
+                    rm -f .genie-welcome-draft-raw.json
+                fi
+
+                # Update releases.json
+                if [ -f "frontend/public/releases.json" ]; then
+                    echo "📝 Updating frontend/public/releases.json..."
+
+                    # Read existing releases
+                    EXISTING_RELEASES=$(cat frontend/public/releases.json)
+
+                    # Add new release to the beginning of the array
+                    NEW_RELEASE=$(cat .genie-welcome-draft.json)
+
+                    # Create updated releases.json with new release prepended
+                    echo "$EXISTING_RELEASES" | jq --argjson new "$NEW_RELEASE" '. = [$new] + .' > frontend/public/releases.json.tmp
+                    mv frontend/public/releases.json.tmp frontend/public/releases.json
+
+                    echo "✅ Updated releases.json with Genie welcome message"
+
+                    # Clean up
+                    rm -f .genie-welcome-draft.json
+                else
+                    echo "⚠️  frontend/public/releases.json not found, skipping update"
+                fi
+            else
+                echo "⚠️  Claude CLI not available, skipping Genie message generation"
+                echo "   Install Claude CLI: npm install -g @anthropic-ai/claude-cli"
+            fi
         fi
-        
+
         # Step 1: Handle pre-release workflow or use existing pre-release
         if [ "${SKIP_WORKFLOW:-false}" = "true" ] && [ -n "$PRERELEASE_TAG" ]; then
             echo ""

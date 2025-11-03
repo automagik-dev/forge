@@ -31,6 +31,7 @@ import type {
   ImageResponse,
   GitBranch,
   ExecutorProfileId,
+  TaskAttempt,
 } from 'shared/types';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import { useKeySubmitTask, useKeySubmitTaskAlt, Scope } from '@/keyboard';
@@ -82,7 +83,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     const imageUploadRef = useRef<ImageUploadSectionHandle>(null);
     const [isTextareaFocused, setIsTextareaFocused] = useState(false);
     const [parentTask, setParentTask] = useState<Task | null>(null);
-    const [parentAttempt, setParentAttempt] = useState<typeof attemptsApi.get extends (...args: any[]) => Promise<infer R> ? R : never | null>(null);
+    const [parentAttempt, setParentAttempt] = useState<TaskAttempt | null>(null);
 
     const isEditMode = Boolean(task);
     const isSubtaskMode = Boolean(parentTaskAttemptId);

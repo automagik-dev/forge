@@ -346,6 +346,7 @@ export class SubGenieApiService {
         task_id: taskId,
         executor_profile_id: executorProfileId,
         base_branch: baseBranch,
+        use_worktree: false, // Genie runs in current branch without worktrees
       }),
     });
 

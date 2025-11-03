@@ -62,6 +62,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
   const [initialMessage, setInitialMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [currentBranch, setCurrentBranch] = useState<string | null>(null);
+  // @ts-ignore - activeTab kept for compatibility, tabs removed from UI
   const [activeTab, setActiveTab] = useState<'master' | 'wish' | 'forge' | 'review'>('master');
   const [neurons, setNeurons] = useState<Neuron[]>([]);
   const [creatingNeuron, setCreatingNeuron] = useState<'wish' | 'forge' | 'review' | null>(null);
@@ -199,7 +200,8 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     return type.toUpperCase() as 'WISH' | 'FORGE' | 'REVIEW';
   };
 
-  // Ensure a neuron task exists (doesn't create attempt until user sends message)
+  // DISABLED: Ensure a neuron task exists - neuron tabs removed from UI
+  // @ts-ignore - keeping function for potential future use
   const ensureNeuron = async (
     neuronType: 'wish' | 'forge' | 'review'
   ): Promise<Neuron | null> => {
@@ -287,19 +289,19 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
     }
   };
 
-  // Handle tab change with neuron creation
-  const handleTabChange = async (tab: 'master' | 'wish' | 'forge' | 'review') => {
-    setActiveTab(tab);
-
-    // If switching to a neuron tab, ensure it exists (but don't create attempt yet)
-    if (tab !== 'master') {
-      const uppercaseTab = toUppercaseNeuronType(tab);
-      const neuron = neurons.find((n) => n.type === uppercaseTab);
-      if (!neuron) {
-        await ensureNeuron(tab);
-      }
-    }
-  };
+  // DISABLED: Handle tab change with neuron creation - tabs have been removed
+  // const handleTabChange = async (tab: 'master' | 'wish' | 'forge' | 'review') => {
+  //   setActiveTab(tab);
+  //
+  //   // If switching to a neuron tab, ensure it exists (but don't create attempt yet)
+  //   if (tab !== 'master') {
+  //     const uppercaseTab = toUppercaseNeuronType(tab);
+  //     const neuron = neurons.find((n) => n.type === uppercaseTab);
+  //     if (!neuron) {
+  //       await ensureNeuron(tab);
+  //     }
+  //   }
+  // };
 
   // Handle new session creation
   // Show new session dialog
@@ -770,76 +772,8 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = ({
           </Button>
         </div>
 
-        {/* Tabs - only show when Master Genie has an active attempt */}
-        {masterGenie?.attempt && (
-          <div className="flex gap-1 mt-2">
-            <button
-              onClick={() => handleTabChange('master')}
-              disabled={creatingNeuron !== null}
-              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                activeTab === 'master'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
-            >
-              {t('genie.tabs.genie')}
-            </button>
-            <button
-              onClick={() => handleTabChange('wish')}
-              disabled={creatingNeuron !== null}
-              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                activeTab === 'wish'
-                  ? 'bg-purple-500 text-white'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              } ${creatingNeuron === 'wish' ? 'opacity-50' : ''}`}
-            >
-              {creatingNeuron === 'wish' ? (
-                <>
-                  <Loader2 className="inline h-3 w-3 mr-1 animate-spin" />
-                  {t('genie.tabs.wish')}
-                </>
-              ) : (
-                t('genie.tabs.wish')
-              )}
-            </button>
-            <button
-              onClick={() => handleTabChange('forge')}
-              disabled={creatingNeuron !== null}
-              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                activeTab === 'forge'
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              } ${creatingNeuron === 'forge' ? 'opacity-50' : ''}`}
-            >
-              {creatingNeuron === 'forge' ? (
-                <>
-                  <Loader2 className="inline h-3 w-3 mr-1 animate-spin" />
-                  {t('genie.tabs.forge')}
-                </>
-              ) : (
-                t('genie.tabs.forge')
-              )}
-            </button>
-            <button
-              onClick={() => handleTabChange('review')}
-              disabled={creatingNeuron !== null}
-              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
-                activeTab === 'review'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              } ${creatingNeuron === 'review' ? 'opacity-50' : ''}`}
-            >
-              {creatingNeuron === 'review' ? (
-                <>
-                  <Loader2 className="inline h-3 w-3 mr-1 animate-spin" />
-                  {t('genie.tabs.review')}
-                </>
-              ) : (
-                t('genie.tabs.review')
-              )}
-            </button>
-          </div>
-        )}
+        {/* Tabs - DISABLED: Only master tab was kept, wish/forge/review tabs removed */}
+        {/* No tabs shown - simplified genie widget */}
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col p-0 min-h-0">

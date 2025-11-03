@@ -52,6 +52,7 @@ import TaskPanel from '@/components/panels/TaskPanel';
 import TodoPanel from '@/components/tasks/TodoPanel';
 import { NewCard } from '@/components/ui/new-card';
 import { Breadcrumb } from '@/components/breadcrumb';
+import { ChatPanelActions } from '@/components/panels/ChatPanelActions';
 
 type Task = TaskWithAttemptStatus;
 
@@ -476,15 +477,18 @@ export function ProjectTasks() {
 
   const handleViewTaskDetails = useCallback(
     (task: Task, attemptIdToShow?: string) => {
-      if (attemptIdToShow) {
-        navigateWithSearch(paths.attempt(projectId!, task.id, attemptIdToShow));
-      } else {
-        navigateWithSearch(
-          `${paths.task(projectId!, task.id)}/attempts/latest`
-        );
+      const params = new URLSearchParams(searchParams);
+      // Default to kanban view when opening a task
+      if (!params.has('view')) {
+        params.set('view', 'kanban');
       }
+      const search = params.toString();
+      const pathname = attemptIdToShow
+        ? paths.attempt(projectId!, task.id, attemptIdToShow)
+        : `${paths.task(projectId!, task.id)}/attempts/latest`;
+      navigate({ pathname, search: search ? `?${search}` : '' });
     },
-    [projectId, navigateWithSearch]
+    [projectId, navigate, searchParams]
   );
 
   const handleNavigateToTask = useCallback(
@@ -628,18 +632,6 @@ export function ProjectTasks() {
     return <Loader message={t('loading')} size={32} className="py-8" />;
   }
 
-  const truncateTitle = (title: string | undefined, maxLength = 20) => {
-    if (!title) return 'Task';
-    if (title.length <= maxLength) return title;
-
-    const truncated = title.substring(0, maxLength);
-    const lastSpace = truncated.lastIndexOf(' ');
-
-    return lastSpace > 0
-      ? `${truncated.substring(0, lastSpace)}...`
-      : `${truncated}...`;
-  };
-
   const kanbanContent =
     tasks.length === 0 ? (
       <div className="max-w-7xl mx-auto mt-8">
@@ -675,11 +667,11 @@ export function ProjectTasks() {
       </div>
     );
 
-  // Show breadcrumb only for preview/diffs modes (kanban has its own navigation)
-  const rightHeader = mode === 'preview' || mode === 'diffs' ? <Breadcrumb /> : null;
+  // Show breadcrumb for preview/diffs/kanban modes (these hide the main navbar)
+  const rightHeader = mode === 'preview' || mode === 'diffs' || mode === 'kanban' ? <Breadcrumb /> : null;
 
   const attemptContent = selectedTask ? (
-    <NewCard className="h-full min-h-0 flex flex-col bg-diagonal-lines bg-muted border-0">
+    <NewCard className="h-full min-h-0 flex flex-col bg-diagonal-lines bg-muted border-0 relative">
       {isTaskView ? (
         <TaskPanel task={selectedTask} />
       ) : (
@@ -691,6 +683,7 @@ export function ProjectTasks() {
         >
           {({ logs, followUp }) => (
             <>
+              <ChatPanelActions attempt={attempt} task={selectedTask} />
               {gitError && (
                 <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded">
                   <div className="text-destructive text-sm">{gitError}</div>

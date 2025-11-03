@@ -28,7 +28,6 @@ export const AttemptHeaderActions = ({
   onModeChange,
   task,
   attempt,
-  onNavigateToTask,
 }: AttemptHeaderActionsProps) => {
   const { t } = useTranslation('tasks');
   const posthog = usePostHog();

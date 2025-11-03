@@ -4,6 +4,8 @@
 //! Provides unified access to both upstream functionality and forge-specific features.
 
 mod notification_hook;
+pub mod genie_profiles;
+pub mod profile_cache;
 
 use anyhow::{Context, Result, anyhow};
 use deployment::Deployment;
@@ -11,7 +13,7 @@ use serde::Deserialize;
 use serde_json::json;
 use server::DeploymentImpl;
 use sqlx::{ConnectOptions, Row, SqlitePool, sqlite::SqliteConnectOptions};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -30,6 +32,7 @@ pub struct ForgeServices {
     pub omni: Arc<RwLock<OmniService>>,
     pub config: Arc<ForgeConfigService>,
     pub pool: SqlitePool,
+    pub profile_cache: Arc<profile_cache::ProfileCacheManager>,
 }
 
 impl ForgeServices {
@@ -85,11 +88,15 @@ impl ForgeServices {
         // Spawn background worker that processes queued Omni notifications
         spawn_omni_notification_worker(pool.clone(), config.clone());
 
+        // Initialize profile cache manager
+        let profile_cache = Arc::new(profile_cache::ProfileCacheManager::new());
+
         Ok(Self {
             deployment,
             omni,
             config,
             pool,
+            profile_cache,
         })
     }
 
@@ -109,6 +116,24 @@ impl ForgeServices {
     #[allow(dead_code)]
     pub async fn effective_omni_config(&self, project_id: Option<Uuid>) -> Result<OmniConfig> {
         self.config.effective_omni_config(project_id).await
+    }
+
+    /// Load executor profiles for a specific workspace (Forge feature with hot-reload)
+    /// Merges: defaults → user overrides → .genie folder profiles
+    ///
+    /// This is a Forge-specific feature that extends upstream profile loading
+    /// with per-project .genie folder discovery and automatic hot-reload.
+    ///
+    /// The first call initializes a file watcher that automatically reloads
+    /// profiles when .genie/*.md files change.
+    pub async fn load_profiles_for_workspace(
+        &self,
+        workspace_root: &Path,
+    ) -> Result<executors::profile::ExecutorConfigs> {
+        // Use the profile cache manager (with hot-reload)
+        self.profile_cache
+            .get_profiles(workspace_root)
+            .await
     }
 }
 

@@ -89,7 +89,7 @@ dependencies = [
  "actix-utils",
  "futures-core",
  "futures-util",
- "mio",
+ "mio 1.1.0",
  "socket2 0.5.10",
  "tokio",
  "tracing",
@@ -1063,7 +1063,7 @@ checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 
 [[package]]
 name = "db"
-version = "0.0.113"
+version = "0.0.114"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1117,7 +1117,7 @@ dependencies = [
 
 [[package]]
 name = "deployment"
-version = "0.0.113"
+version = "0.0.114"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1445,7 +1445,7 @@ dependencies = [
 
 [[package]]
 name = "executors"
-version = "0.0.113"
+version = "0.0.114"
 dependencies = [
  "agent-client-protocol",
  "async-trait",
@@ -1505,6 +1505,18 @@ version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1fc6a637b6dc58414714eddd9170ff187ecb0933d4c7024d1abbd23a3cc26e9"
 dependencies = [
+ "windows-sys 0.60.2",
+]
+
+[[package]]
+name = "filetime"
+version = "0.2.26"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc0505cd1b6fa6580283f6bdf70a73fcf4aba1184038c90902b92b3dd0df63ed"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "libredox",
  "windows-sys 0.60.2",
 ]
 
@@ -1598,6 +1610,7 @@ dependencies = [
  "axum",
  "base64 0.22.1",
  "chrono",
+ "convert_case",
  "db",
  "deployment",
  "executors",
@@ -1608,6 +1621,8 @@ dependencies = [
  "json-patch",
  "local-deployment",
  "mime_guess",
+ "notify 6.1.1",
+ "regex",
  "reqwest 0.12.24",
  "rust-embed",
  "serde",
@@ -2481,6 +2496,17 @@ dependencies = [
 
 [[package]]
 name = "inotify"
+version = "0.9.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8069d3ec154eb856955c1c0fbffefbf5f3c40a104ec912d4797314c1801abff"
+dependencies = [
+ "bitflags 1.3.2",
+ "inotify-sys",
+ "libc",
+]
+
+[[package]]
+name = "inotify"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f37dccff2791ab604f9babef0ba14fbe0be30bd368dc541e2b08d07c8aa908f3"
@@ -2813,7 +2839,7 @@ dependencies = [
 
 [[package]]
 name = "local-deployment"
-version = "0.0.113"
+version = "0.0.114"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -2829,7 +2855,7 @@ dependencies = [
  "ignore",
  "json-patch",
  "nix 0.29.0",
- "notify",
+ "notify 8.2.0",
  "notify-debouncer-full",
  "notify-rust",
  "openssl-sys",
@@ -2969,6 +2995,18 @@ dependencies = [
 
 [[package]]
 name = "mio"
+version = "0.8.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4a650543ca06a924e8b371db273b2756685faae30f8487da1b56505a8f78b0c"
+dependencies = [
+ "libc",
+ "log",
+ "wasi",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "mio"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69d83b0086dc8ecf3ce9ae2874b2d1290252e2a30720bea58a5c6639b0092873"
@@ -3088,17 +3126,36 @@ dependencies = [
 
 [[package]]
 name = "notify"
+version = "6.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6205bd8bb1e454ad2e27422015fb5e4f2bcc7e08fa8f27058670d208324a4d2d"
+dependencies = [
+ "bitflags 2.10.0",
+ "crossbeam-channel",
+ "filetime",
+ "fsevent-sys",
+ "inotify 0.9.6",
+ "kqueue",
+ "libc",
+ "log",
+ "mio 0.8.11",
+ "walkdir",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "notify"
 version = "8.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4d3d07927151ff8575b7087f245456e549fea62edf0ec4e565a5ee50c8402bc3"
 dependencies = [
  "bitflags 2.10.0",
  "fsevent-sys",
- "inotify",
+ "inotify 0.11.0",
  "kqueue",
  "libc",
  "log",
- "mio",
+ "mio 1.1.0",
  "notify-types",
  "walkdir",
  "windows-sys 0.60.2",
@@ -3112,7 +3169,7 @@ checksum = "d2d88b1a7538054351c8258338df7c931a590513fb3745e8c15eb9ff4199b8d1"
 dependencies = [
  "file-id",
  "log",
- "notify",
+ "notify 8.2.0",
  "notify-types",
  "walkdir",
 ]
@@ -4543,7 +4600,7 @@ dependencies = [
 
 [[package]]
 name = "server"
-version = "0.0.113"
+version = "0.0.114"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4591,7 +4648,7 @@ dependencies = [
 
 [[package]]
 name = "services"
-version = "0.0.113"
+version = "0.0.114"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4615,7 +4672,7 @@ dependencies = [
  "lazy_static",
  "libc",
  "moka",
- "notify",
+ "notify 8.2.0",
  "notify-debouncer-full",
  "notify-rust",
  "octocrab",
@@ -5354,7 +5411,7 @@ checksum = "ff360e02eab121e0bc37a2d3b4d4dc622e6eda3a8e5253d5435ecf5bd4c68408"
 dependencies = [
  "bytes",
  "libc",
- "mio",
+ "mio 1.1.0",
  "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
@@ -5859,7 +5916,7 @@ checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
 
 [[package]]
 name = "utils"
-version = "0.0.113"
+version = "0.0.114"
 dependencies = [
  "async-stream",
  "axum",
