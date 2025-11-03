@@ -594,11 +594,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
 
               {/* Executor Profile & Branch Selection - Always visible in create mode */}
               {!isEditMode && (
-                <div className="space-y-3 pt-2">
-                  <div className="text-xs text-muted-foreground pb-1 border-t pt-3">
-                    Configuration for "Create & Start" (optional)
-                  </div>
-
+                <div className="space-y-3 pt-2 border-t">
                   {/* Executor Profile Selector */}
                   {profiles && selectedExecutorProfile && (
                     <ExecutorProfileSelector
