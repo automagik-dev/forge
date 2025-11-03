@@ -146,7 +146,7 @@ export function Breadcrumb() {
           label: targetBranch,
           path: location.pathname,
           type: 'base-branch',
-          icon: <GitBranch className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
+          icon: <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
         });
       }
     }
