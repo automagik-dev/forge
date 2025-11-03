@@ -41,7 +41,7 @@ export const AttemptHeaderActions = ({
             type="single"
             value={mode === 'chat' || mode === null ? '' : mode}
             onValueChange={(v) => {
-              const newMode = (v as LayoutMode) || 'chat';
+              const newMode = (v as LayoutMode) || 'kanban';
 
               // Track view navigation
               if (newMode === 'preview') {
@@ -59,14 +59,6 @@ export const AttemptHeaderActions = ({
               } else if (newMode === 'kanban') {
                 posthog?.capture('kanban_navigated', {
                   trigger: 'button',
-                  timestamp: new Date().toISOString(),
-                  source: 'frontend',
-                });
-              } else if (newMode === 'chat') {
-                // Closing the view (clicked active button)
-                posthog?.capture('view_closed', {
-                  trigger: 'button',
-                  from_view: mode ?? 'attempt',
                   timestamp: new Date().toISOString(),
                   source: 'frontend',
                 });

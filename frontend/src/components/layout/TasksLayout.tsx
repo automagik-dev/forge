@@ -25,11 +25,9 @@ interface TasksLayoutProps {
 type SplitSizes = [number, number];
 
 const MIN_PANEL_SIZE = 20;
-const DEFAULT_KANBAN_ATTEMPT: SplitSizes = [66, 34];
 const DEFAULT_ATTEMPT_AUX: SplitSizes = [34, 66];
 
 const STORAGE_KEYS = {
-  KANBAN_ATTEMPT: 'tasksLayout.desktop.v2.kanbanAttempt',
   ATTEMPT_AUX: 'tasksLayout.desktop.v2.attemptAux',
 } as const;
 
@@ -202,9 +200,7 @@ function RightWorkArea({
 }
 
 /**
- * DesktopSimple - Conditionally renders layout based on mode.
- * When mode is null or 'chat': Shows Attempt | Kanban (two-panel layout)
- * When mode is 'preview', 'diffs', or 'kanban': Fullscreen with RightWorkArea handling right panel
+ * DesktopSimple - Fullscreen RightWorkArea that handles all view modes
  */
 function DesktopSimple({
   kanban,
@@ -219,117 +215,14 @@ function DesktopSimple({
   mode: LayoutMode;
   rightHeader?: ReactNode;
 }) {
-  const kanbanPanelRef = useRef<ImperativePanelHandle>(null);
-  const [isKanbanCollapsed, setIsKanbanCollapsed] = useState(false);
-
-  const [outerSizes] = useState<SplitSizes>(() =>
-    loadSizes(STORAGE_KEYS.KANBAN_ATTEMPT, DEFAULT_KANBAN_ATTEMPT)
-  );
-
-  const toggleKanban = () => {
-    if (kanbanPanelRef.current) {
-      if (isKanbanCollapsed) {
-        kanbanPanelRef.current.expand();
-      } else {
-        kanbanPanelRef.current.collapse();
-      }
-      setIsKanbanCollapsed(!isKanbanCollapsed);
-    }
-  };
-
-  // When preview/diffs/kanban view is active, hide left Kanban panel and show fullscreen RightWorkArea
-  if (mode !== null && mode !== 'chat') {
-    return (
-      <RightWorkArea
-        attempt={attempt}
-        aux={aux}
-        mode={mode}
-        rightHeader={rightHeader}
-        kanban={kanban}
-      />
-    );
-  }
-
-  // Default two-panel layout: Attempt | Kanban (inverted so attempt slides from LEFT)
   return (
-    <PanelGroup
-      direction="horizontal"
-      className="h-full min-h-0"
-      onLayout={(layout) => {
-        if (layout.length === 2) {
-          // Inverted order: [attempt, kanban] so store as [layout[1], layout[0]]
-          saveSizes(STORAGE_KEYS.KANBAN_ATTEMPT, [layout[1], layout[0]]);
-        }
-      }}
-    >
-      <Panel
-        id="left"
-        order={1}
-        defaultSize={outerSizes[1]}
-        minSize={MIN_PANEL_SIZE}
-        collapsible={false}
-        className="min-w-0 min-h-0 overflow-hidden"
-      >
-        <RightWorkArea
-          attempt={attempt}
-          aux={aux}
-          mode={mode}
-          rightHeader={rightHeader}
-          kanban={kanban}
-        />
-      </Panel>
-
-      <PanelResizeHandle
-        id="handle-kr"
-        className="relative z-30 w-1 bg-border cursor-col-resize group touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-1 focus-visible:ring-offset-background"
-        aria-label="Resize panels"
-        role="separator"
-        aria-orientation="vertical"
-      >
-        <div className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-border" />
-        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 bg-muted/90 border border-border rounded-full px-1.5 py-3 opacity-70 group-hover:opacity-100 group-focus:opacity-100 transition-opacity shadow-sm">
-          <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-          <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-          <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-        </div>
-        {/* Sidebar toggle button with lamp-style animation */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="pointer-events-auto absolute top-4 left-0 -translate-x-3/4 group-hover:translate-x-[-50%] h-7 w-7 bg-background/95 border border-border hover:bg-accent shadow-sm z-10 transition-transform duration-300 ease-out opacity-40 group-hover:opacity-100"
-                onClick={toggleKanban}
-                aria-label={isKanbanCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-              >
-                <PanelLeft className={`h-4 w-4 transition-transform duration-200 ${isKanbanCollapsed ? 'rotate-180' : ''}`} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {isKanbanCollapsed ? 'Show sidebar' : 'Hide sidebar'}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </PanelResizeHandle>
-
-      <Panel
-        ref={kanbanPanelRef}
-        id="kanban"
-        order={2}
-        defaultSize={outerSizes[0]}
-        minSize={MIN_PANEL_SIZE}
-        collapsible
-        collapsedSize={0}
-        className="min-w-0 min-h-0 overflow-hidden"
-        role="region"
-        aria-label="Kanban board"
-        onCollapse={() => setIsKanbanCollapsed(true)}
-        onExpand={() => setIsKanbanCollapsed(false)}
-      >
-        {kanban}
-      </Panel>
-    </PanelGroup>
+    <RightWorkArea
+      attempt={attempt}
+      aux={aux}
+      mode={mode}
+      rightHeader={rightHeader}
+      kanban={kanban}
+    />
   );
 }
 
