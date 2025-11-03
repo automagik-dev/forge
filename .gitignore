@@ -86,3 +86,7 @@ vibe-kanban-cloud/
 
 # Release notes drafts
 .release-notes*
+
+# Genie runtime state (ephemeral, auto-generated)
+.genie/state/token-cache.json
+.genie/.session
