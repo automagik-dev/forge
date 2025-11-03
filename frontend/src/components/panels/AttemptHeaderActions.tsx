@@ -12,7 +12,6 @@ import type { LayoutMode } from '../layout/TasksLayout';
 import type { TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
 import { ActionsDropdown } from '../ui/ActionsDropdown';
 import { usePostHog } from 'posthog-js/react';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { TaskRelationshipBadges } from '../tasks/TaskRelationshipBadges';
 
 interface AttemptHeaderActionsProps {
@@ -34,7 +33,6 @@ export const AttemptHeaderActions = ({
 }: AttemptHeaderActionsProps) => {
   const { t } = useTranslation('tasks');
   const posthog = usePostHog();
-  const isXL = useMediaQuery('(min-width: 1280px)');
 
   return (
     <>
@@ -44,7 +42,7 @@ export const AttemptHeaderActions = ({
       />
       {/* Separator after badges (always visible if badges exist) */}
       <div className="h-4 w-px bg-border shrink-0" />
-      {typeof mode !== 'undefined' && onModeChange && isXL && (
+      {typeof mode !== 'undefined' && onModeChange && (
         <TooltipProvider>
           <ToggleGroup
             type="single"
@@ -112,7 +110,7 @@ export const AttemptHeaderActions = ({
           </ToggleGroup>
         </TooltipProvider>
       )}
-      {typeof mode !== 'undefined' && onModeChange && isXL && (
+      {typeof mode !== 'undefined' && onModeChange && (
         <div className="h-4 w-px bg-border" />
       )}
       <ActionsDropdown task={task} attempt={attempt} />

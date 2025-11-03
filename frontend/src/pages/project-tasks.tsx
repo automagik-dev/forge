@@ -51,14 +51,7 @@ import TaskAttemptPanel from '@/components/panels/TaskAttemptPanel';
 import TaskPanel from '@/components/panels/TaskPanel';
 import TodoPanel from '@/components/tasks/TodoPanel';
 import { NewCard, NewCardHeader } from '@/components/ui/new-card';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
+import { Breadcrumb } from '@/components/breadcrumb';
 import { AttemptHeaderActions } from '@/components/panels/AttemptHeaderActions';
 import { TaskPanelHeaderActions } from '@/components/panels/TaskPanelHeaderActions';
 
@@ -668,7 +661,8 @@ export function ProjectTasks() {
       </div>
     );
 
-  const rightHeader = null;
+  // Show breadcrumb in fullscreen mode (when mode !== null)
+  const rightHeader = mode !== null ? <Breadcrumb /> : null;
 
   const attemptContent = selectedTask ? (
     <NewCard className="h-full min-h-0 flex flex-col bg-diagonal-lines bg-muted border-0">
