@@ -1,12 +1,16 @@
-import { Settings2, ArrowDown } from 'lucide-react';
+import { useState, useMemo, useRef, useCallback, useEffect, memo } from 'react';
+import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
+import { Settings2, ArrowDown, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import type {
   BaseCodingAgent,
   ExecutorConfig,
@@ -22,6 +26,68 @@ type Props = {
   showVariantSelector?: boolean;
 };
 
+type ProfileRowProps = {
+  executorKey: string;
+  isSelected: boolean;
+  isHighlighted: boolean;
+  onHover: () => void;
+  onSelect: () => void;
+};
+
+const ProfileRow = memo(function ProfileRow({
+  executorKey,
+  isSelected,
+  isHighlighted,
+  onHover,
+  onSelect,
+}: ProfileRowProps) {
+  const classes =
+    (isSelected ? 'bg-accent text-accent-foreground ' : '') +
+    (!isSelected && isHighlighted ? 'bg-accent/70 ring-2 ring-accent ' : '') +
+    'transition-none';
+
+  return (
+    <DropdownMenuItem
+      onMouseEnter={onHover}
+      onSelect={onSelect}
+      className={classes.trim()}
+    >
+      {executorKey}
+    </DropdownMenuItem>
+  );
+});
+
+type VariantRowProps = {
+  variantKey: string;
+  isSelected: boolean;
+  isHighlighted: boolean;
+  onHover: () => void;
+  onSelect: () => void;
+};
+
+const VariantRow = memo(function VariantRow({
+  variantKey,
+  isSelected,
+  isHighlighted,
+  onHover,
+  onSelect,
+}: VariantRowProps) {
+  const classes =
+    (isSelected ? 'bg-accent text-accent-foreground ' : '') +
+    (!isSelected && isHighlighted ? 'bg-accent/70 ring-2 ring-accent ' : '') +
+    'transition-none';
+
+  return (
+    <DropdownMenuItem
+      onMouseEnter={onHover}
+      onSelect={onSelect}
+      className={classes.trim()}
+    >
+      {variantKey}
+    </DropdownMenuItem>
+  );
+});
+
 function ExecutorProfileSelector({
   profiles,
   selectedProfile,
@@ -30,30 +96,143 @@ function ExecutorProfileSelector({
   showLabel = true,
   showVariantSelector = true,
 }: Props) {
+  const [profileSearchTerm, setProfileSearchTerm] = useState('');
+  const [variantSearchTerm, setVariantSearchTerm] = useState('');
+  const [profileHighlightedIndex, setProfileHighlightedIndex] = useState<number | null>(null);
+  const [variantHighlightedIndex, setVariantHighlightedIndex] = useState<number | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [variantOpen, setVariantOpen] = useState(false);
+  const profileSearchInputRef = useRef<HTMLInputElement>(null);
+  const variantSearchInputRef = useRef<HTMLInputElement>(null);
+  const profileVirtuosoRef = useRef<VirtuosoHandle>(null);
+  const variantVirtuosoRef = useRef<VirtuosoHandle>(null);
+
   if (!profiles) {
     return null;
   }
 
-  const handleExecutorChange = (executor: string) => {
+  const handleExecutorChange = useCallback((executor: string) => {
     onProfileSelect({
       executor: executor as BaseCodingAgent,
       variant: null,
     });
-  };
+    setProfileSearchTerm('');
+    setProfileHighlightedIndex(null);
+    setProfileOpen(false);
+  }, [onProfileSelect]);
 
-  const handleVariantChange = (variant: string) => {
+  const handleVariantChange = useCallback((variant: string) => {
     if (selectedProfile) {
       onProfileSelect({
         ...selectedProfile,
         variant: variant === 'DEFAULT' ? null : variant,
       });
     }
-  };
+    setVariantSearchTerm('');
+    setVariantHighlightedIndex(null);
+    setVariantOpen(false);
+  }, [selectedProfile, onProfileSelect]);
 
   const currentProfile = selectedProfile
     ? profiles[selectedProfile.executor]
     : null;
   const hasVariants = currentProfile && Object.keys(currentProfile).length > 0;
+
+  // Filtered and sorted profiles
+  const filteredProfiles = useMemo(() => {
+    let profileKeys = Object.keys(profiles).sort((a, b) => a.localeCompare(b));
+
+    if (profileSearchTerm.trim()) {
+      const q = profileSearchTerm.toLowerCase();
+      profileKeys = profileKeys.filter((key) => key.toLowerCase().includes(q));
+    }
+    return profileKeys;
+  }, [profiles, profileSearchTerm]);
+
+  // Filtered and sorted variants
+  const filteredVariants = useMemo(() => {
+    if (!currentProfile) return [];
+    let variantKeys = Object.keys(currentProfile).sort((a, b) => a.localeCompare(b));
+
+    if (variantSearchTerm.trim()) {
+      const q = variantSearchTerm.toLowerCase();
+      variantKeys = variantKeys.filter((key) => key.toLowerCase().includes(q));
+    }
+    return variantKeys;
+  }, [currentProfile, variantSearchTerm]);
+
+  // Profile keyboard navigation
+  const moveProfileHighlight = useCallback(
+    (delta: 1 | -1) => {
+      if (filteredProfiles.length === 0) return;
+
+      const start = profileHighlightedIndex ?? -1;
+      const next = (start + delta + filteredProfiles.length) % filteredProfiles.length;
+      setProfileHighlightedIndex(next);
+      profileVirtuosoRef.current?.scrollIntoView({
+        index: next,
+        behavior: 'auto',
+      });
+    },
+    [filteredProfiles.length, profileHighlightedIndex]
+  );
+
+  const attemptProfileSelect = useCallback(() => {
+    if (profileHighlightedIndex == null) return;
+    const executorKey = filteredProfiles[profileHighlightedIndex];
+    if (!executorKey) return;
+    handleExecutorChange(executorKey);
+  }, [profileHighlightedIndex, filteredProfiles, handleExecutorChange]);
+
+  // Variant keyboard navigation
+  const moveVariantHighlight = useCallback(
+    (delta: 1 | -1) => {
+      if (filteredVariants.length === 0) return;
+
+      const start = variantHighlightedIndex ?? -1;
+      const next = (start + delta + filteredVariants.length) % filteredVariants.length;
+      setVariantHighlightedIndex(next);
+      variantVirtuosoRef.current?.scrollIntoView({
+        index: next,
+        behavior: 'auto',
+      });
+    },
+    [filteredVariants.length, variantHighlightedIndex]
+  );
+
+  const attemptVariantSelect = useCallback(() => {
+    if (variantHighlightedIndex == null) return;
+    const variantKey = filteredVariants[variantHighlightedIndex];
+    if (!variantKey) return;
+    handleVariantChange(variantKey);
+  }, [variantHighlightedIndex, filteredVariants, handleVariantChange]);
+
+  // Auto-focus search input when dropdown opens
+  useEffect(() => {
+    if (profileOpen && profileSearchInputRef.current) {
+      // Small delay to ensure dropdown is mounted
+      setTimeout(() => {
+        profileSearchInputRef.current?.focus();
+      }, 10);
+    }
+  }, [profileOpen]);
+
+  useEffect(() => {
+    if (variantOpen && variantSearchInputRef.current) {
+      setTimeout(() => {
+        variantSearchInputRef.current?.focus();
+      }, 10);
+    }
+  }, [variantOpen]);
+
+  // Reset highlights when search changes
+  useEffect(() => {
+    setProfileHighlightedIndex(null);
+  }, [profileSearchTerm]);
+
+  useEffect(() => {
+    setVariantHighlightedIndex(null);
+  }, [variantSearchTerm]);
 
   return (
     <div className="flex gap-3 flex-col sm:flex-row">
@@ -64,7 +243,16 @@ function ExecutorProfileSelector({
             Agent
           </Label>
         )}
-        <DropdownMenu>
+        <DropdownMenu
+          open={profileOpen}
+          onOpenChange={(next) => {
+            setProfileOpen(next);
+            if (!next) {
+              setProfileSearchTerm('');
+              setProfileHighlightedIndex(null);
+            }
+          }}
+        >
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
@@ -81,20 +269,75 @@ function ExecutorProfileSelector({
               <ArrowDown className="h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-full">
-            {Object.keys(profiles)
-              .sort((a, b) => a.localeCompare(b))
-              .map((executorKey) => (
-                <DropdownMenuItem
-                  key={executorKey}
-                  onClick={() => handleExecutorChange(executorKey)}
-                  className={
-                    selectedProfile?.executor === executorKey ? 'bg-accent' : ''
-                  }
-                >
-                  {executorKey}
-                </DropdownMenuItem>
-              ))}
+          <DropdownMenuContent className="w-80">
+            <div className="p-2">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  ref={profileSearchInputRef}
+                  placeholder="Search agents..."
+                  value={profileSearchTerm}
+                  onChange={(e) => setProfileSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    switch (e.key) {
+                      case 'ArrowDown':
+                        e.preventDefault();
+                        e.stopPropagation();
+                        moveProfileHighlight(1);
+                        return;
+                      case 'ArrowUp':
+                        e.preventDefault();
+                        e.stopPropagation();
+                        moveProfileHighlight(-1);
+                        return;
+                      case 'Enter':
+                        e.preventDefault();
+                        e.stopPropagation();
+                        attemptProfileSelect();
+                        return;
+                      case 'Escape':
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setProfileOpen(false);
+                        return;
+                      case 'Tab':
+                        return;
+                      default:
+                        e.stopPropagation();
+                    }
+                  }}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+            <DropdownMenuSeparator />
+            {filteredProfiles.length === 0 ? (
+              <div className="p-2 text-sm text-muted-foreground text-center">
+                No agents found
+              </div>
+            ) : (
+              <Virtuoso
+                ref={profileVirtuosoRef}
+                style={{ height: '16rem' }}
+                totalCount={filteredProfiles.length}
+                computeItemKey={(idx) => filteredProfiles[idx] ?? idx}
+                itemContent={(idx) => {
+                  const executorKey = filteredProfiles[idx];
+                  const isHighlighted = idx === profileHighlightedIndex;
+                  const isSelected = selectedProfile?.executor === executorKey;
+
+                  return (
+                    <ProfileRow
+                      executorKey={executorKey}
+                      isSelected={isSelected}
+                      isHighlighted={isHighlighted}
+                      onHover={() => setProfileHighlightedIndex(idx)}
+                      onSelect={() => handleExecutorChange(executorKey)}
+                    />
+                  );
+                }}
+              />
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -108,7 +351,16 @@ function ExecutorProfileSelector({
             <Label htmlFor="executor-variant" className="text-sm font-medium">
               Configuration
             </Label>
-            <DropdownMenu>
+            <DropdownMenu
+              open={variantOpen}
+              onOpenChange={(next) => {
+                setVariantOpen(next);
+                if (!next) {
+                  setVariantSearchTerm('');
+                  setVariantHighlightedIndex(null);
+                }
+              }}
+            >
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
@@ -122,18 +374,75 @@ function ExecutorProfileSelector({
                   <ArrowDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-full">
-                {Object.keys(currentProfile).map((variantKey) => (
-                  <DropdownMenuItem
-                    key={variantKey}
-                    onClick={() => handleVariantChange(variantKey)}
-                    className={
-                      selectedProfile.variant === variantKey ? 'bg-accent' : ''
-                    }
-                  >
-                    {variantKey}
-                  </DropdownMenuItem>
-                ))}
+              <DropdownMenuContent className="w-80">
+                <div className="p-2">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      ref={variantSearchInputRef}
+                      placeholder="Search configurations..."
+                      value={variantSearchTerm}
+                      onChange={(e) => setVariantSearchTerm(e.target.value)}
+                      onKeyDown={(e) => {
+                        switch (e.key) {
+                          case 'ArrowDown':
+                            e.preventDefault();
+                            e.stopPropagation();
+                            moveVariantHighlight(1);
+                            return;
+                          case 'ArrowUp':
+                            e.preventDefault();
+                            e.stopPropagation();
+                            moveVariantHighlight(-1);
+                            return;
+                          case 'Enter':
+                            e.preventDefault();
+                            e.stopPropagation();
+                            attemptVariantSelect();
+                            return;
+                          case 'Escape':
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setVariantOpen(false);
+                            return;
+                          case 'Tab':
+                            return;
+                          default:
+                            e.stopPropagation();
+                        }
+                      }}
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
+                {filteredVariants.length === 0 ? (
+                  <div className="p-2 text-sm text-muted-foreground text-center">
+                    No configurations found
+                  </div>
+                ) : (
+                  <Virtuoso
+                    ref={variantVirtuosoRef}
+                    style={{ height: '16rem' }}
+                    totalCount={filteredVariants.length}
+                    computeItemKey={(idx) => filteredVariants[idx] ?? idx}
+                    itemContent={(idx) => {
+                      const variantKey = filteredVariants[idx];
+                      const isHighlighted = idx === variantHighlightedIndex;
+                      const isSelected = selectedProfile.variant === variantKey;
+
+                      return (
+                        <VariantRow
+                          variantKey={variantKey}
+                          isSelected={isSelected}
+                          isHighlighted={isHighlighted}
+                          onHover={() => setVariantHighlightedIndex(idx)}
+                          onSelect={() => handleVariantChange(variantKey)}
+                        />
+                      );
+                    }}
+                  />
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

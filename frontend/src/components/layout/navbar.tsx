@@ -46,7 +46,7 @@ const EXTERNAL_LINKS = [
   {
     label: 'Discord',
     icon: MessageCircle,
-    href: 'https://discord.gg/AC4nwVtJM3',
+    href: 'https://discord.gg/CEbzP5Hteh',
   },
 ];
 
@@ -83,7 +83,7 @@ export function Navbar() {
               <Logo />
             </Link>
             <a
-              href="https://discord.gg/AC4nwVtJM3"
+              href="https://discord.gg/CEbzP5Hteh"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Join our Discord"
