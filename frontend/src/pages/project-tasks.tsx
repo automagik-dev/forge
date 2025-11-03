@@ -218,11 +218,20 @@ export function ProjectTasks() {
   }, [projectId]);
 
   const rawMode = searchParams.get('view') as LayoutMode;
-  // Migrate: treat no query param as 'chat' mode for unified system
+  // Default to kanban view when no view parameter is set
   const mode: LayoutMode =
     rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat'
       ? rawMode
-      : 'chat';
+      : 'kanban';
+
+  // Redirect to ?view=kanban if no view parameter is set
+  useEffect(() => {
+    if (!rawMode && isPanelOpen) {
+      const params = new URLSearchParams(searchParams);
+      params.set('view', 'kanban');
+      setSearchParams(params, { replace: true });
+    }
+  }, [rawMode, isPanelOpen, searchParams, setSearchParams]);
 
   // TODO: Remove this redirect after v0.1.0 (legacy URL support for bookmarked links)
   // Migrates old `view=logs` to `view=diffs`
@@ -238,9 +247,9 @@ export function ProjectTasks() {
   const setMode = useCallback(
     (newMode: LayoutMode) => {
       const params = new URLSearchParams(searchParams);
-      if (newMode === null || newMode === 'chat') {
-        // Default to 'chat' mode in unified system
-        params.set('view', 'chat');
+      if (newMode === null) {
+        // Default to kanban mode when deselecting
+        params.set('view', 'kanban');
       } else {
         params.set('view', newMode);
       }
@@ -358,12 +367,12 @@ export function ProjectTasks() {
   /**
    * Cycle the attempt area view.
    * - When panel is closed: opens task details (if a task is selected)
-   * - When panel is open: cycles among [chat, preview, diffs, kanban]
+   * - When panel is open: cycles among [kanban, preview, diffs, chat]
    */
   const cycleView = useCallback(
     (direction: 'forward' | 'backward' = 'forward') => {
-      const order: LayoutMode[] = ['chat', 'preview', 'diffs', 'kanban'];
-      const idx = order.indexOf(mode ?? 'chat');
+      const order: LayoutMode[] = ['kanban', 'preview', 'diffs', 'chat'];
+      const idx = order.indexOf(mode ?? 'kanban');
       const next =
         direction === 'forward'
           ? order[(idx + 1) % order.length]
@@ -386,8 +395,8 @@ export function ProjectTasks() {
     () => {
       if (isPanelOpen) {
         // Track keyboard shortcut before cycling view
-        const order: LayoutMode[] = ['chat', 'preview', 'diffs', 'kanban'];
-        const idx = order.indexOf(mode ?? 'chat');
+        const order: LayoutMode[] = ['kanban', 'preview', 'diffs', 'chat'];
+        const idx = order.indexOf(mode ?? 'kanban');
         const next = order[(idx + 1) % order.length];
 
         if (next === 'preview') {
@@ -426,8 +435,8 @@ export function ProjectTasks() {
     () => {
       if (isPanelOpen) {
         // Track keyboard shortcut before cycling view
-        const order: LayoutMode[] = ['chat', 'preview', 'diffs', 'kanban'];
-        const idx = order.indexOf(mode ?? 'chat');
+        const order: LayoutMode[] = ['kanban', 'preview', 'diffs', 'chat'];
+        const idx = order.indexOf(mode ?? 'kanban');
         const next = order[(idx - 1 + order.length) % order.length];
 
         if (next === 'preview') {
