@@ -48,7 +48,9 @@
   },
   "attemptHeaderActions": {
     "diffs": "Diffs",
-    "preview": "Preview"
+    "preview": "Preview",
+    "kanban": "カンバン",
+    "history": "履歴"
   },
   "branches": {
     "changeTarget": {

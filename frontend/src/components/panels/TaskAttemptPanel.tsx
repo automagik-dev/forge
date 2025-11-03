@@ -8,6 +8,8 @@ import type { ReactNode } from 'react';
 interface TaskAttemptPanelProps {
   attempt: TaskAttempt | undefined;
   task: TaskWithAttemptStatus | null;
+  tasksById?: Record<string, TaskWithAttemptStatus>;
+  onNavigateToTask?: (taskId: string) => void;
   children: (sections: { logs: ReactNode; followUp: ReactNode }) => ReactNode;
 }
 

@@ -240,7 +240,9 @@
   },
   "attemptHeaderActions": {
     "preview": "Preview",
-    "diffs": "Diffs"
+    "diffs": "Diffs",
+    "kanban": "Kanban",
+    "history": "History"
   },
   "actionsMenu": {
     "attempt": "Attempt",
