@@ -200,15 +200,126 @@ function DesktopSimple({
     }
   };
 
-  // When preview/diffs is open, hide Kanban entirely and render only RightWorkArea
+  // When preview/diffs is open, show three-column layout: Kanban | Aux | Attempt
   if (mode !== null) {
     return (
-      <RightWorkArea
-        attempt={attempt}
-        aux={aux}
-        mode={mode}
-        rightHeader={rightHeader}
-      />
+      <PanelGroup
+        direction="horizontal"
+        className="h-full min-h-0"
+        onLayout={(layout) => {
+          if (layout.length === 3) {
+            // Save the three-column layout sizes
+            saveSizes('tasksLayout.desktop.v2.threeColumn', [layout[0], layout[1] + layout[2]]);
+          }
+        }}
+      >
+        {/* Kanban panel */}
+        <Panel
+          ref={kanbanPanelRef}
+          id="kanban"
+          order={1}
+          defaultSize={33}
+          minSize={MIN_PANEL_SIZE}
+          collapsible
+          collapsedSize={0}
+          className="min-w-0 min-h-0 overflow-hidden"
+          role="region"
+          aria-label="Kanban board"
+          onCollapse={() => setIsKanbanCollapsed(true)}
+          onExpand={() => setIsKanbanCollapsed(false)}
+        >
+          {kanban}
+        </Panel>
+
+        {/* Resize handle for Kanban */}
+        <PanelResizeHandle
+          id="handle-ka"
+          className="relative z-30 w-1 bg-border cursor-col-resize group touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+          aria-label="Resize panels"
+          role="separator"
+          aria-orientation="vertical"
+        >
+          <div className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-border" />
+          <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 bg-muted/90 border border-border rounded-full px-1.5 py-3 opacity-70 group-hover:opacity-100 group-focus:opacity-100 transition-opacity shadow-sm">
+            <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+            <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+            <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+          </div>
+          {/* Sidebar toggle button with lamp-style animation */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="pointer-events-auto absolute top-4 left-0 -translate-x-3/4 group-hover:translate-x-[-50%] h-7 w-7 bg-background/95 border border-border hover:bg-accent shadow-sm z-10 transition-transform duration-300 ease-out opacity-40 group-hover:opacity-100"
+                  onClick={toggleKanban}
+                  aria-label={isKanbanCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+                >
+                  <PanelLeft className={`h-4 w-4 transition-transform duration-200 ${isKanbanCollapsed ? 'rotate-180' : ''}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {isKanbanCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </PanelResizeHandle>
+
+        {/* Aux panel (preview/diffs) on the LEFT */}
+        <Panel
+          id="aux"
+          order={2}
+          defaultSize={34}
+          minSize={MIN_PANEL_SIZE}
+          collapsible={false}
+          className="min-w-0 min-h-0 overflow-hidden"
+          role="region"
+          aria-label={mode === 'preview' ? 'Preview' : 'Diffs'}
+        >
+          <div className="h-full min-h-0 flex flex-col">
+            {rightHeader && (
+              <div className="shrink-0 sticky top-0 z-20 bg-background border-b">
+                {rightHeader}
+              </div>
+            )}
+            <div className="flex-1 min-h-0">
+              <AuxRouter mode={mode} aux={aux} />
+            </div>
+          </div>
+        </Panel>
+
+        {/* Resize handle between Aux and Attempt */}
+        <PanelResizeHandle
+          id="handle-aa"
+          className="relative z-30 w-1 bg-border cursor-col-resize group touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+          aria-label="Resize panels"
+          role="separator"
+          aria-orientation="vertical"
+        >
+          <div className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-border" />
+          <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 bg-muted/90 border border-border rounded-full px-1.5 py-3 opacity-70 group-hover:opacity-100 group-focus:opacity-100 transition-opacity shadow-sm">
+            <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+            <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+            <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+          </div>
+        </PanelResizeHandle>
+
+        {/* Attempt panel (chat) on the RIGHT */}
+        <Panel
+          id="attempt"
+          order={3}
+          defaultSize={33}
+          minSize={MIN_PANEL_SIZE}
+          collapsible
+          collapsedSize={0}
+          className="min-w-0 min-h-0 overflow-hidden"
+          role="region"
+          aria-label="Details"
+        >
+          {attempt}
+        </Panel>
+      </PanelGroup>
     );
   }
 
