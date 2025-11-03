@@ -200,9 +200,6 @@ pub struct ForgeConfig {
 /// Represents a discovered agent file
 #[derive(Debug, Clone)]
 pub struct AgentFile {
-    /// Agent name from filename
-    pub name: String,
-
     /// Full path to the agent file
     pub file_path: PathBuf,
 
@@ -227,9 +224,6 @@ pub enum AgentType {
 pub struct Collective {
     /// Collective ID (e.g., "code", "create")
     pub id: String,
-
-    /// Root path of the collective
-    pub root: PathBuf,
 
     /// Agents directory path
     pub agents_dir: PathBuf,
@@ -369,7 +363,6 @@ impl GenieProfileLoader {
             if agents_file.exists() {
                 collectives.push(Collective {
                     id: dir_name,
-                    root: collective_root.clone(),
                     agents_dir: collective_root.join("agents"),
                     context_file: agents_file,
                 });
@@ -453,7 +446,6 @@ impl GenieProfileLoader {
             };
 
             files.push(AgentFile {
-                name,
                 file_path: path,
                 collective: collective.clone(),
                 agent_type: agent_type.clone(),
