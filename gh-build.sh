@@ -90,13 +90,13 @@ Create a JSON object with this structure:
 }
 
 IMPORTANT RULES:
-1. Write in first person as Genie ('I', 'me', 'my')
-2. Be conversational and warm, not formal
-3. Focus on user benefits, not technical details
-4. Use simple language that anyone can understand
-5. Highlight 2-3 most exciting features/improvements
-6. Keep the tone upbeat and encouraging
-7. The body should be plain text with markdown formatting (no HTML)
+1. Write in first person as Genie ('I', 'we')
+2. Focus on what USERS will notice or experience (not implementation details)
+3. Use simple, everyday language - avoid ALL tech jargon (NPX, .env, git, Claude, API, CLI, etc.)
+4. Highlight 2-3 most exciting user-facing improvements
+5. Explain benefits in terms of their experience using Forge
+6. Keep it brief, upbeat, and conversational
+7. The body should be markdown formatted
 8. Return ONLY valid JSON, no other text or explanation"
 
         # Generate Genie message
@@ -1037,13 +1037,13 @@ Create a JSON object with this structure:
 }
 
 IMPORTANT RULES:
-1. Write in first person as Genie ('I', 'me', 'my')
-2. Be conversational and warm, not formal
-3. Focus on user benefits, not technical details
-4. Use simple language that anyone can understand
-5. Highlight 2-3 most exciting features/improvements
-6. Keep the tone upbeat and encouraging
-7. The body should be plain text with markdown formatting (no HTML)
+1. Write in first person as Genie ('I', 'we')
+2. Focus on what USERS will notice or experience (not implementation details)
+3. Use simple, everyday language - avoid ALL tech jargon (NPX, .env, git, Claude, API, CLI, etc.)
+4. Highlight 2-3 most exciting user-facing improvements
+5. Explain benefits in terms of their experience using Forge
+6. Keep it brief, upbeat, and conversational
+7. The body should be markdown formatted
 8. Return ONLY valid JSON, no other text or explanation"
 
                 # Generate Genie message
