@@ -3,7 +3,17 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 
 import { cn } from '@/lib/utils';
 
-const TooltipProvider = TooltipPrimitive.Provider;
+// Faster tooltip delay (200ms instead of default 700ms)
+const TooltipProvider = React.forwardRef<
+  React.ElementRef<typeof TooltipPrimitive.Provider>,
+  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Provider>
+>((props, ref) => (
+  <TooltipPrimitive.Provider
+    delayDuration={200}
+    {...props}
+  />
+));
+TooltipProvider.displayName = 'TooltipProvider';
 
 const Tooltip = TooltipPrimitive.Root;
 
