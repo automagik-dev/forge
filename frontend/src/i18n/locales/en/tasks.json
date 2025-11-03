@@ -241,6 +241,7 @@
   "attemptHeaderActions": {
     "preview": "Preview",
     "diffs": "Diffs",
+    "kanban": "Kanban",
     "history": "History"
   },
   "actionsMenu": {

@@ -50,10 +50,8 @@ import { DiffsPanel } from '@/components/panels/DiffsPanel';
 import TaskAttemptPanel from '@/components/panels/TaskAttemptPanel';
 import TaskPanel from '@/components/panels/TaskPanel';
 import TodoPanel from '@/components/tasks/TodoPanel';
-import { NewCard, NewCardHeader } from '@/components/ui/new-card';
+import { NewCard } from '@/components/ui/new-card';
 import { Breadcrumb } from '@/components/breadcrumb';
-import { AttemptHeaderActions } from '@/components/panels/AttemptHeaderActions';
-import { TaskPanelHeaderActions } from '@/components/panels/TaskPanelHeaderActions';
 
 type Task = TaskWithAttemptStatus;
 
@@ -220,8 +218,11 @@ export function ProjectTasks() {
   }, [projectId]);
 
   const rawMode = searchParams.get('view') as LayoutMode;
+  // Migrate: treat no query param as 'chat' mode for unified system
   const mode: LayoutMode =
-    rawMode === 'preview' || rawMode === 'diffs' ? rawMode : null;
+    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat'
+      ? rawMode
+      : 'chat';
 
   // TODO: Remove this redirect after v0.1.0 (legacy URL support for bookmarked links)
   // Migrates old `view=logs` to `view=diffs`
@@ -237,8 +238,9 @@ export function ProjectTasks() {
   const setMode = useCallback(
     (newMode: LayoutMode) => {
       const params = new URLSearchParams(searchParams);
-      if (newMode === null) {
-        params.delete('view');
+      if (newMode === null || newMode === 'chat') {
+        // Default to 'chat' mode in unified system
+        params.set('view', 'chat');
       } else {
         params.set('view', newMode);
       }
@@ -356,12 +358,12 @@ export function ProjectTasks() {
   /**
    * Cycle the attempt area view.
    * - When panel is closed: opens task details (if a task is selected)
-   * - When panel is open: cycles among [attempt, preview, diffs]
+   * - When panel is open: cycles among [chat, preview, diffs, kanban]
    */
   const cycleView = useCallback(
     (direction: 'forward' | 'backward' = 'forward') => {
-      const order: LayoutMode[] = [null, 'preview', 'diffs'];
-      const idx = order.indexOf(mode);
+      const order: LayoutMode[] = ['chat', 'preview', 'diffs', 'kanban'];
+      const idx = order.indexOf(mode ?? 'chat');
       const next =
         direction === 'forward'
           ? order[(idx + 1) % order.length]
@@ -384,8 +386,8 @@ export function ProjectTasks() {
     () => {
       if (isPanelOpen) {
         // Track keyboard shortcut before cycling view
-        const order: LayoutMode[] = [null, 'preview', 'diffs'];
-        const idx = order.indexOf(mode);
+        const order: LayoutMode[] = ['chat', 'preview', 'diffs', 'kanban'];
+        const idx = order.indexOf(mode ?? 'chat');
         const next = order[(idx + 1) % order.length];
 
         if (next === 'preview') {
@@ -397,6 +399,13 @@ export function ProjectTasks() {
           });
         } else if (next === 'diffs') {
           posthog?.capture('diffs_navigated', {
+            trigger: 'keyboard',
+            direction: 'forward',
+            timestamp: new Date().toISOString(),
+            source: 'frontend',
+          });
+        } else if (next === 'kanban') {
+          posthog?.capture('kanban_navigated', {
             trigger: 'keyboard',
             direction: 'forward',
             timestamp: new Date().toISOString(),
@@ -417,8 +426,8 @@ export function ProjectTasks() {
     () => {
       if (isPanelOpen) {
         // Track keyboard shortcut before cycling view
-        const order: LayoutMode[] = [null, 'preview', 'diffs'];
-        const idx = order.indexOf(mode);
+        const order: LayoutMode[] = ['chat', 'preview', 'diffs', 'kanban'];
+        const idx = order.indexOf(mode ?? 'chat');
         const next = order[(idx - 1 + order.length) % order.length];
 
         if (next === 'preview') {
@@ -430,6 +439,13 @@ export function ProjectTasks() {
           });
         } else if (next === 'diffs') {
           posthog?.capture('diffs_navigated', {
+            trigger: 'keyboard',
+            direction: 'backward',
+            timestamp: new Date().toISOString(),
+            source: 'frontend',
+          });
+        } else if (next === 'kanban') {
+          posthog?.capture('kanban_navigated', {
             trigger: 'keyboard',
             direction: 'backward',
             timestamp: new Date().toISOString(),
@@ -661,8 +677,8 @@ export function ProjectTasks() {
       </div>
     );
 
-  // Show breadcrumb in fullscreen mode (when mode !== null)
-  const rightHeader = mode !== null ? <Breadcrumb /> : null;
+  // Show breadcrumb in fullscreen mode (when mode is not default two-panel layout)
+  const rightHeader = mode !== null && mode !== 'chat' ? <Breadcrumb /> : null;
 
   const attemptContent = selectedTask ? (
     <NewCard className="h-full min-h-0 flex flex-col bg-diagonal-lines bg-muted border-0">

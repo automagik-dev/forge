@@ -10,7 +10,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-export type LayoutMode = 'preview' | 'diffs' | null;
+export type LayoutMode = 'chat' | 'preview' | 'diffs' | 'kanban' | null;
 
 interface TasksLayoutProps {
   kanban: ReactNode;
@@ -78,22 +78,38 @@ function AuxRouter({ mode, aux }: { mode: LayoutMode; aux: ReactNode }) {
 
 /**
  * RightWorkArea - Contains header and Attempt/Aux content.
- * Shows just Attempt when mode === null, or Attempt | Aux split when mode !== null.
+ * Shows just Attempt when mode is 'chat' or null, or Attempt | Aux split when mode is preview/diffs.
  */
 function RightWorkArea({
   attempt,
   aux,
   mode,
   rightHeader,
+  kanban,
 }: {
   attempt: ReactNode;
   aux: ReactNode;
   mode: LayoutMode;
   rightHeader?: ReactNode;
+  kanban: ReactNode;
 }) {
+  const attemptPanelRef = useRef<ImperativePanelHandle>(null);
+  const [isAttemptCollapsed, setIsAttemptCollapsed] = useState(false);
+
   const [innerSizes] = useState<SplitSizes>(() =>
     loadSizes(STORAGE_KEYS.ATTEMPT_AUX, DEFAULT_ATTEMPT_AUX)
   );
+
+  const toggleAttempt = () => {
+    if (attemptPanelRef.current) {
+      if (isAttemptCollapsed) {
+        attemptPanelRef.current.expand();
+      } else {
+        attemptPanelRef.current.collapse();
+      }
+      setIsAttemptCollapsed(!isAttemptCollapsed);
+    }
+  };
 
   return (
     <div className="h-full min-h-0 flex flex-col">
@@ -103,8 +119,10 @@ function RightWorkArea({
         </div>
       )}
       <div className="flex-1 min-h-0">
-        {mode === null ? (
+        {mode === null || mode === 'chat' ? (
           attempt
+        ) : mode === 'kanban' ? (
+          kanban
         ) : (
           <PanelGroup
             direction="horizontal"
@@ -116,6 +134,7 @@ function RightWorkArea({
             }}
           >
             <Panel
+              ref={attemptPanelRef}
               id="attempt"
               order={1}
               defaultSize={innerSizes[0]}
@@ -125,6 +144,8 @@ function RightWorkArea({
               className="min-w-0 min-h-0 overflow-hidden"
               role="region"
               aria-label="Details"
+              onCollapse={() => setIsAttemptCollapsed(true)}
+              onExpand={() => setIsAttemptCollapsed(false)}
             >
               {attempt}
             </Panel>
@@ -142,6 +163,25 @@ function RightWorkArea({
                 <span className="w-1 h-1 rounded-full bg-muted-foreground" />
                 <span className="w-1 h-1 rounded-full bg-muted-foreground" />
               </div>
+              {/* Chat toggle button with lamp-style animation */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="pointer-events-auto absolute top-4 left-0 -translate-x-3/4 group-hover:translate-x-[-50%] h-7 w-7 bg-background/95 border border-border hover:bg-accent shadow-sm z-10 transition-transform duration-300 ease-out opacity-40 group-hover:opacity-100"
+                      onClick={toggleAttempt}
+                      aria-label={isAttemptCollapsed ? 'Show chat' : 'Hide chat'}
+                    >
+                      <PanelLeft className={`h-4 w-4 transition-transform duration-200 ${isAttemptCollapsed ? 'rotate-180' : ''}`} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    {isAttemptCollapsed ? 'Show chat' : 'Hide chat'}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </PanelResizeHandle>
 
             <Panel
@@ -165,8 +205,8 @@ function RightWorkArea({
 
 /**
  * DesktopSimple - Conditionally renders layout based on mode.
- * When mode === null: Shows Kanban | Attempt
- * When mode !== null: Hides Kanban, shows only RightWorkArea with Attempt | Aux
+ * When mode is null or 'chat': Shows Attempt | Kanban (two-panel layout)
+ * When mode is 'preview', 'diffs', or 'kanban': Fullscreen with RightWorkArea handling right panel
  */
 function DesktopSimple({
   kanban,
@@ -199,19 +239,20 @@ function DesktopSimple({
     }
   };
 
-  // When preview/diffs is open, hide Kanban entirely and render only RightWorkArea
-  if (mode !== null) {
+  // When preview/diffs/kanban view is active, hide left Kanban panel and show fullscreen RightWorkArea
+  if (mode !== null && mode !== 'chat') {
     return (
       <RightWorkArea
         attempt={attempt}
         aux={aux}
         mode={mode}
         rightHeader={rightHeader}
+        kanban={kanban}
       />
     );
   }
 
-  // When only viewing attempt logs, show Attempt | Kanban (inverted so attempt slides from LEFT)
+  // Default two-panel layout: Attempt | Kanban (inverted so attempt slides from LEFT)
   return (
     <PanelGroup
       direction="horizontal"
@@ -236,6 +277,7 @@ function DesktopSimple({
           aux={aux}
           mode={mode}
           rightHeader={rightHeader}
+          kanban={kanban}
         />
       </Panel>
 
