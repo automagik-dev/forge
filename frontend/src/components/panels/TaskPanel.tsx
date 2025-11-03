@@ -127,10 +127,10 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
         taskId: task.id,
         data: {
           title: editTitle,
-          description: null,
-          status: null,
-          parent_task_attempt: null,
-          image_ids: null,
+          description: task.description,
+          status: task.status,
+          parent_task_attempt: task.parent_task_attempt,
+          image_ids: (task as any).image_ids || null,
         },
       });
       setIsEditingTitle(false);
@@ -146,11 +146,11 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
       await updateTask.mutateAsync({
         taskId: task.id,
         data: {
-          title: null,
+          title: task.title,
           description: editDescription,
-          status: null,
-          parent_task_attempt: null,
-          image_ids: null,
+          status: task.status,
+          parent_task_attempt: task.parent_task_attempt,
+          image_ids: (task as any).image_ids || null,
         },
       });
       setIsEditingDescription(false);
