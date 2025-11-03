@@ -668,32 +668,7 @@ export function ProjectTasks() {
       </div>
     );
 
-  const rightHeader = selectedTask ? (
-    <NewCardHeader
-      className="shrink-0"
-      actions={
-        isTaskView ? (
-          <TaskPanelHeaderActions
-            task={selectedTask}
-            onClose={() =>
-              navigate(`/projects/${projectId}/tasks`, { replace: true })
-            }
-          />
-        ) : (
-          <AttemptHeaderActions
-            mode={mode}
-            onModeChange={setMode}
-            task={selectedTask}
-            attempt={attempt ?? null}
-            onNavigateToTask={handleNavigateToTask}
-            onClose={() =>
-              navigate(`/projects/${projectId}/tasks`, { replace: true })
-            }
-          />
-        )
-      }
-    />
-  ) : null;
+  const rightHeader = null;
 
   const attemptContent = selectedTask ? (
     <NewCard className="h-full min-h-0 flex flex-col bg-diagonal-lines bg-muted border-0">
