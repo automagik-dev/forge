@@ -1,15 +1,19 @@
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge } from 'lucide-react';
 import { useProject } from '@/contexts/project-context';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
 import { useTaskAttempt } from '@/hooks/useTaskAttempt';
+import { useCallback } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { TaskPanelHeaderActions } from '@/components/panels/TaskPanelHeaderActions';
+import { AttemptHeaderActions } from '@/components/panels/AttemptHeaderActions';
+import type { LayoutMode } from '@/components/layout/TasksLayout';
 
 export function Breadcrumb() {
   const location = useLocation();
@@ -18,10 +22,44 @@ export function Breadcrumb() {
   const { data: projects } = useProjects();
   const { taskId, attemptId } = useParams<{ taskId?: string; attemptId?: string }>();
   const { tasksById } = useProjectTasks(projectId || '');
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Get attempt data if viewing an attempt
   const effectiveAttemptId = attemptId === 'latest' ? undefined : attemptId;
   const { data: attempt } = useTaskAttempt(effectiveAttemptId);
+
+  // Determine if we're in task view or attempt view
+  const isTaskView = !!taskId && !effectiveAttemptId;
+
+  // Get mode from URL params
+  const rawMode = searchParams.get('view') as LayoutMode;
+  const mode: LayoutMode =
+    rawMode === 'preview' || rawMode === 'diffs' ? rawMode : null;
+
+  const setMode = useCallback(
+    (newMode: LayoutMode) => {
+      const params = new URLSearchParams(searchParams);
+      if (newMode === null) {
+        params.delete('view');
+      } else {
+        params.set('view', newMode);
+      }
+      setSearchParams(params, { replace: true });
+    },
+    [searchParams, setSearchParams]
+  );
+
+  const handleNavigateToTask = useCallback(
+    (taskId: string) => {
+      if (!projectId) return;
+      const search = searchParams.toString();
+      navigate({
+        pathname: `/projects/${projectId}/tasks/${taskId}/attempts/latest`,
+        search: search ? `?${search}` : '',
+      });
+    },
+    [projectId, navigate, searchParams]
+  );
 
   // Determine breadcrumb items based on route
   const getBreadcrumbs = () => {
@@ -60,26 +98,26 @@ export function Breadcrumb() {
           path: `/projects/${projectId}/tasks/${taskId}`,
           type: 'task',
         });
+      }
 
-        // Add git branch if viewing an attempt
-        if (attempt?.branch) {
-          crumbs.push({
-            label: attempt.branch,
-            path: location.pathname,
-            type: 'git-branch',
-            icon: <GitBranch className="h-3 w-3" />,
-          });
-        }
+      // Add git branch if viewing an attempt (after task, outside task check)
+      if (attempt?.branch) {
+        crumbs.push({
+          label: attempt.branch,
+          path: location.pathname,
+          type: 'git-branch',
+          icon: <GitBranch className="h-3 w-3" />,
+        });
+      }
 
-        // Add base branch (for informational purposes)
-        if (project.default_base_branch) {
-          crumbs.push({
-            label: project.default_base_branch,
-            path: location.pathname,
-            type: 'base-branch',
-            icon: <GitMerge className="h-3 w-3" />,
-          });
-        }
+      // Always add base branch if available (not just in task view)
+      if (project.default_base_branch) {
+        crumbs.push({
+          label: project.default_base_branch,
+          path: location.pathname,
+          type: 'base-branch',
+          icon: <GitMerge className="h-3 w-3" />,
+        });
       }
     }
 
@@ -97,8 +135,11 @@ export function Breadcrumb() {
     navigate(`/projects/${newProjectId}/tasks`);
   };
 
+  // Get current task for action buttons
+  const currentTask = taskId && tasksById[taskId] ? tasksById[taskId] : null;
+
   return (
-    <nav aria-label="Breadcrumb" className="px-3 py-2 text-sm">
+    <nav aria-label="Breadcrumb" className="px-3 py-2 text-sm flex items-center justify-between">
       <ol className="flex items-center gap-1">
         {/* Home icon to navigate back to project */}
         <li className="flex items-center gap-1">
@@ -165,6 +206,27 @@ export function Breadcrumb() {
           );
         })}
       </ol>
+
+      {/* Action buttons */}
+      {currentTask && (
+        <div className="flex items-center gap-2">
+          {isTaskView ? (
+            <TaskPanelHeaderActions
+              task={currentTask}
+              onClose={() => navigate(`/projects/${projectId}/tasks`, { replace: true })}
+            />
+          ) : (
+            <AttemptHeaderActions
+              mode={mode}
+              onModeChange={setMode}
+              task={currentTask}
+              attempt={attempt ?? null}
+              onNavigateToTask={handleNavigateToTask}
+              onClose={() => navigate(`/projects/${projectId}/tasks`, { replace: true })}
+            />
+          )}
+        </div>
+      )}
     </nav>
   );
 }
