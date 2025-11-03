@@ -6,7 +6,14 @@ import type {
   TaskRelationships,
   TaskWithAttemptStatus,
 } from 'shared/types';
-import { cn } from '@/lib/utils';
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 
 interface TaskRelationshipBreadcrumbProps {
   selectedAttempt: TaskAttempt | null;
@@ -53,26 +60,33 @@ export function TaskRelationshipBreadcrumb({
     return null;
   }
 
-  const truncate = (text: string, maxLength: number = 40) => {
-    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
-  };
-
   return (
-    <div className="shrink-0 flex items-center gap-1.5 text-xs text-muted-foreground px-4 py-2 bg-muted/30 border-b">
-      <button
-        onClick={() => onNavigateToTask?.(relationships.parent_task!.id)}
-        className={cn(
-          'hover:text-foreground transition-colors truncate max-w-[200px]',
-          'font-medium'
-        )}
-        title={relationships.parent_task.title}
-      >
-        {truncate(relationships.parent_task.title)}
-      </button>
-      <ChevronRight className="w-3 h-3 shrink-0" />
-      <span className="text-foreground font-medium truncate">
-        {truncate(currentTask?.title || 'Current Task')}
-      </span>
+    <div className="shrink-0 px-3 py-2 bg-muted/30 border-b">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink
+              asChild
+              className="cursor-pointer max-w-[200px] truncate"
+            >
+              <button
+                onClick={() => onNavigateToTask?.(relationships.parent_task!.id)}
+                title={relationships.parent_task.title}
+              >
+                {relationships.parent_task.title}
+              </button>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator>
+            <ChevronRight className="h-4 w-4" />
+          </BreadcrumbSeparator>
+          <BreadcrumbItem>
+            <BreadcrumbPage className="max-w-[300px] truncate">
+              {currentTask?.title || 'Current Task'}
+            </BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
     </div>
   );
 }
