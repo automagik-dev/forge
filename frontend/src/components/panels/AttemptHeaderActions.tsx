@@ -68,7 +68,7 @@ export const AttemptHeaderActions = ({
 
               onModeChange(newMode);
             }}
-            className="inline-flex gap-4"
+            className="inline-flex gap-1"
             aria-label="Layout mode"
           >
             <Tooltip>
@@ -79,6 +79,11 @@ export const AttemptHeaderActions = ({
                   active={mode === 'preview'}
                 >
                   <Eye className="h-4 w-4" />
+                  {mode === 'preview' && (
+                    <span className="text-sm font-medium">
+                      {t('attemptHeaderActions.preview')}
+                    </span>
+                  )}
                 </ToggleGroupItem>
               </TooltipTrigger>
               <TooltipContent side="bottom">
@@ -94,6 +99,11 @@ export const AttemptHeaderActions = ({
                   active={mode === 'diffs'}
                 >
                   <FileDiff className="h-4 w-4" />
+                  {mode === 'diffs' && (
+                    <span className="text-sm font-medium">
+                      {t('attemptHeaderActions.diffs')}
+                    </span>
+                  )}
                 </ToggleGroupItem>
               </TooltipTrigger>
               <TooltipContent side="bottom">
