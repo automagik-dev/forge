@@ -692,40 +692,7 @@ export function ProjectTasks() {
           />
         )
       }
-    >
-      <div className="mx-auto w-full">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              {isTaskView ? (
-                <BreadcrumbPage>
-                  {truncateTitle(selectedTask?.title)}
-                </BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink
-                  className="cursor-pointer hover:underline"
-                  onClick={() =>
-                    navigateWithSearch(paths.task(projectId!, taskId!))
-                  }
-                >
-                  {truncateTitle(selectedTask?.title)}
-                </BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
-            {!isTaskView && (
-              <>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>
-                    {attempt?.branch || 'Task Attempt'}
-                  </BreadcrumbPage>
-                </BreadcrumbItem>
-              </>
-            )}
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-    </NewCardHeader>
+    />
   ) : null;
 
   const attemptContent = selectedTask ? (
