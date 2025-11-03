@@ -264,13 +264,14 @@ export function Breadcrumb() {
 
         {breadcrumbs.map((crumb, index) => {
           const isCurrentProject = crumb.type === 'project';
+          const isParentTask = crumb.type === 'parent-task';
           const isGitBranch = crumb.type === 'git-branch';
           const isBaseBranch = crumb.type === 'base-branch';
           const isLastCrumb = index === breadcrumbs.length - 1;
           const hasIcon = isGitBranch || isBaseBranch;
 
           return (
-            <li key={`${crumb.type}-${crumb.path}-${index}`} className="flex items-center gap-1">
+            <li key={`${crumb.type}-${crumb.path}-${index}`} className={`flex items-center gap-1 ${isParentTask ? 'hidden lg:flex' : ''}`}>
               {/* Separator */}
               {!isGitBranch ? (
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -307,10 +308,19 @@ export function Breadcrumb() {
                 </DropdownMenu>
               ) : isGitBranch || isBaseBranch ? (
                 <div className="flex items-center gap-1">
-                  <span className="inline-flex items-center gap-1.5 max-w-[280px] px-2 py-0.5 rounded-full bg-muted text-xs font-medium min-w-0">
-                    {crumb.icon}
-                    <span className="truncate">{crumb.label}</span>
-                  </span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex items-center gap-1.5 max-w-[120px] md:max-w-[180px] lg:max-w-[280px] px-2 py-0.5 rounded-full bg-muted text-xs font-medium min-w-0">
+                          {crumb.icon}
+                          <span className="truncate">{crumb.label}</span>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <span className="font-mono text-xs">{crumb.label}</span>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   {/* Add change target branch button next to base branch */}
                   {isBaseBranch && attempt && (
                     <TooltipProvider>
@@ -335,11 +345,12 @@ export function Breadcrumb() {
                   )}
                 </div>
               ) : isLastCrumb ? (
-                <span className="text-foreground font-medium">{crumb.label}</span>
+                <span className="text-foreground font-medium truncate max-w-[150px] md:max-w-[250px] lg:max-w-none">{crumb.label}</span>
               ) : (
                 <Link
                   to={crumb.path}
-                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors truncate max-w-[150px] md:max-w-[200px]"
+                  title={crumb.label}
                 >
                   {crumb.label}
                 </Link>
@@ -348,12 +359,12 @@ export function Breadcrumb() {
           );
         })}
 
-        {/* Git status badges (ahead/behind) - show after branches */}
+        {/* Git status badges (ahead/behind) - show after branches, hide on very small screens */}
         {branchStatus && attempt && (
           <>
             {branchStatus.commits_ahead > 0 && (
-              <li className="flex items-center gap-1">
-                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100/70 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs">
+              <li className="hidden md:flex items-center gap-1">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100/70 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs">
                   +{branchStatus.commits_ahead}{' '}
                   {t('git.status.commits', { count: branchStatus.commits_ahead })}{' '}
                   {t('git.status.ahead')}
@@ -361,7 +372,7 @@ export function Breadcrumb() {
               </li>
             )}
             {branchStatus.commits_behind > 0 && (
-              <li className="flex items-center gap-1">
+              <li className="hidden md:flex items-center gap-1">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100/60 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs">
                   {branchStatus.commits_behind}{' '}
                   {t('git.status.commits', { count: branchStatus.commits_behind })}{' '}
