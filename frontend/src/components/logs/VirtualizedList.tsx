@@ -15,9 +15,17 @@ import {
   PatchTypeWithKey,
   useConversationHistory,
 } from '@/hooks/useConversationHistory';
-import { Loader2 } from 'lucide-react';
+import { Loader2, History } from 'lucide-react';
 import { TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
 import { ApprovalFormProvider } from '@/contexts/ApprovalFormContext';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useTranslation } from 'react-i18next';
 
 interface VirtualizedListProps {
   attempt: TaskAttempt;
@@ -75,6 +83,38 @@ const computeItemKey: VirtuosoMessageListProps<
   MessageListContext
 >['computeItemKey'] = ({ data }) => `l-${data.patchKey}`;
 
+const ChatHeader = () => {
+  const { t } = useTranslation('tasks');
+
+  return (
+    <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-4 py-2">
+      <div className="flex items-center justify-end">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                aria-label="View history"
+                onClick={() => {
+                  // TODO: Implement history dropdown
+                  console.log('History clicked');
+                }}
+              >
+                <History className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              {t('attemptHeaderActions.history')}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    </div>
+  );
+};
+
 const VirtualizedList = ({ attempt, task }: VirtualizedListProps) => {
   const [channelData, setChannelData] =
     useState<DataWithScrollModifier<PatchTypeWithKey> | null>(null);
@@ -116,6 +156,7 @@ const VirtualizedList = ({ attempt, task }: VirtualizedListProps) => {
 
   return (
     <ApprovalFormProvider>
+      <ChatHeader />
       <VirtuosoMessageListLicense
         licenseKey={import.meta.env.VITE_PUBLIC_REACT_VIRTUOSO_LICENSE_KEY}
       >

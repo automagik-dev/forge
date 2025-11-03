@@ -252,18 +252,18 @@ function DesktopSimple({
           <span className="w-1 h-1 rounded-full bg-muted-foreground" />
           <span className="w-1 h-1 rounded-full bg-muted-foreground" />
         </div>
-        {/* Sidebar toggle button */}
+        {/* Sidebar toggle button with lamp-style animation */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="pointer-events-auto absolute top-4 left-1/2 -translate-x-1/2 h-7 w-7 bg-background/95 border border-border hover:bg-accent shadow-sm z-10"
+                className="pointer-events-auto absolute top-4 left-0 -translate-x-3/4 group-hover:translate-x-[-50%] h-7 w-7 bg-background/95 border border-border hover:bg-accent shadow-sm z-10 transition-transform duration-300 ease-out opacity-40 group-hover:opacity-100"
                 onClick={toggleKanban}
                 aria-label={isKanbanCollapsed ? 'Show sidebar' : 'Hide sidebar'}
               >
-                <PanelLeft className={`h-4 w-4 transition-transform ${isKanbanCollapsed ? 'rotate-180' : ''}`} />
+                <PanelLeft className={`h-4 w-4 transition-transform duration-200 ${isKanbanCollapsed ? 'rotate-180' : ''}`} />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right">
