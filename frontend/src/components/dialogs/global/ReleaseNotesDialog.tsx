@@ -129,29 +129,27 @@ export const ReleaseNotesDialog = NiceModal.create(() => {
           ) : null}
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-2">
-          <div className="flex gap-2 flex-1">
+        <DialogFooter className="flex sm:flex-row sm:justify-end sm:space-x-2 flex-row justify-between gap-2">
+          <Button
+            variant="outline"
+            onClick={handleViewAllReleases}
+            className="flex-1"
+          >
+            View All Releases
+          </Button>
+          {release && (
             <Button
               variant="outline"
-              onClick={handleViewAllReleases}
+              onClick={handleViewOnGitHub}
               className="flex-1"
             >
-              View All Releases
+              <ExternalLink className="h-4 w-4 mr-2" />
+              View on GitHub
             </Button>
-            {release && (
-              <Button
-                variant="outline"
-                onClick={handleViewOnGitHub}
-                className="flex-1"
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                View on GitHub
-              </Button>
-            )}
-          </div>
+          )}
           <Button
             onClick={() => modal.resolve()}
-            className="sm:flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+            className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
           >
             Let's Create! ✨
           </Button>
