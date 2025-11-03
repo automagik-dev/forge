@@ -117,8 +117,8 @@ function RightWorkArea({
         </div>
       )}
       <div className="flex-1 min-h-0">
-        {mode === null || mode === 'chat' ? (
-          attempt
+        {mode === null || mode === 'chat' || mode === 'kanban' ? (
+          mode === 'kanban' ? kanban : attempt
         ) : (
           <PanelGroup
             direction="horizontal"
