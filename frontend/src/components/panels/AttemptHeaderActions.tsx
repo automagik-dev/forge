@@ -39,9 +39,9 @@ export const AttemptHeaderActions = ({
         <TooltipProvider>
           <ToggleGroup
             type="single"
-            value={mode ?? ''}
+            value={mode === 'chat' || mode === null ? '' : mode}
             onValueChange={(v) => {
-              const newMode = (v as LayoutMode) || null;
+              const newMode = (v as LayoutMode) || 'chat';
 
               // Track view navigation
               if (newMode === 'preview') {
@@ -56,7 +56,13 @@ export const AttemptHeaderActions = ({
                   timestamp: new Date().toISOString(),
                   source: 'frontend',
                 });
-              } else if (newMode === null) {
+              } else if (newMode === 'kanban') {
+                posthog?.capture('kanban_navigated', {
+                  trigger: 'button',
+                  timestamp: new Date().toISOString(),
+                  source: 'frontend',
+                });
+              } else if (newMode === 'chat') {
                 // Closing the view (clicked active button)
                 posthog?.capture('view_closed', {
                   trigger: 'button',

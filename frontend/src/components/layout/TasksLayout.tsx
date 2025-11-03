@@ -121,8 +121,6 @@ function RightWorkArea({
       <div className="flex-1 min-h-0">
         {mode === null || mode === 'chat' ? (
           attempt
-        ) : mode === 'kanban' ? (
-          kanban
         ) : (
           <PanelGroup
             direction="horizontal"
@@ -192,9 +190,9 @@ function RightWorkArea({
               collapsible={false}
               className="min-w-0 min-h-0 overflow-hidden"
               role="region"
-              aria-label={mode === 'preview' ? 'Preview' : 'Diffs'}
+              aria-label={mode === 'preview' ? 'Preview' : mode === 'diffs' ? 'Diffs' : 'Kanban'}
             >
-              <AuxRouter mode={mode} aux={aux} />
+              {mode === 'kanban' ? kanban : <AuxRouter mode={mode} aux={aux} />}
             </Panel>
           </PanelGroup>
         )}
