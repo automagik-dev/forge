@@ -233,12 +233,27 @@ export function Breadcrumb() {
   };
 
   const handleChangeTargetBranchDialogOpen = async () => {
+    // Ensure branches are loaded before showing dialog
+    let branchesToUse = branches;
+    if (branchesToUse.length === 0 && projectId) {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/git/branches`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          branchesToUse = data.data;
+          setBranches(data.data); // Update state for future use
+        }
+      } catch (err) {
+        console.error('Failed to fetch branches:', err);
+      }
+    }
+
     try {
       const result = await showModal<{
         action: 'confirmed' | 'canceled';
         branchName: string;
       }>('change-target-branch-dialog', {
-        branches,
+        branches: branchesToUse,
         isChangingTargetBranch: isChangingTargetBranch,
       });
 
