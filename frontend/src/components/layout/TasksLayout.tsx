@@ -212,32 +212,32 @@ function DesktopSimple({
     );
   }
 
-  // When only viewing attempt logs, show Kanban | Attempt (no aux)
+  // When only viewing attempt logs, show Attempt | Kanban (inverted so attempt slides from LEFT)
   return (
     <PanelGroup
       direction="horizontal"
       className="h-full min-h-0"
       onLayout={(layout) => {
         if (layout.length === 2) {
-          saveSizes(STORAGE_KEYS.KANBAN_ATTEMPT, [layout[0], layout[1]]);
+          // Inverted order: [attempt, kanban] so store as [layout[1], layout[0]]
+          saveSizes(STORAGE_KEYS.KANBAN_ATTEMPT, [layout[1], layout[0]]);
         }
       }}
     >
       <Panel
-        ref={kanbanPanelRef}
-        id="kanban"
+        id="left"
         order={1}
-        defaultSize={outerSizes[0]}
+        defaultSize={outerSizes[1]}
         minSize={MIN_PANEL_SIZE}
-        collapsible
-        collapsedSize={0}
+        collapsible={false}
         className="min-w-0 min-h-0 overflow-hidden"
-        role="region"
-        aria-label="Kanban board"
-        onCollapse={() => setIsKanbanCollapsed(true)}
-        onExpand={() => setIsKanbanCollapsed(false)}
       >
-        {kanban}
+        <RightWorkArea
+          attempt={attempt}
+          aux={aux}
+          mode={mode}
+          rightHeader={rightHeader}
+        />
       </Panel>
 
       <PanelResizeHandle
@@ -275,19 +275,20 @@ function DesktopSimple({
       </PanelResizeHandle>
 
       <Panel
-        id="right"
+        ref={kanbanPanelRef}
+        id="kanban"
         order={2}
-        defaultSize={outerSizes[1]}
+        defaultSize={outerSizes[0]}
         minSize={MIN_PANEL_SIZE}
-        collapsible={false}
+        collapsible
+        collapsedSize={0}
         className="min-w-0 min-h-0 overflow-hidden"
+        role="region"
+        aria-label="Kanban board"
+        onCollapse={() => setIsKanbanCollapsed(true)}
+        onExpand={() => setIsKanbanCollapsed(false)}
       >
-        <RightWorkArea
-          attempt={attempt}
-          aux={aux}
-          mode={mode}
-          rightHeader={rightHeader}
-        />
+        {kanban}
       </Panel>
     </PanelGroup>
   );
