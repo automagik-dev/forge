@@ -192,7 +192,7 @@ export const keyBindings: KeyBinding[] = [
   },
   {
     action: Action.SUBMIT_FOLLOW_UP,
-    keys: 'meta+enter',
+    keys: ['meta+enter', 'ctrl+enter'],
     scopes: [Scope.FOLLOW_UP_READY],
     description: 'Send or queue follow-up (depending on state)',
     group: 'Follow-up',

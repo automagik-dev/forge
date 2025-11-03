@@ -111,22 +111,22 @@ function RightWorkArea({
             className="h-full min-h-0"
             onLayout={(layout) => {
               if (layout.length === 2) {
-                saveSizes(STORAGE_KEYS.ATTEMPT_AUX, [layout[0], layout[1]]);
+                // Inverted: [aux, attempt] so store as [layout[1], layout[0]]
+                saveSizes(STORAGE_KEYS.ATTEMPT_AUX, [layout[1], layout[0]]);
               }
             }}
           >
             <Panel
-              id="attempt"
+              id="aux"
               order={1}
-              defaultSize={innerSizes[0]}
+              defaultSize={innerSizes[1]}
               minSize={MIN_PANEL_SIZE}
-              collapsible
-              collapsedSize={0}
+              collapsible={false}
               className="min-w-0 min-h-0 overflow-hidden"
               role="region"
-              aria-label="Details"
+              aria-label={mode === 'preview' ? 'Preview' : 'Diffs'}
             >
-              {attempt}
+              <AuxRouter mode={mode} aux={aux} />
             </Panel>
 
             <PanelResizeHandle
@@ -145,16 +145,17 @@ function RightWorkArea({
             </PanelResizeHandle>
 
             <Panel
-              id="aux"
+              id="attempt"
               order={2}
-              defaultSize={innerSizes[1]}
+              defaultSize={innerSizes[0]}
               minSize={MIN_PANEL_SIZE}
-              collapsible={false}
+              collapsible
+              collapsedSize={0}
               className="min-w-0 min-h-0 overflow-hidden"
               role="region"
-              aria-label={mode === 'preview' ? 'Preview' : 'Diffs'}
+              aria-label="Details"
             >
-              <AuxRouter mode={mode} aux={aux} />
+              {attempt}
             </Panel>
           </PanelGroup>
         )}
