@@ -12,7 +12,6 @@ import type { LayoutMode } from '../layout/TasksLayout';
 import type { TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
 import { ActionsDropdown } from '../ui/ActionsDropdown';
 import { usePostHog } from 'posthog-js/react';
-import { TaskRelationshipBadges } from '../tasks/TaskRelationshipBadges';
 
 interface AttemptHeaderActionsProps {
   onClose: () => void;
@@ -36,12 +35,6 @@ export const AttemptHeaderActions = ({
 
   return (
     <>
-      <TaskRelationshipBadges
-        selectedAttempt={attempt || null}
-        onNavigateToTask={onNavigateToTask}
-      />
-      {/* Separator after badges (always visible if badges exist) */}
-      <div className="h-4 w-px bg-border shrink-0" />
       {typeof mode !== 'undefined' && onModeChange && (
         <TooltipProvider>
           <ToggleGroup
