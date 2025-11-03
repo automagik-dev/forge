@@ -240,28 +240,42 @@ async fn forge_create_task_attempt(
     // Load workspace-specific .genie profiles and inject into global cache just-in-time
     if let Ok(workspace_profiles) = forge_services.load_profiles_for_workspace(&project.git_repo_path).await {
         // Log profile details for validation
-        let variant_summary: Vec<String> = workspace_profiles.executors.iter()
+        let variant_count = workspace_profiles.executors.values()
+            .map(|config| config.configurations.len())
+            .sum::<usize>();
+
+        let variant_list: Vec<String> = workspace_profiles.executors.iter()
             .flat_map(|(executor, config)| {
-                config.configurations.iter().map(move |(variant, cfg)| {
-                    let prompt_preview = cfg.append_prompt.get()
-                        .map(|p| {
-                            let trimmed = p.trim();
-                            if trimmed.len() > 80 {
-                                format!("{}...", &trimmed[..80])
-                            } else {
-                                trimmed.to_string()
-                            }
-                        })
-                        .unwrap_or_else(|| "<no prompt>".to_string());
-                    format!("{}:{} (prompt: {})", executor, variant, prompt_preview)
+                config.configurations.iter().map(move |(variant, coding_agent)| {
+                    // Extract append_prompt from the CodingAgent enum
+                    let prompt_preview = match coding_agent {
+                        executors::executors::CodingAgent::ClaudeCode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Codex(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Gemini(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Opencode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::CursorAgent(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::QwenCode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Copilot(cfg) => cfg.append_prompt.get(),
+                    }.map(|p| {
+                        let trimmed = p.trim();
+                        if trimmed.len() > 60 {
+                            format!("{}...", &trimmed[..60])
+                        } else {
+                            trimmed.to_string()
+                        }
+                    }).unwrap_or_else(|| "<none>".to_string());
+
+                    format!("{}:{} ({})", executor, variant, prompt_preview)
                 })
             })
             .collect();
 
         tracing::info!(
-            "🔧 Injected .genie profiles for workspace: {} | Variants: [{}]",
+            "🔧 Injected {} .genie profile variant(s) for workspace: {} | Profiles: [{}]",
+            variant_count,
             project.git_repo_path.display(),
-            variant_summary.join(", ")
+            variant_list.join(", ")
         );
 
         executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
@@ -357,28 +371,42 @@ async fn forge_create_task_and_start(
     // Load workspace-specific .genie profiles and inject into global cache just-in-time
     if let Ok(workspace_profiles) = forge_services.load_profiles_for_workspace(&project.git_repo_path).await {
         // Log profile details for validation
-        let variant_summary: Vec<String> = workspace_profiles.executors.iter()
+        let variant_count = workspace_profiles.executors.values()
+            .map(|config| config.configurations.len())
+            .sum::<usize>();
+
+        let variant_list: Vec<String> = workspace_profiles.executors.iter()
             .flat_map(|(executor, config)| {
-                config.configurations.iter().map(move |(variant, cfg)| {
-                    let prompt_preview = cfg.append_prompt.get()
-                        .map(|p| {
-                            let trimmed = p.trim();
-                            if trimmed.len() > 80 {
-                                format!("{}...", &trimmed[..80])
-                            } else {
-                                trimmed.to_string()
-                            }
-                        })
-                        .unwrap_or_else(|| "<no prompt>".to_string());
-                    format!("{}:{} (prompt: {})", executor, variant, prompt_preview)
+                config.configurations.iter().map(move |(variant, coding_agent)| {
+                    // Extract append_prompt from the CodingAgent enum
+                    let prompt_preview = match coding_agent {
+                        executors::executors::CodingAgent::ClaudeCode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Codex(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Gemini(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Opencode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::CursorAgent(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::QwenCode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Copilot(cfg) => cfg.append_prompt.get(),
+                    }.map(|p| {
+                        let trimmed = p.trim();
+                        if trimmed.len() > 60 {
+                            format!("{}...", &trimmed[..60])
+                        } else {
+                            trimmed.to_string()
+                        }
+                    }).unwrap_or_else(|| "<none>".to_string());
+
+                    format!("{}:{} ({})", executor, variant, prompt_preview)
                 })
             })
             .collect();
 
         tracing::info!(
-            "🔧 Injected .genie profiles for workspace: {} | Variants: [{}]",
+            "🔧 Injected {} .genie profile variant(s) for workspace: {} | Profiles: [{}]",
+            variant_count,
             project.git_repo_path.display(),
-            variant_summary.join(", ")
+            variant_list.join(", ")
         );
 
         executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
@@ -757,28 +785,42 @@ async fn forge_follow_up(
     // Load workspace-specific .genie profiles and inject into global cache just-in-time
     if let Ok(workspace_profiles) = forge_services.load_profiles_for_workspace(&project.git_repo_path).await {
         // Log profile details for validation
-        let variant_summary: Vec<String> = workspace_profiles.executors.iter()
+        let variant_count = workspace_profiles.executors.values()
+            .map(|config| config.configurations.len())
+            .sum::<usize>();
+
+        let variant_list: Vec<String> = workspace_profiles.executors.iter()
             .flat_map(|(executor, config)| {
-                config.configurations.iter().map(move |(variant, cfg)| {
-                    let prompt_preview = cfg.append_prompt.get()
-                        .map(|p| {
-                            let trimmed = p.trim();
-                            if trimmed.len() > 80 {
-                                format!("{}...", &trimmed[..80])
-                            } else {
-                                trimmed.to_string()
-                            }
-                        })
-                        .unwrap_or_else(|| "<no prompt>".to_string());
-                    format!("{}:{} (prompt: {})", executor, variant, prompt_preview)
+                config.configurations.iter().map(move |(variant, coding_agent)| {
+                    // Extract append_prompt from the CodingAgent enum
+                    let prompt_preview = match coding_agent {
+                        executors::executors::CodingAgent::ClaudeCode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Codex(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Gemini(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Opencode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::CursorAgent(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::QwenCode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Copilot(cfg) => cfg.append_prompt.get(),
+                    }.map(|p| {
+                        let trimmed = p.trim();
+                        if trimmed.len() > 60 {
+                            format!("{}...", &trimmed[..60])
+                        } else {
+                            trimmed.to_string()
+                        }
+                    }).unwrap_or_else(|| "<none>".to_string());
+
+                    format!("{}:{} ({})", executor, variant, prompt_preview)
                 })
             })
             .collect();
 
         tracing::info!(
-            "🔧 Injected .genie profiles for workspace: {} (follow-up) | Variants: [{}]",
+            "🔧 Injected {} .genie profile variant(s) for workspace: {} (follow-up) | Profiles: [{}]",
+            variant_count,
             project.git_repo_path.display(),
-            variant_summary.join(", ")
+            variant_list.join(", ")
         );
 
         executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
