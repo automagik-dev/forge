@@ -26,6 +26,7 @@ import { TaskPanelHeaderActions } from '@/components/panels/TaskPanelHeaderActio
 import { AttemptHeaderActions } from '@/components/panels/AttemptHeaderActions';
 import { TaskRelationshipBadges } from '@/components/tasks/TaskRelationshipBadges';
 import { showModal } from '@/lib/modals';
+import NiceModal from '@ebay/nice-modal-react';
 import type { LayoutMode } from '@/components/layout/TasksLayout';
 import type { Task, GitBranch as GitBranchType } from '@/shared/types';
 
@@ -249,6 +250,17 @@ export function Breadcrumb() {
     }
   };
 
+  // Git actions dialog handler
+  const handleGitActionsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!attempt?.id || !currentTask || !projectId) return;
+    NiceModal.show('git-actions', {
+      attemptId: attempt.id,
+      task: currentTask,
+      projectId,
+    });
+  };
+
   return (
     <nav aria-label="Breadcrumb" className="px-3 py-2 text-sm flex items-center justify-between">
       <ol className="flex items-center gap-1">
@@ -390,10 +402,13 @@ export function Breadcrumb() {
                 {branchStatus.commits_ahead > 0 && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="inline-flex items-center justify-center gap-0.5 h-6 px-1.5 rounded-md bg-emerald-100/70 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-medium cursor-default">
+                      <button
+                        onClick={handleGitActionsClick}
+                        className="inline-flex items-center justify-center gap-0.5 h-6 px-1.5 rounded-md bg-emerald-100/70 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-medium cursor-pointer hover:bg-emerald-200/70 dark:hover:bg-emerald-800/40 transition-colors"
+                      >
                         <span className="text-[10px]">↑</span>
                         <span className="text-[10px]">{branchStatus.commits_ahead}</span>
-                      </div>
+                      </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="text-xs">
                       +{branchStatus.commits_ahead}{' '}
@@ -407,10 +422,13 @@ export function Breadcrumb() {
                 {branchStatus.commits_behind > 0 && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="inline-flex items-center justify-center gap-0.5 h-6 px-1.5 rounded-md bg-amber-100/60 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-medium cursor-default">
+                      <button
+                        onClick={handleGitActionsClick}
+                        className="inline-flex items-center justify-center gap-0.5 h-6 px-1.5 rounded-md bg-amber-100/60 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-medium cursor-pointer hover:bg-amber-200/60 dark:hover:bg-amber-800/40 transition-colors"
+                      >
                         <span className="text-[10px]">↓</span>
                         <span className="text-[10px]">{branchStatus.commits_behind}</span>
-                      </div>
+                      </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="text-xs">
                       {branchStatus.commits_behind}{' '}
