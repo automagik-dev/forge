@@ -359,34 +359,53 @@ export function Breadcrumb() {
           );
         })}
 
-        {/* Git status badges (ahead/behind) - show after branches, hide on very small screens */}
-        {branchStatus && attempt && (
-          <>
-            {branchStatus.commits_ahead > 0 && (
-              <li className="hidden md:flex items-center gap-1">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100/70 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs">
-                  +{branchStatus.commits_ahead}{' '}
-                  {t('git.status.commits', { count: branchStatus.commits_ahead })}{' '}
-                  {t('git.status.ahead')}
-                </span>
-              </li>
-            )}
-            {branchStatus.commits_behind > 0 && (
-              <li className="hidden md:flex items-center gap-1">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100/60 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs">
-                  {branchStatus.commits_behind}{' '}
-                  {t('git.status.commits', { count: branchStatus.commits_behind })}{' '}
-                  {t('git.status.behind')}
-                </span>
-              </li>
-            )}
-          </>
-        )}
       </ol>
 
-      {/* Action buttons */}
+      {/* Right side: Git status badges + Action buttons */}
       {currentTask && (
         <div className="flex items-center gap-2">
+          {/* Compact git status badges */}
+          {branchStatus && attempt && (
+            <TooltipProvider>
+              <div className="flex items-center gap-1">
+                {/* Ahead badge */}
+                {branchStatus.commits_ahead > 0 && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="inline-flex items-center justify-center gap-0.5 h-6 px-1.5 rounded-md bg-emerald-100/70 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-medium cursor-default">
+                        <span className="text-[10px]">↑</span>
+                        <span className="text-[10px]">{branchStatus.commits_ahead}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      +{branchStatus.commits_ahead}{' '}
+                      {t('git.status.commits', { count: branchStatus.commits_ahead })}{' '}
+                      {t('git.status.ahead')}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+
+                {/* Behind badge */}
+                {branchStatus.commits_behind > 0 && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="inline-flex items-center justify-center gap-0.5 h-6 px-1.5 rounded-md bg-amber-100/60 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-medium cursor-default">
+                        <span className="text-[10px]">↓</span>
+                        <span className="text-[10px]">{branchStatus.commits_behind}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">
+                      {branchStatus.commits_behind}{' '}
+                      {t('git.status.commits', { count: branchStatus.commits_behind })}{' '}
+                      {t('git.status.behind')}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            </TooltipProvider>
+          )}
+
+          {/* Action buttons */}
           {isTaskView ? (
             <TaskPanelHeaderActions
               task={currentTask}
