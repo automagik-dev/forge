@@ -281,7 +281,7 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
               <table className="w-full text-sm">
                 <thead className="uppercase text-muted-foreground">
                   <tr>
-                    <th colSpan={3}>
+                    <th colSpan={2}>
                       <div className="w-full flex text-left">
                         <span className="flex-1">
                           Subtasks ({childrenTasks.length})
@@ -302,13 +302,12 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
                         }
                       }}
                     >
-                      <td className="py-2 pr-4 font-mono text-xs">
+                      <td className="py-2 pr-4">
                         <div className="flex items-center gap-2">
                           <Network className="h-4 w-4 shrink-0" />
-                          <span>Parent</span>
+                          <span>{parentTask.title}</span>
                         </div>
                       </td>
-                      <td className="py-2 pr-4">{parentTask.title}</td>
                       <td className="py-2 pr-0 text-right">
                         {formatTimeAgo(parentTask.created_at)}
                       </td>
@@ -326,10 +325,12 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
                         }
                       }}
                     >
-                      <td className="py-2 pr-4 font-mono text-xs">
-                        <GitFork className="h-4 w-4 shrink-0" />
+                      <td className="py-2 pr-4">
+                        <div className="flex items-center gap-2">
+                          <GitFork className="h-4 w-4 shrink-0" />
+                          <span>{child.title}</span>
+                        </div>
                       </td>
-                      <td className="py-2 pr-4">{child.title}</td>
                       <td className="py-2 pr-0 text-right">
                         {formatTimeAgo(child.created_at)}
                       </td>
