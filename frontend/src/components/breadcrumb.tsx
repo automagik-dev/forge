@@ -70,7 +70,7 @@ export function Breadcrumb() {
         }
       })
       .catch((err) => {
-        console.error('Failed to fetch branches:', err);
+        // Silently handle error - on-demand fetch will handle it
       });
   }, [attempt?.id, projectId]);
 
@@ -244,7 +244,7 @@ export function Breadcrumb() {
           setBranches(data.data); // Update state for future use
         }
       } catch (err) {
-        console.error('Failed to fetch branches:', err);
+        // Silently handle error - backend API issue
       }
     }
 
