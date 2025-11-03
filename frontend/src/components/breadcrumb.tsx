@@ -28,7 +28,7 @@ import { TaskRelationshipBadges } from '@/components/tasks/TaskRelationshipBadge
 import { showModal } from '@/lib/modals';
 import NiceModal from '@ebay/nice-modal-react';
 import type { LayoutMode } from '@/components/layout/TasksLayout';
-import type { Task, GitBranch as GitBranchType } from '@/shared/types';
+import type { Task, GitBranch as GitBranchType } from 'shared/types';
 import { projectsApi } from '@/lib/api';
 
 export function Breadcrumb() {
