@@ -43,8 +43,11 @@ impl ProfileCache {
         let profiles = self.load_profiles_now()?;
         let count = self.count_variants(&profiles);
 
-        *self.profiles.write().await = profiles;
+        *self.profiles.write().await = profiles.clone();
         *self.last_count.write().await = count;
+
+        // Set into global executor cache so spawning uses these profiles
+        executors::profile::ExecutorConfigs::set_cached(profiles);
 
         tracing::info!(
             "📦 Initialized profile cache for {:?} ({} variants)",
@@ -66,8 +69,11 @@ impl ProfileCache {
         let new_profiles = self.load_profiles_now()?;
         let new_count = self.count_variants(&new_profiles);
 
-        *self.profiles.write().await = new_profiles;
+        *self.profiles.write().await = new_profiles.clone();
         *self.last_count.write().await = new_count;
+
+        // Set into global executor cache so spawning uses these profiles
+        executors::profile::ExecutorConfigs::set_cached(new_profiles);
 
         if new_count != old_count {
             tracing::info!(
