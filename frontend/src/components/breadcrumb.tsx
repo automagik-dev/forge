@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge, ArrowRight, Settings } from 'lucide-react';
+import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge, ArrowRight, Settings, History, PanelLeft } from 'lucide-react';
 import { useProject } from '@/contexts/project-context';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
@@ -398,9 +398,49 @@ export function Breadcrumb() {
 
       </ol>
 
-      {/* Right side: Git status badges + Action buttons */}
+      {/* Right side: History + Sidebar toggle + Git status badges + Action buttons */}
       {currentTask && (
         <div className="flex items-center gap-2">
+          {/* History button - shows dropdown of all attempts */}
+          {attempt && taskId && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    aria-label="View history"
+                  >
+                    <History className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  View history
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {/* Sidebar toggle button */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label="Toggle sidebar"
+                >
+                  <PanelLeft className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                Toggle sidebar
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           {/* Compact git status badges */}
           {branchStatus && attempt && (
             <TooltipProvider>
