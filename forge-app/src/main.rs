@@ -107,6 +107,9 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Initializing forge services using upstream deployment");
     let services = services::ForgeServices::new().await?;
 
+    // Load .genie profiles for all existing projects on startup
+    services.load_genie_profiles_for_all_projects().await?;
+
     // Create router with services and auth flag
     let app = router::create_router(services, auth_required);
 

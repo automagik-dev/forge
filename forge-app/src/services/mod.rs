@@ -135,6 +135,86 @@ impl ForgeServices {
             .get_profiles(workspace_root)
             .await
     }
+
+    /// Load .genie profiles for all existing projects on server startup
+    ///
+    /// This method is called during server initialization to discover and cache
+    /// .genie profiles for all existing projects in the database. For each project
+    /// with a .genie folder, it initializes the profile cache and starts file watching.
+    pub async fn load_genie_profiles_for_all_projects(&self) -> Result<()> {
+        use db::models::project::Project;
+
+        // Query all projects from database
+        let projects = Project::find_all(&self.pool).await?;
+
+        if projects.is_empty() {
+            tracing::info!("No existing projects found to load .genie profiles from");
+            return Ok(());
+        }
+
+        let project_count = projects.len();
+        tracing::info!("Scanning {} projects for .genie profiles", project_count);
+
+        let mut loaded_count = 0;
+        let mut total_variants = 0;
+
+        for project in projects {
+            let genie_path = project.git_repo_path.join(".genie");
+
+            if !genie_path.exists() || !genie_path.is_dir() {
+                tracing::debug!(
+                    "Project '{}' has no .genie folder at {:?}",
+                    project.name,
+                    genie_path
+                );
+                continue;
+            }
+
+            tracing::info!(
+                "📁 Loading .genie profiles for project: {} ({})",
+                project.name,
+                project.git_repo_path.display()
+            );
+
+            match self.load_profiles_for_workspace(&project.git_repo_path).await {
+                Ok(configs) => {
+                    let variant_count: usize = configs.executors.values()
+                        .map(|e| e.configurations.len())
+                        .sum();
+
+                    tracing::info!(
+                        "✅ Loaded {} profile variants for project: {}",
+                        variant_count,
+                        project.name
+                    );
+
+                    loaded_count += 1;
+                    total_variants += variant_count;
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        "⚠️  Failed to load .genie profiles for project '{}': {}",
+                        project.name,
+                        e
+                    );
+                    // Don't fail startup if one project has invalid profiles
+                }
+            }
+        }
+
+        if loaded_count > 0 {
+            tracing::info!(
+                "🎉 Successfully loaded .genie profiles for {}/{} projects ({} total variants)",
+                loaded_count,
+                project_count,
+                total_variants
+            );
+        } else {
+            tracing::info!("No projects with .genie folders found");
+        }
+
+        Ok(())
+    }
 }
 
 /// Ensure forge-specific migrations do not pollute upstream tracking table.

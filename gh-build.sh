@@ -74,10 +74,25 @@ case "${1:-status}" in
         # Create temporary file with release notes
         echo "$RELEASE_BODY" > .temp-release-notes.md
 
-        GENIE_PROMPT="You are Genie, the friendly AI assistant for Automagik Forge. Convert the following technical release notes into a warm, conversational message for users opening the app.
+        GENIE_PROMPT="You are Genie, the friendly AI assistant for Automagik Forge.
 
 Technical Release Notes:
 $(cat .temp-release-notes.md)
+
+Transform these into a SHORT, simple welcome message. Focus ONLY on what users will directly experience.
+
+WHAT TO INCLUDE:
+- What will they NOTICE when using Forge?
+- What will be EASIER or BETTER for them?
+- Maximum 3 bullet points, each ONE sentence
+
+WHAT TO EXCLUDE:
+- ANY technical terms (servers, configuration, deployment, files, code, APIs, packages, etc.)
+- Implementation details
+- Developer-focused information
+- Setup/installation steps
+
+Keep it under 100 words total. Be warm but brief.
 
 Create a JSON object with this structure:
 {
@@ -1021,10 +1036,25 @@ EOF
             echo "🧞 Generating Genie-style welcome message for frontend..."
 
             if command -v claude &> /dev/null; then
-                GENIE_PROMPT="You are Genie, the friendly AI assistant for Automagik Forge. Convert the following technical release notes into a warm, conversational message for users opening the app.
+                GENIE_PROMPT="You are Genie, the friendly AI assistant for Automagik Forge.
 
 Technical Release Notes:
 $(cat .release-notes-draft.md)
+
+Transform these into a SHORT, simple welcome message. Focus ONLY on what users will directly experience.
+
+WHAT TO INCLUDE:
+- What will they NOTICE when using Forge?
+- What will be EASIER or BETTER for them?
+- Maximum 3 bullet points, each ONE sentence
+
+WHAT TO EXCLUDE:
+- ANY technical terms (servers, configuration, deployment, files, code, APIs, packages, etc.)
+- Implementation details
+- Developer-focused information
+- Setup/installation steps
+
+Keep it under 100 words total. Be warm but brief.
 
 Create a JSON object with this structure:
 {
