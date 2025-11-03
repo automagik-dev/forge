@@ -110,6 +110,39 @@ export const AttemptHeaderActions = ({
                 {t('attemptHeaderActions.diffs')}
               </TooltipContent>
             </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <ToggleGroupItem
+                  value="kanban"
+                  aria-label="Kanban"
+                  active={mode === 'kanban'}
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    viewBox="0 0 24 24"
+                  >
+                    <rect x="3" y="3" width="7" height="9" />
+                    <rect x="14" y="3" width="7" height="5" />
+                    <rect x="14" y="12" width="7" height="9" />
+                    <rect x="3" y="16" width="7" height="5" />
+                  </svg>
+                  {mode === 'kanban' && (
+                    <span className="text-sm font-medium">
+                      {t('attemptHeaderActions.kanban')}
+                    </span>
+                  )}
+                </ToggleGroupItem>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {t('attemptHeaderActions.kanban')}
+              </TooltipContent>
+            </Tooltip>
           </ToggleGroup>
         </TooltipProvider>
       )}
