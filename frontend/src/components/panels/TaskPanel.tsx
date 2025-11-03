@@ -284,7 +284,7 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
                     <th colSpan={2}>
                       <div className="w-full flex text-left">
                         <span className="flex-1">
-                          Subtasks ({childrenTasks.length})
+                          {parentTask ? 'Related Tasks' : `Subtasks (${childrenTasks.length})`}
                         </span>
                       </div>
                     </th>
