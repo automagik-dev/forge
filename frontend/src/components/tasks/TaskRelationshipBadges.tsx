@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Network, GitFork } from 'lucide-react';
+import { GitFork } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -52,39 +52,15 @@ export function TaskRelationshipBadges({
     fetchRelationships();
   }, [selectedAttempt?.id]);
 
-  const hasParent = relationships?.parent_task !== null;
   const childCount = relationships?.children?.length || 0;
 
-  if (loading || (!hasParent && childCount === 0)) {
+  if (loading || childCount === 0) {
     return null;
   }
 
   return (
     <TooltipProvider>
       <div className="flex items-center gap-1 shrink-0">
-        {/* Parent badge - icon only with tooltip */}
-        {hasParent && relationships?.parent_task && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => onNavigateToTask?.(relationships.parent_task!.id)}
-                className="inline-flex items-center justify-center h-6 w-6 text-xs border border-border rounded-md bg-background cursor-pointer hover:bg-green-50 hover:border-green-500 hover:text-green-700 transition-colors"
-                aria-label="Parent task"
-              >
-                <Network className="w-3.5 h-3.5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-xs">
-              <div className="text-xs">
-                <div className="font-medium">Parent Task</div>
-                <div className="text-muted-foreground mt-0.5">
-                  {relationships.parent_task.title}
-                </div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        )}
-
         {/* Children badge - icon + count with dropdown */}
         {childCount > 0 && (
           <DropdownMenu>
