@@ -4,7 +4,8 @@ import { useProject } from '@/contexts/project-context';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
 import { useTaskAttempt } from '@/hooks/useTaskAttempt';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +15,7 @@ import {
 import { TaskPanelHeaderActions } from '@/components/panels/TaskPanelHeaderActions';
 import { AttemptHeaderActions } from '@/components/panels/AttemptHeaderActions';
 import type { LayoutMode } from '@/components/layout/TasksLayout';
+import type { Task } from '@/shared/types';
 
 export function Breadcrumb() {
   const location = useLocation();
@@ -27,6 +29,35 @@ export function Breadcrumb() {
   // Get attempt data if viewing an attempt
   const effectiveAttemptId = attemptId === 'latest' ? undefined : attemptId;
   const { data: attempt } = useTaskAttempt(effectiveAttemptId);
+
+  // Get parent task if current task has one (via parent_task_attempt)
+  const currentTask = taskId && tasksById[taskId] ? tasksById[taskId] : null;
+  const parentTaskAttemptId = currentTask?.parent_task_attempt;
+
+  // Fetch parent task via parent_task_attempt -> task_id
+  const { data: parentTask } = useQuery({
+    queryKey: ['parent-task-from-attempt', parentTaskAttemptId],
+    queryFn: async () => {
+      if (!parentTaskAttemptId) return null;
+
+      // First fetch the parent attempt
+      const attemptResponse = await fetch(`/api/task-attempts/${parentTaskAttemptId}`);
+      if (!attemptResponse.ok) return null;
+
+      const attemptWrapper = await attemptResponse.json();
+      const attempt = attemptWrapper.data;
+      if (!attempt || !attempt.task_id) return null;
+
+      // Then fetch the task for that attempt
+      const taskResponse = await fetch(`/api/tasks/${attempt.task_id}`);
+      if (!taskResponse.ok) return null;
+
+      const taskWrapper = await taskResponse.json();
+      return taskWrapper.data as Task;
+    },
+    enabled: !!parentTaskAttemptId,
+    staleTime: 30000, // Cache for 30 seconds
+  });
 
   // Determine if we're in task view or attempt view
   const isTaskView = !!taskId && !effectiveAttemptId;
@@ -80,21 +111,18 @@ export function Breadcrumb() {
       });
 
       // Add parent task if current task has one
-      if (taskId && tasksById[taskId]) {
-        const currentTask = tasksById[taskId];
-
-        if (currentTask.parent_task_id && tasksById[currentTask.parent_task_id]) {
-          const parentTask = tasksById[currentTask.parent_task_id];
-          crumbs.push({
-            label: parentTask.title,
-            path: `/projects/${projectId}/tasks/${parentTask.id}`,
-            type: 'parent-task',
-          });
-        }
-
-        // Add current task
+      if (parentTask) {
         crumbs.push({
-          label: currentTask.title,
+          label: parentTask.title,
+          path: `/projects/${projectId}/tasks/${parentTask.id}`,
+          type: 'parent-task',
+        });
+      }
+
+      // Add current task
+      if (taskId && tasksById[taskId]) {
+        crumbs.push({
+          label: tasksById[taskId].title,
           path: `/projects/${projectId}/tasks/${taskId}`,
           type: 'task',
         });
@@ -134,9 +162,6 @@ export function Breadcrumb() {
   const handleProjectSwitch = (newProjectId: string) => {
     navigate(`/projects/${newProjectId}/tasks`);
   };
-
-  // Get current task for action buttons
-  const currentTask = taskId && tasksById[taskId] ? tasksById[taskId] : null;
 
   return (
     <nav aria-label="Breadcrumb" className="px-3 py-2 text-sm flex items-center justify-between">
