@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge } from 'lucide-react';
+import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge, ArrowRight } from 'lucide-react';
 import { useProject } from '@/contexts/project-context';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
@@ -134,7 +134,7 @@ export function Breadcrumb() {
           label: attempt.branch,
           path: location.pathname,
           type: 'git-branch',
-          icon: <GitBranch className="h-3 w-3" />,
+          icon: <GitBranch className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
         });
       }
 
@@ -146,7 +146,7 @@ export function Breadcrumb() {
           label: targetBranch,
           path: location.pathname,
           type: 'base-branch',
-          icon: <GitMerge className="h-3 w-3" />,
+          icon: <GitBranch className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
         });
       }
     }
@@ -181,12 +181,21 @@ export function Breadcrumb() {
 
         {breadcrumbs.map((crumb, index) => {
           const isCurrentProject = crumb.type === 'project';
+          const isGitBranch = crumb.type === 'git-branch';
+          const isBaseBranch = crumb.type === 'base-branch';
           const isLastCrumb = index === breadcrumbs.length - 1;
-          const hasIcon = crumb.type === 'git-branch' || crumb.type === 'base-branch';
+          const hasIcon = isGitBranch || isBaseBranch;
 
           return (
             <li key={`${crumb.type}-${crumb.path}-${index}`} className="flex items-center gap-1">
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              {/* Separator */}
+              {!isGitBranch ? (
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              )}
+
+              {/* Content */}
               {isCurrentProject ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-ring rounded-sm px-1 -mx-1">
@@ -213,10 +222,10 @@ export function Breadcrumb() {
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
-              ) : isLastCrumb && hasIcon ? (
-                <span className="flex items-center gap-1 text-foreground font-medium">
+              ) : isGitBranch || isBaseBranch ? (
+                <span className="inline-flex items-center gap-1.5 max-w-[280px] px-2 py-0.5 rounded-full bg-muted text-xs font-medium min-w-0">
                   {crumb.icon}
-                  {crumb.label}
+                  <span className="truncate">{crumb.label}</span>
                 </span>
               ) : isLastCrumb ? (
                 <span className="text-foreground font-medium">{crumb.label}</span>
@@ -225,7 +234,6 @@ export function Breadcrumb() {
                   to={crumb.path}
                   className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {crumb.icon}
                   {crumb.label}
                 </Link>
               )}
