@@ -201,10 +201,15 @@ async fn forge_create_task_attempt(
 
     let attempt_id = Uuid::new_v4();
 
-    // Use same logic as upstream but replace "vk" with "forge" prefix
-    let task_title_id = git_branch_id(&task.title);
-    let short_id = short_uuid(&attempt_id);
-    let git_branch_name = format!("forge/{}-{}", short_id, task_title_id);
+    // If use_worktree is false, use the current branch (base_branch) directly
+    // Otherwise, generate a new branch name for the worktree with "forge" prefix
+    let git_branch_name = if payload.use_worktree {
+        let task_title_id = git_branch_id(&task.title);
+        let short_id = short_uuid(&attempt_id);
+        format!("forge/{}-{}", short_id, task_title_id)
+    } else {
+        payload.base_branch.clone()
+    };
 
     let mut task_attempt = TaskAttempt::create(
         &deployment.db().pool,
