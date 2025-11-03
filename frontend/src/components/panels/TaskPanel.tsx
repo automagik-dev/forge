@@ -6,7 +6,7 @@ import { paths } from '@/lib/paths';
 import type { TaskWithAttemptStatus, Task } from 'shared/types';
 import { NewCardContent } from '../ui/new-card';
 import { Button } from '../ui/button';
-import { PlusIcon, Edit2, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { PlusIcon, Edit2, Network, GitFork } from 'lucide-react';
 import NiceModal from '@ebay/nice-modal-react';
 import MarkdownRenderer from '@/components/ui/markdown-renderer';
 import { attemptsApi, tasksApi } from '@/lib/api';
@@ -176,44 +176,59 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
         <div className="p-6 flex flex-col h-full max-h-[calc(100vh-8rem)]">
           {/* Parent/Children Task Relationships */}
           {(parentTask || childrenTasks.length > 0) && (
-            <div className="mb-4 space-y-2">
-              {parentTask && (
-                <div className="flex items-center gap-2 text-sm">
-                  <ArrowUpCircle className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-muted-foreground">Parent:</span>
-                  <button
-                    onClick={() => {
-                      if (projectId && parentTask.id) {
-                        navigate(paths.task(projectId, parentTask.id));
-                      }
-                    }}
-                    className="text-primary hover:underline truncate"
-                  >
-                    {parentTask.title}
-                  </button>
-                </div>
-              )}
-              {childrenTasks.length > 0 && (
-                <div className="flex items-start gap-2 text-sm">
-                  <ArrowDownCircle className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                  <span className="text-muted-foreground">Subtasks:</span>
-                  <div className="flex flex-wrap gap-2">
-                    {childrenTasks.map((child) => (
-                      <button
-                        key={child.id}
-                        onClick={() => {
-                          if (projectId && child.id) {
-                            navigate(paths.task(projectId, child.id));
-                          }
-                        }}
-                        className="text-primary hover:underline"
-                      >
-                        {child.title}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+            <div className="mb-4">
+              <table className="w-full text-sm">
+                <thead className="uppercase text-muted-foreground">
+                  <tr>
+                    <th colSpan={2} className="text-left pb-2">
+                      Relationships
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {parentTask && (
+                    <tr className="border-t cursor-pointer hover:bg-muted">
+                      <td className="py-2 pr-4 text-muted-foreground w-24">
+                        <div className="flex items-center gap-2">
+                          <Network className="h-4 w-4 shrink-0" />
+                          <span>Parent</span>
+                        </div>
+                      </td>
+                      <td className="py-2">
+                        <button
+                          onClick={() => {
+                            if (projectId && parentTask.id) {
+                              navigate(paths.task(projectId, parentTask.id));
+                            }
+                          }}
+                          className="text-primary hover:underline truncate text-left w-full"
+                        >
+                          {parentTask.title}
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                  {childrenTasks.map((child) => (
+                    <tr
+                      key={child.id}
+                      className="border-t cursor-pointer hover:bg-muted"
+                      onClick={() => {
+                        if (projectId && child.id) {
+                          navigate(paths.task(projectId, child.id));
+                        }
+                      }}
+                    >
+                      <td className="py-2 pr-4 text-muted-foreground w-24">
+                        <div className="flex items-center gap-2">
+                          <GitFork className="h-4 w-4 shrink-0" />
+                          <span>Subtask</span>
+                        </div>
+                      </td>
+                      <td className="py-2 truncate">{child.title}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 
