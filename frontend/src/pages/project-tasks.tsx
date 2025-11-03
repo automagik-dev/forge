@@ -677,8 +677,8 @@ export function ProjectTasks() {
       </div>
     );
 
-  // Show breadcrumb only for preview/diffs modes (not for chat/kanban)
-  const rightHeader = mode === 'preview' || mode === 'diffs' ? <Breadcrumb /> : null;
+  // Show breadcrumb for preview/diffs/kanban modes (where right panel has view toggle buttons)
+  const rightHeader = mode === 'preview' || mode === 'diffs' || mode === 'kanban' ? <Breadcrumb /> : null;
 
   const attemptContent = selectedTask ? (
     <NewCard className="h-full min-h-0 flex flex-col bg-diagonal-lines bg-muted border-0">
