@@ -138,10 +138,12 @@ export function Breadcrumb() {
         });
       }
 
-      // Always add base branch if available (not just in task view)
-      if (project.default_base_branch) {
+      // Add target/base branch if viewing an attempt
+      // Use attempt's target_branch first (user-selected), fallback to project default
+      const targetBranch = attempt?.target_branch || project.default_base_branch;
+      if (targetBranch) {
         crumbs.push({
-          label: project.default_base_branch,
+          label: targetBranch,
           path: location.pathname,
           type: 'base-branch',
           icon: <GitMerge className="h-3 w-3" />,
