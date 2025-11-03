@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Settings2, ChevronRight } from 'lucide-react';
+import { Settings2, ChevronRight, GitBranch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   ImageUploadSection,
@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { imagesApi, projectsApi, attemptsApi } from '@/lib/api';
+import { imagesApi, projectsApi, attemptsApi, tasksApi } from '@/lib/api';
 import { useTaskMutations } from '@/hooks/useTaskMutations';
 import { useUserSystem } from '@/components/config-provider';
 import { ExecutorProfileSelector } from '@/components/settings';
@@ -83,8 +83,11 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       useState<boolean>(false);
     const imageUploadRef = useRef<ImageUploadSectionHandle>(null);
     const [isTextareaFocused, setIsTextareaFocused] = useState(false);
+    const [parentTask, setParentTask] = useState<Task | null>(null);
+    const [parentAttempt, setParentAttempt] = useState<typeof attemptsApi.get extends (...args: any[]) => Promise<infer R> ? R : never | null>(null);
 
     const isEditMode = Boolean(task);
+    const isSubtaskMode = Boolean(parentTaskAttemptId);
 
     // Check if there's any content that would be lost
     const hasUnsavedChanges = useCallback(() => {
@@ -187,6 +190,30 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       }
     }, [modal.visible, isEditMode, projectId, initialBaseBranch]);
 
+    // Fetch parent task and attempt information when parentTaskAttemptId is provided
+    useEffect(() => {
+      if (modal.visible && !isEditMode && parentTaskAttemptId) {
+        attemptsApi
+          .get(parentTaskAttemptId)
+          .then((attempt) => {
+            setParentAttempt(attempt);
+
+            // Fetch parent task details
+            return tasksApi.getById(attempt.task_id);
+          })
+          .then((task) => {
+            setParentTask(task);
+          })
+          .catch((error) => {
+            console.error('Failed to fetch parent task information:', error);
+          });
+      } else if (!modal.visible || isEditMode || !parentTaskAttemptId) {
+        // Reset parent task state when dialog closes or mode changes
+        setParentTask(null);
+        setParentAttempt(null);
+      }
+    }, [modal.visible, isEditMode, parentTaskAttemptId]);
+
     // Fetch parent base branch when parentTaskAttemptId is provided
     useEffect(() => {
       if (
@@ -194,19 +221,13 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
         !isEditMode &&
         parentTaskAttemptId &&
         !initialBaseBranch &&
-        branches.length > 0
+        branches.length > 0 &&
+        parentAttempt
       ) {
-        attemptsApi
-          .get(parentTaskAttemptId)
-          .then((attempt) => {
-            const parentBranch = attempt.branch || attempt.target_branch;
-            if (parentBranch && branches.some((b) => b.name === parentBranch)) {
-              setSelectedBranch(parentBranch);
-            }
-          })
-          .catch(() => {
-            // Silently fail, will use current branch fallback
-          });
+        const parentBranch = parentAttempt.branch || parentAttempt.target_branch;
+        if (parentBranch && branches.some((b) => b.name === parentBranch)) {
+          setSelectedBranch(parentBranch);
+        }
       }
     }, [
       modal.visible,
@@ -214,6 +235,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       parentTaskAttemptId,
       initialBaseBranch,
       branches,
+      parentAttempt,
     ]);
 
     // Set default executor from config (following TaskDetailsToolbar pattern)
@@ -473,10 +495,28 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
           <DialogContent className="sm:max-w-[550px]">
             <DialogHeader>
               <DialogTitle>
-                {isEditMode ? 'Edit Task' : 'Create New Task'}
+                {isEditMode ? 'Edit Task' : isSubtaskMode ? 'Create Subtask' : 'Create New Task'}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              {isSubtaskMode && parentTask && parentAttempt && (
+                <div className="bg-muted/50 border border-border rounded-md p-3 -mt-2">
+                  <div className="flex items-start gap-2">
+                    <GitBranch className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground mb-1">
+                        Creating subtask for:
+                      </p>
+                      <p className="text-sm font-medium truncate" title={parentTask.title}>
+                        {parentTask.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Branch: <span className="font-mono">{parentAttempt.branch || parentAttempt.target_branch}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div>
                 <Label htmlFor="task-title" className="text-sm font-medium">
                   Title
