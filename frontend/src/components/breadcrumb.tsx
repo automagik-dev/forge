@@ -1,9 +1,10 @@
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge, ArrowRight, Settings } from 'lucide-react';
+import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge, ArrowRight, Settings, History, Plus } from 'lucide-react';
 import { useProject } from '@/contexts/project-context';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
 import { useTaskAttempt } from '@/hooks/useTaskAttempt';
+import { useTaskAttempts } from '@/hooks/useTaskAttempts';
 import { useBranchStatus } from '@/hooks/useBranchStatus';
 import { useChangeTargetBranch } from '@/hooks/useChangeTargetBranch';
 import { useCallback, useEffect, useState, useMemo } from 'react';
@@ -44,6 +45,9 @@ export function Breadcrumb() {
   // Get attempt data if viewing an attempt
   const effectiveAttemptId = attemptId === 'latest' ? undefined : attemptId;
   const { data: attempt } = useTaskAttempt(effectiveAttemptId);
+
+  // Get all attempts for history dropdown
+  const { data: attempts = [] } = useTaskAttempts(taskId);
 
   // Get branch status for git status badges
   const { data: branchStatus } = useBranchStatus(attempt?.id);
@@ -401,6 +405,90 @@ export function Breadcrumb() {
       {/* Right side: Git status badges + Action buttons */}
       {currentTask && (
         <div className="flex items-center gap-2">
+          {/* History dropdown - shows all attempts */}
+          {!isTaskView && attempts.length > 0 && (
+            <DropdownMenu>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <History className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    {t('attemptHeaderActions.history')}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <DropdownMenuContent align="end" className="w-64 max-h-96 overflow-y-auto bg-popover">
+                {attempts.map((att, index) => {
+                  const isCurrentAttempt = att.id === attempt?.id;
+                  const attemptNumber = attempts.length - index;
+                  const attemptDate = new Date(att.created_at).toLocaleString();
+
+                  return (
+                    <DropdownMenuItem
+                      key={att.id}
+                      onClick={() => navigate(`/projects/${projectId}/tasks/${taskId}/attempts/${att.id}`)}
+                      className={isCurrentAttempt ? 'bg-accent' : ''}
+                    >
+                      <div className="flex flex-col gap-0.5 w-full">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">Attempt #{attemptNumber}</span>
+                          {isCurrentAttempt && (
+                            <span className="text-xs text-muted-foreground">(current)</span>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground truncate">
+                          {att.branch || 'No branch'}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{attemptDate}</span>
+                      </div>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* + button dropdown - new attempt or new subtask */}
+          {!isTaskView && currentTask && (
+            <DropdownMenu>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Create new</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <DropdownMenuContent align="end" className="w-48 bg-popover">
+                <DropdownMenuItem
+                  onClick={() => {
+                    // TODO: Implement create new attempt
+                    console.log('Create new attempt');
+                  }}
+                >
+                  New Attempt
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    // TODO: Implement create new subtask
+                    console.log('Create new subtask');
+                  }}
+                >
+                  New Subtask
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
           {/* Compact git status badges */}
           {branchStatus && attempt && (
             <TooltipProvider>
