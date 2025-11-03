@@ -121,7 +121,12 @@ export function Breadcrumb() {
   // Get mode from URL params
   const rawMode = searchParams.get('view') as LayoutMode;
   const mode: LayoutMode =
-    rawMode === 'preview' || rawMode === 'diffs' ? rawMode : null;
+    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat'
+      ? rawMode
+      : null;
+
+  // Don't show breadcrumb for kanban or chat modes (they have their own navigation)
+  const shouldShowBreadcrumb = mode === 'preview' || mode === 'diffs' || mode === null;
 
   const setMode = useCallback(
     (newMode: LayoutMode) => {
@@ -212,8 +217,8 @@ export function Breadcrumb() {
 
   const breadcrumbs = getBreadcrumbs();
 
-  // Only show breadcrumb if we're in a project context
-  if (!projectId || breadcrumbs.length === 0) {
+  // Only show breadcrumb if we're in a project context and in the right mode
+  if (!projectId || breadcrumbs.length === 0 || !shouldShowBreadcrumb) {
     return null;
   }
 
