@@ -130,7 +130,7 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
           description: task.description,
           status: task.status,
           parent_task_attempt: task.parent_task_attempt,
-          image_ids: (task as any).image_ids || null,
+          image_ids: null, // null = don't modify images (backend keeps existing)
         },
       });
       setIsEditingTitle(false);
@@ -150,7 +150,7 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
           description: editDescription,
           status: task.status,
           parent_task_attempt: task.parent_task_attempt,
-          image_ids: (task as any).image_ids || null,
+          image_ids: null, // null = don't modify images (backend keeps existing)
         },
       });
       setIsEditingDescription(false);
