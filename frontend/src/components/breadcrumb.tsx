@@ -26,7 +26,7 @@ import { TaskPanelHeaderActions } from '@/components/panels/TaskPanelHeaderActio
 import { AttemptHeaderActions } from '@/components/panels/AttemptHeaderActions';
 import { showModal } from '@/lib/modals';
 import type { LayoutMode } from '@/components/layout/TasksLayout';
-import type { Task, GitBranch } from '@/shared/types';
+import type { Task, GitBranch as GitBranchType } from '@/shared/types';
 
 export function Breadcrumb() {
   const location = useLocation();
@@ -46,7 +46,7 @@ export function Breadcrumb() {
   const { data: branchStatus } = useBranchStatus(attempt?.id);
 
   // Fetch branches for change target branch dialog
-  const [branches, setBranches] = useState<GitBranch[]>([]);
+  const [branches, setBranches] = useState<GitBranchType[]>([]);
   const [gitError, setGitError] = useState<string | null>(null);
 
   // Change target branch mutation
