@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/tooltip';
 import { TaskPanelHeaderActions } from '@/components/panels/TaskPanelHeaderActions';
 import { AttemptHeaderActions } from '@/components/panels/AttemptHeaderActions';
+import { TaskRelationshipBadges } from '@/components/tasks/TaskRelationshipBadges';
 import { showModal } from '@/lib/modals';
 import type { LayoutMode } from '@/components/layout/TasksLayout';
 import type { Task, GitBranch as GitBranchType } from '@/shared/types';
@@ -345,7 +346,16 @@ export function Breadcrumb() {
                   )}
                 </div>
               ) : isLastCrumb ? (
-                <span className="text-foreground font-medium truncate max-w-[150px] md:max-w-[250px] lg:max-w-none">{crumb.label}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-foreground font-medium truncate max-w-[150px] md:max-w-[250px] lg:max-w-none">{crumb.label}</span>
+                  {/* Show children badge inline with task name when it's a task crumb */}
+                  {crumb.type === 'task' && currentTask && attempt && (
+                    <TaskRelationshipBadges
+                      selectedAttempt={attempt}
+                      onNavigateToTask={handleNavigateToTask}
+                    />
+                  )}
+                </div>
               ) : (
                 <Link
                   to={crumb.path}
