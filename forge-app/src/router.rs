@@ -191,6 +191,7 @@ async fn forge_create_task(
 /// Forge override: create task attempt with forge/ branch prefix (vk -> forge only)
 async fn forge_create_task_attempt(
     State(deployment): State<DeploymentImpl>,
+    State(forge_services): State<ForgeServices>,
     Json(payload): Json<task_attempts::CreateTaskAttemptBody>,
 ) -> Result<Json<ApiResponse<TaskAttempt>>, ApiError> {
     let executor_profile_id = payload.get_executor_profile_id();
@@ -230,6 +231,21 @@ async fn forge_create_task_attempt(
         task_attempt.executor = executor_with_variant;
     }
 
+    // Get project to determine workspace root
+    let project = task
+        .parent_project(&deployment.db().pool)
+        .await?
+        .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
+
+    // Load workspace-specific .genie profiles and inject into global cache just-in-time
+    if let Ok(workspace_profiles) = forge_services.load_profiles_for_workspace(&project.git_repo_path).await {
+        executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+        tracing::debug!(
+            "Injected .genie profiles for workspace: {}",
+            project.git_repo_path.display()
+        );
+    }
+
     let _execution_process = deployment
         .container()
         .start_attempt(&task_attempt, executor_profile_id.clone())
@@ -252,6 +268,7 @@ async fn forge_create_task_attempt(
 /// Forge override: create task and start with forge/ branch prefix (vk -> forge only)
 async fn forge_create_task_and_start(
     State(deployment): State<DeploymentImpl>,
+    State(forge_services): State<ForgeServices>,
     Json(payload): Json<CreateAndStartTaskRequest>,
 ) -> Result<Json<ApiResponse<TaskWithAttemptStatus>>, ApiError> {
     let task_id = Uuid::new_v4();
@@ -305,6 +322,21 @@ async fn forge_create_task_and_start(
         task_attempt.executor = executor_with_variant;
     }
 
+    // Get project to determine workspace root
+    let project = task
+        .parent_project(&deployment.db().pool)
+        .await?
+        .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
+
+    // Load workspace-specific .genie profiles and inject into global cache just-in-time
+    if let Ok(workspace_profiles) = forge_services.load_profiles_for_workspace(&project.git_repo_path).await {
+        executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+        tracing::debug!(
+            "Injected .genie profiles for workspace: {}",
+            project.git_repo_path.display()
+        );
+    }
+
     let execution_process = deployment
         .container()
         .start_attempt(&task_attempt, payload.executor_profile_id.clone())
@@ -353,16 +385,14 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     router =
         router.merge(drafts::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
 
-    // Build custom tasks router with forge override
+    // Build custom tasks router with forge override (already typed as ForgeAppState)
     let tasks_router_with_override = build_tasks_router_with_forge_override(deployment);
-    router =
-        router.merge(tasks_router_with_override.with_state::<ForgeAppState>(dep_clone.clone()));
+    router = router.merge(tasks_router_with_override);
 
-    // Build custom task_attempts router with forge override
+    // Build custom task_attempts router with forge override (already typed as ForgeAppState)
     let task_attempts_router_with_override =
         build_task_attempts_router_with_forge_override(deployment);
-    router = router
-        .merge(task_attempts_router_with_override.with_state::<ForgeAppState>(dep_clone.clone()));
+    router = router.merge(task_attempts_router_with_override);
     router = router.merge(
         execution_processes::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()),
     );
@@ -379,7 +409,7 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
 }
 
 /// Build tasks router with forge override for create-and-start endpoint
-fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
+fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     use axum::middleware::from_fn_with_state;
     use server::middleware::load_task_middleware;
 
@@ -654,16 +684,52 @@ async fn handle_forge_tasks_ws(
     Ok(())
 }
 
+/// Forge override: inject workspace profiles before follow-up
+async fn forge_follow_up(
+    axum::Extension(task_attempt): axum::Extension<TaskAttempt>,
+    State(deployment): State<DeploymentImpl>,
+    State(forge_services): State<ForgeServices>,
+    Json(payload): Json<serde_json::Value>,
+) -> Result<Json<ApiResponse<db::models::execution_process::ExecutionProcess>>, ApiError> {
+    // Get task and project to determine workspace root
+    let task = task_attempt
+        .parent_task(&deployment.db().pool)
+        .await?
+        .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
+
+    let project = task
+        .parent_project(&deployment.db().pool)
+        .await?
+        .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
+
+    // Load workspace-specific .genie profiles and inject into global cache just-in-time
+    if let Ok(workspace_profiles) = forge_services.load_profiles_for_workspace(&project.git_repo_path).await {
+        executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+        tracing::debug!(
+            "Injected .genie profiles for workspace: {} (follow-up)",
+            project.git_repo_path.display()
+        );
+    }
+
+    // Call upstream follow_up - re-parse JSON into the correct type
+    let typed_payload: task_attempts::CreateFollowUpAttempt = serde_json::from_value(payload)
+        .map_err(|e| ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
+            format!("Invalid follow-up payload: {}", e)
+        )))?;
+
+    task_attempts::follow_up(axum::Extension(task_attempt), State(deployment), Json(typed_payload)).await
+}
+
 /// Build task_attempts router with forge override for create endpoint
 fn build_task_attempts_router_with_forge_override(
     deployment: &DeploymentImpl,
-) -> Router<DeploymentImpl> {
+) -> Router<ForgeAppState> {
     use axum::middleware::from_fn_with_state;
     use server::middleware::load_task_attempt_middleware;
 
     let task_attempt_id_router = Router::new()
         .route("/", get(task_attempts::get_task_attempt))
-        .route("/follow-up", post(task_attempts::follow_up))
+        .route("/follow-up", post(forge_follow_up))
         .route(
             "/draft",
             get(task_attempts::drafts::get_draft)
