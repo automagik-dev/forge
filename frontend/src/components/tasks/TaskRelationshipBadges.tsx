@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
   TooltipContent,
@@ -66,14 +65,13 @@ export function TaskRelationshipBadges({
         {hasParent && relationships?.parent_task && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge
-                variant="outline"
-                className="h-6 px-2 py-0 text-xs cursor-pointer hover:bg-green-50 hover:border-green-500 hover:text-green-700 transition-colors"
+              <button
                 onClick={() => onNavigateToTask?.(relationships.parent_task!.id)}
+                className="inline-flex items-center h-6 px-2 py-0 text-xs border border-border rounded-md bg-background cursor-pointer hover:bg-green-50 hover:border-green-500 hover:text-green-700 transition-colors"
               >
                 <ArrowUp className="w-3 h-3 mr-1" />
                 Parent
-              </Badge>
+              </button>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="max-w-xs">
               <div className="text-xs">
@@ -89,13 +87,12 @@ export function TaskRelationshipBadges({
         {childCount > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Badge
-                variant="outline"
-                className="h-6 px-2 py-0 text-xs cursor-pointer hover:bg-blue-50 hover:border-blue-500 hover:text-blue-700 transition-colors"
+              <button
+                className="inline-flex items-center h-6 px-2 py-0 text-xs border border-border rounded-md bg-background cursor-pointer hover:bg-blue-50 hover:border-blue-500 hover:text-blue-700 transition-colors"
               >
                 <ArrowDown className="w-3 h-3 mr-1" />
                 {childCount} {childCount === 1 ? 'Child' : 'Children'}
-              </Badge>
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-80">
               <div className="px-2 py-1.5 text-sm font-medium">
