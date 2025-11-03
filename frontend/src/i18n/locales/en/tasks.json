@@ -240,7 +240,8 @@
   },
   "attemptHeaderActions": {
     "preview": "Preview",
-    "diffs": "Diffs"
+    "diffs": "Diffs",
+    "history": "History"
   },
   "actionsMenu": {
     "attempt": "Attempt",
