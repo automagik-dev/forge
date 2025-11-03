@@ -3,12 +3,17 @@ import { useProject } from '@/contexts/project-context';
 import { useTaskAttempts } from '@/hooks/useTaskAttempts';
 import { useNavigateWithSearch } from '@/hooks';
 import { paths } from '@/lib/paths';
-import type { TaskWithAttemptStatus } from 'shared/types';
+import type { TaskWithAttemptStatus, Task } from 'shared/types';
 import { NewCardContent } from '../ui/new-card';
 import { Button } from '../ui/button';
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, Edit2, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import NiceModal from '@ebay/nice-modal-react';
 import MarkdownRenderer from '@/components/ui/markdown-renderer';
+import { attemptsApi, tasksApi } from '@/lib/api';
+import { useState, useEffect } from 'react';
+import { Input } from '../ui/input';
+import { FileSearchTextarea } from '../ui/file-search-textarea';
+import { useTaskMutations } from '@/hooks/useTaskMutations';
 
 interface TaskPanelProps {
   task: TaskWithAttemptStatus | null;
@@ -18,12 +23,59 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
   const { t } = useTranslation('tasks');
   const navigate = useNavigateWithSearch();
   const { projectId } = useProject();
+  const { updateTask } = useTaskMutations(projectId);
+
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [parentTask, setParentTask] = useState<Task | null>(null);
+  const [childrenTasks, setChildrenTasks] = useState<Task[]>([]);
 
   const {
     data: attempts = [],
     isLoading: isAttemptsLoading,
     isError: isAttemptsError,
   } = useTaskAttempts(task?.id);
+
+  // Fetch parent and children task relationships
+  useEffect(() => {
+    if (!task) {
+      setParentTask(null);
+      setChildrenTasks([]);
+      return;
+    }
+
+    // Fetch parent task if exists
+    if (task.parent_task_attempt) {
+      attemptsApi
+        .get(task.parent_task_attempt)
+        .then((attempt) => tasksApi.getById(attempt.task_id))
+        .then((parentTask) => setParentTask(parentTask))
+        .catch(() => setParentTask(null));
+    } else {
+      setParentTask(null);
+    }
+
+    // Fetch children tasks (subtasks)
+    const latestAttempt = attempts[0];
+    if (latestAttempt) {
+      attemptsApi
+        .getChildren(latestAttempt.id)
+        .then((relationships) => setChildrenTasks(relationships.children))
+        .catch(() => setChildrenTasks([]));
+    } else {
+      setChildrenTasks([]);
+    }
+  }, [task, attempts]);
+
+  // Initialize edit state when task changes
+  useEffect(() => {
+    if (task) {
+      setEditTitle(task.title);
+      setEditDescription(task.description || '');
+    }
+  }, [task]);
 
   const formatTimeAgo = (iso: string) => {
     const d = new Date(iso);
@@ -60,6 +112,56 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
 
   const latestAttempt = displayedAttempts[0] ?? null;
 
+  const handleSaveTitle = async () => {
+    if (!task || !projectId) return;
+
+    try {
+      await updateTask.mutateAsync({
+        taskId: task.id,
+        data: {
+          title: editTitle,
+          description: null,
+          status: null,
+          parent_task_attempt: null,
+          image_ids: null,
+        },
+      });
+      setIsEditingTitle(false);
+    } catch (error) {
+      console.error('Failed to update task title:', error);
+    }
+  };
+
+  const handleSaveDescription = async () => {
+    if (!task || !projectId) return;
+
+    try {
+      await updateTask.mutateAsync({
+        taskId: task.id,
+        data: {
+          title: null,
+          description: editDescription,
+          status: null,
+          parent_task_attempt: null,
+          image_ids: null,
+        },
+      });
+      setIsEditingDescription(false);
+    } catch (error) {
+      console.error('Failed to update task description:', error);
+    }
+  };
+
+  const handleCancelEdit = (type: 'title' | 'description') => {
+    if (type === 'title') {
+      setEditTitle(task?.title || '');
+      setIsEditingTitle(false);
+    } else {
+      setEditDescription(task?.description || '');
+      setIsEditingDescription(false);
+    }
+  };
+
   if (!task) {
     return (
       <div className="text-muted-foreground">
@@ -68,18 +170,145 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
     );
   }
 
-  const titleContent = `# ${task.title || 'Task'}`;
-  const descriptionContent = task.description || '';
-
   return (
     <>
       <NewCardContent>
         <div className="p-6 flex flex-col h-full max-h-[calc(100vh-8rem)]">
+          {/* Parent/Children Task Relationships */}
+          {(parentTask || childrenTasks.length > 0) && (
+            <div className="mb-4 space-y-2">
+              {parentTask && (
+                <div className="flex items-center gap-2 text-sm">
+                  <ArrowUpCircle className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground">Parent:</span>
+                  <button
+                    onClick={() => {
+                      if (projectId && parentTask.id) {
+                        navigate(paths.task(projectId, parentTask.id));
+                      }
+                    }}
+                    className="text-primary hover:underline truncate"
+                  >
+                    {parentTask.title}
+                  </button>
+                </div>
+              )}
+              {childrenTasks.length > 0 && (
+                <div className="flex items-start gap-2 text-sm">
+                  <ArrowDownCircle className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  <span className="text-muted-foreground">Subtasks:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {childrenTasks.map((child) => (
+                      <button
+                        key={child.id}
+                        onClick={() => {
+                          if (projectId && child.id) {
+                            navigate(paths.task(projectId, child.id));
+                          }
+                        }}
+                        className="text-primary hover:underline"
+                      >
+                        {child.title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="space-y-3 overflow-y-auto flex-shrink min-h-0">
-            <MarkdownRenderer content={titleContent} />
-            {descriptionContent && (
-              <MarkdownRenderer content={descriptionContent} />
-            )}
+            {/* Editable Title */}
+            <div className="group relative">
+              {isEditingTitle ? (
+                <div className="space-y-2">
+                  <Input
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSaveTitle();
+                      } else if (e.key === 'Escape') {
+                        handleCancelEdit('title');
+                      }
+                    }}
+                    autoFocus
+                    className="text-2xl font-bold"
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleSaveTitle}>
+                      Save
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleCancelEdit('title')}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2">
+                  <MarkdownRenderer content={`# ${task.title || 'Task'}`} />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => setIsEditingTitle(true)}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Editable Description */}
+            <div className="group relative">
+              {isEditingDescription ? (
+                <div className="space-y-2">
+                  <FileSearchTextarea
+                    value={editDescription}
+                    onChange={setEditDescription}
+                    rows={5}
+                    maxRows={15}
+                    projectId={projectId}
+                    className="min-h-[100px]"
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleSaveDescription}>
+                      Save
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleCancelEdit('description')}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2">
+                  {task.description && (
+                    <MarkdownRenderer content={task.description} />
+                  )}
+                  {!task.description && (
+                    <p className="text-muted-foreground italic">
+                      No description
+                    </p>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => setIsEditingDescription(true)}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="mt-6 flex-shrink-0">
@@ -146,7 +375,7 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
                           }
                         }}
                       >
-                        <td className="py-2 pr-4">
+                        <td className="py-2 pr-4 font-mono text-xs">
                           {attempt.executor || 'Base Agent'}
                         </td>
                         <td className="py-2 pr-4">{attempt.branch || '—'}</td>
