@@ -187,15 +187,19 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
               <table className="w-full text-sm">
                 <thead className="uppercase text-muted-foreground">
                   <tr>
-                    <th colSpan={2} className="text-left pb-2">
-                      Subtasks
+                    <th colSpan={2}>
+                      <div className="w-full flex text-left">
+                        <span className="flex-1">
+                          Subtasks ({childrenTasks.length})
+                        </span>
+                      </div>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {parentTask && (
                     <tr className="border-t cursor-pointer hover:bg-muted">
-                      <td className="py-2 pr-4 text-muted-foreground w-24">
+                      <td className="py-2 pr-4 text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <Network className="h-4 w-4 shrink-0" />
                           <span>Parent</span>
@@ -225,10 +229,10 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
                         }
                       }}
                     >
-                      <td className="py-2 pr-4 text-muted-foreground w-24">
+                      <td className="py-2 pr-4">
                         <GitFork className="h-4 w-4 shrink-0" />
                       </td>
-                      <td className="py-2 truncate">{child.title}</td>
+                      <td className="py-2">{child.title}</td>
                     </tr>
                   ))}
                 </tbody>
