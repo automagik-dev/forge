@@ -181,65 +181,6 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
     <>
       <NewCardContent>
         <div className="p-6 flex flex-col h-full max-h-[calc(100vh-8rem)]">
-          {/* Parent/Children Task Relationships */}
-          {(parentTask || childrenTasks.length > 0) && (
-            <div className="mb-4">
-              <table className="w-full text-sm">
-                <thead className="uppercase text-muted-foreground">
-                  <tr>
-                    <th colSpan={2}>
-                      <div className="w-full flex text-left">
-                        <span className="flex-1">
-                          Subtasks ({childrenTasks.length})
-                        </span>
-                      </div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {parentTask && (
-                    <tr className="border-t cursor-pointer hover:bg-muted">
-                      <td className="py-2 pr-4 text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <Network className="h-4 w-4 shrink-0" />
-                          <span>Parent</span>
-                        </div>
-                      </td>
-                      <td className="py-2">
-                        <button
-                          onClick={() => {
-                            if (projectId && parentTask.id) {
-                              navigate(paths.task(projectId, parentTask.id));
-                            }
-                          }}
-                          className="text-primary hover:underline truncate text-left w-full"
-                        >
-                          {parentTask.title}
-                        </button>
-                      </td>
-                    </tr>
-                  )}
-                  {childrenTasks.map((child) => (
-                    <tr
-                      key={child.id}
-                      className="border-t cursor-pointer hover:bg-muted"
-                      onClick={() => {
-                        if (projectId && child.id) {
-                          navigate(paths.task(projectId, child.id));
-                        }
-                      }}
-                    >
-                      <td className="py-2 pr-4">
-                        <GitFork className="h-4 w-4 shrink-0" />
-                      </td>
-                      <td className="py-2">{child.title}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
           <div className="space-y-3 overflow-y-auto flex-shrink min-h-0">
             {/* Editable Title */}
             <div className="group relative">
@@ -333,6 +274,71 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
               )}
             </div>
           </div>
+
+          {/* Parent/Children Task Relationships */}
+          {(parentTask || childrenTasks.length > 0) && (
+            <div className="mt-6 flex-shrink-0">
+              <table className="w-full text-sm">
+                <thead className="uppercase text-muted-foreground">
+                  <tr>
+                    <th colSpan={3}>
+                      <div className="w-full flex text-left">
+                        <span className="flex-1">
+                          Subtasks ({childrenTasks.length})
+                        </span>
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {parentTask && (
+                    <tr
+                      className="border-t cursor-pointer hover:bg-muted"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        if (projectId && parentTask.id) {
+                          navigate(paths.task(projectId, parentTask.id));
+                        }
+                      }}
+                    >
+                      <td className="py-2 pr-4 font-mono text-xs">
+                        <div className="flex items-center gap-2">
+                          <Network className="h-4 w-4 shrink-0" />
+                          <span>Parent</span>
+                        </div>
+                      </td>
+                      <td className="py-2 pr-4">{parentTask.title}</td>
+                      <td className="py-2 pr-0 text-right">
+                        {formatTimeAgo(parentTask.created_at)}
+                      </td>
+                    </tr>
+                  )}
+                  {childrenTasks.map((child) => (
+                    <tr
+                      key={child.id}
+                      className="border-t cursor-pointer hover:bg-muted"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        if (projectId && child.id) {
+                          navigate(paths.task(projectId, child.id));
+                        }
+                      }}
+                    >
+                      <td className="py-2 pr-4 font-mono text-xs">
+                        <GitFork className="h-4 w-4 shrink-0" />
+                      </td>
+                      <td className="py-2 pr-4">{child.title}</td>
+                      <td className="py-2 pr-0 text-right">
+                        {formatTimeAgo(child.created_at)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           <div className="mt-6 flex-shrink-0">
             {isAttemptsLoading && (
