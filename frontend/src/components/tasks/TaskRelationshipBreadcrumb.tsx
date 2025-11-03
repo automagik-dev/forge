@@ -58,7 +58,7 @@ export function TaskRelationshipBreadcrumb({
   };
 
   return (
-    <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-4 py-2 bg-muted/30 border-b">
+    <div className="shrink-0 flex items-center gap-1.5 text-xs text-muted-foreground px-4 py-2 bg-muted/30 border-b">
       <button
         onClick={() => onNavigateToTask?.(relationships.parent_task!.id)}
         className={cn(
