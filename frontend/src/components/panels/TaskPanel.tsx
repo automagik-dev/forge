@@ -188,7 +188,7 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
                 <thead className="uppercase text-muted-foreground">
                   <tr>
                     <th colSpan={2} className="text-left pb-2">
-                      Relationships
+                      Subtasks
                     </th>
                   </tr>
                 </thead>
@@ -226,10 +226,7 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
                       }}
                     >
                       <td className="py-2 pr-4 text-muted-foreground w-24">
-                        <div className="flex items-center gap-2">
-                          <GitFork className="h-4 w-4 shrink-0" />
-                          <span>Subtask</span>
-                        </div>
+                        <GitFork className="h-4 w-4 shrink-0" />
                       </td>
                       <td className="py-2 truncate">{child.title}</td>
                     </tr>
