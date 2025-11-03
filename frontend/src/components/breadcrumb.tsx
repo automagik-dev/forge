@@ -1,21 +1,32 @@
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge, ArrowRight } from 'lucide-react';
+import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge, ArrowRight, Settings } from 'lucide-react';
 import { useProject } from '@/contexts/project-context';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
 import { useTaskAttempt } from '@/hooks/useTaskAttempt';
-import { useCallback, useEffect, useState } from 'react';
+import { useBranchStatus } from '@/hooks/useBranchStatus';
+import { useChangeTargetBranch } from '@/hooks/useChangeTargetBranch';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { TaskPanelHeaderActions } from '@/components/panels/TaskPanelHeaderActions';
 import { AttemptHeaderActions } from '@/components/panels/AttemptHeaderActions';
+import { showModal } from '@/lib/modals';
 import type { LayoutMode } from '@/components/layout/TasksLayout';
-import type { Task } from '@/shared/types';
+import type { Task, GitBranch } from '@/shared/types';
 
 export function Breadcrumb() {
   const location = useLocation();
@@ -25,10 +36,54 @@ export function Breadcrumb() {
   const { taskId, attemptId } = useParams<{ taskId?: string; attemptId?: string }>();
   const { tasksById } = useProjectTasks(projectId || '');
   const [searchParams, setSearchParams] = useSearchParams();
+  const { t } = useTranslation('tasks');
 
   // Get attempt data if viewing an attempt
   const effectiveAttemptId = attemptId === 'latest' ? undefined : attemptId;
   const { data: attempt } = useTaskAttempt(effectiveAttemptId);
+
+  // Get branch status for git status badges
+  const { data: branchStatus } = useBranchStatus(attempt?.id);
+
+  // Fetch branches for change target branch dialog
+  const [branches, setBranches] = useState<GitBranch[]>([]);
+  const [gitError, setGitError] = useState<string | null>(null);
+
+  // Change target branch mutation
+  const changeTargetBranchMutation = useChangeTargetBranch(
+    attempt?.id || '',
+    projectId || ''
+  );
+  const isChangingTargetBranch = changeTargetBranchMutation.isPending;
+
+  // Fetch branches when attempt is available
+  useEffect(() => {
+    if (!attempt?.id) return;
+
+    fetch(`/api/projects/${projectId}/git/branches`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          setBranches(data.data);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch branches:', err);
+      });
+  }, [attempt?.id, projectId]);
+
+  // Calculate conflicts for disabling change target branch button
+  const hasConflictsCalculated = useMemo(
+    () => Boolean((branchStatus?.conflicted_files?.length ?? 0) > 0),
+    [branchStatus?.conflicted_files]
+  );
+
+  // Check if attempt is running
+  const isAttemptRunning = useMemo(() => {
+    if (!taskId || !tasksById[taskId]) return false;
+    const task = tasksById[taskId];
+    return task.status === 'running';
+  }, [taskId, tasksById]);
 
   // Get parent task if current task has one (via parent_task_attempt)
   const currentTask = taskId && tasksById[taskId] ? tasksById[taskId] : null;
@@ -165,6 +220,34 @@ export function Breadcrumb() {
     navigate(`/projects/${newProjectId}/tasks`);
   };
 
+  // Target branch change handlers
+  const handleChangeTargetBranchClick = async (newBranch: string) => {
+    await changeTargetBranchMutation
+      .mutateAsync(newBranch)
+      .then(() => setGitError(null))
+      .catch((error) => {
+        setGitError(error.message || t('git.errors.changeTargetBranch'));
+      });
+  };
+
+  const handleChangeTargetBranchDialogOpen = async () => {
+    try {
+      const result = await showModal<{
+        action: 'confirmed' | 'canceled';
+        branchName: string;
+      }>('change-target-branch-dialog', {
+        branches,
+        isChangingTargetBranch: isChangingTargetBranch,
+      });
+
+      if (result.action === 'confirmed' && result.branchName) {
+        await handleChangeTargetBranchClick(result.branchName);
+      }
+    } catch (error) {
+      // User cancelled - do nothing
+    }
+  };
+
   return (
     <nav aria-label="Breadcrumb" className="px-3 py-2 text-sm flex items-center justify-between">
       <ol className="flex items-center gap-1">
@@ -223,10 +306,34 @@ export function Breadcrumb() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : isGitBranch || isBaseBranch ? (
-                <span className="inline-flex items-center gap-1.5 max-w-[280px] px-2 py-0.5 rounded-full bg-muted text-xs font-medium min-w-0">
-                  {crumb.icon}
-                  <span className="truncate">{crumb.label}</span>
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className="inline-flex items-center gap-1.5 max-w-[280px] px-2 py-0.5 rounded-full bg-muted text-xs font-medium min-w-0">
+                    {crumb.icon}
+                    <span className="truncate">{crumb.label}</span>
+                  </span>
+                  {/* Add change target branch button next to base branch */}
+                  {isBaseBranch && attempt && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            onClick={handleChangeTargetBranchDialogOpen}
+                            disabled={isAttemptRunning || hasConflictsCalculated}
+                            className="inline-flex h-5 w-5 p-0 hover:bg-muted"
+                            aria-label={t('branches.changeTarget.dialog.title')}
+                          >
+                            <Settings className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          {t('branches.changeTarget.dialog.title')}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
               ) : isLastCrumb ? (
                 <span className="text-foreground font-medium">{crumb.label}</span>
               ) : (
@@ -240,6 +347,30 @@ export function Breadcrumb() {
             </li>
           );
         })}
+
+        {/* Git status badges (ahead/behind) - show after branches */}
+        {branchStatus && attempt && (
+          <>
+            {branchStatus.commits_ahead > 0 && (
+              <li className="flex items-center gap-1">
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100/70 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs">
+                  +{branchStatus.commits_ahead}{' '}
+                  {t('git.status.commits', { count: branchStatus.commits_ahead })}{' '}
+                  {t('git.status.ahead')}
+                </span>
+              </li>
+            )}
+            {branchStatus.commits_behind > 0 && (
+              <li className="flex items-center gap-1">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100/60 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs">
+                  {branchStatus.commits_behind}{' '}
+                  {t('git.status.commits', { count: branchStatus.commits_behind })}{' '}
+                  {t('git.status.behind')}
+                </span>
+              </li>
+            )}
+          </>
+        )}
       </ol>
 
       {/* Action buttons */}
