@@ -346,10 +346,18 @@ export function Breadcrumb() {
                   )}
                 </div>
               ) : isLastCrumb ? (
+                <span className="text-foreground font-medium truncate max-w-[150px] md:max-w-[250px] lg:max-w-none">{crumb.label}</span>
+              ) : crumb.type === 'task' ? (
                 <div className="flex items-center gap-1.5">
-                  <span className="text-foreground font-medium truncate max-w-[150px] md:max-w-[250px] lg:max-w-none">{crumb.label}</span>
+                  <Link
+                    to={crumb.path}
+                    className="text-muted-foreground hover:text-foreground transition-colors truncate max-w-[150px] md:max-w-[200px]"
+                    title={crumb.label}
+                  >
+                    {crumb.label}
+                  </Link>
                   {/* Show children badge inline with task name when it's a task crumb */}
-                  {crumb.type === 'task' && currentTask && attempt && (
+                  {currentTask && attempt && (
                     <TaskRelationshipBadges
                       selectedAttempt={attempt}
                       onNavigateToTask={handleNavigateToTask}
