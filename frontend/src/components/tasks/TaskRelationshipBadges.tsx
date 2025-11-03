@@ -61,16 +61,17 @@ export function TaskRelationshipBadges({
 
   return (
     <TooltipProvider>
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex items-center gap-1 shrink-0">
+        {/* Parent badge - icon only with tooltip */}
         {hasParent && relationships?.parent_task && (
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={() => onNavigateToTask?.(relationships.parent_task!.id)}
-                className="inline-flex items-center h-6 px-2 py-0 text-xs border border-border rounded-md bg-background cursor-pointer hover:bg-green-50 hover:border-green-500 hover:text-green-700 transition-colors"
+                className="inline-flex items-center justify-center h-6 w-6 text-xs border border-border rounded-md bg-background cursor-pointer hover:bg-green-50 hover:border-green-500 hover:text-green-700 transition-colors"
+                aria-label="Parent task"
               >
-                <Network className="w-3 h-3 mr-1" />
-                Parent
+                <Network className="w-3.5 h-3.5" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="max-w-xs">
@@ -84,16 +85,25 @@ export function TaskRelationshipBadges({
           </Tooltip>
         )}
 
+        {/* Children badge - icon + count with dropdown */}
         {childCount > 0 && (
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="inline-flex items-center h-6 px-2 py-0 text-xs border border-border rounded-md bg-background cursor-pointer hover:bg-blue-50 hover:border-blue-500 hover:text-blue-700 transition-colors"
-              >
-                <GitFork className="w-3 h-3 mr-1" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="inline-flex items-center justify-center gap-0.5 h-6 px-1.5 text-xs border border-border rounded-md bg-background cursor-pointer hover:bg-blue-50 hover:border-blue-500 hover:text-blue-700 transition-colors"
+                    aria-label={`${childCount} child ${childCount === 1 ? 'task' : 'tasks'}`}
+                  >
+                    <GitFork className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-medium">{childCount}</span>
+                  </button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
                 {childCount} {childCount === 1 ? 'Child' : 'Children'}
-              </button>
-            </DropdownMenuTrigger>
+              </TooltipContent>
+            </Tooltip>
             <DropdownMenuContent align="start" className="w-80">
               <div className="px-2 py-1.5 text-sm font-medium">
                 Child Tasks ({childCount})
