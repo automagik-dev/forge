@@ -218,20 +218,10 @@ export function ProjectTasks() {
   }, [projectId]);
 
   const rawMode = searchParams.get('view') as LayoutMode;
-  // Default to kanban view when no view parameter is set
   const mode: LayoutMode =
     rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat'
       ? rawMode
-      : 'kanban';
-
-  // Redirect to ?view=kanban if no view parameter is set
-  useEffect(() => {
-    if (!rawMode && isPanelOpen) {
-      const params = new URLSearchParams(searchParams);
-      params.set('view', 'kanban');
-      setSearchParams(params, { replace: true });
-    }
-  }, [rawMode, isPanelOpen, searchParams, setSearchParams]);
+      : null;
 
   // TODO: Remove this redirect after v0.1.0 (legacy URL support for bookmarked links)
   // Migrates old `view=logs` to `view=diffs`
@@ -248,8 +238,7 @@ export function ProjectTasks() {
     (newMode: LayoutMode) => {
       const params = new URLSearchParams(searchParams);
       if (newMode === null) {
-        // Default to kanban mode when deselecting
-        params.set('view', 'kanban');
+        params.delete('view');
       } else {
         params.set('view', newMode);
       }
