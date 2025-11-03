@@ -1,6 +1,14 @@
-import { ReactNode, useState } from 'react';
-import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
+import { ReactNode, useState, useRef } from 'react';
+import { PanelGroup, Panel, PanelResizeHandle, ImperativePanelHandle } from 'react-resizable-panels';
 import { AnimatePresence, motion } from 'framer-motion';
+import { PanelLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export type LayoutMode = 'preview' | 'diffs' | null;
 
@@ -173,9 +181,23 @@ function DesktopSimple({
   mode: LayoutMode;
   rightHeader?: ReactNode;
 }) {
+  const kanbanPanelRef = useRef<ImperativePanelHandle>(null);
+  const [isKanbanCollapsed, setIsKanbanCollapsed] = useState(false);
+
   const [outerSizes] = useState<SplitSizes>(() =>
     loadSizes(STORAGE_KEYS.KANBAN_ATTEMPT, DEFAULT_KANBAN_ATTEMPT)
   );
+
+  const toggleKanban = () => {
+    if (kanbanPanelRef.current) {
+      if (isKanbanCollapsed) {
+        kanbanPanelRef.current.expand();
+      } else {
+        kanbanPanelRef.current.collapse();
+      }
+      setIsKanbanCollapsed(!isKanbanCollapsed);
+    }
+  };
 
   // When preview/diffs is open, hide Kanban entirely and render only RightWorkArea
   if (mode !== null) {
@@ -201,6 +223,7 @@ function DesktopSimple({
       }}
     >
       <Panel
+        ref={kanbanPanelRef}
         id="kanban"
         order={1}
         defaultSize={outerSizes[0]}
@@ -210,6 +233,8 @@ function DesktopSimple({
         className="min-w-0 min-h-0 overflow-hidden"
         role="region"
         aria-label="Kanban board"
+        onCollapse={() => setIsKanbanCollapsed(true)}
+        onExpand={() => setIsKanbanCollapsed(false)}
       >
         {kanban}
       </Panel>
@@ -227,6 +252,25 @@ function DesktopSimple({
           <span className="w-1 h-1 rounded-full bg-muted-foreground" />
           <span className="w-1 h-1 rounded-full bg-muted-foreground" />
         </div>
+        {/* Sidebar toggle button */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="pointer-events-auto absolute top-4 left-1/2 -translate-x-1/2 h-7 w-7 bg-background/95 border border-border hover:bg-accent shadow-sm z-10"
+                onClick={toggleKanban}
+                aria-label={isKanbanCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+              >
+                <PanelLeft className={`h-4 w-4 transition-transform ${isKanbanCollapsed ? 'rotate-180' : ''}`} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {isKanbanCollapsed ? 'Show sidebar' : 'Hide sidebar'}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </PanelResizeHandle>
 
       <Panel
