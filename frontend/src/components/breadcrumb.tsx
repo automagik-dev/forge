@@ -1,8 +1,9 @@
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ChevronRight, ChevronDown, Home } from 'lucide-react';
+import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge } from 'lucide-react';
 import { useProject } from '@/contexts/project-context';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
+import { useTaskAttempt } from '@/hooks/useTaskAttempt';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,26 +16,70 @@ export function Breadcrumb() {
   const navigate = useNavigate();
   const { projectId, project } = useProject();
   const { data: projects } = useProjects();
-  const { taskId } = useParams<{ taskId?: string }>();
+  const { taskId, attemptId } = useParams<{ taskId?: string; attemptId?: string }>();
   const { tasksById } = useProjectTasks(projectId || '');
+
+  // Get attempt data if viewing an attempt
+  const effectiveAttemptId = attemptId === 'latest' ? undefined : attemptId;
+  const { data: attempt } = useTaskAttempt(effectiveAttemptId);
 
   // Determine breadcrumb items based on route
   const getBreadcrumbs = () => {
-    const crumbs: Array<{ label: string; path: string }> = [];
+    const crumbs: Array<{
+      label: string;
+      path: string;
+      type?: 'project' | 'task' | 'parent-task' | 'git-branch' | 'base-branch';
+      icon?: React.ReactNode;
+      onClick?: () => void;
+    }> = [];
 
     if (projectId && project) {
-      // Start with project name (no "Projects" root)
+      // Start with project name
       crumbs.push({
         label: project.name,
         path: `/projects/${projectId}/tasks`,
+        type: 'project',
       });
 
-      // Add task name if we're viewing a task
+      // Add parent task if current task has one
       if (taskId && tasksById[taskId]) {
+        const currentTask = tasksById[taskId];
+
+        if (currentTask.parent_task_id && tasksById[currentTask.parent_task_id]) {
+          const parentTask = tasksById[currentTask.parent_task_id];
+          crumbs.push({
+            label: parentTask.title,
+            path: `/projects/${projectId}/tasks/${parentTask.id}`,
+            type: 'parent-task',
+          });
+        }
+
+        // Add current task
         crumbs.push({
-          label: tasksById[taskId].title,
-          path: location.pathname,
+          label: currentTask.title,
+          path: `/projects/${projectId}/tasks/${taskId}`,
+          type: 'task',
         });
+
+        // Add git branch if viewing an attempt
+        if (attempt?.branch) {
+          crumbs.push({
+            label: attempt.branch,
+            path: location.pathname,
+            type: 'git-branch',
+            icon: <GitBranch className="h-3 w-3" />,
+          });
+        }
+
+        // Add base branch (for informational purposes)
+        if (project.default_base_branch) {
+          crumbs.push({
+            label: project.default_base_branch,
+            path: location.pathname,
+            type: 'base-branch',
+            icon: <GitMerge className="h-3 w-3" />,
+          });
+        }
       }
     }
 
@@ -67,11 +112,12 @@ export function Breadcrumb() {
         </li>
 
         {breadcrumbs.map((crumb, index) => {
-          const isCurrentProject = projectId && crumb.label === project?.name;
+          const isCurrentProject = crumb.type === 'project';
           const isLastCrumb = index === breadcrumbs.length - 1;
+          const hasIcon = crumb.type === 'git-branch' || crumb.type === 'base-branch';
 
           return (
-            <li key={crumb.path} className="flex items-center gap-1">
+            <li key={`${crumb.type}-${crumb.path}-${index}`} className="flex items-center gap-1">
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
               {isCurrentProject ? (
                 <DropdownMenu>
@@ -99,13 +145,19 @@ export function Breadcrumb() {
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
+              ) : isLastCrumb && hasIcon ? (
+                <span className="flex items-center gap-1 text-foreground font-medium">
+                  {crumb.icon}
+                  {crumb.label}
+                </span>
               ) : isLastCrumb ? (
                 <span className="text-foreground font-medium">{crumb.label}</span>
               ) : (
                 <Link
                   to={crumb.path}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
                 >
+                  {crumb.icon}
                   {crumb.label}
                 </Link>
               )}
