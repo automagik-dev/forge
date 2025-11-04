@@ -138,7 +138,7 @@ function main() {
   if (process.env.GENIE_SKIP_TESTS) {
     console.warn('⚠️  Tests skipped (GENIE_SKIP_TESTS set)');
   } else {
-    const testsCode = runNodeScript('run-tests.cjs', [], { CI: 'true' });
+    const testsCode = runNodeScript('run-tests.cjs', [], { GIT_DIR: process.env.GIT_DIR || '.git' });
     if (testsCode !== 0) {
       console.error('❌ Pre-push blocked - tests failed');
       process.exit(1);
