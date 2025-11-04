@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
+import { useState } from 'react';
 import { History, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +17,9 @@ import {
 import { useTaskAttempts } from '@/hooks/useTaskAttempts';
 import type { TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
 import { useTranslation } from 'react-i18next';
+import { useUserSystem } from '@/components/config-provider';
+import { BaseCodingAgent } from 'shared/types';
+import { subGenieApi } from '@/services/subGenieApi';
 
 interface ChatPanelActionsProps {
   attempt: TaskAttempt | undefined;
@@ -27,10 +31,65 @@ export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
   const { projectId, taskId } = useParams<{ projectId: string; taskId: string }>();
   const { data: attempts = [] } = useTaskAttempts(taskId);
   const { t } = useTranslation('tasks');
+  const { config } = useUserSystem();
+  const [isCreatingAttempt, setIsCreatingAttempt] = useState(false);
 
   if (!task || !projectId || !taskId) {
     return null;
   }
+
+  const handleCreateNewAttempt = async () => {
+    if (!config || isCreatingAttempt) return;
+
+    setIsCreatingAttempt(true);
+    try {
+      // Get current branch from git status
+      let currentBranch = 'main'; // fallback
+
+      try {
+        const branchResponse = await fetch(`/api/projects/${projectId}/git/status`);
+        if (branchResponse.ok) {
+          const contentType = branchResponse.headers.get('content-type');
+          if (contentType?.includes('application/json')) {
+            const { data } = await branchResponse.json();
+            currentBranch = data?.current_branch || 'main';
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to get current branch, using default:', error);
+      }
+
+      // Check if this is a Master Genie task (has MASTER variant)
+      const isMasterGenie = attempt?.executor?.includes(':MASTER');
+
+      // Create new attempt with appropriate variant
+      const executorProfile = config.executor_profile || {
+        executor: BaseCodingAgent.CLAUDE_CODE,
+        variant: null,
+      };
+
+      const variant = isMasterGenie ? 'MASTER' : executorProfile.variant;
+
+      const newAttempt = await subGenieApi.createMasterGenieAttempt(
+        taskId,
+        currentBranch,
+        { ...executorProfile, variant }
+      );
+
+      // Navigate to new attempt with chat view
+      navigate(`/projects/${projectId}/tasks/${taskId}/attempts/${newAttempt.id}?view=chat`);
+    } catch (error) {
+      console.error('Failed to create new attempt:', error);
+      // TODO: Show error toast
+    } finally {
+      setIsCreatingAttempt(false);
+    }
+  };
+
+  const handleCreateNewSubtask = () => {
+    // TODO: Implement subtask creation (needs separate form/modal)
+    console.log('Create new subtask - not yet implemented');
+  };
 
   return (
     <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
@@ -60,12 +119,12 @@ export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
               return (
                 <DropdownMenuItem
                   key={att.id}
-                  onClick={() => navigate(`/projects/${projectId}/tasks/${taskId}/attempts/${att.id}`)}
+                  onClick={() => navigate(`/projects/${projectId}/tasks/${taskId}/attempts/${att.id}?view=chat`)}
                   className={isCurrentAttempt ? 'bg-accent' : ''}
                 >
                   <div className="flex flex-col gap-0.5 w-full">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">Attempt #{attemptNumber}</span>
+                      <span className="font-medium">Session #{attemptNumber}</span>
                       {isCurrentAttempt && (
                         <span className="text-xs text-muted-foreground">(current)</span>
                       )}
@@ -98,20 +157,16 @@ export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
         </TooltipProvider>
         <DropdownMenuContent align="end" className="w-48 bg-popover">
           <DropdownMenuItem
-            onClick={() => {
-              // TODO: Implement create new attempt
-              console.log('Create new attempt');
-            }}
+            onClick={handleCreateNewAttempt}
+            disabled={isCreatingAttempt}
           >
-            New Attempt
+            {isCreatingAttempt ? 'Creating...' : 'New Session'}
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={() => {
-              // TODO: Implement create new subtask
-              console.log('Create new subtask');
-            }}
+            onClick={handleCreateNewSubtask}
+            disabled
           >
-            New Subtask
+            New Subtask (Coming Soon)
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

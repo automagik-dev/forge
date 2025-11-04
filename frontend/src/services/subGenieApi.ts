@@ -271,7 +271,14 @@ export class SubGenieApiService {
     );
 
     if (!agentResponse.ok) {
-      throw new Error(`Failed to fetch agents: ${agentResponse.status}`);
+      const errorText = await agentResponse.text();
+      throw new Error(`Failed to fetch agents: ${agentResponse.status} - ${errorText.substring(0, 200)}`);
+    }
+
+    const contentType = agentResponse.headers.get('content-type');
+    if (!contentType?.includes('application/json')) {
+      const responseText = await agentResponse.text();
+      throw new Error(`Expected JSON response from /forge/agents, got: ${contentType}. Response: ${responseText.substring(0, 200)}`);
     }
 
     const { data: agents } = await agentResponse.json();

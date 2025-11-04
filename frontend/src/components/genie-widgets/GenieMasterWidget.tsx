@@ -46,8 +46,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = () => {
    *
    * Flow:
    * 1. Ensure Master Genie task exists (or create it)
-   * 2. Get latest attempt (or create new one)
-   * 3. Navigate to chat view URL
+   * 2. Navigate to task with chat view (attempt will be created on first message)
    */
   const handleOpenChat = async () => {
     if (!projectId || !config) return;
@@ -58,36 +57,14 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = () => {
       // Step 1: Ensure Master Genie task exists
       const { task, attempt } = await subGenieApi.ensureMasterGenie(projectId);
 
-      // Step 2: Get or create attempt
-      let attemptId = attempt?.id;
-
-      if (!attemptId) {
-        // Get current branch from git status API
-        const branchResponse = await fetch(`/api/projects/${projectId}/git/status`);
-        let currentBranch = 'main'; // fallback
-
-        if (branchResponse.ok) {
-          const { data } = await branchResponse.json();
-          currentBranch = data?.current_branch || 'main';
-        }
-
-        // Create new attempt with MASTER variant
-        const executorProfile = config.executor_profile || {
-          executor: BaseCodingAgent.CLAUDE_CODE,
-          variant: null,
-        };
-
-        const newAttempt = await subGenieApi.createMasterGenieAttempt(
-          task.id,
-          currentBranch,
-          { ...executorProfile, variant: 'MASTER' }
-        );
-
-        attemptId = newAttempt.id;
+      // Step 2: Navigate to chat view
+      // If there's an existing attempt, use it; otherwise navigate to task-only view
+      // and let the chat interface create an attempt on first message
+      if (attempt) {
+        navigate(`/projects/${projectId}/tasks/${task.id}/attempts/${attempt.id}?view=chat`);
+      } else {
+        navigate(`/projects/${projectId}/tasks/${task.id}?view=chat`);
       }
-
-      // Step 3: Navigate to chat view
-      navigate(`/projects/${projectId}/tasks/${task.id}/attempts/${attemptId}?view=chat`);
     } catch (error) {
       console.error('Failed to open Master Genie:', error);
       // TODO: Show error toast
