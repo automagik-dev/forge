@@ -10,8 +10,57 @@ if [ -f .env ]; then
   set +a
 fi
 
+# Incremental build detection (Phase 3 optimization)
+NEEDS_FRONTEND_BUILD=true
+NEEDS_BACKEND_BUILD=true
+FORCE_REBUILD="${GENIE_FORCE_REBUILD:-0}"
+
+if [ "$FORCE_REBUILD" = "1" ]; then
+  echo "🔁 Force rebuild requested (GENIE_FORCE_REBUILD=1)"
+else
+  # Check if binaries already exist
+  if [ -f "npx-cli/dist/linux-x64/automagik-forge.zip" ] && [ -f "npx-cli/dist/linux-x64/automagik-forge-mcp.zip" ]; then
+    echo "📊 Checking for code changes since last commit..."
+
+    # Check for changes using git diff (works in both committed and uncommitted states)
+    if git rev-parse HEAD >/dev/null 2>&1; then
+      # Try to detect changes since last commit
+      FRONTEND_CHANGES=$(git diff --name-only HEAD -- frontend/ 2>/dev/null | wc -l || echo "1")
+      BACKEND_CHANGES=$(git diff --name-only HEAD -- upstream/crates/ forge-app/ Cargo.toml Cargo.lock 2>/dev/null | wc -l || echo "1")
+
+      if [ "$FRONTEND_CHANGES" -eq 0 ]; then
+        echo "✅ No frontend changes detected"
+        NEEDS_FRONTEND_BUILD=false
+      else
+        echo "📝 Frontend changes detected ($FRONTEND_CHANGES files)"
+      fi
+
+      if [ "$BACKEND_CHANGES" -eq 0 ]; then
+        echo "✅ No backend changes detected"
+        NEEDS_BACKEND_BUILD=false
+      else
+        echo "📝 Backend changes detected ($BACKEND_CHANGES files)"
+      fi
+
+      # If nothing changed, skip entire build
+      if [ "$NEEDS_FRONTEND_BUILD" = "false" ] && [ "$NEEDS_BACKEND_BUILD" = "false" ]; then
+        echo "🎉 No code changes detected - skipping build"
+        echo "   Binaries already exist from previous build"
+        echo "   Use GENIE_FORCE_REBUILD=1 to force rebuild"
+        exit 0
+      fi
+    fi
+  else
+    echo "📦 First build or binaries missing - building everything"
+  fi
+fi
+
 echo "🧹 Cleaning previous builds..."
-rm -rf npx-cli/dist
+if [ "$NEEDS_FRONTEND_BUILD" = "true" ] && [ "$NEEDS_BACKEND_BUILD" = "true" ]; then
+  rm -rf npx-cli/dist
+elif [ "$FORCE_REBUILD" = "1" ]; then
+  rm -rf npx-cli/dist
+fi
 
 # Detect current platform (normalize msys/mingw/cygwin to windows)
 UNAME_S=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -49,20 +98,31 @@ mkdir -p "npx-cli/dist/$PLATFORM_DIR"
 echo "🔄 Syncing upstream assets..."
 node scripts/sync-upstream-assets.js
 
-echo "🔨 Building frontend with pnpm..."
-(
-  cd frontend
-  pnpm run build
-)
+if [ "$NEEDS_FRONTEND_BUILD" = "true" ]; then
+  echo "🔨 Building frontend with pnpm..."
+  (
+    cd frontend
+    pnpm run build
+  )
 
-echo "🔨 Cleaning Rust build cache to pick up fresh frontend..."
-# Remove the embedded frontend from the build cache
-rm -rf target/release/build/forge-app-*/
-rm -rf target/release/.fingerprint/forge-app-*/
+  if [ "$NEEDS_BACKEND_BUILD" = "true" ]; then
+    echo "🔨 Cleaning Rust build cache to pick up fresh frontend..."
+    # Remove the embedded frontend from the build cache
+    rm -rf target/release/build/forge-app-*/
+    rm -rf target/release/.fingerprint/forge-app-*/
+  fi
+else
+  echo "⏭️  Skipping frontend build (no changes)"
+fi
 
-echo "🔨 Building Rust binaries with fresh frontend embed..."
-cargo build --release --bin forge-app
-cargo build --release --bin mcp_task_server
+if [ "$NEEDS_BACKEND_BUILD" = "true" ]; then
+  echo "🔨 Building Rust binaries..."
+  cargo build --release --bin forge-app
+  cargo build --release --bin mcp_task_server
+else
+  echo "⏭️  Skipping backend build (no changes)"
+  echo "   Using existing binaries from target/release/"
+fi
 
 echo "📦 Creating distribution package..."
 

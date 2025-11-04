@@ -29,7 +29,8 @@
     "generate-types:check": "cargo run --bin generate_types -- --check",
     "prepare-db": "node scripts/prepare-db.js",
     "build:npx": "bash ./local-build.sh",
-    "prepack": "npm run build:npx"
+    "prepack": "npm run build:npx",
+    "test:ci": "./test-npm-package-ci.sh"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",

@@ -52,7 +52,11 @@ export default schemas;
 export default defineConfig({
   plugins: [
     react(),
-    sentryVitePlugin({ org: "namastex-labs", project: "automagik-forge" }),
+    sentryVitePlugin({
+      org: "namastex-labs",
+      project: "automagik-forge",
+      telemetry: false,
+    }),
     executorSchemasPlugin(),
   ],
   resolve: {
