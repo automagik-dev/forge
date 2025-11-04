@@ -44,10 +44,11 @@ else
         FRONTEND_CHANGES=$(git diff --name-only "$LAST_BUILD_COMMIT" HEAD -- frontend/ 2>/dev/null | wc -l || echo "1")
         BACKEND_CHANGES=$(git diff --name-only "$LAST_BUILD_COMMIT" HEAD -- upstream/crates/ forge-app/ Cargo.toml Cargo.lock 2>/dev/null | wc -l || echo "1")
       else
-        # No marker - first build or marker deleted
-        echo "   No build marker found - checking for uncommitted changes"
-        FRONTEND_CHANGES=$(git diff --name-only HEAD -- frontend/ 2>/dev/null | wc -l || echo "1")
-        BACKEND_CHANGES=$(git diff --name-only HEAD -- upstream/crates/ forge-app/ Cargo.toml Cargo.lock 2>/dev/null | wc -l || echo "1")
+        # No marker - binaries exist but we don't know when they were built
+        # Force rebuild to be safe
+        echo "   No build marker found - forcing rebuild"
+        FRONTEND_CHANGES=1
+        BACKEND_CHANGES=1
       fi
 
       if [ "$FRONTEND_CHANGES" -eq 0 ]; then
