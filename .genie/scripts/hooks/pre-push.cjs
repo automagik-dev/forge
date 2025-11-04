@@ -18,12 +18,13 @@ function getWorktreeRoot() {
   }
 }
 
-function runNodeScript(script, args = []) {
+function runNodeScript(script, args = [], env = {}) {
   const worktreeRoot = getWorktreeRoot();
   const p = path.join(worktreeRoot, '.genie', 'scripts', script);
   const res = spawnSync('node', [p, ...args], {
     stdio: 'inherit',
-    cwd: worktreeRoot  // Run from worktree root, not main repo
+    cwd: worktreeRoot,  // Run from worktree root, not main repo
+    env: { ...process.env, ...env }  // Merge additional env vars
   });
   return res.status || 0;
 }
@@ -137,7 +138,7 @@ function main() {
   if (process.env.GENIE_SKIP_TESTS) {
     console.warn('⚠️  Tests skipped (GENIE_SKIP_TESTS set)');
   } else {
-    const testsCode = runNodeScript('run-tests.cjs');
+    const testsCode = runNodeScript('run-tests.cjs', [], { CI: 'true' });
     if (testsCode !== 0) {
       console.error('❌ Pre-push blocked - tests failed');
       process.exit(1);
