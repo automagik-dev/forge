@@ -1,6 +1,15 @@
 const { spawn } = require('child_process');
 
+// Accept tarball path from command line
+const tarball = process.argv[2];
+if (!tarball) {
+  console.error('❌ Usage: node mcp_test.js <tarball-path>');
+  console.error('   Example: node mcp_test.js automagik-forge-0.1.0.tgz');
+  process.exit(1);
+}
+
 console.error('🔄 Starting MCP server for comprehensive endpoint testing...');
+console.error(`📦 Using package: ${tarball}`);
 
 // Test configuration
 let currentStepIndex = 0;
@@ -334,8 +343,8 @@ function executeNextStep() {
   executeCurrentStep();
 }
 
-// Start MCP process
-const mcpProcess = spawn('vibe-kanban', ["--mcp"], {
+// Start MCP process using npx with tarball
+const mcpProcess = spawn('npx', ['-y', `--package=${tarball}`, 'automagik-forge', '--mcp'], {
   stdio: ['pipe', 'pipe', 'inherit'],
 });
 
