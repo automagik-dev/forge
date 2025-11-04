@@ -80,10 +80,10 @@ const OnboardingDialog = NiceModal.create(() => {
         <div className="space-y-2">
           <h2 className="text-xl flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
-            Choose Your Coding Agent
+            Choose Your AI Provider
           </h2>
           <div className="space-y-2">
-            <Label htmlFor="profile">Default Agent</Label>
+            <Label htmlFor="profile">Default Provider</Label>
             <div className="flex gap-2">
               <Select
                 value={profile.executor}
@@ -92,7 +92,7 @@ const OnboardingDialog = NiceModal.create(() => {
                 }
               >
                 <SelectTrigger id="profile" className="flex-1">
-                  <SelectValue placeholder="Select your preferred coding agent" />
+                  <SelectValue placeholder="Select your preferred AI provider" />
                 </SelectTrigger>
                 <SelectContent>
                   {profiles &&

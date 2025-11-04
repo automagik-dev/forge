@@ -33,47 +33,80 @@
 
 ## 🚀 What is Automagik Forge?
 
-**Automagik Forge** is the vibe coding++ platform where humans stay in control. It's the structured home for your AI development tasks - plan them yourself or vibe with AI to create them, experiment with different agents to find what works, review everything before shipping. No more code that breaks in 2 weeks.
+**Automagik Forge** is the vibe coding++ platform where humans stay in control. It's the structured home for your AI-powered tasks - plan them yourself or use Genie to help, experiment with different providers and agents to find what works, review everything before shipping. Perfect for development, content, and any AI-assisted work.
 
 ### 🎭 Vibe Coding++™ Philosophy
 
-**Regular vibe coding problem**: You chat with AI, get code, ship it. Two weeks later? Everything breaks and you can't fix it because you let AI do everything.
+**Regular vibe coding problem**: You chat with AI, get output, ship it. Two weeks later? Things break and you can't fix them because you let AI do everything without understanding.
 
 **Vibe Coding++™ solution**: Perfect human-AI integration where you:
 
-- 📋 **You Plan Tasks**: Break down work yourself or use AI to help plan
+- 📋 **You Plan Tasks**: Break down work yourself or use Genie AI assistant to help plan
 - 🏠 **Forge is Home**: All tasks live in persistent kanban, not lost in chat history or random .md files scattered across your codebase
-- 🧪 **You Experiment**: Try different agents on same task - see what works best
-- 🎯 **You Choose Agents**: Pick which coding agent for each task
+- 🧪 **You Experiment**: Try different providers and agents on same task - see what works best
+- 🎯 **You Choose**: Pick which provider (Claude, Gemini, etc.) and agent (test-writer, security-expert) for each task
 - 🔒 **Isolated Attempts**: Each attempt in its own Git worktree - no conflicts
 - 👀 **You Review**: Understand what changed before merging
-- 🚀 **Ship Confident Code**: Code that won't mysteriously break in 2 weeks
+- 🚀 **Ship with Confidence**: Work you understand and can maintain
 
-### 🚫 Why Regular Vibe Coding Fails
+### 🚀 The 10x Productivity Advantage
 
-The "just let AI do it" approach creates a ticking time bomb:
-- **No Structure**: Random chat conversations, no task tracking
-- **No Control**: AI makes all decisions, you don't understand the code
-- **No Memory**: What did we build last week? Who knows! Lost in chat history or random .md files
-- **No Experimentation**: Stuck with one agent's approach
-- **The 2-Week Curse**: Code works today, breaks tomorrow, unfixable forever
+Forge delivers exponential productivity through intelligent parallelism:
+- **Run Multiple Tasks Simultaneously**: While one agent writes tests, another fixes bugs, and a third refactors code
+- **Never Wait**: No sequential bottleneck - scale your output by running many agents at once
+- **Total Visibility**: Every task, every attempt, every change tracked and visible in one place
+- **Nothing Forgotten**: Persistent kanban means no work is lost, everything has context
+- **Structured Execution**: Tasks you control, not scattered in chat history or random .md files
 
 ### ✅ The Vibe Coding++™ Solution
 
 Forge elevates human potential - you orchestrate, AI executes:
 - **You Own the Kanban**: Tasks you create, not AI's whims
-- **You Pick the Agent**: Try Claude, then Gemini, see what works
-- **Multiple Attempts**: Each task can have multiple attempts with different agents
+- **You Pick Provider + Agent**: Try Claude with test-writer agent, then Gemini with security agent
+- **Multiple Attempts**: Each task can have multiple attempts with different providers/agents
+- **Genie AI Assistant**: Optional `.genie` integration for AI-assisted planning and custom agents
 - **Git Worktree Isolation**: Every attempt isolated, no conflicts
 - **You Review & Understand**: Know exactly what's changing before merge
 - **MCP Control**: Create/update tasks from your coding agent without leaving your flow
+
+### 🎯 The Wish → Forge → Review Framework
+
+Forge uses a three-phase workflow that maps directly to the kanban columns:
+
+**1. Wish** (Planning Phase)
+- Create tasks yourself or use Genie AI assistant to help break down complex work
+- Define clear requirements and acceptance criteria
+- Attach screenshots, diagrams, and context
+- Tasks live in "Wish" column until you're ready to execute
+
+**2. Forge** (Execution Phase)
+- Pick your provider (Claude, Gemini, etc.) and agent (test-writer, security-expert, etc.)
+- Execute tasks in isolated Git worktrees - run multiple tasks in parallel
+- Watch real-time progress, see diffs as they happen
+- Create multiple attempts with different providers/agents to find what works best
+- Tasks move to "Forge" column during execution
+
+**3. Review** (Validation Phase)
+- Compare attempts side-by-side, understand what changed
+- Review diffs, run tests, validate quality
+- Choose the best attempt to merge
+- Ship with confidence - work you understand and can maintain
+- Tasks move to "Review" column when ready for your approval
+
+**The Power:**
+- **Total Control**: You orchestrate, AI executes
+- **Maximum Parallelism**: Run many tasks simultaneously for 10x productivity
+- **Complete Visibility**: Nothing is hidden, everything tracked
+- **No Surprises**: Review before merge, understand before ship
 
 ---
 
 ## 🌟 Key Features
 
-- **8 AI Coding Executors**: Claude Code, Cursor, Gemini, Codex, and more - including open-source options
-- **Multiple Attempts Per Task**: Try different agents, compare results, choose the best
+- **8 AI Providers**: Claude Code, Cursor, Gemini, Codex, and more - including open-source options
+- **Custom Agents**: Add specialized behavior to any provider (test-writer, security-expert, refactor-specialist, content-writer)
+- **Genie Integration**: Auto-detects `.genie` folders and activates Genie Lamp for AI assistant capabilities
+- **Multiple Attempts Per Task**: Try different providers and agents, compare results, choose the best
 - **Parallel Execution**: Run multiple agents simultaneously on different tasks
 - **Git Worktree Isolation**: Every attempt in its own isolated environment
 - **Persistent Kanban Board**: Tasks live forever, not lost in chat history
@@ -85,22 +118,28 @@ Forge elevates human potential - you orchestrate, AI executes:
 
 ---
 
-## 🤖 AI Coding Agents (Executors)
+## 🤖 Providers + Agents: Two-Layer Flexibility
 
-### 🛠️ Available Executors in Forge
+### 🛠️ How It Works
 
-Forge can execute tasks using these AI coding agents - including open-source and LLM-agnostic options:
-
-- **Claude Code** - Anthropic's Claude models (supports Claude Code Router for LLM-agnostic execution)
-- **Cursor Agent** - Cursor's agent capabilities
+**Layer 1: Providers** (Who executes the task)
+- **Claude Code** - Anthropic's Claude models (supports Router for any LLM)
+- **Cursor** - Cursor's AI capabilities
 - **Gemini** - Google's Gemini models
-- **Codex** - OpenAI's code models
+- **Codex** - OpenAI's models
 - **Amp** - Sourcegraph's code intelligence
-- **OpenCode** - Open-source models, fully local execution
+- **OpenCode** - Open-source models, fully local
 - **Qwen Code** - Alibaba's open-source models
 - **Copilot** - GitHub Copilot integration
 
-**The Power:** Not locked to subscriptions - use open-source models, route to any LLM, or bring your own API keys
+**Layer 2: Agents** (How they should behave)
+- Add specialized behavior to any provider via custom prompts
+- Create agents for any purpose: "test-writer", "security-expert", "content-writer", "documentation-specialist"
+- Agents work with ANY provider - same behavior, different AI model
+
+**Example:** Your "test-writer" agent can run on Claude today, Gemini tomorrow, or your local LLM next week.
+
+**The Power:** Not locked to subscriptions - use open-source models, route to any LLM, bring your own API keys, customize for coding OR general tasks
 
 ### 🧪 Task Attempts: Experiment Until It Works
 
@@ -119,6 +158,40 @@ Task: "Implement user authentication"
 - Compare different agent outputs side-by-side
 - No commits until YOU approve
 - Learn which agent works best for which task type
+
+---
+
+## 🧞 Genie Integration: Your AI Assistant in Forge
+
+Forge automatically detects and integrates with [Automagik Genie](https://github.com/namastexlabs/automagik-genie) when present in your project.
+
+### How It Works
+
+**Auto-Detection:**
+- Forge scans for `.genie` folder in your project root
+- When detected, activates the **Genie Lamp** UI element
+- Lamp hidden when no `.genie` folder present - clean UI when not needed
+
+**What You Get:**
+- **Genie Agents**: Custom agents from your `.genie/agents/` directory automatically available in Forge
+- **Agent Library**: Your Genie agents work with ANY provider - use them across Claude, Gemini, local models
+- **Unified Workflow**: Plan with Genie, execute in Forge, seamless handoff
+
+### Setup
+
+```bash
+# Install Automagik Genie
+npm install -g automagik-genie
+
+# Initialize Genie in your project
+cd your-project
+genie init
+
+# Forge automatically detects .genie folder and activates integration
+npx automagik-forge
+```
+
+**Learn more:** [github.com/namastexlabs/automagik-genie](https://github.com/namastexlabs/automagik-genie)
 
 ---
 
@@ -337,19 +410,19 @@ graph LR
 You: "I need a user dashboard with charts and real-time updates"
 
 Your Process:
-1. YOU create tasks (or use AI to help plan):
+1. YOU create tasks (or use Genie to help plan):
    ├── Task 1: Design dashboard layout
-   ├── Task 2: Create chart components  
+   ├── Task 2: Create chart components
    ├── Task 3: Build WebSocket service
    ├── Task 4: Write integration tests
    └── Task 5: Generate documentation
 
-2. YOU experiment with different agents:
+2. YOU experiment with different providers + agents:
    Task 2 - Chart Components:
-   ├── Attempt 1: Try Claude → Too abstract
-   ├── Attempt 2: Try Cursor → Good but verbose
-   └── Attempt 3: Try Gemini → Perfect! ✅
-   
+   ├── Attempt 1: Claude Code (default) → Too abstract
+   ├── Attempt 2: Cursor (refactor agent) → Good but verbose
+   └── Attempt 3: Gemini (component-specialist agent) → Perfect! ✅
+
 3. YOU review and choose what to merge
 
 The Power: You're in control, not hoping AI gets it right
@@ -363,11 +436,13 @@ The Power: You're in control, not hoping AI gets it right
 |---------|----------------------|-------------------------------|
 | **Human Control** | ✅ You orchestrate every decision | ❌ AI acts autonomously |
 | **Task Persistence** | ✅ Kanban board - tasks live forever | ❌ Lost in chat conversations |
-| **Multiple Attempts** | ✅ Try different executors per task | ❌ One AI, one approach |
-| **8 AI Coding Executors** | ✅ Claude Code, Cursor, Gemini, etc. | ❌ Single AI model |
-| **Git Worktree Isolation** | ✅ Every attempt isolated | ❌ Direct code changes |
+| **Multiple Attempts** | ✅ Try different providers/agents per task | ❌ One AI, one approach |
+| **8 AI Providers** | ✅ Claude Code, Cursor, Gemini, etc. | ❌ Single AI model |
+| **Custom Agents** | ✅ Add specialized behavior to any provider | ❌ Fixed behavior |
+| **Genie Integration** | ✅ Auto-detects .genie, activates Lamp | ❌ No AI assistant integration |
+| **Git Worktree Isolation** | ✅ Every attempt isolated | ❌ Direct changes |
 | **MCP Server** | ✅ 8+ tools for remote control | ❌ No external integration |
-| **2-Week Curse Protection** | ✅ You understand the code | ❌ AI black box magic |
+| **2-Week Curse Protection** | ✅ You understand the work | ❌ AI black box magic |
 | **Code Review** | ✅ Review before merge | ❌ Auto-applies changes |
 | **Visual Context** | ✅ Attach screenshots to tasks | ✅ Can generate images |
 | **Open Source** | ✅ 100% open-source | ❌ Proprietary |
@@ -382,7 +457,6 @@ The Power: You're in control, not hoping AI gets it right
 
 - Node.js 18+ and pnpm 8+ (tested with pnpm 10.12.4)
 - Git repository to work with
-- (Optional) AI coding agent for MCP integration - see [supported agents](docs/supported-coding-agents.mdx)
 
 ### Installation
 
@@ -534,7 +608,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ---
 
 <p align="center">
-  <strong>🚀 Stop the 2-week curse. Start shipping code you actually understand.</strong><br>
+  <strong>🚀 Stop the 2-week curse. Start shipping work you actually understand.</strong><br>
   <strong>Vibe Coding++™ - Where Human Control Meets AI Power</strong><br><br>
   <a href="https://github.com/namastexlabs/automagik-forge">Star us on GitHub</a> •
   <a href="https://discord.gg/xcW8c7fF3R">Join our Discord</a> •

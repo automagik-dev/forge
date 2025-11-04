@@ -240,7 +240,7 @@ function ExecutorProfileSelector({
       <div className="flex-1">
         {showLabel && (
           <Label htmlFor="executor-profile" className="text-sm font-medium">
-            Agent
+            Provider
           </Label>
         )}
         <DropdownMenu
@@ -263,7 +263,7 @@ function ExecutorProfileSelector({
               <div className="flex items-center gap-1.5">
                 <Settings2 className="h-3 w-3" />
                 <span className="truncate">
-                  {selectedProfile?.executor || 'Select profile'}
+                  {selectedProfile?.executor || 'Select provider'}
                 </span>
               </div>
               <ArrowDown className="h-3 w-3" />
@@ -275,7 +275,7 @@ function ExecutorProfileSelector({
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   ref={profileSearchInputRef}
-                  placeholder="Search agents..."
+                  placeholder="Search providers..."
                   value={profileSearchTerm}
                   onChange={(e) => setProfileSearchTerm(e.target.value)}
                   onKeyDown={(e) => {
@@ -349,7 +349,7 @@ function ExecutorProfileSelector({
         currentProfile && (
           <div className="flex-1">
             <Label htmlFor="executor-variant" className="text-sm font-medium">
-              Configuration
+              Agent
             </Label>
             <DropdownMenu
               open={variantOpen}
@@ -380,7 +380,7 @@ function ExecutorProfileSelector({
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       ref={variantSearchInputRef}
-                      placeholder="Search configurations..."
+                      placeholder="Search agents..."
                       value={variantSearchTerm}
                       onChange={(e) => setVariantSearchTerm(e.target.value)}
                       onKeyDown={(e) => {
@@ -418,7 +418,7 @@ function ExecutorProfileSelector({
                 <DropdownMenuSeparator />
                 {filteredVariants.length === 0 ? (
                   <div className="p-2 text-sm text-muted-foreground text-center">
-                    No configurations found
+                    No agents found
                   </div>
                 ) : (
                   <Virtuoso
@@ -455,7 +455,7 @@ function ExecutorProfileSelector({
         currentProfile && (
           <div className="flex-1">
             <Label htmlFor="executor-variant" className="text-sm font-medium">
-              Configuration
+              Agent
             </Label>
             <Button
               variant="outline"
@@ -472,7 +472,7 @@ function ExecutorProfileSelector({
       {showVariantSelector && !selectedProfile && (
         <div className="flex-1">
           <Label htmlFor="executor-variant" className="text-sm font-medium">
-            Configuration
+            Agent
           </Label>
           <Button
             variant="outline"
@@ -480,7 +480,7 @@ function ExecutorProfileSelector({
             disabled
             className="w-full text-xs justify-start mt-1.5"
           >
-            Select agent first
+            Select provider first
           </Button>
         </div>
       )}
