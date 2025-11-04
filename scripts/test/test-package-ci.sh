@@ -9,7 +9,7 @@ echo "🧪 Testing NPM package (CI mode)..."
 export AUTOMAGIK_FORGE_SKIP_START=1
 export CI=true
 
-./local-build.sh
+bash scripts/build/build.sh
 
 cd npx-cli
 

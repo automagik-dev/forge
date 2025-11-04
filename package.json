@@ -16,9 +16,9 @@
     "check": "npm run frontend:check && npm run backend:check",
     "predev": "node scripts/ensure-submodules.js",
     "dev": "export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend) && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && concurrently \"npm run backend:dev:watch\" \"npm run frontend:dev\"",
-    "test:npm": "./test-npm-package.sh",
-    "test:all": "./test-npm-package-ci.sh",
-    "test:ci": "./test-npm-package-ci.sh",
+    "test:npm": "bash scripts/test/test-package.sh",
+    "test:all": "bash scripts/test/test-package-ci.sh",
+    "test:ci": "bash scripts/test/test-package-ci.sh",
     "frontend:lint": "cd frontend && npm run lint",
     "frontend:dev": "cd frontend && npm run dev -- --port ${FRONTEND_PORT:-3000} --host",
     "frontend:check": "cd frontend && npm run check",
@@ -29,9 +29,8 @@
     "generate-types": "cargo run --bin generate_types",
     "generate-types:check": "cargo run --bin generate_types -- --check",
     "prepare-db": "node scripts/prepare-db.js",
-    "build:npx": "bash ./local-build.sh",
-    "prepack": "npm run build:npx",
-    "test:ci": "./test-npm-package-ci.sh"
+    "build:npx": "bash scripts/build/build.sh",
+    "prepack": "npm run build:npx"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
