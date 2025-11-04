@@ -121,6 +121,14 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Upload source maps to PostHog
+        uses: PostHog/upload-source-maps@v0.4.6
+        with:
+          directory: frontend/dist
+          env-id: ${{ secrets.POSTHOG_ENV_ID }}
+          cli-token: ${{ secrets.POSTHOG_CLI_TOKEN }}
+          version: ${{ github.event.release.tag_name || inputs.tag_name }}
+
       - name: Update release description
         uses: actions/github-script@v7
         env:
@@ -141,5 +149,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: releaseId,
-              body: currentBody + '\n\n✅ **Published to npm registry**'
+              body: currentBody + '\n\n✅ **Published to npm registry**\n✅ **Source maps uploaded to PostHog**'
             });

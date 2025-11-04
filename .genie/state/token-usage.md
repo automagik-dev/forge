@@ -1,6 +1,6 @@
 # Token Usage
-Generated: 2025-11-04T18:32:13.807Z | Encoding: approx-words
-Total Files: 151 | Total Tokens: 156991
+Generated: 2025-11-04T19:09:58.796Z | Encoding: approx-words
+Total Files: 153 | Total Tokens: 158968
 
 ## Top 30 Files by Tokens
 -   8270 | .genie/spells/prompt.md

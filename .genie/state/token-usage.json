@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2025-11-04T18:32:13.807Z",
+  "generatedAt": "2025-11-04T19:09:58.796Z",
   "encoding": "approx-words",
   "files": [
     {
@@ -252,6 +252,13 @@
       "tokens": 1436,
       "lines": 411,
       "bytes": 10420,
+      "method": "approx"
+    },
+    {
+      "path": "docs/posthog-debugging.md",
+      "tokens": 1408,
+      "lines": 451,
+      "bytes": 11090,
       "method": "approx"
     },
     {
@@ -651,6 +658,13 @@
       "tokens": 577,
       "lines": 90,
       "bytes": 3862,
+      "method": "approx"
+    },
+    {
+      "path": "docs/posthog-source-maps-setup.md",
+      "tokens": 569,
+      "lines": 133,
+      "bytes": 3990,
       "method": "approx"
     },
     {
@@ -1061,7 +1075,7 @@
     }
   ],
   "totals": {
-    "files": 151,
-    "tokens": 156991
+    "files": 153,
+    "tokens": 158968
   }
 }
