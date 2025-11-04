@@ -150,7 +150,8 @@ export function ProjectTasks() {
     [taskId, tasksById]
   );
 
-  const isPanelOpen = Boolean(taskId && selectedTask);
+  // Panel is open if we have a regular task OR an agent task (Master Genie) with attemptId
+  const isPanelOpen = Boolean(taskId && (selectedTask || attemptId));
 
   const { isOpen: showTaskPanelShowcase, close: closeTaskPanelShowcase } =
     useShowcaseTrigger(showcases.taskPanel, {

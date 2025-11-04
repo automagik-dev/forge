@@ -7,7 +7,7 @@ type PartialDraft = Pick<Draft, 'prompt' | 'image_ids'>;
 
 type Args = {
   draft: PartialDraft | null;
-  taskId: string;
+  taskId: string | undefined;
 };
 
 export function useDraftEditor({ draft, taskId }: Args) {
@@ -41,7 +41,8 @@ export function useDraftEditor({ draft, taskId }: Args) {
     queryKey: ['taskImagesForDraft', taskId, idsKey],
     enabled: !!taskId,
     queryFn: async () => {
-      const all = await imagesApi.getTaskImages(taskId);
+      // taskId is guaranteed to exist because of enabled guard above
+      const all = await imagesApi.getTaskImages(taskId!);
       const want = new Set(serverIds);
       return all.filter((img) => want.has(img.id));
     },

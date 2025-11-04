@@ -22,16 +22,14 @@ const TaskAttemptPanel = ({
     return <div className="p-6 text-muted-foreground">Loading attempt...</div>;
   }
 
-  if (!task) {
-    return <div className="p-6 text-muted-foreground">Loading task...</div>;
-  }
-
+  // Allow rendering without task for agent tasks (Master Genie)
+  // VirtualizedList and TaskFollowUpSection can handle null task
   return (
     <EntriesProvider key={attempt.id}>
       <RetryUiProvider attemptId={attempt.id}>
         {children({
           logs: (
-            <VirtualizedList key={attempt.id} attempt={attempt} task={task} />
+            <VirtualizedList key={attempt.id} attempt={attempt} task={task ?? undefined} />
           ),
           followUp: (
             <TaskFollowUpSection

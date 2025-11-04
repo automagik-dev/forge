@@ -44,7 +44,7 @@ import { appendImageMarkdown } from '@/utils/markdownImages';
 import { useTranslation } from 'react-i18next';
 
 interface TaskFollowUpSectionProps {
-  task: TaskWithAttemptStatus;
+  task: TaskWithAttemptStatus | null;
   selectedAttemptId?: string;
   jumpToLogsTab: () => void;
 }
@@ -57,7 +57,7 @@ export function TaskFollowUpSection({
   const { t } = useTranslation('tasks');
 
   const { isAttemptRunning, stopExecution, isStopping, processes } =
-    useAttemptExecution(selectedAttemptId, task.id);
+    useAttemptExecution(selectedAttemptId, task?.id);
   const { data: branchStatus, refetch: refetchBranchStatus } =
     useBranchStatus(selectedAttemptId);
   const { branch: attemptBranch, refetch: refetchAttemptBranch } =
@@ -111,7 +111,7 @@ export function TaskFollowUpSection({
     clearImagesAndUploads,
   } = useDraftEditor({
     draft,
-    taskId: task.id,
+    taskId: task?.id,
   });
 
   // Presentation-only: show/hide image upload panel
@@ -435,7 +435,7 @@ export function TaskFollowUpSection({
                 ref={imageUploadRef}
                 images={images}
                 onImagesChange={setImages}
-                onUpload={(file) => imagesApi.uploadForTask(task.id, file)}
+                onUpload={(file) => task?.id ? imagesApi.uploadForTask(task.id, file) : Promise.reject('No task ID')}
                 onDelete={imagesApi.delete}
                 onImageUploaded={(image) => {
                   handleImageUploaded(image);
