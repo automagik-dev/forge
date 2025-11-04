@@ -115,6 +115,10 @@ fn forge_api_routes() -> Router<ForgeAppState> {
             "/api/forge/projects/{project_id}/settings",
             get(get_project_settings).put(update_project_settings),
         )
+        .route(
+            "/api/forge/projects/{project_id}/profiles",
+            get(get_project_profiles),
+        )
         .route("/api/forge/omni/status", get(get_omni_status))
         .route("/api/forge/omni/instances", get(list_omni_instances))
         .route("/api/forge/omni/validate", post(validate_omni_config))
@@ -1212,6 +1216,29 @@ async fn update_project_settings(
         })?;
 
     Ok(Json(ApiResponse::success(settings)))
+}
+
+/// Get executor profiles for a specific project
+async fn get_project_profiles(
+    Path(project_id): Path<Uuid>,
+    State(services): State<ForgeServices>,
+) -> Result<Json<ApiResponse<executors::profile::ExecutorConfigs>>, StatusCode> {
+    services
+        .profile_cache
+        .get_profiles_for_project(project_id)
+        .await
+        .map(|profiles| {
+            tracing::debug!(
+                "Retrieved {} executor profiles for project {}",
+                profiles.executors.len(),
+                project_id
+            );
+            Json(ApiResponse::success(profiles))
+        })
+        .map_err(|e| {
+            tracing::error!("Failed to load profiles for project {}: {}", project_id, e);
+            StatusCode::NOT_FOUND
+        })
 }
 
 async fn get_omni_status(State(services): State<ForgeServices>) -> Result<Json<Value>, StatusCode> {

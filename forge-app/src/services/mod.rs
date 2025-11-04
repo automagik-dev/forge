@@ -182,10 +182,16 @@ impl ForgeServices {
                         .map(|e| e.configurations.len())
                         .sum();
 
+                    // Register project → workspace mapping
+                    self.profile_cache
+                        .register_project(project.id, project.git_repo_path.clone())
+                        .await;
+
                     tracing::info!(
-                        "✅ Loaded {} profile variants for project: {}",
+                        "✅ Loaded {} profile variants for project: {} (registered project_id: {})",
                         variant_count,
-                        project.name
+                        project.name,
+                        project.id
                     );
 
                     loaded_count += 1;

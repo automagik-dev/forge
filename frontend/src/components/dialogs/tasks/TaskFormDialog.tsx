@@ -24,6 +24,7 @@ import {
 import { imagesApi, projectsApi, attemptsApi, tasksApi } from '@/lib/api';
 import { useTaskMutations } from '@/hooks/useTaskMutations';
 import { useUserSystem } from '@/components/config-provider';
+import { useProjectProfiles } from '@/hooks/useProjectProfiles';
 import { ExecutorProfileSelector } from '@/components/settings';
 import BranchSelector from '@/components/tasks/BranchSelector';
 import type {
@@ -65,7 +66,12 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     const modal = useModal();
     const { createTask, createAndStart, updateTask } =
       useTaskMutations(projectId);
-    const { system, profiles } = useUserSystem();
+    const { system } = useUserSystem();
+    const { data: projectProfiles } = useProjectProfiles(projectId);
+
+    // Use project profiles if available, fallback to global profiles
+    const profiles = projectProfiles?.executors || system.profiles?.executors;
+
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState<TaskStatus>('todo');

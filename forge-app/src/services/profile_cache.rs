@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
+use uuid::Uuid;
 
 use super::genie_profiles::GenieProfileLoader;
 
@@ -223,16 +224,20 @@ impl ProfileCache {
     }
 }
 
-/// Global profile cache manager
+/// Global profile cache manager (multi-tenant, project-aware)
 pub struct ProfileCacheManager {
-    /// Caches per workspace
-    caches: Arc<RwLock<HashMap<PathBuf, Arc<ProfileCache>>>>,
+    /// Caches per workspace path
+    caches_by_path: Arc<RwLock<HashMap<PathBuf, Arc<ProfileCache>>>>,
+
+    /// Project ID → workspace path mapping
+    project_paths: Arc<RwLock<HashMap<Uuid, PathBuf>>>,
 }
 
 impl ProfileCacheManager {
     pub fn new() -> Self {
         Self {
-            caches: Arc::new(RwLock::new(HashMap::new())),
+            caches_by_path: Arc::new(RwLock::new(HashMap::new())),
+            project_paths: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -240,7 +245,7 @@ impl ProfileCacheManager {
     pub async fn get_or_create(&self, workspace_root: PathBuf) -> Result<Arc<ProfileCache>> {
         // Check if cache exists
         {
-            let caches = self.caches.read().await;
+            let caches = self.caches_by_path.read().await;
             if let Some(cache) = caches.get(&workspace_root) {
                 return Ok(cache.clone());
             }
@@ -254,14 +259,31 @@ impl ProfileCacheManager {
         cache.clone().start_watching()?;
 
         // Store cache
-        self.caches.write().await.insert(workspace_root, cache.clone());
+        self.caches_by_path.write().await.insert(workspace_root, cache.clone());
 
         Ok(cache)
     }
 
-    /// Get cached profiles for a workspace
+    /// Register a project ID → workspace path mapping
+    pub async fn register_project(&self, project_id: Uuid, workspace_root: PathBuf) {
+        self.project_paths.write().await.insert(project_id, workspace_root);
+    }
+
+    /// Get cached profiles for a workspace (by path)
     pub async fn get_profiles(&self, workspace_root: &Path) -> Result<ExecutorConfigs> {
         let cache = self.get_or_create(workspace_root.to_path_buf()).await?;
         Ok(cache.get().await)
+    }
+
+    /// Get cached profiles for a project (by project_id)
+    pub async fn get_profiles_for_project(&self, project_id: Uuid) -> Result<ExecutorConfigs> {
+        let workspace_root = {
+            let paths = self.project_paths.read().await;
+            paths.get(&project_id)
+                .cloned()
+                .ok_or_else(|| anyhow::anyhow!("Project {} not registered in profile cache", project_id))?
+        };
+
+        self.get_profiles(&workspace_root).await
     }
 }

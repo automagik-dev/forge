@@ -421,8 +421,26 @@ impl GenieProfileLoader {
         for entry in entries.flatten() {
             let path = entry.path();
 
-            // Recursively scan subdirectories
+            // Skip non-agent directories (spells, workflows, teams, etc.)
             if path.is_dir() {
+                let dir_name = path.file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("");
+
+                // Directories to exclude from agent scanning
+                // Note: teams/ is included (will contain agent definitions in future)
+                let excluded_dirs = [
+                    "spells", "workflows", "specs", "reports",
+                    "state", "product", "qa", "wishes", "scripts",
+                    "utilities", ".cache", "node_modules", ".git", "backups"
+                ];
+
+                if excluded_dirs.contains(&dir_name) {
+                    tracing::debug!("Skipping non-agent directory: {}", path.display());
+                    continue;
+                }
+
+                // Recursively scan subdirectories
                 files.extend(self.scan_directory(&path, collective.clone(), agent_type.clone())?);
                 continue;
             }
@@ -432,11 +450,17 @@ impl GenieProfileLoader {
                 continue;
             }
 
+            // Skip README files (documentation, not agents)
             let name = path
                 .file_stem()
                 .and_then(|s| s.to_str())
                 .unwrap_or("unknown")
                 .to_string();
+
+            if name.eq_ignore_ascii_case("README") || name.eq_ignore_ascii_case("AGENTS") {
+                tracing::debug!("Skipping documentation file: {}", path.display());
+                continue;
+            }
 
             let namespaced_key = match (&collective, &agent_type) {
                 (Some(coll), AgentType::Agent) => format!("{}/{}", coll, name),
@@ -562,17 +586,10 @@ impl GenieProfileLoader {
     }
 
     /// Derive variant name from metadata and file info
-    /// Includes project folder name prefix to ensure uniqueness across projects
+    /// Project scoping is handled by profile cache, so no prefix needed
     fn derive_variant_name(&self, metadata: &AgentFrontmatter, file: &AgentFile) -> String {
-        // Get project folder name as prefix (e.g., "automagik-genie" -> "AUTOMAGIK_GENIE")
-        let project_prefix = self.workspace_root
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("UNKNOWN_PROJECT")
-            .to_case(Case::ScreamingSnake);
-
-        // Build the base name based on agent type
-        let base_name = if file.agent_type == AgentType::Neuron {
+        // Build the variant name based on agent type
+        if file.agent_type == AgentType::Neuron {
             // Neurons: NAME
             metadata.name.to_case(Case::ScreamingSnake)
         } else if let Some(collective) = &file.collective {
@@ -583,10 +600,7 @@ impl GenieProfileLoader {
         } else {
             // Global agents: NAME
             metadata.name.to_case(Case::ScreamingSnake)
-        };
-
-        // Prefix with project folder name: PROJECT_BASE_NAME
-        format!("{}_{}", project_prefix, base_name)
+        }
     }
 
     /// Build CodingAgent from metadata
