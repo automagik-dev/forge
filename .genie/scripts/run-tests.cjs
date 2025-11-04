@@ -16,14 +16,39 @@ async function main() {
   // Detect context: CI, git hook, or manual execution
   const isCI = process.env.CI || process.env.GITHUB_ACTIONS;
   const isHook = process.env.GIT_REFNAME || process.env.GIT_DIR; // Set by git hooks
-  const useNonInteractive = isCI || isHook;
 
+  // Git hooks should run fast unit tests, not slow package tests
+  if (isHook && !process.env.FORCE_PACKAGE_TEST) {
+    console.log('⚙️  Running unit tests (git hook - fast validation)...');
+    console.log('   Package tests skipped (run manually: npm run test:npm)');
+
+    await new Promise((resolve) => {
+      const ps = spawn('cargo', ['test', '--workspace'], {
+        stdio: 'inherit',
+        cwd: repoRoot,
+        shell: false
+      });
+      ps.on('exit', (code) => {
+        if (code === 0) {
+          console.log('✅ Unit tests passed');
+        } else {
+          console.error(`❌ Unit tests failed (exit code: ${code})`);
+          console.error('   Fix failing tests before pushing');
+        }
+        process.exit(code || 0);
+      });
+    });
+    return;
+  }
+
+  // Manual or CI execution: run full package tests
+  const useNonInteractive = isCI;
   const testCommand = useNonInteractive ? 'test:ci' : 'test:all';
 
   if (useNonInteractive) {
-    console.log('⚙️  Running tests (non-interactive mode)...');
+    console.log('⚙️  Running package tests (CI mode)...');
   } else {
-    console.log('⚙️  Running tests...');
+    console.log('⚙️  Running package tests (interactive)...');
   }
 
   await new Promise((resolve) => {
@@ -35,9 +60,9 @@ async function main() {
     });
     ps.on('exit', (code) => {
       if (code === 0) {
-        console.log('✅ Tests passed');
+        console.log('✅ Package tests passed');
       } else {
-        console.error(`❌ Tests failed (exit code: ${code})`);
+        console.error(`❌ Package tests failed (exit code: ${code})`);
         console.error('   Fix failing tests before pushing');
       }
       process.exit(code || 0);
