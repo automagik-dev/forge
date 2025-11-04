@@ -223,20 +223,14 @@ if command -v npm >/dev/null 2>&1; then
       echo "✅ npm link complete."
       echo ""
       echo "Next steps:"
-      echo "  - Run CLI directly (recommended):    automagik-forge --help"
-      echo "  - Avoid using npx here:              npx automagik-forge"
-      echo "      npx may fetch from the registry and ignore the global link,"
-      echo "      causing slow or 'eternal' waits."
+      echo "  - Test in dev mode:     make dev"
+      echo "  - Test production:      make prod"
+      echo "  - Run CLI directly:     automagik-forge --help"
+      echo "  - Or use short alias:   forge --help"
       echo ""
       echo "To unlink the globally linked CLI:"
       echo "  - npm unlink -g automagik-forge"
       echo "  - Or remove altogether: npm rm -g automagik-forge"
-      echo ""
-      echo "Troubleshooting tips:"
-      echo "  - Verify zips exist:   ls -1 npx-cli/dist/*/*.zip"
-      echo "  - Check unzip is present (Linux/macOS): which unzip"
-      echo "  - Show where the binary resolves: which automagik-forge"
-      echo "  - If 'npx automagik-forge' hangs, run: automagik-forge --help"
     else
       echo "⚠️  npm link failed (status $LINK_STATUS). Package was still built."
       echo "    You can link manually with verbose logs:"
@@ -249,31 +243,4 @@ else
   echo "ℹ️ Skipped npm link: 'npm' not found on PATH."
   echo "   You can still install locally via pnpm:"
   echo "     cd npx-cli && pnpm link --global"
-fi
-
-# --- Launch the freshly linked CLI for QA ---
-echo ""
-echo "🚀 Preparing to launch automagik-forge for QA..."
-
-if [ "${CI:-}" = "true" ]; then
-  echo "ℹ️ Detected CI environment; skipping app launch."
-elif [ "${AUTOMAGIK_FORGE_SKIP_START:-0}" = "1" ]; then
-  echo "ℹ️ Skipping launch because AUTOMAGIK_FORGE_SKIP_START=1."
-elif ! command -v automagik-forge >/dev/null 2>&1; then
-  echo "⚠️  automagik-forge CLI not found on PATH after linking; skipping launch."
-  echo "    Ensure npm link succeeded, then rerun this script or launch manually."
-else
-  echo "▶️ Launching automagik-forge (Ctrl+C when you're finished QAing)."
-  if [ -n "${AUTOMAGIK_FORGE_START_ARGS:-}" ]; then
-    # Allow whitespace-delimited extra arguments via env var
-    # shellcheck disable=SC2206
-    EXTRA_ARGS=(${AUTOMAGIK_FORGE_START_ARGS})
-    echo "   Additional args: ${EXTRA_ARGS[*]}"
-    automagik-forge "${EXTRA_ARGS[@]}"
-  else
-    automagik-forge
-  fi
-  echo ""
-  echo "✅ automagik-forge exited. If you stopped it intentionally, you're all set."
-  echo "   To skip auto-launch next time, run: AUTOMAGIK_FORGE_SKIP_START=1 ./local-build.sh"
 fi

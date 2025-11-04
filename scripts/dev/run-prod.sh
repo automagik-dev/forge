@@ -1,22 +1,21 @@
 #!/bin/bash
-# run-prod.sh - Build and run the production npm package locally
-# This runs the exact same thing you'll publish to npm
+# run-prod.sh - Build and run the production package locally
 
 set -e
 
 echo "📦 Building production package..."
 bash scripts/build/build.sh
 
-cd npx-cli
-
-echo "📋 Creating package tarball..."
-TARBALL=$(npm pack 2>&1 | tail -n1)
-
-echo "🚀 Running production package from tarball..."
-echo "   This is exactly what users will get from: npx automagik-forge"
+echo ""
+echo "🚀 Running production build (globally linked CLI)..."
+echo "   This tests the same binaries that will be published to npm"
 echo ""
 
-npx -y --package=$TARBALL automagik-forge
-
-# Note: This will run until you Ctrl+C
-# The tarball will be cleaned up automatically
+if command -v automagik-forge >/dev/null 2>&1; then
+  automagik-forge
+elif command -v forge >/dev/null 2>&1; then
+  forge
+else
+  echo "❌ Neither 'automagik-forge' nor 'forge' command found. Build may have failed."
+  exit 1
+fi

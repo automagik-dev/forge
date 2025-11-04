@@ -199,10 +199,12 @@ export function ProjectTasks() {
 
   useEffect(() => {
     if (!projectId || !taskId || isLoading) return;
-    if (selectedTask === null) {
+    // Don't redirect if we have an attemptId - agent tasks (Master Genie) won't be in tasksById
+    // but we can still show them via their attempts
+    if (selectedTask === null && !attemptId) {
       navigate(`/projects/${projectId}/tasks`, { replace: true });
     }
-  }, [projectId, taskId, isLoading, selectedTask, navigate]);
+  }, [projectId, taskId, isLoading, selectedTask, attemptId, navigate]);
 
   const effectiveAttemptId = attemptId === 'latest' ? undefined : attemptId;
   const isTaskView = !!taskId && !effectiveAttemptId;
@@ -659,9 +661,11 @@ export function ProjectTasks() {
   // Show breadcrumb for preview/diffs/kanban modes (these hide the main navbar)
   const rightHeader = mode === 'preview' || mode === 'diffs' || mode === 'kanban' ? <Breadcrumb /> : null;
 
-  const attemptContent = selectedTask ? (
+  // Allow rendering attempt content for agent tasks (Master Genie) where selectedTask is null
+  // but we have an attempt to show
+  const attemptContent = selectedTask || (attempt && attemptId) ? (
     <NewCard className="h-full min-h-0 flex flex-col bg-diagonal-lines bg-muted border-0 relative">
-      {isTaskView ? (
+      {isTaskView && selectedTask ? (
         <TaskPanel task={selectedTask} />
       ) : (
         <TaskAttemptPanel

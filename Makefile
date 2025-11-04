@@ -6,12 +6,13 @@ help:
 	@echo ""
 	@echo "Quick Start:"
 	@echo "  make dev       - Start development server (frontend + backend with hot reload)"
-	@echo "  make prod      - Build and run production package (exactly what gets published)"
+	@echo "  make prod      - Build and run production package (QA testing)"
+	@echo "  make forge     - Alias for 'make prod'"
 	@echo ""
 	@echo "Specific Targets:"
 	@echo "  make backend   - Start backend only (dev mode)"
 	@echo "  make frontend  - Start frontend only (dev mode)"
-	@echo "  make build     - Build production package"
+	@echo "  make build     - Build production package (no launch)"
 	@echo "  make test      - Run full test suite"
 	@echo "  make clean     - Clean build artifacts"
 	@echo ""
@@ -26,6 +27,9 @@ prod:
 	@echo "📦 Building and running production package..."
 	@bash scripts/dev/run-prod.sh
 
+# Alias for prod
+forge: prod
+
 # Backend only
 backend:
 	@echo "⚙️  Starting backend server (dev mode)..."
@@ -36,7 +40,7 @@ frontend:
 	@echo "🎨 Starting frontend server (dev mode)..."
 	@npm run frontend:dev
 
-# Build production package
+# Build production package (without launching)
 build:
 	@echo "🔨 Building production package..."
 	@bash scripts/build/build.sh

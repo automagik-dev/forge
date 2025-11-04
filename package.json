@@ -24,7 +24,8 @@
   "packageManager": "pnpm@10.12.4+sha512.5ea8b0deed94ed68691c9bad4c955492705c5eeb8a87ef86bc62c74a26b037b08ff9570f108b2e4dbd1dd1a9186fea925e527f141c648e85af45631074680184",
   "private": true,
   "bin": {
-    "automagik-forge": "npx-cli/bin/cli.js"
+    "automagik-forge": "npx-cli/bin/cli.js",
+    "forge": "npx-cli/bin/cli.js"
   },
   "files": [
     "npx-cli/bin/cli.js",
@@ -40,12 +41,12 @@
     "test:all": "bash scripts/test/test-package-ci.sh",
     "test:ci": "bash scripts/test/test-package-ci.sh",
     "frontend:lint": "cd frontend && npm run lint",
-    "frontend:dev": "cd frontend && npm run dev -- --port ${FRONTEND_PORT:-3000} --host",
+    "frontend:dev": "cd frontend && VITE_OPEN=true npm run dev -- --port ${FRONTEND_PORT:-3000} --host",
     "frontend:check": "cd frontend && npm run check",
     "backend:lint": "cargo clippy --workspace --all-targets --all-features -- -D warnings",
     "backend:dev": "BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) npm run backend:dev:watch",
     "backend:check": "cargo check",
-    "backend:dev:watch": "DISABLE_WORKTREE_ORPHAN_CLEANUP=1 RUST_LOG=debug cargo watch -w upstream/crates -w forge-app/src -w forge-extensions -x 'run --bin forge-app'",
+    "backend:dev:watch": "DISABLE_BROWSER_OPEN=1 DISABLE_WORKTREE_ORPHAN_CLEANUP=1 RUST_LOG=debug cargo watch -w upstream/crates -w forge-app/src -w forge-extensions -x 'run --bin forge-app'",
     "generate-types": "cargo run --bin generate_types",
     "generate-types:check": "cargo run --bin generate_types -- --check",
     "prepare-db": "node scripts/prepare-db.js",

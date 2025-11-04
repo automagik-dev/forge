@@ -20,7 +20,8 @@
   "license": "MIT",
   "main": "index.js",
   "bin": {
-    "automagik-forge": "bin/cli.js"
+    "automagik-forge": "bin/cli.js",
+    "forge": "bin/cli.js"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
