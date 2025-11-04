@@ -14,19 +14,41 @@ fi
 NEEDS_FRONTEND_BUILD=true
 NEEDS_BACKEND_BUILD=true
 FORCE_REBUILD="${GENIE_FORCE_REBUILD:-0}"
+BUILD_MARKER=".build_commit"
 
 if [ "$FORCE_REBUILD" = "1" ]; then
   echo "🔁 Force rebuild requested (GENIE_FORCE_REBUILD=1)"
 else
   # Check if binaries already exist
   if [ -f "npx-cli/dist/linux-x64/automagik-forge.zip" ] && [ -f "npx-cli/dist/linux-x64/automagik-forge-mcp.zip" ]; then
-    echo "📊 Checking for code changes since last commit..."
+    echo "📊 Checking for code changes since last build..."
 
-    # Check for changes using git diff (works in both committed and uncommitted states)
+    # Check for changes using git diff against last build commit
     if git rev-parse HEAD >/dev/null 2>&1; then
-      # Try to detect changes since last commit
-      FRONTEND_CHANGES=$(git diff --name-only HEAD -- frontend/ 2>/dev/null | wc -l || echo "1")
-      BACKEND_CHANGES=$(git diff --name-only HEAD -- upstream/crates/ forge-app/ Cargo.toml Cargo.lock 2>/dev/null | wc -l || echo "1")
+      CURRENT_COMMIT=$(git rev-parse HEAD)
+      LAST_BUILD_COMMIT=""
+
+      # Read last build commit if marker exists
+      if [ -f "$BUILD_MARKER" ]; then
+        LAST_BUILD_COMMIT=$(cat "$BUILD_MARKER" 2>/dev/null || echo "")
+      fi
+
+      if [ -n "$LAST_BUILD_COMMIT" ] && [ "$CURRENT_COMMIT" = "$LAST_BUILD_COMMIT" ]; then
+        # Same commit - check for uncommitted changes
+        FRONTEND_CHANGES=$(git diff --name-only HEAD -- frontend/ 2>/dev/null | wc -l || echo "1")
+        BACKEND_CHANGES=$(git diff --name-only HEAD -- upstream/crates/ forge-app/ Cargo.toml Cargo.lock 2>/dev/null | wc -l || echo "1")
+      elif [ -n "$LAST_BUILD_COMMIT" ]; then
+        # Different commit - check changes between commits
+        echo "   Last build: $LAST_BUILD_COMMIT"
+        echo "   Current:    $CURRENT_COMMIT"
+        FRONTEND_CHANGES=$(git diff --name-only "$LAST_BUILD_COMMIT" HEAD -- frontend/ 2>/dev/null | wc -l || echo "1")
+        BACKEND_CHANGES=$(git diff --name-only "$LAST_BUILD_COMMIT" HEAD -- upstream/crates/ forge-app/ Cargo.toml Cargo.lock 2>/dev/null | wc -l || echo "1")
+      else
+        # No marker - first build or marker deleted
+        echo "   No build marker found - checking for uncommitted changes"
+        FRONTEND_CHANGES=$(git diff --name-only HEAD -- frontend/ 2>/dev/null | wc -l || echo "1")
+        BACKEND_CHANGES=$(git diff --name-only HEAD -- upstream/crates/ forge-app/ Cargo.toml Cargo.lock 2>/dev/null | wc -l || echo "1")
+      fi
 
       if [ "$FRONTEND_CHANGES" -eq 0 ]; then
         echo "✅ No frontend changes detected"
@@ -175,6 +197,13 @@ echo "📋 Other platform placeholders created under npx-cli/dist/"
 
 echo "ℹ️ To create the npm package tarball, run:"
 echo "   pnpm pack --filter npx-cli"
+
+# Save current commit hash as build marker for incremental builds
+if git rev-parse HEAD >/dev/null 2>&1; then
+  CURRENT_COMMIT=$(git rev-parse HEAD)
+  echo "$CURRENT_COMMIT" > "$BUILD_MARKER"
+  echo "📝 Build marker updated: $CURRENT_COMMIT"
+fi
 
 # --- Optional convenience: global npm link for the CLI ---
 echo ""

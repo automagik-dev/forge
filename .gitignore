@@ -97,3 +97,6 @@ vibe-kanban-cloud/
 .genie/.framework-version
 .genie.backup-*
 .genie/backups/
+
+# Build marker for incremental builds
+.build_commit
