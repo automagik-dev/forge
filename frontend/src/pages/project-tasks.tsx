@@ -12,7 +12,8 @@ import { FeatureShowcaseModal } from '@/components/showcase/FeatureShowcaseModal
 import { showcases } from '@/config/showcases';
 import { useShowcaseTrigger } from '@/hooks/useShowcaseTrigger';
 import { usePostHog } from 'posthog-js/react';
-import type { ViewModeSwitchedEvent, ViewModeChangeTrigger } from '@/types/analytics';
+import type { ViewModeSwitchedEvent, ViewModeChangeTrigger, KeyboardContext } from '@/types/analytics';
+import { trackKeyboardShortcut, isFirstUse } from '@/lib/track-analytics';
 
 import { useSearch } from '@/contexts/search-context';
 import { useProject } from '@/contexts/project-context';
@@ -268,6 +269,11 @@ export function ProjectTasks() {
   );
 
   const handleCreateNewTask = useCallback(() => {
+    trackKeyboardShortcut({
+      shortcut: 'create_task',
+      context: 'task_list',
+      is_first_use: isFirstUse('shortcut_create_task'),
+    });
     handleCreateTask();
   }, [handleCreateTask]);
 
@@ -395,8 +401,18 @@ export function ProjectTasks() {
   useKeyOpenDetails(
     () => {
       if (isPanelOpen) {
+        trackKeyboardShortcut({
+          shortcut: 'cycle_view',
+          context: mode as KeyboardContext || 'task_list',
+          is_first_use: isFirstUse('shortcut_cycle_view'),
+        });
         cycleViewForward();
       } else if (selectedTask) {
+        trackKeyboardShortcut({
+          shortcut: 'open_details',
+          context: 'task_list',
+          is_first_use: isFirstUse('shortcut_open_details'),
+        });
         handleViewTaskDetails(selectedTask);
       }
     },
@@ -407,6 +423,11 @@ export function ProjectTasks() {
   useKeyCycleViewBackward(
     () => {
       if (isPanelOpen) {
+        trackKeyboardShortcut({
+          shortcut: 'cycle_view',
+          context: mode as KeyboardContext || 'task_list',
+          is_first_use: isFirstUse('shortcut_cycle_view_backward'),
+        });
         cycleViewBackward();
       }
     },
@@ -550,6 +571,19 @@ export function ProjectTasks() {
       const task = tasksById[draggedTaskId];
       if (!task || task.status === newStatus) return;
 
+      // Track kanban drag event
+      const fromStatus = task.status;
+      const fromColumn = groupedFilteredTasks[fromStatus] || [];
+      const toColumn = groupedFilteredTasks[newStatus] || [];
+
+      posthog.capture('kanban_task_dragged', {
+        from_status: fromStatus,
+        to_status: newStatus,
+        tasks_in_source_column: fromColumn.length,
+        tasks_in_target_column: toColumn.length,
+      });
+      console.log('[Analytics] kanban_task_dragged', { from_status: fromStatus, to_status: newStatus });
+
       try {
         await tasksApi.update(draggedTaskId, {
           title: task.title,
@@ -562,7 +596,7 @@ export function ProjectTasks() {
         console.error('Failed to update task status:', err);
       }
     },
-    [tasksById]
+    [tasksById, groupedFilteredTasks, posthog]
   );
 
   const isInitialTasksLoad = isLoading && tasks.length === 0;
