@@ -27,7 +27,7 @@
   <a href="#-contributing">Contributing</a>
 </p>
 
-![Automagik Forge Dashboard](frontend/public/screenshot.png)
+<!-- Screenshot placeholder - add your Forge dashboard screenshot here -->
 
 ---
 
@@ -44,7 +44,7 @@
 - 📋 **You Plan Tasks**: Break down work yourself or use AI to help plan
 - 🏠 **Forge is Home**: All tasks live in persistent kanban, not lost in chat history or random .md files scattered across your codebase
 - 🧪 **You Experiment**: Try different agents on same task - see what works best
-- 🎯 **You Choose Agents**: Pick which coding agent AND specialized agent for each task
+- 🎯 **You Choose Agents**: Pick which coding agent for each task
 - 🔒 **Isolated Attempts**: Each attempt in its own Git worktree - no conflicts
 - 👀 **You Review**: Understand what changed before merging
 - 🚀 **Ship Confident Code**: Code that won't mysteriously break in 2 weeks
@@ -63,7 +63,6 @@ The "just let AI do it" approach creates a ticking time bomb:
 Forge elevates human potential - you orchestrate, AI executes:
 - **You Own the Kanban**: Tasks you create, not AI's whims
 - **You Pick the Agent**: Try Claude, then Gemini, see what works
-- **You Choose Specialization**: Apply "test writer" or "PR reviewer" as needed
 - **Multiple Attempts**: Each task can have multiple attempts with different agents
 - **Git Worktree Isolation**: Every attempt isolated, no conflicts
 - **You Review & Understand**: Know exactly what's changing before merge
@@ -73,13 +72,11 @@ Forge elevates human potential - you orchestrate, AI executes:
 
 ## 🌟 Key Features
 
-- **8 AI Coding Agents**: Claude, Cursor CLI, Gemini, Codex, and more - including open-source options
-- **Specialized Agents**: Custom prompts that work with ANY coding agent (test-writer, pr-reviewer, etc.)
+- **8 AI Coding Executors**: Claude Code, Cursor, Gemini, Codex, and more - including open-source options
 - **Multiple Attempts Per Task**: Try different agents, compare results, choose the best
 - **Parallel Execution**: Run multiple agents simultaneously on different tasks
 - **Git Worktree Isolation**: Every attempt in its own isolated environment
 - **Persistent Kanban Board**: Tasks live forever, not lost in chat history
-- **Task Templates**: Reusable patterns for common workflows
 - **MCP Server Built-in**: Control from any AI coding agent without leaving your flow
 - **Visual Context**: Attach screenshots and diagrams to tasks
 - **Real-time Progress**: Watch agents work, see diffs as they happen
@@ -88,25 +85,20 @@ Forge elevates human potential - you orchestrate, AI executes:
 
 ---
 
-## 🤖 Two Types of Agents, Clear and Simple
+## 🤖 AI Coding Agents (Executors)
 
-> **The Key Distinction:**
-> - **AI Coding Agents** = The AI execution platforms (CLI tools that run AI models)
-> - **Specialized Agents** = Custom prompts that work with ANY coding agent
-> - Example: Your "test-writer" specialized agent can run on Claude today, Gemini tomorrow
-
-### 🛠️ AI Coding Agents Available in Forge
+### 🛠️ Available Executors in Forge
 
 Forge can execute tasks using these AI coding agents - including open-source and LLM-agnostic options:
 
-- **Claude Code** - Anthropic's Claude models
-- **Claude Code Router** - LLM-agnostic, use ANY model instead of Claude
-- **Cursor CLI** - Cursor's CLI agent (separate from their IDE)
+- **Claude Code** - Anthropic's Claude models (supports Claude Code Router for LLM-agnostic execution)
+- **Cursor Agent** - Cursor's agent capabilities
 - **Gemini** - Google's Gemini models
 - **Codex** - OpenAI's code models
 - **Amp** - Sourcegraph's code intelligence
 - **OpenCode** - Open-source models, fully local execution
 - **Qwen Code** - Alibaba's open-source models
+- **Copilot** - GitHub Copilot integration
 
 **The Power:** Not locked to subscriptions - use open-source models, route to any LLM, or bring your own API keys
 
@@ -116,9 +108,9 @@ Each task can have multiple attempts - try different approaches:
 
 ```yaml
 Task: "Implement user authentication"
-├── Attempt 1: Claude + "security-expert" → Too complex
-├── Attempt 2: Gemini + default → Missing edge cases  
-├── Attempt 3: Cursor + "auth-specialist" → Perfect! ✅
+├── Attempt 1: Claude Code → Too complex
+├── Attempt 2: Gemini → Missing edge cases
+├── Attempt 3: Cursor Agent → Perfect! ✅
 └── Result: You choose Attempt 3 to merge
 ```
 
@@ -127,13 +119,6 @@ Task: "Implement user authentication"
 - Compare different agent outputs side-by-side
 - No commits until YOU approve
 - Learn which agent works best for which task type
-
-**Available Templates:**
-- 🔍 **Code Review**: Multi-agent PR analysis
-- 🐛 **Bug Hunt**: Reproduce → Fix → Test → Document
-- ✨ **Feature Dev**: Design → Implement → Test → Deploy
-- 🔧 **Refactor**: Analyze → Plan → Execute → Verify
-- 📚 **Documentation**: Code → Comments → README → Examples
 
 ---
 
@@ -378,11 +363,10 @@ The Power: You're in control, not hoping AI gets it right
 |---------|----------------------|-------------------------------|
 | **Human Control** | ✅ You orchestrate every decision | ❌ AI acts autonomously |
 | **Task Persistence** | ✅ Kanban board - tasks live forever | ❌ Lost in chat conversations |
-| **Multiple Attempts** | ✅ Try different agents per task | ❌ One AI, one approach |
-| **8 AI Coding Agents** | ✅ Claude, Cursor CLI, Gemini, etc. | ❌ Single AI model |
-| **Specialized Agents** | ✅ Custom prompts for any agent | ❌ Fixed behavior |
+| **Multiple Attempts** | ✅ Try different executors per task | ❌ One AI, one approach |
+| **8 AI Coding Executors** | ✅ Claude Code, Cursor, Gemini, etc. | ❌ Single AI model |
 | **Git Worktree Isolation** | ✅ Every attempt isolated | ❌ Direct code changes |
-| **MCP Server** | ✅ 6 tools for remote control | ❌ No external integration |
+| **MCP Server** | ✅ 8+ tools for remote control | ❌ No external integration |
 | **2-Week Curse Protection** | ✅ You understand the code | ❌ AI black box magic |
 | **Code Review** | ✅ Review before merge | ❌ Auto-applies changes |
 | **Visual Context** | ✅ Attach screenshots to tasks | ✅ Can generate images |
@@ -396,9 +380,9 @@ The Power: You're in control, not hoping AI gets it right
 
 ### Prerequisites
 
-- Node.js 18+ and pnpm 8+
-- Authenticated AI coding agent (Claude Code, Gemini CLI, etc.)
+- Node.js 18+ and pnpm 8+ (tested with pnpm 10.12.4)
 - Git repository to work with
+- (Optional) AI coding agent for MCP integration - see [supported agents](docs/supported-coding-agents.mdx)
 
 ### Installation
 

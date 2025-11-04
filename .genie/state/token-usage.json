@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2025-11-04T18:07:37.402Z",
+  "generatedAt": "2025-11-04T18:19:06.307Z",
   "encoding": "approx-words",
   "files": [
     {
@@ -213,10 +213,31 @@
       "method": "approx"
     },
     {
+      "path": "docs/posthog-analytics-implementation.md",
+      "tokens": 1484,
+      "lines": 382,
+      "bytes": 11284,
+      "method": "approx"
+    },
+    {
       "path": ".genie/agents/forge.md",
       "tokens": 1450,
       "lines": 288,
       "bytes": 11585,
+      "method": "approx"
+    },
+    {
+      "path": "DEVELOPER.md",
+      "tokens": 1449,
+      "lines": 448,
+      "bytes": 11359,
+      "method": "approx"
+    },
+    {
+      "path": "docs/posthog-analytics-dashboards.md",
+      "tokens": 1449,
+      "lines": 342,
+      "bytes": 10281,
       "method": "approx"
     },
     {
@@ -259,6 +280,13 @@
       "tokens": 1359,
       "lines": 402,
       "bytes": 9893,
+      "method": "approx"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "tokens": 1330,
+      "lines": 339,
+      "bytes": 9506,
       "method": "approx"
     },
     {
@@ -1033,7 +1061,7 @@
     }
   ],
   "totals": {
-    "files": 147,
-    "tokens": 151279
+    "files": 151,
+    "tokens": 156991
   }
 }
