@@ -1,14 +1,28 @@
 {
-  "title": "Projects",
-  "subtitle": "Manage your projects and track their progress",
-  "createProject": "Create Project",
-  "loading": "Loading projects...",
+  "title": "Projetos",
+  "subtitle": "Gerencie seus projetos e acompanhe seu progresso",
+  "createProject": "Criar Projeto",
+  "loading": "Carregando projetos...",
+  "card": {
+    "status": {
+      "active": "Ativo"
+    },
+    "created": "Criado",
+    "menu": {
+      "viewProject": "Ver Projeto",
+      "openInIDE": "Abrir no IDE",
+      "edit": "Editar",
+      "delete": "Excluir"
+    },
+    "deleteConfirm": "Tem certeza de que deseja excluir \"{{name}}\"? Esta ação não pode ser desfeita."
+  },
   "errors": {
-    "fetchFailed": "Failed to fetch projects"
+    "fetchFailed": "Falha ao buscar projetos",
+    "deleteFailed": "Falha ao excluir projeto"
   },
   "empty": {
-    "title": "No projects yet",
-    "description": "Get started by creating your first project.",
-    "createFirst": "Create your first project"
+    "title": "Ainda não há projetos",
+    "description": "Comece criando seu primeiro projeto.",
+    "createFirst": "Criar seu primeiro projeto"
   }
 }

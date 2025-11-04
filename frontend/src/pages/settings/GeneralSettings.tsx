@@ -42,6 +42,7 @@ import { useTheme } from '@/components/theme-provider';
 import { useUserSystem } from '@/components/config-provider';
 import { TagManager } from '@/components/TagManager';
 import NiceModal from '@ebay/nice-modal-react';
+import { updateLanguageFromConfig } from '@/i18n/config';
 
 export function GeneralSettings() {
   const { t } = useTranslation(['settings', 'common']);
@@ -156,6 +157,7 @@ export function GeneralSettings() {
     try {
       await updateAndSaveConfig(draft); // Atomically apply + persist
       setTheme(draft.theme);
+      updateLanguageFromConfig(draft.language); // Apply language change immediately
       setDirty(false);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
