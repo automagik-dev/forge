@@ -1,6 +1,8 @@
 {
   "name": "Automagik Forge",
   "short_name": "Forge",
+  "description": "AI agent task management kanban board for Vibe Coding with git worktree isolation",
+  "categories": ["productivity", "development", "utilities"],
   "icons": [
     {
       "src": "/forge-clear.svg",
@@ -21,5 +23,7 @@
   ],
   "theme_color": "#00D9FF",
   "background_color": "#0A0A0A",
-  "display": "standalone"
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/"
 }
