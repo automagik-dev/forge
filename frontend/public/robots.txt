@@ -1,0 +1,15 @@
+# Automagik Forge - robots.txt
+# Domain: forge.namastex.ai
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://forge.namastex.ai/sitemap.xml
+
+# Crawl-delay (optional, helps with server load)
+# Crawl-delay: 1
+
+# Disallow sensitive paths (add as needed)
+# Disallow: /api/
+# Disallow: /admin/
