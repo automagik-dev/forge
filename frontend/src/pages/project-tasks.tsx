@@ -12,6 +12,7 @@ import { FeatureShowcaseModal } from '@/components/showcase/FeatureShowcaseModal
 import { showcases } from '@/config/showcases';
 import { useShowcaseTrigger } from '@/hooks/useShowcaseTrigger';
 import { usePostHog } from 'posthog-js/react';
+import type { ViewModeSwitchedEvent, ViewModeChangeTrigger } from '@/types/analytics';
 
 import { useSearch } from '@/contexts/search-context';
 import { useProject } from '@/contexts/project-context';
@@ -236,7 +237,17 @@ export function ProjectTasks() {
   }, [searchParams, setSearchParams]);
 
   const setMode = useCallback(
-    (newMode: LayoutMode) => {
+    (newMode: LayoutMode, trigger: ViewModeChangeTrigger = 'ui_button') => {
+      // Track view mode switch before changing
+      const viewModeSwitchedEvent: ViewModeSwitchedEvent = {
+        from_mode: mode,
+        to_mode: newMode,
+        trigger,
+        task_selected: Boolean(taskId && selectedTask),
+      };
+      posthog.capture('view_mode_switched', viewModeSwitchedEvent);
+      console.log('[Analytics] view_mode_switched', viewModeSwitchedEvent);
+
       const params = new URLSearchParams(searchParams);
       if (newMode === null) {
         params.delete('view');
@@ -245,7 +256,7 @@ export function ProjectTasks() {
       }
       setSearchParams(params, { replace: true });
     },
-    [searchParams, setSearchParams]
+    [mode, taskId, selectedTask, posthog, searchParams, setSearchParams]
   );
 
   const navigateWithSearch = useCallback(
@@ -367,7 +378,7 @@ export function ProjectTasks() {
         direction === 'forward'
           ? order[(idx + 1) % order.length]
           : order[(idx - 1 + order.length) % order.length];
-      setMode(next);
+      setMode(next, 'keyboard_shortcut');
     },
     [mode, setMode]
   );
@@ -384,34 +395,6 @@ export function ProjectTasks() {
   useKeyOpenDetails(
     () => {
       if (isPanelOpen) {
-        // Track keyboard shortcut before cycling view
-        const order: LayoutMode[] = ['kanban', 'preview', 'diffs', 'chat'];
-        const idx = order.indexOf(mode ?? 'kanban');
-        const next = order[(idx + 1) % order.length];
-
-        if (next === 'preview') {
-          posthog?.capture('preview_navigated', {
-            trigger: 'keyboard',
-            direction: 'forward',
-            timestamp: new Date().toISOString(),
-            source: 'frontend',
-          });
-        } else if (next === 'diffs') {
-          posthog?.capture('diffs_navigated', {
-            trigger: 'keyboard',
-            direction: 'forward',
-            timestamp: new Date().toISOString(),
-            source: 'frontend',
-          });
-        } else if (next === 'kanban') {
-          posthog?.capture('kanban_navigated', {
-            trigger: 'keyboard',
-            direction: 'forward',
-            timestamp: new Date().toISOString(),
-            source: 'frontend',
-          });
-        }
-
         cycleViewForward();
       } else if (selectedTask) {
         handleViewTaskDetails(selectedTask);
@@ -424,34 +407,6 @@ export function ProjectTasks() {
   useKeyCycleViewBackward(
     () => {
       if (isPanelOpen) {
-        // Track keyboard shortcut before cycling view
-        const order: LayoutMode[] = ['kanban', 'preview', 'diffs', 'chat'];
-        const idx = order.indexOf(mode ?? 'kanban');
-        const next = order[(idx - 1 + order.length) % order.length];
-
-        if (next === 'preview') {
-          posthog?.capture('preview_navigated', {
-            trigger: 'keyboard',
-            direction: 'backward',
-            timestamp: new Date().toISOString(),
-            source: 'frontend',
-          });
-        } else if (next === 'diffs') {
-          posthog?.capture('diffs_navigated', {
-            trigger: 'keyboard',
-            direction: 'backward',
-            timestamp: new Date().toISOString(),
-            source: 'frontend',
-          });
-        } else if (next === 'kanban') {
-          posthog?.capture('kanban_navigated', {
-            trigger: 'keyboard',
-            direction: 'backward',
-            timestamp: new Date().toISOString(),
-            source: 'frontend',
-          });
-        }
-
         cycleViewBackward();
       }
     },
