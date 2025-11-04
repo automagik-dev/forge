@@ -21,16 +21,17 @@ TARBALL=$(pwd)/$(ls automagik-forge-*.tgz | head -n1)
 echo "🧪 Testing main command..."
 npx -y --package=$TARBALL automagik-forge &
 MAIN_PID=$!
-sleep 3
-kill $MAIN_PID 2>/dev/null || true
-wait $MAIN_PID 2>/dev/null || true
+sleep 5  # Give backend time to fully start
 echo "✅ Main app started successfully"
 
 echo "🧪 Testing MCP command with complete handshake..."
+echo "   (MCP server needs backend running on port 8887)"
 
 node ../scripts/mcp_test.js $TARBALL
 
 echo "🧹 Cleaning up..."
+kill $MAIN_PID 2>/dev/null || true
+wait $MAIN_PID 2>/dev/null || true
 rm "$TARBALL"
 
 echo "✅ NPM package test completed successfully!"
