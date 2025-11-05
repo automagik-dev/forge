@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lamp } from '@/components/icons/Lamp';
 import { useProject } from '@/contexts/project-context';
-import { useUserSystem } from '@/components/config-provider';
 import { subGenieApi } from '@/services/subGenieApi';
-import { BaseCodingAgent } from 'shared/types';
 import { Loader2 } from 'lucide-react';
 
 interface GenieMasterWidgetProps {
@@ -25,7 +23,6 @@ interface GenieMasterWidgetProps {
 export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = () => {
   const navigate = useNavigate();
   const { projectId } = useProject();
-  const { config } = useUserSystem();
   const [isHovering, setIsHovering] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -46,10 +43,11 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = () => {
    *
    * Flow:
    * 1. Ensure Master Genie task exists (or create it)
-   * 2. Navigate to task with chat view (attempt will be created on first message)
+   * 2. Navigate to chat view (with existing attempt if available)
+   * 3. ChatPanel will create new attempt on first message if none exists
    */
   const handleOpenChat = async () => {
-    if (!projectId || !config) return;
+    if (!projectId) return;
 
     setIsLoading(true);
 
@@ -57,59 +55,13 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = () => {
       // Step 1: Ensure Master Genie task exists
       const { task, attempt: existingAttempt } = await subGenieApi.ensureMasterGenie(projectId);
 
-      // Step 2: Get current branch for attempt creation - MUST succeed
-      let currentBranch: string | null = null;
-      try {
-        const branchesResponse = await fetch(`/api/projects/${projectId}/branches`);
-        if (branchesResponse.ok) {
-          const { data } = await branchesResponse.json();
-          const currentBranchObj = data?.find((b: any) => b.is_current);
-          currentBranch = currentBranchObj?.name || null;
-          console.log('[GenieMasterWidget] Branch Detection', {
-            projectId,
-            detected: currentBranch,
-            allBranches: data?.length
-          });
-        }
-      } catch (error) {
-        console.error('Failed to get current branch:', error);
+      // Step 2: Navigate to chat view
+      // If existing attempt, navigate to it; otherwise navigate to task and let ChatPanel create attempt on first message
+      if (existingAttempt) {
+        navigate(`/projects/${projectId}/tasks/${task.id}/attempts/${existingAttempt.id}?view=chat`);
+      } else {
+        navigate(`/projects/${projectId}/tasks/${task.id}?view=chat`);
       }
-
-      if (!currentBranch) {
-        console.error('Cannot create Master Genie attempt: current branch detection failed');
-        alert('Cannot create session: Failed to detect current git branch. Make sure the project is a valid git repository.');
-        return;
-      }
-
-      // Step 3: Create attempt if it doesn't exist
-      let attemptToUse = existingAttempt;
-      if (!attemptToUse) {
-        const executorProfile = config.executor_profile || {
-          executor: BaseCodingAgent.CLAUDE_CODE,
-          variant: null,
-        };
-        try {
-          attemptToUse = await subGenieApi.createMasterGenieAttempt(
-            task.id,
-            currentBranch,
-            { ...executorProfile, variant: 'MASTER' }
-          );
-        } catch (error) {
-          // Attempt creation failed, but it might have been created in DB before container start failed
-          // Re-fetch to check if an attempt was actually created
-          const retry = await subGenieApi.ensureMasterGenie(projectId);
-          if (retry.attempt) {
-            console.log('[GenieMasterWidget] Recovered from failed creation - attempt exists in DB');
-            attemptToUse = retry.attempt;
-          } else {
-            // No attempt found after retry, rethrow original error
-            throw error;
-          }
-        }
-      }
-
-      // Step 4: Navigate to chat view with attempt
-      navigate(`/projects/${projectId}/tasks/${task.id}/attempts/${attemptToUse.id}?view=chat`);
     } catch (error) {
       console.error('Failed to open Master Genie:', error);
       // TODO: Show error toast

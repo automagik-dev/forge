@@ -17,9 +17,6 @@ import {
 import { useTaskAttempts } from '@/hooks/useTaskAttempts';
 import type { TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
 import { useTranslation } from 'react-i18next';
-import { useUserSystem } from '@/components/config-provider';
-import { BaseCodingAgent } from 'shared/types';
-import { subGenieApi } from '@/services/subGenieApi';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface ChatPanelActionsProps {
@@ -32,7 +29,6 @@ export function ChatPanelActions({ attempt }: ChatPanelActionsProps) {
   const { projectId, taskId } = useParams<{ projectId: string; taskId: string }>();
   const { data: attempts = [] } = useTaskAttempts(taskId);
   const { t } = useTranslation('tasks');
-  const { config } = useUserSystem();
   const queryClient = useQueryClient();
   const [isCreatingAttempt, setIsCreatingAttempt] = useState(false);
 
@@ -41,61 +37,18 @@ export function ChatPanelActions({ attempt }: ChatPanelActionsProps) {
   }
 
   const handleCreateNewAttempt = async () => {
-    if (!config || isCreatingAttempt) return;
+    if (isCreatingAttempt) return;
 
     setIsCreatingAttempt(true);
     try {
-      // Get current branch from git branches - MUST succeed
-      let currentBranch: string | null = null;
+      // Navigate to task without attempt ID
+      // ChatPanel will create the attempt when first message is sent
+      navigate(`/projects/${projectId}/tasks/${taskId}?view=chat`);
 
-      try {
-        const branchesResponse = await fetch(`/api/projects/${projectId}/branches`);
-        if (branchesResponse.ok) {
-          const { data } = await branchesResponse.json();
-          const currentBranchObj = data?.find((b: any) => b.is_current);
-          currentBranch = currentBranchObj?.name || null;
-          console.log('[Branch Detection]', {
-            projectId,
-            detected: currentBranch,
-            allBranches: data?.length
-          });
-        }
-      } catch (error) {
-        console.error('Failed to get current branch:', error);
-      }
-
-      if (!currentBranch) {
-        console.error('Cannot create attempt: current branch detection failed');
-        alert('Cannot create session: Failed to detect current git branch. Make sure the project is a valid git repository.');
-        return;
-      }
-
-      // Check if this is a Master Genie task (has MASTER variant)
-      const isMasterGenie = attempt?.executor?.includes(':MASTER');
-
-      // Create new attempt with appropriate variant
-      const executorProfile = config.executor_profile || {
-        executor: BaseCodingAgent.CLAUDE_CODE,
-        variant: null,
-      };
-
-      const variant = isMasterGenie ? 'MASTER' : executorProfile.variant;
-
-      const newAttempt = await subGenieApi.createMasterGenieAttempt(
-        taskId,
-        currentBranch,
-        { ...executorProfile, variant }
-      );
-
-      // Invalidate all related queries to ensure fresh data
+      // Invalidate attempts query to ensure fresh data
       await queryClient.invalidateQueries({ queryKey: ['task-attempts', taskId] });
-      await queryClient.invalidateQueries({ queryKey: ['task-attempt', newAttempt.id] });
-      await queryClient.invalidateQueries({ queryKey: ['execution-processes', newAttempt.id] });
-
-      // Navigate to new attempt with chat view
-      navigate(`/projects/${projectId}/tasks/${taskId}/attempts/${newAttempt.id}?view=chat`);
     } catch (error) {
-      console.error('Failed to create new attempt:', error);
+      console.error('Failed to navigate to new session:', error);
       // TODO: Show error toast
     } finally {
       setIsCreatingAttempt(false);
