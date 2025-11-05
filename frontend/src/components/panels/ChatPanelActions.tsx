@@ -45,22 +45,20 @@ export function ChatPanelActions({ attempt }: ChatPanelActionsProps) {
 
     setIsCreatingAttempt(true);
     try {
-      // Get current branch from git status - MUST succeed
+      // Get current branch from git branches - MUST succeed
       let currentBranch: string | null = null;
 
       try {
-        const branchResponse = await fetch(`/api/projects/${projectId}/git/status`);
-        if (branchResponse.ok) {
-          const contentType = branchResponse.headers.get('content-type');
-          if (contentType?.includes('application/json')) {
-            const { data } = await branchResponse.json();
-            currentBranch = data?.current_branch || null;
-            console.log('[Branch Detection]', {
-              projectId,
-              detected: currentBranch,
-              fullResponse: data
-            });
-          }
+        const branchesResponse = await fetch(`/api/projects/${projectId}/branches`);
+        if (branchesResponse.ok) {
+          const { data } = await branchesResponse.json();
+          const currentBranchObj = data?.find((b: any) => b.is_current);
+          currentBranch = currentBranchObj?.name || null;
+          console.log('[Branch Detection]', {
+            projectId,
+            detected: currentBranch,
+            allBranches: data?.length
+          });
         }
       } catch (error) {
         console.error('Failed to get current branch:', error);

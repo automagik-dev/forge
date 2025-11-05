@@ -60,14 +60,15 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = () => {
       // Step 2: Get current branch for attempt creation - MUST succeed
       let currentBranch: string | null = null;
       try {
-        const branchResponse = await fetch(`/api/projects/${projectId}/git/status`);
-        if (branchResponse.ok && branchResponse.headers.get('content-type')?.includes('application/json')) {
-          const { data } = await branchResponse.json();
-          currentBranch = data?.current_branch || null;
+        const branchesResponse = await fetch(`/api/projects/${projectId}/branches`);
+        if (branchesResponse.ok) {
+          const { data } = await branchesResponse.json();
+          const currentBranchObj = data?.find((b: any) => b.is_current);
+          currentBranch = currentBranchObj?.name || null;
           console.log('[GenieMasterWidget] Branch Detection', {
             projectId,
             detected: currentBranch,
-            fullResponse: data
+            allBranches: data?.length
           });
         }
       } catch (error) {
