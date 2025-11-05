@@ -163,7 +163,17 @@ export interface BreadcrumbClickedEvent {
 // Executor Events (Backend Enhancement)
 // ============================================================================
 
-export type ExecutorType = 'claude_code' | 'gemini' | 'openai';
+// Matches backend BaseCodingAgent enum values
+export type ExecutorType =
+  | 'CLAUDE_CODE'
+  | 'AMP'
+  | 'GEMINI'
+  | 'CODEX'
+  | 'OPENCODE'
+  | 'CURSOR_AGENT'
+  | 'QWEN_CODE'
+  | 'COPILOT'
+  | 'unknown'; // Fallback for error cases
 
 export interface ExecutorSelectedEvent {
   executor: ExecutorType;
@@ -177,6 +187,36 @@ export interface ExecutorPerformanceEvent {
   duration_seconds: number;
   error_type: 'timeout' | 'api_error' | 'execution_error' | null;
   had_dev_server: boolean; // Correlation tracking
+}
+
+export interface TaskCreatedEvent {
+  executor: ExecutorType;
+  has_description: boolean;
+  prompt_length: number; // Length of task description
+  is_subtask: boolean;
+}
+
+export interface TaskCompletedEvent {
+  executor: ExecutorType;
+  duration_seconds: number;
+  attempt_count: number;
+  success: boolean;
+  had_dev_server: boolean;
+}
+
+export interface FirstSuccessEvent {
+  time_to_first_success_minutes: number;
+  attempts_before_success: number;
+  executor_used: ExecutorType;
+  days_since_signup: number;
+}
+
+export interface TokenUsageEvent {
+  executor: ExecutorType;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  task_id: string; // Hashed UUID
 }
 
 // ============================================================================
@@ -221,5 +261,9 @@ export type AnalyticsEvent =
   | { event: 'breadcrumb_clicked'; properties: BreadcrumbClickedEvent }
   | { event: 'executor_selected'; properties: ExecutorSelectedEvent }
   | { event: 'executor_performance'; properties: ExecutorPerformanceEvent }
+  | { event: 'task_created'; properties: TaskCreatedEvent }
+  | { event: 'task_completed'; properties: TaskCompletedEvent }
+  | { event: 'first_success'; properties: FirstSuccessEvent }
+  | { event: 'token_usage'; properties: TokenUsageEvent }
   | { event: 'github_feature_used'; properties: GitHubFeatureUsedEvent }
   | { event: 'github_auth_flow'; properties: GitHubAuthFlowEvent };

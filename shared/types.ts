@@ -44,9 +44,9 @@ export type TagSearchParams = { search: string | null, };
 
 export type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelled" | "agent";
 
-export type Task = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, created_at: string, updated_at: string, };
+export type Task = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, dev_server_id: string | null, created_at: string, updated_at: string, };
 
-export type TaskWithAttemptStatus = { has_in_progress_attempt: boolean, has_merged_attempt: boolean, last_attempt_failed: boolean, executor: string, id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, created_at: string, updated_at: string, };
+export type TaskWithAttemptStatus = { has_in_progress_attempt: boolean, has_merged_attempt: boolean, last_attempt_failed: boolean, executor: string, id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, dev_server_id: string | null, created_at: string, updated_at: string, };
 
 export type TaskRelationships = { parent_task: Task | null, current_attempt: TaskAttempt, children: Array<Task>, };
 
@@ -94,13 +94,13 @@ export type ImageResponse = { id: string, file_path: string, original_name: stri
 
 export enum GitHubServiceError { TOKEN_INVALID = "TOKEN_INVALID", INSUFFICIENT_PERMISSIONS = "INSUFFICIENT_PERMISSIONS", REPO_NOT_FOUND_OR_NO_ACCESS = "REPO_NOT_FOUND_OR_NO_ACCESS" }
 
-export type Config = { config_version: string, theme: ThemeMode, executor_profile: ExecutorProfileId, disclaimer_acknowledged: boolean, onboarding_acknowledged: boolean, github_login_acknowledged: boolean, telemetry_acknowledged: boolean, notifications: NotificationConfig, editor: EditorConfig, github: GitHubConfig, analytics_enabled: boolean | null, workspace_dir: string | null, last_app_version: string | null, show_release_notes: boolean, language: UiLanguage, git_branch_prefix: string, showcases: ShowcaseState, };
+export type Config = { config_version: string, theme: ThemeMode, executor_profile: ExecutorProfileId, disclaimer_acknowledged: boolean, onboarding_acknowledged: boolean, github_login_acknowledged: boolean, telemetry_acknowledged: boolean, notifications: NotificationConfig, editor: EditorConfig, github: GitHubConfig, analytics_enabled: boolean | null, contact_email_opt_in: boolean | null, contact_username_opt_in: boolean | null, workspace_dir: string | null, last_app_version: string | null, show_release_notes: boolean, language: UiLanguage, git_branch_prefix: string, showcases: ShowcaseState, };
 
 export type NotificationConfig = { sound_enabled: boolean, push_enabled: boolean, sound_file: SoundFile, };
 
 export enum ThemeMode { LIGHT = "LIGHT", DARK = "DARK", SYSTEM = "SYSTEM" }
 
-export type EditorConfig = { editor_type: EditorType, custom_command: string | null, };
+export type EditorConfig = { editor_type: EditorType, custom_command: string | null, remote_ssh_host: string | null, remote_ssh_user: string | null, };
 
 export enum EditorType { VS_CODE = "VS_CODE", CURSOR = "CURSOR", WINDSURF = "WINDSURF", INTELLI_J = "INTELLI_J", ZED = "ZED", XCODE = "XCODE", CUSTOM = "CUSTOM" }
 
@@ -204,7 +204,11 @@ export type CreateTaskAttemptBody = { task_id: string,
 /**
  * Executor profile specification
  */
-executor_profile_id: ExecutorProfileId, base_branch: string, };
+executor_profile_id: ExecutorProfileId, base_branch: string, 
+/**
+ * If false, skip creating a git worktree and run in the main repo
+ */
+use_worktree: boolean, };
 
 export type RebaseTaskAttemptRequest = { old_base_branch: string | null, new_base_branch: string | null, };
 
@@ -250,7 +254,7 @@ conflicted_files: Array<string>, };
 
 export type ConflictOp = "rebase" | "merge" | "cherry_pick" | "revert";
 
-export type TaskAttempt = { id: string, task_id: string, container_ref: string | null, branch: string, target_branch: string, executor: string, worktree_deleted: boolean, setup_completed_at: string | null, created_at: string, updated_at: string, };
+export type TaskAttempt = { id: string, task_id: string, container_ref: string | null, branch: string, target_branch: string, executor: string, worktree_deleted: boolean, setup_completed_at: string | null, input_tokens: number | null, output_tokens: number | null, cache_creation_tokens: number | null, cache_read_tokens: number | null, created_at: string, updated_at: string, };
 
 export type ExecutionProcess = { id: string, task_attempt_id: string, run_reason: ExecutionProcessRunReason, executor_action: ExecutorAction, 
 /**
