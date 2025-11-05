@@ -45,7 +45,7 @@ export function ChatPanelActions({ attempt }: ChatPanelActionsProps) {
 
     setIsCreatingAttempt(true);
     try {
-      // Get current branch from git status - REQUIRED, no fallback to 'main'
+      // Get current branch from git status - MUST succeed
       let currentBranch: string | null = null;
 
       try {
@@ -54,7 +54,12 @@ export function ChatPanelActions({ attempt }: ChatPanelActionsProps) {
           const contentType = branchResponse.headers.get('content-type');
           if (contentType?.includes('application/json')) {
             const { data } = await branchResponse.json();
-            currentBranch = data?.current_branch;
+            currentBranch = data?.current_branch || null;
+            console.log('[Branch Detection]', {
+              projectId,
+              detected: currentBranch,
+              fullResponse: data
+            });
           }
         }
       } catch (error) {
@@ -62,8 +67,8 @@ export function ChatPanelActions({ attempt }: ChatPanelActionsProps) {
       }
 
       if (!currentBranch) {
-        console.error('Cannot create attempt: current branch is unknown');
-        // TODO: Show error toast - cannot determine current branch
+        console.error('Cannot create attempt: current branch detection failed');
+        alert('Cannot create session: Failed to detect current git branch. Make sure the project is a valid git repository.');
         return;
       }
 
