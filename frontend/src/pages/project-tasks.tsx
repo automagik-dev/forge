@@ -211,7 +211,7 @@ export function ProjectTasks() {
   const isTaskView = !!taskId && !effectiveAttemptId;
   const { data: attempt } = useTaskAttempt(effectiveAttemptId);
 
-  const { data: branchStatus } = useBranchStatus(attempt?.id);
+  const { data: branchStatus } = useBranchStatus(attempt?.id, attempt);
   const [branches, setBranches] = useState<GitBranch[]>([]);
   const [gitError, setGitError] = useState<string | null>(null);
 

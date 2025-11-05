@@ -4,7 +4,6 @@ import { Lamp } from '@/components/icons/Lamp';
 import { useProject } from '@/contexts/project-context';
 import { useUserSystem } from '@/components/config-provider';
 import { subGenieApi } from '@/services/subGenieApi';
-import { BaseCodingAgent } from 'shared/types';
 import { Loader2 } from 'lucide-react';
 
 interface GenieMasterWidgetProps {

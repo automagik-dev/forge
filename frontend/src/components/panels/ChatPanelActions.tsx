@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { useUserSystem } from '@/components/config-provider';
 import { BaseCodingAgent } from 'shared/types';
 import { subGenieApi } from '@/services/subGenieApi';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ChatPanelActionsProps {
   attempt: TaskAttempt | undefined;
@@ -32,6 +33,7 @@ export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
   const { data: attempts = [] } = useTaskAttempts(taskId);
   const { t } = useTranslation('tasks');
   const { config } = useUserSystem();
+  const queryClient = useQueryClient();
   const [isCreatingAttempt, setIsCreatingAttempt] = useState(false);
 
   if (!task || !projectId || !taskId) {
@@ -75,6 +77,9 @@ export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
         currentBranch,
         { ...executorProfile, variant }
       );
+
+      // Invalidate task attempts cache to refresh the history dropdown
+      await queryClient.invalidateQueries({ queryKey: ['task-attempts', taskId] });
 
       // Navigate to new attempt with chat view
       navigate(`/projects/${projectId}/tasks/${taskId}/attempts/${newAttempt.id}?view=chat`);

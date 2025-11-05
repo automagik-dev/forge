@@ -51,7 +51,7 @@ export function Breadcrumb() {
   const { data: attempts = [] } = useTaskAttempts(taskId);
 
   // Get branch status for git status badges
-  const { data: branchStatus } = useBranchStatus(attempt?.id);
+  const { data: branchStatus } = useBranchStatus(attempt?.id, attempt);
 
   // Fetch branches for change target branch dialog
   const [branches, setBranches] = useState<GitBranchType[]>([]);
