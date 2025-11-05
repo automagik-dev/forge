@@ -290,7 +290,7 @@ function App() {
       <UserSystemProvider>
         <ClickedElementsProvider>
           <ProjectProvider>
-            <HotkeysProvider initiallyActiveScopes={['*', 'global', 'kanban']}>
+            <HotkeysProvider initiallyActiveScopes={['*', 'global', 'kanban', 'dialog', 'projects', 'settings', 'edit-comment', 'approvals', 'follow-up', 'follow-up-ready']}>
               <SubGenieProvider>
                 <NiceModal.Provider>
                   <AppContent />
