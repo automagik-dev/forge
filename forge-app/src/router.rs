@@ -227,6 +227,15 @@ async fn forge_create_task_attempt(
     )
     .await?;
 
+    // Insert use_worktree flag into forge_task_attempt_config
+    sqlx::query(
+        "INSERT INTO forge_task_attempt_config (task_attempt_id, use_worktree) VALUES (?, ?)"
+    )
+    .bind(attempt_id)
+    .bind(payload.use_worktree)
+    .execute(&deployment.db().pool)
+    .await?;
+
     // Store executor with variant for agent task filtering
     if let Some(variant) = &executor_profile_id.variant {
         let executor_with_variant = format!("{}:{}", executor_profile_id.executor, variant);
@@ -356,6 +365,15 @@ async fn forge_create_task_and_start(
         task_attempt_id,
         task.id,
     )
+    .await?;
+
+    // Insert use_worktree flag into forge_task_attempt_config (defaults to true for regular tasks)
+    sqlx::query(
+        "INSERT INTO forge_task_attempt_config (task_attempt_id, use_worktree) VALUES (?, ?)"
+    )
+    .bind(task_attempt_id)
+    .bind(true) // Regular tasks always use worktree
+    .execute(&deployment.db().pool)
     .await?;
 
     // Store executor with variant for agent task filtering
