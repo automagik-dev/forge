@@ -4,7 +4,6 @@ import { useProject } from '@/contexts/project-context';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
 import { useTaskAttempt } from '@/hooks/useTaskAttempt';
-import { useTaskAttempts } from '@/hooks/useTaskAttempts';
 import { useBranchStatus } from '@/hooks/useBranchStatus';
 import { useChangeTargetBranch } from '@/hooks/useChangeTargetBranch';
 import { useCallback, useEffect, useState, useMemo } from 'react';
@@ -47,8 +46,8 @@ export function Breadcrumb() {
   const { data: attempt } = useTaskAttempt(effectiveAttemptId);
 
   // Get all attempts for history dropdown (currently unused after moving history button)
-  // @ts-ignore - keeping for potential future use
-  const { data: attempts = [] } = useTaskAttempts(taskId);
+  // Commented out to avoid lint errors - uncomment if needed in future
+  // const { data: attempts = [] } = useTaskAttempts(taskId);
 
   // Get branch status for git status badges
   const { data: branchStatus } = useBranchStatus(attempt?.id, attempt);

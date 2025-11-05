@@ -107,10 +107,6 @@ function ExecutorProfileSelector({
   const profileVirtuosoRef = useRef<VirtuosoHandle>(null);
   const variantVirtuosoRef = useRef<VirtuosoHandle>(null);
 
-  if (!profiles) {
-    return null;
-  }
-
   const handleExecutorChange = useCallback((executor: string) => {
     onProfileSelect({
       executor: executor as BaseCodingAgent,
@@ -133,13 +129,14 @@ function ExecutorProfileSelector({
     setVariantOpen(false);
   }, [selectedProfile, onProfileSelect]);
 
-  const currentProfile = selectedProfile
+  const currentProfile = selectedProfile && profiles
     ? profiles[selectedProfile.executor]
     : null;
   const hasVariants = currentProfile && Object.keys(currentProfile).length > 0;
 
   // Filtered and sorted profiles
   const filteredProfiles = useMemo(() => {
+    if (!profiles) return [];
     let profileKeys = Object.keys(profiles).sort((a, b) => a.localeCompare(b));
 
     if (profileSearchTerm.trim()) {
@@ -233,6 +230,10 @@ function ExecutorProfileSelector({
   useEffect(() => {
     setVariantHighlightedIndex(null);
   }, [variantSearchTerm]);
+
+  if (!profiles) {
+    return null;
+  }
 
   return (
     <div className="flex gap-3 flex-col sm:flex-row">
