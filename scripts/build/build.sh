@@ -143,8 +143,15 @@ if [ "$NEEDS_BACKEND_BUILD" = "true" ]; then
   cargo build --release --bin forge-app
   cargo build --release --bin mcp_task_server
 else
-  echo "⏭️  Skipping backend build (no changes)"
-  echo "   Using existing binaries from target/release/"
+  # Verify binaries actually exist before skipping
+  if [ ! -f "target/release/forge-app${BIN_EXT}" ] || [ ! -f "target/release/mcp_task_server${BIN_EXT}" ]; then
+    echo "⚠️  Backend binaries missing despite no detected changes - rebuilding"
+    cargo build --release --bin forge-app
+    cargo build --release --bin mcp_task_server
+  else
+    echo "⏭️  Skipping backend build (no changes)"
+    echo "   Using existing binaries from target/release/"
+  fi
 fi
 
 echo "📦 Creating distribution package..."
