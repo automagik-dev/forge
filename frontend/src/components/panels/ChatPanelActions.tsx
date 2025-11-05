@@ -27,7 +27,7 @@ interface ChatPanelActionsProps {
   task: TaskWithAttemptStatus | null;
 }
 
-export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
+export function ChatPanelActions({ attempt }: ChatPanelActionsProps) {
   const navigate = useNavigate();
   const { projectId, taskId } = useParams<{ projectId: string; taskId: string }>();
   const { data: attempts = [] } = useTaskAttempts(taskId);
