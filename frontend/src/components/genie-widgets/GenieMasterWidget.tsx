@@ -47,7 +47,7 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = () => {
    * 3. ChatPanel will create new attempt on first message if none exists
    */
   const handleOpenChat = async () => {
-    if (!projectId) return;
+    if (!projectId || isLoading) return;
 
     setIsLoading(true);
 
