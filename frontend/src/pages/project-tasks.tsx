@@ -150,8 +150,9 @@ export function ProjectTasks() {
     [taskId, tasksById]
   );
 
-  // Panel is open if we have a regular task OR an agent task (Master Genie) with attemptId
-  const isPanelOpen = Boolean(taskId && (selectedTask || attemptId));
+  // Panel is open if we have a regular task OR an agent task (Master Genie) with attemptId OR in chat view
+  const isInChatView = searchParams.get('view') === 'chat';
+  const isPanelOpen = Boolean(taskId && (selectedTask || attemptId || isInChatView));
 
   const { isOpen: showTaskPanelShowcase, close: closeTaskPanelShowcase } =
     useShowcaseTrigger(showcases.taskPanel, {
@@ -203,11 +204,10 @@ export function ProjectTasks() {
     // Don't redirect if we have an attemptId - agent tasks (Master Genie) won't be in tasksById
     // but we can still show them via their attempts
     // Also don't redirect if in chat view - ChatPanel will create attempt on first message
-    const isInChatView = searchParams.get('view') === 'chat';
     if (selectedTask === null && !attemptId && !isInChatView) {
       navigate(`/projects/${projectId}/tasks`, { replace: true });
     }
-  }, [projectId, taskId, isLoading, selectedTask, attemptId, searchParams, navigate]);
+  }, [projectId, taskId, isLoading, selectedTask, attemptId, isInChatView, navigate]);
 
   const effectiveAttemptId = attemptId === 'latest' ? undefined : attemptId;
   const isTaskView = !!taskId && !effectiveAttemptId;
