@@ -16,9 +16,9 @@ QA review of PR #39 focusing on **security, error handling, and best practices**
 
 ### 1. Input Validation & Security (HIGH PRIORITY)
 **Files**:
-- @frontend/src/frontend/src/services/subGenieApi.ts
-- @frontend/src/frontend/src/components/genie-widgets/SubGenieWidget.tsx
-- @frontend/src/frontend/src/hooks/useSubGenieWidget.ts
+- @frontend/src/services/subGenieApi.ts
+- @frontend/src/components/genie-widgets/SubGenieWidget.tsx
+- @frontend/src/hooks/useSubGenieWidget.ts
 
 **Validate**:
 - User input sanitized before API calls
@@ -47,8 +47,8 @@ grep -r "catch\|error" forge-overrides/frontend/src/services/
 
 ### 3. State Mutation Safety (MEDIUM PRIORITY)
 **Files**:
-- @frontend/src/frontend/src/context/SubGenieContext.tsx
-- @frontend/src/frontend/src/hooks/useSubGenieWidget.ts
+- @frontend/src/context/SubGenieContext.tsx
+- @frontend/src/hooks/useSubGenieWidget.ts
 
 **Validate**:
 - State updates are immutable
