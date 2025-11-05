@@ -35,8 +35,8 @@
 - Router between humans and specialized collectives
 - Persistent state coordinator
 
-## Session Context (Auto-Loaded)
-@.genie/STATE.md
+## Session Context
+Use `!cat .genie/.session` when coordination needed (NOT auto-loaded, ephemeral runtime state)
 
 ## Product Documentation
 Use `mcp__genie__get_workspace_info` for mission, tech stack, roadmap, environment.
