@@ -345,7 +345,6 @@ pnpm run dev
 
 1. Add executor profile to `upstream/crates/executors/default_profiles.json`
 2. Implement executor interface in `upstream/crates/executors/src/`
-3. Update documentation in `docs/supported-coding-agents.mdx`
 
 ### Updating from Upstream
 
