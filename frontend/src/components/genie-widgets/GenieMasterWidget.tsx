@@ -57,16 +57,27 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = () => {
       // Step 1: Ensure Master Genie task exists
       const { task, attempt: existingAttempt } = await subGenieApi.ensureMasterGenie(projectId);
 
-      // Step 2: Get current branch for attempt creation
-      let currentBranch = 'main';
+      // Step 2: Get current branch for attempt creation - MUST succeed
+      let currentBranch: string | null = null;
       try {
         const branchResponse = await fetch(`/api/projects/${projectId}/git/status`);
         if (branchResponse.ok && branchResponse.headers.get('content-type')?.includes('application/json')) {
           const { data } = await branchResponse.json();
-          currentBranch = data?.current_branch || 'main';
+          currentBranch = data?.current_branch || null;
+          console.log('[GenieMasterWidget] Branch Detection', {
+            projectId,
+            detected: currentBranch,
+            fullResponse: data
+          });
         }
       } catch (error) {
-        console.warn('Failed to get current branch, using default:', error);
+        console.error('Failed to get current branch:', error);
+      }
+
+      if (!currentBranch) {
+        console.error('Cannot create Master Genie attempt: current branch detection failed');
+        alert('Cannot create session: Failed to detect current git branch. Make sure the project is a valid git repository.');
+        return;
       }
 
       // Step 3: Create attempt if it doesn't exist
