@@ -45,8 +45,8 @@ export function ChatPanelActions({ attempt }: ChatPanelActionsProps) {
 
     setIsCreatingAttempt(true);
     try {
-      // Get current branch from git status
-      let currentBranch = 'main'; // fallback
+      // Get current branch from git status - REQUIRED, no fallback to 'main'
+      let currentBranch: string | null = null;
 
       try {
         const branchResponse = await fetch(`/api/projects/${projectId}/git/status`);
@@ -54,11 +54,17 @@ export function ChatPanelActions({ attempt }: ChatPanelActionsProps) {
           const contentType = branchResponse.headers.get('content-type');
           if (contentType?.includes('application/json')) {
             const { data } = await branchResponse.json();
-            currentBranch = data?.current_branch || 'main';
+            currentBranch = data?.current_branch;
           }
         }
       } catch (error) {
-        console.warn('Failed to get current branch, using default:', error);
+        console.error('Failed to get current branch:', error);
+      }
+
+      if (!currentBranch) {
+        console.error('Cannot create attempt: current branch is unknown');
+        // TODO: Show error toast - cannot determine current branch
+        return;
       }
 
       // Check if this is a Master Genie task (has MASTER variant)
@@ -78,8 +84,10 @@ export function ChatPanelActions({ attempt }: ChatPanelActionsProps) {
         { ...executorProfile, variant }
       );
 
-      // Invalidate task attempts cache to refresh the history dropdown
+      // Invalidate all related queries to ensure fresh data
       await queryClient.invalidateQueries({ queryKey: ['task-attempts', taskId] });
+      await queryClient.invalidateQueries({ queryKey: ['task-attempt', newAttempt.id] });
+      await queryClient.invalidateQueries({ queryKey: ['execution-processes', newAttempt.id] });
 
       // Navigate to new attempt with chat view
       navigate(`/projects/${projectId}/tasks/${taskId}/attempts/${newAttempt.id}?view=chat`);

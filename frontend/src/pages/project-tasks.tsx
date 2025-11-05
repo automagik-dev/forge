@@ -670,6 +670,7 @@ export function ProjectTasks() {
         <TaskPanel task={selectedTask} />
       ) : (
         <TaskAttemptPanel
+          key={attempt?.id}
           attempt={attempt}
           task={selectedTask}
           tasksById={tasksById}

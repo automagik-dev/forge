@@ -5,7 +5,7 @@ help:
 	@echo "🔧 Automagik Forge - Development Commands"
 	@echo ""
 	@echo "Quick Start:"
-	@echo "  make dev       - Start development server (frontend + backend with hot reload)"
+	@echo "  make dev       - Start dev environment (backend first, then frontend)"
 	@echo "  make prod      - Build and run production package (QA testing)"
 	@echo "  make forge     - Alias for 'make prod'"
 	@echo ""
@@ -17,10 +17,9 @@ help:
 	@echo "  make clean     - Clean build artifacts"
 	@echo ""
 
-# Development mode - hot reload
+# Development mode - hot reload (backend first, then frontend)
 dev:
-	@echo "🚀 Starting development environment..."
-	@pnpm run dev
+	@bash scripts/dev/run-dev.sh
 
 # Production mode - test what will be published
 prod:

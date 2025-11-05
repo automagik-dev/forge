@@ -1,0 +1,116 @@
+#!/bin/bash
+
+set -euo pipefail
+
+echo "🚀 Starting Automagik Forge development environment..."
+echo ""
+
+# Get ports from setup script
+export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend)
+export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend)
+
+echo "📍 Ports:"
+echo "   Backend:  http://localhost:${BACKEND_PORT}"
+echo "   Frontend: http://localhost:${FRONTEND_PORT}"
+echo ""
+
+# Start backend in background
+echo "⚙️  Starting backend server..."
+export DISABLE_BROWSER_OPEN=1
+export DISABLE_WORKTREE_ORPHAN_CLEANUP=1
+export RUST_LOG=debug
+
+# Start backend with cargo watch
+cargo watch -w upstream/crates -w forge-app/src -w forge-extensions -x 'run --bin forge-app' &
+BACKEND_PID=$!
+
+# Function to cleanup on exit
+cleanup() {
+    echo ""
+    echo "🛑 Shutting down development environment..."
+
+    # Kill backend
+    if [ ! -z "${BACKEND_PID:-}" ]; then
+        echo "   Stopping backend (PID: $BACKEND_PID)..."
+        kill -TERM $BACKEND_PID 2>/dev/null || true
+        wait $BACKEND_PID 2>/dev/null || true
+    fi
+
+    # Kill frontend (find by port)
+    echo "   Stopping frontend..."
+    pkill -f "vite.*--port ${FRONTEND_PORT}" 2>/dev/null || true
+
+    echo "✅ Cleanup complete"
+}
+
+# Register cleanup on script exit
+trap cleanup EXIT INT TERM
+
+# Wait for backend to be ready (HTTP server + database)
+echo "⏳ Waiting for backend to be ready..."
+MAX_ATTEMPTS=60  # 60 seconds max wait
+ATTEMPT=0
+HTTP_READY=false
+DB_READY=false
+
+while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+    # First check if HTTP server is responding
+    if [ "$HTTP_READY" = "false" ]; then
+        if curl -sf -o /dev/null http://localhost:${BACKEND_PORT}/ 2>/dev/null; then
+            echo "   HTTP server is up"
+            HTTP_READY=true
+        fi
+    fi
+
+    # Once HTTP is ready, check if database is initialized by hitting /api/projects
+    if [ "$HTTP_READY" = "true" ] && [ "$DB_READY" = "false" ]; then
+        # Try to hit an endpoint that requires database access
+        HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" http://localhost:${BACKEND_PORT}/api/projects 2>/dev/null || echo "000")
+
+        # Accept 200 (success) or 401/403 (auth required but DB working)
+        if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "401" ] || [ "$HTTP_CODE" = "403" ]; then
+            echo "   Database is initialized"
+            DB_READY=true
+            break
+        fi
+    fi
+
+    ATTEMPT=$((ATTEMPT + 1))
+
+    # Show progress every 5 seconds
+    if [ $((ATTEMPT % 5)) -eq 0 ]; then
+        echo "   Still waiting... (${ATTEMPT}s)"
+    fi
+
+    sleep 1
+done
+
+if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+    echo "❌ Backend failed to start within ${MAX_ATTEMPTS} seconds"
+    echo "   HTTP ready: $HTTP_READY"
+    echo "   Database ready: $DB_READY"
+    exit 1
+fi
+
+echo "✅ Backend is ready (HTTP + Database)!"
+echo ""
+
+# Start frontend
+echo "🎨 Starting frontend server..."
+cd frontend
+BACKEND_PORT=${BACKEND_PORT} VITE_OPEN=true npm run dev -- --port ${FRONTEND_PORT} --host &
+FRONTEND_PID=$!
+cd ..
+
+echo ""
+echo "✨ Development environment is ready!"
+echo ""
+echo "📍 Access points:"
+echo "   Frontend: http://localhost:${FRONTEND_PORT}"
+echo "   Backend:  http://localhost:${BACKEND_PORT}"
+echo ""
+echo "Press Ctrl+C to stop all services"
+echo ""
+
+# Wait for frontend process (keeps script running)
+wait $FRONTEND_PID
