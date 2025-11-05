@@ -3,7 +3,7 @@
 
 ## Snapshot
 - Branch: feat/genie-framework-migration
-- Related wish: @.genie/wishes/upgrade-upstream-0-0-104-wish.md
+- Related wish: # @.genie/wishes/upgrade-upstream-0-0-104-wish.md (archived)
 - Task: Task E - Full Integration Testing (NPX package QA fixes)
 
 ## Pre-commit Gate Results

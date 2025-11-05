@@ -1,7 +1,7 @@
 # Done Report: qa-upgrade-upstream-0-0-104-task-e-202510072247
 
 **Task:** Task E: Full Integration Testing
-**Wish:** @.genie/wishes/upgrade-upstream-0-0-104-wish.md
+**Wish:** # @.genie/wishes/upgrade-upstream-0-0-104-wish.md (archived)
 **Owner:** qa
 **Date:** 2025-10-07
 **Time:** 22:47 UTC
@@ -192,7 +192,7 @@ Human tester with browser access must:
 
 ### Mitigation Options
 1. **Port forwarding:** Forward localhost:3000 to local machine with browser
-2. **Playwright automation:** Use @mcp__playwright__* tools (limited coverage)
+2. **Playwright automation:** Use # @mcp__playwright__ (tool reference)* tools (limited coverage)
 3. **Human handoff:** Transfer task to tester with display environment
 
 ---

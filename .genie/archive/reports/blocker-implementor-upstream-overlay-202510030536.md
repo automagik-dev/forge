@@ -1,8 +1,8 @@
 # Blocker Report: implementor-upstream-overlay-202510030536
 
 ## Context Investigated
-- Loaded wish context @.genie/wishes/upstream-overlay-wish.md.
-- Reviewed expected Group A output @.genie/reports/done-implementor-upstream-overlay-202502161530.md (missing in repo).
+- Loaded wish context # @.genie/wishes/upstream-overlay-wish.md (archived)
+- Reviewed expected Group A output # @.genie/reports/done-implementor-upstream-overlay-202502161530.md (archived) (missing in repo).
 - Inspected current overlay configuration in @frontend/vite.config.ts and @frontend/tsconfig.json.
 
 ## Blocker Summary

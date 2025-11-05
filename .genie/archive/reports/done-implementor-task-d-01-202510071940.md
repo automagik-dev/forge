@@ -19,9 +19,9 @@ Successfully validated forge-omni extension against v0.0.105 upstream. All compi
 None. The forge-omni extension compiled cleanly against v0.0.105 dependencies with only a minor lint fix required.
 
 ## Evidence
-- Compile: @.genie/wishes/upgrade-upstream-0-0-104/evidence/d-01-compile.txt
-- Tests: @.genie/wishes/upgrade-upstream-0-0-104/evidence/d-01-test.txt
-- Clippy: @.genie/wishes/upgrade-upstream-0-0-104/evidence/d-01-clippy.txt
+- Compile: # @.genie/wishes/upgrade-upstream-0-0-104/evidence/ (archived)d-01-compile.txt
+- Tests: # @.genie/wishes/upgrade-upstream-0-0-104/evidence/ (archived)d-01-test.txt
+- Clippy: # @.genie/wishes/upgrade-upstream-0-0-104/evidence/ (archived)d-01-clippy.txt
 
 ## Validation Results
 

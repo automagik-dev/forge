@@ -158,5 +158,5 @@ Task B completed successfully with bulletproof rebrand script:
 ---
 
 **Done Report:** @.genie/reports/done-implementor-mechanical-rebrand-group-b-202510082212.md
-**Evidence:** @.genie/wishes/mechanical-rebrand/qa/group-b/
+**Evidence:** # @.genie/wishes/mechanical-rebrand/qa/group-b/ (archived)
 **Script:** @scripts/rebrand.sh

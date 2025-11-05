@@ -1,7 +1,7 @@
 # Done Report: Group B - Dev Server & HMR Validation
 
 **Agent:** QA Specialist
-**Wish:** @.genie/wishes/complete-upstream-migration-wish.md
+**Wish:** # @.genie/wishes/complete-upstream-migration-wish.md (archived)
 **Task:** Group B - Validate Development Experience
 **Date:** 2025-10-06 18:26 UTC
 

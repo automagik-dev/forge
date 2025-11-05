@@ -128,7 +128,7 @@ h1, h2, h3, h4, h5, h6 {
 #### CSS Validity
 ✅ **Manual structural check passed**
 - All opening braces have matching closing braces
-- Proper @layer nesting
+- Proper # @layer (CSS directive) nesting
 - Valid CSS custom property syntax
 - File properly terminated
 
@@ -155,8 +155,8 @@ This file is a **Forge-Specific Feature** with:
 
 The file uses standard CSS features:
 - CSS Custom Properties (`:root`, `var()`)
-- @layer directive (Tailwind CSS integration)
-- @import for Google Fonts
+- # @layer (CSS directive) directive (Tailwind CSS integration)
+- # @import (CSS directive) for Google Fonts
 - Class selectors (`.dracula`, `.purple`, etc.)
 - Pseudo-classes (`:hover`, `:focus`, etc.)
 
@@ -187,7 +187,7 @@ The file is:
 - Syntactically valid CSS
 - Uses standard CSS3 features
 - Self-contained (no external dependencies beyond Google Fonts)
-- Compatible with Tailwind CSS @layer system
+- Compatible with Tailwind CSS # @layer (CSS directive) system
 
 **Follow-up**: Visual regression testing recommended to verify theme rendering after v0.0.105 upgrade (assign to `qa` specialist in Task D integration testing).
 

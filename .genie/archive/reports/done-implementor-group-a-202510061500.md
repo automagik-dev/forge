@@ -4,7 +4,7 @@
 **Task:** Fix frontend dependencies via workspace strategy
 **Status:** ⚠️ BLOCKED - Architecture Issue Discovered
 **Date:** 2025-10-06 15:00 UTC
-**Evidence:** @.genie/wishes/complete-migration/qa/group-a/
+**Evidence:** # @.genie/wishes/complete-migration/qa/group-a/ (archived)
 
 ---
 

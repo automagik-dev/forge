@@ -16,10 +16,10 @@ QA review of PR #39 focusing on **TypeScript type safety and React code quality*
 
 ### 1. TypeScript Quality (HIGH PRIORITY)
 **Files**:
-- @forge-overrides/frontend/src/components/genie-widgets/types.ts
-- @forge-overrides/frontend/src/components/genie-widgets/*.tsx
-- @forge-overrides/frontend/src/hooks/*.ts
-- @forge-overrides/frontend/src/services/subGenieApi.ts
+- @frontend/src/frontend/src/components/genie-widgets/types.ts
+- @frontend/src/frontend/src/components/genie-widgets/*.tsx
+- @frontend/src/frontend/src/hooks/*.ts
+- @frontend/src/frontend/src/services/subGenieApi.ts
 - @shared/types.ts
 
 **Validate**:

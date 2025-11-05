@@ -115,7 +115,7 @@ mkdir -p .genie/wishes/complete-migration/qa/group-c/
 1. **Overlay Resolution**: forge-overrides takes precedence over upstream
 2. **Build System**: Vite builds successfully with overlay plugin
 3. **Dev Server**: Works with HMR (verified in Group B)
-4. **Omni Components**: Accessible via @/components/omni/ imports
+4. **Omni Components**: Accessible via @frontend/src/components/omni/ imports
 5. **Type Safety**: Builds without errors (test warnings non-blocking)
 6. **Backend Integration**: forge-app compiles and serves frontend
 7. **Documentation**: All references updated
