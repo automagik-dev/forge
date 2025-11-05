@@ -1,0 +1,35 @@
+--- .genie/backups/pre-rebrand-20251105-201009/snapshots/task_server.rs.before	2025-11-05 20:10:09.666866356 -0300
++++ .genie/backups/pre-rebrand-20251105-201009/snapshots/task_server.rs.after	2025-11-05 20:10:24.082955845 -0300
+@@ -288,27 +288,27 @@
+         let resp = rb
+             .send()
+             .await
+-            .map_err(|e| Self::err("Failed to connect to VK API", Some(&e.to_string())).unwrap())?;
++            .map_err(|e| Self::err("Failed to connect to AF API", Some(&e.to_string())).unwrap())?;
+ 
+         if !resp.status().is_success() {
+             let status = resp.status();
+             return Err(
+-                Self::err(format!("VK API returned error status: {}", status), None).unwrap(),
++                Self::err(format!("AF API returned error status: {}", status), None).unwrap(),
+             );
+         }
+ 
+         let api_response = resp.json::<ApiResponseEnvelope<T>>().await.map_err(|e| {
+-            Self::err("Failed to parse VK API response", Some(&e.to_string())).unwrap()
++            Self::err("Failed to parse AF API response", Some(&e.to_string())).unwrap()
+         })?;
+ 
+         if !api_response.success {
+             let msg = api_response.message.as_deref().unwrap_or("Unknown error");
+-            return Err(Self::err("VK API returned error", Some(msg)).unwrap());
++            return Err(Self::err("AF API returned error", Some(msg)).unwrap());
+         }
+ 
+         api_response
+             .data
+-            .ok_or_else(|| Self::err("VK API response missing data field", None).unwrap())
++            .ok_or_else(|| Self::err("AF API response missing data field", None).unwrap())
+     }
+ 
+     fn url(&self, path: &str) -> String {
