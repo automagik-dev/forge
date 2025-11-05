@@ -27,6 +27,7 @@ use db::models::{
     task_attempt::{CreateTaskAttempt, TaskAttempt},
 };
 use deployment::Deployment;
+use executors::profile::ExecutorProfileId;
 use forge_config::ForgeProjectSettings;
 use server::routes::{
     self as upstream, approvals, auth, config as upstream_config, containers, drafts, events,
@@ -192,11 +193,31 @@ async fn forge_create_task(
     Ok(Json(ApiResponse::success(task)))
 }
 
+/// Forge-specific CreateTaskAttemptBody that includes use_worktree field
+#[derive(Debug, Serialize, Deserialize)]
+struct ForgeCreateTaskAttemptBody {
+    pub task_id: Uuid,
+    pub executor_profile_id: ExecutorProfileId,
+    pub base_branch: String,
+    #[serde(default = "default_use_worktree")]
+    pub use_worktree: bool,
+}
+
+fn default_use_worktree() -> bool {
+    true
+}
+
+impl ForgeCreateTaskAttemptBody {
+    pub fn get_executor_profile_id(&self) -> ExecutorProfileId {
+        self.executor_profile_id.clone()
+    }
+}
+
 /// Forge override: create task attempt with forge/ branch prefix (vk -> forge only)
 async fn forge_create_task_attempt(
     State(deployment): State<DeploymentImpl>,
     State(forge_services): State<ForgeServices>,
-    Json(payload): Json<task_attempts::CreateTaskAttemptBody>,
+    Json(payload): Json<ForgeCreateTaskAttemptBody>,
 ) -> Result<Json<ApiResponse<TaskAttempt>>, ApiError> {
     let executor_profile_id = payload.get_executor_profile_id();
     let task = Task::find_by_id(&deployment.db().pool, payload.task_id)
