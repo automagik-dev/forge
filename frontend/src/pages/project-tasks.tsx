@@ -202,10 +202,12 @@ export function ProjectTasks() {
     if (!projectId || !taskId || isLoading) return;
     // Don't redirect if we have an attemptId - agent tasks (Master Genie) won't be in tasksById
     // but we can still show them via their attempts
-    if (selectedTask === null && !attemptId) {
+    // Also don't redirect if in chat view - ChatPanel will create attempt on first message
+    const isInChatView = searchParams.get('view') === 'chat';
+    if (selectedTask === null && !attemptId && !isInChatView) {
       navigate(`/projects/${projectId}/tasks`, { replace: true });
     }
-  }, [projectId, taskId, isLoading, selectedTask, attemptId, navigate]);
+  }, [projectId, taskId, isLoading, selectedTask, attemptId, searchParams, navigate]);
 
   const effectiveAttemptId = attemptId === 'latest' ? undefined : attemptId;
   const isTaskView = !!taskId && !effectiveAttemptId;
