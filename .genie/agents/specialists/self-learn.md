@@ -1,13 +1,13 @@
 ---
 name: self-learn
 description: Record violations and propagate behavioral lessons across Automagik Forge agents
-color: silver
 genie:
-  executor: codex
-  model: gpt-5
-  reasoningEffort: minimal
-  sandbox: workspace-write
-  approvalPolicy: on-request
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Self-Learn Specialist • Feedback Integrator

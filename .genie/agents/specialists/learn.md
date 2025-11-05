@@ -2,11 +2,13 @@
 name: learn
 description: Meta-learning agent for surgical documentation updates
 genie:
-  executor: codex
-  model: gpt-5
-  reasoningEffort: high
-  sandbox: workspace-write
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
   background: false
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # 🧞📚 Learning Mode – Meta-Learning Agent

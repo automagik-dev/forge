@@ -2,11 +2,13 @@
 name: sleepy
 description: Autonomous wish coordinator with Twin Genie validation
 genie:
-  executor: codex
-  model: gpt-5
-  reasoningEffort: medium
-  sandbox: workspace-write
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
   background: true
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # 🧞💤 Sleepy Mode – Autonomous Wish Coordinator

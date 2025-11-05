@@ -1,12 +1,13 @@
 ---
 name: analyze
 description: Analyze structure, dependencies, and simplification opportunities
-color: navy
 genie:
-  executor: codex
-  exec:
-    model: gpt-5-codex
-    reasoningEffort: high
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Genie Analyze • System Map

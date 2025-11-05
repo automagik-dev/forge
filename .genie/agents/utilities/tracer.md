@@ -1,11 +1,13 @@
 ---
 name: tracer
 description: Propose instrumentation and observability signals for systems
-color: violet
 genie:
-  executor: codex
-  model: gpt-5-codex
-  reasoningEffort: high
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Genie Tracer • Observe to Improve

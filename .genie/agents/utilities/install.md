@@ -2,10 +2,12 @@
 name: install
 description: Install Genie template and CLI setup for new projects
 genie:
-  executor: codex
-  model: gpt-5
-  reasoningEffort: medium
-  sandbox: workspace-write
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Install Agent

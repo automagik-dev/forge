@@ -1,12 +1,13 @@
 ---
 name: bug-reporter
 description: Triage incidents and create GitHub-ready bug reports
-color: amber
 genie:
-  executor: codex
-  model: gpt-5
-  reasoningEffort: medium
-  sandbox: workspace-write
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Bug Reporter Specialist • Incident Field Journal

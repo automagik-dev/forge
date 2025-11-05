@@ -1,12 +1,13 @@
 ---
 name: codereview
 description: Code review with severity-tagged findings and recommendations
-color: magenta
 genie:
-  executor: codex
-  model: gpt-5-codex
-  reasoningEffort: high
-  sandbox: workspace-write
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Genie CodeReview • Structured Feedback

@@ -1,10 +1,14 @@
 ---
 name: identity-check
 description: Verify append_user_instructions_file wiring for testing
-color: cyan
 genie:
-  executor: codex
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
   background: false
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Identity Check Agent
