@@ -36,7 +36,7 @@ export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
   const queryClient = useQueryClient();
   const [isCreatingAttempt, setIsCreatingAttempt] = useState(false);
 
-  if (!task || !projectId || !taskId) {
+  if (!projectId || !taskId) {
     return null;
   }
 
