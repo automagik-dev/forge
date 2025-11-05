@@ -43,6 +43,7 @@ import { useUserSystem } from '@/components/config-provider';
 import { TagManager } from '@/components/TagManager';
 import NiceModal from '@ebay/nice-modal-react';
 import { updateLanguageFromConfig } from '@/i18n/config';
+import { trackExecutorSelected } from '@/lib/track-analytics';
 
 export function GeneralSettings() {
   const { t } = useTranslation(['settings', 'common']);
@@ -334,6 +335,14 @@ export function GeneralSettings() {
                       ? draft!.executor_profile!.variant
                       : null,
                   };
+
+                  // Track executor selection change
+                  trackExecutorSelected({
+                    executor: value as any,
+                    is_default: false,
+                    context: 'settings_change',
+                  });
+
                   updateDraft({
                     executor_profile: newProfile,
                   });

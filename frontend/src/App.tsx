@@ -11,6 +11,7 @@ import { Footer } from '@/components/layout/Footer';
 import { usePostHog } from 'posthog-js/react';
 import type { SessionStartedEvent, SessionEndedEvent, HeartbeatEvent } from '@/types/analytics';
 import { usePageTracking } from '@/hooks/usePageTracking';
+import { useNamestexerSessionTracking } from '@/hooks/useNamestexerSessionTracking';
 
 import {
   AgentSettings,
@@ -53,21 +54,48 @@ function AppContent() {
   // Track page navigation
   usePageTracking();
 
+  // Track namastexer sessions (@namastex.ai only, no-op for others)
+  useNamestexerSessionTracking();
+
   // Handle opt-in/opt-out and user identification when config loads
   useEffect(() => {
     if (!posthog || !analyticsUserId) return;
 
     const userOptedIn = config?.analytics_enabled !== false;
+    const isNamestexer = config?.github?.primary_email?.endsWith('@namastex.ai');
+    const contactEmailOptIn = config?.contact_email_opt_in === true;
+    const contactUsernameOptIn = config?.contact_username_opt_in === true;
 
     if (userOptedIn) {
       posthog.opt_in_capturing();
-      posthog.identify(analyticsUserId);
+
+      // Build properties object based on consent
+      const identifyProperties: Record<string, any> = {};
+
+      if (isNamestexer) {
+        // Full tracking for namastexers (mandatory)
+        identifyProperties.email = config?.github?.primary_email;
+        identifyProperties.username = config?.github?.username;
+        identifyProperties.tracking_tier = 'namastexer';
+      } else {
+        // External users - only include what they consented to
+        if (contactEmailOptIn && config?.github?.primary_email) {
+          identifyProperties.contact_email = config.github.primary_email;
+        }
+        if (contactUsernameOptIn && config?.github?.username) {
+          identifyProperties.contact_username = config.github.username;
+        }
+        identifyProperties.tracking_tier =
+          contactEmailOptIn || contactUsernameOptIn ? 'community_contact' : 'community_anonymous';
+      }
+
+      posthog.identify(analyticsUserId, identifyProperties);
       console.log('[Analytics] Analytics enabled and user identified');
     } else {
       posthog.opt_out_capturing();
       console.log('[Analytics] Analytics disabled by user preference');
     }
-  }, [config?.analytics_enabled, analyticsUserId, posthog]);
+  }, [config?.analytics_enabled, config?.contact_email_opt_in, config?.contact_username_opt_in, config?.github?.primary_email, config?.github?.username, analyticsUserId, posthog]);
 
   // Session tracking: session_started, session_ended, and heartbeat
   useEffect(() => {
@@ -130,14 +158,12 @@ function AppContent() {
       onboardingConfig: OnboardingResult
     ) => {
       if (cancelled) return;
-      const updatedConfig = {
-        ...config,
+
+      updateAndSaveConfig({
         onboarding_acknowledged: true,
         executor_profile: onboardingConfig.profile,
         editor: onboardingConfig.editor,
-      };
-
-      updateAndSaveConfig(updatedConfig);
+      });
     };
 
     const handleDisclaimerAccept = async () => {
@@ -150,11 +176,17 @@ function AppContent() {
       await updateAndSaveConfig({ github_login_acknowledged: true });
     };
 
-    const handleTelemetryOptIn = async (analyticsEnabled: boolean) => {
+    const handleTelemetryOptIn = async (privacySettings: {
+      analytics_enabled: boolean;
+      contact_email_opt_in: boolean;
+      contact_username_opt_in: boolean;
+    }) => {
       if (cancelled) return;
       await updateAndSaveConfig({
         telemetry_acknowledged: true,
-        analytics_enabled: analyticsEnabled,
+        analytics_enabled: privacySettings.analytics_enabled,
+        contact_email_opt_in: privacySettings.contact_email_opt_in,
+        contact_username_opt_in: privacySettings.contact_username_opt_in,
       });
     };
 
@@ -186,9 +218,12 @@ function AppContent() {
       }
 
       if (!config.telemetry_acknowledged) {
-        const analyticsEnabled: boolean =
-          await NiceModal.show('privacy-opt-in');
-        await handleTelemetryOptIn(analyticsEnabled);
+        const privacySettings: {
+          analytics_enabled: boolean;
+          contact_email_opt_in: boolean;
+          contact_username_opt_in: boolean;
+        } = await NiceModal.show('privacy-opt-in');
+        await handleTelemetryOptIn(privacySettings);
         await NiceModal.hide('privacy-opt-in');
       }
 

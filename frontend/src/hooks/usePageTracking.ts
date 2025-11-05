@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { usePostHog } from 'posthog-js/react';
 import type { PageVisitedEvent, NavigationMethod } from '@/types/analytics';
+import { isNamestexEmployee } from '@/lib/track-analytics';
 
 /**
  * Custom hook to track page navigation for analytics
@@ -55,8 +56,22 @@ export function usePageTracking() {
       navigation_method: navigationMethod,
     };
 
-    posthog.capture('page_visited', pageVisitedEvent);
+    // ========== NAMASTEX ANALYTICS ==========
+    const userEmail = posthog.get_property('email') as string | undefined;
+    const isNamestexer = isNamestexEmployee(userEmail);
+
+    if (isNamestexer) {
+      posthog.capture('page_visited', {
+        ...pageVisitedEvent,
+        namastexer_email: userEmail,
+        tracking_tier: 'namastexer',
+      });
+    } else {
+      posthog.capture('page_visited', pageVisitedEvent);
+    }
+
     console.log('[Analytics] page_visited', pageVisitedEvent);
+    // ========== END ==========
 
     // Update refs for next navigation
     previousPageRef.current = currentPath;
