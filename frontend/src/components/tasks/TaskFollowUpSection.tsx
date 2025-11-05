@@ -224,7 +224,7 @@ export function TaskFollowUpSection({
 
   // Separate logic for when textarea should be disabled vs when send button should be disabled
   const canTypeFollowUp = useMemo(() => {
-    if (!selectedAttemptId || processes.length === 0 || isSendingFollowUp) {
+    if (!selectedAttemptId || isSendingFollowUp) {
       return false;
     }
 
@@ -243,7 +243,6 @@ export function TaskFollowUpSection({
     return true;
   }, [
     selectedAttemptId,
-    processes.length,
     isSendingFollowUp,
     branchStatus?.merges,
     isRetryActive,
