@@ -88,11 +88,24 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = () => {
           executor: BaseCodingAgent.CLAUDE_CODE,
           variant: null,
         };
-        attemptToUse = await subGenieApi.createMasterGenieAttempt(
-          task.id,
-          currentBranch,
-          { ...executorProfile, variant: 'MASTER' }
-        );
+        try {
+          attemptToUse = await subGenieApi.createMasterGenieAttempt(
+            task.id,
+            currentBranch,
+            { ...executorProfile, variant: 'MASTER' }
+          );
+        } catch (error) {
+          // Attempt creation failed, but it might have been created in DB before container start failed
+          // Re-fetch to check if an attempt was actually created
+          const retry = await subGenieApi.ensureMasterGenie(projectId);
+          if (retry.attempt) {
+            console.log('[GenieMasterWidget] Recovered from failed creation - attempt exists in DB');
+            attemptToUse = retry.attempt;
+          } else {
+            // No attempt found after retry, rethrow original error
+            throw error;
+          }
+        }
       }
 
       // Step 4: Navigate to chat view with attempt
