@@ -4,6 +4,7 @@ import { Lamp } from '@/components/icons/Lamp';
 import { useProject } from '@/contexts/project-context';
 import { useUserSystem } from '@/components/config-provider';
 import { subGenieApi } from '@/services/subGenieApi';
+import { BaseCodingAgent } from 'shared/types';
 import { Loader2 } from 'lucide-react';
 
 interface GenieMasterWidgetProps {
@@ -54,16 +55,36 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = () => {
 
     try {
       // Step 1: Ensure Master Genie task exists
-      const { task, attempt } = await subGenieApi.ensureMasterGenie(projectId);
+      const { task, attempt: existingAttempt } = await subGenieApi.ensureMasterGenie(projectId);
 
-      // Step 2: Navigate to chat view
-      // If there's an existing attempt, use it; otherwise navigate to task-only view
-      // and let the chat interface create an attempt on first message
-      if (attempt) {
-        navigate(`/projects/${projectId}/tasks/${task.id}/attempts/${attempt.id}?view=chat`);
-      } else {
-        navigate(`/projects/${projectId}/tasks/${task.id}?view=chat`);
+      // Step 2: Get current branch for attempt creation
+      let currentBranch = 'main';
+      try {
+        const branchResponse = await fetch(`/api/projects/${projectId}/git/status`);
+        if (branchResponse.ok && branchResponse.headers.get('content-type')?.includes('application/json')) {
+          const { data } = await branchResponse.json();
+          currentBranch = data?.current_branch || 'main';
+        }
+      } catch (error) {
+        console.warn('Failed to get current branch, using default:', error);
       }
+
+      // Step 3: Create attempt if it doesn't exist
+      let attemptToUse = existingAttempt;
+      if (!attemptToUse) {
+        const executorProfile = config.executor_profile || {
+          executor: BaseCodingAgent.CLAUDE_CODE,
+          variant: null,
+        };
+        attemptToUse = await subGenieApi.createMasterGenieAttempt(
+          task.id,
+          currentBranch,
+          { ...executorProfile, variant: 'MASTER' }
+        );
+      }
+
+      // Step 4: Navigate to chat view with attempt
+      navigate(`/projects/${projectId}/tasks/${task.id}/attempts/${attemptToUse.id}?view=chat`);
     } catch (error) {
       console.error('Failed to open Master Genie:', error);
       // TODO: Show error toast
