@@ -36,13 +36,13 @@ else
       if [ -n "$LAST_BUILD_COMMIT" ] && [ "$CURRENT_COMMIT" = "$LAST_BUILD_COMMIT" ]; then
         # Same commit - check for uncommitted changes
         FRONTEND_CHANGES=$(git diff --name-only HEAD -- frontend/ 2>/dev/null | wc -l || echo "1")
-        BACKEND_CHANGES=$(git diff --name-only HEAD -- upstream/crates/ forge-app/ Cargo.toml Cargo.lock 2>/dev/null | wc -l || echo "1")
+        BACKEND_CHANGES=$(git diff --name-only HEAD -- upstream forge-app/ Cargo.toml Cargo.lock 2>/dev/null | wc -l || echo "1")
       elif [ -n "$LAST_BUILD_COMMIT" ]; then
         # Different commit - check changes between commits
         echo "   Last build: $LAST_BUILD_COMMIT"
         echo "   Current:    $CURRENT_COMMIT"
         FRONTEND_CHANGES=$(git diff --name-only "$LAST_BUILD_COMMIT" HEAD -- frontend/ 2>/dev/null | wc -l || echo "1")
-        BACKEND_CHANGES=$(git diff --name-only "$LAST_BUILD_COMMIT" HEAD -- upstream/crates/ forge-app/ Cargo.toml Cargo.lock 2>/dev/null | wc -l || echo "1")
+        BACKEND_CHANGES=$(git diff --name-only "$LAST_BUILD_COMMIT" HEAD -- upstream forge-app/ Cargo.toml Cargo.lock 2>/dev/null | wc -l || echo "1")
       else
         # No marker - binaries exist but we don't know when they were built
         # Force rebuild to be safe
