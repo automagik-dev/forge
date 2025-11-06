@@ -409,13 +409,12 @@ export function TaskFollowUpSection({
   }, [isQueued, isQueuing, isUnqueuing]);
 
   return (
-    selectedAttemptId && (
-      <div
-        className={cn(
-          'p-4 focus-within:ring ring-inset',
-          isRetryActive && 'opacity-50'
-        )}
-      >
+    <div
+      className={cn(
+        'p-4 focus-within:ring ring-inset',
+        isRetryActive && 'opacity-50'
+      )}
+    >
         <div className="space-y-2">
           {followUpError && (
             <Alert variant="destructive">
@@ -669,6 +668,5 @@ export function TaskFollowUpSection({
           </div>
         </div>
       </div>
-    )
   );
 }

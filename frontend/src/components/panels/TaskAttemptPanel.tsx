@@ -95,7 +95,7 @@ const TaskAttemptPanel = ({
             followUp: (
               <TaskFollowUpSection
                 task={task}
-                selectedAttemptId={undefined}
+                selectedAttemptId={task?.id}
                 jumpToLogsTab={() => {}}
               />
             ),
