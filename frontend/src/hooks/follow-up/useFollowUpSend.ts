@@ -1,9 +1,11 @@
 import { useCallback, useState } from 'react';
 import { attemptsApi } from '@/lib/api';
-import type { ImageResponse } from 'shared/types';
+import type { ImageResponse, TaskWithAttemptStatus, ExecutorProfileId } from 'shared/types';
 
 type Args = {
   attemptId?: string;
+  task?: TaskWithAttemptStatus | null;
+  currentProfile?: Record<string, any> | null;
   message: string;
   conflictMarkdown: string | null;
   reviewMarkdown: string;
@@ -20,6 +22,8 @@ type Args = {
 
 export function useFollowUpSend({
   attemptId,
+  task,
+  currentProfile,
   message,
   conflictMarkdown,
   reviewMarkdown,
@@ -38,6 +42,52 @@ export function useFollowUpSend({
 
   const onSendFollowUp = useCallback(async () => {
     if (!attemptId) return;
+
+    // Detect if we're sending to an agent task without an attempt
+    // In this case, attemptId is actually the task ID
+    const isAgentTaskWithoutAttempt =
+      task && attemptId === task.id && task.status === 'agent';
+
+    let actualAttemptId = attemptId;
+
+    // If this is an agent task without an attempt, create the attempt first
+    if (isAgentTaskWithoutAttempt) {
+      if (!currentProfile || Object.keys(currentProfile).length === 0) {
+        setFollowUpError(
+          'Cannot create attempt: No executor profile available'
+        );
+        return;
+      }
+
+      // Get the first available profile variant
+      const firstVariantKey = Object.keys(currentProfile)[0];
+      const executorProfileId = currentProfile[firstVariantKey];
+
+      try {
+        console.log('[Master Genie] Creating attempt before sending follow-up', {
+          task_id: task.id,
+          executor_profile_id: executorProfileId,
+        });
+
+        const newAttempt = await attemptsApi.create({
+          task_id: task.id,
+          executor_profile_id: executorProfileId as ExecutorProfileId,
+          base_branch: 'HEAD', // Use HEAD to represent current branch
+          use_worktree: false, // Master Genie runs without worktree
+        });
+
+        actualAttemptId = newAttempt.id;
+        console.log('[Master Genie] Attempt created:', newAttempt.id);
+      } catch (error: unknown) {
+        const err = error as { message?: string };
+        setFollowUpError(
+          `Failed to create attempt: ${err.message ?? 'Unknown error'}`
+        );
+        setIsSendingFollowUp(false);
+        return;
+      }
+    }
+
     const extraMessage = message.trim();
     const finalPrompt = [
       conflictMarkdown,
@@ -57,7 +107,7 @@ export function useFollowUpSend({
           : images.length > 0
             ? images.map((img) => img.id)
             : null;
-      await attemptsApi.followUp(attemptId, {
+      await attemptsApi.followUp(actualAttemptId, {
         prompt: finalPrompt,
         variant: selectedVariant,
         image_ids,
@@ -80,6 +130,8 @@ export function useFollowUpSend({
     }
   }, [
     attemptId,
+    task,
+    currentProfile,
     message,
     conflictMarkdown,
     reviewMarkdown,

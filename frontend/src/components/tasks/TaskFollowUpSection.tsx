@@ -47,12 +47,16 @@ interface TaskFollowUpSectionProps {
   task: TaskWithAttemptStatus | null;
   selectedAttemptId?: string;
   jumpToLogsTab: () => void;
+  isInChatView?: boolean;
+  taskIdFromUrl?: string;
 }
 
 export function TaskFollowUpSection({
   task,
   selectedAttemptId,
   jumpToLogsTab,
+  isInChatView = false,
+  taskIdFromUrl,
 }: TaskFollowUpSectionProps) {
   const { t } = useTranslation('tasks');
 
@@ -98,7 +102,7 @@ export function TaskFollowUpSection({
   ]);
 
   // Draft stream and synchronization
-  const { draft, isDraftLoaded } = useDraftStream(selectedAttemptId);
+  const { draft, isDraftLoaded } = useDraftStream(selectedAttemptId, task?.id);
 
   // Editor state
   const {
@@ -203,9 +207,17 @@ export function TaskFollowUpSection({
   });
 
   // Send follow-up action
+  // For agent tasks without attempts, use task.id (backend will create attempt on first message)
+  // Priority: selectedAttemptId > task?.id (if agent) > taskIdFromUrl (from URL before task loads)
+  const effectiveAttemptId =
+    selectedAttemptId ||
+    (task?.status === 'agent' ? task?.id : undefined) ||
+    (isInChatView ? taskIdFromUrl : undefined);
   const { isSendingFollowUp, followUpError, setFollowUpError, onSendFollowUp } =
     useFollowUpSend({
-      attemptId: selectedAttemptId,
+      attemptId: effectiveAttemptId,
+      task,
+      currentProfile,
       message: followUpMessage,
       conflictMarkdown: conflictResolutionInstructions,
       reviewMarkdown,
@@ -224,7 +236,32 @@ export function TaskFollowUpSection({
 
   // Separate logic for when textarea should be disabled vs when send button should be disabled
   const canTypeFollowUp = useMemo(() => {
-    if (!selectedAttemptId || isSendingFollowUp) {
+    // For agent tasks (Master Genie) without attempts: allow typing even if selectedAttemptId is taskId
+    // We detect this by checking if selectedAttemptId === task?.id (agent tasks pass task.id as selectedAttemptId)
+    // IMPORTANT: Also check task exists to avoid undefined === undefined edge case during initial load
+    // OR if isInChatView=true (welcome screen before task data loads)
+    const isAgentTaskWithoutAttempt =
+      isInChatView ||
+      (task && selectedAttemptId === task.id && task.status === 'agent');
+
+    console.log('[DEBUG canTypeFollowUp]', {
+      selectedAttemptId,
+      taskId: task?.id,
+      taskStatus: task?.status,
+      isInChatView,
+      isAgentTaskWithoutAttempt,
+      isSendingFollowUp,
+      isRetryActive,
+      hasPendingApproval,
+    });
+
+    if (!selectedAttemptId && !isAgentTaskWithoutAttempt) {
+      console.log('[DEBUG canTypeFollowUp] Blocked: no selectedAttemptId and not agent task');
+      return false;
+    }
+
+    if (isSendingFollowUp) {
+      console.log('[DEBUG canTypeFollowUp] Blocked: isSendingFollowUp');
       return false;
     }
 
@@ -234,15 +271,26 @@ export function TaskFollowUpSection({
         (m) => m.type === 'pr' && m.pr_info.status === 'merged'
       );
       if (mergedPR) {
+        console.log('[DEBUG canTypeFollowUp] Blocked: PR merged');
         return false;
       }
     }
 
-    if (isRetryActive) return false; // disable typing while retry editor is active
-    if (hasPendingApproval) return false; // disable typing during approval
+    if (isRetryActive) {
+      console.log('[DEBUG canTypeFollowUp] Blocked: retry active');
+      return false;
+    }
+    if (hasPendingApproval) {
+      console.log('[DEBUG canTypeFollowUp] Blocked: pending approval');
+      return false;
+    }
+    console.log('[DEBUG canTypeFollowUp] ALLOWED');
     return true;
   }, [
     selectedAttemptId,
+    task?.id,
+    task?.status,
+    isInChatView,
     isSendingFollowUp,
     branchStatus?.merges,
     isRetryActive,

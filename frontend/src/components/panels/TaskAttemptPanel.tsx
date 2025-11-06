@@ -11,6 +11,7 @@ interface TaskAttemptPanelProps {
   tasksById?: Record<string, TaskWithAttemptStatus>;
   onNavigateToTask?: (taskId: string) => void;
   isInChatView?: boolean;
+  taskIdFromUrl?: string;
   children: (sections: { logs: ReactNode; followUp: ReactNode }) => ReactNode;
 }
 
@@ -18,6 +19,7 @@ const TaskAttemptPanel = ({
   attempt,
   task,
   isInChatView,
+  taskIdFromUrl,
   children,
 }: TaskAttemptPanelProps) => {
   // Allow rendering without attempt for agent tasks (Master Genie)
@@ -97,6 +99,8 @@ const TaskAttemptPanel = ({
                 task={task}
                 selectedAttemptId={task?.id}
                 jumpToLogsTab={() => {}}
+                isInChatView={isInChatView}
+                taskIdFromUrl={taskIdFromUrl}
               />
             ),
           })}
@@ -122,6 +126,8 @@ const TaskAttemptPanel = ({
               task={task}
               selectedAttemptId={attemptId}
               jumpToLogsTab={() => {}}
+              isInChatView={isInChatView}
+              taskIdFromUrl={taskIdFromUrl}
             />
           ),
         })}
