@@ -665,8 +665,8 @@ export function ProjectTasks() {
   const rightHeader = mode === 'preview' || mode === 'diffs' || mode === 'kanban' ? <Breadcrumb /> : null;
 
   // Allow rendering attempt content for agent tasks (Master Genie) where selectedTask is null
-  // but we have an attempt to show
-  const attemptContent = selectedTask || (attempt && attemptId) ? (
+  // but we have an attempt to show, OR when in chat view (ChatPanel creates attempt on first message)
+  const attemptContent = selectedTask || (attempt && attemptId) || isInChatView ? (
     <NewCard className="h-full min-h-0 flex flex-col bg-diagonal-lines bg-muted border-0 relative">
       {isTaskView && selectedTask ? (
         <TaskPanel task={selectedTask} />
@@ -677,6 +677,7 @@ export function ProjectTasks() {
           task={selectedTask}
           tasksById={tasksById}
           onNavigateToTask={handleNavigateToTask}
+          isInChatView={isInChatView}
         >
           {({ logs, followUp }) => (
             <>
@@ -724,6 +725,25 @@ export function ProjectTasks() {
     <ClickedElementsProvider attempt={attempt}>
       <ReviewProvider key={attempt.id}>
         <ExecutionProcessesProvider key={attempt.id} attemptId={attempt.id}>
+          <TasksLayout
+            kanban={kanbanContent}
+            attempt={attemptContent}
+            aux={auxContent}
+            isPanelOpen={isPanelOpen}
+            mode={mode}
+            isMobile={isMobile}
+            rightHeader={rightHeader}
+          />
+        </ExecutionProcessesProvider>
+      </ReviewProvider>
+    </ClickedElementsProvider>
+  ) : isInChatView && taskId ? (
+    // Agent tasks (Master Genie) need same provider hierarchy as regular attempts
+    // Use taskId from URL since selectedTask might still be loading
+    // ClickedElementsProvider accepts null attempt (used for preview click tracking)
+    <ClickedElementsProvider attempt={null}>
+      <ReviewProvider key={taskId}>
+        <ExecutionProcessesProvider key={taskId} attemptId={taskId}>
           <TasksLayout
             kanban={kanbanContent}
             attempt={attemptContent}
