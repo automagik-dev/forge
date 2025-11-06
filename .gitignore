@@ -100,3 +100,4 @@ vibe-kanban-cloud/
 
 # Build marker for incremental builds
 .build_commit
+/.sqlx/
