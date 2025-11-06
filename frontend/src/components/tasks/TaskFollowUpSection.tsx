@@ -58,7 +58,7 @@ export function TaskFollowUpSection({
   selectedAttemptId,
   jumpToLogsTab,
   isInChatView = false,
-  taskIdFromUrl,
+  taskIdFromUrl: _taskIdFromUrl,
   projectId: projectIdFromUrl,
 }: TaskFollowUpSectionProps) {
   const { t } = useTranslation('tasks');

@@ -147,7 +147,7 @@ export function useFollowUpSend({
     }
 
     // Normal follow-up flow (attempt exists)
-    if (!attemptId) return;
+    if (!actualAttemptId) return;
 
     const extraMessage = message.trim();
     const finalPrompt = [
