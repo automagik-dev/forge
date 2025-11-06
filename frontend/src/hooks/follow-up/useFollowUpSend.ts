@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { attemptsApi } from '@/lib/api';
+import { attemptsApi, tasksApi } from '@/lib/api';
 import type { ImageResponse, TaskWithAttemptStatus, ExecutorProfileId } from 'shared/types';
 
 type Args = {
@@ -18,6 +18,8 @@ type Args = {
   jumpToLogsTab: () => void;
   onAfterSendCleanup: () => void;
   setMessage: (v: string) => void;
+  projectId?: string; // For create-and-start when no attempt exists
+  onNewTaskCreated?: (taskId: string, attemptId: string) => void; // Callback for navigation
 };
 
 export function useFollowUpSend({
@@ -36,25 +38,37 @@ export function useFollowUpSend({
   jumpToLogsTab,
   onAfterSendCleanup,
   setMessage,
+  projectId,
+  onNewTaskCreated,
 }: Args) {
   const [isSendingFollowUp, setIsSendingFollowUp] = useState(false);
   const [followUpError, setFollowUpError] = useState<string | null>(null);
 
   const onSendFollowUp = useCallback(async () => {
-    if (!attemptId) return;
+    console.log('[Master Genie] onSendFollowUp called with:', {
+      attemptId,
+      task_id: task?.id,
+      task_status: task?.status,
+      projectId,
+      currentProfile,
+    });
 
-    // Detect if we're sending to an agent task without an attempt
-    // In this case, attemptId is actually the task ID
-    const isAgentTaskWithoutAttempt =
-      task && attemptId === task.id && task.status === 'agent';
+    // Detect if we're sending first message to Master Genie (no attempt exists)
+    // We have projectId from URL, no attemptId, and task might still be loading
+    // If task is loaded and has status='agent', OR if task is null but we have projectId (still loading),
+    // treat this as first Genie message
+    const isFirstGenieMessage =
+      !attemptId && projectId && (!task || task.status === 'agent');
+
+    console.log('[Master Genie] isFirstGenieMessage:', isFirstGenieMessage);
 
     let actualAttemptId = attemptId;
 
-    // If this is an agent task without an attempt, create the attempt first
-    if (isAgentTaskWithoutAttempt) {
+    // If this is first message to Genie, use create-and-start
+    if (isFirstGenieMessage) {
       if (!currentProfile || Object.keys(currentProfile).length === 0) {
         setFollowUpError(
-          'Cannot create attempt: No executor profile available'
+          'Cannot start Master Genie: No executor profile available'
         );
         return;
       }
@@ -63,30 +77,77 @@ export function useFollowUpSend({
       const firstVariantKey = Object.keys(currentProfile)[0];
       const executorProfileId = currentProfile[firstVariantKey];
 
+      // Prepare the message content
+      const extraMessage = message.trim();
+      const firstMessage = [
+        conflictMarkdown,
+        clickedMarkdown?.trim(),
+        reviewMarkdown?.trim(),
+        extraMessage,
+      ]
+        .filter(Boolean)
+        .join('\n\n');
+
+      if (!firstMessage) return;
+
       try {
-        console.log('[Master Genie] Creating attempt before sending follow-up', {
-          task_id: task.id,
+        setIsSendingFollowUp(true);
+        setFollowUpError(null);
+
+        console.log('[Master Genie] Creating new task with create-and-start', {
+          project_id: projectId,
           executor_profile_id: executorProfileId,
         });
 
-        const newAttempt = await attemptsApi.create({
-          task_id: task.id,
+        // Create task + attempt with user's first message
+        const result = await tasksApi.createAndStart({
+          task: {
+            project_id: projectId,
+            title: `Chat: ${firstMessage.substring(0, 50)}${firstMessage.length > 50 ? '...' : ''}`,
+            description: firstMessage, // User's message goes here!
+          },
           executor_profile_id: executorProfileId as ExecutorProfileId,
-          base_branch: 'HEAD', // Use HEAD to represent current branch
-          use_worktree: false, // Master Genie runs without worktree
-        });
+          base_branch: 'dev', // TODO: Get from project config
+          use_worktree: false, // CRITICAL: Genie uses current branch!
+        } as any);
 
-        actualAttemptId = newAttempt.id;
-        console.log('[Master Genie] Attempt created:', newAttempt.id);
+        console.log('[Master Genie] Task created:', result.id);
+
+        // Get the attempt ID from the result
+        // The API returns TaskWithAttemptStatus which has has_in_progress_attempt
+        // We need to fetch the actual attempt
+        const attempts = await attemptsApi.getAll(result.id);
+        if (attempts.length > 0) {
+          actualAttemptId = attempts[0].id;
+          console.log('[Master Genie] Attempt ID:', actualAttemptId);
+
+          // Notify parent component for navigation
+          if (onNewTaskCreated) {
+            onNewTaskCreated(result.id, actualAttemptId);
+          }
+
+          // Clean up UI
+          setMessage('');
+          clearComments();
+          clearClickedElements?.();
+          onAfterSendCleanup();
+          jumpToLogsTab();
+        }
+
+        setIsSendingFollowUp(false);
+        return; // Done!
       } catch (error: unknown) {
         const err = error as { message?: string };
         setFollowUpError(
-          `Failed to create attempt: ${err.message ?? 'Unknown error'}`
+          `Failed to start Master Genie: ${err.message ?? 'Unknown error'}`
         );
         setIsSendingFollowUp(false);
         return;
       }
     }
+
+    // Normal follow-up flow (attempt exists)
+    if (!attemptId) return;
 
     const extraMessage = message.trim();
     const finalPrompt = [
@@ -144,6 +205,8 @@ export function useFollowUpSend({
     jumpToLogsTab,
     onAfterSendCleanup,
     setMessage,
+    projectId,
+    onNewTaskCreated,
   ]);
 
   return {

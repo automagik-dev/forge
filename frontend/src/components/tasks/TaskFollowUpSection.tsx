@@ -13,6 +13,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 //
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { imagesApi } from '@/lib/api.ts';
 import type { TaskWithAttemptStatus } from 'shared/types';
 import { useBranchStatus } from '@/hooks';
@@ -49,6 +50,7 @@ interface TaskFollowUpSectionProps {
   jumpToLogsTab: () => void;
   isInChatView?: boolean;
   taskIdFromUrl?: string;
+  projectId?: string; // Project ID from URL (fallback when task is still loading)
 }
 
 export function TaskFollowUpSection({
@@ -57,8 +59,10 @@ export function TaskFollowUpSection({
   jumpToLogsTab,
   isInChatView = false,
   taskIdFromUrl,
+  projectId: projectIdFromUrl,
 }: TaskFollowUpSectionProps) {
   const { t } = useTranslation('tasks');
+  const navigate = useNavigate();
 
   const { isAttemptRunning, stopExecution, isStopping, processes } =
     useAttemptExecution(selectedAttemptId, task?.id);
@@ -206,16 +210,25 @@ export function TaskFollowUpSection({
     isUnqueuing: isUnqueuing,
   });
 
+  // Use projectId from URL as fallback when task is still loading
+  const effectiveProjectId = task?.project_id ?? projectIdFromUrl;
+
+  // Handle navigation when new task/attempt is created (Master Genie first message)
+  const handleNewTaskCreated = useCallback(
+    (taskId: string, attemptId: string) => {
+      console.log('[Master Genie] Navigating to new task:', taskId, attemptId);
+      // Navigate to the new task/attempt with chat view
+      navigate(`/projects/${effectiveProjectId}/tasks/${taskId}/attempts/${attemptId}?view=chat`);
+    },
+    [navigate, effectiveProjectId]
+  );
+
   // Send follow-up action
-  // For agent tasks without attempts, use task.id (backend will create attempt on first message)
-  // Priority: selectedAttemptId > task?.id (if agent) > taskIdFromUrl (from URL before task loads)
-  const effectiveAttemptId =
-    selectedAttemptId ||
-    (task?.status === 'agent' ? task?.id : undefined) ||
-    (isInChatView ? taskIdFromUrl : undefined);
+  // For Master Genie first message: pass undefined as attemptId (hook detects and uses create-and-start)
+  // For subsequent messages: pass selectedAttemptId (from URL/state)
   const { isSendingFollowUp, followUpError, setFollowUpError, onSendFollowUp } =
     useFollowUpSend({
-      attemptId: effectiveAttemptId,
+      attemptId: selectedAttemptId,
       task,
       currentProfile,
       message: followUpMessage,
@@ -230,19 +243,18 @@ export function TaskFollowUpSection({
       jumpToLogsTab,
       onAfterSendCleanup: clearImagesAndUploads,
       setMessage: setFollowUpMessage,
+      projectId: effectiveProjectId,
+      onNewTaskCreated: handleNewTaskCreated,
     });
 
   // Profile/variant derived from processes only (see useDefaultVariant)
 
   // Separate logic for when textarea should be disabled vs when send button should be disabled
   const canTypeFollowUp = useMemo(() => {
-    // For agent tasks (Master Genie) without attempts: allow typing even if selectedAttemptId is taskId
-    // We detect this by checking if selectedAttemptId === task?.id (agent tasks pass task.id as selectedAttemptId)
-    // IMPORTANT: Also check task exists to avoid undefined === undefined edge case during initial load
-    // OR if isInChatView=true (welcome screen before task data loads)
+    // For agent tasks (Master Genie) without attempts: allow typing
+    // We detect this by checking task.status === 'agent' and !selectedAttemptId
     const isAgentTaskWithoutAttempt =
-      isInChatView ||
-      (task && selectedAttemptId === task.id && task.status === 'agent');
+      isInChatView || (task && task.status === 'agent' && !selectedAttemptId);
 
     console.log('[DEBUG canTypeFollowUp]', {
       selectedAttemptId,

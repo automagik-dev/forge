@@ -679,6 +679,7 @@ export function ProjectTasks() {
           onNavigateToTask={handleNavigateToTask}
           isInChatView={isInChatView}
           taskIdFromUrl={taskId}
+          projectId={projectId}
         >
           {({ logs, followUp }) => (
             <>

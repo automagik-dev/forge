@@ -12,6 +12,7 @@ interface TaskAttemptPanelProps {
   onNavigateToTask?: (taskId: string) => void;
   isInChatView?: boolean;
   taskIdFromUrl?: string;
+  projectId?: string; // Project ID from URL (for Master Genie when task is still loading)
   children: (sections: { logs: ReactNode; followUp: ReactNode }) => ReactNode;
 }
 
@@ -20,6 +21,7 @@ const TaskAttemptPanel = ({
   task,
   isInChatView,
   taskIdFromUrl,
+  projectId,
   children,
 }: TaskAttemptPanelProps) => {
   // Allow rendering without attempt for agent tasks (Master Genie)
@@ -101,6 +103,7 @@ const TaskAttemptPanel = ({
                 jumpToLogsTab={() => {}}
                 isInChatView={isInChatView}
                 taskIdFromUrl={taskIdFromUrl}
+                projectId={projectId}
               />
             ),
           })}
@@ -128,6 +131,7 @@ const TaskAttemptPanel = ({
               jumpToLogsTab={() => {}}
               isInChatView={isInChatView}
               taskIdFromUrl={taskIdFromUrl}
+              projectId={projectId}
             />
           ),
         })}
