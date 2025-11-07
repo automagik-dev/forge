@@ -140,13 +140,17 @@ export function TaskFollowUpSection({
     useDefaultVariant({ processes, profiles: profiles ?? null });
 
   // For agent tasks without execution history (Master Genie on first message),
-  // default to CLAUDE_CODE profile so the variant selector works
+  // use the user's configured default executor profile so the variant selector works
   const isAgentTask = task?.status === 'agent';
   const currentProfile = useMemo(() => {
     if (profileFromHistory) return profileFromHistory;
-    if (isAgentTask && profiles?.CLAUDE_CODE) return profiles.CLAUDE_CODE;
+    if (isAgentTask && config?.executor_profile && profiles) {
+      // Use the user's configured default executor
+      const defaultExecutor = config.executor_profile.executor;
+      return profiles[defaultExecutor] ?? null;
+    }
     return null;
-  }, [profileFromHistory, isAgentTask, profiles]);
+  }, [profileFromHistory, isAgentTask, config, profiles]);
 
   // Cycle to the next variant when Shift+Tab is pressed
   const cycleVariant = useCallback(() => {
@@ -240,6 +244,7 @@ export function TaskFollowUpSection({
       attemptId: selectedAttemptId,
       task,
       currentProfile,
+      defaultExecutor: config?.executor_profile?.executor,
       message: followUpMessage,
       conflictMarkdown: conflictResolutionInstructions,
       reviewMarkdown,

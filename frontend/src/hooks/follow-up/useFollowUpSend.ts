@@ -6,6 +6,7 @@ type Args = {
   attemptId?: string;
   task?: TaskWithAttemptStatus | null;
   currentProfile?: Record<string, any> | null;
+  defaultExecutor?: string; // User's configured default executor (e.g., "CLAUDE_CODE")
   message: string;
   conflictMarkdown: string | null;
   reviewMarkdown: string;
@@ -26,6 +27,7 @@ export function useFollowUpSend({
   attemptId,
   task,
   currentProfile,
+  defaultExecutor,
   message,
   conflictMarkdown,
   reviewMarkdown,
@@ -73,10 +75,9 @@ export function useFollowUpSend({
         return;
       }
 
-      // For agent tasks, always use CLAUDE_CODE executor
-      // Get the selected variant, or DEFAULT (null) if none selected
+      // For agent tasks, use the user's configured default executor
       const executorProfileId = {
-        executor: 'CLAUDE_CODE',
+        executor: defaultExecutor || 'CLAUDE_CODE', // Use configured default, fallback to CLAUDE_CODE
         variant: selectedVariant,
       };
 
@@ -196,6 +197,7 @@ export function useFollowUpSend({
     attemptId,
     task,
     currentProfile,
+    defaultExecutor,
     message,
     conflictMarkdown,
     reviewMarkdown,
