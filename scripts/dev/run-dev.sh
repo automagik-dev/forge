@@ -39,22 +39,27 @@ echo "   Backend:  http://localhost:${BACKEND_PORT}"
 echo "   Frontend: http://localhost:${FRONTEND_PORT}"
 echo ""
 
+# Check for pnpm
+if ! command -v pnpm >/dev/null 2>&1; then
+    echo "❌ Error: pnpm is required but not installed"
+    echo "   Install with: npm install -g pnpm"
+    exit 1
+fi
+
+# Ensure dependencies are installed
+if [ ! -d "node_modules" ]; then
+    echo "📦 Installing dependencies with pnpm..."
+    pnpm install
+    echo "✅ Dependencies installed"
+    echo ""
+fi
+
 # Ensure frontend/dist exists for RustEmbed (required at compile time)
 FRONTEND_DIST_MISSING=false
 if [ ! -d "frontend/dist" ]; then
     FRONTEND_DIST_MISSING=true
     echo "🔨 Building frontend for first time (required for Rust compilation)..."
     echo "   This is needed because the backend embeds frontend/dist at compile time."
-
-    # Install dependencies at root level (pnpm workspace)
-    if ! command -v pnpm >/dev/null 2>&1; then
-        echo "❌ Error: pnpm is required but not installed"
-        echo "   Install with: npm install -g pnpm"
-        exit 1
-    fi
-
-    echo "📦 Installing dependencies with pnpm..."
-    pnpm install
 
     # Build frontend
     (
