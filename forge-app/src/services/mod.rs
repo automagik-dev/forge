@@ -12,9 +12,8 @@ use deployment::Deployment;
 use serde::Deserialize;
 use serde_json::json;
 use server::DeploymentImpl;
-use sqlx::{ConnectOptions, Row, SqlitePool, sqlite::SqliteConnectOptions};
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use sqlx::{Row, SqlitePool};
+use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::time::{Duration, sleep};
@@ -37,9 +36,8 @@ pub struct ForgeServices {
 
 impl ForgeServices {
     pub async fn new() -> Result<Self> {
-        purge_shared_migration_markers().await?;
-
         // Initialize upstream deployment (handles DB, sentry, analytics, etc.)
+        // Note: All migrations (including forge-specific) are now in upstream/crates/db/migrations
         let deployment = DeploymentImpl::new().await?;
         ensure_legacy_base_branch_column(&deployment.db().pool).await?;
 
@@ -65,11 +63,8 @@ impl ForgeServices {
 
         let deployment = Arc::new(deployment);
 
-        // Reuse upstream pool for forge migrations/features
+        // Reuse upstream pool for forge features
         let pool = deployment.db().pool.clone();
-
-        // Apply single Forge migration for Omni tables
-        apply_forge_migrations(&pool).await?;
 
         // Initialize forge extension services
         let config = Arc::new(ForgeConfigService::new(pool.clone()));
@@ -223,88 +218,7 @@ impl ForgeServices {
     }
 }
 
-/// Ensure forge-specific migrations do not pollute upstream tracking table.
-async fn purge_shared_migration_markers() -> Result<()> {
-    let mut urls: Vec<String> = Vec::new();
-
-    if let Ok(url) = std::env::var("DATABASE_URL") {
-        urls.push(url);
-    }
-
-    let crate_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let workspace_root = crate_dir
-        .parent()
-        .map(PathBuf::from)
-        .unwrap_or_else(|| crate_dir.clone());
-
-    let default_paths = [
-        workspace_root.join("dev_assets/db.sqlite"),
-        workspace_root.join("upstream/dev_assets/db.sqlite"),
-        workspace_root.join("dev_assets_seed/forge-snapshot/forge.sqlite"),
-    ];
-
-    for path in default_paths {
-        if path.exists() {
-            urls.push(format!("sqlite://{}", path.to_string_lossy()));
-        }
-    }
-
-    urls.sort();
-    urls.dedup();
-
-    for url in urls {
-        let mut options = SqliteConnectOptions::from_str(&url)
-            .with_context(|| format!("failed to parse sqlite URL: {url}"))?;
-        options = options.create_if_missing(true);
-
-        let mut conn = options
-            .connect()
-            .await
-            .with_context(|| format!("failed to open sqlite connection: {url}"))?;
-
-        let forge_table_exists: bool = sqlx::query_scalar(
-            "SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = '_forge_migrations'",
-        )
-        .fetch_one(&mut conn)
-        .await
-        .unwrap_or(0)
-            > 0;
-
-        if !forge_table_exists {
-            continue;
-        }
-
-        let deleted =
-            sqlx::query("DELETE FROM _forge_migrations WHERE version IN ('20250924090001', '20250924090003', '20251007000001')")
-                .execute(&mut conn)
-                .await;
-
-        match deleted {
-            Ok(result) => {
-                if result.rows_affected() > 0 {
-                    tracing::info!(database = %url, "Purged legacy forge migration markers");
-                }
-            }
-            Err(sqlx::Error::Database(db_err)) if db_err.message().contains("no such table") => {
-                tracing::debug!(database = %url, "Shared migration table disappeared during purge");
-            }
-            Err(err) => {
-                return Err(err).with_context(|| {
-                    format!("failed to clean shared migration table for database: {url}")
-                });
-            }
-        }
-    }
-
-    Ok(())
-}
-
-struct ForgeMigration {
-    version: &'static str,
-    description: &'static str,
-    sql: &'static str,
-}
-
+/// Backfill base_branch column for legacy Vibe Kanban databases
 async fn ensure_legacy_base_branch_column(pool: &SqlitePool) -> Result<()> {
     let has_base_branch = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(1) FROM pragma_table_info('task_attempts') WHERE name = 'base_branch'",
@@ -352,130 +266,6 @@ async fn ensure_legacy_base_branch_column(pool: &SqlitePool) -> Result<()> {
     .await?;
 
     Ok(())
-}
-
-const FORGE_MIGRATIONS: &[ForgeMigration] = &[
-    ForgeMigration {
-        version: "20251008000001",
-        description: "forge_omni_tables",
-        sql: include_str!("../../migrations/20251008000001_forge_omni_tables.sql"),
-    },
-    ForgeMigration {
-        version: "20251020000001",
-        description: "add_agent_task_status",
-        sql: include_str!("../../migrations/20251020000001_add_agent_task_status.sql"),
-    },
-    ForgeMigration {
-        version: "20251027000000",
-        description: "create_forge_agents",
-        sql: include_str!("../../migrations/20251027000000_create_forge_agents.sql"),
-    },
-];
-
-async fn apply_forge_migrations(pool: &SqlitePool) -> Result<()> {
-    sqlx::query(
-        "CREATE TABLE IF NOT EXISTS _forge_migrations (
-            version TEXT PRIMARY KEY,
-            description TEXT NOT NULL,
-            applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )",
-    )
-    .execute(pool)
-    .await?;
-
-    for migration in FORGE_MIGRATIONS {
-        let already_applied: bool = sqlx::query_scalar::<_, i64>(
-            "SELECT EXISTS(SELECT 1 FROM _forge_migrations WHERE version = ?)",
-        )
-        .bind(migration.version)
-        .fetch_one(pool)
-        .await?
-            != 0;
-
-        if already_applied {
-            tracing::debug!(
-                version = migration.version,
-                "Forge migration already applied"
-            );
-            continue;
-        }
-
-        tracing::info!(version = migration.version, "Applying forge migration");
-        let mut tx = pool.begin().await?;
-
-        for statement in split_statements(migration.sql) {
-            if statement.is_empty() {
-                continue;
-            }
-
-            if let Err(err) = sqlx::query(&statement).execute(&mut *tx).await {
-                if should_ignore_migration_error(migration.version, &statement, &err) {
-                    tracing::info!(
-                        version = migration.version,
-                        stmt = statement,
-                        "Ignorable migration error encountered; continuing"
-                    );
-                    continue;
-                }
-
-                tx.rollback().await.ok();
-                return Err(err).with_context(|| {
-                    format!("failed to execute forge migration {}", migration.version)
-                });
-            }
-        }
-
-        sqlx::query("INSERT INTO _forge_migrations (version, description) VALUES (?, ?)")
-            .bind(migration.version)
-            .bind(migration.description)
-            .execute(&mut *tx)
-            .await?;
-
-        tx.commit().await?;
-    }
-
-    Ok(())
-}
-
-fn split_statements(sql: &str) -> Vec<String> {
-    let mut statements = Vec::new();
-    let mut current = String::new();
-    let mut begin_depth: i32 = 0;
-
-    for line in sql.lines() {
-        let trimmed = line.trim();
-
-        if trimmed.is_empty() || trimmed.starts_with("--") {
-            continue;
-        }
-
-        let upper = trimmed.to_ascii_uppercase();
-        if upper.starts_with("BEGIN") {
-            begin_depth += 1;
-        }
-        if upper.starts_with("END") && begin_depth > 0 {
-            begin_depth -= 1;
-        }
-
-        current.push_str(trimmed);
-        current.push('\n');
-
-        if trimmed.ends_with(';') && begin_depth == 0 {
-            statements.push(current.trim().to_string());
-            current.clear();
-        }
-    }
-
-    if !current.trim().is_empty() {
-        statements.push(current.trim().to_string());
-    }
-
-    statements
-}
-
-fn should_ignore_migration_error(_version: &str, _statement: &str, _err: &sqlx::Error) -> bool {
-    // No ignored errors - clean migration should succeed
-    false
 }
 
 fn spawn_omni_notification_worker(pool: SqlitePool, config: Arc<ForgeConfigService>) {

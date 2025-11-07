@@ -54,36 +54,31 @@ if [ ! -d "node_modules" ]; then
     echo ""
 fi
 
-# Ensure frontend/dist exists for RustEmbed (required at compile time)
-FRONTEND_DIST_MISSING=false
-if [ ! -d "frontend/dist" ]; then
-    FRONTEND_DIST_MISSING=true
-    echo "🔨 Building frontend for first time (required for Rust compilation)..."
-    echo "   This is needed because the backend embeds frontend/dist at compile time."
+# Always rebuild frontend to ensure fresh build
+# Delete dist folder to force clean rebuild
+echo "🧹 Cleaning frontend build cache..."
+rm -rf frontend/dist
+echo "✅ Frontend cache cleared"
+echo ""
 
-    # Build frontend
-    (
-        cd frontend
-        pnpm run build
-    )
-    echo "✅ Frontend built successfully"
-    echo ""
-fi
+echo "🔨 Building frontend (required for Rust compilation)..."
+echo "   This is needed because the backend embeds frontend/dist at compile time."
+(
+    cd frontend
+    pnpm run build
+)
+echo "✅ Frontend built successfully"
+echo ""
 
-# If frontend/dist was just created, clean Rust cache to force recompilation
-# This prevents "trait Embed is not satisfied" errors from cached build state
-if [ "$FRONTEND_DIST_MISSING" = "true" ]; then
-    echo "🧹 Cleaning Rust build cache (first-time setup)..."
-    echo "   This ensures RustEmbed picks up the new frontend/dist folder."
-    rm -rf target/debug/build/forge-app-*
-    rm -rf target/debug/.fingerprint/forge-app-*
-    rm -rf target/debug/incremental/forge_app-*
-    echo "✅ Cache cleared"
-    echo ""
-fi
+# Always clean Rust build cache to ensure fresh compilation
+# Incremental compilation was causing too many issues with stale binaries
+echo "🧹 Cleaning Rust build cache..."
+cargo clean
+echo "✅ Build cache cleared - forcing fresh compilation"
+echo ""
 
 # Start backend in background
-echo "⚙️  Starting backend server..."
+echo "⚙️  Starting backend server (this will take a while on first compile)..."
 export DISABLE_BROWSER_OPEN=1
 export DISABLE_WORKTREE_ORPHAN_CLEANUP=1
 export RUST_LOG=debug
