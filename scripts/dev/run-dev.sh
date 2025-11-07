@@ -10,6 +10,22 @@ if [ ! -d "upstream/crates" ]; then
     echo "⚠️  Upstream submodule not initialized"
     echo "   Initializing upstream submodule..."
     git submodule update --init --recursive upstream
+
+    # In git worktrees, submodule checkout can fail
+    # Verify and fix if needed
+    if [ ! -d "upstream/crates" ]; then
+        echo "   Fixing submodule checkout for git worktree..."
+        cd upstream
+        git reset --hard HEAD
+        cd ..
+    fi
+
+    if [ ! -d "upstream/crates" ]; then
+        echo "❌ Failed to initialize upstream submodule"
+        echo "   Please run: git submodule update --init --recursive upstream"
+        exit 1
+    fi
+
     echo "✅ Upstream submodule initialized"
     echo ""
 fi
