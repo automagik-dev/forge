@@ -19,6 +19,7 @@ import type { TaskWithAttemptStatus } from 'shared/types';
 import { useBranchStatus } from '@/hooks';
 import { useAttemptExecution } from '@/hooks/useAttemptExecution';
 import { useUserSystem } from '@/components/config-provider';
+import { useProjectProfiles } from '@/hooks/useProjectProfiles';
 import { cn } from '@/lib/utils';
 //
 import { useReview } from '@/contexts/ReviewProvider';
@@ -71,7 +72,12 @@ export function TaskFollowUpSection({
     useBranchStatus(selectedAttemptId);
   const { branch: attemptBranch, refetch: refetchAttemptBranch } =
     useAttemptBranch(selectedAttemptId);
-  const { profiles, config } = useUserSystem();
+  const { profiles: globalProfiles, config } = useUserSystem();
+  const { data: projectProfiles } = useProjectProfiles(task?.project_id ?? projectIdFromUrl);
+
+  // Use project profiles if available (synchronized agents), fallback to global profiles
+  const profiles = projectProfiles?.executors || globalProfiles;
+
   const { comments, generateReviewMarkdown, clearComments } = useReview();
   const {
     generateMarkdown: generateClickedMarkdown,
