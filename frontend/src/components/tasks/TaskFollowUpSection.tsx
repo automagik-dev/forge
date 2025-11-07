@@ -244,7 +244,7 @@ export function TaskFollowUpSection({
     serverDraft: draft,
     current: {
       prompt: followUpMessage,
-      variant: selectedVariant,
+      variant: selectedProfile?.variant ?? null,
       image_ids: images.map((img) => img.id),
     },
     isQueuedUI: displayQueued,
