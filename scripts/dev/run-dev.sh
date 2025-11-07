@@ -40,7 +40,9 @@ echo "   Frontend: http://localhost:${FRONTEND_PORT}"
 echo ""
 
 # Ensure frontend/dist exists for RustEmbed (required at compile time)
+FRONTEND_DIST_MISSING=false
 if [ ! -d "frontend/dist" ]; then
+    FRONTEND_DIST_MISSING=true
     echo "🔨 Building frontend for first time (required for Rust compilation)..."
     echo "   This is needed because the backend embeds frontend/dist at compile time."
     (
@@ -49,6 +51,18 @@ if [ ! -d "frontend/dist" ]; then
         npm run build
     )
     echo "✅ Frontend built successfully"
+    echo ""
+fi
+
+# If frontend/dist was just created, clean Rust cache to force recompilation
+# This prevents "trait Embed is not satisfied" errors from cached build state
+if [ "$FRONTEND_DIST_MISSING" = "true" ]; then
+    echo "🧹 Cleaning Rust build cache (first-time setup)..."
+    echo "   This ensures RustEmbed picks up the new frontend/dist folder."
+    rm -rf target/debug/build/forge-app-*
+    rm -rf target/debug/.fingerprint/forge-app-*
+    rm -rf target/debug/incremental/forge_app-*
+    echo "✅ Cache cleared"
     echo ""
 fi
 
