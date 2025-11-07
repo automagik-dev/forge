@@ -5,6 +5,15 @@ set -euo pipefail
 echo "🚀 Starting Automagik Forge development environment..."
 echo ""
 
+# Check if upstream submodule is initialized
+if [ ! -d "upstream/crates" ]; then
+    echo "⚠️  Upstream submodule not initialized"
+    echo "   Initializing upstream submodule..."
+    git submodule update --init --recursive upstream
+    echo "✅ Upstream submodule initialized"
+    echo ""
+fi
+
 # Get ports from setup script
 export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend)
 export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend)
