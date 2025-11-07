@@ -3,7 +3,6 @@ import { KanbanCard } from '@/components/ui/shadcn-io/kanban';
 import { CheckCircle, Loader2, XCircle, Play } from 'lucide-react';
 import type { TaskWithAttemptStatus } from 'shared/types';
 import { ActionsDropdown } from '@/components/ui/ActionsDropdown';
-import { useProject } from '@/contexts/project-context';
 import { Button } from '@/components/ui/button';
 import NiceModal from '@ebay/nice-modal-react';
 
@@ -25,7 +24,6 @@ export function TaskCard({
   isOpen,
 }: TaskCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const { projectId } = useProject();
 
   const handleClick = useCallback(() => {
     onViewDetails(task);
