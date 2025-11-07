@@ -141,7 +141,8 @@ export function TaskFollowUpSection({
 
   // For agent tasks without execution history (Master Genie on first message),
   // use the user's configured default executor profile so the variant selector works
-  const isAgentTask = task?.status === 'agent';
+  // When task is still loading (null), but we have projectId from URL, assume it's an agent task (Master Genie)
+  const isAgentTask = task?.status === 'agent' || (!task && projectIdFromUrl);
   const currentProfile = useMemo(() => {
     if (profileFromHistory) return profileFromHistory;
     if (isAgentTask && config?.executor_profile && profiles) {
