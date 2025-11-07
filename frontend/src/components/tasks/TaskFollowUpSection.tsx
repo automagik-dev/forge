@@ -70,7 +70,7 @@ export function TaskFollowUpSection({
     useBranchStatus(selectedAttemptId);
   const { branch: attemptBranch, refetch: refetchAttemptBranch } =
     useAttemptBranch(selectedAttemptId);
-  const { profiles } = useUserSystem();
+  const { profiles, config } = useUserSystem();
   const { comments, generateReviewMarkdown, clearComments } = useReview();
   const {
     generateMarkdown: generateClickedMarkdown,
