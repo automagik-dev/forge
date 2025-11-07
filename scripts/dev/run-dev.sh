@@ -162,7 +162,7 @@ echo ""
 # Start frontend
 echo "🎨 Starting frontend server..."
 cd frontend
-BACKEND_PORT=${BACKEND_PORT} VITE_OPEN=true npm run dev -- --port ${FRONTEND_PORT} --host &
+BACKEND_PORT=${BACKEND_PORT} VITE_OPEN=true pnpm run dev -- --port ${FRONTEND_PORT} --host &
 FRONTEND_PID=$!
 cd ..
 
