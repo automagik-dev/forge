@@ -58,4 +58,4 @@ forge-omni = { path = "../forge-extensions/omni" }
 forge-config = { path = "../forge-extensions/config" }
 
 [dev-dependencies]
-httpmock = "0.7"
+# httpmock = "0.7" # Removed: conflicts with codex ICU 2.0.0 requirement
