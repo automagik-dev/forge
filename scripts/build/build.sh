@@ -158,17 +158,13 @@ echo "📦 Creating distribution package..."
 
 PLATFORMS=("linux-x64" "linux-arm64" "windows-x64" "windows-arm64" "macos-x64" "macos-arm64")
 
-# Helper: zip a single file using available tool
+# Helper: zip a single file using Node.js (cross-platform, no OS dependencies)
 zip_one() {
   local src="$1"
   local out_zip="$2"
-  if command -v zip >/dev/null 2>&1; then
-    zip -q "$out_zip" "$src"
-  elif [ "$PLATFORM_OS" = "windows" ] && command -v powershell >/dev/null 2>&1; then
-    # Use PowerShell Compress-Archive on Windows when zip is missing
-    powershell -NoProfile -Command "Compress-Archive -Path \"$src\" -DestinationPath \"$out_zip\" -Force" >/dev/null
-  else
-    echo "❌ Neither 'zip' nor PowerShell Compress-Archive is available to create $out_zip" >&2
+  node scripts/build/create-zip.js "$src" "$out_zip"
+  if [ $? -ne 0 ]; then
+    echo "❌ Failed to create ZIP file: $out_zip" >&2
     exit 1
   fi
 }
