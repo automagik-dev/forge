@@ -136,8 +136,17 @@ export function TaskFollowUpSection({
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
 
   // Variant selection (with keyboard cycling)
-  const { selectedVariant, setSelectedVariant, currentProfile } =
+  const { selectedVariant, setSelectedVariant, currentProfile: profileFromHistory } =
     useDefaultVariant({ processes, profiles: profiles ?? null });
+
+  // For agent tasks without execution history (Master Genie on first message),
+  // default to CLAUDE_CODE profile so the variant selector works
+  const isAgentTask = task?.status === 'agent';
+  const currentProfile = useMemo(() => {
+    if (profileFromHistory) return profileFromHistory;
+    if (isAgentTask && profiles?.CLAUDE_CODE) return profiles.CLAUDE_CODE;
+    return null;
+  }, [profileFromHistory, isAgentTask, profiles]);
 
   // Cycle to the next variant when Shift+Tab is pressed
   const cycleVariant = useCallback(() => {

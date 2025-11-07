@@ -73,9 +73,12 @@ export function useFollowUpSend({
         return;
       }
 
-      // Get the first available profile variant
-      const firstVariantKey = Object.keys(currentProfile)[0];
-      const executorProfileId = currentProfile[firstVariantKey];
+      // For agent tasks, always use CLAUDE_CODE executor
+      // Get the selected variant, or DEFAULT (null) if none selected
+      const executorProfileId = {
+        executor: 'CLAUDE_CODE',
+        variant: selectedVariant,
+      };
 
       // Prepare the message content
       const extraMessage = message.trim();
