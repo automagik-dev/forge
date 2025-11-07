@@ -27,7 +27,7 @@ import { useEntries } from '@/contexts/EntriesContext';
 import { useKeyCycleVariant, useKeySubmitFollowUp, Scope } from '@/keyboard';
 import { useHotkeysContext } from 'react-hotkeys-hook';
 //
-import { VariantSelector } from '@/components/tasks/VariantSelector';
+import ExecutorProfileSelector from '@/components/settings/ExecutorProfileSelector';
 import { FollowUpStatusRow } from '@/components/tasks/FollowUpStatusRow';
 import { useAttemptBranch } from '@/hooks/useAttemptBranch';
 import { FollowUpConflictSection } from '@/components/tasks/follow-up/FollowUpConflictSection';
@@ -43,6 +43,7 @@ import { useDefaultVariant } from '@/hooks/follow-up/useDefaultVariant';
 import { buildResolveConflictsInstructions } from '@/lib/conflicts';
 import { appendImageMarkdown } from '@/utils/markdownImages';
 import { useTranslation } from 'react-i18next';
+import type { ExecutorProfileId } from 'shared/types';
 
 interface TaskFollowUpSectionProps {
   task: TaskWithAttemptStatus | null;
@@ -135,47 +136,75 @@ export function TaskFollowUpSection({
   // Track whether the follow-up textarea is focused
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
 
-  // Variant selection (with keyboard cycling)
-  const { selectedVariant, setSelectedVariant, currentProfile: profileFromHistory } =
+  // Get profile from execution history (if exists)
+  const { selectedVariant: variantFromHistory, currentProfile: profileFromHistory } =
     useDefaultVariant({ processes, profiles: profiles ?? null });
 
-  // For agent tasks without execution history (Master Genie on first message),
-  // use the user's configured default executor profile so the variant selector works
-  // When task is still loading (null), but we have projectId from URL, assume it's an agent task (Master Genie)
-  const isAgentTask = task?.status === 'agent' || (!task && projectIdFromUrl);
-  const currentProfile = useMemo(() => {
-    if (profileFromHistory) return profileFromHistory;
-    if (isAgentTask && config?.executor_profile && profiles) {
-      // Use the user's configured default executor
-      const defaultExecutor = config.executor_profile.executor;
-      return profiles[defaultExecutor] ?? null;
+  // Initialize selected profile with history or default
+  const [selectedProfile, setSelectedProfile] = useState<ExecutorProfileId | null>(() => {
+    if (profileFromHistory) {
+      // Extract executor from profileFromHistory (it's ExecutorConfig)
+      const executorKey = Object.keys(profiles || {}).find(
+        (key) => profiles?.[key] === profileFromHistory
+      );
+      return executorKey
+        ? {
+            executor: executorKey as any,
+            variant: variantFromHistory,
+          }
+        : null;
+    }
+    // Fallback to user's configured default executor
+    if (config?.executor_profile) {
+      return {
+        executor: config.executor_profile.executor,
+        variant: null,
+      };
     }
     return null;
-  }, [profileFromHistory, isAgentTask, config, profiles]);
+  });
 
-  // Cycle to the next variant when Shift+Tab is pressed
+  // Update selectedProfile when history changes (e.g., after first execution)
+  useEffect(() => {
+    if (profileFromHistory && profiles) {
+      const executorKey = Object.keys(profiles).find(
+        (key) => profiles[key] === profileFromHistory
+      );
+      if (executorKey) {
+        setSelectedProfile({
+          executor: executorKey as any,
+          variant: variantFromHistory,
+        });
+      }
+    }
+  }, [profileFromHistory, variantFromHistory, profiles]);
+
+  // Cycle variants with keyboard (Shift+Tab)
   const cycleVariant = useCallback(() => {
-    if (!currentProfile) return;
-    const variants = Object.keys(currentProfile); // Include DEFAULT
+    if (!selectedProfile || !profiles) return;
+    const currentExecutorProfile = profiles[selectedProfile.executor];
+    if (!currentExecutorProfile) return;
+
+    const variants = Object.keys(currentExecutorProfile);
     if (variants.length === 0) return;
 
-    // Treat null as "DEFAULT" for finding current position
-    const currentVariantForLookup = selectedVariant ?? 'DEFAULT';
+    const currentVariantForLookup = selectedProfile.variant ?? 'DEFAULT';
     const currentIndex = variants.indexOf(currentVariantForLookup);
     const nextIndex = (currentIndex + 1) % variants.length;
     const nextVariant = variants[nextIndex];
 
-    // Keep using null to represent DEFAULT (backend expects it)
-    // But for display/cycling purposes, treat DEFAULT as a real option
-    setSelectedVariant(nextVariant === 'DEFAULT' ? null : nextVariant);
-  }, [currentProfile, selectedVariant, setSelectedVariant]);
+    setSelectedProfile({
+      ...selectedProfile,
+      variant: nextVariant === 'DEFAULT' ? null : nextVariant,
+    });
+  }, [selectedProfile, profiles]);
 
   // Queue management (including derived lock flag)
   const { onQueue, onUnqueue } = useDraftQueue({
     attemptId: selectedAttemptId,
     draft,
     message: followUpMessage,
-    selectedVariant,
+    selectedVariant: selectedProfile?.variant ?? null,
     images,
   });
 
@@ -244,13 +273,15 @@ export function TaskFollowUpSection({
     useFollowUpSend({
       attemptId: selectedAttemptId,
       task,
-      currentProfile,
-      defaultExecutor: config?.executor_profile?.executor,
+      currentProfile: selectedProfile && profiles
+        ? profiles[selectedProfile.executor]
+        : null,
+      defaultExecutor: selectedProfile?.executor,
       message: followUpMessage,
       conflictMarkdown: conflictResolutionInstructions,
       reviewMarkdown,
       clickedMarkdown,
-      selectedVariant,
+      selectedVariant: selectedProfile?.variant ?? null,
       images,
       newlyUploadedImageIds,
       clearComments,
@@ -596,11 +627,13 @@ export function TaskFollowUpSection({
                     />
                   </Button>
 
-                  <VariantSelector
-                    currentProfile={currentProfile}
-                    selectedVariant={selectedVariant}
-                    onChange={setSelectedVariant}
+                  <ExecutorProfileSelector
+                    profiles={profiles}
+                    selectedProfile={selectedProfile}
+                    onProfileSelect={setSelectedProfile}
                     disabled={!isEditable}
+                    showLabel={false}
+                    showVariantSelector={true}
                   />
                 </div>
 
