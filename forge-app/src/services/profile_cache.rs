@@ -88,6 +88,8 @@ impl ProfileCache {
     pub fn start_watching(self: Arc<Self>) -> Result<()> {
         let genie_path = self.workspace_root.join(".genie");
 
+        tracing::debug!("start_watching called for {:?}", self.workspace_root);
+
         if !genie_path.exists() {
             tracing::debug!("No .genie folder to watch in {:?}", self.workspace_root);
             return Ok(());
@@ -99,21 +101,28 @@ impl ProfileCache {
         let cache = self.clone();
 
         // Capture current tokio runtime handle to use in thread
+        tracing::debug!("Capturing tokio runtime handle...");
         let runtime = tokio::runtime::Handle::current();
 
+        tracing::debug!("Spawning file watcher thread...");
         std::thread::spawn(move || {
+            tracing::debug!("File watcher thread started");
             if let Err(e) = cache.watch_loop(&genie_path, runtime) {
                 tracing::error!("File watcher error: {}", e);
             }
         });
 
+        tracing::debug!("File watcher thread spawned");
         Ok(())
     }
 
     /// Watch loop (runs in separate thread)
     fn watch_loop(&self, genie_path: &Path, runtime: tokio::runtime::Handle) -> Result<()> {
+        tracing::debug!("watch_loop entered for {:?}", genie_path);
+
         let (tx, rx) = std::sync::mpsc::channel();
 
+        tracing::debug!("Creating RecommendedWatcher...");
         let mut watcher = RecommendedWatcher::new(
             move |res: Result<Event, notify::Error>| {
                 if let Ok(event) = res {
@@ -122,7 +131,9 @@ impl ProfileCache {
             },
             Config::default(),
         )?;
+        tracing::debug!("RecommendedWatcher created");
 
+        tracing::debug!("Starting to watch {:?}", genie_path);
         watcher.watch(genie_path, RecursiveMode::Recursive)?;
 
         tracing::debug!("File watcher started for {:?}", genie_path);
@@ -243,20 +254,28 @@ impl ProfileCacheManager {
 
     /// Get or create cache for a workspace
     pub async fn get_or_create(&self, workspace_root: PathBuf) -> Result<Arc<ProfileCache>> {
+        tracing::debug!("ProfileCacheManager::get_or_create for {:?}", workspace_root);
+
         // Check if cache exists
         {
             let caches = self.caches_by_path.read().await;
             if let Some(cache) = caches.get(&workspace_root) {
+                tracing::debug!("Using existing cache for {:?}", workspace_root);
                 return Ok(cache.clone());
             }
         }
 
         // Create new cache
+        tracing::debug!("Creating new ProfileCache for {:?}", workspace_root);
         let cache = Arc::new(ProfileCache::new(workspace_root.clone()));
+
+        tracing::debug!("Initializing ProfileCache...");
         cache.initialize().await?;
 
         // Start file watcher
+        tracing::debug!("Starting file watcher...");
         cache.clone().start_watching()?;
+        tracing::debug!("File watcher started successfully");
 
         // Store cache
         self.caches_by_path.write().await.insert(workspace_root, cache.clone());

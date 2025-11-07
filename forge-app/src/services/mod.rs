@@ -139,8 +139,12 @@ impl ForgeServices {
     pub async fn load_genie_profiles_for_all_projects(&self) -> Result<()> {
         use db::models::project::Project;
 
+        tracing::info!("Starting to load .genie profiles for all projects...");
+
         // Query all projects from database
+        tracing::debug!("Querying all projects from database...");
         let projects = Project::find_all(&self.pool).await?;
+        tracing::debug!("Found {} projects in database", projects.len());
 
         if projects.is_empty() {
             tracing::info!("No existing projects found to load .genie profiles from");
@@ -155,6 +159,12 @@ impl ForgeServices {
 
         for project in projects {
             let genie_path = project.git_repo_path.join(".genie");
+
+            tracing::debug!(
+                "Checking project '{}' at path: {:?}",
+                project.name,
+                project.git_repo_path
+            );
 
             if !genie_path.exists() || !genie_path.is_dir() {
                 tracing::debug!(
@@ -171,6 +181,7 @@ impl ForgeServices {
                 project.git_repo_path.display()
             );
 
+            tracing::debug!("Calling load_profiles_for_workspace...");
             match self.load_profiles_for_workspace(&project.git_repo_path).await {
                 Ok(configs) => {
                     let variant_count: usize = configs.executors.values()
