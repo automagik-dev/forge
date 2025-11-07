@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { KanbanCard } from '@/components/ui/shadcn-io/kanban';
-import { CheckCircle, Loader2, XCircle, Maximize2 } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle, Play } from 'lucide-react';
 import type { TaskWithAttemptStatus } from 'shared/types';
 import { ActionsDropdown } from '@/components/ui/ActionsDropdown';
-import { useNavigate } from 'react-router-dom';
 import { useProject } from '@/contexts/project-context';
-import { paths } from '@/lib/paths';
 import { Button } from '@/components/ui/button';
+import NiceModal from '@ebay/nice-modal-react';
 
 type Task = TaskWithAttemptStatus;
 
@@ -26,20 +25,22 @@ export function TaskCard({
   isOpen,
 }: TaskCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const navigate = useNavigate();
   const { projectId } = useProject();
 
   const handleClick = useCallback(() => {
     onViewDetails(task);
   }, [task, onViewDetails]);
 
-  const handleMaximize = useCallback(
+  const handlePlay = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (!projectId || !task) return;
-      navigate(`${paths.task(projectId, task.id)}/attempts/latest?view=diffs`);
+      if (!task) return;
+      NiceModal.show('create-attempt', {
+        taskId: task.id,
+        latestAttempt: null,
+      });
     },
-    [projectId, task, navigate]
+    [task]
   );
 
   const localRef = useRef<HTMLDivElement>(null);
@@ -88,8 +89,8 @@ export function TaskCard({
           {task.last_attempt_failed && !task.has_merged_attempt && (
             <XCircle className="h-3 w-3 text-destructive" />
           )}
-          {/* Maximize Button (on hover) */}
-          {isHovered && (
+          {/* Play Button (on hover, only when no attempts exist) */}
+          {isHovered && !task.has_in_progress_attempt && !task.has_merged_attempt && !task.last_attempt_failed && (
             <div
               onPointerDown={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
@@ -99,10 +100,10 @@ export function TaskCard({
                 variant="ghost"
                 size="sm"
                 className="h-6 w-6 p-0"
-                onClick={handleMaximize}
-                aria-label="Maximize"
+                onClick={handlePlay}
+                aria-label="Start new attempt"
               >
-                <Maximize2 className="h-4 w-4" />
+                <Play className="h-4 w-4" />
               </Button>
             </div>
           )}

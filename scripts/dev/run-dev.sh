@@ -39,6 +39,19 @@ echo "   Backend:  http://localhost:${BACKEND_PORT}"
 echo "   Frontend: http://localhost:${FRONTEND_PORT}"
 echo ""
 
+# Ensure frontend/dist exists for RustEmbed (required at compile time)
+if [ ! -d "frontend/dist" ]; then
+    echo "🔨 Building frontend for first time (required for Rust compilation)..."
+    echo "   This is needed because the backend embeds frontend/dist at compile time."
+    (
+        cd frontend
+        npm install
+        npm run build
+    )
+    echo "✅ Frontend built successfully"
+    echo ""
+fi
+
 # Start backend in background
 echo "⚙️  Starting backend server..."
 export DISABLE_BROWSER_OPEN=1
