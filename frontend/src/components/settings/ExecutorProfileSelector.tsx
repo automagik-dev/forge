@@ -231,9 +231,8 @@ function ExecutorProfileSelector({
     setVariantHighlightedIndex(null);
   }, [variantSearchTerm]);
 
-  if (!profiles) {
-    return null;
-  }
+  // Show loading state instead of returning null
+  const isLoading = !profiles;
 
   return (
     <div className="flex gap-3 flex-col sm:flex-row">
@@ -245,7 +244,7 @@ function ExecutorProfileSelector({
           </Label>
         )}
         <DropdownMenu
-          open={profileOpen}
+          open={isLoading ? false : profileOpen}
           onOpenChange={(next) => {
             setProfileOpen(next);
             if (!next) {
@@ -259,12 +258,14 @@ function ExecutorProfileSelector({
               variant="outline"
               size="sm"
               className="w-full justify-between text-xs mt-1.5"
-              disabled={disabled}
+              disabled={disabled || isLoading}
             >
               <div className="flex items-center gap-1.5">
                 <Settings2 className="h-3 w-3" />
                 <span className="truncate">
-                  {selectedProfile?.executor || 'Select provider'}
+                  {isLoading
+                    ? 'Loading providers...'
+                    : selectedProfile?.executor || 'Select provider'}
                 </span>
               </div>
               <ArrowDown className="h-3 w-3" />
@@ -353,7 +354,7 @@ function ExecutorProfileSelector({
               Agent
             </Label>
             <DropdownMenu
-              open={variantOpen}
+              open={isLoading ? false : variantOpen}
               onOpenChange={(next) => {
                 setVariantOpen(next);
                 if (!next) {
@@ -367,10 +368,12 @@ function ExecutorProfileSelector({
                   variant="outline"
                   size="sm"
                   className="w-full justify-between text-xs mt-1.5"
-                  disabled={disabled}
+                  disabled={disabled || isLoading}
                 >
                   <span className="truncate">
-                    {selectedProfile.variant || 'DEFAULT'}
+                    {isLoading
+                      ? 'Loading agents...'
+                      : selectedProfile.variant || 'DEFAULT'}
                   </span>
                   <ArrowDown className="h-3 w-3" />
                 </Button>
