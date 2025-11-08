@@ -603,7 +603,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
               {!isEditMode && (
                 <div className="space-y-3 pt-2 border-t">
                   {/* Executor Profile Selector */}
-                  {profiles && selectedExecutorProfile && (
+                  {profiles && (
                     <ExecutorProfileSelector
                       profiles={profiles}
                       selectedProfile={selectedExecutorProfile}
