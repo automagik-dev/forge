@@ -55,6 +55,8 @@ if [ "$IS_WORKTREE" = "false" ] && [ -f ".env" ]; then
     echo "📝 Loaded configuration from .env (main repository mode)"
 else
     if [ "$IS_WORKTREE" = "true" ]; then
+        # Unset DATABASE_URL to force use of isolated dev_assets/db.sqlite
+        unset DATABASE_URL
         echo "🔒 Running in worktree (sandbox mode) - using isolated dev_assets/ database"
     fi
 fi
