@@ -539,106 +539,11 @@ mod tests {
             .await
             .expect("failed to create in-memory pool");
 
-        sqlx::query(
-            r#"CREATE TABLE tasks (
-                id TEXT PRIMARY KEY,
-                project_id TEXT,
-                title TEXT NOT NULL,
-                description TEXT,
-                status TEXT,
-                parent_task_attempt TEXT,
-                created_at TEXT,
-                updated_at TEXT
-            )"#,
-        )
-        .execute(&pool)
-        .await
-        .expect("failed to create tasks table");
-
-        sqlx::query(
-            r#"CREATE TABLE projects (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL
-            )"#,
-        )
-        .execute(&pool)
-        .await
-        .expect("failed to create projects table");
-
-        sqlx::query(
-            r#"CREATE TABLE task_attempts (
-                id TEXT PRIMARY KEY,
-                task_id TEXT NOT NULL,
-                branch TEXT,
-                base_branch TEXT,
-                executor TEXT
-            )"#,
-        )
-        .execute(&pool)
-        .await
-        .expect("failed to create task_attempts table");
-
-        sqlx::query(
-            r#"CREATE TABLE execution_processes (
-                id TEXT PRIMARY KEY,
-                task_attempt_id TEXT NOT NULL,
-                status TEXT NOT NULL,
-                run_reason TEXT NOT NULL,
-                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )"#,
-        )
-        .execute(&pool)
-        .await
-        .expect("failed to create execution_processes table");
-
-        // Apply forge_omni migrations
-        sqlx::query(
-            r#"CREATE TABLE IF NOT EXISTS forge_global_settings (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
-                forge_config TEXT NOT NULL DEFAULT '{}',
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )"#,
-        )
-        .execute(&pool)
-        .await
-        .expect("failed to create forge_global_settings table");
-
-        sqlx::query("INSERT OR IGNORE INTO forge_global_settings (id, forge_config) VALUES (1, '{}')")
-            .execute(&pool)
+        // Use upstream migrations (includes all forge-specific migrations)
+        sqlx::migrate!("../upstream/crates/db/migrations")
+            .run(&pool)
             .await
-            .expect("failed to initialize forge_global_settings");
-
-        sqlx::query(
-            r#"CREATE TABLE IF NOT EXISTS forge_project_settings (
-                project_id TEXT PRIMARY KEY REFERENCES projects(id) ON DELETE CASCADE,
-                custom_executors TEXT,
-                forge_config TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )"#,
-        )
-        .execute(&pool)
-        .await
-        .expect("failed to create forge_project_settings table");
-
-        sqlx::query(
-            r#"CREATE TABLE IF NOT EXISTS forge_omni_notifications (
-                id TEXT PRIMARY KEY,
-                task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
-                notification_type TEXT NOT NULL,
-                recipient TEXT NOT NULL,
-                message TEXT NOT NULL,
-                sent_at DATETIME,
-                status TEXT DEFAULT 'pending',
-                error_message TEXT,
-                metadata TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )"#,
-        )
-        .execute(&pool)
-        .await
-        .expect("failed to create forge_omni_notifications table");
+            .expect("failed to run upstream migrations");
 
         pool
     }
