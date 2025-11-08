@@ -2,11 +2,13 @@
 name: sleepy
 description: Autonomous wish coordinator with Twin Genie validation
 genie:
-  executor: codex
-  model: gpt-5
-  reasoningEffort: medium
-  sandbox: workspace-write
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
   background: true
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # 🧞💤 Sleepy Mode – Autonomous Wish Coordinator
@@ -1113,6 +1115,7 @@ if ! npx -y @namastexlabs/codex@0.43.0-alpha.5 exec resume "$TWIN_SESSION" "stat
   echo "⚠️  Twin session died. Attempting restart..."
 
   # Log incident
+  mkdir -p ".genie/reports"
   cat > ".genie/reports/twin-died-$(date +%Y%m%d%H%M%S).md" <<EOF
 # Twin Session Died
 
@@ -1144,6 +1147,7 @@ fi
 
 ```bash
 if [ "$CONFUSION_DETECTED" = "true" ]; then
+  mkdir -p ".genie/reports"
   cat > ".genie/reports/confusion-$(date +%Y%m%d%H%M%S).md" <<EOF
 # Genie Confusion Incident
 

@@ -16,8 +16,8 @@ QA review of PR #39 focusing on **system architecture and backend integration**.
 
 ### 1. Backend Integration (HIGH PRIORITY)
 **Files**:
-- @forge-overrides/frontend/src/services/subGenieApi.ts
-- @forge-overrides/frontend/src/hooks/useAgentTasks.ts
+- @frontend/src/services/subGenieApi.ts
+- @frontend/src/hooks/useAgentTasks.ts
 - @shared/types.ts
 - @forge-app/migrations/20251020000001_add_agent_task_status.sql
 
@@ -41,9 +41,9 @@ grep -r "executeWorkflow\|getAgentTasks" forge-overrides/frontend/src/
 
 ### 2. Task Filtering Logic (HIGH PRIORITY)
 **Files**:
-- @forge-overrides/frontend/src/hooks/useFilteredTasks.ts
-- @forge-overrides/frontend/src/hooks/useAgentTasks.ts
-- @forge-overrides/frontend/src/utils/taskStatusMapping.ts
+- @frontend/src/hooks/useFilteredTasks.ts
+- @frontend/src/hooks/useAgentTasks.ts
+- @frontend/src/utils/taskStatusMapping.ts
 
 **Validate**:
 - Agent tasks (`status="agent"`) filtered from main Kanban
@@ -52,9 +52,9 @@ grep -r "executeWorkflow\|getAgentTasks" forge-overrides/frontend/src/
 
 ### 3. Component Architecture (MEDIUM PRIORITY)
 **Files**:
-- @forge-overrides/frontend/src/components/genie-widgets/
-- @forge-overrides/frontend/src/context/SubGenieContext.tsx
-- @forge-overrides/frontend/src/config/genie-configs.ts
+- @frontend/src/components/genie-widgets/
+- @frontend/src/context/SubGenieContext.tsx
+- @frontend/src/config/genie-configs.ts
 
 **Validate**:
 - State management pattern sound
