@@ -645,6 +645,21 @@ echo "  ✓ Generated: RESTORATION_GUIDE.md"
 echo ""
 
 # ============================================================================
+# PHASE 6: CLEANUP - Remove upstream docs (we don't support direct usage)
+# ============================================================================
+
+echo "🗑️  PHASE 6: Cleanup..."
+echo "=========================================="
+
+# Remove docs and README since we don't support using upstream directly
+rm -rf upstream/docs
+rm -f upstream/README.md
+
+echo "  ✓ Removed upstream/docs/ (use parent repo docs instead)"
+echo "  ✓ Removed upstream/README.md (use parent repo README instead)"
+echo ""
+
+# ============================================================================
 # FINAL REPORT
 # ============================================================================
 

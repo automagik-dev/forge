@@ -14,7 +14,6 @@ import type {
 import { useRebase } from '@/hooks/useRebase';
 import { useMerge } from '@/hooks/useMerge';
 import { usePush } from '@/hooks/usePush';
-import { useChangeTargetBranch } from '@/hooks/useChangeTargetBranch';
 import NiceModal from '@ebay/nice-modal-react';
 import { Err } from '@/lib/api';
 import type { GitOperationError } from 'shared/types';
@@ -43,8 +42,6 @@ function GitOperations({
   branches,
   isAttemptRunning,
   setError,
-  selectedBranch,
-  layout = 'horizontal',
 }: GitOperationsProps) {
   const { t } = useTranslation('tasks');
 
@@ -52,11 +49,6 @@ function GitOperations({
   const rebaseMutation = useRebase(selectedAttempt.id, projectId);
   const mergeMutation = useMerge(selectedAttempt.id);
   const pushMutation = usePush(selectedAttempt.id);
-  const changeTargetBranchMutation = useChangeTargetBranch(
-    selectedAttempt.id,
-    projectId
-  );
-  const isChangingTargetBranch = changeTargetBranchMutation.isPending;
 
   // Git status calculations
   const hasConflictsCalculated = useMemo(
@@ -72,32 +64,6 @@ function GitOperations({
   const [pushSuccess, setPushSuccess] = useState(false);
 
   // Target branch change handlers
-  const handleChangeTargetBranchClick = async (newBranch: string) => {
-    await changeTargetBranchMutation
-      .mutateAsync(newBranch)
-      .then(() => setError(null))
-      .catch((error) => {
-        setError(error.message || t('git.errors.changeTargetBranch'));
-      });
-  };
-
-  const handleChangeTargetBranchDialogOpen = async () => {
-    try {
-      const result = await showModal<{
-        action: 'confirmed' | 'canceled';
-        branchName: string;
-      }>('change-target-branch-dialog', {
-        branches,
-        isChangingTargetBranch: isChangingTargetBranch,
-      });
-
-      if (result.action === 'confirmed' && result.branchName) {
-        await handleChangeTargetBranchClick(result.branchName);
-      }
-    } catch (error) {
-      // User cancelled - do nothing
-    }
-  };
 
   // Memoize merge status information to avoid repeated calculations
   const mergeInfo = useMemo(() => {

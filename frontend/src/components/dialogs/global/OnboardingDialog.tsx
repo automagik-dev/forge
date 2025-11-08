@@ -25,7 +25,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Sparkles, Code, ChevronDown, HandMetal } from 'lucide-react';
 import { BaseCodingAgent, EditorType } from 'shared/types';
-import type { ExecutorProfileId } from 'shared/types';
+import type { ExecutorProfileId, EditorConfig } from 'shared/types';
 import { useUserSystem } from '@/components/config-provider';
 
 import { toPrettyCase } from '@/utils/string';
@@ -33,7 +33,7 @@ import NiceModal, { useModal } from '@ebay/nice-modal-react';
 
 export type OnboardingResult = {
   profile: ExecutorProfileId;
-  editor: { editor_type: EditorType; custom_command: string | null };
+  editor: EditorConfig;
 };
 
 const OnboardingDialog = NiceModal.create(() => {
@@ -56,6 +56,8 @@ const OnboardingDialog = NiceModal.create(() => {
         editor_type: editorType,
         custom_command:
           editorType === EditorType.CUSTOM ? customCommand || null : null,
+        remote_ssh_host: null,
+        remote_ssh_user: null,
       },
     } as OnboardingResult);
   };
@@ -80,10 +82,10 @@ const OnboardingDialog = NiceModal.create(() => {
         <div className="space-y-2">
           <h2 className="text-xl flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
-            Choose Your Coding Agent
+            Choose Your AI Provider
           </h2>
           <div className="space-y-2">
-            <Label htmlFor="profile">Default Agent</Label>
+            <Label htmlFor="profile">Default Provider</Label>
             <div className="flex gap-2">
               <Select
                 value={profile.executor}
@@ -92,7 +94,7 @@ const OnboardingDialog = NiceModal.create(() => {
                 }
               >
                 <SelectTrigger id="profile" className="flex-1">
-                  <SelectValue placeholder="Select your preferred coding agent" />
+                  <SelectValue placeholder="Select your preferred AI provider" />
                 </SelectTrigger>
                 <SelectContent>
                   {profiles &&

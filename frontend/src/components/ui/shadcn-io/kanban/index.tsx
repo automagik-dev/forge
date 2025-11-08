@@ -53,7 +53,7 @@ export const KanbanBoard = ({ id, children, className }: KanbanBoardProps) => {
   return (
     <div
       className={cn(
-        'flex h-full min-h-40 flex-col',
+        'flex min-h-full flex-col',
         isOver ? 'outline-primary' : 'outline-black',
         className
       )}
@@ -284,7 +284,7 @@ export const KanbanProvider = ({
     >
       <div
         className={cn(
-          'inline-grid grid-flow-col auto-cols-[minmax(200px,400px)] divide-x border-x h-full',
+          'inline-grid grid-flow-col auto-cols-[minmax(200px,400px)] divide-x border-x min-h-full',
           className
         )}
       >

@@ -18,7 +18,7 @@ type WsJsonPatchMsg = { JsonPatch: Operation[] };
 type WsFinishedMsg = { finished: boolean };
 type WsMsg = WsJsonPatchMsg | WsFinishedMsg;
 
-export function useDraftStream(attemptId?: string) {
+export function useDraftStream(attemptId?: string, taskId?: string) {
   const { projectId } = useProject();
   const drafts = useDraftsStreamState(projectId);
 
@@ -27,11 +27,15 @@ export function useDraftStream(attemptId?: string) {
     return drafts[attemptId] ?? null;
   }, [drafts, attemptId]);
 
+  // For agent tasks (Master Genie): if attemptId is actually a taskId and not in drafts,
+  // treat draft as "loaded" (empty state is valid - attempt will be created on first message)
+  const isAgentTaskWithoutAttempt = attemptId === taskId && !attemptDrafts;
+
   return {
     draft: attemptDrafts?.follow_up ?? null,
     retryDraft: attemptDrafts?.retry ?? null,
     isRetryLoaded: !!attemptDrafts,
-    isDraftLoaded: !!attemptDrafts,
+    isDraftLoaded: !!attemptDrafts || isAgentTaskWithoutAttempt,
   } as const;
 }
 

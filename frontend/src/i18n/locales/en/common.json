@@ -135,5 +135,11 @@
       "open": "Open Genie chat",
       "close": "Close"
     }
+  },
+  "footer": {
+    "tagline": "AI that elevates human potential, not replaces it",
+    "crafted": "Crafted with 💙 by",
+    "updateAvailable": "Update available",
+    "connecting": "Connecting..."
   }
 }

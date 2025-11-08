@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigateWithSearch } from '@/hooks';
-import { tasksApi } from '@/lib/api';
+import { tasksApi, attemptsApi } from '@/lib/api';
 import { paths } from '@/lib/paths';
+import { trackTaskCreated, trackTaskCompleted, checkAndTrackFirstSuccess } from '@/lib/track-analytics';
 import type {
   CreateTask,
   CreateAndStartTaskRequest,
@@ -23,7 +24,16 @@ export function useTaskMutations(projectId?: string) {
 
   const createTask = useMutation({
     mutationFn: (data: CreateTask) => tasksApi.create(data),
-    onSuccess: (createdTask: Task) => {
+    onSuccess: (createdTask: Task, variables: CreateTask) => {
+      // Track task creation with analytics
+      // Note: executor info is not in CreateTask, will be tracked from config
+      trackTaskCreated({
+        executor: (createdTask as any).executor_profile?.executor || 'unknown',
+        has_description: !!variables.description,
+        prompt_length: variables.description?.length || 0,
+        is_subtask: !!variables.parent_task_attempt,
+      });
+
       invalidateQueries();
       if (projectId) {
         navigate(`${paths.task(projectId, createdTask.id)}/attempts/latest`);
@@ -37,7 +47,15 @@ export function useTaskMutations(projectId?: string) {
   const createAndStart = useMutation({
     mutationFn: (data: CreateAndStartTaskRequest) =>
       tasksApi.createAndStart(data),
-    onSuccess: (createdTask: TaskWithAttemptStatus) => {
+    onSuccess: (createdTask: TaskWithAttemptStatus, variables: CreateAndStartTaskRequest) => {
+      // Track task creation with analytics
+      trackTaskCreated({
+        executor: (variables.executor_profile_id.executor as any) || 'unknown',
+        has_description: !!variables.task.description,
+        prompt_length: variables.task.description?.length || 0,
+        is_subtask: !!variables.task.parent_task_attempt,
+      });
+
       invalidateQueries();
       if (projectId) {
         navigate(`${paths.task(projectId, createdTask.id)}/attempts/latest`);
@@ -51,7 +69,43 @@ export function useTaskMutations(projectId?: string) {
   const updateTask = useMutation({
     mutationFn: ({ taskId, data }: { taskId: string; data: UpdateTask }) =>
       tasksApi.update(taskId, data),
-    onSuccess: (updatedTask: Task) => {
+    onSuccess: async (updatedTask: Task, variables: { taskId: string; data: UpdateTask }) => {
+      // Track task completion if status changed to 'done'
+      if (variables.data.status === 'done' && updatedTask.status === 'done') {
+        const durationSeconds = updatedTask.created_at
+          ? Math.floor((Date.now() - new Date(updatedTask.created_at).getTime()) / 1000)
+          : 0;
+
+        // Fetch attempts to get executor and attempt count (backend data)
+        try {
+          const attempts = await attemptsApi.getAll(updatedTask.id);
+          const latestAttempt = attempts[0]; // Sorted newest first
+          const executor = (latestAttempt?.executor as any) || 'unknown';
+          const attemptCount = attempts.length;
+
+          trackTaskCompleted({
+            executor,
+            duration_seconds: durationSeconds,
+            attempt_count: attemptCount,
+            success: true,
+            had_dev_server: !!updatedTask.dev_server_id, // Now using real backend field!
+          });
+
+          // Check if this is first success and track it
+          checkAndTrackFirstSuccess(updatedTask.id, executor, attemptCount);
+        } catch (err) {
+          console.warn('Failed to fetch attempts for telemetry:', err);
+          // Fallback to basic tracking without attempt data
+          trackTaskCompleted({
+            executor: 'unknown',
+            duration_seconds: durationSeconds,
+            attempt_count: 1,
+            success: true,
+            had_dev_server: !!updatedTask.dev_server_id,
+          });
+        }
+      }
+
       invalidateQueries(updatedTask.id);
     },
     onError: (err) => {

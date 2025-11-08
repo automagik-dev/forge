@@ -75,17 +75,47 @@ fn find_process_using_port(port: u16) -> Option<String> {
 fn resolve_bind_address() -> SocketAddr {
     let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
 
-    let port = std::env::var("BACKEND_PORT")
-        .or_else(|_| std::env::var("PORT"))
-        .ok()
-        .and_then(|raw| raw.trim().parse::<u16>().ok())
-        .unwrap_or(8887);
+    // Check for --port CLI flag first
+    let cli_port = parse_port_flag();
+
+    let port = cli_port.unwrap_or_else(|| {
+        std::env::var("BACKEND_PORT")
+            .or_else(|_| std::env::var("PORT"))
+            .ok()
+            .and_then(|raw| raw.trim().parse::<u16>().ok())
+            .unwrap_or(8887)
+    });
 
     let ip = host
         .parse::<IpAddr>()
         .unwrap_or_else(|_| IpAddr::from([127, 0, 0, 1]));
 
     SocketAddr::from((ip, port))
+}
+
+/// Parse --port or -p flag from CLI arguments
+fn parse_port_flag() -> Option<u16> {
+    let args: Vec<String> = env::args().collect();
+
+    for i in 0..args.len() {
+        let arg = &args[i];
+
+        // Handle --port=8888 or -p=8888
+        if let Some(port_str) = arg.strip_prefix("--port=").or_else(|| arg.strip_prefix("-p=")) {
+            if let Ok(port) = port_str.parse::<u16>() {
+                return Some(port);
+            }
+        }
+
+        // Handle --port 8888 or -p 8888
+        if (arg == "--port" || arg == "-p") && i + 1 < args.len() {
+            if let Ok(port) = args[i + 1].parse::<u16>() {
+                return Some(port);
+            }
+        }
+    }
+
+    None
 }
 
 /// Parse CLI flags from arguments
@@ -106,6 +136,9 @@ async fn main() -> anyhow::Result<()> {
     // Initialize upstream deployment and forge services
     tracing::info!("Initializing forge services using upstream deployment");
     let services = services::ForgeServices::new().await?;
+
+    // Load .genie profiles for all existing projects on startup
+    services.load_genie_profiles_for_all_projects().await?;
 
     // Create router with services and auth flag
     let app = router::create_router(services, auth_required);

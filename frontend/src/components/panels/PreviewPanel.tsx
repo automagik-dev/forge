@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDevserverPreview } from '@/hooks/useDevserverPreview';
 import { useDevServer } from '@/hooks/useDevServer';
 import { useLogStream } from '@/hooks/useLogStream';
 import { useDevserverUrlFromLogs } from '@/hooks/useDevserverUrl';
+import { useDevserverBuildState } from '@/hooks/useDevserverBuildState';
 import { ClickToComponentListener } from '@/utils/previewBridge';
 import { useClickedElements } from '@/contexts/ClickedElementsProvider';
 import { Alert } from '@/components/ui/alert';
@@ -19,8 +20,6 @@ import { ReadyContent } from '@/components/tasks/TaskDetails/preview/ReadyConten
 export function PreviewPanel() {
   const [iframeError, setIframeError] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const [loadingTimeFinished, setLoadingTimeFinished] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showLogs, setShowLogs] = useState(false);
   const listenerRef = useRef<ClickToComponentListener | null>(null);
@@ -44,6 +43,7 @@ export function PreviewPanel() {
 
   const logStream = useLogStream(latestDevServerProcess?.id ?? '');
   const lastKnownUrl = useDevserverUrlFromLogs(logStream.logs);
+  const buildState = useDevserverBuildState(logStream.logs, Boolean(lastKnownUrl));
 
   const previewState = useDevserverPreview(attemptId, {
     projectHasDevScript,
@@ -79,7 +79,6 @@ export function PreviewPanel() {
       onReady: () => {
         setIsReady(true);
         setShowLogs(false);
-        setShowHelp(false);
       },
     });
 
@@ -92,34 +91,15 @@ export function PreviewPanel() {
     };
   }, [previewState.status, previewState.url, addElement]);
 
-  function startTimer() {
-    setLoadingTimeFinished(false);
-    setTimeout(() => {
-      setLoadingTimeFinished(true);
-    }, 5000);
-  }
-
+  // Auto-show logs when dev server is running but not ready
   useEffect(() => {
-    startTimer();
-  }, []);
-
-  useEffect(() => {
-    if (
-      loadingTimeFinished &&
-      !isReady &&
-      latestDevServerProcess &&
-      runningDevServer
-    ) {
-      setShowHelp(true);
-      setShowLogs(true);
-      setLoadingTimeFinished(false);
+    if (runningDevServer && !isReady && latestDevServerProcess) {
+      // Only show logs if actively building or in error state
+      if (buildState === 'building' || buildState === 'error' || buildState === 'idle') {
+        setShowLogs(true);
+      }
     }
-  }, [
-    loadingTimeFinished,
-    isReady,
-    latestDevServerProcess?.id,
-    runningDevServer,
-  ]);
+  }, [buildState, isReady, latestDevServerProcess, runningDevServer]);
 
   const isPreviewReady =
     previewState.status === 'ready' &&
@@ -137,19 +117,12 @@ export function PreviewPanel() {
   };
 
   const handleStartDevServer = () => {
-    setLoadingTimeFinished(false);
     startDevServer();
-    startTimer();
-    setShowHelp(false);
     setIsReady(false);
   };
 
   const handleStopAndEdit = () => {
-    stopDevServer(undefined, {
-      onSuccess: () => {
-        setShowHelp(false);
-      },
-    });
+    stopDevServer();
   };
 
   if (!attemptId) {
@@ -193,49 +166,60 @@ export function PreviewPanel() {
           />
         )}
 
-        {showHelp && (
+        {/* Building state - show friendly info message */}
+        {buildState === 'building' && runningDevServer && !isReady && (
+          <Alert className="space-y-2 border-blue-500 bg-blue-50 dark:bg-blue-950 dark:border-blue-800">
+            <div className="flex items-start gap-2">
+              <Loader2 className="h-4 w-4 animate-spin mt-0.5 text-blue-600 dark:text-blue-400" />
+              <div className="flex-1 space-y-1">
+                <p className="font-bold text-blue-900 dark:text-blue-100">
+                  {t('preview.buildingAlert.title')}
+                </p>
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  {t('preview.buildingAlert.description')}
+                </p>
+              </div>
+            </div>
+          </Alert>
+        )}
+
+        {/* Idle/Error state - show troubleshooting message */}
+        {(buildState === 'idle' || buildState === 'error') && runningDevServer && !isReady && (
           <Alert variant="destructive" className="space-y-2">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 space-y-2">
                 <p className="font-bold">{t('preview.troubleAlert.title')}</p>
-                <ol className="list-decimal list-inside space-y-2">
+                <p className="text-sm">{t('preview.troubleAlert.description')}</p>
+                <ol className="list-decimal list-inside space-y-2 text-sm">
                   <li>{t('preview.troubleAlert.item1')}</li>
                   <li>
                     {t('preview.troubleAlert.item2')}{' '}
-                    <code>http://localhost:3000</code>
+                    <code className="text-xs">http://localhost:3000</code>{' '}
                     {t('preview.troubleAlert.item2Suffix')}
                   </li>
                   <li>
                     {t('preview.troubleAlert.item3')}{' '}
                     <a
-                      href="https://github.com/namastexlabs/vibe-kanban-web-companion"
+                      href="https://github.com/namastexlabs/forge-inspector"
                       target="_blank"
                       className="underline font-bold"
                     >
                       {t('preview.troubleAlert.item3Link')}
                     </a>
-                    .
                   </li>
                 </ol>
                 <Button
                   variant="destructive"
                   onClick={handleStopAndEdit}
                   disabled={isStoppingDevServer}
+                  size="sm"
                 >
                   {isStoppingDevServer && (
-                    <Loader2 className="mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   {t('preview.noServer.stopAndEditButton')}
                 </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowHelp(false)}
-                className="h-6 w-6 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
             </div>
           </Alert>
         )}

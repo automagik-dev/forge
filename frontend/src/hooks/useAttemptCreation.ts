@@ -24,6 +24,7 @@ export function useAttemptCreation({
         task_id: taskId,
         executor_profile_id: profile,
         base_branch: baseBranch,
+        use_worktree: true,
       }),
     onSuccess: (newAttempt: TaskAttempt) => {
       queryClient.setQueryData(

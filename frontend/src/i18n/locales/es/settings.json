@@ -41,9 +41,9 @@
         "title": "Ejecución de Tareas",
         "description": "Configura cómo se ejecutan y procesan las tareas.",
         "executor": {
-          "label": "Configuración predeterminada del Agente",
-          "placeholder": "Seleccionar perfil",
-          "helper": "Define la configuración predeterminada del agente que se usará al iniciar una tarea."
+          "label": "Proveedor y Agente predeterminados",
+          "placeholder": "Seleccionar proveedor",
+          "helper": "Define el proveedor y agente predeterminados que se usarán al iniciar una tarea."
         },
         "variant": "PREDETERMINADO",
         "defaultLabel": "Predeterminado"
@@ -181,25 +181,25 @@
       }
     },
     "agents": {
-      "title": "Configuraciones de Agentes de Código",
-      "description": "Personaliza el comportamiento de los agentes con diferentes configuraciones.",
-      "loading": "Cargando configuraciones de agentes...",
+      "title": "Configuraciones de Proveedores",
+      "description": "Personaliza el comportamiento de proveedores con diferentes configuraciones de agentes.",
+      "loading": "Cargando configuraciones de proveedores...",
       "save": {
-        "button": "Guardar Configuraciones de Agentes",
-        "success": "✓ ¡Configuración guardada con éxito”!"
+        "button": "Guardar Configuraciones de Proveedores",
+        "success": "✓ ¡Configuración guardada con éxito!"
       },
       "editor": {
         "formLabel": "Editar JSON",
-        "agentLabel": "Agente",
-        "agentPlaceholder": "Seleccionar tipo",
-        "configLabel": "Configuración",
-        "configPlaceholder": "Seleccionar configuración",
+        "agentLabel": "Proveedor",
+        "agentPlaceholder": "Seleccionar tipo de proveedor",
+        "configLabel": "Agente",
+        "configPlaceholder": "Seleccionar agente",
         "createNew": "Crear nuevo...",
         "deleteTitle": "No se puede eliminar la última configuración",
         "deleteButton": "Eliminar {{name}}",
         "deleteText": "Eliminar",
-        "jsonLabel": "Configuración de Agente (JSON)",
-        "jsonPlaceholder": "Cargando perfiles...",
+        "jsonLabel": "Configuración de Proveedor (JSON)",
+        "jsonPlaceholder": "Cargando configuraciones...",
         "jsonLoading": "Cargando...",
         "pathLabel": "Ubicación del archivo de configuración:"
       },

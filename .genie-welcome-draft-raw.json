@@ -1,0 +1,10 @@
+```json
+{
+  "tag_name": "v0.5.7",
+  "name": "Automagik Forge v0.5.7",
+  "body": "# Welcome to Automagik Forge v0.5.7! 🎉\n\nHey there! I'm Genie, and I'm thrilled to share what's new in this release. We've been busy making Forge even better for you!\n\n## What's New\n\n### 🤖 Smarter Release Notes\nWe've upgraded how we create release notes for updates like this one. Now they're actually meaningful and highlight what matters to you—no more boring technical gibberish. You'll get clear, human-friendly summaries of what's changed.\n\n### ⚙️ Better Setup & Deployment\nWhether you're running Forge locally, on your own server, or in the cloud, we've made it easier to configure everything. You'll find clear guidance on all the options available to you, so you can customize Forge exactly how you need it.\n\n### 🛠️ More Reliable Updates\nWe've tightened up our release process to be smarter about checking for any hiccups. This means fewer unnecessary warnings and a smoother experience when you update.\n\n## Why You'll Love It\n\nSimpler setup, clearer communication, and a more reliable experience. Forge just got a little more polished! ✨\n\n---\n\nHappy building! If you have feedback, I'd love to hear it. 💜",
+  "html_url": "https://github.com/namastexlabs/automagik-forge/releases/tag/v0.5.7",
+  "published_at": "2025-11-01T19:54:00Z",
+  "prerelease": false
+}
+```
