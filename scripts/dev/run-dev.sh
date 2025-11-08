@@ -34,9 +34,23 @@ fi
 export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend)
 export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend)
 
-echo "📍 Ports:"
+# Load .env to check DATABASE_URL
+if [ -f ".env" ]; then
+    set -a
+    source .env
+    set +a
+fi
+
+echo "📍 Configuration:"
 echo "   Backend:  http://localhost:${BACKEND_PORT}"
 echo "   Frontend: http://localhost:${FRONTEND_PORT}"
+if [ -n "$DATABASE_URL" ]; then
+    # Extract the path from sqlite:// URL
+    DB_PATH="${DATABASE_URL#sqlite://}"
+    echo "   Database: ${DB_PATH}"
+else
+    echo "   Database: dev_assets/db.sqlite (default)"
+fi
 echo ""
 
 # Check for pnpm
