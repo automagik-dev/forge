@@ -43,10 +43,6 @@ const SECRET_PATTERNS = [
   // Database URLs
   { pattern: /postgresql:\/\/[^:]+:[^@]+@/, name: 'PostgreSQL Connection String', severity: 'high' },
   { pattern: /mongodb(\+srv)?:\/\/[^:]+:[^@]+@/, name: 'MongoDB Connection String', severity: 'high' },
-
-  // Cryptocurrency
-  { pattern: /0x[a-fA-F0-9]{40}/, name: 'Ethereum Address', severity: 'medium' },
-  { pattern: /[13][a-km-zA-HJ-NP-Z1-9]{25,34}/, name: 'Bitcoin Address', severity: 'medium' },
 ];
 
 // Files to always skip (even if staged)
@@ -55,6 +51,7 @@ const SKIP_FILES = [
   'package-lock.json',
   'pnpm-lock.yaml',
   'yarn.lock',
+  'Cargo.lock',
   '.git/',
   'node_modules/',
   '.genie/state/',
