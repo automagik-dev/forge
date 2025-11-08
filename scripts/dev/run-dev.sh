@@ -51,6 +51,13 @@ if [ -n "$DATABASE_URL" ]; then
 else
     echo "   Database: dev_assets/db.sqlite (default)"
 fi
+
+# Show SQLx mode
+if [ "$SQLX_OFFLINE" = "true" ]; then
+    echo "   SQLx:     offline (using .sqlx/ cache for compile-time verification)"
+else
+    echo "   SQLx:     online (will connect to database during compilation)"
+fi
 echo ""
 
 # Check for pnpm
