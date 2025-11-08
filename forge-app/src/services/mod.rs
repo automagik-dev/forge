@@ -549,8 +549,10 @@ mod tests {
     }
 
     async fn insert_project(pool: &SqlitePool, project_id: Uuid) {
-        sqlx::query("INSERT INTO projects (id, name) VALUES (?, 'Forge Project')")
+        let unique_path = format!("/tmp/test-project-{}", project_id);
+        sqlx::query("INSERT INTO projects (id, name, git_repo_path) VALUES (?, 'Forge Project', ?)")
             .bind(project_id)
+            .bind(unique_path)
             .execute(pool)
             .await
             .expect("failed to insert project row");
@@ -571,7 +573,7 @@ mod tests {
         .expect("failed to insert task row");
 
         sqlx::query(
-            "INSERT INTO task_attempts (id, task_id, branch, base_branch, executor)
+            "INSERT INTO task_attempts (id, task_id, branch, target_branch, executor)
              VALUES (?, ?, 'feature/test', 'main', 'forge-agent')",
         )
         .bind(attempt_id)
