@@ -1,0 +1,1357 @@
+{
+  ".genie/agents/README.md": {
+    "hash": "IyBHRU5JRSBBZ2VudHMgRG9jdW1lbnRh",
+    "tokens": 2355,
+    "lines": 547,
+    "bytes": 17294,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/specialists/bug-reporter.md": {
+    "hash": "LS0tCm5hbWU6IGJ1Zy1yZXBvcnRlcgpk",
+    "tokens": 629,
+    "lines": 101,
+    "bytes": 4923,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/specialists/git-workflow.md": {
+    "hash": "LS0tCm5hbWU6IGdpdC13b3JrZmxvdwpk",
+    "tokens": 489,
+    "lines": 132,
+    "bytes": 3473,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/specialists/implementor.md": {
+    "hash": "LS0tCm5hbWU6IGltcGxlbWVudG9yCmRl",
+    "tokens": 1359,
+    "lines": 264,
+    "bytes": 10347,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/specialists/issue-creator.md": {
+    "hash": "LS0tCm5hbWU6IGlzc3VlLWNyZWF0b3IK",
+    "tokens": 1252,
+    "lines": 374,
+    "bytes": 8890,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/specialists/learn.md": {
+    "hash": "LS0tCm5hbWU6IGxlYXJuCmRlc2NyaXB0",
+    "tokens": 1801,
+    "lines": 562,
+    "bytes": 13954,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/specialists/polish.md": {
+    "hash": "LS0tCm5hbWU6IHBvbGlzaApkZXNjcmlw",
+    "tokens": 774,
+    "lines": 177,
+    "bytes": 5950,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/specialists/project-manager.md": {
+    "hash": "LS0tCm5hbWU6IHByb2plY3QtbWFuYWdl",
+    "tokens": 363,
+    "lines": 82,
+    "bytes": 2702,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/specialists/qa.md": {
+    "hash": "LS0tCm5hbWU6IHFhCmRlc2NyaXB0aW9u",
+    "tokens": 651,
+    "lines": 143,
+    "bytes": 4791,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/specialists/self-learn.md": {
+    "hash": "LS0tCm5hbWU6IHNlbGYtbGVhcm4KZGVz",
+    "tokens": 754,
+    "lines": 149,
+    "bytes": 5908,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/specialists/sleepy.md": {
+    "hash": "LS0tCm5hbWU6IHNsZWVweQpkZXNjcmlw",
+    "tokens": 4230,
+    "lines": 1277,
+    "bytes": 33835,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/specialists/tests.md": {
+    "hash": "LS0tCm5hbWU6IHRlc3RzCmRlc2NyaXB0",
+    "tokens": 896,
+    "lines": 211,
+    "bytes": 6843,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/analyze.md": {
+    "hash": "LS0tCm5hbWU6IGFuYWx5emUKZGVzY3Jp",
+    "tokens": 1254,
+    "lines": 155,
+    "bytes": 9585,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/challenge.md": {
+    "hash": "LS0tCm5hbWU6IGNoYWxsZW5nZQpkZXNj",
+    "tokens": 319,
+    "lines": 58,
+    "bytes": 2432,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/codereview.md": {
+    "hash": "LS0tCm5hbWU6IGNvZGVyZXZpZXcKZGVz",
+    "tokens": 868,
+    "lines": 114,
+    "bytes": 6577,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/commit.md": {
+    "hash": "LS0tCm5hbWU6IGNvbW1pdApkZXNjcmlw",
+    "tokens": 675,
+    "lines": 142,
+    "bytes": 4838,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/consensus.md": {
+    "hash": "LS0tCm5hbWU6IGNvbnNlbnN1cwpkZXNj",
+    "tokens": 1574,
+    "lines": 186,
+    "bytes": 11317,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/debug.md": {
+    "hash": "LS0tCm5hbWU6IGRlYnVnCmRlc2NyaXB0",
+    "tokens": 700,
+    "lines": 87,
+    "bytes": 5308,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/docgen.md": {
+    "hash": "LS0tCm5hbWU6IGRvY2dlbgpkZXNjcmlw",
+    "tokens": 92,
+    "lines": 29,
+    "bytes": 704,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/identity-check.md": {
+    "hash": "LS0tCm5hbWU6IGlkZW50aXR5LWNoZWNr",
+    "tokens": 51,
+    "lines": 16,
+    "bytes": 390,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/install.md": {
+    "hash": "LS0tCm5hbWU6IGluc3RhbGwKZGVzY3Jp",
+    "tokens": 1677,
+    "lines": 342,
+    "bytes": 13123,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/prompt.md": {
+    "hash": "LS0tCm5hbWU6IHByb21wdApkZXNjcmlw",
+    "tokens": 8141,
+    "lines": 729,
+    "bytes": 53792,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/refactor.md": {
+    "hash": "LS0tCm5hbWU6IHJlZmFjdG9yCmRlc2Ny",
+    "tokens": 749,
+    "lines": 82,
+    "bytes": 5910,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/release-notes.md": {
+    "hash": "LS0tCm5hbWU6IHJlbGVhc2Utbm90ZXMK",
+    "tokens": 796,
+    "lines": 149,
+    "bytes": 5681,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/secaudit.md": {
+    "hash": "LS0tCm5hbWU6IHNlY2F1ZGl0CmRlc2Ny",
+    "tokens": 122,
+    "lines": 34,
+    "bytes": 916,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/testgen.md": {
+    "hash": "LS0tCm5hbWU6IHRlc3RnZW4KZGVzY3Jp",
+    "tokens": 168,
+    "lines": 41,
+    "bytes": 1281,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/thinkdeep.md": {
+    "hash": "LS0tCm5hbWU6IHRoaW5rZGVlcApkZXNj",
+    "tokens": 254,
+    "lines": 46,
+    "bytes": 1901,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/tracer.md": {
+    "hash": "LS0tCm5hbWU6IHRyYWNlcgpkZXNjcmlw",
+    "tokens": 89,
+    "lines": 28,
+    "bytes": 715,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/twin.md": {
+    "hash": "LS0tCm5hbWU6IHR3aW4KZGVzY3JpcHRp",
+    "tokens": 1280,
+    "lines": 231,
+    "bytes": 10669,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/upstream-update-enhanced.md": {
+    "hash": "IyBVcHN0cmVhbSBVcGRhdGUgQWdlbnQg",
+    "tokens": 2356,
+    "lines": 637,
+    "bytes": 18975,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/agents/utilities/upstream-update.md": {
+    "hash": "LS0tCm5hbWU6IHVwc3RyZWFtLXVwZGF0",
+    "tokens": 5869,
+    "lines": 1540,
+    "bytes": 46292,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/architecture/frontend-backend-split.md": {
+    "hash": "IyBBcmNoaXRlY3R1cmUgRGVjaXNpb246",
+    "tokens": 1110,
+    "lines": 294,
+    "bytes": 8281,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/analyze.md": {
+    "hash": "IyBhbmFseXplIC0gUHJvamVjdCBDdXN0",
+    "tokens": 85,
+    "lines": 35,
+    "bytes": 578,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/audit.md": {
+    "hash": "IyBhdWRpdCAtIFByb2plY3QgQ3VzdG9t",
+    "tokens": 85,
+    "lines": 35,
+    "bytes": 570,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/challenge.md": {
+    "hash": "IyBjaGFsbGVuZ2UgLSBQcm9qZWN0IEN1",
+    "tokens": 85,
+    "lines": 35,
+    "bytes": 586,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/commit.md": {
+    "hash": "IyBDb21taXQg4oCiIFByb2plY3QgRGVm",
+    "tokens": 121,
+    "lines": 16,
+    "bytes": 884,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/consensus.md": {
+    "hash": "IyBjb25zZW5zdXMgLSBQcm9qZWN0IEN1",
+    "tokens": 85,
+    "lines": 35,
+    "bytes": 586,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/debug.md": {
+    "hash": "IyBCdWcgUmVwb3J0ZXIg4oCiIFByb2pl",
+    "tokens": 115,
+    "lines": 19,
+    "bytes": 1020,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/docgen.md": {
+    "hash": "IyBkb2NnZW4gLSBQcm9qZWN0IEN1c3Rv",
+    "tokens": 85,
+    "lines": 35,
+    "bytes": 574,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/explore.md": {
+    "hash": "IyBleHBsb3JlIC0gUHJvamVjdCBDdXN0",
+    "tokens": 85,
+    "lines": 35,
+    "bytes": 578,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/forge.md": {
+    "hash": "IyBmb3JnZSAtIFByb2plY3QgQ3VzdG9t",
+    "tokens": 85,
+    "lines": 35,
+    "bytes": 570,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/git-workflow.md": {
+    "hash": "IyBHaXQgV29ya2Zsb3cg4oCiIFByb2pl",
+    "tokens": 190,
+    "lines": 23,
+    "bytes": 1323,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/github-workflow.md": {
+    "hash": "IyBnaXRodWItd29ya2Zsb3cgLSBQcm9q",
+    "tokens": 85,
+    "lines": 35,
+    "bytes": 610,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/implementor.md": {
+    "hash": "IyBJbXBsZW1lbnRvciDigKIgUHJvamVj",
+    "tokens": 219,
+    "lines": 23,
+    "bytes": 1644,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/learn.md": {
+    "hash": "LS0tCm5hbWU6IGxlYXJuCmRlc2NyaXB0",
+    "tokens": 126,
+    "lines": 14,
+    "bytes": 930,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/orchestrator.md": {
+    "hash": "IyBPcmNoZXN0cmF0b3Ig4oCiIFByb2pl",
+    "tokens": 135,
+    "lines": 17,
+    "bytes": 1002,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/plan.md": {
+    "hash": "IyBQbGFubmluZyDigKIgUHJvamVjdCBE",
+    "tokens": 145,
+    "lines": 22,
+    "bytes": 1089,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/polish.md": {
+    "hash": "IyBwb2xpc2ggLSBQcm9qZWN0IEN1c3Rv",
+    "tokens": 85,
+    "lines": 35,
+    "bytes": 574,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/qa.md": {
+    "hash": "IyBRQSDigKIgUHJvamVjdCBEZWZhdWx0",
+    "tokens": 141,
+    "lines": 19,
+    "bytes": 1225,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/refactor.md": {
+    "hash": "IyByZWZhY3RvciAtIFByb2plY3QgQ3Vz",
+    "tokens": 85,
+    "lines": 35,
+    "bytes": 582,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/review.md": {
+    "hash": "IyByZXZpZXcgLSBQcm9qZWN0IEN1c3Rv",
+    "tokens": 85,
+    "lines": 35,
+    "bytes": 574,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/tests.md": {
+    "hash": "IyBUZXN0cyDigKIgUHJvamVjdCBEZWZh",
+    "tokens": 179,
+    "lines": 21,
+    "bytes": 1391,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/tracer.md": {
+    "hash": "IyB0cmFjZXIgLSBQcm9qZWN0IEN1c3Rv",
+    "tokens": 85,
+    "lines": 35,
+    "bytes": 574,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/custom/wish.md": {
+    "hash": "IyB3aXNoIC0gUHJvamVjdCBDdXN0b21p",
+    "tokens": 85,
+    "lines": 35,
+    "bytes": 566,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/guides/getting-started.md": {
+    "hash": "IyBHZXR0aW5nIFN0YXJ0ZWQgd2l0aCB0",
+    "tokens": 337,
+    "lines": 77,
+    "bytes": 2458,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/product/environment.md": {
+    "hash": "IyBBdXRvbWFnaWsgRm9yZ2UgRW52aXJv",
+    "tokens": 574,
+    "lines": 153,
+    "bytes": 4412,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/product/mission-lite.md": {
+    "hash": "IyBQcm9kdWN0IE1pc3Npb24gKExpdGUp",
+    "tokens": 91,
+    "lines": 8,
+    "bytes": 630,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/product/mission.md": {
+    "hash": "IyBBdXRvbWFnaWsgRm9yZ2UgTWlzc2lv",
+    "tokens": 778,
+    "lines": 91,
+    "bytes": 5462,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/product/planning-notes/README.md": {
+    "hash": "IyBQbGFubmluZyBOb3RlcwoKVGhpcyBk",
+    "tokens": 79,
+    "lines": 34,
+    "bytes": 852,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/product/roadmap.md": {
+    "hash": "IyBBdXRvbWFnaWsgRm9yZ2UgUHJvZHVj",
+    "tokens": 1274,
+    "lines": 185,
+    "bytes": 8575,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/product/tech-stack.md": {
+    "hash": "IyBBdXRvbWFnaWsgRm9yZ2UgVGVjaG5p",
+    "tokens": 1020,
+    "lines": 220,
+    "bytes": 8055,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/README.md": {
+    "hash": "IyDwn6eeIEdFTklFIEZyYW1ld29yayBm",
+    "tokens": 991,
+    "lines": 231,
+    "bytes": 7764,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/scripts/hooks/README.md": {
+    "hash": "IyBHZW5pZSBHaXQgSG9va3MgU3lzdGVt",
+    "tokens": 372,
+    "lines": 94,
+    "bytes": 2873,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/standards/best-practices.md": {
+    "hash": "IyBEZXZlbG9wbWVudCBCZXN0IFByYWN0",
+    "tokens": 231,
+    "lines": 58,
+    "bytes": 1780,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/standards/code-style.md": {
+    "hash": "IyBDb2RlIFN0eWxlIEd1aWRlCgojIyBD",
+    "tokens": 346,
+    "lines": 78,
+    "bytes": 3067,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/standards/code-style/css-style.md": {
+    "hash": "IyBDU1MgU3R5bGUgR3VpZGUKCldlIGFs",
+    "tokens": 169,
+    "lines": 26,
+    "bytes": 1228,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/standards/code-style/html-style.md": {
+    "hash": "IyBIVE1MIFN0eWxlIEd1aWRlCgojIyBT",
+    "tokens": 105,
+    "lines": 36,
+    "bytes": 870,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/standards/code-style/javascript-style.md": {
+    "hash": "IyBKYXZhc2NyaXB0IFN0eWxlIEd1aWRl",
+    "tokens": 4,
+    "lines": 2,
+    "bytes": 25,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/standards/code-style/README.md": {
+    "hash": "IyBMYW5ndWFnZS1TcGVjaWZpYyBDb2Rl",
+    "tokens": 107,
+    "lines": 37,
+    "bytes": 828,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/standards/naming.md": {
+    "hash": "IyBOYW1pbmcgQ29udmVudGlvbnMKCkNv",
+    "tokens": 247,
+    "lines": 84,
+    "bytes": 2116,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/standards/tech-stack.md": {
+    "hash": "IyBUZWNoIFN0YWNrIFJlZmVyZW5jZQoK",
+    "tokens": 35,
+    "lines": 10,
+    "bytes": 299,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/UPDATE.md": {
+    "hash": "IyDwn6eeIEdlbmllIFVwZGF0ZSBXb3Jr",
+    "tokens": 2396,
+    "lines": 668,
+    "bytes": 18331,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".release-notes-v0.5.3.md": {
+    "hash": "IyBSZWxlYXNlIHYwLjUuMwoKIyMg8J+Q",
+    "tokens": 84,
+    "lines": 19,
+    "bytes": 611,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".release-notes-v0.5.4.md": {
+    "hash": "IyBSZWxlYXNlIHYwLjUuNAoKIyMg8J+U",
+    "tokens": 51,
+    "lines": 13,
+    "bytes": 382,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".release-notes-v0.5.6.md": {
+    "hash": "IyBSZWxlYXNlIHYwLjUuNgoKIyMg8J+Q",
+    "tokens": 41,
+    "lines": 15,
+    "bytes": 318,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".temp-release-notes.md": {
+    "hash": "UGVyZmVjdCEgTm93IEkgaGF2ZSBhbGwg",
+    "tokens": 368,
+    "lines": 43,
+    "bytes": 2800,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "AGENTS.md": {
+    "hash": "IyBHZW5pZSBBZ2VudCBGcmFtZXdvcmsK",
+    "tokens": 2009,
+    "lines": 420,
+    "bytes": 15274,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "CHANGELOG.md": {
+    "hash": "IyBDaGFuZ2Vsb2cKCkFsbCBub3RhYmxl",
+    "tokens": 59,
+    "lines": 14,
+    "bytes": 441,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "CLAUDE.md": {
+    "hash": "QEFHRU5UUy5tZAoxMUBBR0VOVFMubWQK",
+    "tokens": 1,
+    "lines": 2,
+    "bytes": 11,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "CODE-OF-CONDUCT.md": {
+    "hash": "IyBDb250cmlidXRvciBDb3ZlbmFudCAz",
+    "tokens": 1390,
+    "lines": 108,
+    "bytes": 10188,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "CONTRIBUTING.md": {
+    "hash": "IyBDb250cmlidXRpbmcgdG8gQXV0b21h",
+    "tokens": 1330,
+    "lines": 339,
+    "bytes": 9506,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "DEVELOPER.md": {
+    "hash": "IyBEZXZlbG9wZXIgR3VpZGUKCldlbGNv",
+    "tokens": 1449,
+    "lines": 448,
+    "bytes": 11359,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "npx-cli/README.md": {
+    "hash": "IyBBdXRvbWFnaWsgRm9yZ2UKCj4gQSB2",
+    "tokens": 794,
+    "lines": 160,
+    "bytes": 5466,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "README.md": {
+    "hash": "PHAgYWxpZ249ImNlbnRlciI+CiAgPGEg",
+    "tokens": 2927,
+    "lines": 622,
+    "bytes": 22014,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "upstream/AGENTS.md": {
+    "hash": "IyBSZXBvc2l0b3J5IEd1aWRlbGluZXMK",
+    "tokens": 352,
+    "lines": 41,
+    "bytes": 2577,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "upstream/CLAUDE.md": {
+    "hash": "IyBDTEFVREUubWQKClRoaXMgZmlsZSBw",
+    "tokens": 867,
+    "lines": 192,
+    "bytes": 6447,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "upstream/CODE-OF-CONDUCT.md": {
+    "hash": "IyBDb250cmlidXRvciBDb3ZlbmFudCBD",
+    "tokens": 491,
+    "lines": 90,
+    "bytes": 3858,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "upstream/docs/AGENTS.md": {
+    "hash": "IyBNaW50bGlmeSB0ZWNobmljYWwgd3Jp",
+    "tokens": 1392,
+    "lines": 416,
+    "bytes": 11140,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "upstream/docs/README.md": {
+    "hash": "IyBNaW50bGlmeSBTdGFydGVyIEtpdAoK",
+    "tokens": 141,
+    "lines": 35,
+    "bytes": 1097,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "upstream/npx-cli/README.md": {
+    "hash": "IyBBdXRvbWFnaWsgRm9yZ2UKCj4gQSB2",
+    "tokens": 794,
+    "lines": 160,
+    "bytes": 5466,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "upstream/README.md": {
+    "hash": "PHAgYWxpZ249ImNlbnRlciI+CiAgPGEg",
+    "tokens": 708,
+    "lines": 140,
+    "bytes": 5802,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "__meta": {
+    "timestamp": 1762558699814
+  },
+  ".genie/state/token-usage.md": {
+    "hash": "IyBUb2tlbiBVc2FnZQpHZW5lcmF0ZWQ6",
+    "tokens": 154,
+    "lines": 37,
+    "bytes": 1803,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/blocker-implementor-task-c-18-202510072033.md": {
+    "hash": "IyBCbG9ja2VyIFJlcG9ydDogaW1wbGVt",
+    "tokens": 519,
+    "lines": 119,
+    "bytes": 4132,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/blocker-implementor-upstream-overlay-202510030536.md": {
+    "hash": "IyBCbG9ja2VyIFJlcG9ydDogaW1wbGVt",
+    "tokens": 263,
+    "lines": 31,
+    "bytes": 1981,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/commit-advice-github-actions-submodules-202510101530.md": {
+    "hash": "IyBDb21taXQgQWR2aXNvcnkg4oCTIEdp",
+    "tokens": 434,
+    "lines": 81,
+    "bytes": 3294,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/commit-advice-issue-creator-202501111545.md": {
+    "hash": "IyBDb21taXQgQWR2aXNvcnkg4oCTIGlz",
+    "tokens": 372,
+    "lines": 72,
+    "bytes": 2815,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/commit-advice-pr23-fixes-202510080000.md": {
+    "hash": "IyBDb21taXQgQWR2aXNvcnkg4oCTIFBS",
+    "tokens": 1071,
+    "lines": 213,
+    "bytes": 7676,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/commit-advice-upgrade-upstream-0-0-104-202510072331.md": {
+    "hash": "IyBDb21taXQgQWR2aXNvcnkg4oCTIHVw",
+    "tokens": 844,
+    "lines": 192,
+    "bytes": 7066,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-forge-upgrade-upstream-0-0-104-202510071724.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogZm9yZ2UtdXBn",
+    "tokens": 760,
+    "lines": 175,
+    "bytes": 5725,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-d-02-config-202510071855.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 616,
+    "lines": 134,
+    "bytes": 5367,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-d-06-git-se-202510072200.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 521,
+    "lines": 118,
+    "bytes": 3836,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-github-actions-fix-202510121632.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogR2l0SHViIEFj",
+    "tokens": 308,
+    "lines": 85,
+    "bytes": 2416,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-group-a-202510061500.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogR3JvdXAgQSAt",
+    "tokens": 1021,
+    "lines": 256,
+    "bytes": 8305,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-make-build-fix-202510121646.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogRml4IG1ha2Ug",
+    "tokens": 948,
+    "lines": 238,
+    "bytes": 7443,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-make-bump-fix-202510121633.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogRml4IG1ha2Ug",
+    "tokens": 663,
+    "lines": 151,
+    "bytes": 5132,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-make-clean-fix-202510121632.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogTWFrZSBDbGVh",
+    "tokens": 426,
+    "lines": 142,
+    "bytes": 3143,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-make-dev-fix-202510121632.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogRml4IG1ha2Ug",
+    "tokens": 759,
+    "lines": 198,
+    "bytes": 5554,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-make-test-fix-202510121633.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogbWFrZSB0ZXN0",
+    "tokens": 747,
+    "lines": 164,
+    "bytes": 5198,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-make-version-fix-202510121633.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogbWFrZSB2ZXJz",
+    "tokens": 488,
+    "lines": 98,
+    "bytes": 4026,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-mechanical-rebrand-202510101208.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 987,
+    "lines": 198,
+    "bytes": 8354,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-mechanical-rebrand-202510101217.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 1719,
+    "lines": 356,
+    "bytes": 13364,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-mechanical-rebrand-group-a-202510082023.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 821,
+    "lines": 175,
+    "bytes": 7316,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-mechanical-rebrand-group-b-202510082212.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 767,
+    "lines": 163,
+    "bytes": 6138,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-mechanical-rebrand-group-b-202510082234-CORRECTED.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 1095,
+    "lines": 232,
+    "bytes": 8438,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-a-submodule-202510071435.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 587,
+    "lines": 113,
+    "bytes": 4283,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-01-202510071831.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 493,
+    "lines": 121,
+    "bytes": 4065,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-02-202510072023.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 762,
+    "lines": 165,
+    "bytes": 6072,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-03-202510072025.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 344,
+    "lines": 72,
+    "bytes": 2845,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-04-202510071741.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 632,
+    "lines": 143,
+    "bytes": 5329,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-05-202510072026.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 367,
+    "lines": 76,
+    "bytes": 2966,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-06-202510071852.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 557,
+    "lines": 109,
+    "bytes": 4169,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-07-202510071745.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 346,
+    "lines": 81,
+    "bytes": 2950,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-08-202510071855.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 771,
+    "lines": 169,
+    "bytes": 5958,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-10-202510071550.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 409,
+    "lines": 89,
+    "bytes": 3377,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-11-202510071853.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 570,
+    "lines": 156,
+    "bytes": 4578,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-12-202510072241.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 560,
+    "lines": 96,
+    "bytes": 4015,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-13-202510071851.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 475,
+    "lines": 98,
+    "bytes": 3696,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-14-202510071736.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 553,
+    "lines": 122,
+    "bytes": 5222,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-16-202510072035.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 261,
+    "lines": 78,
+    "bytes": 2459,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-18-202510072107.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 908,
+    "lines": 205,
+    "bytes": 7583,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-19-202510071735.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 355,
+    "lines": 87,
+    "bytes": 3045,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-20-202510072034.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 474,
+    "lines": 100,
+    "bytes": 3932,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-22-202510071733.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 1502,
+    "lines": 306,
+    "bytes": 11093,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-23-202510072034.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 982,
+    "lines": 144,
+    "bytes": 7995,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-24-202510072034.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 596,
+    "lines": 120,
+    "bytes": 5068,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-c-25-202510071900.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 600,
+    "lines": 117,
+    "bytes": 4883,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-d-01-202510071940.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogVGFzayBELTAx",
+    "tokens": 304,
+    "lines": 72,
+    "bytes": 2426,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-d-03-202510072158.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 822,
+    "lines": 182,
+    "bytes": 6701,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-task-d-04-202510072157.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 605,
+    "lines": 128,
+    "bytes": 4790,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-implementor-upgrade-upstream-0-0-104-task-b-202510071749.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogaW1wbGVtZW50",
+    "tokens": 968,
+    "lines": 206,
+    "bytes": 7948,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-install-automagik-forge-202510030456.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogR2VuaWUgSW5z",
+    "tokens": 1706,
+    "lines": 326,
+    "bytes": 12729,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-qa-group-b-dev-server-202510061826.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogR3JvdXAgQiAt",
+    "tokens": 805,
+    "lines": 261,
+    "bytes": 6703,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-qa-group-c-final-validation-202510061849.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogR3JvdXAgQyAt",
+    "tokens": 873,
+    "lines": 246,
+    "bytes": 7340,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-qa-task-d-05-202510072157.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogcWEtdGFzay1k",
+    "tokens": 1825,
+    "lines": 475,
+    "bytes": 14209,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-qa-upgrade-upstream-0-0-104-task-e-202510072247.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogcWEtdXBncmFk",
+    "tokens": 1250,
+    "lines": 288,
+    "bytes": 9114,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-qa-upstream-overlay-202510030554.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogcWEtdXBzdHJl",
+    "tokens": 275,
+    "lines": 33,
+    "bytes": 2380,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/done-self-learn-background-monitoring-202510030555.md": {
+    "hash": "IyBEb25lIFJlcG9ydDogc2VsZi1sZWFy",
+    "tokens": 316,
+    "lines": 47,
+    "bytes": 2515,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/learn-issue-creator-202501111530.md": {
+    "hash": "IyDwn6ee8J+TmiBMZWFybmluZyBSZXBv",
+    "tokens": 730,
+    "lines": 162,
+    "bytes": 5882,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/makefile-fixes-context.md": {
+    "hash": "IyBNYWtlZmlsZSBGaXhlcyAtIENvbXBy",
+    "tokens": 1476,
+    "lines": 377,
+    "bytes": 11697,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/mcp-comprehensive-test-202510030502.md": {
+    "hash": "IyBHZW5pZSBNQ1AgQ29tcHJlaGVuc2l2",
+    "tokens": 1317,
+    "lines": 397,
+    "bytes": 10607,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/migration-202510141519.md": {
+    "hash": "IyBHZW5pZSBNaWdyYXRpb24gU3VtbWFy",
+    "tokens": 857,
+    "lines": 203,
+    "bytes": 6281,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/qa-widget-activation-analysis-202501261045.md": {
+    "hash": "IyBRQSBBbmFseXNpczogV2lkZ2V0IEFj",
+    "tokens": 1918,
+    "lines": 569,
+    "bytes": 17569,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/review-makefile-fixes-202510121702.md": {
+    "hash": "IyBSZXZpZXcgUmVwb3J0OiBNYWtlZmls",
+    "tokens": 2239,
+    "lines": 507,
+    "bytes": 16604,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/session-continuation-upstream-109-upgrade.md": {
+    "hash": "IyBTZXNzaW9uIENvbnRpbnVhdGlvbjog",
+    "tokens": 1066,
+    "lines": 300,
+    "bytes": 8600,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/upstream-update-enhancement-summary.md": {
+    "hash": "IyB1dGlsaXRpZXMvdXBzdHJlYW0tdXBk",
+    "tokens": 1158,
+    "lines": 356,
+    "bytes": 9703,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/upstream-upgrade-106-to-109-analysis.md": {
+    "hash": "IyBVcHN0cmVhbSBVcGdyYWRlIEFuYWx5",
+    "tokens": 2188,
+    "lines": 499,
+    "bytes": 15056,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/archive/reports/verification-correct-migration-wish-202510061355.md": {
+    "hash": "IyBWRVJJRklDQVRJT04gUkVQT1JUOiBD",
+    "tokens": 1498,
+    "lines": 300,
+    "bytes": 11338,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/wishes/genie-chat-widgets-wish.md": {
+    "hash": "IyBXaXNoOiBHZW5pZSBDaGF0IFdpZGdl",
+    "tokens": 2190,
+    "lines": 397,
+    "bytes": 15659,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/wishes/genie-chat-widgets/README.md": {
+    "hash": "IyBHZW5pZSBDaGF0IFdpZGdldHMKCkFn",
+    "tokens": 114,
+    "lines": 28,
+    "bytes": 947,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/wishes/genie-chat-widgets/REVIEW_TASKS_READY.md": {
+    "hash": "IyDinIUgUFIgIzM5IFJldmlldyBUYXNr",
+    "tokens": 766,
+    "lines": 242,
+    "bytes": 6740,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/wishes/genie-chat-widgets/review-task-claude.md": {
+    "hash": "IyBSZXZpZXcgVGFzazogUFIgIzM5IChD",
+    "tokens": 198,
+    "lines": 66,
+    "bytes": 1749,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/wishes/genie-chat-widgets/review-task-codex.md": {
+    "hash": "IyBSZXZpZXcgVGFzazogUFIgIzM5IChD",
+    "tokens": 238,
+    "lines": 82,
+    "bytes": 2388,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/wishes/genie-chat-widgets/review-task-opencode.md": {
+    "hash": "IyBSZXZpZXcgVGFzazogUFIgIzM5IChP",
+    "tokens": 258,
+    "lines": 81,
+    "bytes": 2317,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/wishes/genie-chat-widgets/review-tasks-summary.md": {
+    "hash": "IyBQUiAjMzkgUmV2aWV3IFRhc2tzIC0g",
+    "tokens": 278,
+    "lines": 76,
+    "bytes": 2277,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/wishes/genie-widget-phase1-fixes-wish.md": {
+    "hash": "IyBXaXNoOiBHZW5pZSBXaWRnZXQgUGhh",
+    "tokens": 1736,
+    "lines": 287,
+    "bytes": 12440,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/wishes/neural-network-visualization-wish.md": {
+    "hash": "IyBXaXNoOiBOZXVyYWwgTmV0d29yayBW",
+    "tokens": 1563,
+    "lines": 396,
+    "bytes": 12789,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/wishes/task-relationship-viewer-integration-wish.md": {
+    "hash": "IyBXaXNoOiBJbnRlZ3JhdGUgVGFzayBS",
+    "tokens": 1505,
+    "lines": 346,
+    "bytes": 11732,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  ".genie/wishes/unified-mcp-startup/fastmcp-reference.md": {
+    "hash": "IyBGYXN0TUNQCgpBIFR5cGVTY3JpcHQg",
+    "tokens": 6081,
+    "lines": 1847,
+    "bytes": 51744,
+    "method": "approx",
+    "encoding": "approx-words"
+  },
+  "upstream/.genie/reports/telemetry-token-tracking-handoff.md": {
+    "hash": "IyBUb2tlbiBUcmFja2luZyBJbXBsZW1l",
+    "tokens": 676,
+    "lines": 190,
+    "bytes": 5966,
+    "method": "approx",
+    "encoding": "approx-words"
+  }
+}
