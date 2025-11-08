@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2025-11-08T12:20:44.138Z",
+  "generatedAt": "2025-11-08T13:17:51.828Z",
   "encoding": "approx-words",
   "files": [
     {
@@ -248,6 +248,13 @@
       "method": "approx"
     },
     {
+      "path": "DEVELOPER.md",
+      "tokens": 1449,
+      "lines": 448,
+      "bytes": 11359,
+      "method": "approx"
+    },
+    {
       "path": "docs/AGENTS.md",
       "tokens": 1392,
       "lines": 416,
@@ -273,6 +280,13 @@
       "tokens": 1359,
       "lines": 264,
       "bytes": 10347,
+      "method": "approx"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "tokens": 1330,
+      "lines": 339,
+      "bytes": 9506,
       "method": "approx"
     },
     {
@@ -1144,6 +1158,13 @@
       "method": "approx"
     },
     {
+      "path": ".temp-release-notes.md",
+      "tokens": 368,
+      "lines": 43,
+      "bytes": 2800,
+      "method": "approx"
+    },
+    {
       "path": ".genie/archive/reports/done-implementor-task-c-05-202510072026.md",
       "tokens": 367,
       "lines": 76,
@@ -1620,6 +1641,13 @@
       "method": "approx"
     },
     {
+      "path": "CHANGELOG.md",
+      "tokens": 59,
+      "lines": 14,
+      "bytes": 441,
+      "method": "approx"
+    },
+    {
       "path": ".genie/agents/utilities/identity-check.md",
       "tokens": 51,
       "lines": 16,
@@ -1663,7 +1691,7 @@
     }
   ],
   "totals": {
-    "files": 237,
-    "tokens": 197748
+    "files": 241,
+    "tokens": 200954
   }
 }

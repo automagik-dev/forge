@@ -4612,6 +4612,7 @@ dependencies = [
  "deployment",
  "dirs 5.0.1",
  "dotenv",
+ "dotenvy",
  "executors",
  "futures-util",
  "git2",
