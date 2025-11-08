@@ -529,7 +529,7 @@ fn omni_base_url() -> String {
 mod tests {
     use super::*;
     use forge_config::{ForgeConfigService, ForgeProjectSettings, OmniConfig, RecipientType};
-    // use httpmock::prelude::*; // Removed: httpmock dev dependency conflicts with codex ICU requirements
+    use httpmock::prelude::*;
     use serde_json::json;
     use sqlx::SqlitePool;
     use uuid::Uuid;
@@ -591,9 +591,54 @@ mod tests {
         .await
         .expect("failed to create execution_processes table");
 
-        // apply_forge_migrations(&pool)
-        //     .await
-        //     .expect("forge migrations should apply cleanly");
+        // Apply forge_omni migrations
+        sqlx::query(
+            r#"CREATE TABLE IF NOT EXISTS forge_global_settings (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                forge_config TEXT NOT NULL DEFAULT '{}',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )"#,
+        )
+        .execute(&pool)
+        .await
+        .expect("failed to create forge_global_settings table");
+
+        sqlx::query("INSERT OR IGNORE INTO forge_global_settings (id, forge_config) VALUES (1, '{}')")
+            .execute(&pool)
+            .await
+            .expect("failed to initialize forge_global_settings");
+
+        sqlx::query(
+            r#"CREATE TABLE IF NOT EXISTS forge_project_settings (
+                project_id TEXT PRIMARY KEY REFERENCES projects(id) ON DELETE CASCADE,
+                custom_executors TEXT,
+                forge_config TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )"#,
+        )
+        .execute(&pool)
+        .await
+        .expect("failed to create forge_project_settings table");
+
+        sqlx::query(
+            r#"CREATE TABLE IF NOT EXISTS forge_omni_notifications (
+                id TEXT PRIMARY KEY,
+                task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+                notification_type TEXT NOT NULL,
+                recipient TEXT NOT NULL,
+                message TEXT NOT NULL,
+                sent_at DATETIME,
+                status TEXT DEFAULT 'pending',
+                error_message TEXT,
+                metadata TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )"#,
+        )
+        .execute(&pool)
+        .await
+        .expect("failed to create forge_omni_notifications table");
 
         pool
     }
@@ -646,161 +691,155 @@ mod tests {
 
     // Removed: branch-templates extension tests (extension deleted)
 
-    // DISABLED: Test requires forge_global_settings table from migrations
-    // Re-enable when apply_forge_migrations is available
-    // #[tokio::test]
-    // async fn omni_notification_skips_when_disabled() {
-    //     let pool = setup_pool().await;
-    //     let project_id = Uuid::new_v4();
-    //     insert_project(&pool, project_id).await;
-    //     let (_task_id, attempt_id) = insert_task_graph(&pool, project_id).await;
-    //
-    //     let config = ForgeConfigService::new(pool.clone());
-    //
-    //     let result = handle_omni_notification(
-    //         &pool,
-    //         &config,
-    //         &PendingNotification {
-    //             id: "notif-1".into(),
-    //             metadata: Some(pending_metadata(attempt_id, project_id)),
-    //         },
-    //     )
-    //     .await
-    //     .expect("notification with disabled config should not error");
-    //
-    //     match result {
-    //         OmniQueueAction::Skipped { reason } => {
-    //             assert!(reason.contains("disabled"));
-    //         }
-    //         other => panic!("expected skip, got {other:?}"),
-    //     }
-    // }
+    #[tokio::test]
+    async fn omni_notification_skips_when_disabled() {
+        let pool = setup_pool().await;
+        let project_id = Uuid::new_v4();
+        insert_project(&pool, project_id).await;
+        let (_task_id, attempt_id) = insert_task_graph(&pool, project_id).await;
 
-    // DISABLED: Test requires forge_global_settings table from migrations
-    // Re-enable when apply_forge_migrations is available
-    // #[tokio::test]
-    // async fn omni_notification_requires_host_configuration() {
-    //     let pool = setup_pool().await;
-    //     let project_id = Uuid::new_v4();
-    //     insert_project(&pool, ForgeConfigService::GLOBAL_PROJECT_ID).await;
-    //     insert_project(&pool, project_id).await;
-    //     let (_task_id, attempt_id) = insert_task_graph(&pool, project_id).await;
-    //
-    //     let config_service = ForgeConfigService::new(pool.clone());
-    //     let settings = ForgeProjectSettings {
-    //         omni_enabled: true,
-    //         omni_config: Some(OmniConfig {
-    //             enabled: true,
-    //             host: None,
-    //             api_key: None,
-    //             instance: Some("forge-instance".into()),
-    //             recipient: Some("+15550001111".into()),
-    //             recipient_type: Some(RecipientType::PhoneNumber),
-    //         }),
-    //     };
-    //
-    //     config_service
-    //         .set_global_settings(&settings)
-    //         .await
-    //         .expect("should store global settings");
-    //
-    //     let err = handle_omni_notification(
-    //         &pool,
-    //         &config_service,
-    //         &PendingNotification {
-    //             id: "notif-missing-host".into(),
-    //             metadata: Some(pending_metadata(attempt_id, project_id)),
-    //         },
-    //     )
-    //     .await
-    //     .expect_err("missing host should raise error");
-    //
-    //     assert!(err.to_string().contains("Omni host"));
-    // }
+        let config = ForgeConfigService::new(pool.clone());
 
-    // DISABLED: Test requires httpmock which conflicts with codex ICU requirements
-    // Re-enable when httpmock dependency conflict is resolved
-    // #[tokio::test(flavor = "multi_thread")]
-    // async fn process_next_notification_marks_sent() {
-    //     let pool = setup_pool().await;
-    //     let project_id = Uuid::new_v4();
-    //     insert_project(&pool, ForgeConfigService::GLOBAL_PROJECT_ID).await;
-    //     insert_project(&pool, project_id).await;
-    //     let (task_id, attempt_id) = insert_task_graph(&pool, project_id).await;
-    //
-    //     let config_service = ForgeConfigService::new(pool.clone());
-    //     let server = MockServer::start_async().await;
-    //     let mock = server.mock(|when, then| {
-    //         when.method(POST)
-    //             .path("/api/v1/instance/forge-instance/send-text");
-    //         then.status(200)
-    //             .header("Content-Type", "application/json")
-    //             .json_body(json!({
-    //                 "success": true,
-    //                 "message_id": "msg-123",
-    //                 "status": "queued",
-    //                 "error": null
-    //             }));
-    //     });
-    //     let base_url = server.base_url();
-    //
-    //     let settings = ForgeProjectSettings {
-    //         omni_enabled: true,
-    //         omni_config: Some(OmniConfig {
-    //             enabled: true,
-    //             host: Some(base_url.clone()),
-    //             api_key: None,
-    //             instance: Some("forge-instance".into()),
-    //             recipient: Some("+15550001111".into()),
-    //             recipient_type: Some(RecipientType::PhoneNumber),
-    //         }),
-    //     };
-    //     config_service
-    //         .set_global_settings(&settings)
-    //         .await
-    //         .expect("should persist omni settings");
-    //
-    //     sqlx::query(
-    //         "INSERT INTO forge_omni_notifications (id, task_id, notification_type, recipient, message, status, metadata)
-    //          VALUES ('execution-1', ?, 'execution_completed', '', '', 'pending', ?)",
-    //     )
-    //     .bind(task_id)
-    //     .bind(pending_metadata(attempt_id, project_id))
-    //     .execute(&pool)
-    //     .await
-    //     .expect("failed to queue notification");
-    //
-    //     let previous_url = std::env::var("PUBLIC_BASE_URL").ok();
-    //     unsafe {
-    //         std::env::set_var("PUBLIC_BASE_URL", "http://forge.example");
-    //     }
-    //
-    //     let processed = process_next_omni_notification(&pool, &config_service)
-    //         .await
-    //         .expect("processing should succeed");
-    //     assert!(processed);
-    //
-    //     let row: (String, Option<String>, Option<String>) = sqlx::query_as(
-    //         "SELECT status, message, sent_at FROM forge_omni_notifications WHERE id = 'execution-1'",
-    //     )
-    //     .fetch_one(&pool)
-    //     .await
-    //     .expect("queue row remains accessible");
-    //
-    //     assert_eq!(row.0, "sent");
-    //     assert!(row.1.unwrap_or_default().contains("Execution completed"));
-    //     assert!(row.2.is_some());
-    //
-    //     mock.assert_async().await;
-    //
-    //     unsafe {
-    //         if let Some(url) = previous_url {
-    //             std::env::set_var("PUBLIC_BASE_URL", url);
-    //         } else {
-    //             std::env::remove_var("PUBLIC_BASE_URL");
-    //         }
-    //     }
-    // }
+        let result = handle_omni_notification(
+            &pool,
+            &config,
+            &PendingNotification {
+                id: "notif-1".into(),
+                metadata: Some(pending_metadata(attempt_id, project_id)),
+            },
+        )
+        .await
+        .expect("notification with disabled config should not error");
+
+        match result {
+            OmniQueueAction::Skipped { reason } => {
+                assert!(reason.contains("disabled"));
+            }
+            other => panic!("expected skip, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn omni_notification_requires_host_configuration() {
+        let pool = setup_pool().await;
+        let project_id = Uuid::new_v4();
+        insert_project(&pool, ForgeConfigService::GLOBAL_PROJECT_ID).await;
+        insert_project(&pool, project_id).await;
+        let (_task_id, attempt_id) = insert_task_graph(&pool, project_id).await;
+
+        let config_service = ForgeConfigService::new(pool.clone());
+        let settings = ForgeProjectSettings {
+            omni_enabled: true,
+            omni_config: Some(OmniConfig {
+                enabled: true,
+                host: None,
+                api_key: None,
+                instance: Some("forge-instance".into()),
+                recipient: Some("+15550001111".into()),
+                recipient_type: Some(RecipientType::PhoneNumber),
+            }),
+        };
+
+        config_service
+            .set_global_settings(&settings)
+            .await
+            .expect("should store global settings");
+
+        let err = handle_omni_notification(
+            &pool,
+            &config_service,
+            &PendingNotification {
+                id: "notif-missing-host".into(),
+                metadata: Some(pending_metadata(attempt_id, project_id)),
+            },
+        )
+        .await
+        .expect_err("missing host should raise error");
+
+        assert!(err.to_string().contains("Omni host"));
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn process_next_notification_marks_sent() {
+        let pool = setup_pool().await;
+        let project_id = Uuid::new_v4();
+        insert_project(&pool, ForgeConfigService::GLOBAL_PROJECT_ID).await;
+        insert_project(&pool, project_id).await;
+        let (task_id, attempt_id) = insert_task_graph(&pool, project_id).await;
+
+        let config_service = ForgeConfigService::new(pool.clone());
+        let server = MockServer::start_async().await;
+        let mock = server.mock(|when, then| {
+            when.method(POST)
+                .path("/api/v1/instance/forge-instance/send-text");
+            then.status(200)
+                .header("Content-Type", "application/json")
+                .json_body(json!({
+                    "success": true,
+                    "message_id": "msg-123",
+                    "status": "queued",
+                    "error": null
+                }));
+        });
+        let base_url = server.base_url();
+
+        let settings = ForgeProjectSettings {
+            omni_enabled: true,
+            omni_config: Some(OmniConfig {
+                enabled: true,
+                host: Some(base_url.clone()),
+                api_key: None,
+                instance: Some("forge-instance".into()),
+                recipient: Some("+15550001111".into()),
+                recipient_type: Some(RecipientType::PhoneNumber),
+            }),
+        };
+        config_service
+            .set_global_settings(&settings)
+            .await
+            .expect("should persist omni settings");
+
+        sqlx::query(
+            "INSERT INTO forge_omni_notifications (id, task_id, notification_type, recipient, message, status, metadata)
+             VALUES ('execution-1', ?, 'execution_completed', '', '', 'pending', ?)",
+        )
+        .bind(task_id)
+        .bind(pending_metadata(attempt_id, project_id))
+        .execute(&pool)
+        .await
+        .expect("failed to queue notification");
+
+        let previous_url = std::env::var("PUBLIC_BASE_URL").ok();
+        unsafe {
+            std::env::set_var("PUBLIC_BASE_URL", "http://forge.example");
+        }
+
+        let processed = process_next_omni_notification(&pool, &config_service)
+            .await
+            .expect("processing should succeed");
+        assert!(processed);
+
+        let row: (String, Option<String>, Option<String>) = sqlx::query_as(
+            "SELECT status, message, sent_at FROM forge_omni_notifications WHERE id = 'execution-1'",
+        )
+        .fetch_one(&pool)
+        .await
+        .expect("queue row remains accessible");
+
+        assert_eq!(row.0, "sent");
+        assert!(row.1.unwrap_or_default().contains("Execution completed"));
+        assert!(row.2.is_some());
+
+        mock.assert_async().await;
+
+        unsafe {
+            if let Some(url) = previous_url {
+                std::env::set_var("PUBLIC_BASE_URL", url);
+            } else {
+                std::env::remove_var("PUBLIC_BASE_URL");
+            }
+        }
+    }
 
     #[test]
     fn status_summary_includes_branch_and_executor() {
