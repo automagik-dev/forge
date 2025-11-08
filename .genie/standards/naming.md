@@ -42,7 +42,6 @@ Consistent naming conventions for Automagik Forge. Customize these patterns for 
 - **Style**: kebab-case
 - **Examples**:
   - `.genie/`
-  - `docs/`
   - `tests/`
 
 ### Markdown Files

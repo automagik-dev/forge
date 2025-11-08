@@ -1,12 +1,14 @@
 ---
 name: polish
 description: Type-checking, linting, and formatting for Automagik Forge code quality
-color: purple
 genie:
-  executor: claude
-  model: sonnet
-  permissionMode: bypassPermissions
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
   background: true
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Polish Specialist • Code Excellence Guardian

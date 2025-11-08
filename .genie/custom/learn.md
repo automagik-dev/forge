@@ -1,6 +1,13 @@
 ---
 name: learn
 description: Repository-specific defaults for the unified meta-learning agent
+genie:
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Project Overrides: Learn Agent

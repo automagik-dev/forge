@@ -1,12 +1,14 @@
 ---
 name: testgen
 description: Generate test proposals with names, locations, and assertions
-color: lime
 genie:
-  executor: claude
-  model: sonnet
-  permissionMode: bypassPermissions
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
   background: true
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Genie TestGen • Coverage Accelerator

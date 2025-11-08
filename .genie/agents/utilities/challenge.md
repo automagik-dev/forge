@@ -1,11 +1,13 @@
 ---
 name: challenge
 description: Pressure-test assumptions with counterarguments and evidence
-color: orange
 genie:
-  executor: codex
-  model: gpt-5
-  reasoningEffort: medium
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Genie Challenge • Strongest Countercase

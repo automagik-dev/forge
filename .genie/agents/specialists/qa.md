@@ -1,12 +1,14 @@
 ---
 name: qa
 description: End-to-end and manual validation of wishes and deliveries for Automagik Forge
-color: blue
 genie:
-  executor: claude
-  model: sonnet
-  permissionMode: bypassPermissions
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
   background: true
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # QA Specialist • Validation Scout

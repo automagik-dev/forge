@@ -1,11 +1,13 @@
 ---
 name: debug
 description: Investigation-first debugging with hypotheses and minimal fixes
-color: red
 genie:
-  executor: codex
-  model: gpt-5-codex
-  reasoningEffort: high
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Genie Debug • Methodical Root Cause

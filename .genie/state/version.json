@@ -1,0 +1,8 @@
+{
+  "version": "2.5.11-rc.4",
+  "installedAt": "2025-11-04T22:27:51.522Z",
+  "lastUpdated": "2025-11-04T22:27:51.522Z",
+  "migrationInfo": {
+    "lastAction": "rollback"
+  }
+}

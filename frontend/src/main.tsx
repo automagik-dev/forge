@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './styles/index.css';
 import { ClickToComponent } from 'click-to-react-component';
-import { VibeKanbanWebCompanion as AutomagikForgeWebCompanion } from 'vibe-kanban-web-companion';
+import { ForgeInspector as AutomagikForgeWebCompanion } from 'forge-inspector';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
 import NiceModal from '@ebay/nice-modal-react';
