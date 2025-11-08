@@ -1,12 +1,14 @@
 ---
 name: tests
 description: Author new tests and repair failing test suites across all layers for Automagik Forge
-color: lime
 genie:
-  executor: claude
-  model: sonnet
-  permissionMode: bypassPermissions
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
   background: true
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Tests Specialist • TDD & Stability Champion

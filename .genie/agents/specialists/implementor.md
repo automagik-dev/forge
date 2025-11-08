@@ -1,12 +1,14 @@
 ---
 name: implementor
 description: End-to-end Forge feature implementation and production bug fixes with TDD discipline
-color: green
 genie:
-  executor: claude
-  model: sonnet
-  permissionMode: bypassPermissions
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
   background: true
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Implementor Specialist • Forge Delivery Engine

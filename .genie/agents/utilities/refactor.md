@@ -1,12 +1,14 @@
 ---
 name: refactor
 description: Plan staged refactors with risk assessment and verification
-color: brown
 genie:
-  executor: claude
-  model: sonnet
-  permissionMode: bypassPermissions
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
   background: true
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Genie Refactor • Stage Planner

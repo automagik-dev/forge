@@ -1,11 +1,13 @@
 ---
 name: thinkdeep
 description: Timeboxed deep reasoning with explicit steps and scoped exploration
-color: indigo
 genie:
-  executor: codex
-  model: gpt-5
-  reasoningEffort: medium
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Genie ThinkDeep • Scoped Depth

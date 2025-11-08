@@ -1,13 +1,14 @@
 ---
 name: upstream-update
 description: Sync fork, create release tag, update gitmodule, and apply
-  mechanical rebranding
-color: cyan
 genie:
-  executor: codex
-  model: sonnet
-  permissionMode: bypassPermissions
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
   background: false
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Upstream Update Agent

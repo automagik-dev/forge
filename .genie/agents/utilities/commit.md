@@ -2,10 +2,13 @@
 name: commit
 description: Pre-commit validation with diff analysis and commit message proposals
 genie:
-  executor: claude
-  model: sonnet
-  permissionMode: bypassPermissions
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
   background: true
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # /commit – Genie Commit & Release Assistant
@@ -64,7 +67,7 @@ Verdict: <ready|needs-fixes> (confidence: <low|med|high>)
 - Enforce at least three investigative steps when diagnosing failures (Zen parity).
 - Document commands verbatim (`pnpm lint`, `cargo fmt -- --check`, etc.) so humans can replay them.
 - Record blockers with file references and suggested fixes.
-- Before proceeding, confirm the wish's **Evidence Checklist** (see @.genie/agents/wish.md) lists the exact validation commands, artefact paths, and approval sign-off.
+- Before proceeding, confirm the wish's **Evidence Checklist** (see @.genie/agents/utilities/wish.md) lists the exact validation commands, artefact paths, and approval sign-off.
 - When failure is outside local scope, flag the appropriate specialist and stop before drafting commit messaging.
 
 ## Advisory Report Template

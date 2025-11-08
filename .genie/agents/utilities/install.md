@@ -2,10 +2,12 @@
 name: install
 description: Install Genie template and CLI setup for new projects
 genie:
-  executor: codex
-  model: gpt-5
-  reasoningEffort: medium
-  sandbox: workspace-write
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Install Agent
@@ -265,7 +267,7 @@ When populating product docs and resolving gaps:
 
 ### Plan Integration (next step)
 - Produce a planning brief from Install outputs (mission, tech, roadmap, environment).
-- Example: Use `mcp__genie__run` with agent "plan" and prompt "[Discovery] Load @.genie/product/mission.md and @.genie/product/roadmap.md. [Implementation] Evaluate feature 'user-notes' (not on roadmap) and prepare a wish brief. [Verification] Provide wish-readiness checklist + blockers."
+- Example: Use `mcp__genie__run` with agent "plan" and prompt "[Discovery] Load @.genie/product/mission.md and @.genie/product/ROADMAP.md [Implementation] Evaluate feature 'user-notes' (not on roadmap) and prepare a wish brief. [Verification] Provide wish-readiness checklist + blockers."
 - Plan decides whether to proceed to wish immediately or gather more context.
 
 ### Wish Integration (after plan approval)
@@ -275,12 +277,12 @@ When populating product docs and resolving gaps:
 
 ### Forge Integration
 - Forge breaks the approved wish into execution groups and validation hooks.
-- Example: Use `mcp__genie__run` with agent "forge" and prompt "[Discovery] Use @.genie/wishes/user-notes-wish.md. [Implementation] Break into execution groups + commands. [Verification] Emit validation hooks and evidence paths."
+- Example: Use `mcp__genie__run` with agent "forge" and prompt "[Discovery] Use # @.genie/wishes/user-notes-wish.md (archived). [Implementation] Break into execution groups + commands. [Verification] Emit validation hooks and evidence paths."
 - Evidence locations follow the wish; no default QA path.
 
 ### Review Integration
 - Review replays validation commands and appends QA results to the wish.
-- Example: Use `mcp__genie__run` with agent "review" and prompt "[Discovery] Use @.genie/wishes/user-notes-wish.md and execution evidence. [Implementation] Replay validation commands. [Verification] Provide QA verdict + remaining risks."
+- Example: Use `mcp__genie__run` with agent "review" and prompt "[Discovery] Use # @.genie/wishes/user-notes-wish.md (archived) and execution evidence. [Implementation] Replay validation commands. [Verification] Provide QA verdict + remaining risks."
 
 ### Done Report
 Location: `.genie/reports/done-install-<project-slug>-<timestamp>.md`
