@@ -82,17 +82,13 @@ echo "⚙️  Starting backend server (this will take a while on first compile).
 export DISABLE_BROWSER_OPEN=1
 export DISABLE_WORKTREE_ORPHAN_CLEANUP=1
 export RUST_LOG=debug
-export SQLX_OFFLINE=true
 
-# Load .env file if it exists
+# Start backend with cargo watch, loading .env file for build-time variables (like SQLX_OFFLINE)
 if [ -f ".env" ]; then
-    set -a  # automatically export all variables
-    source .env
-    set +a
+    cargo watch --env-file .env -w upstream/crates -w forge-app/src -w forge-extensions -x 'run --bin forge-app' &
+else
+    cargo watch -w upstream/crates -w forge-app/src -w forge-extensions -x 'run --bin forge-app' &
 fi
-
-# Start backend with cargo watch
-cargo watch -w upstream/crates -w forge-app/src -w forge-extensions -x 'run --bin forge-app' &
 BACKEND_PID=$!
 
 # Function to cleanup on exit
