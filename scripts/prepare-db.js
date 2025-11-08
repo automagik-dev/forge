@@ -6,8 +6,8 @@ const path = require('path');
 
 console.log('Preparing database for SQLx...');
 
-// Change to backend directory
-const backendDir = path.join(__dirname, '..', 'crates/db');
+// Change to backend directory (in upstream submodule)
+const backendDir = path.join(__dirname, '..', 'upstream', 'crates/db');
 process.chdir(backendDir);
 
 // Create temporary database file
