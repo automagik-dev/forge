@@ -60,6 +60,32 @@ else
 fi
 echo ""
 
+# Ensure database exists for online mode (SQLx compile-time verification)
+if [ "${SQLX_OFFLINE:-}" != "true" ]; then
+    if [ -n "$DATABASE_URL" ]; then
+        # Extract the path from sqlite:// URL
+        DB_PATH="${DATABASE_URL#sqlite://}"
+
+        if [ ! -f "$DB_PATH" ]; then
+            echo "🔧 Database doesn't exist - creating for SQLx online mode..."
+
+            # Create parent directory if needed
+            DB_DIR=$(dirname "$DB_PATH")
+            mkdir -p "$DB_DIR"
+
+            # Create empty database
+            sqlite3 "$DB_PATH" "SELECT 1;" > /dev/null 2>&1
+
+            # Run migrations
+            echo "   Running migrations..."
+            (cd upstream/crates/db && DATABASE_URL="$DATABASE_URL" sqlx migrate run)
+
+            echo "✅ Database created and migrated: $DB_PATH"
+            echo ""
+        fi
+    fi
+fi
+
 # Check for pnpm
 if ! command -v pnpm >/dev/null 2>&1; then
     echo "❌ Error: pnpm is required but not installed"
