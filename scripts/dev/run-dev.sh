@@ -34,11 +34,29 @@ fi
 export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend)
 export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend)
 
-# Load .env to check DATABASE_URL
-if [ -f ".env" ]; then
+# Detect if we're in a git worktree (sandbox mode)
+IS_WORKTREE=false
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    GIT_DIR=$(git rev-parse --git-common-dir 2>/dev/null || echo "")
+    GIT_WORK_TREE=$(git rev-parse --show-toplevel 2>/dev/null || echo "")
+
+    # If .git is a file (not a directory), we're in a worktree
+    if [ -f "$GIT_WORK_TREE/.git" ]; then
+        IS_WORKTREE=true
+    fi
+fi
+
+# Only load .env if we're NOT in a worktree (sandbox mode)
+# Worktrees should use their own isolated database in dev_assets/
+if [ "$IS_WORKTREE" = "false" ] && [ -f ".env" ]; then
     set -a
     source .env
     set +a
+    echo "📝 Loaded configuration from .env (main repository mode)"
+else
+    if [ "$IS_WORKTREE" = "true" ]; then
+        echo "🔒 Running in worktree (sandbox mode) - using isolated dev_assets/ database"
+    fi
 fi
 
 echo "📍 Configuration:"
@@ -130,8 +148,9 @@ export DISABLE_BROWSER_OPEN=1
 export DISABLE_WORKTREE_ORPHAN_CLEANUP=1
 export RUST_LOG=debug
 
-# Start backend with cargo watch, loading .env file for build-time variables (like SQLX_OFFLINE)
-if [ -f ".env" ]; then
+# Start backend with cargo watch
+# Only load .env file for build-time variables if NOT in worktree (sandbox) mode
+if [ "$IS_WORKTREE" = "false" ] && [ -f ".env" ]; then
     cargo watch --env-file .env -w upstream/crates -w forge-app/src -w forge-extensions -x 'run --bin forge-app' &
 else
     cargo watch -w upstream/crates -w forge-app/src -w forge-extensions -x 'run --bin forge-app' &

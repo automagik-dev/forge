@@ -1,5 +1,5 @@
 # Token Usage
-Generated: 2025-11-08T16:20:47.497Z | Encoding: approx-words
+Generated: 2025-11-08T17:41:26.433Z | Encoding: approx-words
 Total Files: 241 | Total Tokens: 200954
 
 ## Top 30 Files by Tokens
