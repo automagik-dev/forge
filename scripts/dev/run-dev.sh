@@ -53,7 +53,7 @@ else
 fi
 
 # Show SQLx mode
-if [ "$SQLX_OFFLINE" = "true" ]; then
+if [ "${SQLX_OFFLINE:-}" = "true" ]; then
     echo "   SQLx:     offline (using .sqlx/ cache for compile-time verification)"
 else
     echo "   SQLx:     online (will connect to database during compilation)"
