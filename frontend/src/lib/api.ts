@@ -765,6 +765,14 @@ export const profilesApi = {
   },
 };
 
+// Project-specific profiles API (Forge extension)
+export const projectProfilesApi = {
+  load: async (projectId: string): Promise<any> => {
+    const response = await makeRequest(`/api/forge/projects/${projectId}/profiles`);
+    return handleApiResponse<any>(response);
+  },
+};
+
 // Images API
 export const imagesApi = {
   upload: async (file: File): Promise<ImageResponse> => {

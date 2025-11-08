@@ -3,8 +3,22 @@
   "subtitle": "Manage your projects and track their progress",
   "createProject": "Create Project",
   "loading": "Loading projects...",
+  "card": {
+    "status": {
+      "active": "Active"
+    },
+    "created": "Created",
+    "menu": {
+      "viewProject": "View Project",
+      "openInIDE": "Open in IDE",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "deleteConfirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone."
+  },
   "errors": {
-    "fetchFailed": "Failed to fetch projects"
+    "fetchFailed": "Failed to fetch projects",
+    "deleteFailed": "Failed to delete project"
   },
   "empty": {
     "title": "No projects yet",

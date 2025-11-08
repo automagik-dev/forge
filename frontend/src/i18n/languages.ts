@@ -15,7 +15,8 @@ export const UI_TO_I18N = {
 } as const;
 
 const SUPPORTED_UI_LANGUAGES = ['BROWSER', 'EN', 'JA', 'ES', 'KO', 'PT_BR'] as const;
-export const SUPPORTED_I18N_CODES = Object.values(UI_TO_I18N);
+// Include both 'pt-BR' and 'pt' so i18next can use 'pt' as fallback
+export const SUPPORTED_I18N_CODES = [...Object.values(UI_TO_I18N), 'pt'];
 
 const FALLBACK_ENDONYMS = {
   en: 'English',

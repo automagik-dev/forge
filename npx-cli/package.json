@@ -2,14 +2,27 @@
   "name": "automagik-forge",
   "private": false,
   "version": "0.5.7",
+  "description": "Automagik Forge: AI agent task management and kanban board for Vibe Coding with git worktree isolation",
+  "keywords": [
+    "ai",
+    "agent",
+    "claude",
+    "gemini",
+    "cursor",
+    "kanban",
+    "task-management",
+    "mcp",
+    "vibe-coding",
+    "cli",
+    "npx"
+  ],
+  "author": "Namastex Labs",
+  "license": "MIT",
   "main": "index.js",
   "bin": {
-    "automagik-forge": "bin/cli.js"
+    "automagik-forge": "bin/cli.js",
+    "forge": "bin/cli.js"
   },
-  "keywords": [],
-  "author": "Namastex Labs",
-  "license": "",
-  "description": "NPX wrapper around automagik-forge and automagik-forge-mcp",
   "dependencies": {
     "adm-zip": "^0.5.16",
     "dotenv": "^16.4.5"

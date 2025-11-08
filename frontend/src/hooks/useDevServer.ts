@@ -1,8 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { attemptsApi, executionProcessesApi } from '@/lib/api';
 import { useAttemptExecution } from '@/hooks/useAttemptExecution';
 import type { ExecutionProcess } from 'shared/types';
+import { usePostHog } from 'posthog-js/react';
+import type { DevServerStartedEvent, DevServerStoppedEvent } from '@/types/analytics';
 
 interface UseDevServerOptions {
   onStartSuccess?: () => void;
@@ -17,6 +19,11 @@ export function useDevServer(
 ) {
   const queryClient = useQueryClient();
   const { attemptData } = useAttemptExecution(attemptId);
+  const posthog = usePostHog();
+  const devServerStartTimeRef = useRef<number | null>(null);
+  const devServerUsageCountRef = useRef<number>(
+    parseInt(localStorage.getItem('dev_server_usage_count') || '0', 10)
+  );
 
   // Find running dev server process
   const runningDevServer = useMemo<ExecutionProcess | undefined>(() => {
@@ -47,6 +54,30 @@ export function useDevServer(
       await queryClient.invalidateQueries({
         queryKey: ['executionProcesses', attemptId],
       });
+
+      // Track dev_server_started event
+      if (attemptId) {
+        const usageCount = devServerUsageCountRef.current;
+        // Check if there are any failed processes in this attempt (indicates previous failure)
+        const hasFailedBefore = attemptData.processes.some(
+          (p) => p.status === 'failed' || (p.exit_code !== null && p.exit_code !== BigInt(0))
+        );
+
+        const devServerStartedEvent: DevServerStartedEvent = {
+          attempt_id: attemptId,
+          task_has_failed_before: hasFailedBefore,
+          is_first_use: usageCount === 0,
+        };
+
+        posthog.capture('dev_server_started', devServerStartedEvent);
+        console.log('[Analytics] dev_server_started', devServerStartedEvent);
+
+        // Update usage count
+        devServerUsageCountRef.current = usageCount + 1;
+        localStorage.setItem('dev_server_usage_count', (usageCount + 1).toString());
+        devServerStartTimeRef.current = Date.now();
+      }
+
       options?.onStartSuccess?.();
     },
     onError: (err) => {
@@ -73,6 +104,21 @@ export function useDevServer(
             })
           : Promise.resolve(),
       ]);
+
+      // Track dev_server_stopped event
+      if (attemptId && devServerStartTimeRef.current) {
+        const duration = Math.floor((Date.now() - devServerStartTimeRef.current) / 1000);
+        const devServerStoppedEvent: DevServerStoppedEvent = {
+          attempt_id: attemptId,
+          duration_seconds: duration,
+          was_manual_stop: true, // User manually stopped
+        };
+
+        posthog.capture('dev_server_stopped', devServerStoppedEvent);
+        console.log('[Analytics] dev_server_stopped', devServerStoppedEvent);
+        devServerStartTimeRef.current = null;
+      }
+
       options?.onStopSuccess?.();
     },
     onError: (err) => {

@@ -85,7 +85,7 @@ export const useConversationHistory = ({
   attempt,
   onEntriesUpdated,
 }: UseConversationHistoryParams): UseConversationHistoryResult => {
-  const { executionProcessesVisible: executionProcessesRaw } =
+  const { executionProcessesVisible: executionProcessesRaw, isLoading: executionProcessesLoading } =
     useExecutionProcessesContext();
   const executionProcesses = useRef<ExecutionProcess[]>(executionProcessesRaw);
   const displayedExecutionProcesses = useRef<ExecutionProcessStateStore>({});
@@ -538,11 +538,17 @@ export const useConversationHistory = ({
     let cancelled = false;
     (async () => {
       // Waiting for execution processes to load
-      if (
-        executionProcesses?.current.length === 0 ||
-        loadedInitialEntries.current
-      )
+      if (loadedInitialEntries.current) return;
+
+      // If no execution processes AND execution processes finished loading, emit empty with loading=false to hide spinner
+      if (!executionProcessesLoading && executionProcesses?.current.length === 0) {
+        emitEntries(displayedExecutionProcesses.current, 'initial', false);
+        loadedInitialEntries.current = true;
         return;
+      }
+
+      // If still loading execution processes, keep waiting
+      if (executionProcessesLoading) return;
 
       // Initial entries
       const allInitialEntries = await loadInitialEntries();
@@ -566,7 +572,7 @@ export const useConversationHistory = ({
     return () => {
       cancelled = true;
     };
-  }, [attempt.id, idListKey]); // include idListKey so new processes trigger reload
+  }, [attempt.id, idListKey, executionProcessesLoading]); // include idListKey so new processes trigger reload, executionProcessesLoading to hide spinner when done
 
   useEffect(() => {
     const activeProcess = getActiveAgentProcess();

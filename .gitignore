@@ -72,7 +72,10 @@ build-npm-package-codesign.sh
 
 npx-cli/dist
 npx-cli/vibe-kanban-*
+npx-cli/automagik-forge-*
 vibe-kanban-*.tgz
+automagik-forge-*.tgz
+*.tgz
 
 # Development ports file
 .dev-ports.json
@@ -86,3 +89,15 @@ vibe-kanban-cloud/
 
 # Release notes drafts
 .release-notes*
+
+# Genie runtime state (ephemeral, auto-generated)
+.genie/state/
+!.genie/state/version.json
+.genie/.session
+.genie/.framework-version
+.genie.backup-*
+.genie/backups/
+
+# Build marker for incremental builds
+.build_commit
+/.sqlx/

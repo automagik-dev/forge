@@ -41,9 +41,9 @@
         "title": "タスク実行",
         "description": "タスクの実行と処理方法を設定します。",
         "executor": {
-          "label": "デフォルトエージェント設定",
-          "placeholder": "プロファイルを選択",
-          "helper": "タスク試行を作成する際に使用するデフォルトエージェント設定を選択してください。"
+          "label": "デフォルトプロバイダーとエージェント",
+          "placeholder": "プロバイダーを選択",
+          "helper": "タスク試行を作成する際に使用するデフォルトプロバイダーとエージェントを選択してください。"
         },
         "variant": "デフォルト",
         "defaultLabel": "デフォルト"
@@ -181,25 +181,25 @@
       }
     },
     "agents": {
-      "title": "コーディングエージェント設定",
-      "description": "コーディングエージェントの動作を異なる設定でカスタマイズします。",
-      "loading": "エージェント設定を読み込み中...",
+      "title": "プロバイダー設定",
+      "description": "プロバイダーの動作を異なるエージェント設定でカスタマイズします。",
+      "loading": "プロバイダー設定を読み込み中...",
       "save": {
-        "button": "エージェント設定を保存",
-        "success": "✓ 実行設定が正常に保存されました！"
+        "button": "プロバイダー設定を保存",
+        "success": "✓ プロバイダー設定が正常に保存されました！"
       },
       "editor": {
         "formLabel": "JSONを編集",
-        "agentLabel": "エージェント",
-        "agentPlaceholder": "実行タイプを選択",
-        "configLabel": "設定",
-        "configPlaceholder": "設定を選択",
+        "agentLabel": "プロバイダー",
+        "agentPlaceholder": "プロバイダータイプを選択",
+        "configLabel": "エージェント",
+        "configPlaceholder": "エージェントを選択",
         "createNew": "新規作成...",
         "deleteTitle": "最後の設定は削除できません",
         "deleteButton": "{{name}}を削除",
         "deleteText": "削除",
-        "jsonLabel": "エージェント設定（JSON）",
-        "jsonPlaceholder": "プロファイルを読み込み中...",
+        "jsonLabel": "プロバイダー設定（JSON）",
+        "jsonPlaceholder": "設定を読み込み中...",
         "jsonLoading": "読み込み中...",
         "pathLabel": "設定ファイルの場所："
       },

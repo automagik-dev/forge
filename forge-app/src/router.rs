@@ -27,6 +27,7 @@ use db::models::{
     task_attempt::{CreateTaskAttempt, TaskAttempt},
 };
 use deployment::Deployment;
+use executors::profile::ExecutorProfileId;
 use forge_config::ForgeProjectSettings;
 use server::routes::{
     self as upstream, approvals, auth, config as upstream_config, containers, drafts, events,
@@ -115,6 +116,10 @@ fn forge_api_routes() -> Router<ForgeAppState> {
             "/api/forge/projects/{project_id}/settings",
             get(get_project_settings).put(update_project_settings),
         )
+        .route(
+            "/api/forge/projects/{project_id}/profiles",
+            get(get_project_profiles),
+        )
         .route("/api/forge/omni/status", get(get_omni_status))
         .route("/api/forge/omni/instances", get(list_omni_instances))
         .route("/api/forge/omni/validate", post(validate_omni_config))
@@ -188,10 +193,31 @@ async fn forge_create_task(
     Ok(Json(ApiResponse::success(task)))
 }
 
+/// Forge-specific CreateTaskAttemptBody that includes use_worktree field
+#[derive(Debug, Serialize, Deserialize)]
+struct ForgeCreateTaskAttemptBody {
+    pub task_id: Uuid,
+    pub executor_profile_id: ExecutorProfileId,
+    pub base_branch: String,
+    #[serde(default = "default_use_worktree")]
+    pub use_worktree: bool,
+}
+
+fn default_use_worktree() -> bool {
+    true
+}
+
+impl ForgeCreateTaskAttemptBody {
+    pub fn get_executor_profile_id(&self) -> ExecutorProfileId {
+        self.executor_profile_id.clone()
+    }
+}
+
 /// Forge override: create task attempt with forge/ branch prefix (vk -> forge only)
 async fn forge_create_task_attempt(
     State(deployment): State<DeploymentImpl>,
-    Json(payload): Json<task_attempts::CreateTaskAttemptBody>,
+    State(forge_services): State<ForgeServices>,
+    Json(payload): Json<ForgeCreateTaskAttemptBody>,
 ) -> Result<Json<ApiResponse<TaskAttempt>>, ApiError> {
     let executor_profile_id = payload.get_executor_profile_id();
     let task = Task::find_by_id(&deployment.db().pool, payload.task_id)
@@ -200,10 +226,15 @@ async fn forge_create_task_attempt(
 
     let attempt_id = Uuid::new_v4();
 
-    // Use same logic as upstream but replace "vk" with "forge" prefix
-    let task_title_id = git_branch_id(&task.title);
-    let short_id = short_uuid(&attempt_id);
-    let git_branch_name = format!("forge/{}-{}", short_id, task_title_id);
+    // If use_worktree is false, use the current branch (base_branch) directly
+    // Otherwise, generate a new branch name for the worktree with "forge" prefix
+    let git_branch_name = if payload.use_worktree {
+        let task_title_id = git_branch_id(&task.title);
+        let short_id = short_uuid(&attempt_id);
+        format!("forge/{}-{}", short_id, task_title_id)
+    } else {
+        payload.base_branch.clone()
+    };
 
     let mut task_attempt = TaskAttempt::create(
         &deployment.db().pool,
@@ -217,6 +248,15 @@ async fn forge_create_task_attempt(
     )
     .await?;
 
+    // Insert use_worktree flag into forge_task_attempt_config
+    sqlx::query(
+        "INSERT INTO forge_task_attempt_config (task_attempt_id, use_worktree) VALUES (?, ?)"
+    )
+    .bind(attempt_id)
+    .bind(payload.use_worktree)
+    .execute(&deployment.db().pool)
+    .await?;
+
     // Store executor with variant for agent task filtering
     if let Some(variant) = &executor_profile_id.variant {
         let executor_with_variant = format!("{}:{}", executor_profile_id.executor, variant);
@@ -228,6 +268,61 @@ async fn forge_create_task_attempt(
         .execute(&deployment.db().pool)
         .await?;
         task_attempt.executor = executor_with_variant;
+    }
+
+    // Get project to determine workspace root
+    let project = task
+        .parent_project(&deployment.db().pool)
+        .await?
+        .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
+
+    // Load workspace-specific .genie profiles and inject into global cache just-in-time
+    if let Ok(workspace_profiles) = forge_services.load_profiles_for_workspace(&project.git_repo_path).await {
+        // Log profile details for validation
+        let variant_count = workspace_profiles.executors.values()
+            .map(|config| config.configurations.len())
+            .sum::<usize>();
+
+        let variant_list: Vec<String> = workspace_profiles.executors.iter()
+            .flat_map(|(executor, config)| {
+                config.configurations.iter().map(move |(variant, coding_agent)| {
+                    // Extract append_prompt from the CodingAgent enum
+                    let prompt_preview = match coding_agent {
+                        executors::executors::CodingAgent::ClaudeCode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Codex(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Gemini(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Opencode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::CursorAgent(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::QwenCode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Copilot(cfg) => cfg.append_prompt.get(),
+                    }.map(|p| {
+                        let trimmed = p.trim();
+                        if trimmed.len() > 60 {
+                            format!("{}...", &trimmed[..60])
+                        } else {
+                            trimmed.to_string()
+                        }
+                    }).unwrap_or_else(|| "<none>".to_string());
+
+                    format!("{}:{} ({})", executor, variant, prompt_preview)
+                })
+            })
+            .collect();
+
+        tracing::info!(
+            "🔧 Injected {} .genie profile variant(s) for workspace: {} | Profiles: [{}]",
+            variant_count,
+            project.git_repo_path.display(),
+            variant_list.join(", ")
+        );
+
+        executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+    } else {
+        tracing::warn!(
+            "⚠️  Failed to load .genie profiles for workspace: {}, using defaults",
+            project.git_repo_path.display()
+        );
     }
 
     let _execution_process = deployment
@@ -252,6 +347,7 @@ async fn forge_create_task_attempt(
 /// Forge override: create task and start with forge/ branch prefix (vk -> forge only)
 async fn forge_create_task_and_start(
     State(deployment): State<DeploymentImpl>,
+    State(forge_services): State<ForgeServices>,
     Json(payload): Json<CreateAndStartTaskRequest>,
 ) -> Result<Json<ApiResponse<TaskWithAttemptStatus>>, ApiError> {
     let task_id = Uuid::new_v4();
@@ -292,6 +388,15 @@ async fn forge_create_task_and_start(
     )
     .await?;
 
+    // Insert use_worktree flag into forge_task_attempt_config (defaults to true for regular tasks)
+    sqlx::query(
+        "INSERT INTO forge_task_attempt_config (task_attempt_id, use_worktree) VALUES (?, ?)"
+    )
+    .bind(task_attempt_id)
+    .bind(true) // Regular tasks always use worktree
+    .execute(&deployment.db().pool)
+    .await?;
+
     // Store executor with variant for agent task filtering
     if let Some(variant) = &payload.executor_profile_id.variant {
         let executor_with_variant = format!("{}:{}", payload.executor_profile_id.executor, variant);
@@ -303,6 +408,61 @@ async fn forge_create_task_and_start(
         .execute(&deployment.db().pool)
         .await?;
         task_attempt.executor = executor_with_variant;
+    }
+
+    // Get project to determine workspace root
+    let project = task
+        .parent_project(&deployment.db().pool)
+        .await?
+        .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
+
+    // Load workspace-specific .genie profiles and inject into global cache just-in-time
+    if let Ok(workspace_profiles) = forge_services.load_profiles_for_workspace(&project.git_repo_path).await {
+        // Log profile details for validation
+        let variant_count = workspace_profiles.executors.values()
+            .map(|config| config.configurations.len())
+            .sum::<usize>();
+
+        let variant_list: Vec<String> = workspace_profiles.executors.iter()
+            .flat_map(|(executor, config)| {
+                config.configurations.iter().map(move |(variant, coding_agent)| {
+                    // Extract append_prompt from the CodingAgent enum
+                    let prompt_preview = match coding_agent {
+                        executors::executors::CodingAgent::ClaudeCode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Codex(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Gemini(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Opencode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::CursorAgent(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::QwenCode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Copilot(cfg) => cfg.append_prompt.get(),
+                    }.map(|p| {
+                        let trimmed = p.trim();
+                        if trimmed.len() > 60 {
+                            format!("{}...", &trimmed[..60])
+                        } else {
+                            trimmed.to_string()
+                        }
+                    }).unwrap_or_else(|| "<none>".to_string());
+
+                    format!("{}:{} ({})", executor, variant, prompt_preview)
+                })
+            })
+            .collect();
+
+        tracing::info!(
+            "🔧 Injected {} .genie profile variant(s) for workspace: {} | Profiles: [{}]",
+            variant_count,
+            project.git_repo_path.display(),
+            variant_list.join(", ")
+        );
+
+        executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+    } else {
+        tracing::warn!(
+            "⚠️  Failed to load .genie profiles for workspace: {}, using defaults",
+            project.git_repo_path.display()
+        );
     }
 
     let execution_process = deployment
@@ -353,16 +513,14 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     router =
         router.merge(drafts::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
 
-    // Build custom tasks router with forge override
+    // Build custom tasks router with forge override (already typed as ForgeAppState)
     let tasks_router_with_override = build_tasks_router_with_forge_override(deployment);
-    router =
-        router.merge(tasks_router_with_override.with_state::<ForgeAppState>(dep_clone.clone()));
+    router = router.merge(tasks_router_with_override);
 
-    // Build custom task_attempts router with forge override
+    // Build custom task_attempts router with forge override (already typed as ForgeAppState)
     let task_attempts_router_with_override =
         build_task_attempts_router_with_forge_override(deployment);
-    router = router
-        .merge(task_attempts_router_with_override.with_state::<ForgeAppState>(dep_clone.clone()));
+    router = router.merge(task_attempts_router_with_override);
     router = router.merge(
         execution_processes::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()),
     );
@@ -379,7 +537,7 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
 }
 
 /// Build tasks router with forge override for create-and-start endpoint
-fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router<DeploymentImpl> {
+fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     use axum::middleware::from_fn_with_state;
     use server::middleware::load_task_middleware;
 
@@ -654,16 +812,92 @@ async fn handle_forge_tasks_ws(
     Ok(())
 }
 
+/// Forge override: inject workspace profiles before follow-up
+async fn forge_follow_up(
+    axum::Extension(task_attempt): axum::Extension<TaskAttempt>,
+    State(deployment): State<DeploymentImpl>,
+    State(forge_services): State<ForgeServices>,
+    Json(payload): Json<serde_json::Value>,
+) -> Result<Json<ApiResponse<db::models::execution_process::ExecutionProcess>>, ApiError> {
+    // Get task and project to determine workspace root
+    let task = task_attempt
+        .parent_task(&deployment.db().pool)
+        .await?
+        .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
+
+    let project = task
+        .parent_project(&deployment.db().pool)
+        .await?
+        .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
+
+    // Load workspace-specific .genie profiles and inject into global cache just-in-time
+    if let Ok(workspace_profiles) = forge_services.load_profiles_for_workspace(&project.git_repo_path).await {
+        // Log profile details for validation
+        let variant_count = workspace_profiles.executors.values()
+            .map(|config| config.configurations.len())
+            .sum::<usize>();
+
+        let variant_list: Vec<String> = workspace_profiles.executors.iter()
+            .flat_map(|(executor, config)| {
+                config.configurations.iter().map(move |(variant, coding_agent)| {
+                    // Extract append_prompt from the CodingAgent enum
+                    let prompt_preview = match coding_agent {
+                        executors::executors::CodingAgent::ClaudeCode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Codex(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Gemini(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Opencode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::CursorAgent(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::QwenCode(cfg) => cfg.append_prompt.get(),
+                        executors::executors::CodingAgent::Copilot(cfg) => cfg.append_prompt.get(),
+                    }.map(|p| {
+                        let trimmed = p.trim();
+                        if trimmed.len() > 60 {
+                            format!("{}...", &trimmed[..60])
+                        } else {
+                            trimmed.to_string()
+                        }
+                    }).unwrap_or_else(|| "<none>".to_string());
+
+                    format!("{}:{} ({})", executor, variant, prompt_preview)
+                })
+            })
+            .collect();
+
+        tracing::info!(
+            "🔧 Injected {} .genie profile variant(s) for workspace: {} (follow-up) | Profiles: [{}]",
+            variant_count,
+            project.git_repo_path.display(),
+            variant_list.join(", ")
+        );
+
+        executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+    } else {
+        tracing::warn!(
+            "⚠️  Failed to load .genie profiles for workspace: {} (follow-up), using defaults",
+            project.git_repo_path.display()
+        );
+    }
+
+    // Call upstream follow_up - re-parse JSON into the correct type
+    let typed_payload: task_attempts::CreateFollowUpAttempt = serde_json::from_value(payload)
+        .map_err(|e| ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
+            format!("Invalid follow-up payload: {}", e)
+        )))?;
+
+    task_attempts::follow_up(axum::Extension(task_attempt), State(deployment), Json(typed_payload)).await
+}
+
 /// Build task_attempts router with forge override for create endpoint
 fn build_task_attempts_router_with_forge_override(
     deployment: &DeploymentImpl,
-) -> Router<DeploymentImpl> {
+) -> Router<ForgeAppState> {
     use axum::middleware::from_fn_with_state;
     use server::middleware::load_task_attempt_middleware;
 
     let task_attempt_id_router = Router::new()
         .route("/", get(task_attempts::get_task_attempt))
-        .route("/follow-up", post(task_attempts::follow_up))
+        .route("/follow-up", post(forge_follow_up))
         .route(
             "/draft",
             get(task_attempts::drafts::get_draft)
@@ -1021,6 +1255,29 @@ async fn update_project_settings(
         })?;
 
     Ok(Json(ApiResponse::success(settings)))
+}
+
+/// Get executor profiles for a specific project
+async fn get_project_profiles(
+    Path(project_id): Path<Uuid>,
+    State(services): State<ForgeServices>,
+) -> Result<Json<ApiResponse<executors::profile::ExecutorConfigs>>, StatusCode> {
+    services
+        .profile_cache
+        .get_profiles_for_project(project_id)
+        .await
+        .map(|profiles| {
+            tracing::debug!(
+                "Retrieved {} executor profiles for project {}",
+                profiles.executors.len(),
+                project_id
+            );
+            Json(ApiResponse::success(profiles))
+        })
+        .map_err(|e| {
+            tracing::error!("Failed to load profiles for project {}: {}", project_id, e);
+            StatusCode::NOT_FOUND
+        })
 }
 
 async fn get_omni_status(State(services): State<ForgeServices>) -> Result<Json<Value>, StatusCode> {
