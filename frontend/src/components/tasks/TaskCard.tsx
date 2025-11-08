@@ -88,7 +88,7 @@ export function TaskCard({
             <XCircle className="h-3 w-3 text-destructive" />
           )}
           {/* Play Button (on hover, only when no attempts exist) */}
-          {isHovered && !task.has_in_progress_attempt && !task.has_merged_attempt && !task.last_attempt_failed && (
+          {isHovered && !task.executor && (
             <div
               onPointerDown={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
