@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2025-11-08T13:17:51.828Z",
+  "generatedAt": "2025-11-08T13:20:50.784Z",
   "encoding": "approx-words",
   "files": [
     {
@@ -255,14 +255,14 @@
       "method": "approx"
     },
     {
-      "path": "docs/AGENTS.md",
+      "path": "upstream/docs/AGENTS.md",
       "tokens": 1392,
       "lines": 416,
       "bytes": 11140,
       "method": "approx"
     },
     {
-      "path": "upstream/docs/AGENTS.md",
+      "path": "docs/AGENTS.md",
       "tokens": 1392,
       "lines": 416,
       "bytes": 11140,
@@ -1137,6 +1137,13 @@
       "method": "approx"
     },
     {
+      "path": ".genie/scripts/hooks/README.md",
+      "tokens": 372,
+      "lines": 94,
+      "bytes": 2873,
+      "method": "approx"
+    },
+    {
       "path": ".genie/archive/reports/commit-advice-issue-creator-202501111545.md",
       "tokens": 372,
       "lines": 72,
@@ -1148,13 +1155,6 @@
       "tokens": 372,
       "lines": 72,
       "bytes": 2815,
-      "method": "approx"
-    },
-    {
-      "path": ".genie/scripts/hooks/README.md",
-      "tokens": 372,
-      "lines": 94,
-      "bytes": 2873,
       "method": "approx"
     },
     {
@@ -1207,6 +1207,13 @@
       "method": "approx"
     },
     {
+      "path": ".genie/standards/code-style.md",
+      "tokens": 346,
+      "lines": 78,
+      "bytes": 3067,
+      "method": "approx"
+    },
+    {
       "path": ".genie/archive/reports/done-implementor-task-c-07-202510071745.md",
       "tokens": 346,
       "lines": 81,
@@ -1218,13 +1225,6 @@
       "tokens": 346,
       "lines": 81,
       "bytes": 2950,
-      "method": "approx"
-    },
-    {
-      "path": ".genie/standards/code-style.md",
-      "tokens": 346,
-      "lines": 78,
-      "bytes": 3067,
       "method": "approx"
     },
     {
@@ -1445,14 +1445,14 @@
       "method": "approx"
     },
     {
-      "path": "docs/README.md",
+      "path": "upstream/docs/README.md",
       "tokens": 141,
       "lines": 35,
       "bytes": 1097,
       "method": "approx"
     },
     {
-      "path": "upstream/docs/README.md",
+      "path": "docs/README.md",
       "tokens": 141,
       "lines": 35,
       "bytes": 1097,
