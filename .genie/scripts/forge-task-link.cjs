@@ -63,14 +63,10 @@ class ForgeTaskLinker {
    */
   isForgeWorktree() {
     try {
-      const gitDir = execSync('git rev-parse --git-dir', {
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'ignore']
-      }).trim();
-
-      // Forge worktrees have .git as a file (gitdir reference)
-      const gitPath = path.join(this.repoRoot, gitDir);
-      return fs.existsSync(gitPath) && fs.statSync(gitPath).isFile();
+      // In worktrees, .git is a file containing "gitdir: <path>"
+      // In main repos, .git is a directory
+      const dotGitPath = path.join(process.cwd(), '.git');
+      return fs.existsSync(dotGitPath) && fs.statSync(dotGitPath).isFile();
     } catch {
       return false;
     }
