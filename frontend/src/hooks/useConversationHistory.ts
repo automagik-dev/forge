@@ -73,6 +73,7 @@ const nextActionPatch: (
       type: 'next_action',
       failed: failed,
       execution_processes: execution_processes,
+      needs_setup: false,
     },
     content: '',
     timestamp: null,

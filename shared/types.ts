@@ -106,7 +106,7 @@ export enum EditorType { VS_CODE = "VS_CODE", CURSOR = "CURSOR", WINDSURF = "WIN
 
 export type GitHubConfig = { pat: string | null, oauth_token: string | null, username: string | null, primary_email: string | null, default_pr_base: string | null, };
 
-export enum SoundFile { ABSTRACT_SOUND1 = "ABSTRACT_SOUND1", ABSTRACT_SOUND2 = "ABSTRACT_SOUND2", ABSTRACT_SOUND3 = "ABSTRACT_SOUND3", ABSTRACT_SOUND4 = "ABSTRACT_SOUND4", GENIE_NOTIFY1 = "GENIE_NOTIFY1", GENIE_NOTIFY2 = "GENIE_NOTIFY2", PHONE_VIBRATION = "PHONE_VIBRATION" }
+export enum SoundFile { ABSTRACT_SOUND1 = "ABSTRACT_SOUND1", ABSTRACT_SOUND2 = "ABSTRACT_SOUND2", ABSTRACT_SOUND3 = "ABSTRACT_SOUND3", ABSTRACT_SOUND4 = "ABSTRACT_SOUND4", COW_MOOING = "COW_MOOING", PHONE_VIBRATION = "PHONE_VIBRATION", ROOSTER = "ROOSTER" }
 
 export type UiLanguage = "BROWSER" | "EN" | "JA" | "ES" | "KO";
 
@@ -204,7 +204,12 @@ export type CreateTaskAttemptBody = { task_id: string,
 /**
  * Executor profile specification
  */
-executor_profile_id: ExecutorProfileId, base_branch: string, };
+executor_profile_id: ExecutorProfileId, base_branch: string, 
+/**
+ * Whether to use worktree for this attempt (default: true)
+ * Set to false for Genie Lamp context (main workspace execution)
+ */
+use_worktree?: boolean, };
 
 export type RunAgentSetupRequest = { executor_profile_id: ExecutorProfileId, };
 
