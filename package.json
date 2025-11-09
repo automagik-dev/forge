@@ -55,8 +55,7 @@
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
-    "concurrently": "^8.2.2",
-    "vite": "^6.3.5"
+    "concurrently": "^8.2.2"
   },
   "engines": {
     "node": ">=18",
