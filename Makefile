@@ -57,7 +57,7 @@ check-android-deps:
 			echo "✅ All build dependencies present"; \
 		fi; \
 	fi
-
+  
 # Initialize git submodules
 check-submodules:
 	@git config submodule.recurse true 2>/dev/null || true
@@ -131,4 +131,5 @@ version:
 	@echo "  Forge App:    $$(grep 'version =' forge-app/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
 	@echo "  Forge Omni:   $$(grep 'version =' forge-extensions/omni/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
 	@echo "  Forge Config: $$(grep 'version =' forge-extensions/config/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
+
 	@echo "  Upstream:     $$(grep 'version =' upstream/crates/server/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/'")

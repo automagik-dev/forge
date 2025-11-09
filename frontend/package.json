@@ -1,11 +1,11 @@
 {
-  "name": "automagik-forge",
+  "name": "@automagik/forge",
   "private": true,
-  "version": "0.5.7",
+  "version": "0.6.0",
   "type": "module",
   "scripts": {
     "dev": "VITE_OPEN=${VITE_OPEN:-false} vite",
-    "build": "tsc && vite build",
+    "build": "NODE_OPTIONS='--max-old-space-size=4096' tsc && NODE_OPTIONS='--max-old-space-size=4096' vite build",
     "check": "tsc --noEmit",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 110",

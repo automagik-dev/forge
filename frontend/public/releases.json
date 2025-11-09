@@ -1,5 +1,13 @@
 [
   {
+    "tag_name": "v0.6.0",
+    "name": "Automagik Forge v0.6.0",
+    "body": "Hey! I'm excited to share what's new in this release.\n\n✨ **Smarter task conversations** - You can now chat with your tasks in a new view mode that feels more natural and interactive.\n\n⚡ **Faster setup** - When you start working, everything just works automatically. No more configuration headaches on a fresh install.\n\n📊 **Better task insights** - See how your tasks connect to each other with improved navigation and relationship visualization.\n\nI also improved how I understand your project structure, so I can provide better guidance tailored to your workspace. The experience should feel smoother overall.\n\nGrab it and let me know what you think!",
+    "html_url": "https://github.com/namastexlabs/automagik-forge/releases/tag/v0.6.0",
+    "published_at": "2025-11-09T17:56:40Z",
+    "prerelease": false
+  },
+  {
     "tag_name": "v0.5.7",
     "name": "Automagik Forge v0.5.7",
     "body": "Hey! 👋\n\nI've been working on making things smoother for you. Here's what you'll notice:\n\n**Better Updates** – When Forge updates, you'll now get a clear, friendly message about what's new instead of confusing technical notes.\n\n**Easier Setup** – Getting Forge running the way you want is now simpler, with clearer instructions.\n\n**More Reliable** – Updates happen more smoothly with fewer false warnings.\n\nThat's it! Just making things work better for you. ✨\n\nHappy creating! 🚀",

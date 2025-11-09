@@ -462,10 +462,10 @@ The Power: You're in control, not hoping AI gets it right
 
 ```bash
 # Install globally
-npm install -g automagik-forge
+npm install -g @automagik/forge
 
 # Or run directly with npx
-npx automagik-forge
+npx @automagik/forge
 ```
 
 ### First Run
