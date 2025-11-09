@@ -11,6 +11,12 @@ import {
   type ImageUploadSectionHandle,
 } from '@/components/ui/ImageUploadSection';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 //
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -671,24 +677,40 @@ export function TaskFollowUpSection({
                         {t('followUp.clearReviewComments')}
                       </Button>
                     )}
-                    <Button
-                      onClick={onSendFollowUp}
-                      disabled={
-                        !canSendFollowUp ||
-                        isDraftLocked ||
-                        !isDraftLoaded ||
-                        isSendingFollowUp ||
-                        isRetryActive
-                      }
-                      size="icon"
-                      className="rounded-full w-9 h-9 bg-primary hover:bg-primary/90"
-                    >
-                      {isSendingFollowUp ? (
-                        <Loader2 className="animate-spin h-4 w-4" />
-                      ) : (
-                        <Send className="h-4 w-4 fill-primary-foreground" />
-                      )}
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={onSendFollowUp}
+                            disabled={
+                              !canSendFollowUp ||
+                              isDraftLocked ||
+                              !isDraftLoaded ||
+                              isSendingFollowUp ||
+                              isRetryActive
+                            }
+                            size="icon"
+                            className="rounded-full w-9 h-9 bg-primary hover:bg-primary/90"
+                          >
+                            {isSendingFollowUp ? (
+                              <Loader2 className="animate-spin h-4 w-4" />
+                            ) : (
+                              <Send className="h-4 w-4 fill-primary-foreground" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">
+                            {conflictResolutionInstructions
+                              ? t('followUp.resolveConflicts')
+                              : t('followUp.send')}{' '}
+                            <kbd className="ml-1 px-1 py-0.5 text-xs bg-muted rounded">
+                              {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Enter
+                            </kbd>
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     {isQueued && (
                       <Button
                         variant="default"
