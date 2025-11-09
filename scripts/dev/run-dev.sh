@@ -61,13 +61,17 @@ else
         # Use SQLx offline mode in worktrees to avoid compile-time database verification issues
         export SQLX_OFFLINE=true
         echo "🔒 Running in worktree (sandbox mode) - using isolated dev_assets/ database"
+    else
+        # Main repo with no .env file - use default dev_assets location
+        export DATABASE_URL="sqlite:///$(pwd)/dev_assets/db.sqlite"
+        echo "📝 No .env file found - using default dev_assets/ database"
     fi
 fi
 
 echo "📍 Configuration:"
 echo "   Backend:  http://localhost:${BACKEND_PORT}"
 echo "   Frontend: http://localhost:${FRONTEND_PORT}"
-if [ -n "$DATABASE_URL" ]; then
+if [ -n "${DATABASE_URL:-}" ]; then
     # Extract the path from sqlite:// URL
     DB_PATH="${DATABASE_URL#sqlite://}"
     echo "   Database: ${DB_PATH}"
@@ -83,37 +87,8 @@ else
 fi
 echo ""
 
-# Ensure database exists for online mode (SQLx compile-time verification)
-if [ "${SQLX_OFFLINE:-}" != "true" ]; then
-    if [ -n "$DATABASE_URL" ]; then
-        # Extract the path from sqlite:// URL
-        DB_PATH="${DATABASE_URL#sqlite://}"
-
-        if [ ! -f "$DB_PATH" ]; then
-            echo "🔧 Database doesn't exist - creating for SQLx online mode..."
-
-            # Create parent directory if needed
-            DB_DIR=$(dirname "$DB_PATH")
-            mkdir -p "$DB_DIR"
-
-            # Ensure dev_assets exists (safety net for worktrees)
-            if [ ! -d "dev_assets" ] && [ -d "dev_assets_seed" ]; then
-                echo "   Copying dev_assets_seed to dev_assets..."
-                cp -r dev_assets_seed dev_assets
-            fi
-
-            # Create empty database
-            sqlite3 "$DB_PATH" "SELECT 1;" > /dev/null 2>&1
-
-            # Run migrations
-            echo "   Running migrations..."
-            (cd upstream/crates/db && DATABASE_URL="$DATABASE_URL" sqlx migrate run)
-
-            echo "✅ Database created and migrated: $DB_PATH"
-            echo ""
-        fi
-    fi
-fi
+# Note: Database creation and migrations are handled automatically by the Rust app at runtime
+# See: upstream/crates/db/src/lib.rs (create_if_missing + sqlx::migrate!)
 
 # Check for pnpm
 if ! command -v pnpm >/dev/null 2>&1; then
