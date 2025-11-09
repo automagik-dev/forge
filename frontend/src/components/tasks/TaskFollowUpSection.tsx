@@ -689,13 +689,24 @@ export function TaskFollowUpSection({
                               isSendingFollowUp ||
                               isRetryActive
                             }
-                            size="icon"
-                            className="rounded-full w-9 h-9 bg-primary hover:bg-primary/90"
+                            size="sm"
+                            className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
                           >
                             {isSendingFollowUp ? (
-                              <Loader2 className="animate-spin h-4 w-4" />
+                              <>
+                                <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                                {t('followUp.sending', 'Sending...')}
+                              </>
                             ) : (
-                              <Send className="h-4 w-4 fill-primary-foreground" />
+                              <>
+                                <Send className="h-4 w-4 mr-2 fill-primary-foreground" />
+                                {conflictResolutionInstructions
+                                  ? t('followUp.resolveConflicts')
+                                  : t('followUp.send')}
+                                <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-primary-foreground/20 rounded font-mono">
+                                  {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}⏎
+                                </kbd>
+                              </>
                             )}
                           </Button>
                         </TooltipTrigger>
@@ -704,9 +715,7 @@ export function TaskFollowUpSection({
                             {conflictResolutionInstructions
                               ? t('followUp.resolveConflicts')
                               : t('followUp.send')}{' '}
-                            <kbd className="ml-1 px-1 py-0.5 text-xs bg-muted rounded">
-                              {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Enter
-                            </kbd>
+                            ({navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Enter)
                           </p>
                         </TooltipContent>
                       </Tooltip>
