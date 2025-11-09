@@ -30,9 +30,10 @@ if [ ! -d "upstream/crates" ]; then
     echo ""
 fi
 
-# Get ports from setup script
-export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend)
-export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend)
+# Get ports from setup script (single atomic call to prevent race conditions)
+SETUP_JSON=$(node scripts/setup-dev-environment.js get 2>/dev/null | tail -1)
+export FRONTEND_PORT=$(echo "$SETUP_JSON" | jq -r '.frontend')
+export BACKEND_PORT=$(echo "$SETUP_JSON" | jq -r '.backend')
 
 # Detect if we're in a git worktree (sandbox mode)
 IS_WORKTREE=false
@@ -92,6 +93,12 @@ if [ "${SQLX_OFFLINE:-}" != "true" ]; then
             # Create parent directory if needed
             DB_DIR=$(dirname "$DB_PATH")
             mkdir -p "$DB_DIR"
+
+            # Ensure dev_assets exists (safety net for worktrees)
+            if [ ! -d "dev_assets" ] && [ -d "dev_assets_seed" ]; then
+                echo "   Copying dev_assets_seed to dev_assets..."
+                cp -r dev_assets_seed dev_assets
+            fi
 
             # Create empty database
             sqlite3 "$DB_PATH" "SELECT 1;" > /dev/null 2>&1
