@@ -33,7 +33,8 @@ pub async fn run_server() -> anyhow::Result<()> {
 
     // Resolve bind address
     let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let port: u16 = std::env::var("PORT")
+    let port: u16 = std::env::var("BACKEND_PORT")
+        .or_else(|_| std::env::var("PORT"))
         .ok()
         .and_then(|p| p.parse().ok())
         .unwrap_or(8887);

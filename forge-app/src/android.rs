@@ -37,7 +37,8 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
     let runtime = get_runtime();
 
     // Default port
-    let port: u16 = std::env::var("PORT")
+    let port: u16 = std::env::var("BACKEND_PORT")
+        .or_else(|_| std::env::var("PORT"))
         .ok()
         .and_then(|p| p.parse().ok())
         .unwrap_or(8887);
