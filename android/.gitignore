@@ -17,6 +17,3 @@ captures/
 
 # NDK
 obj/
-
-# Gradle Wrapper JAR (we'll generate it)
-gradle/wrapper/gradle-wrapper.jar

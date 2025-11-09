@@ -19,6 +19,8 @@ static mut SERVER_HANDLE: Option<tokio::task::JoinHandle<()>> = None;
 fn get_runtime() -> &'static Runtime {
     unsafe {
         INIT.call_once(|| {
+            // Initialize tracing for Android (once)
+            tracing_subscriber::fmt::init();
             RUNTIME = Some(Runtime::new().expect("Failed to create Tokio runtime"));
         });
         RUNTIME.as_ref().unwrap()

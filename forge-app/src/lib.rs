@@ -12,9 +12,9 @@ use std::net::SocketAddr;
 use tokio::signal;
 
 /// Run the Forge server (reusable from both binary and JNI)
+///
+/// Note: Caller is responsible for initializing tracing subscriber.
 pub async fn run_server() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
-
     // Parse auth flag from environment
     let auth_required = std::env::var("AUTH_REQUIRED").is_ok();
     if auth_required {
