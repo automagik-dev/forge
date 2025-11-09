@@ -150,10 +150,16 @@ fn find_process_using_port(_port: u16, _host: &str) -> Option<String> {
     None
 }
 
-/// Run the Forge server (reusable from both binary and JNI)
+/// Run the Forge server with optional readiness notification
+///
+/// When `ready_tx` is provided, sends a signal after the server successfully binds
+/// to the port and is ready to accept connections. This is useful for Android JNI
+/// to avoid race conditions where the WebView tries to connect before the server starts.
 ///
 /// Note: Caller is responsible for initializing tracing subscriber.
-pub async fn run_server() -> anyhow::Result<()> {
+pub async fn run_server_with_readiness(
+    ready_tx: Option<tokio::sync::oneshot::Sender<()>>,
+) -> anyhow::Result<()> {
     // Parse auth flag from environment
     let auth_required = std::env::var("AUTH_REQUIRED").is_ok();
     if auth_required {
@@ -205,6 +211,11 @@ pub async fn run_server() -> anyhow::Result<()> {
     let actual_addr = listener.local_addr()?;
     tracing::info!("Forge app listening on {}", actual_addr);
 
+    // Signal readiness after successful bind (for Android JNI synchronization)
+    if let Some(tx) = ready_tx {
+        let _ = tx.send(());
+    }
+
     // Graceful shutdown
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
@@ -212,6 +223,13 @@ pub async fn run_server() -> anyhow::Result<()> {
 
     tracing::info!("Forge app shut down gracefully");
     Ok(())
+}
+
+/// Run the Forge server (backwards-compatible wrapper)
+///
+/// Note: Caller is responsible for initializing tracing subscriber.
+pub async fn run_server() -> anyhow::Result<()> {
+    run_server_with_readiness(None).await
 }
 
 /// Wait for shutdown signal

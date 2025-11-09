@@ -10,6 +10,7 @@ use jni::objects::JClass;
 use jni::sys::jint;
 use std::sync::Once;
 use tokio::runtime::Runtime;
+use tokio::sync::oneshot;
 
 static INIT: Once = Once::new();
 static mut RUNTIME: Option<Runtime> = None;
@@ -28,6 +29,10 @@ fn get_runtime() -> &'static Runtime {
 }
 
 /// Start the Forge server and return the port number
+///
+/// This function blocks until the server successfully binds to the port,
+/// preventing race conditions where the WebView tries to connect before
+/// the server is ready.
 #[cfg(feature = "android")]
 #[no_mangle]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
@@ -43,10 +48,21 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
         .and_then(|p| p.parse().ok())
         .unwrap_or(8887);
 
+    // Create oneshot channel to signal when server is ready
+    let (ready_tx, ready_rx) = oneshot::channel();
+
     // Spawn server in background
     let handle = runtime.spawn(async move {
-        if let Err(e) = crate::run_server().await {
+        if let Err(e) = crate::run_server_with_readiness(Some(ready_tx)).await {
             eprintln!("Server error: {}", e);
+        }
+    });
+
+    // Block until server is ready to accept connections
+    runtime.block_on(async {
+        match ready_rx.await {
+            Ok(_) => tracing::info!("Server ready on port {}", port),
+            Err(_) => eprintln!("Server failed to signal readiness"),
         }
     });
 
