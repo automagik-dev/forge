@@ -19,7 +19,7 @@ QA review of PR #39 focusing on **system architecture and backend integration**.
 - @frontend/src/services/subGenieApi.ts
 - @frontend/src/hooks/useAgentTasks.ts
 - @shared/types.ts
-- @forge-app/migrations/20251020000001_add_agent_task_status.sql
+- forge-app/migrations/ (database migrations for task status)
 
 **Validate**:
 - API endpoints match backend (`/api/tasks`, `/api/task-attempts`)
