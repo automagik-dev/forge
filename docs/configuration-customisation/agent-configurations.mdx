@@ -43,16 +43,16 @@ The profiles configuration uses a JSON structure with an `executors` object cont
 {
   "executors": {
     "CLAUDE_CODE": {
-      "DEFAULT": { "CLAUDE_CODE": { "dangerously_skip_permissions": true } },
+      "GENIE": { "CLAUDE_CODE": { "dangerously_skip_permissions": true } },
       "PLAN":    { "CLAUDE_CODE": { "plan": true } },
       "ROUTER":  { "CLAUDE_CODE": { "claude_code_router": true, "dangerously_skip_permissions": true } }
     },
     "GEMINI": {
-      "DEFAULT": { "GEMINI": { "model": "default", "yolo": true } },
+      "GENIE": { "GEMINI": { "model": "default", "yolo": true } },
       "FLASH":   { "GEMINI": { "model": "flash",   "yolo": true } }
     },
     "CODEX": {
-      "DEFAULT": { "CODEX": { "sandbox": "danger-full-access" } },
+      "GENIE": { "CODEX": { "sandbox": "danger-full-access" } },
       "HIGH":    { "CODEX": { "sandbox": "danger-full-access", "model_reasoning_effort": "high" } }
     }
   }
@@ -62,7 +62,7 @@ The profiles configuration uses a JSON structure with an `executors` object cont
 <AccordionGroup>
 <Accordion title="Structure Rules">
   - **Variant names**: Case-insensitive and normalised to SCREAMING_SNAKE_CASE
-  - **DEFAULT variant**: Reserved and always present for each agent
+  - **GENIE variant**: Reserved and always present for each agent
   - **Custom variants**: Add new variants like `PLAN`, `FLASH`, `HIGH` as needed
   - **Built-in protection**: Cannot remove built-in executors, but can override values
 </Accordion>

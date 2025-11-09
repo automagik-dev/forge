@@ -528,7 +528,7 @@ impl GenieProfileLoader {
                 .forge_profile_name
                 .clone()
                 .or_else(|| Some(self.derive_variant_name(&metadata, file)))
-                .unwrap_or_else(|| "DEFAULT".to_string());
+                .unwrap_or_else(|| "GENIE".to_string());
 
             // Build CodingAgent configuration
             let config = self.build_coding_agent(&executor, &metadata, &full_instructions)?;

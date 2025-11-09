@@ -385,7 +385,7 @@ export function GeneralSettings() {
                           className="w-full h-10 px-2 flex items-center justify-between"
                         >
                           <span className="text-sm truncate flex-1 text-left">
-                            {currentProfileVariant?.variant || 'DEFAULT'}
+                            {currentProfileVariant?.variant || 'GENIE'}
                           </span>
                           <ChevronDown className="h-4 w-4 ml-1 flex-shrink-0" />
                         </Button>

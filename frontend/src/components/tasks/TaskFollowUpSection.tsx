@@ -200,14 +200,14 @@ export function TaskFollowUpSection({
     const variants = Object.keys(currentExecutorProfile);
     if (variants.length === 0) return;
 
-    const currentVariantForLookup = selectedProfile.variant ?? 'DEFAULT';
+    const currentVariantForLookup = selectedProfile.variant ?? 'GENIE';
     const currentIndex = variants.indexOf(currentVariantForLookup);
     const nextIndex = (currentIndex + 1) % variants.length;
     const nextVariant = variants[nextIndex];
 
     setSelectedProfile({
       ...selectedProfile,
-      variant: nextVariant === 'DEFAULT' ? null : nextVariant,
+      variant: nextVariant === 'GENIE' ? null : nextVariant,
     });
   }, [selectedProfile, profiles]);
 

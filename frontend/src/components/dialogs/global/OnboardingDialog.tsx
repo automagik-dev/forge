@@ -123,7 +123,7 @@ const OnboardingDialog = NiceModal.create(() => {
                           className="w-24 px-2 flex items-center justify-between"
                         >
                           <span className="text-xs truncate flex-1 text-left">
-                            {profile.variant || 'DEFAULT'}
+                            {profile.variant || 'GENIE'}
                           </span>
                           <ChevronDown className="h-3 w-3 ml-1 flex-shrink-0" />
                         </Button>

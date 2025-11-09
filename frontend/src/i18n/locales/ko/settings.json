@@ -45,7 +45,7 @@
           "placeholder": "프로바이더 선택",
           "helper": "작업 시도를 생성할 때 사용할 기본 프로바이더 및 에이전트를 선택하세요."
         },
-        "variant": "DEFAULT",
+        "variant": "GENIE",
         "defaultLabel": "기본"
       },
       "editor": {
