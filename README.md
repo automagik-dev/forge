@@ -484,12 +484,29 @@ automagik-forge
 
 ## 🛠️ Development
 
-Interested in contributing or building from source? Check out our [Developer Guide](DEVELOPER.md) for detailed instructions on:
-- Setting up the development environment
-- Building from source
-- Running tests
-- Database migrations
-- Architecture details
+### Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/namastexlabs/automagik-forge.git
+cd automagik-forge
+
+# Copy environment example (optional - only needed for custom ports)
+cp .env.example .env
+
+# Start development server
+make dev
+
+# Or build and test production package
+make prod
+```
+
+**Port Configuration:**
+- Copy `.env.example` to `.env` to customize ports
+- Default: Backend on 3887, Frontend on 3888
+- That's it - everything else is automated!
+
+**See also:** [DEVELOPER.md](DEVELOPER.md) for architecture details and advanced topics
 
 ### Upstream Management
 
