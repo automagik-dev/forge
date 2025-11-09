@@ -7,7 +7,7 @@
 Run automagik forge instantly without installation:
 
 ```bash
-npx automagik-forge
+npx @automagik/forge
 ```
 
 This will launch the application locally and open it in your browser automatically.
@@ -153,7 +153,7 @@ Automagik Forge supports customization through its configuration system:
 **Ready to supercharge your development workflow?**
 
 ```bash
-npx automagik-forge
+npx @automagik/forge
 ```
 
 *Start managing your projects with the power of AI coding agents today!*
