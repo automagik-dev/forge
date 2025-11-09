@@ -58,6 +58,8 @@ else
     if [ "$IS_WORKTREE" = "true" ]; then
         # Set DATABASE_URL to worktree's isolated database (absolute path requires 3 slashes)
         export DATABASE_URL="sqlite:///$(pwd)/dev_assets/db.sqlite"
+        # Use SQLx offline mode in worktrees to avoid compile-time database verification issues
+        export SQLX_OFFLINE=true
         echo "🔒 Running in worktree (sandbox mode) - using isolated dev_assets/ database"
     fi
 fi
