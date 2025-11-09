@@ -308,6 +308,12 @@ jobs:
         working-directory: frontend
         run: pnpm run build
 
+      - name: Copy frontend dist for server crate embedding
+        run: |
+          mkdir -p upstream/frontend
+          cp -r frontend/dist upstream/frontend/dist
+          echo "Copied frontend/dist to upstream/frontend/dist for RustEmbed"
+
       - name: Configure Android NDK toolchain
         run: |
           echo "[target.aarch64-linux-android]" > ~/.cargo/config.toml
@@ -359,7 +365,7 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleDebug
 
       - name: Package Termux CLI binaries
         run: |
@@ -378,7 +384,7 @@ jobs:
       - name: Package APK
         run: |
           mkdir -p npx-cli/dist/android-apk
-          cp android/app/build/outputs/apk/release/*.apk npx-cli/dist/android-apk/
+          cp android/app/build/outputs/apk/debug/*.apk npx-cli/dist/android-apk/
 
       - name: Upload Termux CLI artifacts
         uses: actions/upload-artifact@v4

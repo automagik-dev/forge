@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Simplified Namastex logo vector for adaptive icon foreground -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.5"
+        android:scaleY="0.5"
+        android:translateX="27"
+        android:translateY="27">
+        <!-- Simplified triangle shape from Namastex logo -->
+        <path
+            android:fillColor="#00D9FF"
+            android:pathData="M54,10 L90,80 L18,80 Z" />
+        <path
+            android:fillColor="#5319E7"
+            android:pathData="M54,25 L75,70 L33,70 Z" />
+    </group>
+</vector>

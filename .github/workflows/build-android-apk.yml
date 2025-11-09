@@ -82,6 +82,12 @@ jobs:
         working-directory: frontend
         run: pnpm run build
 
+      - name: Copy frontend dist for server crate embedding
+        run: |
+          mkdir -p upstream/frontend
+          cp -r frontend/dist upstream/frontend/dist
+          echo "Copied frontend/dist to upstream/frontend/dist for RustEmbed"
+
       - name: Configure Android NDK toolchain
         run: |
           echo "[target.aarch64-linux-android]" > ~/.cargo/config.toml
@@ -112,26 +118,23 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleDebug
 
-      - name: Sign APK (if release)
+      - name: Rename debug APK (if release)
         if: startsWith(github.ref, 'refs/tags/')
-        working-directory: android/app/build/outputs/apk/release
+        working-directory: android/app/build/outputs/apk/debug
         run: |
-          # For now, we'll upload unsigned APK
-          # TODO: Add keystore signing for production releases
-          mv app-release-unsigned.apk automagik-forge-${{ github.ref_name }}.apk || \
-          mv app-release.apk automagik-forge-${{ github.ref_name }}.apk
+          mv app-debug.apk automagik-forge-${{ github.ref_name }}-debug.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: android/app/build/outputs/apk/release/*.apk
+          path: android/app/build/outputs/apk/debug/*.apk
 
       - name: Upload APK to release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          files: android/app/build/outputs/apk/release/automagik-forge-*.apk
+          files: android/app/build/outputs/apk/debug/automagik-forge-*-debug.apk
           token: ${{ secrets.GITHUB_TOKEN }}
