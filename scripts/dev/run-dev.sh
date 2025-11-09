@@ -155,6 +155,12 @@ echo ""
 
 # Start backend in background
 echo "⚙️  Starting backend server (this will take a while on first compile)..."
+
+# Use SQLx offline mode for compilation (uses .sqlx/ metadata instead of live database)
+# This prevents "unable to open database file" errors during compilation
+# See: https://github.com/namastexlabs/automagik-forge/issues/86
+export SQLX_OFFLINE=true
+
 export DISABLE_BROWSER_OPEN=1
 export DISABLE_WORKTREE_ORPHAN_CLEANUP=1
 export RUST_LOG=debug

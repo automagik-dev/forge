@@ -146,12 +146,23 @@ fi
 
 if [ "$NEEDS_BACKEND_BUILD" = "true" ]; then
   echo "🔨 Building Rust binaries..."
+
+  # Use SQLx offline mode for compilation (uses .sqlx/ metadata instead of live database)
+  # This prevents "unable to open database file" errors during compilation
+  # See: https://github.com/namastexlabs/automagik-forge/issues/86
+  export SQLX_OFFLINE=true
+
   cargo build --release --bin forge-app
   cargo build --release --bin mcp_task_server
 else
   # Verify binaries actually exist before skipping
   if [ ! -f "target/release/forge-app${BIN_EXT}" ] || [ ! -f "target/release/mcp_task_server${BIN_EXT}" ]; then
     echo "⚠️  Backend binaries missing despite no detected changes - rebuilding"
+
+    # Use SQLx offline mode for compilation
+    # See: https://github.com/namastexlabs/automagik-forge/issues/86
+    export SQLX_OFFLINE=true
+
     cargo build --release --bin forge-app
     cargo build --release --bin mcp_task_server
   else
