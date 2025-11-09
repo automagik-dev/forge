@@ -79,7 +79,11 @@
     "logs": {
       "title": "Dev Server Logs",
       "hide": "Hide",
-      "show": "Show"
+      "show": "Show",
+      "copy": "Copy Logs",
+      "copied": "Copied!",
+      "copy_failed": "Failed to copy logs",
+      "no_logs": "No logs to copy"
     },
     "iframe": {
       "title": "Dev server preview"
