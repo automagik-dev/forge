@@ -66,7 +66,7 @@ const VariantSelectorInner = forwardRef<HTMLButtonElement, Props>(
             disabled={disabled}
           >
             <span className="text-xs truncate flex-1 text-left">
-              {selectedVariant || 'DEFAULT'}
+              {selectedVariant || 'GENIE'}
             </span>
             <ChevronDown className="h-3 w-3 ml-1 flex-shrink-0" />
           </Button>

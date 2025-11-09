@@ -121,7 +121,7 @@ function ExecutorProfileSelector({
     if (selectedProfile) {
       onProfileSelect({
         ...selectedProfile,
-        variant: variant === 'DEFAULT' ? null : variant,
+        variant: variant === 'GENIE' ? null : variant,
       });
     }
     setVariantSearchTerm('');
@@ -373,7 +373,7 @@ function ExecutorProfileSelector({
                   <span className="truncate">
                     {isLoading
                       ? 'Loading agents...'
-                      : selectedProfile.variant || 'DEFAULT'}
+                      : selectedProfile.variant || 'GENIE'}
                   </span>
                   <ArrowDown className="h-3 w-3" />
                 </Button>
