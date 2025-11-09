@@ -127,12 +127,16 @@ async fn main() -> anyhow::Result<()> {
     // Parse CLI flags
     let auth_required = parse_auth_required();
     if auth_required {
-        std::env::set_var("AUTH_REQUIRED", "1");
+        unsafe {
+            std::env::set_var("AUTH_REQUIRED", "1");
+        }
     }
 
     // Parse port from CLI
     if let Some(port) = parse_port_flag() {
-        std::env::set_var("PORT", port.to_string());
+        unsafe {
+            std::env::set_var("PORT", port.to_string());
+        }
     }
 
     // Open browser before starting server (unless disabled)

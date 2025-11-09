@@ -2,8 +2,11 @@
 //!
 //! This module provides JNI functions to start and stop the Forge server from Android.
 
+#[cfg(feature = "android")]
 use jni::JNIEnv;
+#[cfg(feature = "android")]
 use jni::objects::JClass;
+#[cfg(feature = "android")]
 use jni::sys::jint;
 use std::sync::Once;
 use tokio::runtime::Runtime;
@@ -23,6 +26,7 @@ fn get_runtime() -> &'static Runtime {
 }
 
 /// Start the Forge server and return the port number
+#[cfg(feature = "android")]
 #[no_mangle]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
     _env: JNIEnv,
@@ -51,6 +55,7 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
 }
 
 /// Stop the Forge server
+#[cfg(feature = "android")]
 #[no_mangle]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_stopServer(
     _env: JNIEnv,

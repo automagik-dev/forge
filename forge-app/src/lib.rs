@@ -5,7 +5,7 @@
 pub mod services;
 pub mod router;
 
-#[cfg(target_os = "android")]
+#[cfg(all(target_os = "android", feature = "android"))]
 pub mod android;
 
 use std::net::SocketAddr;
