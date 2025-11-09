@@ -54,7 +54,7 @@ check-android-deps:
 	@if [ -d "/data/data/com.termux" ]; then \
 		echo "📱 Checking Android/Termux build dependencies..."; \
 		MISSING_DEPS=""; \
-		for dep in perl openssl pkg-config make; do \
+		for dep in perl openssl pkg-config make clang; do \
 			if ! command -v $$dep &> /dev/null; then \
 				MISSING_DEPS="$$MISSING_DEPS $$dep"; \
 			fi; \
@@ -65,6 +65,15 @@ check-android-deps:
 			echo "✅ Dependencies installed"; \
 		else \
 			echo "✅ All build dependencies present"; \
+		fi; \
+	else \
+		echo "🐧 Checking Linux build dependencies..."; \
+		if ! dpkg -l | grep -q libclang-dev; then \
+			echo "📦 Installing libclang-dev..."; \
+			sudo apt-get update && sudo apt-get install -y libclang-dev; \
+			echo "✅ libclang-dev installed"; \
+		else \
+			echo "✅ libclang-dev already installed"; \
 		fi; \
 	fi
   

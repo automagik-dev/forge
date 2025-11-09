@@ -503,8 +503,8 @@ make prod
 
 **Port Configuration:**
 - Copy `.env.example` to `.env` to customize ports
-- Default: Backend on 3887, Frontend on 3888
-- That's it - everything else is automated!
+- Defaults work out of the box - no configuration needed!
+- Everything else is automated!
 
 **See also:** [DEVELOPER.md](DEVELOPER.md) for architecture details and advanced topics
 

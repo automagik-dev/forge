@@ -37,47 +37,45 @@ Welcome to the Automagik Forge development guide. This document provides compreh
 
 ## Development Setup
 
-### 1. Clone the Repository
+### Quick Start
 
 ```bash
+# 1. Clone the repository
 git clone https://github.com/namastexlabs/automagik-forge.git
 cd automagik-forge
+
+# 2. (Optional) Copy .env.example to .env for custom port configuration
+cp .env.example .env
+
+# 3. Start development environment
+make dev
 ```
 
-### 2. Initialize Submodules
+That's it! The `make dev` command automatically:
+- Checks and installs cargo/cargo-watch if needed
+- Initializes git submodules
+- Installs pnpm dependencies
+- Creates and seeds the database
+- Builds the frontend
+- Starts both backend and frontend with hot reload
 
-Automagik Forge uses a git submodule for the upstream vibe-kanban template:
+The application will be available at `http://localhost:3000` (or your custom port from .env).
+
+### Alternative: Manual Commands
+
+If you prefer manual control:
 
 ```bash
-git submodule update --init --recursive
-```
-
-### 3. Install Dependencies
-
-```bash
-# Install Node.js dependencies
+# Install dependencies
 pnpm install
 
-# Build Rust workspace (this also checks dependencies)
-cargo build --workspace
-```
-
-### 4. Setup Database
-
-The database is automatically created and seeded when you first run the development server. The seed data is located in `dev_assets_seed/`.
-
-### 5. Start Development Servers
-
-```bash
-# Start both frontend and backend with hot reload
+# Start both servers
 pnpm run dev
 
-# Or start individually:
+# Or start individually
 npm run frontend:dev    # Frontend only (port 3000)
 npm run backend:dev     # Backend only (port auto-assigned)
 ```
-
-The application will be available at `http://localhost:3000`.
 
 ---
 
