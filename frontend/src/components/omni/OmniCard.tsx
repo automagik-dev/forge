@@ -69,7 +69,7 @@ export function OmniCard({ value, onChange }: OmniCardProps) {
                 omni_config: value.omni_config ? {
                   ...value.omni_config,
                   enabled: checked,
-                } : undefined,
+                } : null,
               });
             }}
             disabled={!isConfigured}
