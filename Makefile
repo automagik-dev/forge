@@ -24,7 +24,11 @@ help:
 
 # Check and install cargo if needed (OS agnostic)
 check-cargo:
-	@if ! command -v cargo &> /dev/null; then \
+	@PATH="$$HOME/.cargo/bin:$$PATH"; \
+	export PATH; \
+	if command -v cargo >/dev/null 2>&1; then \
+		echo "✅ Cargo already installed: $$(cargo --version)"; \
+	else \
 		echo "🦀 Cargo not found. Installing Rust toolchain..."; \
 		if [ -d "/data/data/com.termux" ]; then \
 			echo "📱 Termux detected - installing via pkg..."; \
@@ -32,11 +36,17 @@ check-cargo:
 		else \
 			echo "🌐 Installing via rustup (Linux/macOS/WSL)..."; \
 			curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y; \
-			export PATH="$$HOME/.cargo/bin:$$PATH"; \
+			PATH="$$HOME/.cargo/bin:$$PATH"; \
+			export PATH; \
 		fi; \
 		echo "✅ Rust toolchain installed"; \
+	fi; \
+	if cargo watch --version >/dev/null 2>&1; then \
+		echo "✅ cargo-watch already installed: $$(cargo watch --version)"; \
 	else \
-		echo "✅ Cargo already installed: $$(cargo --version)"; \
+		echo "🔧 Installing cargo-watch..."; \
+		cargo install cargo-watch; \
+		echo "✅ cargo-watch installed"; \
 	fi
 
 # Check and install Android/Termux build dependencies
