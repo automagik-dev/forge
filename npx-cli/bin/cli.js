@@ -50,7 +50,8 @@ function getEffectiveArch() {
   return "x64";
 }
 
-const platform = process.platform;
+// Normalize platform - treat Android as Linux (uses same binaries)
+const platform = process.platform === "android" ? "linux" : process.platform;
 const arch = getEffectiveArch();
 
 // Map to our build target names

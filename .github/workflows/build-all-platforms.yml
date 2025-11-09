@@ -27,7 +27,7 @@ jobs:
             platform: linux-x64
           - os: ubuntu-22.04  # Use 22.04 for GLIBC 2.35 compatibility (works on 22.04 AND 24.04)
             target: aarch64-unknown-linux-gnu
-            platform: linux-arm64
+            platform: linux-arm64  # Also supports Android (Termux)
             use-zigbuild: true
           - os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -103,6 +103,13 @@ jobs:
 
       - name: Install workspace dependencies
         run: pnpm install --no-frozen-lockfile
+
+      - name: Install Linux build tools for vendored OpenSSL
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y perl pkg-config libssl-dev make
 
       - name: Install Windows build tools for vendored OpenSSL
         if: runner.os == 'Windows'
