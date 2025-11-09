@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Terminal, ChevronDown, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 import ProcessLogsViewer, {
   ProcessLogsViewerContent,
 } from '../ProcessLogsViewer';
@@ -28,15 +27,11 @@ export function DevServerLogsView({
   error,
 }: DevServerLogsViewProps) {
   const { t } = useTranslation('tasks');
-  const { toast } = useToast();
   const [copied, setCopied] = useState(false);
 
   const handleCopyLogs = async () => {
     if (!logs || logs.length === 0) {
-      toast({
-        title: t('preview.logs.no_logs'),
-        variant: 'destructive',
-      });
+      console.warn('No logs to copy');
       return;
     }
 
@@ -47,17 +42,10 @@ export function DevServerLogsView({
 
       await navigator.clipboard.writeText(logsText);
       setCopied(true);
-      toast({
-        title: t('preview.logs.copied'),
-      });
 
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy logs:', err);
-      toast({
-        title: t('preview.logs.copy_failed'),
-        variant: 'destructive',
-      });
     }
   };
 
