@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Activity, AlertCircle, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface HealthStatus {
   status: 'healthy' | 'unhealthy';
@@ -13,6 +14,7 @@ interface LatestRelease {
 }
 
 export function Footer() {
+  const { t } = useTranslation('common');
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [latestRelease, setLatestRelease] = useState<LatestRelease | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -92,11 +94,11 @@ export function Footer() {
           </a>
           <span className="text-muted-foreground/60">•</span>
           <span className="italic text-muted-foreground/80">
-            AI that elevates human potential, not replaces it
+            {t('footer.tagline')}
           </span>
           <span className="text-muted-foreground/60">•</span>
           <span className="text-muted-foreground/70">
-            Crafted with 💙 by{' '}
+            {t('footer.crafted')}{' '}
             <a
               href="https://namastex.ai"
               target="_blank"
@@ -130,7 +132,7 @@ export function Footer() {
               title={`Update available: ${latestRelease.tag_name}`}
             >
               <Download className="w-3 h-3" />
-              <span>Update available</span>
+              <span>{t('footer.updateAvailable')}</span>
             </a>
           )}
 
@@ -146,7 +148,7 @@ export function Footer() {
           {!health && (
             <div className="flex items-center gap-1.5 text-yellow-600 dark:text-yellow-400">
               <AlertCircle className="w-3 h-3" />
-              <span>Connecting...</span>
+              <span>{t('footer.connecting')}</span>
             </div>
           )}
         </div>

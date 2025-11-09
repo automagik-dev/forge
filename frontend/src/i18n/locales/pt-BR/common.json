@@ -133,5 +133,11 @@
       "open": "Abrir chat do Genie",
       "close": "Fechar"
     }
+  },
+  "footer": {
+    "tagline": "IA que eleva o potencial humano, não o substitui",
+    "crafted": "Criado com 💙 por",
+    "updateAvailable": "Atualização disponível",
+    "connecting": "Conectando..."
   }
 }

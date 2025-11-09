@@ -129,11 +129,10 @@ export const ReleaseNotesDialog = NiceModal.create(() => {
           ) : null}
         </div>
 
-        <DialogFooter className="flex-row justify-between gap-2">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={handleViewAllReleases}
-            className="flex-1"
           >
             View All Releases
           </Button>
@@ -141,7 +140,6 @@ export const ReleaseNotesDialog = NiceModal.create(() => {
             <Button
               variant="outline"
               onClick={handleViewOnGitHub}
-              className="flex-1"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               View on GitHub
@@ -149,9 +147,9 @@ export const ReleaseNotesDialog = NiceModal.create(() => {
           )}
           <Button
             onClick={() => modal.resolve()}
-            className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
           >
-            Let's Code! 🚀
+            Let's Create! ✨
           </Button>
         </DialogFooter>
       </DialogContent>

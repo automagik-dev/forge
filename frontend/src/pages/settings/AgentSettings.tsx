@@ -50,7 +50,7 @@ export function AgentSettings() {
   const [selectedExecutorType, setSelectedExecutorType] =
     useState<string>('CLAUDE_CODE');
   const [selectedConfiguration, setSelectedConfiguration] =
-    useState<string>('DEFAULT');
+    useState<string>('GENIE');
   const [localParsedProfiles, setLocalParsedProfiles] = useState<any>(null);
   const [isDirty, setIsDirty] = useState(false);
 
@@ -216,7 +216,7 @@ export function AgentSettings() {
         const nextConfigs = Object.keys(
           updatedProfiles.executors[selectedExecutorType]
         );
-        const nextSelected = nextConfigs[0] || 'DEFAULT';
+        const nextSelected = nextConfigs[0] || 'GENIE';
         setSelectedConfiguration(nextSelected);
 
         // Show success
@@ -414,7 +414,7 @@ export function AgentSettings() {
                     onValueChange={(value) => {
                       setSelectedExecutorType(value);
                       // Reset configuration selection when executor type changes
-                      setSelectedConfiguration('DEFAULT');
+                      setSelectedConfiguration('GENIE');
                     }}
                   >
                     <SelectTrigger id="executor-type">

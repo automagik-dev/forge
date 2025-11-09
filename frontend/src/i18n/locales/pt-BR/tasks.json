@@ -43,13 +43,18 @@
   "preview": {
     "title": "Preview",
     "selectAttempt": "Select an attempt to see preview",
+    "buildingAlert": {
+      "title": "Iniciando servidor de desenvolvimento...",
+      "description": "Sua aplicação está sendo construída. Isso pode levar um momento dependendo do tamanho do projeto e das dependências."
+    },
     "troubleAlert": {
-      "title": "We're having trouble previewing your application:",
-      "item1": "Did the dev server start successfully? There may be a bug you need to resolve, or perhaps dependencies need to be installed.",
-      "item2": "Did your dev server print the URL and port to the terminal in the format",
-      "item2Suffix": "? (this is how we know it's running)",
-      "item3": "Have you installed the Web Companion (required for click-to-edit)? If not, please",
-      "item3Link": "follow the installation instructions here"
+      "title": "Pré-visualização ainda não está pronta",
+      "description": "O servidor de desenvolvimento está demorando mais do que o esperado. Aqui estão algumas coisas para verificar:",
+      "item1": "Verifique se o servidor de desenvolvimento iniciou com sucesso - pode haver erros de compilação ou dependências ausentes.",
+      "item2": "Verifique se o servidor de desenvolvimento imprime a URL e a porta no formato",
+      "item2Suffix": "(é assim que detectamos que está em execução).",
+      "item3": "Se você ainda não o fez, instale o Web Companion para funcionalidade de clique para editar:",
+      "item3Link": "Ver instruções de instalação"
     },
     "noServer": {
       "title": "No dev server running",

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Project } from 'shared/types';
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useOpenProjectInEditor } from '@/hooks/useOpenProjectInEditor';
 import { useNavigateWithSearch } from '@/hooks';
 import { projectsApi } from '@/lib/api';
@@ -41,6 +42,7 @@ function ProjectCard({
   setError,
   onEdit,
 }: Props) {
+  const { t } = useTranslation('projects');
   const navigate = useNavigateWithSearch();
   const ref = useRef<HTMLDivElement>(null);
   const handleOpenInEditor = useOpenProjectInEditor(project);
@@ -54,9 +56,7 @@ function ProjectCard({
 
   const handleDelete = async (id: string, name: string) => {
     if (
-      !confirm(
-        `Are you sure you want to delete "${name}"? This action cannot be undone.`
-      )
+      !confirm(t('card.deleteConfirm', { name }))
     )
       return;
 
@@ -65,7 +65,7 @@ function ProjectCard({
       fetchProjects();
     } catch (error) {
       console.error('Failed to delete project:', error);
-      setError('Failed to delete project');
+      setError(t('errors.deleteFailed'));
     }
   };
 
@@ -88,7 +88,7 @@ function ProjectCard({
         <div className="flex items-start justify-between">
           <CardTitle className="text-lg">{project.name}</CardTitle>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">Active</Badge>
+            <Badge variant="secondary">{t('card.status.active')}</Badge>
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -103,7 +103,7 @@ function ProjectCard({
                   }}
                 >
                   <ExternalLink className="mr-2 h-4 w-4" />
-                  View Project
+                  {t('card.menu.viewProject')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={(e) => {
@@ -112,7 +112,7 @@ function ProjectCard({
                   }}
                 >
                   <FolderOpen className="mr-2 h-4 w-4" />
-                  Open in IDE
+                  {t('card.menu.openInIDE')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={(e) => {
@@ -121,7 +121,7 @@ function ProjectCard({
                   }}
                 >
                   <Edit className="mr-2 h-4 w-4" />
-                  Edit
+                  {t('card.menu.edit')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={(e) => {
@@ -131,7 +131,7 @@ function ProjectCard({
                   className="text-destructive"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                  {t('card.menu.delete')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -139,7 +139,7 @@ function ProjectCard({
         </div>
         <CardDescription className="flex items-center">
           <Calendar className="mr-1 h-3 w-3" />
-          Created {new Date(project.created_at).toLocaleDateString()}
+          {t('card.created')} {new Date(project.created_at).toLocaleDateString()}
         </CardDescription>
       </CardHeader>
     </Card>

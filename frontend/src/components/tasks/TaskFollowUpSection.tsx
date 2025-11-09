@@ -11,13 +11,21 @@ import {
   type ImageUploadSectionHandle,
 } from '@/components/ui/ImageUploadSection';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 //
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { imagesApi } from '@/lib/api.ts';
 import type { TaskWithAttemptStatus } from 'shared/types';
 import { useBranchStatus } from '@/hooks';
 import { useAttemptExecution } from '@/hooks/useAttemptExecution';
 import { useUserSystem } from '@/components/config-provider';
+import { useProjectProfiles } from '@/hooks/useProjectProfiles';
 import { cn } from '@/lib/utils';
 //
 import { useReview } from '@/contexts/ReviewProvider';
@@ -26,7 +34,7 @@ import { useEntries } from '@/contexts/EntriesContext';
 import { useKeyCycleVariant, useKeySubmitFollowUp, Scope } from '@/keyboard';
 import { useHotkeysContext } from 'react-hotkeys-hook';
 //
-import { VariantSelector } from '@/components/tasks/VariantSelector';
+import ExecutorProfileSelector from '@/components/settings/ExecutorProfileSelector';
 import { FollowUpStatusRow } from '@/components/tasks/FollowUpStatusRow';
 import { useAttemptBranch } from '@/hooks/useAttemptBranch';
 import { FollowUpConflictSection } from '@/components/tasks/follow-up/FollowUpConflictSection';
@@ -42,27 +50,40 @@ import { useDefaultVariant } from '@/hooks/follow-up/useDefaultVariant';
 import { buildResolveConflictsInstructions } from '@/lib/conflicts';
 import { appendImageMarkdown } from '@/utils/markdownImages';
 import { useTranslation } from 'react-i18next';
+import type { ExecutorProfileId } from 'shared/types';
 
 interface TaskFollowUpSectionProps {
-  task: TaskWithAttemptStatus;
+  task: TaskWithAttemptStatus | null;
   selectedAttemptId?: string;
   jumpToLogsTab: () => void;
+  isInChatView?: boolean;
+  taskIdFromUrl?: string;
+  projectId?: string; // Project ID from URL (fallback when task is still loading)
 }
 
 export function TaskFollowUpSection({
   task,
   selectedAttemptId,
   jumpToLogsTab,
+  isInChatView = false,
+  taskIdFromUrl: _taskIdFromUrl,
+  projectId: projectIdFromUrl,
 }: TaskFollowUpSectionProps) {
   const { t } = useTranslation('tasks');
+  const navigate = useNavigate();
 
   const { isAttemptRunning, stopExecution, isStopping, processes } =
-    useAttemptExecution(selectedAttemptId, task.id);
+    useAttemptExecution(selectedAttemptId, task?.id);
   const { data: branchStatus, refetch: refetchBranchStatus } =
     useBranchStatus(selectedAttemptId);
   const { branch: attemptBranch, refetch: refetchAttemptBranch } =
     useAttemptBranch(selectedAttemptId);
-  const { profiles } = useUserSystem();
+  const { profiles: globalProfiles, config } = useUserSystem();
+  const { data: projectProfiles } = useProjectProfiles(task?.project_id ?? projectIdFromUrl);
+
+  // Use project profiles if available (synchronized agents), fallback to global profiles
+  const profiles = projectProfiles?.executors || globalProfiles;
+
   const { comments, generateReviewMarkdown, clearComments } = useReview();
   const {
     generateMarkdown: generateClickedMarkdown,
@@ -98,7 +119,7 @@ export function TaskFollowUpSection({
   ]);
 
   // Draft stream and synchronization
-  const { draft, isDraftLoaded } = useDraftStream(selectedAttemptId);
+  const { draft, isDraftLoaded } = useDraftStream(selectedAttemptId, task?.id);
 
   // Editor state
   const {
@@ -111,7 +132,7 @@ export function TaskFollowUpSection({
     clearImagesAndUploads,
   } = useDraftEditor({
     draft,
-    taskId: task.id,
+    taskId: task?.id,
   });
 
   // Presentation-only: show/hide image upload panel
@@ -127,33 +148,75 @@ export function TaskFollowUpSection({
   // Track whether the follow-up textarea is focused
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
 
-  // Variant selection (with keyboard cycling)
-  const { selectedVariant, setSelectedVariant, currentProfile } =
+  // Get profile from execution history (if exists)
+  const { selectedVariant: variantFromHistory, currentProfile: profileFromHistory } =
     useDefaultVariant({ processes, profiles: profiles ?? null });
 
-  // Cycle to the next variant when Shift+Tab is pressed
+  // Initialize selected profile with history or default
+  const [selectedProfile, setSelectedProfile] = useState<ExecutorProfileId | null>(() => {
+    if (profileFromHistory) {
+      // Extract executor from profileFromHistory (it's ExecutorConfig)
+      const executorKey = Object.keys(profiles || {}).find(
+        (key) => profiles?.[key] === profileFromHistory
+      );
+      return executorKey
+        ? {
+            executor: executorKey as any,
+            variant: variantFromHistory,
+          }
+        : null;
+    }
+    // Fallback to user's configured default executor
+    if (config?.executor_profile) {
+      return {
+        executor: config.executor_profile.executor,
+        variant: null,
+      };
+    }
+    return null;
+  });
+
+  // Update selectedProfile when history changes (e.g., after first execution)
+  useEffect(() => {
+    if (profileFromHistory && profiles) {
+      const executorKey = Object.keys(profiles).find(
+        (key) => profiles[key] === profileFromHistory
+      );
+      if (executorKey) {
+        setSelectedProfile({
+          executor: executorKey as any,
+          variant: variantFromHistory,
+        });
+      }
+    }
+  }, [profileFromHistory, variantFromHistory, profiles]);
+
+  // Cycle variants with keyboard (Shift+Tab)
   const cycleVariant = useCallback(() => {
-    if (!currentProfile) return;
-    const variants = Object.keys(currentProfile); // Include DEFAULT
+    if (!selectedProfile || !profiles) return;
+    const currentExecutorProfile = profiles[selectedProfile.executor];
+    if (!currentExecutorProfile) return;
+
+    const variants = Object.keys(currentExecutorProfile);
     if (variants.length === 0) return;
 
-    // Treat null as "DEFAULT" for finding current position
-    const currentVariantForLookup = selectedVariant ?? 'DEFAULT';
+    const currentVariantForLookup = selectedProfile.variant ?? 'GENIE';
     const currentIndex = variants.indexOf(currentVariantForLookup);
     const nextIndex = (currentIndex + 1) % variants.length;
     const nextVariant = variants[nextIndex];
 
-    // Keep using null to represent DEFAULT (backend expects it)
-    // But for display/cycling purposes, treat DEFAULT as a real option
-    setSelectedVariant(nextVariant === 'DEFAULT' ? null : nextVariant);
-  }, [currentProfile, selectedVariant, setSelectedVariant]);
+    setSelectedProfile({
+      ...selectedProfile,
+      variant: nextVariant === 'GENIE' ? null : nextVariant,
+    });
+  }, [selectedProfile, profiles]);
 
   // Queue management (including derived lock flag)
   const { onQueue, onUnqueue } = useDraftQueue({
     attemptId: selectedAttemptId,
     draft,
     message: followUpMessage,
-    selectedVariant,
+    selectedVariant: selectedProfile?.variant ?? null,
     images,
   });
 
@@ -193,7 +256,7 @@ export function TaskFollowUpSection({
     serverDraft: draft,
     current: {
       prompt: followUpMessage,
-      variant: selectedVariant,
+      variant: selectedProfile?.variant ?? null,
       image_ids: images.map((img) => img.id),
     },
     isQueuedUI: displayQueued,
@@ -202,15 +265,35 @@ export function TaskFollowUpSection({
     isUnqueuing: isUnqueuing,
   });
 
+  // Use projectId from URL as fallback when task is still loading
+  const effectiveProjectId = task?.project_id ?? projectIdFromUrl;
+
+  // Handle navigation when new task/attempt is created (Master Genie first message)
+  const handleNewTaskCreated = useCallback(
+    (taskId: string, attemptId: string) => {
+      console.log('[Master Genie] Navigating to new task:', taskId, attemptId);
+      // Navigate to the new task/attempt with chat view
+      navigate(`/projects/${effectiveProjectId}/tasks/${taskId}/attempts/${attemptId}?view=chat`);
+    },
+    [navigate, effectiveProjectId]
+  );
+
   // Send follow-up action
+  // For Master Genie first message: pass undefined as attemptId (hook detects and uses create-and-start)
+  // For subsequent messages: pass selectedAttemptId (from URL/state)
   const { isSendingFollowUp, followUpError, setFollowUpError, onSendFollowUp } =
     useFollowUpSend({
       attemptId: selectedAttemptId,
+      task,
+      currentProfile: selectedProfile && profiles
+        ? profiles[selectedProfile.executor]
+        : null,
+      defaultExecutor: selectedProfile?.executor,
       message: followUpMessage,
       conflictMarkdown: conflictResolutionInstructions,
       reviewMarkdown,
       clickedMarkdown,
-      selectedVariant,
+      selectedVariant: selectedProfile?.variant ?? null,
       images,
       newlyUploadedImageIds,
       clearComments,
@@ -218,13 +301,37 @@ export function TaskFollowUpSection({
       jumpToLogsTab,
       onAfterSendCleanup: clearImagesAndUploads,
       setMessage: setFollowUpMessage,
+      projectId: effectiveProjectId,
+      onNewTaskCreated: handleNewTaskCreated,
     });
 
   // Profile/variant derived from processes only (see useDefaultVariant)
 
   // Separate logic for when textarea should be disabled vs when send button should be disabled
   const canTypeFollowUp = useMemo(() => {
-    if (!selectedAttemptId || processes.length === 0 || isSendingFollowUp) {
+    // For agent tasks (Master Genie) without attempts: allow typing
+    // We detect this by checking task.status === 'agent' and !selectedAttemptId
+    const isAgentTaskWithoutAttempt =
+      isInChatView || (task && task.status === 'agent' && !selectedAttemptId);
+
+    console.log('[DEBUG canTypeFollowUp]', {
+      selectedAttemptId,
+      taskId: task?.id,
+      taskStatus: task?.status,
+      isInChatView,
+      isAgentTaskWithoutAttempt,
+      isSendingFollowUp,
+      isRetryActive,
+      hasPendingApproval,
+    });
+
+    if (!selectedAttemptId && !isAgentTaskWithoutAttempt) {
+      console.log('[DEBUG canTypeFollowUp] Blocked: no selectedAttemptId and not agent task');
+      return false;
+    }
+
+    if (isSendingFollowUp) {
+      console.log('[DEBUG canTypeFollowUp] Blocked: isSendingFollowUp');
       return false;
     }
 
@@ -234,16 +341,26 @@ export function TaskFollowUpSection({
         (m) => m.type === 'pr' && m.pr_info.status === 'merged'
       );
       if (mergedPR) {
+        console.log('[DEBUG canTypeFollowUp] Blocked: PR merged');
         return false;
       }
     }
 
-    if (isRetryActive) return false; // disable typing while retry editor is active
-    if (hasPendingApproval) return false; // disable typing during approval
+    if (isRetryActive) {
+      console.log('[DEBUG canTypeFollowUp] Blocked: retry active');
+      return false;
+    }
+    if (hasPendingApproval) {
+      console.log('[DEBUG canTypeFollowUp] Blocked: pending approval');
+      return false;
+    }
+    console.log('[DEBUG canTypeFollowUp] ALLOWED');
     return true;
   }, [
     selectedAttemptId,
-    processes.length,
+    task?.id,
+    task?.status,
+    isInChatView,
     isSendingFollowUp,
     branchStatus?.merges,
     isRetryActive,
@@ -410,13 +527,12 @@ export function TaskFollowUpSection({
   }, [isQueued, isQueuing, isUnqueuing]);
 
   return (
-    selectedAttemptId && (
-      <div
-        className={cn(
-          'p-4 focus-within:ring ring-inset',
-          isRetryActive && 'opacity-50'
-        )}
-      >
+    <div
+      className={cn(
+        'p-4 focus-within:ring ring-inset',
+        isRetryActive && 'opacity-50'
+      )}
+    >
         <div className="space-y-2">
           {followUpError && (
             <Alert variant="destructive">
@@ -435,7 +551,7 @@ export function TaskFollowUpSection({
                 ref={imageUploadRef}
                 images={images}
                 onImagesChange={setImages}
-                onUpload={(file) => imagesApi.uploadForTask(task.id, file)}
+                onUpload={(file) => task?.id ? imagesApi.uploadForTask(task.id, file) : Promise.reject('No task ID')}
                 onDelete={imagesApi.delete}
                 onImageUploaded={(image) => {
                   handleImageUploaded(image);
@@ -523,11 +639,13 @@ export function TaskFollowUpSection({
                     />
                   </Button>
 
-                  <VariantSelector
-                    currentProfile={currentProfile}
-                    selectedVariant={selectedVariant}
-                    onChange={setSelectedVariant}
+                  <ExecutorProfileSelector
+                    profiles={profiles}
+                    selectedProfile={selectedProfile}
+                    onProfileSelect={setSelectedProfile}
                     disabled={!isEditable}
+                    showLabel={false}
+                    showVariantSelector={true}
                   />
                 </div>
 
@@ -559,28 +677,49 @@ export function TaskFollowUpSection({
                         {t('followUp.clearReviewComments')}
                       </Button>
                     )}
-                    <Button
-                      onClick={onSendFollowUp}
-                      disabled={
-                        !canSendFollowUp ||
-                        isDraftLocked ||
-                        !isDraftLoaded ||
-                        isSendingFollowUp ||
-                        isRetryActive
-                      }
-                      size="sm"
-                    >
-                      {isSendingFollowUp ? (
-                        <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4 mr-2" />
-                          {conflictResolutionInstructions
-                            ? t('followUp.resolveConflicts')
-                            : t('followUp.send')}
-                        </>
-                      )}
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={onSendFollowUp}
+                            disabled={
+                              !canSendFollowUp ||
+                              isDraftLocked ||
+                              !isDraftLoaded ||
+                              isSendingFollowUp ||
+                              isRetryActive
+                            }
+                            size="sm"
+                            className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                          >
+                            {isSendingFollowUp ? (
+                              <>
+                                <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                                {t('followUp.sending', 'Sending...')}
+                              </>
+                            ) : (
+                              <>
+                                <Send className="h-4 w-4 mr-2 fill-primary-foreground" />
+                                {conflictResolutionInstructions
+                                  ? t('followUp.resolveConflicts')
+                                  : t('followUp.send')}
+                                <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-primary-foreground/20 rounded font-mono">
+                                  {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}⏎
+                                </kbd>
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">
+                            {conflictResolutionInstructions
+                              ? t('followUp.resolveConflicts')
+                              : t('followUp.send')}{' '}
+                            ({navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Enter)
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     {isQueued && (
                       <Button
                         variant="default"
@@ -670,6 +809,5 @@ export function TaskFollowUpSection({
           </div>
         </div>
       </div>
-    )
   );
 }

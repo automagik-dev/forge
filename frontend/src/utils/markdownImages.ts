@@ -1,7 +1,8 @@
 import type { ImageResponse } from 'shared/types';
+import { imagesApi } from '@/lib/api';
 
 export function imageToMarkdown(image: ImageResponse): string {
-  return `![${image.original_name}](${image.file_path})`;
+  return `![${image.original_name}](${imagesApi.getImageUrl(image.id)})`;
 }
 
 export function appendImageMarkdown(

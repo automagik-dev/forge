@@ -1,10 +1,31 @@
 {
   "name": "automagik-forge",
   "version": "0.5.7",
+  "description": "The Vibe Coding++™ platform for human-AI development. Kanban board for AI agents with git worktree isolation.",
+  "keywords": [
+    "ai",
+    "agent",
+    "claude",
+    "gemini",
+    "cursor",
+    "kanban",
+    "task-management",
+    "mcp",
+    "vibe-coding",
+    "automation",
+    "git-worktree",
+    "developer-tools",
+    "coding-assistant",
+    "model-context-protocol",
+    "agent-orchestration"
+  ],
+  "author": "Namastex Labs",
+  "license": "MIT",
   "packageManager": "pnpm@10.12.4+sha512.5ea8b0deed94ed68691c9bad4c955492705c5eeb8a87ef86bc62c74a26b037b08ff9570f108b2e4dbd1dd1a9186fea925e527f141c648e85af45631074680184",
   "private": true,
   "bin": {
-    "automagik-forge": "npx-cli/bin/cli.js"
+    "automagik-forge": "npx-cli/bin/cli.js",
+    "forge": "npx-cli/bin/cli.js"
   },
   "files": [
     "npx-cli/bin/cli.js",
@@ -16,18 +37,20 @@
     "check": "npm run frontend:check && npm run backend:check",
     "predev": "node scripts/ensure-submodules.js",
     "dev": "export FRONTEND_PORT=$(node scripts/setup-dev-environment.js frontend) && export BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) && concurrently \"npm run backend:dev:watch\" \"npm run frontend:dev\"",
-    "test:npm": "./test-npm-package.sh",
+    "test:npm": "bash scripts/test/test-package.sh",
+    "test:all": "bash scripts/test/test-package-ci.sh",
+    "test:ci": "bash scripts/test/test-package-ci.sh",
     "frontend:lint": "cd frontend && npm run lint",
-    "frontend:dev": "cd frontend && npm run dev -- --port ${FRONTEND_PORT:-3000} --host",
+    "frontend:dev": "cd frontend && BACKEND_PORT=${BACKEND_PORT:-3001} VITE_OPEN=true npm run dev -- --port ${FRONTEND_PORT:-3000} --host",
     "frontend:check": "cd frontend && npm run check",
     "backend:lint": "cargo clippy --workspace --all-targets --all-features -- -D warnings",
     "backend:dev": "BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) npm run backend:dev:watch",
     "backend:check": "cargo check",
-    "backend:dev:watch": "DISABLE_WORKTREE_ORPHAN_CLEANUP=1 RUST_LOG=debug cargo watch -w upstream/crates -w forge-app/src -w forge-extensions -x 'run --bin forge-app'",
+    "backend:dev:watch": "dotenv run -- bash -c 'DISABLE_BROWSER_OPEN=1 DISABLE_WORKTREE_ORPHAN_CLEANUP=1 RUST_LOG=debug cargo watch -w upstream/crates -w forge-app/src -w forge-extensions -x \"run --bin forge-app\"'",
     "generate-types": "cargo run --bin generate_types",
     "generate-types:check": "cargo run --bin generate_types -- --check",
     "prepare-db": "node scripts/prepare-db.js",
-    "build:npx": "bash ./local-build.sh",
+    "build:npx": "bash scripts/build/build.sh",
     "prepack": "npm run build:npx"
   },
   "devDependencies": {
@@ -43,8 +66,10 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@ebay/nice-modal-react": "^1.2.13",
     "@radix-ui/react-toggle-group": "^1.1.11",
+    "@types/uuid": "^11.0.0",
     "framer-motion": "^12.23.22",
     "lodash": "^4.17.21",
-    "react-resizable-panels": "^3.0.6"
+    "react-resizable-panels": "^3.0.6",
+    "uuid": "^13.0.0"
   }
 }

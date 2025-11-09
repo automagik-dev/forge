@@ -26,7 +26,8 @@ async function main() {
       const ps = spawn('cargo', ['test', '--workspace'], {
         stdio: 'inherit',
         cwd: repoRoot,
-        shell: false
+        shell: false,
+        env: { ...process.env, SQLX_OFFLINE: 'true' }
       });
       ps.on('exit', (code) => {
         if (code === 0) {

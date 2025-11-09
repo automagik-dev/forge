@@ -51,5 +51,11 @@
     "reconnecting": "Reconectando",
     "saving": "Guardando...",
     "success": "Éxito"
+  },
+  "footer": {
+    "tagline": "IA que eleva el potencial humano, no lo reemplaza",
+    "crafted": "Creado con 💙 por",
+    "updateAvailable": "Actualización disponible",
+    "connecting": "Conectando..."
   }
 }

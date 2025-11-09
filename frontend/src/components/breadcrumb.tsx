@@ -1,10 +1,9 @@
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge, ArrowRight, Settings, History, Plus } from 'lucide-react';
+import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge, ArrowRight, Settings } from 'lucide-react';
 import { useProject } from '@/contexts/project-context';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
 import { useTaskAttempt } from '@/hooks/useTaskAttempt';
-import { useTaskAttempts } from '@/hooks/useTaskAttempts';
 import { useBranchStatus } from '@/hooks/useBranchStatus';
 import { useChangeTargetBranch } from '@/hooks/useChangeTargetBranch';
 import { useCallback, useEffect, useState, useMemo } from 'react';
@@ -46,15 +45,15 @@ export function Breadcrumb() {
   const effectiveAttemptId = attemptId === 'latest' ? undefined : attemptId;
   const { data: attempt } = useTaskAttempt(effectiveAttemptId);
 
-  // Get all attempts for history dropdown
-  const { data: attempts = [] } = useTaskAttempts(taskId);
+  // Get all attempts for history dropdown (currently unused after moving history button)
+  // Commented out to avoid lint errors - uncomment if needed in future
+  // const { data: attempts = [] } = useTaskAttempts(taskId);
 
   // Get branch status for git status badges
-  const { data: branchStatus } = useBranchStatus(attempt?.id);
+  const { data: branchStatus } = useBranchStatus(attempt?.id, attempt);
 
   // Fetch branches for change target branch dialog
   const [branches, setBranches] = useState<GitBranchType[]>([]);
-  const [gitError, setGitError] = useState<string | null>(null);
 
   // Change target branch mutation
   const changeTargetBranchMutation = useChangeTargetBranch(
@@ -83,7 +82,7 @@ export function Breadcrumb() {
   const isAttemptRunning = useMemo(() => {
     if (!taskId || !tasksById[taskId]) return false;
     const task = tasksById[taskId];
-    return task.status === 'running';
+    return task.status === 'agent' || task.status === 'inprogress';
   }, [taskId, tasksById]);
 
   // Get parent task if current task has one (via parent_task_attempt)
@@ -125,8 +124,8 @@ export function Breadcrumb() {
       ? rawMode
       : null;
 
-  // Don't show breadcrumb for kanban or chat modes (they have their own navigation)
-  const shouldShowBreadcrumb = mode === 'preview' || mode === 'diffs' || mode === null;
+  // Show breadcrumb when viewing project tasks page or task details
+  const shouldShowBreadcrumb = !!projectId;
 
   const setMode = useCallback(
     (newMode: LayoutMode) => {
@@ -200,8 +199,8 @@ export function Breadcrumb() {
       }
 
       // Add target/base branch if viewing an attempt
-      // Use attempt's target_branch first (user-selected), fallback to project default
-      const targetBranch = attempt?.target_branch || project.default_base_branch;
+      // Use attempt's target_branch (user-selected)
+      const targetBranch = attempt?.target_branch;
       if (targetBranch) {
         crumbs.push({
           label: targetBranch,
@@ -230,9 +229,8 @@ export function Breadcrumb() {
   const handleChangeTargetBranchClick = async (newBranch: string) => {
     await changeTargetBranchMutation
       .mutateAsync(newBranch)
-      .then(() => setGitError(null))
       .catch((error) => {
-        setGitError(error.message || t('git.errors.changeTargetBranch'));
+        console.error(error.message || t('git.errors.changeTargetBranch'));
       });
   };
 
@@ -297,7 +295,6 @@ export function Breadcrumb() {
           const isGitBranch = crumb.type === 'git-branch';
           const isBaseBranch = crumb.type === 'base-branch';
           const isLastCrumb = index === breadcrumbs.length - 1;
-          const hasIcon = isGitBranch || isBaseBranch;
 
           return (
             <li key={`${crumb.type}-${crumb.path}-${index}`} className={`flex items-center gap-1 ${isParentTask ? 'hidden lg:flex' : ''}`}>
@@ -407,99 +404,15 @@ export function Breadcrumb() {
 
       </ol>
 
-      {/* Right side: Git status badges + Action buttons */}
+      {/* Right side: Git status badges */}
       {currentTask && (
         <div className="flex items-center gap-2">
-          {/* History dropdown - shows all attempts */}
-          {!isTaskView && attempts.length > 0 && (
-            <DropdownMenu>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <History className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">
-                    {t('attemptHeaderActions.history')}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <DropdownMenuContent align="end" className="w-64 max-h-96 overflow-y-auto bg-popover">
-                {attempts.map((att, index) => {
-                  const isCurrentAttempt = att.id === attempt?.id;
-                  const attemptNumber = attempts.length - index;
-                  const attemptDate = new Date(att.created_at).toLocaleString();
-
-                  return (
-                    <DropdownMenuItem
-                      key={att.id}
-                      onClick={() => navigate(`/projects/${projectId}/tasks/${taskId}/attempts/${att.id}`)}
-                      className={isCurrentAttempt ? 'bg-accent' : ''}
-                    >
-                      <div className="flex flex-col gap-0.5 w-full">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">Attempt #{attemptNumber}</span>
-                          {isCurrentAttempt && (
-                            <span className="text-xs text-muted-foreground">(current)</span>
-                          )}
-                        </div>
-                        <span className="text-xs text-muted-foreground truncate">
-                          {att.branch || 'No branch'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">{attemptDate}</span>
-                      </div>
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
-          {/* + button dropdown - new attempt or new subtask */}
-          {!isTaskView && currentTask && (
-            <DropdownMenu>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">Create new</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <DropdownMenuContent align="end" className="w-48 bg-popover">
-                <DropdownMenuItem
-                  onClick={() => {
-                    // TODO: Implement create new attempt
-                    console.log('Create new attempt');
-                  }}
-                >
-                  New Attempt
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    // TODO: Implement create new subtask
-                    console.log('Create new subtask');
-                  }}
-                >
-                  New Subtask
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
           {/* Compact git status badges */}
           {branchStatus && attempt && (
             <TooltipProvider>
               <div className="flex items-center gap-1">
                 {/* Ahead badge */}
-                {branchStatus.commits_ahead > 0 && (
+                {(branchStatus.commits_ahead ?? 0) > 0 && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
@@ -511,15 +424,15 @@ export function Breadcrumb() {
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="text-xs">
-                      +{branchStatus.commits_ahead}{' '}
-                      {t('git.status.commits', { count: branchStatus.commits_ahead })}{' '}
+                      +{branchStatus.commits_ahead ?? 0}{' '}
+                      {t('git.status.commits', { count: branchStatus.commits_ahead ?? 0 })}{' '}
                       {t('git.status.ahead')}
                     </TooltipContent>
                   </Tooltip>
                 )}
 
                 {/* Behind badge */}
-                {branchStatus.commits_behind > 0 && (
+                {(branchStatus.commits_behind ?? 0) > 0 && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
@@ -531,8 +444,8 @@ export function Breadcrumb() {
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="text-xs">
-                      {branchStatus.commits_behind}{' '}
-                      {t('git.status.commits', { count: branchStatus.commits_behind })}{' '}
+                      {branchStatus.commits_behind ?? 0}{' '}
+                      {t('git.status.commits', { count: branchStatus.commits_behind ?? 0 })}{' '}
                       {t('git.status.behind')}
                     </TooltipContent>
                   </Tooltip>

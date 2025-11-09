@@ -41,11 +41,11 @@
         "title": "Task Execution",
         "description": "Configure how tasks are executed and processed.",
         "executor": {
-          "label": "Default Agent Configuration",
-          "placeholder": "Select profile",
-          "helper": "Choose the default agent configuration to use when creating a task attempt."
+          "label": "Default Provider & Agent",
+          "placeholder": "Select provider",
+          "helper": "Choose the default provider and agent to use when creating a task attempt."
         },
-        "variant": "DEFAULT",
+        "variant": "GENIE",
         "defaultLabel": "Default"
       },
       "editor": {
@@ -181,25 +181,25 @@
       }
     },
     "agents": {
-      "title": "Coding Agent Configurations",
-      "description": "Customize the behavior of coding agents with different configurations.",
-      "loading": "Loading agent configurations...",
+      "title": "Provider Configurations",
+      "description": "Customize the behavior of providers with different agent configurations.",
+      "loading": "Loading provider configurations...",
       "save": {
-        "button": "Save Agent Configurations",
-        "success": "✓ Executor configurations saved successfully!"
+        "button": "Save Provider Configurations",
+        "success": "✓ Provider configurations saved successfully!"
       },
       "editor": {
         "formLabel": "Edit JSON",
-        "agentLabel": "Agent",
-        "agentPlaceholder": "Select executor type",
-        "configLabel": "Configuration",
-        "configPlaceholder": "Select configuration",
+        "agentLabel": "Provider",
+        "agentPlaceholder": "Select provider type",
+        "configLabel": "Agent",
+        "configPlaceholder": "Select agent",
         "createNew": "Create new...",
-        "deleteTitle": "Cannot delete the last configuration",
+        "deleteTitle": "Cannot delete the last agent",
         "deleteButton": "Delete {{name}}",
         "deleteText": "Delete",
-        "jsonLabel": "Agent Configuration (JSON)",
-        "jsonPlaceholder": "Loading profiles...",
+        "jsonLabel": "Provider Configuration (JSON)",
+        "jsonPlaceholder": "Loading configurations...",
         "jsonLoading": "Loading...",
         "pathLabel": "Configuration file location:"
       },

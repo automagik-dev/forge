@@ -45,7 +45,7 @@ function GitActionsDialogContent({
   setGitError,
 }: GitActionsDialogContentProps) {
   const { t } = useTranslation('tasks');
-  const { data: branchStatus } = useBranchStatus(attempt.id);
+  const { data: branchStatus } = useBranchStatus(attempt.id, attempt);
   const { isAttemptRunning } = useAttemptExecution(attempt.id);
 
   const mergedPR = branchStatus?.merges?.find(

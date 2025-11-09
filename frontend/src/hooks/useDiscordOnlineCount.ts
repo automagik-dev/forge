@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-const DISCORD_GUILD_ID = '1423630976524877857';
+const DISCORD_GUILD_ID = '1095114867012292758';
 
 async function fetchDiscordOnlineCount(): Promise<number | null> {
   try {

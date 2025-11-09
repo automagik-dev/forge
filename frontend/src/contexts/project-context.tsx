@@ -54,9 +54,9 @@ export function ProjectProvider({ children }: ProjectProviderProps) {
   // Centralized page title management
   useEffect(() => {
     if (query.data) {
-      document.title = `${query.data.name} | automagik-forge`;
+      document.title = `${query.data.name} | Automagik Forge`;
     } else {
-      document.title = 'automagik-forge';
+      document.title = 'Automagik Forge - AI Agent Kanban for Vibe Coding';
     }
   }, [query.data]);
 

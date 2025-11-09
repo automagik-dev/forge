@@ -7,6 +7,7 @@ const net = require("net");
 const PORTS_FILE = path.join(__dirname, "..", ".dev-ports.json");
 const DEV_ASSETS_SEED = path.join(__dirname, "..", "dev_assets_seed");
 const DEV_ASSETS = path.join(__dirname, "..", "dev_assets");
+const ENV_FILE = path.join(__dirname, "..", ".env");
 
 /**
  * Check if a port is available
@@ -34,6 +35,36 @@ async function findFreePort(startPort = 3000) {
     }
   }
   return port;
+}
+
+/**
+ * Load ports from .env file
+ */
+function loadEnvPorts() {
+  try {
+    if (fs.existsSync(ENV_FILE)) {
+      const envContent = fs.readFileSync(ENV_FILE, "utf8");
+      const frontendMatch = envContent.match(/^FRONTEND_PORT=(\d+)/m);
+      const backendMatch = envContent.match(/^BACKEND_PORT=(\d+)/m);
+
+      if (frontendMatch && backendMatch) {
+        const ports = {
+          frontend: parseInt(frontendMatch[1], 10),
+          backend: parseInt(backendMatch[1], 10),
+          source: "env",
+        };
+
+        if (process.argv[2] === "get") {
+          console.log(`Found ports in .env: frontend=${ports.frontend}, backend=${ports.backend}`);
+        }
+
+        return ports;
+      }
+    }
+  } catch (error) {
+    console.warn("Failed to load ports from .env:", error.message);
+  }
+  return null;
 }
 
 /**
@@ -83,7 +114,27 @@ async function verifyPorts(ports) {
  * Allocate ports for development
  */
 async function allocatePorts() {
-  // Try to load existing ports first
+  // Priority 1: Check .env file for configured ports
+  const envPorts = loadEnvPorts();
+  if (envPorts) {
+    // Verify .env ports are available
+    if (await verifyPorts(envPorts)) {
+      if (process.argv[2] === "get") {
+        console.log("Using ports from .env:");
+        console.log(`Frontend: ${envPorts.frontend}`);
+        console.log(`Backend: ${envPorts.backend}`);
+      }
+      return envPorts;
+    } else {
+      if (process.argv[2] === "get") {
+        console.log(
+          "Ports from .env are not available, falling back to automatic allocation..."
+        );
+      }
+    }
+  }
+
+  // Priority 2: Try to load existing allocated ports
   const existingPorts = loadPorts();
 
   if (existingPorts) {
@@ -104,7 +155,7 @@ async function allocatePorts() {
     }
   }
 
-  // Find new free ports
+  // Priority 3: Find new free ports automatically
   const frontendPort = await findFreePort(3000);
   const backendPort = await findFreePort(frontendPort + 1);
 
@@ -112,6 +163,7 @@ async function allocatePorts() {
     frontend: frontendPort,
     backend: backendPort,
     timestamp: new Date().toISOString(),
+    source: "auto",
   };
 
   savePorts(ports);

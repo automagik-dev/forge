@@ -87,17 +87,54 @@ Sentry.init({
 });
 Sentry.setTag('source', 'frontend');
 
-if (
-  import.meta.env.VITE_POSTHOG_API_KEY &&
-  import.meta.env.VITE_POSTHOG_API_ENDPOINT
-) {
-  posthog.init(import.meta.env.VITE_POSTHOG_API_KEY, {
-    api_host: import.meta.env.VITE_POSTHOG_API_ENDPOINT,
+// PostHog configuration
+// Default keys for Namastex Labs analytics (write-only, safe to expose)
+// Users can override via VITE_POSTHOG_API_KEY environment variable
+const posthogKey = import.meta.env.VITE_POSTHOG_API_KEY ||
+  'phc_' + 'KYI6y57aVECNO9aj5O28gNAz3r7BU0cTtEf50HQJZHd';
+const posthogHost = import.meta.env.VITE_POSTHOG_API_ENDPOINT ||
+  'https://us.i.posthog.com';
+
+if (posthogKey && posthogHost) {
+  posthog.init(posthogKey, {
+    api_host: posthogHost,
     capture_pageview: false,
     capture_pageleave: true,
-    capture_performance: true,
+    capture_performance: true, // Keep for performance monitoring (disclosed in dialog)
     autocapture: false,
     opt_out_capturing_by_default: true,
+    mask_all_text: true, // Masks any text in error messages
+    sanitize_properties: (properties) => {
+      // Don't sanitize for namastexers (detected later via email)
+      if (properties?.tracking_tier === 'namastexer') {
+        return properties;
+      }
+
+      // Remove any PII that might slip through for non-namastexers
+      const sanitized = { ...properties };
+
+      // Remove direct PII fields
+      const piiFields = ['email', 'username', 'ip', 'name', '$ip'];
+      piiFields.forEach(field => {
+        delete sanitized[field];
+        // Also remove nested fields like $set.email
+        if (sanitized.$set) {
+          delete sanitized.$set[field];
+        }
+      });
+
+      // Keep contact fields if explicitly opted in
+      if (properties?.tracking_tier === 'community_contact') {
+        // These are allowed when user consents
+        // contact_email and contact_username are kept
+      } else {
+        // Remove contact fields if no consent
+        delete sanitized.contact_email;
+        delete sanitized.contact_username;
+      }
+
+      return sanitized;
+    },
   });
 } else {
   console.warn(

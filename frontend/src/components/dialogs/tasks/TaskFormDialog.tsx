@@ -24,6 +24,7 @@ import {
 import { imagesApi, projectsApi, attemptsApi, tasksApi } from '@/lib/api';
 import { useTaskMutations } from '@/hooks/useTaskMutations';
 import { useUserSystem } from '@/components/config-provider';
+import { useProjectProfiles } from '@/hooks/useProjectProfiles';
 import { ExecutorProfileSelector } from '@/components/settings';
 import BranchSelector from '@/components/tasks/BranchSelector';
 import type {
@@ -31,6 +32,7 @@ import type {
   ImageResponse,
   GitBranch,
   ExecutorProfileId,
+  TaskAttempt,
 } from 'shared/types';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 import { useKeySubmitTask, useKeySubmitTaskAlt, Scope } from '@/keyboard';
@@ -64,7 +66,12 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     const modal = useModal();
     const { createTask, createAndStart, updateTask } =
       useTaskMutations(projectId);
-    const { system, profiles } = useUserSystem();
+    const { system } = useUserSystem();
+    const { data: projectProfiles } = useProjectProfiles(projectId);
+
+    // Use project profiles if available, fallback to global profiles
+    const profiles = projectProfiles?.executors || system.profiles?.executors;
+
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState<TaskStatus>('todo');
@@ -82,7 +89,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     const imageUploadRef = useRef<ImageUploadSectionHandle>(null);
     const [isTextareaFocused, setIsTextareaFocused] = useState(false);
     const [parentTask, setParentTask] = useState<Task | null>(null);
-    const [parentAttempt, setParentAttempt] = useState<typeof attemptsApi.get extends (...args: any[]) => Promise<infer R> ? R : never | null>(null);
+    const [parentAttempt, setParentAttempt] = useState<TaskAttempt | null>(null);
 
     const isEditMode = Boolean(task);
     const isSubtaskMode = Boolean(parentTaskAttemptId);
@@ -596,7 +603,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
               {!isEditMode && (
                 <div className="space-y-3 pt-2 border-t">
                   {/* Executor Profile Selector */}
-                  {profiles && selectedExecutorProfile && (
+                  {profiles && (
                     <ExecutorProfileSelector
                       profiles={profiles}
                       selectedProfile={selectedExecutorProfile}
