@@ -161,234 +161,86 @@ Task: "Implement user authentication"
 
 ---
 
-## 🧞 Genie Integration: Your AI Assistant in Forge
+## 🧞 Genie Integration: Your AI Assistant
 
-Forge automatically detects and integrates with [Automagik Genie](https://github.com/namastexlabs/automagik-genie) when present in your project.
+Forge works seamlessly with [Automagik Genie](https://github.com/namastexlabs/automagik-genie) for AI-assisted task planning and execution.
 
-### How It Works
-
-**Auto-Detection:**
-- Forge scans for `.genie` folder in your project root
-- When detected, activates the **Genie Lamp** UI element
-- Lamp hidden when no `.genie` folder present - clean UI when not needed
-
-**What You Get:**
-- **Genie Agents**: Custom agents from your `.genie/agents/` directory automatically available in Forge
-- **Agent Library**: Your Genie agents work with ANY provider - use them across Claude, Gemini, local models
-- **Unified Workflow**: Plan with Genie, execute in Forge, seamless handoff
-
-### Setup
-
+**Setup:**
 ```bash
-# Install Automagik Genie
 npm install -g automagik-genie
-
-# Initialize Genie in your project
 cd your-project
 genie init
-
-# Forge automatically detects .genie folder and activates integration
-npx automagik-forge
 ```
+
+**What You Get:**
+- **Master Genie Widget**: AI assistant for planning and breaking down complex work
+- **Custom Agents**: Backend auto-loads agents from `.genie/agents/` directory
+- **Unified Workflow**: Plan with Genie MCP, execute in Forge, review results
+
+**Integration Status:**
+- ✅ Backend: Auto-detects `.genie` folder, loads custom agents, hot-reloads on changes
+- 🚧 Frontend: Master Genie widget available, full agent UI coming soon
 
 **Learn more:** [github.com/namastexlabs/automagik-genie](https://github.com/namastexlabs/automagik-genie)
 
 ---
 
-## 📡 MCP: Remote Control from Anywhere
+## 📡 MCP: AI Assistant Integration
 
-Automagik Forge acts as a **Model Context Protocol (MCP) server**, enabling AI coding agents to programmatically manage tasks. Control your Forge task board from your preferred AI coding agent without leaving your flow.
+Control Forge from your AI coding tools using Model Context Protocol (MCP).
 
-### Typical Workflow
+### 🧞 Genie MCP (Recommended)
 
-1. **Planning Phase**: Use your AI agent to help brainstorm and plan tasks
-2. **Task Creation**: You (or your agent) creates task cards via MCP
-3. **Bug Discovery**: Find issues while coding? Add them to the backlog via MCP
-4. **Status Updates**: Update task progress as work completes
-5. **Cross-Agent Access**: Any MCP-compatible agent can access your task board
+Natural language AI assistant for planning and managing Forge tasks.
 
-### Example Use Cases
+```bash
+npm install -g automagik-genie
+```
 
-- 🎯 **"Help me plan a complete authentication system with OAuth, JWT, and role-based access"** → You create epic with subtasks
-- 🐛 **"Add bug: API returns 500 on malformed JSON input in /api/users endpoint"** → Create detailed bug card via MCP
-- ✅ **"Mark all database migration tasks as complete and move API tasks to in-progress"** → Batch update statuses via MCP
-- 📋 **"Show me all high-priority tasks that are blocked or have dependencies"** → Query tasks with filters via MCP
-
-### Available MCP Tools
-
-| Tool | Description | Example Usage |
-|------|-------------|---------------|
-| `list_projects` | Get all projects | "List all my active projects" |
-| `list_tasks` | View tasks with filters | "Show pending backend tasks" |
-| `create_task` | Add new task to project | "Create task: Implement Redis caching layer" |
-| `get_task` | Get detailed task info | "Show details for task-abc123" |
-| `update_task` | Modify task properties | "Move task-xyz to in-review" |
-| `delete_task` | Remove completed/obsolete tasks | "Delete all cancelled tasks" |
-
-### Quick Setup
-
-<details>
-<summary><b>Getting Your Project ID</b></summary>
-
-1. Run `npx automagik-forge` to open the UI
-2. Create or select your project
-3. The Project ID (UUID) appears in:
-   - The browser URL: `http://localhost:3000/projects/{PROJECT_ID}/tasks`
-   - The project settings panel
-   - Example: `a1b2c3d4-e5f6-7890-abcd-ef1234567890`
-
-</details>
-
-<details>
-<summary><b>🤖 Claude Code Configuration</b></summary>
-
-1. Open Claude Code settings
-2. Navigate to MCP Servers section
-3. Add Forge server configuration:
-
+**Claude Desktop config:**
 ```json
 {
   "mcpServers": {
-    "automagik-forge": {
+    "genie": {
+      "command": "genie",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+**What you can do:**
+- "Help me plan an authentication system" → Creates organized tasks
+- "Run code agent on task-123" → Executes Forge tasks
+- "Show active sessions" → Monitor all work in progress
+
+<details>
+<summary><b>⚙️ Forge MCP (Advanced - 50+ Tools)</b></summary>
+
+Direct API control for power users. Full programmatic access to all Forge features.
+
+**Command:** `npx @automagik/forge --mcp`
+
+**Config example:**
+```json
+{
+  "mcpServers": {
+    "forge": {
       "command": "npx",
-      "args": ["automagik-forge", "mcp-server"],
+      "args": ["@automagik/forge", "--mcp"],
       "env": {
-        "PROJECT_ID": "your-project-uuid-here"
+        "PROJECT_ID": "your-project-uuid"
       }
     }
   }
 }
 ```
 
-4. Restart Claude Code
-5. Use natural language: "Create tasks for implementing a real-time chat feature"
+**Tools:** Task CRUD, attempts, processes, images, filesystem, config, and more.
 
 </details>
 
-<details>
-<summary><b>🎯 Cursor Configuration</b></summary>
-
-1. Open Cursor Settings (`Cmd/Ctrl + ,`)
-2. Search for "MCP" in settings
-3. Add to MCP configuration:
-
-```json
-{
-  "mcp.servers": {
-    "automagik-forge": {
-      "command": "npx",
-      "args": ["automagik-forge", "mcp-server"],
-      "projectId": "your-project-uuid-here"
-    }
-  }
-}
-```
-
-4. Reload window (`Cmd/Ctrl + R`)
-5. Tasks are now accessible via `@automagik-forge`
-
-</details>
-
-<details>
-<summary><b>📝 VSCode + Cline Configuration</b></summary>
-
-**For Cline Extension:**
-1. Install Cline from VSCode marketplace
-2. Open Cline settings (`Cmd/Ctrl + Shift + P` → "Cline: Settings")
-3. Add MCP server:
-
-```json
-{
-  "cline.mcpServers": [
-    {
-      "name": "automagik-forge",
-      "command": "npx",
-      "args": ["automagik-forge", "mcp-server"],
-      "env": {
-        "PROJECT_ID": "your-project-uuid-here"
-      }
-    }
-  ]
-}
-```
-
-4. Restart VSCode
-5. Cline can now manage tasks directly
-
-</details>
-
-<details>
-<summary><b>🚀 Roo Code Configuration</b></summary>
-
-1. Open Roo Code preferences
-2. Navigate to Extensions → MCP
-3. Add new server:
-
-```yaml
-servers:
-  automagik-forge:
-    command: npx
-    args: 
-      - automagik-forge
-      - mcp-server
-    environment:
-      PROJECT_ID: your-project-uuid-here
-```
-
-4. Save and restart Roo Code
-5. Access via command palette: "Roo: Create Task"
-
-</details>
-
-<details>
-<summary><b>💎 Gemini CLI Configuration</b></summary>
-
-1. Edit Gemini CLI config file (`~/.gemini/config.json`)
-2. Add MCP server entry:
-
-```json
-{
-  "mcp": {
-    "servers": {
-      "automagik-forge": {
-        "type": "stdio",
-        "command": "npx",
-        "args": ["automagik-forge", "mcp-server"],
-        "env": {
-          "PROJECT_ID": "your-project-uuid-here"
-        }
-      }
-    }
-  }
-}
-```
-
-3. Run: `gemini reload-config`
-4. Use: `gemini task create "Implement user dashboard with charts"`
-
-</details>
-
-<details>
-<summary><b>🔧 Generic MCP Configuration</b></summary>
-
-For any MCP-compatible tool, use this standard configuration:
-
-```json
-{
-  "command": "npx",
-  "args": ["automagik-forge", "mcp-server"],
-  "env": {
-    "PROJECT_ID": "your-project-uuid-here"
-  }
-}
-```
-
-**Tool-Specific Paths:**
-- Check your tool's MCP or extensions documentation
-- Look for "MCP Servers", "External Tools", or "Model Context Protocol" settings
-- The configuration format is typically JSON or YAML
-
-</details>
+**Get Project ID:** Open Forge UI, check browser URL: `/projects/{PROJECT_ID}/tasks`
 
 ---
 
@@ -474,10 +326,8 @@ npx @automagik/forge
 # Navigate to your project
 cd your-project
 
-# Launch Forge
+# Launch Forge (browser opens automatically to http://localhost:8887)
 automagik-forge
-
-# Open browser to http://localhost:3000
 ```
 
 ---
