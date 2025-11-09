@@ -34,7 +34,7 @@ fn get_runtime() -> &'static Runtime {
 /// preventing race conditions where the WebView tries to connect before
 /// the server is ready.
 #[cfg(feature = "android")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
     _env: JNIEnv,
     _class: JClass,
@@ -75,7 +75,7 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
 
 /// Stop the Forge server
 #[cfg(feature = "android")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_stopServer(
     _env: JNIEnv,
     _class: JClass,
