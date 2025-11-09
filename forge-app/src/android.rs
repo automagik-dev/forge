@@ -8,24 +8,20 @@ use jni::JNIEnv;
 use jni::objects::JClass;
 #[cfg(feature = "android")]
 use jni::sys::jint;
-use std::sync::Once;
+use std::sync::{Mutex, OnceLock};
 use tokio::runtime::Runtime;
 use tokio::sync::oneshot;
 
-static INIT: Once = Once::new();
-static mut RUNTIME: Option<Runtime> = None;
-static mut SERVER_HANDLE: Option<tokio::task::JoinHandle<()>> = None;
+static RUNTIME: OnceLock<Runtime> = OnceLock::new();
+static SERVER_HANDLE: Mutex<Option<tokio::task::JoinHandle<()>>> = Mutex::new(None);
 
 /// Initialize the Tokio runtime (called once)
 fn get_runtime() -> &'static Runtime {
-    unsafe {
-        INIT.call_once(|| {
-            // Initialize tracing for Android (once)
-            tracing_subscriber::fmt::init();
-            RUNTIME = Some(Runtime::new().expect("Failed to create Tokio runtime"));
-        });
-        RUNTIME.as_ref().unwrap()
-    }
+    RUNTIME.get_or_init(|| {
+        // Initialize tracing for Android (once)
+        tracing_subscriber::fmt::init();
+        Runtime::new().expect("Failed to create Tokio runtime")
+    })
 }
 
 /// Start the Forge server and return the port number
@@ -66,9 +62,7 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
         }
     });
 
-    unsafe {
-        SERVER_HANDLE = Some(handle);
-    }
+    *SERVER_HANDLE.lock().unwrap() = Some(handle);
 
     port as jint
 }
@@ -80,9 +74,7 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_stopServer(
     _env: JNIEnv,
     _class: JClass,
 ) {
-    unsafe {
-        if let Some(handle) = SERVER_HANDLE.take() {
-            handle.abort();
-        }
+    if let Some(handle) = SERVER_HANDLE.lock().unwrap().take() {
+        handle.abort();
     }
 }
