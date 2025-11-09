@@ -2,4 +2,5 @@
       path = upstream
       url = https://github.com/namastexlabs/vibe-kanban.git
       branch = release/v0.0.115-namastex-1
+      update = checkout
 

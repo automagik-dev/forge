@@ -121,11 +121,18 @@ mkdir -p "npx-cli/dist/$PLATFORM_DIR"
 echo "🔄 Syncing upstream assets..."
 node scripts/sync-upstream-assets.js
 
-# Ensure adm-zip is installed (needed for cross-platform ZIP creation)
-if [ ! -d "npx-cli/node_modules/adm-zip" ]; then
-  echo "📦 Installing build dependencies (adm-zip)..."
-  (cd npx-cli && npm install --silent)
+# Ensure all dependencies are installed
+echo "📦 Installing dependencies..."
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm install
+else
+  echo "⚠️  pnpm not found, using npm"
+  npm install
 fi
+
+# Ensure build dependencies are installed (npx-cli)
+echo "📦 Installing build dependencies (npx-cli)..."
+(cd npx-cli && npm install --silent)
 
 if [ "$NEEDS_FRONTEND_BUILD" = "true" ]; then
   echo "🔨 Building frontend with pnpm..."

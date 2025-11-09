@@ -122,13 +122,11 @@ if ! command -v pnpm >/dev/null 2>&1; then
     exit 1
 fi
 
-# Ensure dependencies are installed
-if [ ! -d "node_modules" ]; then
-    echo "📦 Installing dependencies with pnpm..."
-    pnpm install
-    echo "✅ Dependencies installed"
-    echo ""
-fi
+# Always install dependencies (fast if already installed)
+echo "📦 Installing dependencies with pnpm..."
+pnpm install
+echo "✅ Dependencies installed"
+echo ""
 
 # Always rebuild frontend to ensure fresh build
 # Delete dist folder to force clean rebuild
