@@ -67,13 +67,18 @@ check-android-deps:
 			echo "✅ All build dependencies present"; \
 		fi; \
 	else \
-		echo "🐧 Checking Linux build dependencies..."; \
-		if ! dpkg -l | grep -q libclang-dev; then \
-			echo "📦 Installing libclang-dev..."; \
-			sudo apt-get update && sudo apt-get install -y libclang-dev; \
-			echo "✅ libclang-dev installed"; \
+		if command -v dpkg >/dev/null 2>&1 && command -v apt-get >/dev/null 2>&1; then \
+			echo "🐧 Checking Debian/Ubuntu build dependencies..."; \
+			if ! dpkg -l | grep -q libclang-dev; then \
+				echo "📦 Installing libclang-dev..."; \
+				sudo apt-get update && sudo apt-get install -y libclang-dev; \
+				echo "✅ libclang-dev installed"; \
+			else \
+				echo "✅ libclang-dev already installed"; \
+			fi; \
 		else \
-			echo "✅ libclang-dev already installed"; \
+			echo "ℹ️  Non-Debian system detected - skipping package checks"; \
+			echo "   (Ensure clang/LLVM is installed via your package manager)"; \
 		fi; \
 	fi
   

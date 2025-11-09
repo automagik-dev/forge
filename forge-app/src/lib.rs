@@ -8,7 +8,7 @@ pub mod router;
 #[cfg(all(target_os = "android", feature = "android"))]
 pub mod android;
 
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr};
 use tokio::signal;
 
 /// Check if a port conflict exists and provide diagnostic information.
@@ -178,7 +178,12 @@ pub async fn run_server() -> anyhow::Result<()> {
         .and_then(|p| p.parse().ok())
         .unwrap_or(8887);
 
-    let addr: SocketAddr = format!("{}:{}", host, port).parse()?;
+    // Parse host as IpAddr first to support both IPv4 and IPv6
+    let ip: IpAddr = host.parse().unwrap_or_else(|_| {
+        tracing::warn!("Invalid HOST value '{}', falling back to 127.0.0.1", host);
+        IpAddr::from([127, 0, 0, 1])
+    });
+    let addr = SocketAddr::from((ip, port));
 
     // Bind and serve
     let listener = match tokio::net::TcpListener::bind(addr).await {
