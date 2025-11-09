@@ -680,17 +680,13 @@ export function TaskFollowUpSection({
                         isSendingFollowUp ||
                         isRetryActive
                       }
-                      size="sm"
+                      size="icon"
+                      className="rounded-full w-9 h-9 bg-primary hover:bg-primary/90"
                     >
                       {isSendingFollowUp ? (
-                        <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                        <Loader2 className="animate-spin h-4 w-4" />
                       ) : (
-                        <>
-                          <Send className="h-4 w-4 mr-2" />
-                          {conflictResolutionInstructions
-                            ? t('followUp.resolveConflicts')
-                            : t('followUp.send')}
-                        </>
+                        <Send className="h-4 w-4 fill-primary-foreground" />
                       )}
                     </Button>
                     {isQueued && (
