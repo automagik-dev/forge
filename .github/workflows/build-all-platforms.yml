@@ -242,8 +242,158 @@ jobs:
           name: binaries-${{ matrix.platform }}
           path: npx-cli/dist/${{ matrix.platform }}/
 
+  android:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: |
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          sdkmanager "ndk;26.1.10909125"
+          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.1.10909125" >> $GITHUB_ENV
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Install Linux build tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y perl pkg-config libssl-dev make
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-android-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-android-
+            ${{ runner.os }}-cargo-
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install workspace dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build frontend
+        working-directory: frontend
+        run: pnpm run build
+
+      - name: Configure Android NDK toolchain
+        run: |
+          echo "[target.aarch64-linux-android]" > ~/.cargo/config.toml
+          echo "linker = \"$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang\"" >> ~/.cargo/config.toml
+          echo "ar = \"$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar\"" >> ~/.cargo/config.toml
+
+      - name: Build Rust binaries for Android (CLI for Termux)
+        env:
+          OPENSSL_STATIC: 1
+          OPENSSL_VENDORED: 1
+          OPENSSL_NO_VENDOR: 0
+          LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
+          LIBSQLITE3_SYS_BUNDLED: 1
+          LIBSQLITE3_SYS_STATIC: 1
+          LIBZ_SYS_STATIC: 1
+          SQLX_OFFLINE: true
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
+          CC: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang
+          AR: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+          RANLIB: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib
+          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang
+          CARGO_TARGET_AARCH64_LINUX_ANDROID_AR: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+        run: |
+          cargo build --release --target aarch64-linux-android
+          cargo build --release --target aarch64-linux-android --bin mcp_task_server
+
+      - name: Build Rust library for Android (JNI for APK)
+        env:
+          OPENSSL_STATIC: 1
+          OPENSSL_VENDORED: 1
+          OPENSSL_NO_VENDOR: 0
+          LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
+          LIBSQLITE3_SYS_BUNDLED: 1
+          LIBSQLITE3_SYS_STATIC: 1
+          LIBZ_SYS_STATIC: 1
+          SQLX_OFFLINE: true
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
+          CC: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang
+          AR: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+          RANLIB: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib
+          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang
+          CARGO_TARGET_AARCH64_LINUX_ANDROID_AR: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+        run: |
+          cargo build -p forge-app --release --target aarch64-linux-android --lib --features android
+
+      - name: Build Android APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - name: Package Termux CLI binaries
+        run: |
+          mkdir -p npx-cli/dist/android-arm64
+
+          cp target/aarch64-linux-android/release/forge-app automagik-forge
+          zip -q automagik-forge.zip automagik-forge
+          mv automagik-forge.zip npx-cli/dist/android-arm64/
+          rm automagik-forge
+
+          cp target/aarch64-linux-android/release/mcp_task_server automagik-forge-mcp
+          zip -q automagik-forge-mcp.zip automagik-forge-mcp
+          mv automagik-forge-mcp.zip npx-cli/dist/android-arm64/
+          rm automagik-forge-mcp
+
+      - name: Package APK
+        run: |
+          mkdir -p npx-cli/dist/android-apk
+          cp android/app/build/outputs/apk/release/*.apk npx-cli/dist/android-apk/
+
+      - name: Upload Termux CLI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-android-arm64
+          path: npx-cli/dist/android-arm64/
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-android-apk
+          path: npx-cli/dist/android-apk/
+
   publish:
-    needs: build
+    needs: [build, android]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '')
 

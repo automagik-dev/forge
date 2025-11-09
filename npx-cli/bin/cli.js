@@ -50,12 +50,27 @@ function getEffectiveArch() {
   return "x64";
 }
 
-// Normalize platform - treat Android as Linux (uses same binaries)
-const platform = process.platform === "android" ? "linux" : process.platform;
+function isAndroid() {
+  if (process.platform === "android") return true;
+  
+  if (process.env.TERMUX_VERSION) return true;
+  if (process.env.ANDROID_ROOT || process.env.ANDROID_DATA) return true;
+  
+  try {
+    if (fs.existsSync("/system/bin/getprop")) return true;
+  } catch {
+  }
+  
+  return false;
+}
+
+// Normalize platform - map Android to android-arm64 for native Termux support
+const platform = isAndroid() ? "android" : process.platform;
 const arch = getEffectiveArch();
 
 // Map to our build target names
 function getPlatformDir() {
+  if (platform === "android" && arch === "arm64") return "android-arm64";
   if (platform === "linux" && arch === "x64") return "linux-x64";
   if (platform === "linux" && arch === "arm64") return "linux-arm64";
   if (platform === "win32" && arch === "x64") return "windows-x64";
@@ -65,6 +80,7 @@ function getPlatformDir() {
 
   console.error(`❌ Unsupported platform: ${platform}-${arch}`);
   console.error("Supported platforms:");
+  console.error("  - Android ARM64 (Termux)");
   console.error("  - Linux x64");
   console.error("  - Linux ARM64");
   console.error("  - Windows x64");
