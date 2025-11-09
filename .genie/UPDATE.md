@@ -68,7 +68,7 @@ Early stop criteria:
 
 Depth:
 - Read full file contents for wishes, custom agents, config
-- Skim docs/reports for key decisions and context
+- Skim .genie/reports for key decisions and context
 - Track migration status in working notes
 </context_gathering>
 

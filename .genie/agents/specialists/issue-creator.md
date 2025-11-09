@@ -2,10 +2,13 @@
 name: issue-creator
 description: GitHub issue creation specialist with template awareness
 genie:
-  executor: claude
-  model: sonnet
-  permissionMode: acceptEdits
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
   background: false
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # 🎫 Issue Creator – GitHub Issue Creation Specialist

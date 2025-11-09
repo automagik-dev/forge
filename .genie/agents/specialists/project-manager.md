@@ -1,12 +1,13 @@
 ---
 name: project-manager
 description: Verify task completion and update roadmap status
-color: cyan
 genie:
-  executor: codex
-  model: gpt-5
-  reasoningEffort: minimal
-  sandbox: workspace-write
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Project Manager Specialist • Completion Steward

@@ -50,17 +50,8 @@ import { DiffsPanel } from '@/components/panels/DiffsPanel';
 import TaskAttemptPanel from '@/components/panels/TaskAttemptPanel';
 import TaskPanel from '@/components/panels/TaskPanel';
 import TodoPanel from '@/components/tasks/TodoPanel';
-import { NewCard, NewCardHeader } from '@/components/ui/new-card';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbLink,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { AttemptHeaderActions } from '@/components/panels/AttemptHeaderActions';
-import { TaskPanelHeaderActions } from '@/components/panels/TaskPanelHeaderActions';
+import { NewCard } from '@/components/ui/new-card';
+import { Breadcrumb } from '@/components/breadcrumb';
 
 type Task = TaskWithAttemptStatus;
 
@@ -228,7 +219,9 @@ export function ProjectTasks() {
 
   const rawMode = searchParams.get('view') as LayoutMode;
   const mode: LayoutMode =
-    rawMode === 'preview' || rawMode === 'diffs' ? rawMode : null;
+    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat'
+      ? rawMode
+      : null;
 
   // TODO: Remove this redirect after v0.1.0 (legacy URL support for bookmarked links)
   // Migrates old `view=logs` to `view=diffs`
@@ -363,12 +356,12 @@ export function ProjectTasks() {
   /**
    * Cycle the attempt area view.
    * - When panel is closed: opens task details (if a task is selected)
-   * - When panel is open: cycles among [attempt, preview, diffs]
+   * - When panel is open: cycles among [kanban, preview, diffs, chat]
    */
   const cycleView = useCallback(
     (direction: 'forward' | 'backward' = 'forward') => {
-      const order: LayoutMode[] = [null, 'preview', 'diffs'];
-      const idx = order.indexOf(mode);
+      const order: LayoutMode[] = ['kanban', 'preview', 'diffs', 'chat'];
+      const idx = order.indexOf(mode ?? 'kanban');
       const next =
         direction === 'forward'
           ? order[(idx + 1) % order.length]
@@ -391,8 +384,8 @@ export function ProjectTasks() {
     () => {
       if (isPanelOpen) {
         // Track keyboard shortcut before cycling view
-        const order: LayoutMode[] = [null, 'preview', 'diffs'];
-        const idx = order.indexOf(mode);
+        const order: LayoutMode[] = ['kanban', 'preview', 'diffs', 'chat'];
+        const idx = order.indexOf(mode ?? 'kanban');
         const next = order[(idx + 1) % order.length];
 
         if (next === 'preview') {
@@ -404,6 +397,13 @@ export function ProjectTasks() {
           });
         } else if (next === 'diffs') {
           posthog?.capture('diffs_navigated', {
+            trigger: 'keyboard',
+            direction: 'forward',
+            timestamp: new Date().toISOString(),
+            source: 'frontend',
+          });
+        } else if (next === 'kanban') {
+          posthog?.capture('kanban_navigated', {
             trigger: 'keyboard',
             direction: 'forward',
             timestamp: new Date().toISOString(),
@@ -424,8 +424,8 @@ export function ProjectTasks() {
     () => {
       if (isPanelOpen) {
         // Track keyboard shortcut before cycling view
-        const order: LayoutMode[] = [null, 'preview', 'diffs'];
-        const idx = order.indexOf(mode);
+        const order: LayoutMode[] = ['kanban', 'preview', 'diffs', 'chat'];
+        const idx = order.indexOf(mode ?? 'kanban');
         const next = order[(idx - 1 + order.length) % order.length];
 
         if (next === 'preview') {
@@ -437,6 +437,13 @@ export function ProjectTasks() {
           });
         } else if (next === 'diffs') {
           posthog?.capture('diffs_navigated', {
+            trigger: 'keyboard',
+            direction: 'backward',
+            timestamp: new Date().toISOString(),
+            source: 'frontend',
+          });
+        } else if (next === 'kanban') {
+          posthog?.capture('kanban_navigated', {
             trigger: 'keyboard',
             direction: 'backward',
             timestamp: new Date().toISOString(),
@@ -476,6 +483,14 @@ export function ProjectTasks() {
           `${paths.task(projectId!, task.id)}/attempts/latest`
         );
       }
+    },
+    [projectId, navigateWithSearch]
+  );
+
+  const handleNavigateToTask = useCallback(
+    (taskId: string) => {
+      if (!projectId) return;
+      navigateWithSearch(`${paths.task(projectId, taskId)}/attempts/latest`);
     },
     [projectId, navigateWithSearch]
   );
@@ -660,71 +675,20 @@ export function ProjectTasks() {
       </div>
     );
 
-  const rightHeader = selectedTask ? (
-    <NewCardHeader
-      className="shrink-0"
-      actions={
-        isTaskView ? (
-          <TaskPanelHeaderActions
-            task={selectedTask}
-            onClose={() =>
-              navigate(`/projects/${projectId}/tasks`, { replace: true })
-            }
-          />
-        ) : (
-          <AttemptHeaderActions
-            mode={mode}
-            onModeChange={setMode}
-            task={selectedTask}
-            attempt={attempt ?? null}
-            onClose={() =>
-              navigate(`/projects/${projectId}/tasks`, { replace: true })
-            }
-          />
-        )
-      }
-    >
-      <div className="mx-auto w-full">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              {isTaskView ? (
-                <BreadcrumbPage>
-                  {truncateTitle(selectedTask?.title)}
-                </BreadcrumbPage>
-              ) : (
-                <BreadcrumbLink
-                  className="cursor-pointer hover:underline"
-                  onClick={() =>
-                    navigateWithSearch(paths.task(projectId!, taskId!))
-                  }
-                >
-                  {truncateTitle(selectedTask?.title)}
-                </BreadcrumbLink>
-              )}
-            </BreadcrumbItem>
-            {!isTaskView && (
-              <>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>
-                    {attempt?.branch || 'Task Attempt'}
-                  </BreadcrumbPage>
-                </BreadcrumbItem>
-              </>
-            )}
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-    </NewCardHeader>
-  ) : null;
+  // Show breadcrumb only for preview/diffs modes (kanban has its own navigation)
+  const rightHeader = mode === 'preview' || mode === 'diffs' ? <Breadcrumb /> : null;
 
   const attemptContent = selectedTask ? (
     <NewCard className="h-full min-h-0 flex flex-col bg-diagonal-lines bg-muted border-0">
       {isTaskView ? (
         <TaskPanel task={selectedTask} />
       ) : (
-        <TaskAttemptPanel attempt={attempt} task={selectedTask}>
+        <TaskAttemptPanel
+          attempt={attempt}
+          task={selectedTask}
+          tasksById={tasksById}
+          onNavigateToTask={handleNavigateToTask}
+        >
           {({ logs, followUp }) => (
             <>
               {gitError && (

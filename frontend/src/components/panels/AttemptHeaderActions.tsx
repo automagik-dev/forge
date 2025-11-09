@@ -12,7 +12,6 @@ import type { LayoutMode } from '../layout/TasksLayout';
 import type { TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
 import { ActionsDropdown } from '../ui/ActionsDropdown';
 import { usePostHog } from 'posthog-js/react';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 interface AttemptHeaderActionsProps {
   onClose: () => void;
@@ -20,6 +19,7 @@ interface AttemptHeaderActionsProps {
   onModeChange?: (mode: LayoutMode) => void;
   task: TaskWithAttemptStatus;
   attempt?: TaskAttempt | null;
+  onNavigateToTask?: (taskId: string) => void;
 }
 
 export const AttemptHeaderActions = ({
@@ -28,20 +28,20 @@ export const AttemptHeaderActions = ({
   onModeChange,
   task,
   attempt,
+  onNavigateToTask,
 }: AttemptHeaderActionsProps) => {
   const { t } = useTranslation('tasks');
   const posthog = usePostHog();
-  const isXL = useMediaQuery('(min-width: 1280px)');
 
   return (
     <>
-      {typeof mode !== 'undefined' && onModeChange && isXL && (
+      {typeof mode !== 'undefined' && onModeChange && (
         <TooltipProvider>
           <ToggleGroup
             type="single"
-            value={mode ?? ''}
+            value={mode === 'chat' || mode === null ? '' : mode}
             onValueChange={(v) => {
-              const newMode = (v as LayoutMode) || null;
+              const newMode = (v as LayoutMode) || 'kanban';
 
               // Track view navigation
               if (newMode === 'preview') {
@@ -56,11 +56,9 @@ export const AttemptHeaderActions = ({
                   timestamp: new Date().toISOString(),
                   source: 'frontend',
                 });
-              } else if (newMode === null) {
-                // Closing the view (clicked active button)
-                posthog?.capture('view_closed', {
+              } else if (newMode === 'kanban') {
+                posthog?.capture('kanban_navigated', {
                   trigger: 'button',
-                  from_view: mode ?? 'attempt',
                   timestamp: new Date().toISOString(),
                   source: 'frontend',
                 });
@@ -68,7 +66,7 @@ export const AttemptHeaderActions = ({
 
               onModeChange(newMode);
             }}
-            className="inline-flex gap-4"
+            className="inline-flex gap-1"
             aria-label="Layout mode"
           >
             <Tooltip>
@@ -79,6 +77,11 @@ export const AttemptHeaderActions = ({
                   active={mode === 'preview'}
                 >
                   <Eye className="h-4 w-4" />
+                  {mode === 'preview' && (
+                    <span className="text-sm font-medium">
+                      {t('attemptHeaderActions.preview')}
+                    </span>
+                  )}
                 </ToggleGroupItem>
               </TooltipTrigger>
               <TooltipContent side="bottom">
@@ -94,16 +97,54 @@ export const AttemptHeaderActions = ({
                   active={mode === 'diffs'}
                 >
                   <FileDiff className="h-4 w-4" />
+                  {mode === 'diffs' && (
+                    <span className="text-sm font-medium">
+                      {t('attemptHeaderActions.diffs')}
+                    </span>
+                  )}
                 </ToggleGroupItem>
               </TooltipTrigger>
               <TooltipContent side="bottom">
                 {t('attemptHeaderActions.diffs')}
               </TooltipContent>
             </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <ToggleGroupItem
+                  value="kanban"
+                  aria-label="Kanban"
+                  active={mode === 'kanban'}
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    viewBox="0 0 24 24"
+                  >
+                    <rect x="3" y="3" width="7" height="9" />
+                    <rect x="14" y="3" width="7" height="5" />
+                    <rect x="14" y="12" width="7" height="9" />
+                    <rect x="3" y="16" width="7" height="5" />
+                  </svg>
+                  {mode === 'kanban' && (
+                    <span className="text-sm font-medium">
+                      {t('attemptHeaderActions.kanban')}
+                    </span>
+                  )}
+                </ToggleGroupItem>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {t('attemptHeaderActions.kanban')}
+              </TooltipContent>
+            </Tooltip>
           </ToggleGroup>
         </TooltipProvider>
       )}
-      {typeof mode !== 'undefined' && onModeChange && isXL && (
+      {typeof mode !== 'undefined' && onModeChange && (
         <div className="h-4 w-px bg-border" />
       )}
       <ActionsDropdown task={task} attempt={attempt} />

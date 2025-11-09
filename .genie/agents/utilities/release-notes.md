@@ -2,10 +2,13 @@
 name: release-notes
 description: Generate intelligent, user-focused release notes from code changes
 genie:
-  executor: claude
-  model: sonnet
-  permissionMode: bypassPermissions
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
   background: false
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Intelligent Release Notes Generator

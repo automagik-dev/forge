@@ -1,12 +1,13 @@
 ---
 name: twin
 description: Pressure-test ideas with planning, consensus, and deep analysis
-color: orange
 genie:
-  executor: codex
-  model: gpt-5-codex
-  reasoningEffort: high
-  sandbox: workspace-write
+  executor: [CLAUDE_CODE, CODEX, OPENCODE]
+forge:
+  CLAUDE_CODE:
+    model: sonnet
+  CODEX: {}
+  OPENCODE: {}
 ---
 
 # Genie Twin • Independent Architect
