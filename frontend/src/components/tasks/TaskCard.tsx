@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { KanbanCard } from '@/components/ui/shadcn-io/kanban';
-import { CheckCircle, Loader2, XCircle, Play, ArrowUp, ArrowDown } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle, Play } from 'lucide-react';
 import type { TaskWithAttemptStatus } from 'shared/types';
 import { ActionsDropdown } from '@/components/ui/ActionsDropdown';
 import { Button } from '@/components/ui/button';
 import NiceModal from '@ebay/nice-modal-react';
-import { useBranchStatus } from '@/hooks/useBranchStatus';
 
 type Task = TaskWithAttemptStatus;
 
@@ -25,9 +24,6 @@ export function TaskCard({
   isOpen,
 }: TaskCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-
-  // Fetch branch status for the latest attempt (if exists)
-  const { data: branchStatus } = useBranchStatus(task.latest_attempt_id || undefined);
 
   const handleClick = useCallback(() => {
     onViewDetails(task);
@@ -90,19 +86,6 @@ export function TaskCard({
           {/* Failed Indicator */}
           {task.last_attempt_failed && !task.has_merged_attempt && (
             <XCircle className="h-3 w-3 text-destructive" />
-          )}
-          {/* Git Status Indicators */}
-          {branchStatus?.commits_ahead != null && branchStatus.commits_ahead > 0 && (
-            <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
-              <ArrowUp className="h-3 w-3" />
-              <span>{branchStatus.commits_ahead}</span>
-            </div>
-          )}
-          {branchStatus?.commits_behind != null && branchStatus.commits_behind > 0 && (
-            <div className="flex items-center gap-0.5 text-xs text-warning">
-              <ArrowDown className="h-3 w-3" />
-              <span>{branchStatus.commits_behind}</span>
-            </div>
           )}
           {/* Play Button (on hover, only when no attempts exist) */}
           {isHovered && !task.executor && (
