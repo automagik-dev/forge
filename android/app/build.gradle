@@ -1,0 +1,65 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'ai.namastex.forge'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "ai.namastex.forge"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "0.6.0"
+
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
+            assets.srcDirs = ['src/main/assets']
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+}
+
+// Task to copy Rust library from cargo build
+task copyRustLib(type: Copy) {
+    from '../target/aarch64-linux-android/release/libforge_app.so'
+    into 'src/main/jniLibs/arm64-v8a'
+}
+
+// Task to copy frontend assets
+task copyFrontendAssets(type: Copy) {
+    from '../frontend/dist'
+    into 'src/main/assets/frontend'
+}
+
+preBuild.dependsOn copyRustLib, copyFrontendAssets

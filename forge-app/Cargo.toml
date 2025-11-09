@@ -12,6 +12,10 @@ path = "src/main.rs"
 name = "generate-forge-types"
 path = "src/bin/generate_forge_types.rs"
 
+[lib]
+name = "forge_app"
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 # Framework dependencies
 axum = { workspace = true }
@@ -56,6 +60,12 @@ utils = { path = "../upstream/crates/utils" }
 # Forge extensions
 forge-omni = { path = "../forge-extensions/omni" }
 forge-config = { path = "../forge-extensions/config" }
+
+# Android JNI
+jni = { version = "0.21", optional = true }
+
+[features]
+android = ["jni"]
 
 [dev-dependencies]
 httpmock = "0.7"

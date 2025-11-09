@@ -5,10 +5,7 @@
 
 use std::env;
 use std::net::{IpAddr, SocketAddr};
-use tokio::signal;
 use utils::browser::open_browser;
-mod router;
-mod services;
 
 /// Find which process is using a given port
 #[cfg(target_os = "linux")]
@@ -130,99 +127,32 @@ async fn main() -> anyhow::Result<()> {
     // Parse CLI flags
     let auth_required = parse_auth_required();
     if auth_required {
-        tracing::info!("GitHub authentication required for frontend access");
+        std::env::set_var("AUTH_REQUIRED", "1");
     }
 
-    // Initialize upstream deployment and forge services
-    tracing::info!("Initializing forge services using upstream deployment");
-    let services = services::ForgeServices::new().await?;
+    // Parse port from CLI
+    if let Some(port) = parse_port_flag() {
+        std::env::set_var("PORT", port.to_string());
+    }
 
-    // Load .genie profiles for all existing projects on startup
-    services.load_genie_profiles_for_all_projects().await?;
-
-    // Create router with services and auth flag
-    let app = router::create_router(services, auth_required);
-
-    let requested_addr = resolve_bind_address();
-    let listener = match tokio::net::TcpListener::bind(requested_addr).await {
-        Ok(listener) => listener,
-        Err(e) => {
-            if e.kind() == std::io::ErrorKind::AddrInUse {
-                let port = requested_addr.port();
-                let error_msg = if let Some(process_info) = find_process_using_port(port) {
-                    format!(
-                        "Failed to bind to {}:{}\n{}\n\nPlease stop the process or use a different port by setting the PORT or BACKEND_PORT environment variable.",
-                        requested_addr.ip(),
-                        port,
-                        process_info
-                    )
-                } else {
-                    format!(
-                        "Failed to bind to {}:{}\nPort {} is already in use by another process.\n\nPlease stop the process or use a different port by setting the PORT or BACKEND_PORT environment variable.",
-                        requested_addr.ip(),
-                        port,
-                        port
-                    )
-                };
-                tracing::error!("{}", error_msg);
-                return Err(anyhow::anyhow!("{}", error_msg));
-            }
-            return Err(e.into());
-        }
-    };
-    let actual_addr = listener.local_addr()?;
-    tracing::info!("Forge app listening on {}", actual_addr);
-
-    // Open browser automatically (unless disabled via env var for development)
+    // Open browser before starting server (unless disabled)
     let should_open_browser = env::var("DISABLE_BROWSER_OPEN").is_err();
     if should_open_browser {
-        let browser_url = if actual_addr.ip().is_unspecified() {
-            format!("http://localhost:{}", actual_addr.port())
+        let requested_addr = resolve_bind_address();
+        let browser_url = if requested_addr.ip().is_unspecified() {
+            format!("http://localhost:{}", requested_addr.port())
         } else {
-            format!("http://{}", actual_addr)
+            format!("http://{}", requested_addr)
         };
-        if let Err(e) = open_browser(&browser_url).await {
-            tracing::warn!("Failed to open browser: {}", e);
-        }
-    } else {
-        tracing::info!("Browser auto-open disabled (development mode)");
+
+        tokio::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+            if let Err(e) = open_browser(&browser_url).await {
+                tracing::warn!("Failed to open browser: {}", e);
+            }
+        });
     }
 
-    // Graceful shutdown on Ctrl+C
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
-
-    tracing::info!("Forge app shut down gracefully");
-
-    Ok(())
-}
-
-/// Wait for Ctrl+C or SIGTERM signal
-async fn shutdown_signal() {
-    let ctrl_c = async {
-        signal::ctrl_c()
-            .await
-            .expect("failed to install Ctrl+C handler");
-    };
-
-    #[cfg(unix)]
-    let terminate = async {
-        signal::unix::signal(signal::unix::SignalKind::terminate())
-            .expect("failed to install SIGTERM handler")
-            .recv()
-            .await;
-    };
-
-    #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
-
-    tokio::select! {
-        _ = ctrl_c => {
-            tracing::info!("Received Ctrl+C, initiating graceful shutdown...");
-        },
-        _ = terminate => {
-            tracing::info!("Received SIGTERM, initiating graceful shutdown...");
-        },
-    }
+    // Run server using shared logic
+    forge_app::run_server().await
 }
