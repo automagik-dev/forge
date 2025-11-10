@@ -15,10 +15,30 @@ export type DevserverUrlInfo = {
 export const detectDevserverUrl = (line: string): DevserverUrlInfo | null => {
   const cleaned = stripAnsi(line);
 
+  // Ignore lines that are clearly not HTTP server URLs
+  const ignoredPatterns = [
+    /--inspect/i,
+    /debugger listening/i,
+    /^ws:\/\//i,
+    /^wss:\/\//i,
+  ];
+  
+  if (ignoredPatterns.some(pattern => pattern.test(cleaned))) {
+    return null;
+  }
+
+  const inspectorPorts = [9229, 9230, 9231, 9232, 9233];
+
   const fullUrlMatch = urlPatterns[0].exec(cleaned);
   if (fullUrlMatch) {
     try {
       const parsed = new URL(fullUrlMatch[1]);
+      const port = parsed.port ? Number(parsed.port) : undefined;
+      
+      if (port && inspectorPorts.includes(port)) {
+        return null;
+      }
+      
       if (
         parsed.hostname === '0.0.0.0' ||
         parsed.hostname === '::' ||
@@ -28,7 +48,7 @@ export const detectDevserverUrl = (line: string): DevserverUrlInfo | null => {
       }
       return {
         url: parsed.toString(),
-        port: parsed.port ? Number(parsed.port) : undefined,
+        port,
         scheme: parsed.protocol === 'https:' ? 'https' : 'http',
       };
     } catch {
@@ -39,6 +59,11 @@ export const detectDevserverUrl = (line: string): DevserverUrlInfo | null => {
   const hostPortMatch = urlPatterns[1].exec(cleaned);
   if (hostPortMatch) {
     const port = Number(hostPortMatch[1]);
+    
+    if (inspectorPorts.includes(port)) {
+      return null;
+    }
+    
     const scheme = /https/i.test(cleaned) ? 'https' : 'http';
     return {
       url: `${scheme}://localhost:${port}`,
