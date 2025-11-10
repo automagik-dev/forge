@@ -610,6 +610,8 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                       onProfileSelect={setSelectedExecutorProfile}
                       disabled={isSubmitting || isSubmittingAndStart}
                       layout="stacked"
+                      showLabel={true}
+                      showVariantSelector={true}
                     />
                   )}
 
