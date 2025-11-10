@@ -335,7 +335,7 @@ jobs:
           fi
           
           if [ "${{ steps.cache-android-apk.outputs.cache-hit }}" == "true" ]; then
-            if [ -f "npx-cli/dist/android-apk/"*.apk ]; then
+            if compgen -G "npx-cli/dist/android-apk/*.apk" > /dev/null 2>&1; then
               SKIP_APK=true
               echo "✅ Cache hit! Skipping Android APK build"
             else
@@ -345,13 +345,15 @@ jobs:
             echo "🔨 No APK cache hit, will build Android APK"
           fi
           
+          # Always export SKIP_CLI and SKIP_APK to GITHUB_ENV so later steps can check them
+          echo "SKIP_CLI=$SKIP_CLI" >> $GITHUB_ENV
+          echo "SKIP_APK=$SKIP_APK" >> $GITHUB_ENV
+          
           if [ "$SKIP_CLI" == "true" ] && [ "$SKIP_APK" == "true" ]; then
             echo "SKIP_BUILD=true" >> $GITHUB_ENV
             echo "✅ Both Android builds cached, skipping all build steps"
           else
             echo "SKIP_BUILD=false" >> $GITHUB_ENV
-            echo "SKIP_CLI=$SKIP_CLI" >> $GITHUB_ENV
-            echo "SKIP_APK=$SKIP_APK" >> $GITHUB_ENV
           fi
 
       - name: Set up JDK 17
