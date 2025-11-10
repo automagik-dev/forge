@@ -66,12 +66,12 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     const modal = useModal();
     const { createTask, createAndStart, updateTask } =
       useTaskMutations(projectId);
-    const { system } = useUserSystem();
+    const { profiles: globalProfiles, config } = useUserSystem();
     const { data: projectProfiles, isLoading: isLoadingProjectProfiles } = useProjectProfiles(projectId);
 
-    // Use project profiles if available, fallback to global profiles
-    const profiles = projectProfiles?.executors || system.profiles?.executors;
-    const isProfilesLoading = isLoadingProjectProfiles && !system.profiles?.executors;
+    // Use project profiles if available (synchronized agents), fallback to global profiles
+    const profiles = projectProfiles?.executors || globalProfiles;
+    const isProfilesLoading = isLoadingProjectProfiles && !globalProfiles;
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -163,9 +163,9 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
         setImages([]);
         setNewlyUploadedImageIds([]);
         setSelectedBranch('');
-        setSelectedExecutorProfile(system.config?.executor_profile || null);
+        setSelectedExecutorProfile(config?.executor_profile || null);
       }
-    }, [task, initialTask, modal.visible, system.config?.executor_profile]);
+    }, [task, initialTask, modal.visible, config?.executor_profile]);
 
     // Fetch branches when dialog opens in create mode
     useEffect(() => {
@@ -245,17 +245,10 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
 
     // Set default executor from config (following TaskDetailsToolbar pattern)
     useEffect(() => {
-      if (system.config?.executor_profile) {
-        setSelectedExecutorProfile(system.config.executor_profile);
+      if (config?.executor_profile) {
+        setSelectedExecutorProfile(config.executor_profile);
       }
-    }, [system.config?.executor_profile]);
-
-    // Set default executor from config (following TaskDetailsToolbar pattern)
-    useEffect(() => {
-      if (system.config?.executor_profile) {
-        setSelectedExecutorProfile(system.config.executor_profile);
-      }
-    }, [system.config?.executor_profile]);
+    }, [config?.executor_profile]);
 
     // Handle image upload success by inserting markdown into description
     const handleImageUploaded = useCallback((image: ImageResponse) => {
@@ -381,7 +374,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
 
         // Use selected executor profile or fallback to config default
         const finalExecutorProfile =
-          selectedExecutorProfile || system.config?.executor_profile;
+          selectedExecutorProfile || config?.executor_profile;
         if (!finalExecutorProfile || !selectedBranch) {
           console.warn(
             `Missing ${
@@ -424,7 +417,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       createAndStart,
       selectedExecutorProfile,
       selectedBranch,
-      system.config?.executor_profile,
+      config?.executor_profile,
       isSubmitting,
       isSubmittingAndStart,
       parentTaskAttemptId,
