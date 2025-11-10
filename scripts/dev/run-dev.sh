@@ -69,8 +69,15 @@ else
 fi
 
 echo "📍 Configuration:"
-echo "   Backend:  http://localhost:${BACKEND_PORT}"
-echo "   Frontend: http://localhost:${FRONTEND_PORT}"
+# Show actual HOST binding (not just localhost)
+DISPLAY_HOST="${HOST:-127.0.0.1}"
+if [ "$DISPLAY_HOST" = "0.0.0.0" ]; then
+    echo "   Backend:  http://0.0.0.0:${BACKEND_PORT} (accessible from network)"
+    echo "   Frontend: http://0.0.0.0:${FRONTEND_PORT} (accessible from network)"
+else
+    echo "   Backend:  http://${DISPLAY_HOST}:${BACKEND_PORT}"
+    echo "   Frontend: http://${DISPLAY_HOST}:${FRONTEND_PORT}"
+fi
 if [ -n "${DATABASE_URL:-}" ]; then
     # Extract the path from sqlite:// URL
     DB_PATH="${DATABASE_URL#sqlite://}"
@@ -141,6 +148,9 @@ export RUST_LOG=debug
 # Explicitly export HOST if set in .env (cargo watch doesn't always pass --env-file vars to child processes)
 if [ -n "${HOST:-}" ]; then
     export HOST
+    echo "🌐 HOST binding set to: $HOST"
+else
+    echo "🌐 HOST not set, will default to 127.0.0.1"
 fi
 
 # Start backend with cargo watch
@@ -224,7 +234,9 @@ echo ""
 # Start frontend
 echo "🎨 Starting frontend server..."
 cd frontend
-BACKEND_PORT=${BACKEND_PORT} VITE_OPEN=true pnpm run dev -- --port ${FRONTEND_PORT} --host &
+# Use same HOST binding as backend (from .env)
+VITE_HOST="${HOST:-127.0.0.1}"
+BACKEND_PORT=${BACKEND_PORT} VITE_OPEN=true pnpm run dev -- --port ${FRONTEND_PORT} --host ${VITE_HOST} &
 FRONTEND_PID=$!
 cd ..
 
@@ -232,8 +244,13 @@ echo ""
 echo "✨ Development environment is ready!"
 echo ""
 echo "📍 Access points:"
-echo "   Frontend: http://localhost:${FRONTEND_PORT}"
-echo "   Backend:  http://localhost:${BACKEND_PORT}"
+if [ "$DISPLAY_HOST" = "0.0.0.0" ]; then
+    echo "   Frontend: http://0.0.0.0:${FRONTEND_PORT} (or http://localhost:${FRONTEND_PORT})"
+    echo "   Backend:  http://0.0.0.0:${BACKEND_PORT} (or http://localhost:${BACKEND_PORT})"
+else
+    echo "   Frontend: http://${DISPLAY_HOST}:${FRONTEND_PORT}"
+    echo "   Backend:  http://${DISPLAY_HOST}:${BACKEND_PORT}"
+fi
 echo ""
 echo "Press Ctrl+C to stop all services"
 echo ""
