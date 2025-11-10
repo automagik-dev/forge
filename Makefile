@@ -1,4 +1,4 @@
-.PHONY: help dev prod backend frontend build test clean publish beta version
+.PHONY: help dev prod backend frontend build test clean publish beta version check-cargo check-android-deps check-submodules
 
 # Default target
 help:
@@ -22,12 +22,104 @@ help:
 	@echo "  make version   - Show current version info"
 	@echo ""
 
+# Check and install cargo if needed (OS agnostic)
+check-cargo:
+	@PATH="$$HOME/.cargo/bin:$$PATH"; \
+	export PATH; \
+	if command -v cargo >/dev/null 2>&1; then \
+		echo "✅ Cargo already installed: $$(cargo --version)"; \
+	else \
+		echo "🦀 Cargo not found. Installing Rust toolchain..."; \
+		if [ -d "/data/data/com.termux" ]; then \
+			echo "📱 Termux detected - installing via pkg..."; \
+			pkg install -y rust; \
+		else \
+			echo "🌐 Installing via rustup (Linux/macOS/WSL)..."; \
+			curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y; \
+			PATH="$$HOME/.cargo/bin:$$PATH"; \
+			export PATH; \
+		fi; \
+		echo "✅ Rust toolchain installed"; \
+	fi; \
+	if cargo watch --version >/dev/null 2>&1; then \
+		echo "✅ cargo-watch already installed: $$(cargo watch --version)"; \
+	else \
+		echo "🔧 Installing cargo-watch..."; \
+		if [ "$$(uname)" = "Darwin" ]; then \
+			echo "🍎 macOS detected - using Homebrew for cargo-watch..."; \
+			if command -v brew >/dev/null 2>&1; then \
+				brew install cargo-watch; \
+			else \
+				echo "⚠️  Homebrew not found, trying cargo install..."; \
+				cargo install cargo-watch || { echo "❌ Failed to install cargo-watch"; exit 1; }; \
+			fi; \
+		else \
+			cargo install cargo-watch || { echo "❌ Failed to install cargo-watch"; exit 1; }; \
+		fi; \
+		if cargo watch --version >/dev/null 2>&1; then \
+			echo "✅ cargo-watch installed: $$(cargo watch --version)"; \
+		else \
+			echo "❌ cargo-watch installation failed"; \
+			exit 1; \
+		fi; \
+	fi
+
+# Check and install Android/Termux build dependencies
+check-android-deps:
+	@if [ -d "/data/data/com.termux" ]; then \
+		echo "📱 Checking Android/Termux build dependencies..."; \
+		MISSING_DEPS=""; \
+		for dep in perl openssl pkg-config make clang; do \
+			if ! command -v $$dep &> /dev/null; then \
+				MISSING_DEPS="$$MISSING_DEPS $$dep"; \
+			fi; \
+		done; \
+		if [ -n "$$MISSING_DEPS" ]; then \
+			echo "📦 Installing missing dependencies:$$MISSING_DEPS"; \
+			pkg install -y$$MISSING_DEPS; \
+			echo "✅ Dependencies installed"; \
+		else \
+			echo "✅ All build dependencies present"; \
+		fi; \
+	else \
+		if command -v dpkg >/dev/null 2>&1 && command -v apt-get >/dev/null 2>&1; then \
+			echo "🐧 Checking Debian/Ubuntu build dependencies..."; \
+			NEEDS_UPDATE=0; \
+			if ! command -v cc >/dev/null 2>&1 || ! command -v gcc >/dev/null 2>&1; then \
+				echo "📦 Installing build-essential (C/C++ compiler toolchain)..."; \
+				NEEDS_UPDATE=1; \
+			fi; \
+			if ! dpkg -l | grep -q libclang-dev; then \
+				echo "📦 Installing libclang-dev..."; \
+				NEEDS_UPDATE=1; \
+			fi; \
+			if [ $$NEEDS_UPDATE -eq 1 ]; then \
+				sudo apt-get update && sudo apt-get install -y build-essential libclang-dev; \
+				echo "✅ Build dependencies installed"; \
+			else \
+				echo "✅ All build dependencies present"; \
+			fi; \
+		else \
+			echo "ℹ️  Non-Debian system detected - skipping package checks"; \
+			echo "   (Ensure gcc/clang and build tools are installed via your package manager)"; \
+		fi; \
+	fi
+  
+# Initialize git submodules
+check-submodules:
+	@git config submodule.recurse true 2>/dev/null || true
+	@if [ ! -f "upstream/Cargo.toml" ]; then \
+		echo "📦 Initializing git submodules..."; \
+		git submodule update --init --recursive; \
+		echo "✅ Submodules initialized"; \
+	fi
+
 # Development mode - hot reload (backend first, then frontend)
-dev:
+dev: check-android-deps check-cargo check-submodules
 	@bash scripts/dev/run-dev.sh
 
 # Production mode - test what will be published
-prod:
+prod: check-android-deps check-cargo check-submodules
 	@echo "📦 Building and running production package..."
 	@bash scripts/dev/run-prod.sh
 
@@ -45,7 +137,7 @@ frontend:
 	@npm run frontend:dev
 
 # Build production package (without launching)
-build:
+build: check-android-deps check-cargo check-submodules
 	@echo "🔨 Building production package..."
 	@bash scripts/build/build.sh
 
@@ -86,4 +178,5 @@ version:
 	@echo "  Forge App:    $$(grep 'version =' forge-app/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
 	@echo "  Forge Omni:   $$(grep 'version =' forge-extensions/omni/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
 	@echo "  Forge Config: $$(grep 'version =' forge-extensions/config/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
-	@echo "  Upstream:     $$(grep 'version =' upstream/crates/server/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
+
+	@echo "  Upstream:     $$(grep 'version =' upstream/crates/server/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/'")

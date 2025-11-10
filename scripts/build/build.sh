@@ -109,6 +109,13 @@ case "$PLATFORM_OS-$ARCH" in
     ;;
 esac
 
+# Check if running on Android/Termux
+IS_ANDROID=false
+if [ -n "${TERMUX_VERSION:-}" ] || [ -n "${ANDROID_ROOT:-}" ] || [ -f "/system/bin/getprop" ]; then
+  IS_ANDROID=true
+  echo "📱 Android/Termux detected"
+fi
+
 # Binary extension per OS
 BIN_EXT=""
 if [ "$PLATFORM_OS" = "windows" ]; then
@@ -208,6 +215,15 @@ cp "target/release/mcp_task_server${BIN_EXT}" "automagik-forge-mcp${BIN_EXT}"
 zip_one "automagik-forge-mcp${BIN_EXT}" "automagik-forge-mcp.zip"
 rm -f "automagik-forge-mcp${BIN_EXT}"
 mv "automagik-forge-mcp.zip" "npx-cli/dist/$PLATFORM_DIR/automagik-forge-mcp.zip"
+
+# On Android/Termux, also copy to android-arm64 directory (for npm package)
+if [ "$IS_ANDROID" = true ] && [ "$PLATFORM_DIR" = "linux-arm64" ]; then
+  echo "📱 Creating android-arm64 package for Termux..."
+  mkdir -p "npx-cli/dist/android-arm64"
+  cp "npx-cli/dist/linux-arm64/automagik-forge.zip" "npx-cli/dist/android-arm64/automagik-forge.zip"
+  cp "npx-cli/dist/linux-arm64/automagik-forge-mcp.zip" "npx-cli/dist/android-arm64/automagik-forge-mcp.zip"
+  echo "✅ Created android-arm64 package"
+fi
 
 # Create placeholder directories for other platforms
 for platform in "${PLATFORMS[@]}"; do
