@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     env:
-      HAS_ANDROID_SIGNING: ${{ secrets.ANDROID_SIGNING_STORE_FILE != '' }}
+      HAS_ANDROID_SIGNING: ${{ secrets.ANDROID_SIGNING_STORE_FILE != '' && secrets.ANDROID_SIGNING_STORE_PASSWORD != '' && secrets.ANDROID_SIGNING_KEY_ALIAS != '' && secrets.ANDROID_SIGNING_KEY_PASSWORD != '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -120,13 +120,18 @@ jobs:
           cargo build -p forge-app --release --target aarch64-linux-android --lib --features android
 
       - name: Setup Android signing keystore
-        if: env.HAS_ANDROID_SIGNING == 'true'
+        if: env.HAS_ANDROID_SIGNING == 'true' && startsWith(github.ref, 'refs/tags/')
         working-directory: android
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_STORE_FILE }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > release.keystore
+          if ! echo "$KEYSTORE_BASE64" | base64 -d > release.keystore 2>/dev/null; then
+            echo "HAS_ANDROID_SIGNING=false" >> $GITHUB_ENV
+            echo "⚠️  Invalid keystore; skipping release signing"
+            exit 0
+          fi
           echo "ANDROID_SIGNING_STORE_FILE=$(pwd)/release.keystore" >> $GITHUB_ENV
+          echo "✅ Keystore configured successfully"
 
       - name: Build Android APKs
         working-directory: android
@@ -139,7 +144,7 @@ jobs:
           ./gradlew assembleDebug
       
       - name: Build signed release APK
-        if: env.HAS_ANDROID_SIGNING == 'true'
+        if: env.HAS_ANDROID_SIGNING == 'true' && startsWith(github.ref, 'refs/tags/')
         working-directory: android
         env:
           ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
@@ -169,7 +174,7 @@ jobs:
           path: android/app/build/outputs/apk/debug/*.apk
 
       - name: Upload release APK artifact
-        if: env.HAS_ANDROID_SIGNING == 'true'
+        if: env.HAS_ANDROID_SIGNING == 'true' && startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
           name: android-apk-release
