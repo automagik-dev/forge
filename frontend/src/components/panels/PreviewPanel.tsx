@@ -46,7 +46,7 @@ export function PreviewPanel() {
   const autoDetectedUrl = useDevserverUrlFromLogs(logStream.logs);
   const buildState = useDevserverBuildState(logStream.logs, Boolean(autoDetectedUrl));
   
-  const { manualUrl, setManualUrl, clearManualUrl, isManual } = useManualPreviewUrl(projectId!);
+  const { manualUrl, setManualUrl, isManual } = useManualPreviewUrl(projectId!);
   
   const lastKnownUrl = manualUrl 
     ? { url: manualUrl, scheme: manualUrl.startsWith('https') ? 'https' as const : 'http' as const }
