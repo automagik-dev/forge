@@ -9,35 +9,79 @@ The Android app consists of:
 - **Rust Library** (`libforge_app.so`): The same Axum backend compiled for Android ARM64
 - **Frontend Assets**: The React frontend bundled into the APK
 
-## Building Locally
+## Quick Start
 
-**Note:** Building Android APK locally requires Android SDK and NDK. For most users, we recommend using GitHub Actions (automatic on every release).
+### Building Locally
+
+Use the unified build script that works on Termux, Linux desktop, and CI:
+
+```bash
+# From repository root
+./scripts/build-android.sh --release
+```
+
+The script will:
+1. Build the frontend (React/TypeScript)
+2. Build the Rust library for Android ARM64
+3. Package everything into an APK
+4. Verify that the APK contains all required components
+
+**Output:** `android/app/build/outputs/apk/release/app-release.apk`
 
 ### Prerequisites
-- Android SDK (API 34)
-- Android NDK (26.1.10909125)
-- Rust with `aarch64-linux-android` target
-- JDK 17
 
-### Build Steps
-
-1. Build the Rust library:
+**On Termux (Android):**
 ```bash
-cargo build --release --target aarch64-linux-android --lib --features android
+pkg install rust rust-std-aarch64-linux-android openjdk-21 nodejs
+npm install -g pnpm
 ```
 
-2. Build the frontend:
+**On Linux Desktop:**
 ```bash
-cd frontend && pnpm build
+# Install Rust from https://rustup.rs
+rustup target add aarch64-linux-android
+
+# Install JDK 17, Node.js, pnpm from your package manager
+# Install Android SDK and NDK (for cross-compilation)
 ```
 
-3. Build the APK:
+### Build Options
+
 ```bash
-cd android
-./gradlew assembleRelease
+# Debug build (faster, larger APK)
+./scripts/build-android.sh
+
+# Release build (optimized)
+./scripts/build-android.sh --release
+
+# With verification (checks APK contents)
+./scripts/build-android.sh --release --verify
+
+# Help
+./scripts/build-android.sh --help
 ```
 
-APK will be at: `android/app/build/outputs/apk/release/app-release.apk`
+## Platform Support
+
+### ✅ Supported Platforms
+
+- **Linux Desktop** - Full APK build support (requires Android SDK + NDK)
+- **GitHub Actions** - Automated APK builds on every release
+- **macOS** - Full APK build support (requires Android SDK + NDK)
+
+### ⚠️ Termux (Android) Limitations
+
+**Termux can build the Rust library but NOT the final APK** due to Android SDK requirements.
+
+On Termux, the build script will:
+- ✅ Build frontend
+- ✅ Build Rust library for Android (`libforge_app.so`)
+- ❌ Fail at APK packaging (requires Android SDK)
+
+**Recommended for Termux users:**
+- Use the build script to validate code compiles: `./scripts/build-android.sh`
+- Download pre-built APKs from [GitHub Releases](https://github.com/namastexlabs/automagik-forge/releases)
+- Or use the npm package: `npm install -g @automagik/forge`
 
 ## GitHub Actions
 
@@ -58,6 +102,36 @@ pkg install nodejs
 npm install -g @automagik/forge
 forge
 ```
+
+## Troubleshooting
+
+### APK is small (< 10 MB) or crashes on launch
+
+The APK is missing components. Ensure you used the build script:
+```bash
+./scripts/build-android.sh --release
+```
+
+Manual `./gradlew assembleRelease` will NOT work - it requires the Rust library and frontend to be built first.
+
+### "aarch64-linux-android target not found"
+
+Install the Android target:
+```bash
+# Termux
+pkg install rust-std-aarch64-linux-android
+
+# Desktop
+rustup target add aarch64-linux-android
+```
+
+### Build fails during Rust compilation
+
+Ensure you have enough storage space (requires ~5 GB for full build).
+
+### "SDK location not found" (Termux)
+
+This is expected on Termux. See "Platform Support" above - Termux cannot build the final APK without Android SDK.
 
 ## License
 
