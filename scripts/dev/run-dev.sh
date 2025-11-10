@@ -172,7 +172,7 @@ trap cleanup EXIT INT TERM
 # Wait for backend to be ready (HTTP server + database)
 echo "⏳ Waiting for backend to be ready..."
 echo "   (This may take a while on first run due to Rust compilation)"
-MAX_ATTEMPTS=180  # 3 minutes max wait (compilation can be slow)
+MAX_ATTEMPTS=1800  # 30 minutes max wait (compilation can be very slow on limited hardware)
 ATTEMPT=0
 HTTP_READY=false
 DB_READY=false

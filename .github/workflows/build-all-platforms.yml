@@ -292,6 +292,7 @@ jobs:
         with:
           name: binaries-${{ matrix.platform }}
           path: npx-cli/dist/${{ matrix.platform }}/
+          overwrite: true
 
   android:
     runs-on: ubuntu-22.04
@@ -525,14 +526,16 @@ jobs:
       - name: Upload Termux CLI artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: binaries-android-arm64
+          name: binaries-android-termux
           path: npx-cli/dist/android-arm64/
+          overwrite: true
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
           name: binaries-android-apk
           path: npx-cli/dist/android-apk/
+          overwrite: true
 
   publish:
     needs: [build, android]
@@ -701,7 +704,7 @@ jobs:
         if: steps.check.outputs.published == 'false'
         run: |
           cd npx-cli
-          npm publish --tag ${{ steps.npm-tag.outputs.tag }}
+          npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
