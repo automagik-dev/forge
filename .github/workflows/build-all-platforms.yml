@@ -20,6 +20,7 @@ jobs:
   build:
     timeout-minutes: 60  # Increase timeout for slower macOS runners
     strategy:
+      fail-fast: false  # Don't cancel other platforms if one fails
       matrix:
         include:
           - os: ubuntu-22.04  # Use 22.04 for GLIBC 2.35 compatibility (works on 22.04 AND 24.04)
@@ -55,18 +56,51 @@ jobs:
         with:
           submodules: recursive
       
+      - name: Set zig suffix for cache key
+        if: matrix.use-zigbuild
+        shell: bash
+        run: echo "ZIG_SUFFIX=-zig-0.13.0" >> $GITHUB_ENV
+      
+      - name: Restore packaged binaries cache
+        id: cache-binaries
+        uses: actions/cache/restore@v4
+        with:
+          path: npx-cli/dist/${{ matrix.platform }}
+          key: binaries-${{ matrix.platform }}-${{ matrix.target }}-${{ runner.os }}${{ env.ZIG_SUFFIX }}-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
+      
+      - name: Check if build can be skipped
+        id: check-skip
+        shell: bash
+        run: |
+          if [ "${{ steps.cache-binaries.outputs.cache-hit }}" == "true" ]; then
+            if [ -f "npx-cli/dist/${{ matrix.platform }}/automagik-forge.zip" ] && [ -f "npx-cli/dist/${{ matrix.platform }}/automagik-forge-mcp.zip" ]; then
+              echo "SKIP_BUILD=true" >> $GITHUB_ENV
+              echo "✅ Cache hit! Skipping build for ${{ matrix.platform }}"
+            else
+              echo "SKIP_BUILD=false" >> $GITHUB_ENV
+              echo "⚠️  Cache hit but binaries missing, will rebuild"
+            fi
+          else
+            echo "SKIP_BUILD=false" >> $GITHUB_ENV
+            echo "🔨 No cache hit, will build ${{ matrix.platform }}"
+          fi
+      
       - name: Install Rust
+        if: env.SKIP_BUILD != 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
       
       - name: Verify cargo
+        if: env.SKIP_BUILD != 'true'
         run: cargo -V || (source "$HOME/.cargo/env" && cargo -V)
           
       - name: Add Rust target (additional step for reliability)
+        if: env.SKIP_BUILD != 'true'
         run: rustup target add ${{ matrix.target }}
           
       - name: Cache Rust dependencies
+        if: env.SKIP_BUILD != 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -80,11 +114,13 @@ jobs:
             ${{ runner.os }}-cargo-
       
       - name: Setup pnpm
+        if: env.SKIP_BUILD != 'true'
         uses: pnpm/action-setup@v4
         with:
           run_install: false
 
       - name: Setup Node.js
+        if: env.SKIP_BUILD != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -92,12 +128,14 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Get pnpm store directory
+        if: env.SKIP_BUILD != 'true'
         id: pnpm-cache
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
       - name: Setup pnpm cache
+        if: env.SKIP_BUILD != 'true'
         uses: actions/cache@v4
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
@@ -106,17 +144,18 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install workspace dependencies
+        if: env.SKIP_BUILD != 'true'
         run: pnpm install --no-frozen-lockfile
 
       - name: Install Linux build tools for vendored OpenSSL
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && env.SKIP_BUILD != 'true'
         shell: bash
         run: |
           sudo apt-get update -y
           sudo apt-get install -y perl pkg-config libssl-dev make
 
       - name: Install Windows build tools for vendored OpenSSL
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && env.SKIP_BUILD != 'true'
         shell: pwsh
         run: |
           choco install strawberryperl nasm -y
@@ -127,7 +166,7 @@ jobs:
           cpan -T Params::Check
 
       - name: Configure vendored OpenSSL (Windows)
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && env.SKIP_BUILD != 'true'
         shell: pwsh
         run: |
           echo "OPENSSL_STATIC=1"        >> $env:GITHUB_ENV
@@ -137,7 +176,7 @@ jobs:
           echo "PERL=$((Get-Command perl).Path)" >> $env:GITHUB_ENV
           
       - name: Install cargo-zigbuild
-        if: matrix.use-zigbuild
+        if: matrix.use-zigbuild && env.SKIP_BUILD != 'true'
         shell: bash
         run: |
           if cargo zigbuild --version >/dev/null 2>&1; then
@@ -147,17 +186,18 @@ jobs:
           fi
 
       - name: Install Zig toolchain
-        if: runner.os == 'Linux' && matrix.use-zigbuild
+        if: runner.os == 'Linux' && matrix.use-zigbuild && env.SKIP_BUILD != 'true'
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.13.0
 
       - name: Build frontend
+        if: env.SKIP_BUILD != 'true'
         working-directory: frontend
         run: pnpm run build
       
       - name: Build Rust binaries (Windows)
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && env.SKIP_BUILD != 'true'
         env:
           LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
           LIBZ_SYS_STATIC: 1
@@ -171,7 +211,7 @@ jobs:
         shell: bash
 
       - name: Build Rust binaries (Linux zigbuild)
-        if: runner.os == 'Linux' && matrix.use-zigbuild
+        if: runner.os == 'Linux' && matrix.use-zigbuild && env.SKIP_BUILD != 'true'
         env:
           OPENSSL_STATIC: 1
           DEP_OPENSSL_VENDORED: 1
@@ -190,7 +230,7 @@ jobs:
         shell: bash
 
       - name: Build Rust binaries (non-Windows, native)
-        if: runner.os != 'Windows' && !matrix.use-zigbuild
+        if: runner.os != 'Windows' && !matrix.use-zigbuild && env.SKIP_BUILD != 'true'
         env:
           OPENSSL_STATIC: 1
           DEP_OPENSSL_VENDORED: 1
@@ -209,7 +249,7 @@ jobs:
         shell: bash
       
       - name: Package binaries (Windows)
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && env.SKIP_BUILD != 'true'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path "npx-cli/dist/${{ matrix.platform }}" | Out-Null
@@ -225,7 +265,7 @@ jobs:
           Remove-Item "automagik-forge-mcp.exe"
 
       - name: Package binaries (Linux/macOS)
-        if: runner.os != 'Windows'
+        if: runner.os != 'Windows' && env.SKIP_BUILD != 'true'
         shell: bash
         run: |
           mkdir -p npx-cli/dist/${{ matrix.platform }}
@@ -239,6 +279,13 @@ jobs:
           zip -q automagik-forge-mcp.zip automagik-forge-mcp
           mv automagik-forge-mcp.zip npx-cli/dist/${{ matrix.platform }}/
           rm automagik-forge-mcp
+      
+      - name: Save packaged binaries cache
+        if: env.SKIP_BUILD != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: npx-cli/dist/${{ matrix.platform }}
+          key: binaries-${{ matrix.platform }}-${{ matrix.target }}-${{ runner.os }}${{ env.ZIG_SUFFIX }}-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -254,33 +301,91 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+      
+      - name: Restore Android CLI binaries cache
+        id: cache-android-cli
+        uses: actions/cache/restore@v4
+        with:
+          path: npx-cli/dist/android-arm64
+          key: binaries-android-arm64-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json', 'scripts/build-android.sh') }}
+      
+      - name: Restore Android APK cache
+        id: cache-android-apk
+        uses: actions/cache/restore@v4
+        with:
+          path: npx-cli/dist/android-apk
+          key: binaries-android-apk-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'android/**', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
+      
+      - name: Check if builds can be skipped
+        id: check-skip
+        shell: bash
+        run: |
+          SKIP_CLI=false
+          SKIP_APK=false
+          
+          if [ "${{ steps.cache-android-cli.outputs.cache-hit }}" == "true" ]; then
+            if [ -f "npx-cli/dist/android-arm64/automagik-forge.zip" ] && [ -f "npx-cli/dist/android-arm64/automagik-forge-mcp.zip" ]; then
+              SKIP_CLI=true
+              echo "✅ Cache hit! Skipping Android CLI build"
+            else
+              echo "⚠️  CLI cache hit but binaries missing, will rebuild"
+            fi
+          else
+            echo "🔨 No CLI cache hit, will build Android CLI"
+          fi
+          
+          if [ "${{ steps.cache-android-apk.outputs.cache-hit }}" == "true" ]; then
+            if [ -f "npx-cli/dist/android-apk/"*.apk ]; then
+              SKIP_APK=true
+              echo "✅ Cache hit! Skipping Android APK build"
+            else
+              echo "⚠️  APK cache hit but APK missing, will rebuild"
+            fi
+          else
+            echo "🔨 No APK cache hit, will build Android APK"
+          fi
+          
+          if [ "$SKIP_CLI" == "true" ] && [ "$SKIP_APK" == "true" ]; then
+            echo "SKIP_BUILD=true" >> $GITHUB_ENV
+            echo "✅ Both Android builds cached, skipping all build steps"
+          else
+            echo "SKIP_BUILD=false" >> $GITHUB_ENV
+            echo "SKIP_CLI=$SKIP_CLI" >> $GITHUB_ENV
+            echo "SKIP_APK=$SKIP_APK" >> $GITHUB_ENV
+          fi
 
       - name: Set up JDK 17
+        if: env.SKIP_BUILD != 'true'
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
       - name: Setup Android SDK
+        if: env.SKIP_BUILD != 'true'
         uses: android-actions/setup-android@v3
 
       - name: Install Android SDK components
+        if: env.SKIP_BUILD != 'true'
         run: |
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
           sdkmanager "ndk;26.1.10909125"
           echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.1.10909125" >> $GITHUB_ENV
 
       - name: Install Rust
+        if: env.SKIP_BUILD != 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android
 
       - name: Install Linux build tools
+        if: env.SKIP_BUILD != 'true'
         run: |
           sudo apt-get update -y
           sudo apt-get install -y perl pkg-config libssl-dev make
 
       - name: Cache Rust dependencies
+        if: env.SKIP_BUILD != 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -294,11 +399,13 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Setup pnpm
+        if: env.SKIP_BUILD != 'true'
         uses: pnpm/action-setup@v4
         with:
           run_install: false
 
       - name: Setup Node.js
+        if: env.SKIP_BUILD != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -306,25 +413,30 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install workspace dependencies
+        if: env.SKIP_BUILD != 'true'
         run: pnpm install --no-frozen-lockfile
 
       - name: Build frontend
+        if: env.SKIP_BUILD != 'true'
         working-directory: frontend
         run: pnpm run build
 
       - name: Copy frontend dist for server crate embedding
+        if: env.SKIP_BUILD != 'true'
         run: |
           mkdir -p upstream/frontend
           cp -r frontend/dist upstream/frontend/dist
           echo "Copied frontend/dist to upstream/frontend/dist for RustEmbed"
 
       - name: Configure Android NDK toolchain
+        if: env.SKIP_BUILD != 'true'
         run: |
           echo "[target.aarch64-linux-android]" > ~/.cargo/config.toml
           echo "linker = \"$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang\"" >> ~/.cargo/config.toml
           echo "ar = \"$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar\"" >> ~/.cargo/config.toml
 
       - name: Build Rust binaries for Android (CLI for Termux)
+        if: env.SKIP_CLI != 'true'
         env:
           OPENSSL_STATIC: 1
           OPENSSL_VENDORED: 1
@@ -346,6 +458,7 @@ jobs:
           cargo build --release --target aarch64-linux-android --bin mcp_task_server
 
       - name: Build Rust library for Android (JNI for APK)
+        if: env.SKIP_APK != 'true'
         env:
           OPENSSL_STATIC: 1
           OPENSSL_VENDORED: 1
@@ -366,12 +479,14 @@ jobs:
           cargo build -p forge-app --release --target aarch64-linux-android --lib --features android
 
       - name: Build Android APK
+        if: env.SKIP_APK != 'true'
         working-directory: android
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
 
       - name: Package Termux CLI binaries
+        if: env.SKIP_CLI != 'true'
         run: |
           mkdir -p npx-cli/dist/android-arm64
 
@@ -386,9 +501,24 @@ jobs:
           rm automagik-forge-mcp
 
       - name: Package APK
+        if: env.SKIP_APK != 'true'
         run: |
           mkdir -p npx-cli/dist/android-apk
           cp android/app/build/outputs/apk/debug/*.apk npx-cli/dist/android-apk/
+      
+      - name: Save Android CLI binaries cache
+        if: env.SKIP_CLI != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: npx-cli/dist/android-arm64
+          key: binaries-android-arm64-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json', 'scripts/build-android.sh') }}
+      
+      - name: Save Android APK cache
+        if: env.SKIP_APK != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: npx-cli/dist/android-apk
+          key: binaries-android-apk-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'android/**', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
 
       - name: Upload Termux CLI artifacts
         uses: actions/upload-artifact@v4
@@ -418,6 +548,48 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
       
+      - name: Restore cached binaries for all platforms
+        shell: bash
+        run: |
+          echo "🔄 Restoring cached binaries for all platforms..."
+          mkdir -p npx-cli/dist
+      
+      - name: Restore linux-x64 cache
+        uses: actions/cache/restore@v4
+        with:
+          path: npx-cli/dist/linux-x64
+          key: binaries-linux-x64-x86_64-unknown-linux-gnu-Linux-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
+      
+      - name: Restore linux-arm64 cache
+        uses: actions/cache/restore@v4
+        with:
+          path: npx-cli/dist/linux-arm64
+          key: binaries-linux-arm64-aarch64-unknown-linux-gnu-Linux-zig-0.13.0-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
+      
+      - name: Restore android-arm64 cache
+        uses: actions/cache/restore@v4
+        with:
+          path: npx-cli/dist/android-arm64
+          key: binaries-android-arm64-Linux-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json', 'scripts/build-android.sh') }}
+      
+      - name: Restore windows-x64 cache
+        uses: actions/cache/restore@v4
+        with:
+          path: npx-cli/dist/windows-x64
+          key: binaries-windows-x64-x86_64-pc-windows-msvc-Windows-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
+      
+      - name: Restore macos-arm64 cache
+        uses: actions/cache/restore@v4
+        with:
+          path: npx-cli/dist/macos-arm64
+          key: binaries-macos-arm64-aarch64-apple-darwin-macOS-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
+      
+      - name: Restore android-apk cache
+        uses: actions/cache/restore@v4
+        with:
+          path: npx-cli/dist/android-apk
+          key: binaries-android-apk-Linux-${{ hashFiles('pnpm-lock.yaml', 'android/**', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
+      
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -440,6 +612,48 @@ jobs:
             rm -rf $dir
           done
           ls -la *
+      
+      - name: Validate all required binaries are present
+        shell: bash
+        run: |
+          echo "🔍 Validating all required platform binaries are present..."
+          MISSING_BINARIES=()
+          
+          # Check required platforms (those currently built in the workflow)
+          REQUIRED_PLATFORMS=("linux-x64" "linux-arm64" "android-arm64" "windows-x64" "macos-arm64")
+          
+          for platform in "${REQUIRED_PLATFORMS[@]}"; do
+            if [ ! -f "npx-cli/dist/$platform/automagik-forge.zip" ]; then
+              MISSING_BINARIES+=("$platform/automagik-forge.zip")
+            fi
+            if [ ! -f "npx-cli/dist/$platform/automagik-forge-mcp.zip" ]; then
+              MISSING_BINARIES+=("$platform/automagik-forge-mcp.zip")
+            fi
+          done
+          
+          # Check Android APK (optional but log if missing)
+          if [ ! -f npx-cli/dist/android-apk/*.apk ]; then
+            echo "⚠️  Warning: Android APK not found (optional)"
+          fi
+          
+          if [ ${#MISSING_BINARIES[@]} -gt 0 ]; then
+            echo "❌ ERROR: Missing required binaries:"
+            for binary in "${MISSING_BINARIES[@]}"; do
+              echo "  - $binary"
+            done
+            echo ""
+            echo "Available files:"
+            find npx-cli/dist -type f -name "*.zip" -o -name "*.apk" | sort
+            exit 1
+          fi
+          
+          echo "✅ All required platform binaries are present!"
+          echo ""
+          echo "Platform binaries:"
+          for platform in "${REQUIRED_PLATFORMS[@]}"; do
+            echo "  ✓ $platform/automagik-forge.zip"
+            echo "  ✓ $platform/automagik-forge-mcp.zip"
+          done
       
       - name: Determine NPM tag
         id: npm-tag
