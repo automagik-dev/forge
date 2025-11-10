@@ -14,3 +14,10 @@ rustflags = ["-C", "link-arg=/DEBUG:FASTLINK"]
 
 [target.aarch64-pc-windows-msvc]
 rustflags = ["-C", "link-arg=/DEBUG:FASTLINK"]
+
+# macOS: Link AppKit framework for mac-notification-sys
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-args=-framework AppKit"]
+
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-args=-framework AppKit"]

@@ -1,0 +1,41 @@
+diff --git a/codex-rs/protocol/src/num_format.rs b/codex-rs/protocol/src/num_format.rs
+index 1234567..abcdefg 100644
+--- a/codex-rs/protocol/src/num_format.rs
++++ b/codex-rs/protocol/src/num_format.rs
+@@ -1,4 +1,3 @@
+-use std::sync::OnceLock;
+-
+ use icu_decimal::DecimalFormatter;
+ use icu_decimal::input::Decimal;
+ use icu_decimal::options::DecimalFormatterOptions;
+@@ -17,9 +16,9 @@ fn make_en_us_formatter() -> DecimalFormatter {
+         .expect("en-US wasn't a valid locale")
+ }
+ 
+-fn formatter() -> &'static DecimalFormatter {
+-    static FORMATTER: OnceLock<DecimalFormatter> = OnceLock::new();
+-    FORMATTER.get_or_init(|| make_local_formatter().unwrap_or_else(make_en_us_formatter))
++// Create formatter on-demand to avoid thread-safety issues with OnceLock + DecimalFormatter
++fn create_formatter() -> DecimalFormatter {
++    make_local_formatter().unwrap_or_else(make_en_us_formatter)
+ }
+ 
+ /// Format a u64 with locale-aware digit separators (e.g. "12345" -> "12,345"
+@@ -27,7 +26,8 @@ fn formatter() -> &'static DecimalFormatter {
+ pub fn format_with_separators(n: u64) -> String {
+-    formatter().format(&Decimal::from(n)).to_string()
++    let formatter = create_formatter();
++    formatter.format(&Decimal::from(n)).to_string()
+ }
+ 
+ fn format_si_suffix_with_formatter(n: u64, formatter: &DecimalFormatter) -> String {
+@@ -69,7 +69,8 @@ fn format_si_suffix_with_formatter(n: u64, formatter: &DecimalFormatter) -> Str
+ ///   - 1200 -> "1.20K"
+ ///   - 123456789 -> "123M"
+ pub fn format_si_suffix(n: u64) -> String {
+-    format_si_suffix_with_formatter(n, formatter())
++    let formatter = create_formatter();
++    format_si_suffix_with_formatter(n, &formatter)
+ }
+ 
+ #[cfg(test)]
