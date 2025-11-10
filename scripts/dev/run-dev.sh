@@ -234,9 +234,8 @@ echo ""
 # Start frontend
 echo "🎨 Starting frontend server..."
 cd frontend
-# Use same HOST binding as backend (from .env)
-VITE_HOST="${HOST:-127.0.0.1}"
-BACKEND_PORT=${BACKEND_PORT} VITE_OPEN=true pnpm run dev -- --port ${FRONTEND_PORT} --host ${VITE_HOST} &
+# HOST is already exported and will be read by vite.config.ts
+BACKEND_PORT=${BACKEND_PORT} VITE_OPEN=true pnpm run dev &
 FRONTEND_PID=$!
 cd ..
 
