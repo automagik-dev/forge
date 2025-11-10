@@ -67,10 +67,11 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     const { createTask, createAndStart, updateTask } =
       useTaskMutations(projectId);
     const { system } = useUserSystem();
-    const { data: projectProfiles } = useProjectProfiles(projectId);
+    const { data: projectProfiles, isLoading: isLoadingProjectProfiles } = useProjectProfiles(projectId);
 
     // Use project profiles if available, fallback to global profiles
     const profiles = projectProfiles?.executors || system.profiles?.executors;
+    const isProfilesLoading = isLoadingProjectProfiles && !system.profiles?.executors;
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -613,9 +614,14 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                       showLabel={true}
                       showVariantSelector={true}
                     />
-                  ) : (
+                  ) : isProfilesLoading ? (
                     <div className="text-sm text-muted-foreground">
                       Loading executor profiles...
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">
+                      No executor profiles configured. Please configure in{' '}
+                      <a href="/settings/general" className="underline">Settings</a>.
                     </div>
                   )}
 
