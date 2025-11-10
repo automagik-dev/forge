@@ -138,13 +138,15 @@ export DISABLE_BROWSER_OPEN=1
 export DISABLE_WORKTREE_ORPHAN_CLEANUP=1
 export RUST_LOG=debug
 
-# Start backend with cargo watch
-# Only load .env file for build-time variables if NOT in worktree (sandbox) mode
-if [ "$IS_WORKTREE" = "false" ] && [ -f ".env" ]; then
-    cargo watch --env-file .env -w upstream/crates -w forge-app/src -w forge-extensions -x 'run --bin forge-app' &
-else
-    cargo watch -w upstream/crates -w forge-app/src -w forge-extensions -x 'run --bin forge-app' &
+# Explicitly export HOST if set in .env (cargo watch doesn't always pass --env-file vars to child processes)
+if [ -n "${HOST:-}" ]; then
+    export HOST
 fi
+
+# Start backend with cargo watch
+# Note: We don't use --env-file flag because it doesn't reliably pass vars to child processes
+# Instead, we rely on the shell environment (already loaded via source .env above)
+cargo watch -w upstream/crates -w forge-app/src -w forge-extensions -x 'run --bin forge-app' &
 BACKEND_PID=$!
 
 # Function to cleanup on exit
