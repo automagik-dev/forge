@@ -24,6 +24,7 @@ type Props = {
   disabled?: boolean;
   showLabel?: boolean;
   showVariantSelector?: boolean;
+  disableProviderChange?: boolean;
 };
 
 type ProfileRowProps = {
@@ -95,6 +96,7 @@ function ExecutorProfileSelector({
   disabled = false,
   showLabel = true,
   showVariantSelector = true,
+  disableProviderChange = false,
 }: Props) {
   const [profileSearchTerm, setProfileSearchTerm] = useState('');
   const [variantSearchTerm, setVariantSearchTerm] = useState('');
@@ -235,11 +237,11 @@ function ExecutorProfileSelector({
   const isLoading = !profiles;
 
   return (
-    <div className="flex gap-3 flex-col sm:flex-row">
+    <div className="flex gap-3 items-center">
       {/* Executor Profile Selector */}
-      <div className="flex-1">
+      <div className="flex items-center gap-2 flex-1">
         {showLabel && (
-          <Label htmlFor="executor-profile" className="text-sm font-medium">
+          <Label htmlFor="executor-profile" className="text-sm font-medium whitespace-nowrap">
             Provider
           </Label>
         )}
@@ -257,8 +259,8 @@ function ExecutorProfileSelector({
             <Button
               variant="outline"
               size="sm"
-              className="w-full justify-between text-xs mt-1.5"
-              disabled={disabled || isLoading}
+              className="w-full justify-between text-xs"
+              disabled={disabled || isLoading || disableProviderChange}
             >
               <div className="flex items-center gap-1.5">
                 <Settings2 className="h-3 w-3" />
@@ -349,8 +351,8 @@ function ExecutorProfileSelector({
         selectedProfile &&
         hasVariants &&
         currentProfile && (
-          <div className="flex-1">
-            <Label htmlFor="executor-variant" className="text-sm font-medium">
+          <div className="flex items-center gap-2 flex-1">
+            <Label htmlFor="executor-variant" className="text-sm font-medium whitespace-nowrap">
               Agent
             </Label>
             <DropdownMenu
@@ -367,7 +369,7 @@ function ExecutorProfileSelector({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full justify-between text-xs mt-1.5"
+                  className="w-full justify-between text-xs"
                   disabled={disabled || isLoading}
                 >
                   <span className="truncate">
@@ -457,15 +459,15 @@ function ExecutorProfileSelector({
         selectedProfile &&
         !hasVariants &&
         currentProfile && (
-          <div className="flex-1">
-            <Label htmlFor="executor-variant" className="text-sm font-medium">
+          <div className="flex items-center gap-2 flex-1">
+            <Label htmlFor="executor-variant" className="text-sm font-medium whitespace-nowrap">
               Agent
             </Label>
             <Button
               variant="outline"
               size="sm"
               disabled
-              className="w-full text-xs justify-start mt-1.5"
+              className="w-full text-xs justify-start"
             >
               Default
             </Button>
@@ -474,15 +476,15 @@ function ExecutorProfileSelector({
 
       {/* Show placeholder for variant when no profile selected */}
       {showVariantSelector && !selectedProfile && (
-        <div className="flex-1">
-          <Label htmlFor="executor-variant" className="text-sm font-medium">
+        <div className="flex items-center gap-2 flex-1">
+          <Label htmlFor="executor-variant" className="text-sm font-medium whitespace-nowrap">
             Agent
           </Label>
           <Button
             variant="outline"
             size="sm"
             disabled
-            className="w-full text-xs justify-start mt-1.5"
+            className="w-full text-xs justify-start"
           >
             Select provider first
           </Button>

@@ -646,6 +646,7 @@ export function TaskFollowUpSection({
                     disabled={!isEditable}
                     showLabel={false}
                     showVariantSelector={true}
+                    disableProviderChange={processes.length > 0}
                   />
                 </div>
 
