@@ -15,10 +15,15 @@ concurrency:
   group: build-android-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   build-apk:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
+    env:
+      HAS_ANDROID_SIGNING: ${{ secrets.ANDROID_SIGNING_STORE_FILE != '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -115,7 +120,7 @@ jobs:
           cargo build -p forge-app --release --target aarch64-linux-android --lib --features android
 
       - name: Setup Android signing keystore
-        if: ${{ secrets.ANDROID_SIGNING_STORE_FILE != '' }}
+        if: env.HAS_ANDROID_SIGNING == 'true'
         working-directory: android
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_STORE_FILE }}
@@ -132,12 +137,17 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
-          if [ -n "$ANDROID_SIGNING_STORE_FILE" ]; then
-            echo "Building signed release APK..."
-            ./gradlew assembleRelease
-          else
-            echo "Skipping release build - signing secrets not configured"
-          fi
+      
+      - name: Build signed release APK
+        if: env.HAS_ANDROID_SIGNING == 'true'
+        working-directory: android
+        env:
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+        run: |
+          echo "Building signed release APK..."
+          ./gradlew assembleRelease
 
       - name: Rename APKs for release
         if: startsWith(github.ref, 'refs/tags/')
@@ -159,7 +169,7 @@ jobs:
           path: android/app/build/outputs/apk/debug/*.apk
 
       - name: Upload release APK artifact
-        if: ${{ secrets.ANDROID_SIGNING_STORE_FILE != '' }}
+        if: env.HAS_ANDROID_SIGNING == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: android-apk-release
