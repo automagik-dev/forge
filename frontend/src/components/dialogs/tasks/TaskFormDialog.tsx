@@ -603,7 +603,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
               {!isEditMode && (
                 <div className="space-y-3 pt-2 border-t">
                   {/* Executor Profile Selector */}
-                  {profiles && (
+                  {profiles ? (
                     <ExecutorProfileSelector
                       profiles={profiles}
                       selectedProfile={selectedExecutorProfile}
@@ -613,6 +613,10 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                       showLabel={true}
                       showVariantSelector={true}
                     />
+                  ) : (
+                    <div className="text-sm text-muted-foreground">
+                      Loading executor profiles...
+                    </div>
                   )}
 
                   {/* Branch Selector */}
