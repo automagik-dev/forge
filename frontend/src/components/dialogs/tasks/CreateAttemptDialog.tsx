@@ -143,15 +143,13 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
 
           <div className="space-y-4 py-4">
             {profiles && (
-              <div className="space-y-2">
-                <ExecutorProfileSelector
-                  profiles={profiles}
-                  selectedProfile={selectedProfile}
-                  onProfileSelect={setSelectedProfile}
-                  showLabel={true}
-                  layout="stacked"
-                />
-              </div>
+              <ExecutorProfileSelector
+                profiles={profiles}
+                selectedProfile={selectedProfile}
+                onProfileSelect={setSelectedProfile}
+                showLabel={true}
+                layout="inline"
+              />
             )}
 
             <div className="space-y-2">
