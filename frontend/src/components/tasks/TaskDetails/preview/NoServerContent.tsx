@@ -265,6 +265,16 @@ export function NoServerContent({
           )}
 
           <div className="space-y-4 pt-6 border-t border-border">
+            <Alert>
+              <AlertDescription className="text-sm">
+                <strong>Note:</strong> Each worktree needs its own dependencies installed.
+                If you see errors like "command not found" or npm/pnpm errors, run the install command in the worktree directory.
+                This project uses <code className="px-1 py-0.5 bg-muted rounded text-xs">pnpm</code>, so use <code className="px-1 py-0.5 bg-muted rounded text-xs">pnpm install</code> in the worktree.
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          <div className="space-y-4 pt-6 border-t border-border">
             <p className="text-sm text-muted-foreground">
               {t('preview.noServer.companionPrompt')}
             </p>
