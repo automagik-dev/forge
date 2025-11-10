@@ -694,9 +694,20 @@ export function TaskFollowUpSection({
                             className="bg-primary hover:bg-primary/90 text-primary-foreground"
                           >
                             {isSendingFollowUp ? (
-                              <Loader2 className="animate-spin h-4 w-4" />
+                              <>
+                                <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                                {t('followUp.sending', 'Sending...')}
+                              </>
                             ) : (
-                              <Send className="h-4 w-4 fill-primary-foreground" />
+                              <>
+                                <Send className="h-4 w-4 mr-2 fill-primary-foreground" />
+                                {conflictResolutionInstructions
+                                  ? t('followUp.resolveConflicts')
+                                  : t('followUp.send')}
+                                <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-primary-foreground/20 rounded font-mono">
+                                  ⏎
+                                </kbd>
+                              </>
                             )}
                           </Button>
                         </TooltipTrigger>
