@@ -8,6 +8,7 @@ import { useDevServer } from '@/hooks/useDevServer';
 import { useLogStream } from '@/hooks/useLogStream';
 import { useDevserverUrlFromLogs } from '@/hooks/useDevserverUrl';
 import { useDevserverBuildState } from '@/hooks/useDevserverBuildState';
+import { useManualPreviewUrl } from '@/hooks/useManualPreviewUrl';
 import { ClickToComponentListener } from '@/utils/previewBridge';
 import { useClickedElements } from '@/contexts/ClickedElementsProvider';
 import { Alert } from '@/components/ui/alert';
@@ -42,8 +43,14 @@ export function PreviewPanel() {
   } = useDevServer(attemptId);
 
   const logStream = useLogStream(latestDevServerProcess?.id ?? '');
-  const lastKnownUrl = useDevserverUrlFromLogs(logStream.logs);
-  const buildState = useDevserverBuildState(logStream.logs, Boolean(lastKnownUrl));
+  const autoDetectedUrl = useDevserverUrlFromLogs(logStream.logs);
+  const buildState = useDevserverBuildState(logStream.logs, Boolean(autoDetectedUrl));
+  
+  const { manualUrl, setManualUrl, isManual } = useManualPreviewUrl(projectId!);
+  
+  const lastKnownUrl = manualUrl 
+    ? { url: manualUrl, scheme: manualUrl.startsWith('https') ? 'https' as const : 'http' as const }
+    : autoDetectedUrl;
 
   const previewState = useDevserverPreview(attemptId, {
     projectHasDevScript,
@@ -148,6 +155,8 @@ export function PreviewPanel() {
               onCopyUrl={handleCopyUrl}
               onStop={stopDevServer}
               isStopping={isStoppingDevServer}
+              isManualUrl={isManual}
+              onSetManualUrl={setManualUrl}
             />
             <ReadyContent
               url={previewState.url}
@@ -163,6 +172,7 @@ export function PreviewPanel() {
             startDevServer={handleStartDevServer}
             stopDevServer={stopDevServer}
             project={project}
+            onSetManualUrl={setManualUrl}
           />
         )}
 

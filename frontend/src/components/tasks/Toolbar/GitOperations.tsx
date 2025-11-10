@@ -19,6 +19,12 @@ import { Err } from '@/lib/api';
 import type { GitOperationError } from 'shared/types';
 import { showModal } from '@/lib/modals';
 import { useTranslation } from 'react-i18next';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface GitOperationsProps {
   selectedAttempt: TaskAttempt;
@@ -122,6 +128,42 @@ function GitOperations({
     }
     return t('git.states.createPr');
   }, [mergeInfo.hasOpenPR, pushSuccess, pushing, t]);
+
+  const getMergeDisabledReason = useMemo(() => {
+    if (mergeInfo.hasOpenPR) return 'PR already exists for this branch';
+    if (merging) return 'Merge in progress';
+    if (hasConflictsCalculated) return 'Merge conflicts present';
+    if (isAttemptRunning) return 'Attempt is still running';
+    if ((branchStatus?.commits_ahead ?? 0) === 0 && !pushSuccess && !mergeSuccess) {
+      return 'No commits ahead of base branch';
+    }
+    return null;
+  }, [mergeInfo.hasOpenPR, merging, hasConflictsCalculated, isAttemptRunning, branchStatus?.commits_ahead, pushSuccess, mergeSuccess]);
+
+  const getPRDisabledReason = useMemo(() => {
+    if (pushing) return 'Push in progress';
+    if (isAttemptRunning) return 'Attempt is still running';
+    if (hasConflictsCalculated) return 'Merge conflicts present';
+    if (mergeInfo.hasOpenPR && branchStatus?.remote_commits_ahead === 0) {
+      return 'No new commits to push to PR';
+    }
+    if (
+      (branchStatus?.commits_ahead ?? 0) === 0 &&
+      (branchStatus?.remote_commits_ahead ?? 0) === 0 &&
+      !pushSuccess &&
+      !mergeSuccess
+    ) {
+      return 'No commits to create PR';
+    }
+    return null;
+  }, [pushing, isAttemptRunning, hasConflictsCalculated, mergeInfo.hasOpenPR, branchStatus?.remote_commits_ahead, branchStatus?.commits_ahead, pushSuccess, mergeSuccess]);
+
+  const getRebaseDisabledReason = useMemo(() => {
+    if (rebasing) return 'Rebase in progress';
+    if (isAttemptRunning) return 'Attempt is still running';
+    if (hasConflictsCalculated) return 'Merge conflicts present';
+    return null;
+  }, [rebasing, isAttemptRunning, hasConflictsCalculated]);
 
   const handleMergeClick = async () => {
     // Directly perform merge without checking branch status
@@ -227,66 +269,85 @@ function GitOperations({
 
   const actionsClasses = 'flex flex-wrap items-center gap-2';
 
+  const mergeDisabled = getMergeDisabledReason !== null;
+  const prDisabled = getPRDisabledReason !== null;
+  const rebaseDisabled = getRebaseDisabledReason !== null;
+
   return (
     <div className="w-full border-b py-2 px-3">
       {/* Actions only - branch info and status moved to breadcrumb */}
       {branchStatus && (
         <div className={actionsClasses}>
-          <Button
-            onClick={handleMergeClick}
-            disabled={
-              mergeInfo.hasOpenPR ||
-              merging ||
-              hasConflictsCalculated ||
-              isAttemptRunning ||
-              ((branchStatus.commits_ahead ?? 0) === 0 &&
-                !pushSuccess &&
-                !mergeSuccess)
-            }
-            variant="outline"
-            size="xs"
-            className="border-success text-success hover:bg-success gap-1 shrink-0"
-            aria-label={mergeButtonLabel}
-          >
-            <GitBranchIcon className="h-3.5 w-3.5" />
-            <span className="truncate max-w-[10ch]">{mergeButtonLabel}</span>
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={handleMergeClick}
+                  disabled={mergeDisabled}
+                  variant="outline"
+                  size="xs"
+                  className="border-success text-success hover:bg-success gap-1 shrink-0"
+                  aria-label={mergeButtonLabel}
+                >
+                  <GitBranchIcon className="h-3.5 w-3.5" />
+                  <span className="truncate max-w-[10ch]">{mergeButtonLabel}</span>
+                </Button>
+              </TooltipTrigger>
+              {getMergeDisabledReason && (
+                <TooltipContent side="bottom">
+                  {getMergeDisabledReason}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
 
-          <Button
-            onClick={handlePRButtonClick}
-            disabled={
-              pushing ||
-              isAttemptRunning ||
-              hasConflictsCalculated ||
-              (mergeInfo.hasOpenPR &&
-                branchStatus.remote_commits_ahead === 0) ||
-              ((branchStatus.commits_ahead ?? 0) === 0 &&
-                (branchStatus.remote_commits_ahead ?? 0) === 0 &&
-                !pushSuccess &&
-                !mergeSuccess)
-            }
-            variant="outline"
-            size="xs"
-            className="border-info text-info hover:bg-info gap-1 shrink-0"
-            aria-label={prButtonLabel}
-          >
-            <GitPullRequest className="h-3.5 w-3.5" />
-            <span className="truncate max-w-[10ch]">{prButtonLabel}</span>
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={handlePRButtonClick}
+                  disabled={prDisabled}
+                  variant="outline"
+                  size="xs"
+                  className="border-info text-info hover:bg-info gap-1 shrink-0"
+                  aria-label={prButtonLabel}
+                >
+                  <GitPullRequest className="h-3.5 w-3.5" />
+                  <span className="truncate max-w-[10ch]">{prButtonLabel}</span>
+                </Button>
+              </TooltipTrigger>
+              {getPRDisabledReason && (
+                <TooltipContent side="bottom">
+                  {getPRDisabledReason}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
 
-          <Button
-            onClick={handleRebaseDialogOpen}
-            disabled={rebasing || isAttemptRunning || hasConflictsCalculated}
-            variant="outline"
-            size="xs"
-            className="border-warning text-warning hover:bg-warning gap-1 shrink-0"
-            aria-label={rebaseButtonLabel}
-          >
-            <RefreshCw
-              className={`h-3.5 w-3.5 ${rebasing ? 'animate-spin' : ''}`}
-            />
-            <span className="truncate max-w-[10ch]">{rebaseButtonLabel}</span>
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={handleRebaseDialogOpen}
+                  disabled={rebaseDisabled}
+                  variant="outline"
+                  size="xs"
+                  className="border-warning text-warning hover:bg-warning gap-1 shrink-0"
+                  aria-label={rebaseButtonLabel}
+                >
+                  <RefreshCw
+                    className={`h-3.5 w-3.5 ${rebasing ? 'animate-spin' : ''}`}
+                  />
+                  <span className="truncate max-w-[10ch]">{rebaseButtonLabel}</span>
+                </Button>
+              </TooltipTrigger>
+              {getRebaseDisabledReason && (
+                <TooltipContent side="bottom">
+                  {getRebaseDisabledReason}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         </div>
       )}
     </div>
