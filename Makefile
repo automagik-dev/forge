@@ -45,8 +45,23 @@ check-cargo:
 		echo "✅ cargo-watch already installed: $$(cargo watch --version)"; \
 	else \
 		echo "🔧 Installing cargo-watch..."; \
-		cargo install cargo-watch; \
-		echo "✅ cargo-watch installed"; \
+		if [ "$$(uname)" = "Darwin" ]; then \
+			echo "🍎 macOS detected - using Homebrew for cargo-watch..."; \
+			if command -v brew >/dev/null 2>&1; then \
+				brew install cargo-watch; \
+			else \
+				echo "⚠️  Homebrew not found, trying cargo install..."; \
+				cargo install cargo-watch || { echo "❌ Failed to install cargo-watch"; exit 1; }; \
+			fi; \
+		else \
+			cargo install cargo-watch || { echo "❌ Failed to install cargo-watch"; exit 1; }; \
+		fi; \
+		if cargo watch --version >/dev/null 2>&1; then \
+			echo "✅ cargo-watch installed: $$(cargo watch --version)"; \
+		else \
+			echo "❌ cargo-watch installation failed"; \
+			exit 1; \
+		fi; \
 	fi
 
 # Check and install Android/Termux build dependencies
