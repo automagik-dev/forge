@@ -115,11 +115,11 @@ check-submodules:
 	fi
 
 # Development mode - hot reload (backend first, then frontend)
-dev: check-cargo check-android-deps check-submodules
+dev: check-android-deps check-cargo check-submodules
 	@bash scripts/dev/run-dev.sh
 
 # Production mode - test what will be published
-prod: check-cargo check-android-deps check-submodules
+prod: check-android-deps check-cargo check-submodules
 	@echo "📦 Building and running production package..."
 	@bash scripts/dev/run-prod.sh
 
@@ -137,7 +137,7 @@ frontend:
 	@npm run frontend:dev
 
 # Build production package (without launching)
-build: check-cargo check-android-deps check-submodules
+build: check-android-deps check-cargo check-submodules
 	@echo "🔨 Building production package..."
 	@bash scripts/build/build.sh
 
