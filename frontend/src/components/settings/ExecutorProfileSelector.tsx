@@ -25,6 +25,7 @@ type Props = {
   showLabel?: boolean;
   showVariantSelector?: boolean;
   disableProviderChange?: boolean;
+  layout?: 'inline' | 'stacked';
 };
 
 type ProfileRowProps = {
@@ -97,6 +98,7 @@ function ExecutorProfileSelector({
   showLabel = true,
   showVariantSelector = true,
   disableProviderChange = false,
+  layout = 'inline',
 }: Props) {
   const [profileSearchTerm, setProfileSearchTerm] = useState('');
   const [variantSearchTerm, setVariantSearchTerm] = useState('');
@@ -236,12 +238,25 @@ function ExecutorProfileSelector({
   // Show loading state instead of returning null
   const isLoading = !profiles;
 
+  // Determine container classes based on layout
+  const containerClasses = layout === 'inline'
+    ? "flex gap-3 items-center"
+    : "space-y-3";
+
+  const selectorContainerClasses = layout === 'inline'
+    ? "flex items-center gap-2 flex-1"
+    : "space-y-1.5";
+
+  const labelClasses = layout === 'inline'
+    ? "text-sm font-medium whitespace-nowrap"
+    : "text-sm font-medium";
+
   return (
-    <div className="flex gap-3 items-center">
+    <div className={containerClasses}>
       {/* Executor Profile Selector */}
-      <div className="flex items-center gap-2 flex-1">
+      <div className={selectorContainerClasses}>
         {showLabel && (
-          <Label htmlFor="executor-profile" className="text-sm font-medium whitespace-nowrap">
+          <Label htmlFor="executor-profile" className={labelClasses}>
             Provider
           </Label>
         )}
@@ -351,8 +366,8 @@ function ExecutorProfileSelector({
         selectedProfile &&
         hasVariants &&
         currentProfile && (
-          <div className="flex items-center gap-2 flex-1">
-            <Label htmlFor="executor-variant" className="text-sm font-medium whitespace-nowrap">
+          <div className={selectorContainerClasses}>
+            <Label htmlFor="executor-variant" className={labelClasses}>
               Agent
             </Label>
             <DropdownMenu
@@ -459,8 +474,8 @@ function ExecutorProfileSelector({
         selectedProfile &&
         !hasVariants &&
         currentProfile && (
-          <div className="flex items-center gap-2 flex-1">
-            <Label htmlFor="executor-variant" className="text-sm font-medium whitespace-nowrap">
+          <div className={selectorContainerClasses}>
+            <Label htmlFor="executor-variant" className={labelClasses}>
               Agent
             </Label>
             <Button
@@ -476,8 +491,8 @@ function ExecutorProfileSelector({
 
       {/* Show placeholder for variant when no profile selected */}
       {showVariantSelector && !selectedProfile && (
-        <div className="flex items-center gap-2 flex-1">
-          <Label htmlFor="executor-variant" className="text-sm font-medium whitespace-nowrap">
+        <div className={selectorContainerClasses}>
+          <Label htmlFor="executor-variant" className={labelClasses}>
             Agent
           </Label>
           <Button
