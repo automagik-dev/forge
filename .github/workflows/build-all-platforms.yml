@@ -541,6 +541,11 @@ jobs:
     needs: [build, android]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '')
+    environment: release
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
 
     steps:
       - uses: actions/checkout@v4
@@ -691,22 +696,12 @@ jobs:
             echo "published=false" >> $GITHUB_OUTPUT
             echo "⏩ Version not found on npm; will publish."
           fi
-          
-      - name: Verify npm auth (temporary)
-        run: |
-          echo "Registry: $(npm config get registry)"
-          echo "npm whoami (to confirm token identity)"
-          npm whoami || true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish to NPM
         if: steps.check.outputs.published == 'false'
         run: |
           cd npx-cli
-          npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }} --provenance
 
       - name: Skip publish (already published)
         if: steps.check.outputs.published == 'true'
