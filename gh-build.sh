@@ -261,7 +261,7 @@ IMPORTANT RULES:
                 echo "📊 Checking publish status..."
                 echo ""
                 echo "Latest NPM package version:"
-                npm view automagik-forge version 2>/dev/null || echo "  (Package not found or not published)"
+                npm view @automagik/forge version 2>/dev/null || echo "  (Package not found or not published)"
                 echo ""
                 echo "Current local version:"
                 cat package.json | grep '"version"' | cut -d'"' -f4
@@ -463,7 +463,7 @@ IMPORTANT RULES:
 
         # Check current version vs npm
         CURRENT_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
-        NPM_VERSION=$(npm view automagik-forge version 2>/dev/null || echo "0.0.0")
+        NPM_VERSION=$(npm view @automagik/forge version 2>/dev/null || echo "0.0.0")
 
         echo "📊 Version Status:"
         echo "  Current local:  $CURRENT_VERSION"
@@ -1263,7 +1263,7 @@ EOF
                                                 echo "🔍 Verifying NPM publication..."
                                                 sleep 30  # Give npm registry time to update
                                                 
-                                                NPM_VERSION=$(npm view automagik-forge version 2>/dev/null || echo "")
+                                                NPM_VERSION=$(npm view @automagik/forge version 2>/dev/null || echo "")
                                                 if [ "$NPM_VERSION" = "$NEW_VERSION" ]; then
                                                     echo "✅ Version $NEW_VERSION successfully published to NPM!"
                                                 else
@@ -1359,7 +1359,7 @@ EOF
                             echo " ❌"
                             echo ""
                             # Treat as success if npm already has the new version (idempotent publish)
-                            NPM_VER=$(npm view automagik-forge version 2>/dev/null || echo "")
+                            NPM_VER=$(npm view @automagik/forge version 2>/dev/null || echo "")
                             if [ -n "$NEW_VERSION" ] && [ "$NPM_VER" = "$NEW_VERSION" ]; then
                                 echo "✅ Detected $NPM_VER on npm (expected $NEW_VERSION). Considering publish successful."
                                 BUILD_SUCCESS=true
@@ -1410,7 +1410,7 @@ EOF
                 echo ""
                 echo "🎉 Release complete!"
                 echo "📦 Version $NEW_VERSION published"
-                echo "📦 NPM package: https://www.npmjs.com/package/automagik-forge"
+                echo "📦 NPM package: https://www.npmjs.com/package/@automagik/forge"
                 echo "🏷️  GitHub release: https://github.com/$REPO/releases/tag/$NEW_TAG"
             else
                 exit 1
@@ -1433,7 +1433,7 @@ EOF
         
         # Check NPM for existing beta versions and auto-increment
         echo "🔍 Checking for existing beta versions..."
-        EXISTING_BETAS=$(npm view automagik-forge versions --json 2>/dev/null | jq -r ".[]" 2>/dev/null | grep "^$BASE_VERSION-beta\." || echo "")
+        EXISTING_BETAS=$(npm view @automagik/forge versions --json 2>/dev/null | jq -r ".[]" 2>/dev/null | grep "^$BASE_VERSION-beta\." || echo "")
         
         if [ -z "$EXISTING_BETAS" ]; then
             BETA_NUMBER=1
@@ -1462,7 +1462,7 @@ $COMMITS
 
 **⚠️ This is a pre-release version intended for testing. Use with caution in production.**
 
-Install with: \`npx automagik-forge@beta\`"
+Install with: \`npx @automagik/forge@beta\`"
         
         # Save beta notes
         echo "$BETA_NOTES" > .beta-release-notes.md
@@ -1513,7 +1513,7 @@ Install with: \`npx automagik-forge@beta\`"
             echo "🔗 View in browser: https://github.com/$REPO/actions/runs/$RUN_ID"
             echo ""
             echo "💡 Beta will be published to NPM with 'beta' tag after successful build"
-            echo "💡 Install with: npx automagik-forge@beta"
+            echo "💡 Install with: npx @automagik/forge@beta"
             echo ""
             
             # Monitor the build automatically
@@ -1591,14 +1591,14 @@ Install with: \`npx automagik-forge@beta\`"
                                 echo "   Expected version: $EXPECTED_VERSION (from latest GitHub release)"
 
                                 for i in {1..10}; do
-                                    NPM_VERSION=$(npm view automagik-forge version 2>/dev/null || echo "")
+                                    NPM_VERSION=$(npm view @automagik/forge version 2>/dev/null || echo "")
                                     echo "  Attempt $i/10: npm shows version '$NPM_VERSION'"
 
                                     if [ "$NPM_VERSION" = "$EXPECTED_VERSION" ]; then
                                         echo ""
                                         echo "✅ SUCCESS! Version $EXPECTED_VERSION published to NPM!"
-                                        echo "📦 Package ready: https://www.npmjs.com/package/automagik-forge"
-                                        echo "🚀 Users can now install with: npx automagik-forge"
+                                        echo "📦 Package ready: https://www.npmjs.com/package/@automagik/forge"
+                                        echo "🚀 Users can now install with: npx @automagik/forge"
                                         break
                                     fi
 
@@ -1611,7 +1611,7 @@ Install with: \`npx automagik-forge@beta\`"
                                     echo ""
                                     echo "⚠️  NPM still shows: '$NPM_VERSION' (expected '$EXPECTED_VERSION')"
                                     echo "   Package may still be propagating through npm registry"
-                                    echo "   Check: https://www.npmjs.com/package/automagik-forge"
+                                    echo "   Check: https://www.npmjs.com/package/@automagik/forge"
                                 fi
                             fi
                             ;;
