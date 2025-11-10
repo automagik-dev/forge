@@ -101,3 +101,8 @@ vibe-kanban-cloud/
 # Build marker for incremental builds
 .build_commit
 /.sqlx/
+
+# Android signing
+*.keystore
+*.keystore.b64
+*.jks

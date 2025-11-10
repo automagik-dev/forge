@@ -114,27 +114,62 @@ jobs:
         run: |
           cargo build -p forge-app --release --target aarch64-linux-android --lib --features android
 
-      - name: Build Android APK
+      - name: Setup Android signing keystore
+        if: ${{ secrets.ANDROID_SIGNING_STORE_FILE != '' }}
         working-directory: android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_STORE_FILE }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > release.keystore
+          echo "ANDROID_SIGNING_STORE_FILE=$(pwd)/release.keystore" >> $GITHUB_ENV
+
+      - name: Build Android APKs
+        working-directory: android
+        env:
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
+          if [ -n "$ANDROID_SIGNING_STORE_FILE" ]; then
+            echo "Building signed release APK..."
+            ./gradlew assembleRelease
+          else
+            echo "Skipping release build - signing secrets not configured"
+          fi
 
-      - name: Rename debug APK (if release)
+      - name: Rename APKs for release
         if: startsWith(github.ref, 'refs/tags/')
-        working-directory: android/app/build/outputs/apk/debug
+        working-directory: android/app/build/outputs/apk
         run: |
-          mv app-debug.apk automagik-forge-${{ github.ref_name }}-debug.apk
+          # Rename debug APK
+          if [ -f debug/app-debug.apk ]; then
+            mv debug/app-debug.apk debug/automagik-forge-${{ github.ref_name }}-debug.apk
+          fi
+          # Rename release APK if it exists
+          if [ -f release/app-release.apk ]; then
+            mv release/app-release.apk release/automagik-forge-${{ github.ref_name }}-release.apk
+          fi
 
-      - name: Upload APK artifact
+      - name: Upload debug APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk
+          name: android-apk-debug
           path: android/app/build/outputs/apk/debug/*.apk
 
-      - name: Upload APK to release
+      - name: Upload release APK artifact
+        if: ${{ secrets.ANDROID_SIGNING_STORE_FILE != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-release
+          path: android/app/build/outputs/apk/release/*.apk
+
+      - name: Upload APKs to GitHub release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          files: android/app/build/outputs/apk/debug/automagik-forge-*-debug.apk
+          files: |
+            android/app/build/outputs/apk/debug/automagik-forge-*-debug.apk
+            android/app/build/outputs/apk/release/automagik-forge-*-release.apk
           token: ${{ secrets.GITHUB_TOKEN }}
