@@ -704,7 +704,7 @@ jobs:
         if: steps.check.outputs.published == 'false'
         run: |
           cd npx-cli
-          npm publish --tag ${{ steps.npm-tag.outputs.tag }}
+          npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
