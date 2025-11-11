@@ -66,22 +66,28 @@ Tasks Chat New Me
 
 ### Core Views (Mobile Redesign)
 
-#### 1. **Kanban Board → Tabbed Columns**
+#### 1. **Kanban Board → Session List View**
 ```
 ┌────────────────────────────────┐
-│ ┌────┬────┬────┬────┐         │
-│ │Todo│Rdy│Act│Done│ ← Swipe   │
-│ └────┴────┴────┴────┘         │
+│ All | Favorites | Scheduled    │
 ├────────────────────────────────┤
-│  ┌──────────────────────────┐ │
-│  │ Task Card                │ │ ← Swipe gestures
-│  └──────────────────────────┘ │
+│ 🎯 Task Title              9/3 │
+│    Description preview...      │
+├────────────────────────────────┤
+│ ⚙️  Running Task          4/12 │
+│    [Progress animation]        │
+├────────────────────────────────┤
+│ ✅ Completed Task         3/3  │
+│    Last message preview...     │
 └────────────────────────────────┘
 ```
-- One column visible at a time
-- Swipe left/right to switch columns
+- **Vertical list of session cards** (like ChatGPT, Manus)
+- Each task = session with icon, title, preview, progress
+- Status icons: 🎯 Wish, ⚙️ Forge (animated), ✅ Review/Done
 - Swipe left on card → Delete
+- Tap card → Open task details
 - Long press → Menu
+- Filter tabs: All, Favorites, Scheduled
 
 #### 2. **Chat View → Full-Screen**
 ```
@@ -229,7 +235,18 @@ Tasks Chat New Me
 - Implementation guide with React Native/Capacitor examples
 - Theme context and CSS variables export
 
-**9. UX Best Practices & Engagement Spec** (`specs/ux-best-practices-and-engagement-spec.md`) **NEW**
+**9. Session Card Component Spec** (`specs/session-card-component-spec.md`) **NEW**
+- 600+ lines of session card component specification
+- Vertical list view design (ChatGPT/Manus-style)
+- Status icons with animations (Wish 🎯, Forge ⚙️, Review 👁️, Completed ✅)
+- Progress indicators and metadata display
+- Swipe gesture implementation
+- Filter tabs (All, Favorites, Scheduled)
+- Virtualization for performance
+- Accessibility and testing strategy
+- Migration from traditional Kanban columns
+
+**10. UX Best Practices & Engagement Spec** (`specs/ux-best-practices-and-engagement-spec.md`) **NEW**
 - 15,000+ lines of comprehensive UX research and engagement strategy
 - Habit-forming UX patterns (Hooked Model, Fogg Behavior Model)
 - Analysis of leading apps (ChatGPT, Duolingo, GitHub Mobile, Notion, Linear)
@@ -275,7 +292,7 @@ Tasks Chat New Me
 - Offline strategy
 - Performance architecture
 
-**Total Planning Documentation:** 31,000+ lines across 13 comprehensive documents (9 specs + 4 research/summary docs)
+**Total Planning Documentation:** 32,000+ lines across 14 comprehensive documents (10 specs + 4 research/summary docs)
 
 ### Key Insights
 
@@ -317,9 +334,12 @@ Tasks Chat New Me
 ### Phase 2: Core Views (Weeks 3-5)
 **Goal:** Kanban, Chat, Diffs, Preview mobile views
 
-**Week 3: Kanban Mobile**
-- [ ] Tabbed column view
-- [ ] Task card mobile component
+**Week 3: Kanban Mobile (Session List View)**
+- [ ] Vertical session list view (ChatGPT/Manus-style)
+- [ ] Task session card component with status icons
+- [ ] Status icon animations (spinning gear for running tasks)
+- [ ] Progress indicators (e.g., "9/12" steps)
+- [ ] Filter tabs (All, Favorites, Scheduled)
 - [ ] Swipe gestures (delete, archive)
 - [ ] FAB for new task
 - [ ] Pull to refresh
@@ -535,8 +555,8 @@ Tasks Chat New Me
 
 ---
 
-**Total Planning Effort:** 31,000+ lines of documentation
-**Planning Docs:** 9 technical specifications + 4 research/summary documents
+**Total Planning Effort:** 32,000+ lines of documentation
+**Planning Docs:** 10 technical specifications + 4 research/summary documents
 **GitHub Issue:** [#113](https://github.com/namastexlabs/automagik-forge/issues/113)
 **Status:** ✅ Planning Complete (with Engagement Enhancements)
 **Ready For:** Design → Development → Launch
