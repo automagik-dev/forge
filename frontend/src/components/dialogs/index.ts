@@ -38,6 +38,10 @@ export {
   type DeleteTaskConfirmationDialogProps,
 } from './tasks/DeleteTaskConfirmationDialog';
 export {
+  ArchiveTaskConfirmationDialog,
+  type ArchiveTaskConfirmationDialogProps,
+} from './tasks/ArchiveTaskConfirmationDialog';
+export {
   TagEditDialog,
   type TagEditDialogProps,
   type TagEditResult,
