@@ -112,7 +112,7 @@
       },
       "privacy": {
         "title": "Privacidad",
-        "description": "Ayuda a mejorar Vibe-Kanban compartiendo datos de uso anónimos.",
+        "description": "Ayuda a mejorar Automagik Forge compartiendo datos de uso anónimos.",
         "telemetry": {
           "label": "Habilitar Telemetría",
           "helper": "Habilita el seguimiento anónimo para ayudar a mejorar la aplicación. No se recopilan prompts ni información del proyecto."
