@@ -52,7 +52,7 @@ fn set_last_error(error: String) {
 }
 
 #[cfg(target_os = "android")]
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_getLastError<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
@@ -68,7 +68,7 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_getLastError<'local>(
 }
 
 #[cfg(target_os = "android")]
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_setDataDir(
     mut env: JNIEnv,
     _class: JClass,
@@ -100,7 +100,7 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_setDataDir(
 /// preventing race conditions where the WebView tries to connect before
 /// the server is ready.
 #[cfg(target_os = "android")]
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
     _env: JNIEnv,
     _class: JClass,
@@ -184,7 +184,7 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
 
 /// Stop the Forge server
 #[cfg(target_os = "android")]
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_getLogsPath<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
@@ -200,7 +200,7 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_getLogsPath<'local>(
 }
 
 #[cfg(target_os = "android")]
-#[unsafe(no_mangle)]
+#[no_mangle]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_stopServer(_env: JNIEnv, _class: JClass) {
     if let Some(handle) = SERVER_HANDLE.lock().unwrap().take() {
         handle.abort();
