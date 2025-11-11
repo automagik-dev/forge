@@ -13,6 +13,8 @@
   "card": {
     "created": "Created",
     "active": "Active",
+    "lastActive": "Active {{time}}",
+    "createdAgo": "Created {{time}}",
     "menu": {
       "viewProject": "View Project",
       "openInIDE": "Open in IDE",

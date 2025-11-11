@@ -27,6 +27,7 @@ import { useTranslation } from 'react-i18next';
 import { useOpenProjectInEditor } from '@/hooks/useOpenProjectInEditor';
 import { useNavigateWithSearch } from '@/hooks';
 import { projectsApi, tasksApi } from '@/lib/api';
+import { formatRelativeTime, getLastActivityDate } from '@/lib/date-utils';
 
 type Props = {
   project: Project;
@@ -173,16 +174,31 @@ function ProjectCard({
             </DropdownMenu>
           </div>
         </div>
-        <CardDescription className="flex items-center justify-between text-xs mt-1.5">
-          <span className="flex items-center text-muted-foreground">
-            <Calendar className="mr-1.5 h-3 w-3" />
-            {new Date(project.created_at).toLocaleDateString()}
-          </span>
-          {!tasksLoading && taskStats.total > 0 && (
-            <span className="text-muted-foreground font-normal">
-              {taskStats.total} {taskStats.total === 1 ? 'task' : 'tasks'}
-            </span>
-          )}
+        <CardDescription className="flex flex-col gap-1 text-xs mt-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-0.5">
+              {/* Last Activity - Show if tasks exist */}
+              {!tasksLoading && taskStats.total > 0 && (() => {
+                const lastActivity = getLastActivityDate(tasks);
+                return lastActivity ? (
+                  <span className="flex items-center text-muted-foreground">
+                    <Calendar className="mr-1.5 h-3 w-3" />
+                    {t('card.lastActive', { time: formatRelativeTime(lastActivity) })}
+                  </span>
+                ) : null;
+              })()}
+              {/* Created Date */}
+              <span className="flex items-center text-muted-foreground">
+                <Calendar className="mr-1.5 h-3 w-3" />
+                {t('card.createdAgo', { time: formatRelativeTime(project.created_at) })}
+              </span>
+            </div>
+            {!tasksLoading && taskStats.total > 0 && (
+              <span className="text-muted-foreground font-normal">
+                {taskStats.total} {taskStats.total === 1 ? 'task' : 'tasks'}
+              </span>
+            )}
+          </div>
         </CardDescription>
       </CardHeader>
     </Card>
