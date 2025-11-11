@@ -34,7 +34,7 @@ export function MobileLayout({
           label: 'Tasks',
           icon: BottomNavIcons.Tasks.default,
           activeIcon: BottomNavIcons.Tasks.active,
-          path: basePath, // Default view (list on mobile)
+          path: basePath,
         },
         {
           id: 'chat',
