@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { KanbanCard } from '@/components/ui/shadcn-io/kanban';
-import { CheckCircle, Loader2, XCircle, Play } from 'lucide-react';
-import type { TaskWithAttemptStatus } from 'shared/types';
+import { CheckCircle, Loader2, XCircle, Play, Bot, Paperclip, Clock, Link2, Server } from 'lucide-react';
+import type { TaskWithAttemptStatus, ImageResponse } from 'shared/types';
 import { ActionsDropdown } from '@/components/ui/ActionsDropdown';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { imagesApi } from '@/lib/api';
 import NiceModal from '@ebay/nice-modal-react';
 import { H4 } from '@/components/ui/typography';
 
@@ -17,6 +19,32 @@ interface TaskCardProps {
   isOpen?: boolean;
 }
 
+// Helper: Strip markdown images from description
+function stripMarkdownImages(text: string | null): string {
+  if (!text) return '';
+  return text
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, '') // Remove ![alt](url)
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim();
+}
+
+// Helper: Format relative time
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  return date.toLocaleDateString();
+}
+
 export function TaskCard({
   task,
   index,
@@ -25,6 +53,7 @@ export function TaskCard({
   isOpen,
 }: TaskCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [images, setImages] = useState<ImageResponse[]>([]);
 
   const handleClick = useCallback(() => {
     onViewDetails(task);
@@ -43,6 +72,20 @@ export function TaskCard({
   );
 
   const localRef = useRef<HTMLDivElement>(null);
+
+  // Fetch images if task has image markdown
+  useEffect(() => {
+    const hasImageMarkdown = task.description?.includes('![');
+    if (!hasImageMarkdown) return;
+
+    imagesApi
+      .getTaskImages(task.id)
+      .then((imgs) => setImages(imgs.slice(0, 3))) // First 3 for card preview
+      .catch((err) => {
+        console.error('Failed to load task images:', err);
+        setImages([]);
+      });
+  }, [task.id, task.description]);
 
   useEffect(() => {
     if (!isOpen || !localRef.current) return;
@@ -116,13 +159,75 @@ export function TaskCard({
           </div>
         </div>
       </div>
+
+      {/* Description (cleaned, no markdown images) */}
       {task.description && (
-        <p className="flex-1 text-sm text-secondary-foreground break-words">
-          {task.description.length > 130
-            ? `${task.description.substring(0, 130)}...`
-            : task.description}
+        <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+          {stripMarkdownImages(task.description)}
         </p>
       )}
+
+      {/* Image Thumbnails */}
+      {images.length > 0 && (
+        <div className="flex gap-1.5 items-center mt-2">
+          {images.map((img) => (
+            <img
+              key={img.id}
+              src={`/api/images/${img.id}/file`}
+              alt={img.original_name}
+              className="w-10 h-10 object-cover rounded border border-border"
+              loading="lazy"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ))}
+          {images.length === 3 && task.description?.match(/!\[/g)?.length && task.description.match(/!\[/g)!.length > 3 && (
+            <span className="text-xs text-muted-foreground">
+              +{task.description.match(/!\[/g)!.length - 3}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Metadata Badges */}
+      <div className="flex flex-wrap gap-1.5 items-center mt-2">
+        {/* Executor Badge */}
+        {task.executor && (
+          <Badge variant="secondary" className="text-xs gap-1 h-5 px-1.5">
+            <Bot className="h-3 w-3" />
+            <span>{task.executor}</span>
+          </Badge>
+        )}
+
+        {/* Subtask Badge */}
+        {task.parent_task_attempt && (
+          <Badge variant="outline" className="text-xs gap-1 h-5 px-1.5">
+            <Link2 className="h-3 w-3" />
+            <span>Subtask</span>
+          </Badge>
+        )}
+
+        {/* Dev Server Badge */}
+        {task.dev_server_id && (
+          <Badge variant="outline" className="text-xs gap-1 h-5 px-1.5">
+            <Server className="h-3 w-3" />
+            <span>Dev</span>
+          </Badge>
+        )}
+
+        {/* Attachment Count */}
+        {images.length > 0 && (
+          <Badge variant="outline" className="text-xs gap-1 h-5 px-1.5">
+            <Paperclip className="h-3 w-3" />
+            <span>{images.length}</span>
+          </Badge>
+        )}
+
+        {/* Time Badge */}
+        <Badge variant="outline" className="text-xs text-muted-foreground gap-1 h-5 px-1.5 border-none bg-transparent">
+          <Clock className="h-3 w-3" />
+          <span>{formatRelativeTime(task.created_at)}</span>
+        </Badge>
+      </div>
     </KanbanCard>
     </div>
   );
