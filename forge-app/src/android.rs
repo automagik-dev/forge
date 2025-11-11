@@ -2,11 +2,11 @@
 //!
 //! This module provides JNI functions to start and stop the Forge server from Android.
 
-#[cfg(feature = "android")]
+#[cfg(target_os = "android")]
 use jni::JNIEnv;
-#[cfg(feature = "android")]
+#[cfg(target_os = "android")]
 use jni::objects::{JClass, JString};
-#[cfg(feature = "android")]
+#[cfg(target_os = "android")]
 use jni::sys::jint;
 use std::sync::{Mutex, OnceLock};
 use tokio::runtime::Runtime;
@@ -29,7 +29,7 @@ fn set_last_error(error: String) {
     *LAST_ERROR.lock().unwrap() = Some(error);
 }
 
-#[cfg(feature = "android")]
+#[cfg(target_os = "android")]
 #[no_mangle]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_getLastError(
     mut env: JNIEnv,
@@ -43,7 +43,7 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_getLastError(
         .unwrap_or_else(|_| env.new_string("Failed to create error string").unwrap())
 }
 
-#[cfg(feature = "android")]
+#[cfg(target_os = "android")]
 #[no_mangle]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_setDataDir(
     mut env: JNIEnv,
@@ -55,16 +55,16 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_setDataDir(
         .into();
     
     std::env::set_var("FORGE_DATA_DIR", &data_dir_str);
-    std::env::set_var("DATABASE_URL", format!("sqlite://{}/forge.db", data_dir_str));
-    std::env::set_var("SQLX_DATABASE_URL", format!("sqlite://{}/forge.db", data_dir_str));
+    std::env::set_var("DATABASE_URL", format!("sqlite:///{}/forge.db", data_dir_str));
+    std::env::set_var("SQLX_DATABASE_URL", format!("sqlite:///{}/forge.db", data_dir_str));
     
     tracing::info!("Android data directory set to: {}", data_dir_str);
 }
 
 /// Start the Forge server and return the port number
 ///
-#[cfg(feature = "android")]
-#[unsafe(no_mangle)]
+#[cfg(target_os = "android")]
+#[no_mangle]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
     _env: JNIEnv,
     _class: JClass,
@@ -118,8 +118,8 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
 }
 
 /// Stop the Forge server
-#[cfg(feature = "android")]
-#[unsafe(no_mangle)]
+#[cfg(target_os = "android")]
+#[no_mangle]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_stopServer(
     _env: JNIEnv,
     _class: JClass,
