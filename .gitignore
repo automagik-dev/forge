@@ -106,3 +106,5 @@ vibe-kanban-cloud/
 *.keystore
 *.keystore.b64
 *.jks
+
+forge.db 
