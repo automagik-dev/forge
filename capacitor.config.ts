@@ -2,7 +2,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'ai.namastex.forge',
-  appName: 'Automagik Forge',
+  appName: 'Forge',
   webDir: 'frontend/dist',
   server: {
     androidScheme: 'https',
