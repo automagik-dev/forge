@@ -529,11 +529,11 @@ export function TaskFollowUpSection({
   return (
     <div
       className={cn(
-        'p-4 focus-within:ring ring-inset',
+        'border-t bg-background p-4',
         isRetryActive && 'opacity-50'
       )}
     >
-        <div className="space-y-2">
+        <div className="space-y-3">
           {followUpError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -622,11 +622,11 @@ export function TaskFollowUpSection({
                   queue: { isUnqueuing: isUnqueuing, isQueued: displayQueued },
                 }}
               />
-              <div className="flex flex-row gap-2 items-center">
-                <div className="flex-1 flex gap-2">
+              <div className="flex flex-row gap-3 items-center">
+                <div className="flex-1 flex gap-3 items-center">
                   {/* Image button */}
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
                     onClick={() => setShowImageUpload(!showImageUpload)}
                     disabled={!isEditable}
