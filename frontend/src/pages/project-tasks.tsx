@@ -53,7 +53,6 @@ import TaskAttemptPanel from '@/components/panels/TaskAttemptPanel';
 import TaskPanel from '@/components/panels/TaskPanel';
 import TodoPanel from '@/components/tasks/TodoPanel';
 import { NewCard } from '@/components/ui/new-card';
-import { Breadcrumb } from '@/components/breadcrumb';
 import { ChatPanelActions } from '@/components/panels/ChatPanelActions';
 
 type Task = TaskWithAttemptStatus;
@@ -208,6 +207,13 @@ export function ProjectTasks() {
       navigate(`/projects/${projectId}/tasks`, { replace: true });
     }
   }, [projectId, taskId, isLoading, selectedTask, attemptId, isInChatView, navigate]);
+
+  // Close task panel when user starts searching (to show search results in kanban)
+  useEffect(() => {
+    if (searchQuery.trim() && isPanelOpen && projectId) {
+      navigate(`/projects/${projectId}/tasks`, { replace: true });
+    }
+  }, [searchQuery, isPanelOpen, projectId, navigate]);
 
   const effectiveAttemptId = attemptId === 'latest' ? undefined : attemptId;
   const isTaskView = !!taskId && !effectiveAttemptId;
@@ -661,8 +667,8 @@ export function ProjectTasks() {
       </div>
     );
 
-  // Show breadcrumb for preview/diffs/kanban modes (these hide the main navbar)
-  const rightHeader = mode === 'preview' || mode === 'diffs' || mode === 'kanban' ? <Breadcrumb /> : null;
+  // Breadcrumb is always shown in the main navbar - no need to duplicate it here
+  const rightHeader = null;
 
   // Allow rendering attempt content for agent tasks (Master Genie) where selectedTask is null
   // but we have an attempt to show, OR when in chat view (ChatPanel creates attempt on first message)
