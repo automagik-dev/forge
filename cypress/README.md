@@ -329,12 +329,15 @@ describe('Mobile Features', () => {
 
 ```bash
 # Run tests and record to Cypress Cloud
-npx cypress run --record --key f36c81f7-4417-43fe-9b3a-63666e5ee7f9
-
-# Or use environment variable
-export CYPRESS_RECORD_KEY=f36c81f7-4417-43fe-9b3a-63666e5ee7f9
+# Set the record key as an environment variable (get from Cypress Cloud project settings)
+export CYPRESS_RECORD_KEY=your-record-key-here
 npx cypress run --record
+
+# Or pass directly (not recommended for security)
+npx cypress run --record --key <your-record-key>
 ```
+
+**Note**: Never commit the actual record key to the repository. In CI/CD, use GitHub Secrets to store `CYPRESS_RECORD_KEY`.
 
 ### Examples
 

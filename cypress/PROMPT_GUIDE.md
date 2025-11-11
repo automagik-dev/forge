@@ -18,12 +18,15 @@ The project is already configured with Cypress Cloud:
 
 ```bash
 # Run tests and record to Cypress Cloud
-npx cypress run --record --key f36c81f7-4417-43fe-9b3a-63666e5ee7f9
-
-# Or use the environment variable
-export CYPRESS_RECORD_KEY=f36c81f7-4417-43fe-9b3a-63666e5ee7f9
+# Set the record key as an environment variable (get from Cypress Cloud project settings)
+export CYPRESS_RECORD_KEY=your-record-key-here
 npx cypress run --record
+
+# Or pass directly (not recommended for security)
+npx cypress run --record --key <your-record-key>
 ```
+
+**Security Note**: Never commit the actual record key to the repository. Store it as a GitHub Secret for CI/CD.
 
 ### 3. GitHub Actions Integration
 
@@ -399,8 +402,9 @@ cy.prompt('...')
 
 2. Ensure record key is set:
    ```bash
-   export CYPRESS_RECORD_KEY=f36c81f7-4417-43fe-9b3a-63666e5ee7f9
+   export CYPRESS_RECORD_KEY=your-record-key-here
    ```
+   Get your record key from Cypress Cloud project settings.
 
 3. Run with --record flag:
    ```bash

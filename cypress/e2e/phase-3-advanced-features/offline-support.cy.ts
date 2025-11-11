@@ -123,7 +123,7 @@ describe('Offline Support - Phase 3 Advanced Features', () => {
   })
 
   describe('Conflict Resolution', () => {
-    it('should detect conflicts on sync', () => {
+    const setupConflictScenario = () => {
       cy.window().then((win) => {
         win.dispatchEvent(new Event('offline'))
       })
@@ -135,15 +135,21 @@ describe('Offline Support - Phase 3 Advanced Features', () => {
       cy.window().then((win) => {
         win.dispatchEvent(new Event('online'))
       })
+    }
+
+    it('should detect conflicts on sync', () => {
+      setupConflictScenario()
       cy.get('[data-testid="conflict-dialog"]').should('be.visible')
     })
 
     it('should allow choosing local version', () => {
+      setupConflictScenario()
       cy.get('[data-testid="conflict-dialog"]').should('be.visible')
       cy.get('[data-testid="use-local-button"]').should('be.visible')
     })
 
     it('should allow choosing remote version', () => {
+      setupConflictScenario()
       cy.get('[data-testid="conflict-dialog"]').should('be.visible')
       cy.get('[data-testid="use-remote-button"]').should('be.visible')
     })
