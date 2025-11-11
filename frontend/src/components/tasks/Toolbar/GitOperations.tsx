@@ -190,8 +190,11 @@ function GitOperations({
     if (rebasing) return 'Rebase in progress';
     if (isAttemptRunning) return 'Attempt is still running';
     if (hasConflictsCalculated) return 'Merge conflicts present';
+    if ((branchStatus?.commits_behind ?? 0) === 0) {
+      return 'Branch is already up-to-date with base branch';
+    }
     return null;
-  }, [rebasing, isAttemptRunning, hasConflictsCalculated]);
+  }, [rebasing, isAttemptRunning, hasConflictsCalculated, branchStatus?.commits_behind]);
 
   const handleMergeClick = async () => {
     // Directly perform merge without checking branch status
@@ -489,11 +492,7 @@ function GitOperations({
               disabled={rebaseDisabled}
               variant="outline"
               size="xs"
-              className={`gap-1 shrink-0 ${
-                conflictsLikely && !rebaseDisabled
-                  ? 'border-warning text-warning hover:bg-warning'
-                  : 'border-warning text-warning hover:bg-warning'
-              }`}
+              className="gap-1 shrink-0 border-warning text-warning hover:bg-warning"
               aria-label={rebaseButtonLabel}
             >
               {conflictsLikely && !rebaseDisabled ? (
