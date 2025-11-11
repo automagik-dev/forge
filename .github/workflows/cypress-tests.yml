@@ -61,6 +61,9 @@ jobs:
         run: |
           npx wait-on http://localhost:3000 http://localhost:8887/health --timeout 60000
 
+      - name: Install Cypress binary
+        run: npx cypress install
+
       - name: Run Cypress tests
         uses: cypress-io/github-action@v6
         with:
@@ -68,6 +71,7 @@ jobs:
           browser: chrome
           record: true
           parallel: true
+          install: false
         env:
           CYPRESS_BASE_URL: http://localhost:3000
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
@@ -127,6 +131,9 @@ jobs:
         env:
           BACKEND_PORT: 8887
           PORT: 3000
+
+      - name: Install Cypress binary
+        run: npx cypress install
 
       - name: Run Phase 1 Foundation Tests
         uses: cypress-io/github-action@v6
