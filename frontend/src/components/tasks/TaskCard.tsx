@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { KanbanCard } from '@/components/ui/shadcn-io/kanban';
-import { CheckCircle, Loader2, XCircle, Play, Bot, Paperclip, Clock, Link2, Server } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle, Play, Bot, Paperclip, Clock, Link2, Server, Archive } from 'lucide-react';
 import type { TaskWithAttemptStatus, ImageResponse } from 'shared/types';
 import { ActionsDropdown } from '@/components/ui/ActionsDropdown';
 import { Button } from '@/components/ui/button';
@@ -66,6 +66,17 @@ export function TaskCard({
       NiceModal.show('create-attempt', {
         taskId: task.id,
         latestAttempt: null,
+      });
+    },
+    [task]
+  );
+
+  const handleArchive = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!task) return;
+      NiceModal.show('archive-task-confirmation', {
+        task,
       });
     },
     [task]
@@ -146,6 +157,24 @@ export function TaskCard({
                 aria-label="Start new attempt"
               >
                 <Play className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          {/* Archive Button (on hover, only for non-archived tasks) */}
+          {isHovered && status !== 'archived' && (
+            <div
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={handleArchive}
+                aria-label="Archive task"
+              >
+                <Archive className="h-4 w-4" />
               </Button>
             </div>
           )}
