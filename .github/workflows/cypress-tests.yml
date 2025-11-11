@@ -132,6 +132,10 @@ jobs:
           BACKEND_PORT: 8887
           PORT: 3000
 
+      - name: Wait for servers
+        run: |
+          npx wait-on http://localhost:3000 http://localhost:8887/health --timeout 60000
+
       - name: Install Cypress binary
         run: npx cypress install
 
