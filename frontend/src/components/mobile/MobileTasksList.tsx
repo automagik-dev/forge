@@ -1,7 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import type { TaskWithAttemptStatus } from 'shared/types';
-import { ProgressiveDisclosure } from '@/components/mobile/ProgressiveDisclosure';
 
 type Task = TaskWithAttemptStatus;
 
@@ -133,16 +132,9 @@ function MobileTaskCard({ task, onClick, isSelected }: MobileTaskCardProps) {
           </h4>
           
           {task.description && (
-            <ProgressiveDisclosure
-              collapsedHeight={40}
-              showMoreText="Show more"
-              showLessText="Show less"
-              contentClassName="text-sm text-muted-foreground"
-            >
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {task.description}
-              </p>
-            </ProgressiveDisclosure>
+            <p className="text-sm text-muted-foreground line-clamp-3 mt-1">
+              {task.description}
+            </p>
           )}
         </div>
 

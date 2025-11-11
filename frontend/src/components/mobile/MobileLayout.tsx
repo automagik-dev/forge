@@ -26,7 +26,6 @@ export function MobileLayout({
   
   const tabs: BottomNavTab[] = React.useMemo(() => {
     if (projectId && location.pathname.includes('/tasks')) {
-      const currentView = searchParams.get('view');
       const basePath = `/projects/${projectId}/tasks`;
       
       return [
