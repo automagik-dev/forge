@@ -52,14 +52,14 @@ jobs:
 
       - name: Start frontend server
         run: |
-          cd frontend && pnpm run preview --port 3000 &
+          cd frontend && pnpm run preview --host 127.0.0.1 --port 3000 --strictPort &
           sleep 5
         env:
           PORT: 3000
 
       - name: Wait for servers
         run: |
-          npx wait-on http://localhost:3000 http://localhost:8887/health --timeout 60000
+          npx wait-on http://127.0.0.1:3000 http://127.0.0.1:8887/health --timeout 120000
 
       - name: Install Cypress binary
         run: npx cypress install
@@ -73,7 +73,7 @@ jobs:
           parallel: true
           install: false
         env:
-          CYPRESS_BASE_URL: http://localhost:3000
+          CYPRESS_baseUrl: http://127.0.0.1:3000
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -126,7 +126,7 @@ jobs:
         run: |
           cargo run --release --bin forge-app &
           sleep 10
-          cd frontend && pnpm run preview --port 3000 &
+          cd frontend && pnpm run preview --host 127.0.0.1 --port 3000 --strictPort &
           sleep 5
         env:
           BACKEND_PORT: 8887
@@ -134,7 +134,7 @@ jobs:
 
       - name: Wait for servers
         run: |
-          npx wait-on http://localhost:3000 http://localhost:8887/health --timeout 60000
+          npx wait-on http://127.0.0.1:3000 http://127.0.0.1:8887/health --timeout 120000
 
       - name: Install Cypress binary
         run: npx cypress install
@@ -146,7 +146,7 @@ jobs:
           browser: chrome
           spec: cypress/e2e/phase-1-foundation/**/*.cy.ts
         env:
-          CYPRESS_BASE_URL: http://localhost:3000
+          CYPRESS_baseUrl: http://127.0.0.1:3000
 
       - name: Run Phase 2 Core Views Tests
         uses: cypress-io/github-action@v6
@@ -155,7 +155,7 @@ jobs:
           browser: chrome
           spec: cypress/e2e/phase-2-core-views/**/*.cy.ts
         env:
-          CYPRESS_BASE_URL: http://localhost:3000
+          CYPRESS_baseUrl: http://127.0.0.1:3000
 
       - name: Run Phase 3 Advanced Features Tests
         uses: cypress-io/github-action@v6
@@ -164,7 +164,7 @@ jobs:
           browser: chrome
           spec: cypress/e2e/phase-3-advanced-features/**/*.cy.ts
         env:
-          CYPRESS_BASE_URL: http://localhost:3000
+          CYPRESS_baseUrl: http://127.0.0.1:3000
 
       - name: Run Phase 4 Polish Tests
         uses: cypress-io/github-action@v6
@@ -173,7 +173,7 @@ jobs:
           browser: chrome
           spec: cypress/e2e/phase-4-polish/**/*.cy.ts
         env:
-          CYPRESS_BASE_URL: http://localhost:3000
+          CYPRESS_baseUrl: http://127.0.0.1:3000
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
