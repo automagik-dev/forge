@@ -74,7 +74,7 @@ dependencies {
 
 // Task to copy Rust library from cargo build
 task copyRustLib(type: Copy) {
-    from '../target/aarch64-linux-android/release/libforge_app.so'
+    from '../../target/aarch64-linux-android/release/libforge_app.so'
     into 'src/main/jniLibs/arm64-v8a'
 }
 
