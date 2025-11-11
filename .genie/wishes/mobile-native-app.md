@@ -2,7 +2,7 @@
 
 **Issue:** [#113](https://github.com/namastexlabs/automagik-forge/issues/113)
 **Branch:** `mobile-native-app`
-**Status:** 📋 PLANNING EXPANSION COMPLETE
+**Status:** 📋 PLANNING COMPLETE (WITH ENGAGEMENT ENHANCEMENTS)
 **Priority:** 🟡 HIGH (Major UX Enhancement)
 
 ---
@@ -215,6 +215,30 @@ Tasks Chat New Me
 - State management (React Query + IndexedDB structure)
 - Error handling and conflict resolution flows
 
+**8. UX Best Practices & Engagement Spec** (`specs/ux-best-practices-and-engagement-spec.md`) **NEW**
+- 15,000+ lines of comprehensive UX research and engagement strategy
+- Habit-forming UX patterns (Hooked Model, Fogg Behavior Model)
+- Analysis of leading apps (ChatGPT, Duolingo, GitHub Mobile, Notion, Linear)
+- Ethical engagement charter (no dark patterns, productivity-first)
+- Assistant autonomy surfaces (proactive suggestions, smart drafts, scheduled windows)
+- Notification strategy (rich actions, RemoteInput, bundling, rate limits)
+- Resume & re-engagement flows (open-to-context, widgets, shortcuts, quick settings tile)
+- Quick capture surfaces (share sheet, voice-to-task, camera-to-task)
+- Personalization & smart drafts (learning preferences, context-aware suggestions)
+- Onboarding & first-time experience (60-second flow, progressive onboarding)
+- Micro-interactions & delight (haptics, animations, celebrations)
+- Measurement & instrumentation (engagement metrics, funnels, A/B testing)
+- Gap analysis against existing 7 specs with priority mapping
+- Updated implementation roadmap with engagement enhancements
+
+**Engagement Enhancements Summary** (`specs/ENGAGEMENT-ENHANCEMENTS-SUMMARY.md`) **NEW**
+- Comprehensive summary of UX research findings
+- Gap analysis table showing coverage vs new features
+- Updated phase plan with engagement additions
+- New success criteria (DAU, retention, TTFV, notification CTR)
+- Feature flags for gradual rollout
+- Risks & mitigations for engagement features
+
 ### Research Documents (in `.genie/wishes/mobile-native-app/research/`)
 
 **1. Frontend Inventory** (`research/forge-frontend-complete-inventory.md`)
@@ -237,7 +261,7 @@ Tasks Chat New Me
 - Offline strategy
 - Performance architecture
 
-**Total Planning Documentation:** 15,000+ lines across 10 comprehensive documents
+**Total Planning Documentation:** 30,000+ lines across 12 comprehensive documents (8 specs + 4 research/summary docs)
 
 ### Key Insights
 
@@ -497,10 +521,10 @@ Tasks Chat New Me
 
 ---
 
-**Total Planning Effort:** 15,000+ lines of documentation
-**Planning Docs:** 7 technical specifications + 3 research documents
+**Total Planning Effort:** 30,000+ lines of documentation
+**Planning Docs:** 8 technical specifications + 4 research/summary documents
 **GitHub Issue:** [#113](https://github.com/namastexlabs/automagik-forge/issues/113)
-**Status:** ✅ Planning Complete
+**Status:** ✅ Planning Complete (with Engagement Enhancements)
 **Ready For:** Design → Development → Launch
 
 🚀 Let's build the best mobile experience for agentic task management!
