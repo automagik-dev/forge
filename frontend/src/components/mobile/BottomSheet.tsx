@@ -6,6 +6,7 @@ import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Platform } from '@/lib/platform';
 import { useDrag } from '@use-gesture/react';
 import { animated, useSpring } from 'react-spring';
+import { H2 } from '@/components/ui/typography';
 
 export interface BottomSheetProps {
   open: boolean;
@@ -158,7 +159,7 @@ export function BottomSheet({
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 {title && (
-                  <h2 className="text-lg font-semibold font-primary">{title}</h2>
+                  <H2 className="text-lg">{title}</H2>
                 )}
                 {description && (
                   <p className="text-sm text-muted-foreground mt-1">

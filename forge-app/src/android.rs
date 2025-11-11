@@ -23,9 +23,14 @@ fn get_runtime() -> &'static Runtime {
         #[cfg(target_os = "android")]
         android_logger::init_once(
             android_logger::Config::default()
-                .with_max_level(log::LevelFilter::Info)
+                .with_max_level(log::LevelFilter::Debug)
                 .with_tag("ForgeApp"),
         );
+        
+        #[cfg(target_os = "android")]
+        unsafe {
+            std::env::set_var("RUST_LOG", "debug");
+        }
 
         // Initialize tracing subscriber
         #[cfg(not(target_os = "android"))]
@@ -129,6 +134,15 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
             port as jint
         }
         Ok(Err(_)) => {
+            runtime.block_on(async {
+                for _ in 0..10 {
+                    if LAST_ERROR.lock().unwrap().is_some() {
+                        break;
+                    }
+                    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                }
+            });
+            
             let has_specific_error = LAST_ERROR.lock().unwrap().is_some();
             if !has_specific_error {
                 set_last_error("Server failed to signal readiness - check initialization".to_string());
@@ -138,6 +152,15 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
             -1
         }
         Err(_) => {
+            runtime.block_on(async {
+                for _ in 0..10 {
+                    if LAST_ERROR.lock().unwrap().is_some() {
+                        break;
+                    }
+                    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                }
+            });
+            
             let has_specific_error = LAST_ERROR.lock().unwrap().is_some();
             if !has_specific_error {
                 set_last_error("Server startup timeout (10s) - initialization took too long".to_string());
@@ -150,6 +173,22 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
 }
 
 /// Stop the Forge server
+#[cfg(target_os = "android")]
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_ai_namastex_forge_MainActivity_getLogsPath<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+) -> JString<'local> {
+    let logs_path = if let Ok(data_dir) = std::env::var("FORGE_DATA_DIR") {
+        format!("{}/forge-debug.log", data_dir)
+    } else {
+        "/tmp/forge-debug.log".to_string()
+    };
+    
+    env.new_string(logs_path)
+        .unwrap_or_else(|_| env.new_string("").unwrap())
+}
+
 #[cfg(target_os = "android")]
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_stopServer(

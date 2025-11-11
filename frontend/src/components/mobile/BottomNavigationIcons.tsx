@@ -3,7 +3,9 @@ import {
   MessageSquare, 
   PlusCircle, 
   User,
-  Search
+  Search,
+  Eye,
+  GitCompare
 } from 'lucide-react';
 
 export const BottomNavIcons = {
@@ -14,6 +16,14 @@ export const BottomNavIcons = {
   Chat: {
     default: <MessageSquare className="w-6 h-6" />,
     active: <MessageSquare className="w-6 h-6" strokeWidth={2.5} />
+  },
+  Review: {
+    default: <Eye className="w-6 h-6" />,
+    active: <Eye className="w-6 h-6" strokeWidth={2.5} />
+  },
+  Changes: {
+    default: <GitCompare className="w-6 h-6" />,
+    active: <GitCompare className="w-6 h-6" strokeWidth={2.5} />
   },
   New: {
     default: <PlusCircle className="w-6 h-6" />,

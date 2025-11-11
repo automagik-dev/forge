@@ -1,8 +1,10 @@
 import React from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { BottomNavigation, BottomNavTab } from './BottomNavigation';
 import { BottomNavIcons } from './BottomNavigationIcons';
 import { usePlatform } from '@/lib/platform';
+import { useProject } from '@/contexts/project-context';
 
 export interface MobileLayoutProps {
   children: React.ReactNode;
@@ -18,38 +20,63 @@ export function MobileLayout({
   contentClassName
 }: MobileLayoutProps) {
   const { isNative } = usePlatform();
+  const { projectId } = useProject();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
   
-  const tabs: BottomNavTab[] = [
-    {
-      id: 'tasks',
-      label: 'Tasks',
-      icon: BottomNavIcons.Tasks.default,
-      activeIcon: BottomNavIcons.Tasks.active,
-      path: '/projects'
-    },
-    {
-      id: 'chat',
-      label: 'Chat',
-      icon: BottomNavIcons.Chat.default,
-      activeIcon: BottomNavIcons.Chat.active,
-      path: '/chat'
-    },
-    {
-      id: 'new',
-      label: 'New',
-      icon: BottomNavIcons.New.default,
-      activeIcon: BottomNavIcons.New.active,
-      onClick: () => {
-      }
-    },
-    {
-      id: 'me',
-      label: 'Me',
-      icon: BottomNavIcons.Me.default,
-      activeIcon: BottomNavIcons.Me.active,
-      path: '/settings'
+  const tabs: BottomNavTab[] = React.useMemo(() => {
+    if (projectId && location.pathname.includes('/tasks')) {
+      const basePath = `/projects/${projectId}/tasks`;
+      
+      return [
+        {
+          id: 'tasks',
+          label: 'Tasks',
+          icon: BottomNavIcons.Tasks.default,
+          activeIcon: BottomNavIcons.Tasks.active,
+          path: basePath,
+        },
+        {
+          id: 'chat',
+          label: 'Chat',
+          icon: BottomNavIcons.Chat.default,
+          activeIcon: BottomNavIcons.Chat.active,
+          path: `${basePath}?view=chat`,
+        },
+        {
+          id: 'review',
+          label: 'Review',
+          icon: BottomNavIcons.Review.default,
+          activeIcon: BottomNavIcons.Review.active,
+          path: `${basePath}?view=preview`,
+        },
+        {
+          id: 'changes',
+          label: 'Changes',
+          icon: BottomNavIcons.Changes.default,
+          activeIcon: BottomNavIcons.Changes.active,
+          path: `${basePath}?view=diffs`,
+        },
+      ];
     }
-  ];
+    
+    return [
+      {
+        id: 'projects',
+        label: 'Projects',
+        icon: BottomNavIcons.Tasks.default,
+        activeIcon: BottomNavIcons.Tasks.active,
+        path: '/projects',
+      },
+      {
+        id: 'settings',
+        label: 'Settings',
+        icon: BottomNavIcons.Me.default,
+        activeIcon: BottomNavIcons.Me.active,
+        path: '/settings',
+      },
+    ];
+  }, [projectId, location.pathname, searchParams]);
   
   return (
     <div className={cn(
