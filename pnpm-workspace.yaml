@@ -1,6 +1,9 @@
 packages:
   - frontend
 
+ignoredBuiltDependencies:
+  - cypress
+
 onlyBuiltDependencies:
   - '@sentry/cli'
   - core-js
