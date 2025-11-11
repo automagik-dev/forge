@@ -538,17 +538,13 @@ mod tests {
     use uuid::Uuid;
 
     async fn setup_pool() -> SqlitePool {
-        let pool = SqlitePool::connect("sqlite::memory:")
+        unsafe {
+            std::env::set_var("DATABASE_URL", "sqlite::memory:");
+        }
+        let db_service = db::DBService::new()
             .await
-            .expect("failed to create in-memory pool");
-
-        // Use upstream migrations (includes all forge-specific migrations)
-        sqlx::migrate!("../upstream/crates/db/migrations")
-            .run(&pool)
-            .await
-            .expect("failed to run upstream migrations");
-
-        pool
+            .expect("failed to create db service with migrations");
+        db_service.pool
     }
 
     async fn insert_project(pool: &SqlitePool, project_id: Uuid) {

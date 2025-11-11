@@ -793,40 +793,38 @@ async fn handle_forge_tasks_ws(
                                 }
                             }
                             // Handle initial snapshot (replace /tasks with map)
-                            else if patch_op.path() == "/tasks" {
-                                if let json_patch::PatchOperation::Replace(op) = patch_op {
-                                    if let Some(tasks_obj) = op.value.as_object() {
-                                        // Filter out agent tasks from the initial snapshot
-                                        let mut filtered_tasks = serde_json::Map::new();
-                                        for (task_id_str, task_value) in tasks_obj {
-                                            if let Ok(task_with_status) =
-                                                serde_json::from_value::<TaskWithAttemptStatus>(task_value.clone())
-                                            {
-                                                let is_agent: bool = sqlx::query_scalar(
-                                                    "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
-                                                )
-                                                .bind(task_with_status.task.id)
-                                                .fetch_one(&db_pool)
-                                                .await
-                                                .unwrap_or(false);
+                            else if patch_op.path() == "/tasks"
+                                && let json_patch::PatchOperation::Replace(op) = patch_op
+                                && let Some(tasks_obj) = op.value.as_object() {
+                                // Filter out agent tasks from the initial snapshot
+                                let mut filtered_tasks = serde_json::Map::new();
+                                for (task_id_str, task_value) in tasks_obj {
+                                    if let Ok(task_with_status) =
+                                        serde_json::from_value::<TaskWithAttemptStatus>(task_value.clone())
+                                    {
+                                        let is_agent: bool = sqlx::query_scalar(
+                                            "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
+                                        )
+                                        .bind(task_with_status.task.id)
+                                        .fetch_one(&db_pool)
+                                        .await
+                                        .unwrap_or(false);
 
-                                                if !is_agent {
-                                                    filtered_tasks.insert(task_id_str.to_string(), task_value.clone());
-                                                }
-                                            }
+                                        if !is_agent {
+                                            filtered_tasks.insert(task_id_str.to_string(), task_value.clone());
                                         }
-
-                                        // Return filtered snapshot
-                                        let filtered_patch = json!([{
-                                            "op": "replace",
-                                            "path": "/tasks",
-                                            "value": filtered_tasks
-                                        }]);
-                                        return Some(Ok(LogMsg::JsonPatch(
-                                            serde_json::from_value(filtered_patch).unwrap()
-                                        )));
                                     }
                                 }
+
+                                // Return filtered snapshot
+                                let filtered_patch = json!([{
+                                    "op": "replace",
+                                    "path": "/tasks",
+                                    "value": filtered_tasks
+                                }]);
+                                return Some(Ok(LogMsg::JsonPatch(
+                                    serde_json::from_value(filtered_patch).unwrap()
+                                )));
                             }
                         }
                         // Pass through non-task patches
@@ -1573,21 +1571,20 @@ async fn get_master_genie_neurons(
     // For each neuron task, find its latest attempt and determine type from executor variant
     for task in neuron_tasks {
         // Get latest attempt for this neuron task (fetch_all returns newest first)
-        if let Ok(attempts) = TaskAttempt::fetch_all(pool, Some(task.id)).await {
-            if let Some(attempt) = attempts.into_iter().next() {
-                // Parse executor to get variant (e.g., "CLAUDE_CODE:WISH" → "WISH")
-                let neuron_type = if let Some((_base, variant)) = attempt.executor.split_once(':') {
-                    variant.to_string() // Keep uppercase to match profile variants
-                } else {
-                    "unknown".to_string()
-                };
+        if let Ok(attempts) = TaskAttempt::fetch_all(pool, Some(task.id)).await
+            && let Some(attempt) = attempts.into_iter().next() {
+            // Parse executor to get variant (e.g., "CLAUDE_CODE:WISH" → "WISH")
+            let neuron_type = if let Some((_base, variant)) = attempt.executor.split_once(':') {
+                variant.to_string() // Keep uppercase to match profile variants
+            } else {
+                "unknown".to_string()
+            };
 
-                neurons.push(Neuron {
-                    neuron_type,
-                    task,
-                    attempt,
-                });
-            }
+            neurons.push(Neuron {
+                neuron_type,
+                task,
+                attempt,
+            });
         }
     }
 
