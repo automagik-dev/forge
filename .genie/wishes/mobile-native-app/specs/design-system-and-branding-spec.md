@@ -1118,6 +1118,195 @@ Test on:
 
 ---
 
+## Universality Validation
+
+### Design System Universal Application
+
+This design system is designed to work universally across all Forge contexts, ensuring visual consistency whether users access Forge through native apps, mobile web browsers, or desktop browsers.
+
+#### Universal Design Principles
+
+**Same Visual Language Everywhere:**
+- Typography, colors, and design tokens are consistent across ALL contexts
+- Mobile components work in responsive web browsers (not just native apps)
+- Touch interactions function in mobile browsers
+- CSS breakpoints and mobile theme apply to browser viewports
+
+#### Platform Coverage
+
+**1. Capacitor Native Apps (Android/iOS)**
+- Full design system implementation with native features
+- Haptic feedback, camera integration, push notifications
+- Safe area handling for notches and Dynamic Island
+- OLED-optimized dark theme for battery efficiency
+
+**2. Mobile Web Browsers (Chrome, Safari on phones)**
+- Same typography scale and font families
+- Same color palette and theme tokens
+- Responsive breakpoints (375px, 390px, 428px, 768px)
+- Touch-optimized interactions (44x44px minimum tap targets)
+- Graceful degradation for native-only features
+- CSS safe-area fallbacks: `padding: env(safe-area-inset-top, 0px)`
+
+**3. Desktop Web Browsers (Responsive Design)**
+- Same design tokens and component styles
+- Adaptive layouts for larger viewports (1280px+)
+- Mouse and keyboard interactions alongside touch
+- Consistent visual effects (gradients, shadows, glassmorphism)
+
+#### Validation Checklist
+
+**Typography Consistency:**
+- [ ] Same font families across native apps, mobile web, desktop web
+- [ ] Same type scale (display, heading, body, label, code) in all contexts
+- [ ] Same font weights and letter spacing across platforms
+- [ ] Web fonts loaded correctly in browser contexts
+
+**Color Consistency:**
+- [ ] Same brand colors (magenta, cyan, teal) across all contexts
+- [ ] Same gradients render correctly in browsers and native apps
+- [ ] Dark theme and light theme work in all contexts
+- [ ] Status colors consistent across platforms
+- [ ] WCAG AA contrast ratios maintained in all contexts
+
+**Component Consistency:**
+- [ ] Bottom navigation works in mobile web browsers
+- [ ] Bottom sheets functional in responsive web views
+- [ ] Cards, buttons, inputs styled identically across contexts
+- [ ] Badges, chips, tooltips render consistently
+- [ ] Modal dialogs and overlays work in all contexts
+
+**Interaction Consistency:**
+- [ ] Touch gestures (swipe, long-press, pinch) work in mobile browsers
+- [ ] Tap targets meet 44x44px minimum in all contexts
+- [ ] Hover states work on desktop (mouse) and mobile (touch)
+- [ ] Focus states consistent across keyboard and touch navigation
+- [ ] Animations and transitions smooth in all contexts
+
+**Layout Consistency:**
+- [ ] Responsive breakpoints apply to browser viewports
+- [ ] Safe area handling gracefully degrades in non-native contexts
+- [ ] Grid and spacing system consistent across platforms
+- [ ] Vertical rhythm maintained in all contexts
+
+**Visual Effects Consistency:**
+- [ ] Glassmorphism effects render in modern browsers
+- [ ] Shadows and glows consistent across platforms
+- [ ] Gradient overlays work in all contexts
+- [ ] Border radius and visual styling identical
+
+#### Browser Compatibility
+
+**Minimum Browser Support:**
+- Chrome 90+ (Android, Desktop)
+- Safari 14+ (iOS, macOS)
+- Firefox 88+ (Android, Desktop)
+- Edge 90+ (Desktop)
+
+**Progressive Enhancement:**
+- Core functionality works in all supported browsers
+- Advanced features (haptics, camera) gracefully degrade in web contexts
+- CSS custom properties (variables) for theme tokens
+- Fallbacks for unsupported CSS features
+
+#### Testing Strategy
+
+**Cross-Context Testing:**
+1. Test all screens on Capacitor native app (Android)
+2. Test all screens on mobile web browser (Chrome on Android, Safari on iOS)
+3. Test all screens on desktop browser (Chrome, Safari, Firefox)
+4. Verify typography, colors, and spacing identical across contexts
+5. Validate touch interactions work in mobile browsers
+6. Confirm responsive breakpoints apply correctly in browser viewports
+
+**Evidence Collection:**
+- Screenshots of same screen in native app vs mobile web vs desktop
+- Side-by-side comparison of typography and colors
+- Video recordings of touch interactions in mobile browsers
+- Lighthouse scores for mobile web (target: >90)
+
+#### Implementation Guidelines
+
+**CSS Variables for Universal Theming:**
+```css
+:root {
+  /* Brand Colors */
+  --color-brand-magenta: #E91EFF;
+  --color-brand-cyan: #00D9FF;
+  --color-brand-teal: #00D9C8;
+  
+  /* Background Colors */
+  --color-bg-primary: #1A1625;
+  --color-bg-secondary: #0F0D15;
+  
+  /* Typography */
+  --font-family-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-mono: "SF Mono", Monaco, "Cascadia Code", monospace;
+  
+  /* Spacing */
+  --spacing-unit: 4px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* Safe Area (with fallback) */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+```
+
+**Platform Detection Utilities:**
+```typescript
+export const isNativeApp = () => {
+  return typeof window !== 'undefined' && 
+         (window as any).Capacitor !== undefined;
+};
+
+export const isMobileWeb = () => {
+  return typeof window !== 'undefined' && 
+         /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) &&
+         !isNativeApp();
+};
+
+export const isDesktop = () => {
+  return typeof window !== 'undefined' && 
+         !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+};
+
+export const supportsHaptics = () => {
+  return isNativeApp() && (window as any).Capacitor?.Plugins?.Haptics;
+};
+```
+
+**Graceful Degradation Example:**
+```typescript
+// Haptic feedback with graceful degradation
+export const triggerHaptic = async (type: HapticType) => {
+  if (supportsHaptics()) {
+    await Haptics.impact({ style: type });
+  } else {
+    // Fallback: visual feedback only (no haptics in web)
+    console.log(`Haptic feedback (${type}) - not available in web context`);
+  }
+};
+```
+
+#### Success Criteria
+
+**Universal Design Validation:**
+- ✅ Same typography across native apps, mobile web, desktop web
+- ✅ Same color palette and theme tokens across all contexts
+- ✅ Mobile components work in responsive web browsers
+- ✅ Touch interactions functional in mobile browsers
+- ✅ CSS breakpoints apply to browser viewports
+- ✅ Safe area utilities gracefully handle non-native contexts
+- ✅ Visual effects (gradients, shadows, glassmorphism) render consistently
+- ✅ Lighthouse mobile score >90 for web contexts
+
+---
+
 ## Resources
 
 ### Design Files

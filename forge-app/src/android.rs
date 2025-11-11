@@ -26,7 +26,7 @@ fn get_runtime() -> &'static Runtime {
                 .with_max_level(log::LevelFilter::Debug)
                 .with_tag("ForgeApp"),
         );
-        
+
         #[cfg(target_os = "android")]
         unsafe {
             std::env::set_var("RUST_LOG", "debug");
@@ -42,7 +42,7 @@ fn get_runtime() -> &'static Runtime {
 
 fn set_last_error(error: String) {
     *LAST_ERROR.lock().unwrap() = Some(error.clone());
-    
+
     if let Ok(data_dir) = std::env::var("FORGE_DATA_DIR") {
         let error_file = format!("{}/forge-last-error.txt", data_dir);
         if let Err(e) = std::fs::write(&error_file, &error) {
@@ -57,10 +57,12 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_getLastError<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass<'local>,
 ) -> JString<'local> {
-    let error = LAST_ERROR.lock().unwrap()
+    let error = LAST_ERROR
+        .lock()
+        .unwrap()
         .clone()
         .unwrap_or_else(|| "Unknown error".to_string());
-    
+
     env.new_string(error)
         .unwrap_or_else(|_| env.new_string("Failed to create error string").unwrap())
 }
@@ -72,16 +74,23 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_setDataDir(
     _class: JClass,
     data_dir: JString,
 ) {
-    let data_dir_str: String = env.get_string(&data_dir)
+    let data_dir_str: String = env
+        .get_string(&data_dir)
         .expect("Failed to get data_dir string")
         .into();
-    
+
     unsafe {
         std::env::set_var("FORGE_DATA_DIR", &data_dir_str);
-        std::env::set_var("DATABASE_URL", format!("sqlite:///{}/forge.db", data_dir_str));
-        std::env::set_var("SQLX_DATABASE_URL", format!("sqlite:///{}/forge.db", data_dir_str));
+        std::env::set_var(
+            "DATABASE_URL",
+            format!("sqlite:///{}/forge.db", data_dir_str),
+        );
+        std::env::set_var(
+            "SQLX_DATABASE_URL",
+            format!("sqlite:///{}/forge.db", data_dir_str),
+        );
     }
-    
+
     tracing::info!("Android data directory set to: {}", data_dir_str);
 }
 
@@ -121,10 +130,7 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
 
     // Block until server is ready to accept connections (with timeout)
     let ready_result = runtime.block_on(async {
-        tokio::time::timeout(
-            std::time::Duration::from_secs(10),
-            ready_rx
-        ).await
+        tokio::time::timeout(std::time::Duration::from_secs(10), ready_rx).await
     });
 
     match ready_result {
@@ -142,10 +148,12 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
                     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
                 }
             });
-            
+
             let has_specific_error = LAST_ERROR.lock().unwrap().is_some();
             if !has_specific_error {
-                set_last_error("Server failed to signal readiness - check initialization".to_string());
+                set_last_error(
+                    "Server failed to signal readiness - check initialization".to_string(),
+                );
             }
             tracing::error!("Server failed to signal readiness");
             handle.abort();
@@ -160,10 +168,12 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
                     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
                 }
             });
-            
+
             let has_specific_error = LAST_ERROR.lock().unwrap().is_some();
             if !has_specific_error {
-                set_last_error("Server startup timeout (10s) - initialization took too long".to_string());
+                set_last_error(
+                    "Server startup timeout (10s) - initialization took too long".to_string(),
+                );
             }
             tracing::error!("Server startup timeout");
             handle.abort();
@@ -184,17 +194,14 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_getLogsPath<'local>(
     } else {
         "/tmp/forge-debug.log".to_string()
     };
-    
+
     env.new_string(logs_path)
         .unwrap_or_else(|_| env.new_string("").unwrap())
 }
 
 #[cfg(target_os = "android")]
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_ai_namastex_forge_MainActivity_stopServer(
-    _env: JNIEnv,
-    _class: JClass,
-) {
+pub extern "C" fn Java_ai_namastex_forge_MainActivity_stopServer(_env: JNIEnv, _class: JClass) {
     if let Some(handle) = SERVER_HANDLE.lock().unwrap().take() {
         handle.abort();
     }
