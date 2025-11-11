@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { BottomNavigation, BottomNavTab } from './BottomNavigation';
 import { BottomNavIcons } from './BottomNavigationIcons';
 import { usePlatform } from '@/lib/platform';
+import { openTaskForm } from '@/lib/openTaskForm';
 
 export interface MobileLayoutProps {
   children: React.ReactNode;
@@ -32,7 +33,7 @@ export function MobileLayout({
       label: 'Chat',
       icon: BottomNavIcons.Chat.default,
       activeIcon: BottomNavIcons.Chat.active,
-      path: '/chat'
+      path: '/projects'
     },
     {
       id: 'new',
@@ -40,6 +41,7 @@ export function MobileLayout({
       icon: BottomNavIcons.New.default,
       activeIcon: BottomNavIcons.New.active,
       onClick: () => {
+        openTaskForm({});
       }
     },
     {
