@@ -126,7 +126,7 @@ export function BottomSheet({
   return createPortal(
     <div className="fixed inset-0 z-[var(--z-mobile-sheet)]">
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={handleBackdropClick}
       />
       
@@ -139,25 +139,26 @@ export function BottomSheet({
         }}
         className={cn(
           'absolute bottom-0 left-0 right-0',
-          'bg-background rounded-t-2xl',
+          'glass-heavy rounded-t-2xl',
           'shadow-2xl',
           'flex flex-col',
           'max-h-[95vh]',
+          'font-secondary',
           className
         )}
       >
         {showHandle && (
           <div className="flex justify-center pt-3 pb-2">
-            <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
+            <div className="w-8 h-1 bg-muted-foreground/40 rounded-full" />
           </div>
         )}
         
         {(title || description) && (
-          <div className="px-4 py-3 border-b border-border">
+          <div className="px-4 py-3 border-b border-white/10">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 {title && (
-                  <h2 className="text-lg font-semibold">{title}</h2>
+                  <h2 className="text-lg font-semibold font-primary">{title}</h2>
                 )}
                 {description && (
                   <p className="text-sm text-muted-foreground mt-1">
@@ -168,7 +169,7 @@ export function BottomSheet({
               {dismissible && (
                 <button
                   onClick={onClose}
-                  className="ml-4 p-1 rounded-full hover:bg-muted touch-target"
+                  className="ml-4 p-1 rounded-full hover:bg-white/10 touch-target transition-colors"
                   aria-label="Close"
                 >
                   <X className="w-5 h-5" />

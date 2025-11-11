@@ -5,20 +5,20 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/40 disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed',
+  'inline-flex items-center justify-center whitespace-nowrap text-sm font-medium font-secondary ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-magenta focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed',
   {
     variants: {
       variant: {
         default:
-          'text-primary-foreground hover:bg-primary/90 border border-foreground',
+          'glass-light text-foreground hover:glass-medium hover-lift border border-white/15',
         destructive:
-          'border border-destructive text-destructive hover:bg-destructive/10',
+          'border border-destructive text-destructive hover:bg-destructive/10 hover-lift',
         outline:
-          'border border-input hover:bg-accent hover:text-accent-foreground',
-        secondary: 'text-secondary-foreground hover:bg-secondary/80 border',
-        ghost: 'hover:text-primary-foreground/50',
-        link: 'hover:underline',
-        icon: 'bg-transparent rounded text-muted-foreground hover:text-foreground',
+          'border border-white/15 hover:glass-light hover-lift',
+        secondary: 'glass-light text-secondary-foreground hover:glass-medium hover-lift',
+        ghost: 'hover:text-foreground hover:bg-white/5',
+        link: 'hover:underline text-brand-cyan',
+        icon: 'bg-transparent rounded text-muted-foreground hover:text-foreground hover:bg-white/5',
       },
       size: {
         default: 'h-10 px-4 py-2',
