@@ -5,7 +5,7 @@ export const statusLabels: Record<TaskStatus, string> = {
   inprogress: 'In Progress',
   inreview: 'In Review',
   done: 'Done',
-  cancelled: 'Cancelled',
+  archived: 'Archived',
   agent: 'Agent',
 };
 
@@ -14,6 +14,6 @@ export const statusBoardColors: Record<TaskStatus, string> = {
   inprogress: '--info',
   inreview: '--warning',
   done: '--success',
-  cancelled: '--destructive',
+  archived: '--destructive',
   agent: '--purple-500',
 };

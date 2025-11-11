@@ -42,7 +42,7 @@ export type UpdateTag = { tag_name: string | null, content: string | null, };
 
 export type TagSearchParams = { search: string | null, };
 
-export type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelled" | "agent";
+export type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "archived" | "agent";
 
 export type Task = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, dev_server_id: string | null, created_at: string, updated_at: string, };
 
