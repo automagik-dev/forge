@@ -54,6 +54,7 @@ import TaskPanel from '@/components/panels/TaskPanel';
 import TodoPanel from '@/components/tasks/TodoPanel';
 import { NewCard } from '@/components/ui/new-card';
 import { ChatPanelActions } from '@/components/panels/ChatPanelActions';
+import { MobileTasksList } from '@/components/mobile/MobileTasksList';
 
 type Task = TaskWithAttemptStatus;
 
@@ -654,6 +655,14 @@ export function ProjectTasks() {
             </p>
           </CardContent>
         </Card>
+      </div>
+    ) : isMobile ? (
+      <div className="w-full h-full overflow-y-auto mobile-scroll">
+        <MobileTasksList
+          tasks={filteredTasks}
+          onTaskClick={handleViewTaskDetails}
+          selectedTaskId={selectedTask?.id}
+        />
       </div>
     ) : (
       <div className="w-full h-full overflow-x-auto overflow-y-auto overscroll-x-contain touch-pan-y">
