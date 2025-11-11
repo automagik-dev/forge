@@ -216,6 +216,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
+name = "android_log-sys"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "84521a3cf562bc62942e294181d9eef17eb38ceb8c68677bc49f144e4c3d4f8d"
+
+[[package]]
+name = "android_logger"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05b07e8e73d720a1f2e4b6014766e6039fd2e96a4fa44e2a78d0e1fa2ff49826"
+dependencies = [
+ "android_log-sys",
+ "env_filter",
+ "log",
+]
+
+[[package]]
 name = "android_system_properties"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1400,6 +1417,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "env_filter"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1bf3c259d255ca70051b30e2e95b5446cdb8949ac4cd22c0d7fd634d89f568e2"
+dependencies = [
+ "log",
+ "regex",
+]
+
+[[package]]
 name = "env_home"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1621,8 +1648,9 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "forge-app"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
+ "android_logger",
  "anyhow",
  "axum",
  "base64 0.22.1",
@@ -1638,6 +1666,7 @@ dependencies = [
  "jni",
  "json-patch",
  "local-deployment",
+ "log",
  "mime_guess",
  "notify 6.1.1",
  "regex",
@@ -1661,7 +1690,7 @@ dependencies = [
 
 [[package]]
 name = "forge-config"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1678,7 +1707,7 @@ dependencies = [
 
 [[package]]
 name = "forge-omni"
-version = "0.6.1"
+version = "0.6.3"
 dependencies = [
  "anyhow",
  "reqwest 0.11.27",
