@@ -9,6 +9,34 @@
   /* Light defaults */
   :root {
     color-scheme: light;
+    
+    /* Mobile-specific variables */
+    --sat: env(safe-area-inset-top);
+    --sab: env(safe-area-inset-bottom);
+    --sal: env(safe-area-inset-left);
+    --sar: env(safe-area-inset-right);
+    
+    --mobile-header-height: 56px;
+    --mobile-bottom-nav-height: 64px;
+    --mobile-input-bar-height: 56px;
+    
+    --touch-target-min: 44px;
+    --touch-target-comfortable: 48px;
+    
+    --mobile-text-xs: 12px;
+    --mobile-text-sm: 14px;
+    --mobile-text-base: 16px;
+    --mobile-text-lg: 18px;
+    --mobile-text-xl: 20px;
+    --mobile-text-2xl: 24px;
+    
+    --z-mobile-content: 1;
+    --z-mobile-header: 10;
+    --z-mobile-bottom-nav: 20;
+    --z-mobile-fab: 30;
+    --z-mobile-sheet: 40;
+    --z-mobile-modal: 50;
+    --z-mobile-toast: 60;
     --_background: 48 33% 97%;
     --_foreground: 222.2 84% 4.9%;
     --_primary: var(--_muted);
@@ -175,6 +203,7 @@
 
   body {
     @apply bg-background text-foreground font-chivo-mono;
+    overscroll-behavior-y: contain;
   }
 
   *:focus {
@@ -183,6 +212,20 @@
 
   .logo {
     @apply fill-foreground;
+  }
+  
+  /* Prevent text size adjustment on orientation change */
+  html {
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  
+  /* Mobile viewport height fix */
+  @supports (height: 100dvh) {
+    .h-screen-mobile {
+      height: 100dvh;
+    }
   }
 }
 
@@ -262,6 +305,59 @@
 
   .ansi-underline {
     @apply underline;
+  }
+}
+
+@layer utilities {
+  /* Safe area utilities */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+  
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  /* Touch target utilities */
+  .touch-target {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+  }
+  
+  .touch-target-comfortable {
+    min-width: var(--touch-target-comfortable);
+    min-height: var(--touch-target-comfortable);
+  }
+  
+  /* Mobile-specific utilities */
+  .mobile-header {
+    height: var(--mobile-header-height);
+  }
+  
+  .mobile-bottom-nav {
+    height: var(--mobile-bottom-nav-height);
+  }
+  
+  /* Disable text selection on mobile UI elements */
+  .no-select-mobile {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Touch-friendly scrolling */
+  .mobile-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
   }
 }
 

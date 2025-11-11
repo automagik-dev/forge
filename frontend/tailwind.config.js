@@ -35,6 +35,41 @@ export default {
       },
     },
     extend: {
+      screens: {
+        'xs': '375px',   // Small phones (iPhone SE)
+        'sm': '640px',   // Large phones
+        'md': '768px',   // Tablets (portrait)
+        'lg': '1024px',  // Tablets (landscape)
+        'xl': '1280px',  // Desktop
+        '2xl': '1536px', // Large desktop
+        
+        'mobile': { 'max': '767px' },      // Mobile only
+        'tablet': { 'min': '768px', 'max': '1023px' }, // Tablet only
+        'desktop': { 'min': '1024px' },    // Desktop and up
+        
+        'h-sm': { 'raw': '(max-height: 667px)' },  // Short screens
+        'h-md': { 'raw': '(min-height: 668px) and (max-height: 844px)' },
+        'h-lg': { 'raw': '(min-height: 845px)' }   // Tall screens
+      },
+      
+      spacing: {
+        'safe-top': 'env(safe-area-inset-top)',
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
+      },
+      
+      height: {
+        'screen-safe': 'calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom))',
+        'dvh': '100dvh', // Dynamic viewport height
+      },
+      
+      minHeight: {
+        'touch': '44px', // iOS minimum touch target
+      },
+      minWidth: {
+        'touch': '44px',
+      },
       backgroundImage: {
         'diagonal-lines': `
           repeating-linear-gradient(-45deg, hsl(var(--border) / 0.4) 0 2px, transparent 1px 12px),
