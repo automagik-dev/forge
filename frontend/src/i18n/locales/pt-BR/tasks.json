@@ -228,6 +228,37 @@
     "actions": {
       "title": "Git Actions",
       "prMerged": "PR #{{number}} is already merged"
+    },
+    "tooltips": {
+      "merge": {
+        "simple": "Mesclar alterações no branch de destino",
+        "title": "Mesclar e completar tarefa",
+        "description": "Isso mesclará suas alterações do branch da tarefa no branch de destino. Seu trabalho será integrado e a tarefa pode ser marcada como concluída.",
+        "technical": "Backend: operação git merge",
+        "conflictWarning": "Tanto você quanto o branch de destino modificaram os mesmos arquivos. Resolução manual de conflitos pode ser necessária."
+      },
+      "createPr": {
+        "simple": "Criar pull request",
+        "title": "Criar pull request e compartilhar trabalho",
+        "description": "Isso enviará suas alterações para o repositório remoto e criará um pull request para revisão da equipe.",
+        "steps": "1. Enviar para branch remoto, 2. Criar PR com detalhes da tarefa, 3. Notificar equipe",
+        "technical": "Backend: git push + API do GitHub",
+        "conflictWarning": "Suas alterações entram em conflito com o branch de destino. Resolva os conflitos antes de criar o PR."
+      },
+      "push": {
+        "simple": "Enviar alterações para o PR",
+        "title": "Enviar atualizações para o pull request",
+        "description": "Isso enviará suas últimas alterações para o pull request existente.",
+        "technical": "Backend: git push",
+        "conflictWarning": "Suas alterações entram em conflito com o branch de destino. Resolva os conflitos antes de enviar."
+      },
+      "rebase": {
+        "simple": "Fazer rebase no branch de destino",
+        "title": "Fazer rebase e atualizar com as últimas alterações",
+        "description": "Isso fará rebase do seu branch de tarefa no último branch de destino. Seus commits serão reproduzidos em cima das últimas alterações do branch de destino.",
+        "technical": "Backend: git fetch + git rebase",
+        "conflictWarning": "O branch de destino tem alterações que podem entrar em conflito com seu trabalho. Você pode precisar resolver conflitos durante o rebase."
+      }
     }
   },
   "createAttemptDialog": {

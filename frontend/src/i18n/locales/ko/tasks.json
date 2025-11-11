@@ -120,6 +120,37 @@
       "title": "Git 작업",
       "prMerged": "PR #{{number}}은(는) 이미 병합되었습니다"
     },
+    "tooltips": {
+      "merge": {
+        "simple": "대상 브랜치에 변경사항 병합",
+        "title": "병합하고 작업 완료",
+        "description": "작업 브랜치에서 대상 브랜치로 변경사항을 병합합니다. 작업이 통합되고 작업을 완료로 표시할 수 있습니다.",
+        "technical": "백엔드: git merge 작업",
+        "conflictWarning": "귀하와 대상 브랜치 모두 동일한 파일을 수정했습니다. 수동 충돌 해결이 필요할 수 있습니다."
+      },
+      "createPr": {
+        "simple": "풀 리퀘스트 생성",
+        "title": "풀 리퀘스트를 생성하고 작업 공유",
+        "description": "원격 저장소에 변경사항을 푸시하고 팀 검토를 위한 풀 리퀘스트를 생성합니다.",
+        "steps": "1. 원격 브랜치에 푸시, 2. 작업 세부정보로 PR 생성, 3. 팀에 알림",
+        "technical": "백엔드: git push + GitHub API",
+        "conflictWarning": "변경사항이 대상 브랜치와 충돌합니다. PR을 생성하기 전에 충돌을 해결하세요."
+      },
+      "push": {
+        "simple": "PR에 변경사항 푸시",
+        "title": "풀 리퀘스트에 업데이트 푸시",
+        "description": "기존 풀 리퀘스트에 최신 변경사항을 푸시합니다.",
+        "technical": "백엔드: git push",
+        "conflictWarning": "변경사항이 대상 브랜치와 충돌합니다. 푸시하기 전에 충돌을 해결하세요."
+      },
+      "rebase": {
+        "simple": "대상 브랜치로 리베이스",
+        "title": "리베이스하고 최신 변경사항으로 업데이트",
+        "description": "최신 대상 브랜치로 작업 브랜치를 리베이스합니다. 커밋이 대상 브랜치의 최신 변경사항 위에 재생됩니다.",
+        "technical": "백엔드: git fetch + git rebase",
+        "conflictWarning": "대상 브랜치에 작업과 충돌할 수 있는 변경사항이 있습니다. 리베이스 중 충돌을 해결해야 할 수 있습니다."
+      }
+    },
     "states": {
       "createPr": "PR 생성",
       "creating": "생성 중...",
