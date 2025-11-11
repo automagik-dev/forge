@@ -18,8 +18,18 @@ static SERVER_HANDLE: Mutex<Option<tokio::task::JoinHandle<()>>> = Mutex::new(No
 /// Initialize the Tokio runtime (called once)
 fn get_runtime() -> &'static Runtime {
     RUNTIME.get_or_init(|| {
-        // Initialize tracing for Android (once)
+        // Initialize android_logger for Android (once)
+        #[cfg(target_os = "android")]
+        android_logger::init_once(
+            android_logger::Config::default()
+                .with_max_level(log::LevelFilter::Info)
+                .with_tag("ForgeApp"),
+        );
+
+        // Initialize tracing subscriber
+        #[cfg(not(target_os = "android"))]
         tracing_subscriber::fmt::init();
+
         Runtime::new().expect("Failed to create Tokio runtime")
     })
 }
@@ -29,6 +39,7 @@ fn get_runtime() -> &'static Runtime {
 /// This function blocks until the server successfully binds to the port,
 /// preventing race conditions where the WebView tries to connect before
 /// the server is ready.
+///
 #[cfg(feature = "android")]
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
@@ -44,36 +55,48 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
         .and_then(|p| p.parse().ok())
         .unwrap_or(8887);
 
+    tracing::info!("Starting Forge server on port {}", port);
+
     // Create oneshot channel to signal when server is ready
     let (ready_tx, ready_rx) = oneshot::channel();
 
     // Spawn server in background
     let handle = runtime.spawn(async move {
         if let Err(e) = crate::run_server_with_readiness(Some(ready_tx)).await {
-            eprintln!("Server error: {}", e);
+            tracing::error!("Server error: {}", e);
         }
     });
 
     // Block until server is ready to accept connections
-    runtime.block_on(async {
+    let server_ready = runtime.block_on(async {
         match ready_rx.await {
-            Ok(_) => tracing::info!("Server ready on port {}", port),
-            Err(_) => eprintln!("Server failed to signal readiness"),
+            Ok(_) => {
+                tracing::info!("Server ready on port {}", port);
+                true
+            }
+            Err(_) => {
+                tracing::error!(
+                    "Server failed to signal readiness - server may have crashed during startup"
+                );
+                false
+            }
         }
     });
 
-    *SERVER_HANDLE.lock().unwrap() = Some(handle);
-
-    port as jint
+    if server_ready {
+        *SERVER_HANDLE.lock().unwrap() = Some(handle);
+        port as jint
+    } else {
+        handle.abort();
+        tracing::error!("Returning error code -1 to indicate server startup failure");
+        -1
+    }
 }
 
 /// Stop the Forge server
 #[cfg(feature = "android")]
 #[unsafe(no_mangle)]
-pub extern "C" fn Java_ai_namastex_forge_MainActivity_stopServer(
-    _env: JNIEnv,
-    _class: JClass,
-) {
+pub extern "C" fn Java_ai_namastex_forge_MainActivity_stopServer(_env: JNIEnv, _class: JClass) {
     if let Some(handle) = SERVER_HANDLE.lock().unwrap().take() {
         handle.abort();
     }
