@@ -87,6 +87,10 @@ export default {
         xl: ['1.125rem', { lineHeight: '1.75rem' }],  // 18px / 28px
       },
       colors: {
+        brand: {
+          magenta: "var(--color-brand-magenta)",
+          cyan: "var(--color-brand-cyan)",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -161,6 +165,9 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
+        'primary': ['var(--font-primary)', 'system-ui', '-apple-system', 'sans-serif'],
+        'secondary': ['var(--font-secondary)', 'system-ui', '-apple-system', 'sans-serif'],
+        'mono': ['var(--font-mono)', 'Courier New', 'monospace'],
         'chivo-mono': ['Chivo Mono', 'Noto Emoji', 'monospace'],
       },
       keyframes: {

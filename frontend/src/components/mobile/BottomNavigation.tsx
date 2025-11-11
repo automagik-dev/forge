@@ -54,7 +54,7 @@ export function BottomNavigation({
     <nav
       className={cn(
         'fixed bottom-0 left-0 right-0 z-[var(--z-mobile-bottom-nav)]',
-        'bg-[#2A2435] border-t border-[#3E3850]',
+        'glass-medium border-t border-white/15',
         'pb-safe',
         className
       )}
@@ -70,18 +70,23 @@ export function BottomNavigation({
               disabled={tab.disabled}
               className={cn(
                 'flex flex-col items-center justify-center',
-                'flex-1 h-full',
+                'flex-1 h-full relative',
                 'touch-target-comfortable',
-                'transition-colors duration-200',
+                'transition-all duration-200',
                 'no-select-mobile',
-                isActive && 'text-[#E91EFF]',
-                !isActive && 'text-[#A8A8B8]',
+                'font-secondary',
+                isActive && 'text-brand-magenta',
+                !isActive && 'text-secondary-foreground hover:text-foreground',
                 tab.disabled && 'opacity-50 cursor-not-allowed'
               )}
               aria-label={tab.label}
               aria-current={isActive ? 'page' : undefined}
             >
-              <div className="relative">
+              {isActive && (
+                <div className="absolute inset-0 magical-gradient opacity-20 rounded-lg mx-2" />
+              )}
+              
+              <div className="relative z-10">
                 <div className={cn(
                   'w-6 h-6 flex items-center justify-center',
                   'transition-transform duration-200',
@@ -108,7 +113,7 @@ export function BottomNavigation({
               </div>
               
               <span className={cn(
-                'text-xs font-medium mt-1',
+                'text-xs font-medium mt-1 relative z-10',
                 'transition-all duration-200',
                 isActive && 'font-semibold'
               )}>

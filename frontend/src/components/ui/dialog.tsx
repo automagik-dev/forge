@@ -116,7 +116,7 @@ const Dialog = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          'relative z-[9999] grid w-full max-w-lg gap-4 bg-primary p-6 shadow-lg duration-200 sm:rounded-lg my-8',
+          'relative z-[9999] grid w-full max-w-lg gap-4 glass-heavy p-6 shadow-xl duration-200 sm:rounded-xl my-8 font-secondary',
           className
         )}
         {...props}
@@ -158,7 +158,7 @@ const DialogTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      'text-lg font-semibold leading-none tracking-tight',
+      'text-lg font-semibold leading-none tracking-tight font-primary',
       className
     )}
     {...props}
