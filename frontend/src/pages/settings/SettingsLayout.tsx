@@ -88,7 +88,7 @@ export function SettingsLayout() {
                           'hover:text-accent-foreground',
                           isActive
                             ? 'text-primary-foreground'
-                            : 'text-secondary-foreground'
+                            : 'text-foreground/80 dark:text-secondary-foreground'
                         )
                       }
                     >

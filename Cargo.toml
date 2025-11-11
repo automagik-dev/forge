@@ -1,14 +1,6 @@
 [workspace]
 resolver = "2"
 members = [
-    # Upstream crates
-    "upstream/crates/server",
-    "upstream/crates/db",
-    "upstream/crates/executors",
-    "upstream/crates/services",
-    "upstream/crates/utils",
-    "upstream/crates/local-deployment",
-    "upstream/crates/deployment",
     # Forge extension crates
     "forge-extensions/config",
     "forge-extensions/omni",

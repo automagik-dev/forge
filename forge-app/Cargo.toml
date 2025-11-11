@@ -48,14 +48,14 @@ sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "migra
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 
-# Upstream crate dependencies (for composition)
-db = { path = "../upstream/crates/db" }
-services = { path = "../upstream/crates/services" }
-server = { path = "../upstream/crates/server" }
-deployment = { path = "../upstream/crates/deployment" }
-local-deployment = { path = "../upstream/crates/local-deployment" }
-executors = { path = "../upstream/crates/executors" }
-utils = { path = "../upstream/crates/utils" }
+# Upstream crate dependencies (from git)
+db = { git = "https://github.com/namastexlabs/forge-core.git", rev = "89b83cc4d57a629d628e0dd7587b385b810e80cf" }
+services = { git = "https://github.com/namastexlabs/forge-core.git", rev = "89b83cc4d57a629d628e0dd7587b385b810e80cf" }
+server = { git = "https://github.com/namastexlabs/forge-core.git", rev = "89b83cc4d57a629d628e0dd7587b385b810e80cf" }
+deployment = { git = "https://github.com/namastexlabs/forge-core.git", rev = "89b83cc4d57a629d628e0dd7587b385b810e80cf" }
+local-deployment = { git = "https://github.com/namastexlabs/forge-core.git", rev = "89b83cc4d57a629d628e0dd7587b385b810e80cf" }
+executors = { git = "https://github.com/namastexlabs/forge-core.git", rev = "89b83cc4d57a629d628e0dd7587b385b810e80cf" }
+utils = { git = "https://github.com/namastexlabs/forge-core.git", rev = "89b83cc4d57a629d628e0dd7587b385b810e80cf" }
 
 # Forge extensions
 forge-omni = { path = "../forge-extensions/omni" }

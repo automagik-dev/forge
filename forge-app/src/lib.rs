@@ -33,17 +33,16 @@ fn find_process_using_port(port: u16, _host: &str) -> Option<String> {
     use std::process::Command;
 
     // Try using ss command first (more modern)
-    if let Ok(output) = Command::new("ss").args(["-tulpn"]).output() {
-        if let Ok(stdout) = String::from_utf8(output.stdout) {
-            for line in stdout.lines() {
-                if line.contains(&format!(":{}", port)) {
-                    // Extract PID from ss output (format: users:(("process",pid=12345,fd=3)))
-                    if let Some(pid_start) = line.find("pid=") {
-                        let pid_str = &line[pid_start + 4..];
-                        if let Some(pid_end) = pid_str.find(',') {
-                            let pid = &pid_str[..pid_end];
-                            return Some(format!("Process with PID {} is using this port", pid));
-                        }
+    if let Ok(output) = Command::new("ss").args(["-tulpn"]).output()
+        && let Ok(stdout) = String::from_utf8(output.stdout) {
+        for line in stdout.lines() {
+            if line.contains(&format!(":{}", port)) {
+                // Extract PID from ss output (format: users:(("process",pid=12345,fd=3)))
+                if let Some(pid_start) = line.find("pid=") {
+                    let pid_str = &line[pid_start + 4..];
+                    if let Some(pid_end) = pid_str.find(',') {
+                        let pid = &pid_str[..pid_end];
+                        return Some(format!("Process with PID {} is using this port", pid));
                     }
                 }
             }
@@ -54,12 +53,10 @@ fn find_process_using_port(port: u16, _host: &str) -> Option<String> {
     if let Ok(output) = Command::new("lsof")
         .args(["-i", &format!(":{}", port), "-t"])
         .output()
-    {
-        if let Ok(pid_str) = String::from_utf8(output.stdout) {
-            let pid = pid_str.trim();
-            if !pid.is_empty() {
-                return Some(format!("Process with PID {} is using this port", pid));
-            }
+        && let Ok(pid_str) = String::from_utf8(output.stdout) {
+        let pid = pid_str.trim();
+        if !pid.is_empty() {
+            return Some(format!("Process with PID {} is using this port", pid));
         }
     }
 

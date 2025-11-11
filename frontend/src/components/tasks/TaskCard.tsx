@@ -221,7 +221,7 @@ export function TaskCard({
       <div className="flex flex-wrap gap-1.5 items-center mt-2">
         {/* Executor Badge */}
         {task.executor && (
-          <Badge variant="secondary" className="text-xs gap-1 h-5 px-1.5">
+          <Badge variant="secondary" className="text-xs gap-1 h-5 px-1.5 bg-secondary/70 dark:bg-secondary text-foreground dark:text-secondary-foreground">
             <Bot className="h-3 w-3" />
             <span>{task.executor}</span>
           </Badge>
