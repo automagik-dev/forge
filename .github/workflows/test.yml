@@ -18,8 +18,6 @@ jobs:
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Setup Node
         uses: ./.github/actions/setup-node
@@ -64,4 +62,4 @@ jobs:
           cargo fmt --all -- --check
           npm run generate-types:check
           cargo test --workspace
-          cargo clippy --all --all-targets -- -D warnings  
+          cargo clippy --all --all-targets -- -D warnings    

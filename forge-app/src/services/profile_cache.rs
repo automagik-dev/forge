@@ -244,6 +244,12 @@ pub struct ProfileCacheManager {
     project_paths: Arc<RwLock<HashMap<Uuid, PathBuf>>>,
 }
 
+impl Default for ProfileCacheManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProfileCacheManager {
     pub fn new() -> Self {
         Self {

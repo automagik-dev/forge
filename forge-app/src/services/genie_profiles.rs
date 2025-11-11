@@ -395,13 +395,13 @@ impl GenieProfileLoader {
         // 1. Scan global agents (.genie/agents/)
         let global_agents_dir = genie_root.join("agents");
         if global_agents_dir.exists() {
-            files.extend(self.scan_directory(&global_agents_dir, None, AgentType::Agent)?);
+            files.extend(Self::scan_directory(&global_agents_dir, None, AgentType::Agent)?);
         }
 
         // 2. Scan collective agents
         for collective in collectives {
             if collective.agents_dir.exists() {
-                files.extend(self.scan_directory(
+                files.extend(Self::scan_directory(
                     &collective.agents_dir,
                     Some(collective.id.clone()),
                     AgentType::Agent,
@@ -412,7 +412,7 @@ impl GenieProfileLoader {
         // 3. Scan neurons (.genie/neurons/)
         let neurons_dir = genie_root.join("neurons");
         if neurons_dir.exists() {
-            files.extend(self.scan_directory(&neurons_dir, None, AgentType::Neuron)?);
+            files.extend(Self::scan_directory(&neurons_dir, None, AgentType::Neuron)?);
         }
 
         Ok(files)
@@ -420,7 +420,6 @@ impl GenieProfileLoader {
 
     /// Scan a directory for .md files recursively
     fn scan_directory(
-        &self,
         dir: &Path,
         collective: Option<String>,
         agent_type: AgentType,
@@ -461,7 +460,7 @@ impl GenieProfileLoader {
                 }
 
                 // Recursively scan subdirectories
-                files.extend(self.scan_directory(&path, collective.clone(), agent_type.clone())?);
+                files.extend(Self::scan_directory(&path, collective.clone(), agent_type.clone())?);
                 continue;
             }
 
@@ -584,7 +583,7 @@ impl GenieProfileLoader {
         let body = captures[2].trim().to_string();
 
         let metadata: AgentFrontmatter = serde_yaml::from_str(front_matter_yaml)
-            .context(format!("Failed to parse frontmatter YAML"))?;
+            .context("Failed to parse frontmatter YAML")?;
 
         Ok((metadata, body))
     }

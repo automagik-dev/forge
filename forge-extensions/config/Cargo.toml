@@ -13,7 +13,7 @@ sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "uuid"
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 forge-omni = { path = "../omni" }
-services = { path = "../../upstream/crates/services" }
+services = { git = "https://github.com/namastexlabs/vibe-kanban.git", rev = "89b83cc4d57a629d628e0dd7587b385b810e80cf" }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

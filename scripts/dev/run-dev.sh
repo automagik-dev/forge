@@ -5,30 +5,6 @@ set -euo pipefail
 echo "🚀 Starting Automagik Forge development environment..."
 echo ""
 
-# Check if upstream submodule is initialized
-if [ ! -d "upstream/crates" ]; then
-    echo "⚠️  Upstream submodule not initialized"
-    echo "   Initializing upstream submodule..."
-    git submodule update --init --recursive upstream
-
-    # In git worktrees, submodule checkout can fail
-    # Verify and fix if needed
-    if [ ! -d "upstream/crates" ]; then
-        echo "   Fixing submodule checkout for git worktree..."
-        cd upstream
-        git reset --hard HEAD
-        cd ..
-    fi
-
-    if [ ! -d "upstream/crates" ]; then
-        echo "❌ Failed to initialize upstream submodule"
-        echo "   Please run: git submodule update --init --recursive upstream"
-        exit 1
-    fi
-
-    echo "✅ Upstream submodule initialized"
-    echo ""
-fi
 
 # Get ports from setup script (single atomic call to prevent race conditions)
 SETUP_JSON=$(node scripts/setup-dev-environment.js get 2>/dev/null | tail -1)
@@ -95,7 +71,7 @@ fi
 echo ""
 
 # Note: Database creation and migrations are handled automatically by the Rust app at runtime
-# See: upstream/crates/db/src/lib.rs (create_if_missing + sqlx::migrate!)
+# See: db crate (create_if_missing + sqlx::migrate!)
 
 # Check for pnpm
 if ! command -v pnpm >/dev/null 2>&1; then
@@ -156,7 +132,7 @@ fi
 # Start backend with cargo watch
 # Note: We don't use --env-file flag because it doesn't reliably pass vars to child processes
 # Instead, we rely on the shell environment (already loaded via source .env above)
-cargo watch -w upstream/crates -w forge-app/src -w forge-extensions -x 'run --bin forge-app' &
+cargo watch -w forge-app/src -w forge-extensions -x 'run --bin forge-app' &
 BACKEND_PID=$!
 
 # Function to cleanup on exit

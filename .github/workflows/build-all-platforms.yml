@@ -53,8 +53,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       
       - name: Set zig suffix for cache key
         if: matrix.use-zigbuild
@@ -300,8 +298,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       
       - name: Restore Android CLI binaries cache
         id: cache-android-cli
@@ -549,8 +545,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
