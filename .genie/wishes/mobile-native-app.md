@@ -66,28 +66,42 @@ Tasks Chat New Me
 
 ### Core Views (Mobile Redesign)
 
-#### 1. **Kanban Board → Session List View**
+#### 1. **Kanban Board → Task List View (Forge Workflow)**
 ```
 ┌────────────────────────────────┐
-│ All | Favorites | Scheduled    │
+│ All | WISH | FORGE | REVIEW | DONE │
 ├────────────────────────────────┤
-│ 🎯 Task Title              9/3 │
-│    Description preview...      │
+│ ✨ WISH  Task Title            │
+│         Planning phase...      │
 ├────────────────────────────────┤
-│ ⚙️  Running Task          4/12 │
-│    [Progress animation]        │
+│ 🔨 FORGE Running Task     4/12 │
+│         [Spinning Hammer]      │
 ├────────────────────────────────┤
-│ ✅ Completed Task         3/3  │
-│    Last message preview...     │
+│ 🎯 REVIEW Task Under Review    │
+│         Validation phase...    │
+├────────────────────────────────┤
+│ ✅ DONE  Completed Task        │
+│         Task completed!        │
 └────────────────────────────────┘
 ```
-- **Vertical list of session cards** (like ChatGPT, Manus)
-- Each task = session with icon, title, preview, progress
-- Status icons: 🎯 Wish, ⚙️ Forge (animated), ✅ Review/Done
+- **Vertical list of Task cards** (like ChatGPT, Manus)
+- Each card represents a Task with current status
+- **Forge Workflow**: WISH → FORGE → REVIEW → DONE
+  - **WISH** (`status: "todo"`): Planning phase - human and AI interact until approved
+  - **FORGE** (`status: "inprogress"`): Execution phase - TaskAttempts run, shows progress (e.g., "4/12" ExecutionProcesses)
+  - **REVIEW** (`status: "inreview"`): Validation phase - results reviewed and approved
+  - **DONE** (`status: "done"`): Task completed
+- Status icons with animations (Lucide icons):
+  - `Sparkles` WISH (planning)
+  - `Hammer` FORGE (spinning when TaskAttempt is running)
+  - `Target` REVIEW (validation)
+  - `CheckCircle2` DONE (completed)
+- Progress indicator (FORGE only): "4/12" shows ExecutionProcess count
+- Approval gates between stages (WISH→FORGE, FORGE→REVIEW, REVIEW→DONE)
 - Swipe left on card → Delete
 - Tap card → Open task details
 - Long press → Menu
-- Filter tabs: All, Favorites, Scheduled
+- Filter tabs: All, WISH, FORGE, REVIEW, DONE, Favorites, Scheduled
 
 #### 2. **Chat View → Full-Screen**
 ```

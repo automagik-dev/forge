@@ -1,7 +1,7 @@
-# Session Card Component Specification
+# Task Card Component Specification (Forge Workflow)
 
-**Component:** TaskSessionCard  
-**Purpose:** Display tasks as session cards in a vertical list (ChatGPT/Manus-style)  
+**Component:** TaskCard  
+**Purpose:** Display Forge tasks in a vertical list with Forge workflow status (WISH → FORGE → REVIEW → DONE)  
 **Status:** Planning Complete  
 **Last Updated:** 2025-11-11
 
@@ -9,23 +9,29 @@
 
 ## Overview
 
-The Session Card component displays each task as a familiar "session" card in a vertical scrollable list, similar to ChatGPT, Claude, Manus, and other AI assistant apps. This design pattern is more intuitive for mobile users than traditional Kanban columns.
+The Task Card component displays each Forge task in a vertical scrollable list, similar to ChatGPT, Claude, and Manus mobile apps. This design pattern is more intuitive for mobile users than traditional horizontal Kanban columns.
 
 ### Design Philosophy
 
-**Why Session Cards?**
+**Why Task Cards (Not Kanban Columns)?**
 - Users are already familiar with this pattern from AI assistants
 - Vertical scrolling is natural on mobile (vs horizontal column switching)
-- Each task becomes a "conversation" or "session" with the AI agent
-- Progress indicators show task advancement clearly
-- Status icons provide instant visual feedback
+- Each task card shows its current Forge workflow status (WISH, FORGE, REVIEW, DONE)
+- Progress indicators show TaskAttempt execution progress in FORGE phase
+- Status icons provide instant visual feedback with animations
 
 **Inspiration:**
 - ChatGPT mobile app (conversation list)
 - Claude mobile app (chat history)
-- Manus app (task sessions with progress indicators)
+- Manus app (task list with progress indicators)
 - Linear mobile app (issue list)
 - Notion mobile app (page list)
+
+**Forge Workflow:**
+- **WISH** (`status: "todo"`): Planning phase - human and AI interact until task is ready and approved
+- **FORGE** (`status: "inprogress"`): Execution phase - TaskAttempts are created and run
+- **REVIEW** (`status: "inreview"`): Validation phase - results are reviewed and approved
+- **DONE** (`status: "done"`): Task completed
 
 ---
 
@@ -35,90 +41,115 @@ The Session Card component displays each task as a familiar "session" card in a 
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ ┌────┐  Task Title                      9/12 ▶ │
-│ │ 🎯 │  Description preview or last      │
-│ └────┘  message from agent...            │
-│         ⏱️ 2h ago • 📊 In Progress        │
+│ ┌────┐  Task Title                      4/12 ▶ │
+│ │ 🔨 │  FORGE • Running                  │
+│ └────┘  Description preview...            │
+│         ⏱️ 2h ago • Approve to Review     │
 └─────────────────────────────────────────────────┘
 ```
+*Note: 🔨 represents the Lucide `Hammer` icon*
 
 ### Component Hierarchy
 
 ```
-TaskSessionCard
+TaskCard
 ├── StatusIcon (left)
-│   ├── Static icon (Wish, Review, Done)
-│   └── Animated icon (Forge - running)
+│   ├── Static icon (WISH, REVIEW, DONE)
+│   └── Animated icon (FORGE - spinning when running)
 ├── Content (center)
 │   ├── Title
+│   ├── Status Badge (WISH, FORGE, REVIEW, DONE)
 │   ├── Description/Preview
-│   └── Metadata (time, status, tags)
+│   └── Metadata (time, approval state, tags)
 └── Progress (right)
-    ├── Step counter (e.g., "9/12")
+    ├── Step counter (FORGE only: "4/12" ExecutionProcesses)
     └── Chevron icon
 ```
 
 ---
 
-## Status Icons
+## Status Icons (Forge Workflow)
 
 ### Icon Mapping
 
 ```typescript
-export const TaskStatusIcons = {
-  // Wish Phase (Planning)
-  wish: {
-    icon: '🎯',
+import { Sparkles, Hammer, Target, CheckCircle2, XCircle, AlertTriangle, type LucideIcon } from 'lucide-react';
+
+export const ForgeTaskStatusIcons: Record<TaskStatus, {
+  icon: LucideIcon;
+  color: string;
+  animation: 'spin' | 'pulse' | 'checkmark' | null;
+  label: string;
+  description: string;
+}> = {
+  // WISH Phase (Planning) - status: "todo"
+  todo: {
+    icon: Sparkles,
     color: '#4A9EFF', // Blue
     animation: null,
-    label: 'Wish',
+    label: 'WISH',
+    description: 'Planning phase - human and AI interact until approved',
   },
   
-  // Forge Phase (Execution)
-  forge: {
-    icon: '⚙️',
+  // FORGE Phase (Execution) - status: "inprogress"
+  inprogress: {
+    icon: Hammer,
     color: '#00D9FF', // Cyan
-    animation: 'spin', // Rotating gear animation
-    label: 'Forge',
+    animation: 'spin', // Rotating hammer when TaskAttempt is running
+    label: 'FORGE',
+    description: 'Execution phase - TaskAttempts are running',
   },
   
-  // Review Phase (Validation)
-  review: {
-    icon: '👁️',
+  // REVIEW Phase (Validation) - status: "inreview"
+  inreview: {
+    icon: Target,
     color: '#FFD700', // Yellow
     animation: null,
-    label: 'Review',
+    label: 'REVIEW',
+    description: 'Validation phase - results are reviewed and approved',
   },
   
-  // Completed
-  completed: {
-    icon: '✅',
+  // DONE (Completed) - status: "done"
+  done: {
+    icon: CheckCircle2,
     color: '#00FF88', // Green
-    animation: 'checkmark', // Scale-in animation
-    label: 'Completed',
+    animation: 'checkmark', // Scale-in animation on completion
+    label: 'DONE',
+    description: 'Task completed',
   },
   
-  // Blocked/Error
-  blocked: {
-    icon: '⚠️',
-    color: '#FF4D6A', // Red
-    animation: 'pulse', // Pulsing animation
-    label: 'Blocked',
-  },
-  
-  // Paused
-  paused: {
-    icon: '⏸️',
+  // Cancelled - status: "cancelled"
+  cancelled: {
+    icon: XCircle,
     color: '#A8A8B8', // Gray
     animation: null,
-    label: 'Paused',
+    label: 'CANCELLED',
+    description: 'Task cancelled',
   },
+  
+  // Agent - status: "agent" (background execution)
+  agent: {
+    icon: Sparkles,
+    color: '#9D4EDD', // Purple
+    animation: 'pulse',
+    label: 'AGENT',
+    description: 'Background agent execution',
+  },
+};
+
+// Blocked/Error state (overlays on any status when errors exist)
+export const BlockedStatusIcon = {
+  icon: AlertTriangle,
+  color: '#FF4D6A', // Red
+  animation: 'pulse' as const,
+  label: 'BLOCKED',
+  description: 'Task has errors or blockers',
 };
 ```
 
 ### Icon Animations
 
-**Forge (Running):**
+**FORGE (Running Hammer):**
 ```css
 @keyframes spin {
   from { transform: rotate(0deg); }
@@ -129,8 +160,9 @@ export const TaskStatusIcons = {
   animation: spin 2s linear infinite;
 }
 ```
+*Applied to `Hammer` icon when TaskAttempt is running*
 
-**Blocked (Pulsing):**
+**Blocked (Pulsing Alert):**
 ```css
 @keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
@@ -141,8 +173,9 @@ export const TaskStatusIcons = {
   animation: pulse 1.5s ease-in-out infinite;
 }
 ```
+*Applied to `AlertTriangle` icon when task has errors*
 
-**Completed (Checkmark):**
+**DONE (Checkmark Scale-In):**
 ```css
 @keyframes checkmark {
   0% { transform: scale(0); opacity: 0; }
@@ -150,10 +183,11 @@ export const TaskStatusIcons = {
   100% { transform: scale(1); opacity: 1; }
 }
 
-.status-icon-completed {
+.status-icon-done {
   animation: checkmark 0.4s ease-out;
 }
 ```
+*Applied to `CheckCircle2` icon on task completion*
 
 ---
 
