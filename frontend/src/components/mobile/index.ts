@@ -10,6 +10,7 @@ export { MobileLayout, useIsMobile } from './MobileLayout';
 export type { MobileLayoutProps } from './MobileLayout';
 
 export { MobileTasksList } from './MobileTasksList';
+export { TasksListView } from './TasksListView';
 
 export { FloatingActionButton, useFAB } from './FloatingActionButton';
 export type { FloatingActionButtonProps } from './FloatingActionButton';
