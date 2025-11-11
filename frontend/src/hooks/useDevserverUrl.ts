@@ -19,6 +19,15 @@ export const detectDevserverUrl = (line: string): DevserverUrlInfo | null => {
   if (fullUrlMatch) {
     try {
       const parsed = new URL(fullUrlMatch[1]);
+      
+      if (parsed.protocol === 'ws:' || parsed.protocol === 'wss:') {
+        return null;
+      }
+      
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return null;
+      }
+      
       if (
         parsed.hostname === '0.0.0.0' ||
         parsed.hostname === '::' ||
@@ -32,19 +41,8 @@ export const detectDevserverUrl = (line: string): DevserverUrlInfo | null => {
         scheme: parsed.protocol === 'https:' ? 'https' : 'http',
       };
     } catch {
-      // Ignore invalid URLs and fall through to host:port detection.
+      return null;
     }
-  }
-
-  const hostPortMatch = urlPatterns[1].exec(cleaned);
-  if (hostPortMatch) {
-    const port = Number(hostPortMatch[1]);
-    const scheme = /https/i.test(cleaned) ? 'https' : 'http';
-    return {
-      url: `${scheme}://localhost:${port}`,
-      port,
-      scheme: scheme as 'http' | 'https',
-    };
   }
 
   return null;

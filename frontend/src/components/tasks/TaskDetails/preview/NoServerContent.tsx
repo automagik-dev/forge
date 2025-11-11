@@ -8,9 +8,11 @@ import {
   Save,
   X,
   ExternalLink,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExecutionProcess, Project } from 'shared/types';
 import {
@@ -24,6 +26,7 @@ import {
   COMPANION_INSTALL_TASK_TITLE,
   COMPANION_INSTALL_TASK_DESCRIPTION,
 } from '@/utils/companion-install-task';
+import { validateAndNormalizeUrl } from '@/hooks/useManualPreviewUrl';
 
 interface NoServerContentProps {
   projectHasDevScript: boolean;
@@ -32,6 +35,7 @@ interface NoServerContentProps {
   startDevServer: () => void;
   stopDevServer: () => void;
   project: Project | undefined;
+  onSetManualUrl?: (url: string | null) => void;
 }
 
 export function NoServerContent({
@@ -41,11 +45,14 @@ export function NoServerContent({
   startDevServer,
   stopDevServer,
   project,
+  onSetManualUrl,
 }: NoServerContentProps) {
   const { t } = useTranslation('tasks');
   const [devScriptInput, setDevScriptInput] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isEditingExistingScript, setIsEditingExistingScript] = useState(false);
+  const [manualUrlInput, setManualUrlInput] = useState('');
+  const [manualUrlError, setManualUrlError] = useState<string | null>(null);
   const { system, config } = useUserSystem();
 
   const { updateProject } = useProjectMutations({
@@ -134,6 +141,20 @@ export function NoServerContent({
       executor_profile_id: config.executor_profile,
       base_branch: 'main',
     });
+  };
+
+  const handleSetManualUrl = () => {
+    const result = validateAndNormalizeUrl(manualUrlInput);
+    if (!result.valid) {
+      setManualUrlError(result.error || 'Invalid URL');
+      return;
+    }
+    
+    if (onSetManualUrl && result.url) {
+      onSetManualUrl(result.url);
+      setManualUrlInput('');
+      setManualUrlError(null);
+    }
   };
 
   return (
@@ -263,6 +284,52 @@ export function NoServerContent({
               </div>
             </div>
           )}
+
+          {onSetManualUrl && (
+            <div className="space-y-4 pt-6 border-t border-border">
+              <div>
+                <h4 className="text-sm font-medium text-foreground mb-2">
+                  Manual Preview URL
+                </h4>
+                <p className="text-xs text-muted-foreground mb-3">
+                  If auto-detection fails, you can manually set the preview URL. Enter a full URL or just the port number.
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    value={manualUrlInput}
+                    onChange={(e) => setManualUrlInput(e.target.value)}
+                    placeholder="http://localhost:3000 or just 3000"
+                    className="text-sm font-mono"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSetManualUrl();
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleSetManualUrl}
+                    disabled={!manualUrlInput.trim()}
+                    className="gap-1"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    Set URL
+                  </Button>
+                </div>
+                {manualUrlError && (
+                  <p className="text-xs text-destructive mt-2">{manualUrlError}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4 pt-6 border-t border-border">
+            <Alert>
+              <AlertDescription className="text-sm">
+                <strong>Note:</strong> Each worktree needs its own dependencies installed.
+                If you see errors like "command not found" or npm/pnpm errors, run the install command in the worktree directory.
+                This project uses <code className="px-1 py-0.5 bg-muted rounded text-xs">pnpm</code>, so use <code className="px-1 py-0.5 bg-muted rounded text-xs">pnpm install</code> in the worktree.
+              </AlertDescription>
+            </Alert>
+          </div>
 
           <div className="space-y-4 pt-6 border-t border-border">
             <p className="text-sm text-muted-foreground">
