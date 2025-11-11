@@ -34,11 +34,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build backend
-        run: cargo build --release
+      - name: Install frontend dependencies
+        run: cd frontend && pnpm install
 
       - name: Build frontend
         run: cd frontend && pnpm run build
+
+      - name: Build backend
+        run: cargo build --release
 
       - name: Start backend server
         run: |
@@ -109,11 +112,11 @@ jobs:
           pnpm install
           cd frontend && pnpm install
 
-      - name: Build backend
-        run: cargo build --release
-
       - name: Build frontend
         run: cd frontend && pnpm run build
+
+      - name: Build backend
+        run: cargo build --release
 
       - name: Start servers
         run: |
