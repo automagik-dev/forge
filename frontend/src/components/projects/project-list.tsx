@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { H1, H3 } from '@/components/ui/typography';
 import {
   Select,
   SelectContent,
@@ -155,7 +156,7 @@ export function ProjectList() {
     <div className="space-y-6 p-8 pb-16 md:pb-8 h-full overflow-auto">
       <div className="flex justify-between items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+          <H1 className="tracking-tight">{t('title')}</H1>
           <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
@@ -206,7 +207,7 @@ export function ProjectList() {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
               <Plus className="h-6 w-6" />
             </div>
-            <h3 className="mt-4 text-lg font-semibold">{t('empty.title')}</h3>
+            <H3 className="mt-4">{t('empty.title')}</H3>
             <p className="mt-2 text-sm text-muted-foreground">
               {t('empty.description')}
             </p>

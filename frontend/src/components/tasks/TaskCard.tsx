@@ -5,6 +5,7 @@ import type { TaskWithAttemptStatus } from 'shared/types';
 import { ActionsDropdown } from '@/components/ui/ActionsDropdown';
 import { Button } from '@/components/ui/button';
 import NiceModal from '@ebay/nice-modal-react';
+import { H4 } from '@/components/ui/typography';
 
 type Task = TaskWithAttemptStatus;
 
@@ -71,9 +72,9 @@ export function TaskCard({
         forwardedRef={localRef}
       >
       <div className="flex flex-1 gap-2 items-center min-w-0">
-        <h4 className="flex-1 min-w-0 line-clamp-2 font-light text-sm">
+        <H4 className="flex-1 min-w-0 line-clamp-2 font-light text-sm">
           {task.title}
-        </h4>
+        </H4>
         <div className="flex items-center space-x-1">
           {/* In Progress Spinner */}
           {task.has_in_progress_attempt && (
