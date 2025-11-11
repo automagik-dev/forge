@@ -66,7 +66,6 @@ export function TaskFollowUpSection({
   selectedAttemptId,
   jumpToLogsTab,
   isInChatView = false,
-  taskIdFromUrl: _taskIdFromUrl,
   projectId: projectIdFromUrl,
 }: TaskFollowUpSectionProps) {
   const { t } = useTranslation('tasks');
@@ -646,6 +645,7 @@ export function TaskFollowUpSection({
                     disabled={!isEditable}
                     showLabel={false}
                     showVariantSelector={true}
+                    disableProviderChange={isAttemptRunning}
                   />
                 </div>
 
@@ -690,7 +690,7 @@ export function TaskFollowUpSection({
                               isRetryActive
                             }
                             size="sm"
-                            className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
                           >
                             {isSendingFollowUp ? (
                               <>
@@ -704,7 +704,7 @@ export function TaskFollowUpSection({
                                   ? t('followUp.resolveConflicts')
                                   : t('followUp.send')}
                                 <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-primary-foreground/20 rounded font-mono">
-                                  {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}⏎
+                                  ⏎
                                 </kbd>
                               </>
                             )}
@@ -715,7 +715,7 @@ export function TaskFollowUpSection({
                             {conflictResolutionInstructions
                               ? t('followUp.resolveConflicts')
                               : t('followUp.send')}{' '}
-                            ({navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Enter)
+                            (Enter)
                           </p>
                         </TooltipContent>
                       </Tooltip>

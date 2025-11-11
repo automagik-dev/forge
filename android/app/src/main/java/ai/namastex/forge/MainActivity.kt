@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.WebSettings
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.coroutines.*
 
@@ -45,13 +47,22 @@ class MainActivity : AppCompatActivity() {
 
         // Start Rust server in background
         serverJob = CoroutineScope(Dispatchers.IO).launch {
-            val port = startServer()
-            withContext(Dispatchers.Main) {
-                if (port > 0) {
-                    // Server started successfully, load app
+            try {
+                val port = startServer()
+                
+                if (port <= 0) {
+                    withContext(Dispatchers.Main) {
+                        showServerError()
+                    }
+                    return@launch
+                }
+                
+                withContext(Dispatchers.Main) {
+                    // Load app once server is ready
                     webView.loadUrl("http://127.0.0.1:$port")
-                } else {
-                    // Server failed to start, show error dialog
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
                     showServerError()
                 }
             }

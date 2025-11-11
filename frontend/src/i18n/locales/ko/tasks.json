@@ -249,6 +249,20 @@
     "startAttempt": "Start Attempt",
     "startFirstAttempt": "Start your first attempt to begin working on this task"
   },
+  "taskFormDialog": {
+    "loadingProfiles": "실행자 프로필 로드 중...",
+    "noProfiles": "실행자 프로필이 구성되지 않았습니다. 다음에서 구성하세요",
+    "settingsLink": "설정"
+  },
+  "executorProfileSelector": {
+    "disabledProviderTooltip": "프로세스가 실행 중일 때는 제공자를 변경할 수 없습니다",
+    "provider": "제공자",
+    "agent": "에이전트",
+    "default": "기본값",
+    "selectProviderFirst": "먼저 제공자를 선택하세요",
+    "loadingProviders": "제공자 로딩 중...",
+    "selectProvider": "제공자 선택"
+  },
   "viewProcessesDialog": {
     "title": "Execution processes"
   },

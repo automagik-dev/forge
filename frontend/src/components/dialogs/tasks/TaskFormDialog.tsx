@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { GitBranch as GitBranchIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -64,13 +66,16 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     parentTaskAttemptId,
   }) => {
     const modal = useModal();
+    const { t } = useTranslation('tasks');
     const { createTask, createAndStart, updateTask } =
       useTaskMutations(projectId);
-    const { system } = useUserSystem();
-    const { data: projectProfiles } = useProjectProfiles(projectId);
+    const { profiles: globalProfiles, config } = useUserSystem();
+    const { data: projectProfiles, isLoading: isLoadingProjectProfiles } = useProjectProfiles(projectId);
 
-    // Use project profiles if available, fallback to global profiles
-    const profiles = projectProfiles?.executors || system.profiles?.executors;
+    // Use project profiles if available (synchronized agents), fallback to global profiles
+    const profiles = projectProfiles?.executors || globalProfiles;
+    const hasProfiles = profiles && Object.keys(profiles).length > 0;
+    const isProfilesLoading = isLoadingProjectProfiles && (!globalProfiles || Object.keys(globalProfiles).length === 0);
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -162,9 +167,9 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
         setImages([]);
         setNewlyUploadedImageIds([]);
         setSelectedBranch('');
-        setSelectedExecutorProfile(system.config?.executor_profile || null);
+        setSelectedExecutorProfile(config?.executor_profile || null);
       }
-    }, [task, initialTask, modal.visible, system.config?.executor_profile]);
+    }, [task, initialTask, modal.visible, config?.executor_profile]);
 
     // Fetch branches when dialog opens in create mode
     useEffect(() => {
@@ -244,17 +249,10 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
 
     // Set default executor from config (following TaskDetailsToolbar pattern)
     useEffect(() => {
-      if (system.config?.executor_profile) {
-        setSelectedExecutorProfile(system.config.executor_profile);
+      if (config?.executor_profile) {
+        setSelectedExecutorProfile(config.executor_profile);
       }
-    }, [system.config?.executor_profile]);
-
-    // Set default executor from config (following TaskDetailsToolbar pattern)
-    useEffect(() => {
-      if (system.config?.executor_profile) {
-        setSelectedExecutorProfile(system.config.executor_profile);
-      }
-    }, [system.config?.executor_profile]);
+    }, [config?.executor_profile]);
 
     // Handle image upload success by inserting markdown into description
     const handleImageUploaded = useCallback((image: ImageResponse) => {
@@ -380,7 +378,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
 
         // Use selected executor profile or fallback to config default
         const finalExecutorProfile =
-          selectedExecutorProfile || system.config?.executor_profile;
+          selectedExecutorProfile || config?.executor_profile;
         if (!finalExecutorProfile || !selectedBranch) {
           console.warn(
             `Missing ${
@@ -423,7 +421,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       createAndStart,
       selectedExecutorProfile,
       selectedBranch,
-      system.config?.executor_profile,
+      config?.executor_profile,
       isSubmitting,
       isSubmittingAndStart,
       parentTaskAttemptId,
@@ -603,13 +601,25 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
               {!isEditMode && (
                 <div className="space-y-3 pt-2 border-t">
                   {/* Executor Profile Selector */}
-                  {profiles && (
+                  {hasProfiles ? (
                     <ExecutorProfileSelector
                       profiles={profiles}
                       selectedProfile={selectedExecutorProfile}
                       onProfileSelect={setSelectedExecutorProfile}
                       disabled={isSubmitting || isSubmittingAndStart}
+                      layout="inline"
+                      showLabel={true}
+                      showVariantSelector={true}
                     />
+                  ) : isProfilesLoading ? (
+                    <div className="text-sm text-muted-foreground">
+                      {t('taskFormDialog.loadingProfiles')}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">
+                      {t('taskFormDialog.noProfiles')}{' '}
+                      <Link to="/settings/general" className="underline">{t('taskFormDialog.settingsLink')}</Link>.
+                    </div>
                   )}
 
                   {/* Branch Selector */}

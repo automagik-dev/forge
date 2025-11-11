@@ -38,6 +38,7 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
     const { projectId } = useProject();
     const { t } = useTranslation('tasks');
     const { profiles, config } = useUserSystem();
+    const hasProfiles = profiles && Object.keys(profiles).length > 0;
     const { createAttempt, isCreating, error } = useAttemptCreation({
       taskId,
       onSuccess: (attempt) => {
@@ -142,14 +143,18 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {profiles && (
-              <div className="space-y-2">
-                <ExecutorProfileSelector
-                  profiles={profiles}
-                  selectedProfile={selectedProfile}
-                  onProfileSelect={setSelectedProfile}
-                  showLabel={true}
-                />
+            {hasProfiles ? (
+              <ExecutorProfileSelector
+                profiles={profiles}
+                selectedProfile={selectedProfile}
+                onProfileSelect={setSelectedProfile}
+                showLabel={true}
+                layout="inline"
+              />
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                {t('taskFormDialog.noProfiles')}{' '}
+                <a href="/settings/general" className="underline">{t('taskFormDialog.settingsLink')}</a>.
               </div>
             )}
 

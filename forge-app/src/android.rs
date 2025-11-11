@@ -19,8 +19,18 @@ static LAST_ERROR: Mutex<Option<String>> = Mutex::new(None);
 /// Initialize the Tokio runtime (called once)
 fn get_runtime() -> &'static Runtime {
     RUNTIME.get_or_init(|| {
-        // Initialize tracing for Android (once)
+        // Initialize android_logger for Android (once)
+        #[cfg(target_os = "android")]
+        android_logger::init_once(
+            android_logger::Config::default()
+                .with_max_level(log::LevelFilter::Info)
+                .with_tag("ForgeApp"),
+        );
+
+        // Initialize tracing subscriber
+        #[cfg(not(target_os = "android"))]
         tracing_subscriber::fmt::init();
+
         Runtime::new().expect("Failed to create Tokio runtime")
     })
 }
@@ -63,6 +73,9 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_setDataDir(
 
 /// Start the Forge server and return the port number
 ///
+/// This function blocks until the server successfully binds to the port,
+/// preventing race conditions where the WebView tries to connect before
+/// the server is ready.
 #[cfg(target_os = "android")]
 #[no_mangle]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
@@ -77,6 +90,8 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
         .ok()
         .and_then(|p| p.parse().ok())
         .unwrap_or(8887);
+
+    tracing::info!("Starting Forge server on port {}", port);
 
     // Create oneshot channel to signal when server is ready
     let (ready_tx, ready_rx) = oneshot::channel();
@@ -107,11 +122,13 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
         Ok(Err(_)) => {
             set_last_error("Server failed to signal readiness - check initialization".to_string());
             tracing::error!("Server failed to signal readiness");
+            handle.abort();
             -1
         }
         Err(_) => {
             set_last_error("Server startup timeout (10s) - initialization took too long".to_string());
             tracing::error!("Server startup timeout");
+            handle.abort();
             -1
         }
     }
