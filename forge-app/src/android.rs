@@ -36,7 +36,14 @@ fn get_runtime() -> &'static Runtime {
 }
 
 fn set_last_error(error: String) {
-    *LAST_ERROR.lock().unwrap() = Some(error);
+    *LAST_ERROR.lock().unwrap() = Some(error.clone());
+    
+    if let Ok(data_dir) = std::env::var("FORGE_DATA_DIR") {
+        let error_file = format!("{}/forge-last-error.txt", data_dir);
+        if let Err(e) = std::fs::write(&error_file, &error) {
+            tracing::error!("Failed to write error to file {}: {}", error_file, e);
+        }
+    }
 }
 
 #[cfg(target_os = "android")]
@@ -122,13 +129,19 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
             port as jint
         }
         Ok(Err(_)) => {
-            set_last_error("Server failed to signal readiness - check initialization".to_string());
+            let has_specific_error = LAST_ERROR.lock().unwrap().is_some();
+            if !has_specific_error {
+                set_last_error("Server failed to signal readiness - check initialization".to_string());
+            }
             tracing::error!("Server failed to signal readiness");
             handle.abort();
             -1
         }
         Err(_) => {
-            set_last_error("Server startup timeout (10s) - initialization took too long".to_string());
+            let has_specific_error = LAST_ERROR.lock().unwrap().is_some();
+            if !has_specific_error {
+                set_last_error("Server startup timeout (10s) - initialization took too long".to_string());
+            }
             tracing::error!("Server startup timeout");
             handle.abort();
             -1
