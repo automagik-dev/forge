@@ -1,0 +1,169 @@
+name: Cypress E2E Tests
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  cypress-run:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        viewport: [iphone-14-pro, ipad-mini, desktop]
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.12.4
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install dependencies
+        run: |
+          pnpm install
+          cd frontend && pnpm install
+
+      - name: Build backend
+        run: cargo build --release
+
+      - name: Build frontend
+        run: cd frontend && pnpm run build
+
+      - name: Start backend server
+        run: |
+          cargo run --release --bin forge-app &
+          sleep 10
+        env:
+          BACKEND_PORT: 8887
+
+      - name: Start frontend server
+        run: |
+          cd frontend && pnpm run preview &
+          sleep 5
+        env:
+          PORT: 3000
+
+      - name: Run Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: .
+          browser: chrome
+          config: viewportWidth=${{ matrix.viewport == 'iphone-14-pro' && '393' || matrix.viewport == 'ipad-mini' && '768' || '1280' }},viewportHeight=${{ matrix.viewport == 'iphone-14-pro' && '852' || matrix.viewport == 'ipad-mini' && '1024' || '720' }}
+        env:
+          CYPRESS_BASE_URL: http://localhost:3000
+
+      - name: Upload screenshots on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots-${{ matrix.viewport }}
+          path: cypress/screenshots
+
+      - name: Upload videos
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-videos-${{ matrix.viewport }}
+          path: cypress/videos
+
+  mobile-specific-tests:
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.12.4
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install dependencies
+        run: |
+          pnpm install
+          cd frontend && pnpm install
+
+      - name: Build backend
+        run: cargo build --release
+
+      - name: Build frontend
+        run: cd frontend && pnpm run build
+
+      - name: Start servers
+        run: |
+          cargo run --release --bin forge-app &
+          sleep 10
+          cd frontend && pnpm run preview &
+          sleep 5
+        env:
+          BACKEND_PORT: 8887
+          PORT: 3000
+
+      - name: Run Phase 1 Foundation Tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: .
+          browser: chrome
+          spec: cypress/e2e/phase-1-foundation/**/*.cy.ts
+        env:
+          CYPRESS_BASE_URL: http://localhost:3000
+
+      - name: Run Phase 2 Core Views Tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: .
+          browser: chrome
+          spec: cypress/e2e/phase-2-core-views/**/*.cy.ts
+        env:
+          CYPRESS_BASE_URL: http://localhost:3000
+
+      - name: Run Phase 3 Advanced Features Tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: .
+          browser: chrome
+          spec: cypress/e2e/phase-3-advanced-features/**/*.cy.ts
+        env:
+          CYPRESS_BASE_URL: http://localhost:3000
+
+      - name: Run Phase 4 Polish Tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: .
+          browser: chrome
+          spec: cypress/e2e/phase-4-polish/**/*.cy.ts
+        env:
+          CYPRESS_BASE_URL: http://localhost:3000
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-results
+          path: |
+            cypress/screenshots
+            cypress/videos
