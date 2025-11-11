@@ -5,7 +5,7 @@
 #[cfg(feature = "android")]
 use jni::JNIEnv;
 #[cfg(feature = "android")]
-use jni::objects::JClass;
+use jni::objects::{JClass, JString};
 #[cfg(feature = "android")]
 use jni::sys::jint;
 use std::sync::{Mutex, OnceLock};
@@ -14,6 +14,7 @@ use tokio::sync::oneshot;
 
 static RUNTIME: OnceLock<Runtime> = OnceLock::new();
 static SERVER_HANDLE: Mutex<Option<tokio::task::JoinHandle<()>>> = Mutex::new(None);
+static LAST_ERROR: Mutex<Option<String>> = Mutex::new(None);
 
 /// Initialize the Tokio runtime (called once)
 fn get_runtime() -> &'static Runtime {
@@ -24,11 +25,44 @@ fn get_runtime() -> &'static Runtime {
     })
 }
 
+fn set_last_error(error: String) {
+    *LAST_ERROR.lock().unwrap() = Some(error);
+}
+
+#[cfg(feature = "android")]
+#[no_mangle]
+pub extern "C" fn Java_ai_namastex_forge_MainActivity_getLastError(
+    mut env: JNIEnv,
+    _class: JClass,
+) -> JString {
+    let error = LAST_ERROR.lock().unwrap()
+        .clone()
+        .unwrap_or_else(|| "Unknown error".to_string());
+    
+    env.new_string(error)
+        .unwrap_or_else(|_| env.new_string("Failed to create error string").unwrap())
+}
+
+#[cfg(feature = "android")]
+#[no_mangle]
+pub extern "C" fn Java_ai_namastex_forge_MainActivity_setDataDir(
+    mut env: JNIEnv,
+    _class: JClass,
+    data_dir: JString,
+) {
+    let data_dir_str: String = env.get_string(&data_dir)
+        .expect("Failed to get data_dir string")
+        .into();
+    
+    std::env::set_var("FORGE_DATA_DIR", &data_dir_str);
+    std::env::set_var("DATABASE_URL", format!("sqlite://{}/forge.db", data_dir_str));
+    std::env::set_var("SQLX_DATABASE_URL", format!("sqlite://{}/forge.db", data_dir_str));
+    
+    tracing::info!("Android data directory set to: {}", data_dir_str);
+}
+
 /// Start the Forge server and return the port number
 ///
-/// This function blocks until the server successfully binds to the port,
-/// preventing race conditions where the WebView tries to connect before
-/// the server is ready.
 #[cfg(feature = "android")]
 #[unsafe(no_mangle)]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
@@ -47,24 +81,40 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
     // Create oneshot channel to signal when server is ready
     let (ready_tx, ready_rx) = oneshot::channel();
 
-    // Spawn server in background
+    // Spawn server in background with error capture
     let handle = runtime.spawn(async move {
         if let Err(e) = crate::run_server_with_readiness(Some(ready_tx)).await {
-            eprintln!("Server error: {}", e);
+            let error_msg = format!("Server initialization failed: {}", e);
+            tracing::error!("{}", error_msg);
+            set_last_error(error_msg);
         }
     });
 
-    // Block until server is ready to accept connections
-    runtime.block_on(async {
-        match ready_rx.await {
-            Ok(_) => tracing::info!("Server ready on port {}", port),
-            Err(_) => eprintln!("Server failed to signal readiness"),
-        }
+    // Block until server is ready to accept connections (with timeout)
+    let ready_result = runtime.block_on(async {
+        tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            ready_rx
+        ).await
     });
 
-    *SERVER_HANDLE.lock().unwrap() = Some(handle);
-
-    port as jint
+    match ready_result {
+        Ok(Ok(_)) => {
+            tracing::info!("Server ready on port {}", port);
+            *SERVER_HANDLE.lock().unwrap() = Some(handle);
+            port as jint
+        }
+        Ok(Err(_)) => {
+            set_last_error("Server failed to signal readiness - check initialization".to_string());
+            tracing::error!("Server failed to signal readiness");
+            -1
+        }
+        Err(_) => {
+            set_last_error("Server startup timeout (10s) - initialization took too long".to_string());
+            tracing::error!("Server startup timeout");
+            -1
+        }
+    }
 }
 
 /// Stop the Forge server
