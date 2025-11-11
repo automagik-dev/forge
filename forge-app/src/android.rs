@@ -40,11 +40,11 @@ fn set_last_error(error: String) {
 }
 
 #[cfg(target_os = "android")]
-#[no_mangle]
-pub extern "C" fn Java_ai_namastex_forge_MainActivity_getLastError(
-    mut env: JNIEnv,
-    _class: JClass,
-) -> JString {
+#[unsafe(no_mangle)]
+pub extern "C" fn Java_ai_namastex_forge_MainActivity_getLastError<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+) -> JString<'local> {
     let error = LAST_ERROR.lock().unwrap()
         .clone()
         .unwrap_or_else(|| "Unknown error".to_string());
@@ -54,7 +54,7 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_getLastError(
 }
 
 #[cfg(target_os = "android")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_setDataDir(
     mut env: JNIEnv,
     _class: JClass,
@@ -64,9 +64,11 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_setDataDir(
         .expect("Failed to get data_dir string")
         .into();
     
-    std::env::set_var("FORGE_DATA_DIR", &data_dir_str);
-    std::env::set_var("DATABASE_URL", format!("sqlite:///{}/forge.db", data_dir_str));
-    std::env::set_var("SQLX_DATABASE_URL", format!("sqlite:///{}/forge.db", data_dir_str));
+    unsafe {
+        std::env::set_var("FORGE_DATA_DIR", &data_dir_str);
+        std::env::set_var("DATABASE_URL", format!("sqlite:///{}/forge.db", data_dir_str));
+        std::env::set_var("SQLX_DATABASE_URL", format!("sqlite:///{}/forge.db", data_dir_str));
+    }
     
     tracing::info!("Android data directory set to: {}", data_dir_str);
 }
@@ -77,7 +79,7 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_setDataDir(
 /// preventing race conditions where the WebView tries to connect before
 /// the server is ready.
 #[cfg(target_os = "android")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
     _env: JNIEnv,
     _class: JClass,
@@ -136,7 +138,7 @@ pub extern "C" fn Java_ai_namastex_forge_MainActivity_startServer(
 
 /// Stop the Forge server
 #[cfg(target_os = "android")]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn Java_ai_namastex_forge_MainActivity_stopServer(
     _env: JNIEnv,
     _class: JClass,
