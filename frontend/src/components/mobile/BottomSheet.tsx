@@ -37,16 +37,16 @@ export function BottomSheet({
   const [currentSnap, setCurrentSnap] = useState(initialSnap);
   const sheetRef = useRef<HTMLDivElement>(null);
   
-  const snapHeights = snapPoints.map(point => window.innerHeight * (point / 100));
+  const snapOffsets = snapPoints.map(point => window.innerHeight * (1 - point / 100));
   
   const [{ y }, api] = useSpring(() => ({
-    y: open ? snapHeights[currentSnap] : window.innerHeight,
+    y: open ? snapOffsets[currentSnap] : window.innerHeight,
     config: { tension: 300, friction: 30 }
   }));
 
   useEffect(() => {
     if (open) {
-      api.start({ y: snapHeights[currentSnap] });
+      api.start({ y: snapOffsets[currentSnap] });
       document.body.style.overflow = 'hidden';
     } else {
       api.start({ y: window.innerHeight });
@@ -56,7 +56,19 @@ export function BottomSheet({
     return () => {
       document.body.style.overflow = '';
     };
-  }, [open, currentSnap, snapHeights, api]);
+  }, [open, currentSnap, snapOffsets, api]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const newSnapOffsets = snapPoints.map(point => window.innerHeight * (1 - point / 100));
+      if (open) {
+        api.start({ y: newSnapOffsets[currentSnap] });
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [open, currentSnap, snapPoints, api]);
 
   const bind = useDrag(
     ({ last, velocity: [, vy], direction: [, dy], movement: [, my], cancel }) => {
@@ -66,10 +78,10 @@ export function BottomSheet({
       }
 
       if (last) {
-        const currentHeight = snapHeights[currentSnap];
-        const newY = currentHeight + my;
+        const currentOffset = snapOffsets[currentSnap];
+        const newY = Math.max(0, Math.min(window.innerHeight, currentOffset + my));
         
-        if (vy > 0.5 || (dy > 0 && newY > currentHeight + 50)) {
+        if (vy > 0.5 || (dy > 0 && newY > currentOffset + 50)) {
           if (currentSnap < snapPoints.length - 1) {
             setCurrentSnap(currentSnap + 1);
             if (Platform.isNative()) {
@@ -81,7 +93,7 @@ export function BottomSheet({
               Haptics.impact({ style: ImpactStyle.Medium });
             }
           }
-        } else if (vy < -0.5 || (dy < 0 && newY < currentHeight - 50)) {
+        } else if (vy < -0.5 || (dy < 0 && newY < currentOffset - 50)) {
           if (currentSnap > 0) {
             setCurrentSnap(currentSnap - 1);
             if (Platform.isNative()) {
@@ -89,16 +101,16 @@ export function BottomSheet({
             }
           }
         } else {
-          api.start({ y: snapHeights[currentSnap] });
+          api.start({ y: snapOffsets[currentSnap] });
         }
       } else {
-        api.start({ y: snapHeights[currentSnap] + my, immediate: true });
+        api.start({ y: snapOffsets[currentSnap] + my, immediate: true });
       }
     },
     {
       from: () => [0, y.get()],
       filterTaps: true,
-      bounds: { top: 0 },
+      bounds: { top: 0, bottom: window.innerHeight },
       rubberband: true
     }
   );
@@ -122,7 +134,7 @@ export function BottomSheet({
         ref={sheetRef}
         {...bind()}
         style={{
-          y,
+          transform: y.to(v => `translateY(${v}px)`),
           touchAction: 'none'
         }}
         className={cn(
