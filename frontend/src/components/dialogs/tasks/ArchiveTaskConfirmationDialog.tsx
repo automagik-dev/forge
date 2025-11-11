@@ -28,7 +28,13 @@ const ArchiveTaskConfirmationDialog =
       setError(null);
 
       try {
-        await tasksApi.update(task.id, { status: 'archived' });
+        await tasksApi.update(task.id, {
+          title: null,
+          description: null,
+          status: 'archived',
+          parent_task_attempt: null,
+          image_ids: null,
+        });
         modal.resolve();
         modal.hide();
       } catch (err: unknown) {
