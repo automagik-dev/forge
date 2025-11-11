@@ -6,7 +6,7 @@ import { Projects } from '@/pages/projects';
 import { ProjectTasks } from '@/pages/project-tasks';
 import { FullAttemptLogsPage } from '@/pages/full-attempt-logs';
 import ReleaseNotesPage from '@/pages/release-notes';
-import { NormalLayout } from '@/components/layout/NormalLayout';
+import { ResponsiveLayout } from '@/components/layout/ResponsiveLayout';
 import { Footer } from '@/components/layout/Footer';
 import { usePostHog } from 'posthog-js/react';
 import type { SessionStartedEvent, SessionEndedEvent, HeartbeatEvent } from '@/types/analytics';
@@ -260,13 +260,13 @@ function AppContent() {
         <SearchProvider>
           <div className="h-screen flex flex-col bg-background">
             <SentryRoutes>
-              {/* VS Code full-page logs route (outside NormalLayout for minimal UI) */}
+              {/* VS Code full-page logs route (outside ResponsiveLayout for minimal UI) */}
               <Route
                 path="/projects/:projectId/tasks/:taskId/attempts/:attemptId/full"
                 element={<FullAttemptLogsPage />}
               />
 
-              <Route element={<NormalLayout />}>
+              <Route element={<ResponsiveLayout />}>
                 <Route path="/" element={<Projects />} />
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/projects/:projectId" element={<Projects />} />
