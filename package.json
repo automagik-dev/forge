@@ -65,7 +65,8 @@
     "@tailwindcss/container-queries": "^0.1.1",
     "concurrently": "^8.2.2",
     "cypress": "^15.6.0",
-    "cypress-plugin-tab": "^1.0.5"
+    "cypress-plugin-tab": "^1.0.5",
+    "typescript": "^5.9.2"
   },
   "engines": {
     "node": ">=20",
