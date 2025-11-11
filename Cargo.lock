@@ -1097,7 +1097,7 @@ checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 [[package]]
 name = "db"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/vibe-kanban.git?rev=89b83cc4d57a629d628e0dd7587b385b810e80cf#89b83cc4d57a629d628e0dd7587b385b810e80cf"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=89b83cc4d57a629d628e0dd7587b385b810e80cf#89b83cc4d57a629d628e0dd7587b385b810e80cf"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1152,7 +1152,7 @@ dependencies = [
 [[package]]
 name = "deployment"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/vibe-kanban.git?rev=89b83cc4d57a629d628e0dd7587b385b810e80cf#89b83cc4d57a629d628e0dd7587b385b810e80cf"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=89b83cc4d57a629d628e0dd7587b385b810e80cf#89b83cc4d57a629d628e0dd7587b385b810e80cf"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1491,7 +1491,7 @@ dependencies = [
 [[package]]
 name = "executors"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/vibe-kanban.git?rev=89b83cc4d57a629d628e0dd7587b385b810e80cf#89b83cc4d57a629d628e0dd7587b385b810e80cf"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=89b83cc4d57a629d628e0dd7587b385b810e80cf#89b83cc4d57a629d628e0dd7587b385b810e80cf"
 dependencies = [
  "agent-client-protocol",
  "async-trait",
@@ -2912,7 +2912,7 @@ dependencies = [
 [[package]]
 name = "local-deployment"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/vibe-kanban.git?rev=89b83cc4d57a629d628e0dd7587b385b810e80cf#89b83cc4d57a629d628e0dd7587b385b810e80cf"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=89b83cc4d57a629d628e0dd7587b385b810e80cf#89b83cc4d57a629d628e0dd7587b385b810e80cf"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -4674,7 +4674,7 @@ dependencies = [
 [[package]]
 name = "server"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/vibe-kanban.git?rev=89b83cc4d57a629d628e0dd7587b385b810e80cf#89b83cc4d57a629d628e0dd7587b385b810e80cf"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=89b83cc4d57a629d628e0dd7587b385b810e80cf#89b83cc4d57a629d628e0dd7587b385b810e80cf"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4720,7 +4720,7 @@ dependencies = [
 [[package]]
 name = "services"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/vibe-kanban.git?rev=89b83cc4d57a629d628e0dd7587b385b810e80cf#89b83cc4d57a629d628e0dd7587b385b810e80cf"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=89b83cc4d57a629d628e0dd7587b385b810e80cf#89b83cc4d57a629d628e0dd7587b385b810e80cf"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5974,7 +5974,7 @@ checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
 [[package]]
 name = "utils"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/vibe-kanban.git?rev=89b83cc4d57a629d628e0dd7587b385b810e80cf#89b83cc4d57a629d628e0dd7587b385b810e80cf"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=89b83cc4d57a629d628e0dd7587b385b810e80cf#89b83cc4d57a629d628e0dd7587b385b810e80cf"
 dependencies = [
  "async-stream",
  "axum",
