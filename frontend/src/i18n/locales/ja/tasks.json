@@ -251,6 +251,14 @@
     "startAttempt": "Start Attempt",
     "startFirstAttempt": "Start your first attempt to begin working on this task"
   },
+  "taskFormDialog": {
+    "loadingProfiles": "エグゼキュータープロファイルを読み込み中...",
+    "noProfiles": "エグゼキュータープロファイルが設定されていません。次で設定してください",
+    "settingsLink": "設定"
+  },
+  "executorProfileSelector": {
+    "disabledProviderTooltip": "プロセスの実行中はプロバイダーを変更できません"
+  },
   "viewProcessesDialog": {
     "title": "Execution processes"
   },

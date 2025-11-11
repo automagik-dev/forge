@@ -249,6 +249,14 @@
     "startAttempt": "Start Attempt",
     "startFirstAttempt": "Start your first attempt to begin working on this task"
   },
+  "taskFormDialog": {
+    "loadingProfiles": "실행자 프로필 로드 중...",
+    "noProfiles": "실행자 프로필이 구성되지 않았습니다. 다음에서 구성하세요",
+    "settingsLink": "설정"
+  },
+  "executorProfileSelector": {
+    "disabledProviderTooltip": "프로세스가 실행 중일 때는 제공자를 변경할 수 없습니다"
+  },
   "viewProcessesDialog": {
     "title": "Execution processes"
   },

@@ -244,6 +244,14 @@
     "creating": "Creating...",
     "start": "Start"
   },
+  "taskFormDialog": {
+    "loadingProfiles": "Loading executor profiles...",
+    "noProfiles": "No executor profiles configured. Please configure in",
+    "settingsLink": "Settings"
+  },
+  "executorProfileSelector": {
+    "disabledProviderTooltip": "Cannot change provider while processes are running"
+  },
   "viewProcessesDialog": {
     "title": "Execution processes"
   },

@@ -240,6 +240,14 @@
     "creating": "Creating...",
     "start": "Start"
   },
+  "taskFormDialog": {
+    "loadingProfiles": "Carregando perfis de executor...",
+    "noProfiles": "Nenhum perfil de executor configurado. Por favor, configure em",
+    "settingsLink": "Configurações"
+  },
+  "executorProfileSelector": {
+    "disabledProviderTooltip": "Não é possível alterar o provedor enquanto os processos estão em execução"
+  },
   "viewProcessesDialog": {
     "title": "Execution processes"
   },

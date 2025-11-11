@@ -249,6 +249,14 @@
     "startAttempt": "Start Attempt",
     "startFirstAttempt": "Start your first attempt to begin working on this task"
   },
+  "taskFormDialog": {
+    "loadingProfiles": "Cargando perfiles de ejecutor...",
+    "noProfiles": "No hay perfiles de ejecutor configurados. Por favor configura en",
+    "settingsLink": "Configuración"
+  },
+  "executorProfileSelector": {
+    "disabledProviderTooltip": "No se puede cambiar el proveedor mientras los procesos están en ejecución"
+  },
   "viewProcessesDialog": {
     "title": "Execution processes"
   },
