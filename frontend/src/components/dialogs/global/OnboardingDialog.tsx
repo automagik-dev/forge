@@ -60,6 +60,7 @@ const OnboardingDialog = NiceModal.create(() => {
         remote_ssh_user: null,
       },
     } as OnboardingResult);
+    modal.hide();
   };
 
   const isValid =

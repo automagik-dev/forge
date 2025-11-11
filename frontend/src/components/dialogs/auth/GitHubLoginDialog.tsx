@@ -9,29 +9,36 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
 import { useUserSystem } from '@/components/config-provider';
-import { Check, Clipboard, Github } from 'lucide-react';
+import { Check, Clipboard, Github, Key, ArrowLeft, ExternalLink } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import { githubAuthApi } from '@/lib/api';
 import { DeviceFlowStartResponse, DevicePollStatus } from 'shared/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
+
+type AuthMethod = 'selection' | 'oauth' | 'pat';
 
 const GitHubLoginDialog = NiceModal.create(() => {
   const modal = useModal();
-  const { config, loading, githubTokenInvalid, reloadSystem } = useUserSystem();
+  const { config, loading, githubTokenInvalid, reloadSystem, updateAndSaveConfig } = useUserSystem();
+  const [authMethod, setAuthMethod] = useState<AuthMethod>('selection');
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deviceState, setDeviceState] =
     useState<null | DeviceFlowStartResponse>(null);
   const [polling, setPolling] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [pat, setPat] = useState('');
+  const [savingPat, setSavingPat] = useState(false);
 
   const isAuthenticated =
     !!(config?.github?.username && config?.github?.oauth_token) &&
     !githubTokenInvalid;
 
-  const handleLogin = async () => {
+  const handleOAuthLogin = async () => {
     setFetching(true);
     setError(null);
     setDeviceState(null);
@@ -39,12 +46,43 @@ const GitHubLoginDialog = NiceModal.create(() => {
       const data = await githubAuthApi.start();
       setDeviceState(data);
       setPolling(true);
+      setAuthMethod('oauth');
     } catch (e: any) {
       console.error(e);
       setError(e?.message || 'Network error');
     } finally {
       setFetching(false);
     }
+  };
+
+  const handlePATSave = async () => {
+    if (!config || !pat.trim()) return;
+    setSavingPat(true);
+    setError(null);
+    try {
+      await updateAndSaveConfig({
+        github: {
+          ...config.github,
+          pat,
+        },
+      });
+      await reloadSystem();
+      modal.resolve(true);
+      modal.hide();
+    } catch (e: any) {
+      console.error(e);
+      setError(e?.message || 'Failed to save Personal Access Token');
+    } finally {
+      setSavingPat(false);
+    }
+  };
+
+  const handleBack = () => {
+    setAuthMethod('selection');
+    setError(null);
+    setDeviceState(null);
+    setPolling(false);
+    setPat('');
   };
 
   // Poll for completion
@@ -176,8 +214,18 @@ const GitHubLoginDialog = NiceModal.create(() => {
               </Button>
             </DialogFooter>
           </div>
-        ) : deviceState ? (
+        ) : authMethod === 'oauth' && deviceState ? (
           <div className="space-y-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBack}
+              className="mb-2"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
+            </Button>
+
             <div className="flex items-start gap-3">
               <span className="flex-shrink-0 w-10 h-10 bg-background border rounded-full flex items-center justify-center text-lg font-semibold">
                 1
@@ -190,9 +238,10 @@ const GitHubLoginDialog = NiceModal.create(() => {
                   href={deviceState.verification_uri}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm underline"
+                  className="text-sm underline flex items-center gap-1"
                 >
                   {deviceState.verification_uri}
+                  <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
             </div>
@@ -252,6 +301,85 @@ const GitHubLoginDialog = NiceModal.create(() => {
               </Button>
             </DialogFooter>
           </div>
+        ) : authMethod === 'pat' ? (
+          <div className="space-y-4 py-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBack}
+              className="mb-2"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
+            </Button>
+
+            <div className="space-y-3">
+              <div className="text-sm">
+                <p className="font-medium mb-2">1. Create a token on GitHub:</p>
+                <a
+                  href="https://github.com/settings/tokens/new?description=Automagik%20Forge&scopes=repo,workflow"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                >
+                  Open GitHub Token Settings
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+
+              <div className="text-sm">
+                <p className="font-medium mb-2">2. Required permissions:</p>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3 w-3 text-green-500" />
+                    <code className="text-xs bg-muted px-1 py-0.5 rounded">repo</code> - Full repository access
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-3 w-3 text-green-500" />
+                    <code className="text-xs bg-muted px-1 py-0.5 rounded">workflow</code> - Update GitHub Actions
+                  </li>
+                </ul>
+              </div>
+
+              <div className="text-sm">
+                <p className="font-medium mb-2">3. Paste your token here:</p>
+                <Input
+                  type="password"
+                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                  value={pat}
+                  onChange={(e) => setPat(e.target.value)}
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  💡 Tip: Save your token securely - you won't be able to see it again on GitHub
+                </p>
+              </div>
+            </div>
+
+            {error && <Alert variant="destructive">{error}</Alert>}
+
+            <DialogFooter className="gap-3 flex-col sm:flex-row">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  modal.resolve(false);
+                  modal.hide();
+                }}
+                disabled={savingPat}
+                className="flex-1"
+              >
+                Skip
+              </Button>
+              <Button
+                onClick={handlePATSave}
+                disabled={savingPat || !pat.trim()}
+                className="flex-1"
+              >
+                <Key className="h-4 w-4 mr-2" />
+                {savingPat ? 'Saving...' : 'Save Token'}
+              </Button>
+            </DialogFooter>
+          </div>
         ) : (
           <div className="space-y-4 py-3">
             <Card>
@@ -291,26 +419,105 @@ const GitHubLoginDialog = NiceModal.create(() => {
               </CardContent>
             </Card>
 
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Choose your authentication method:</p>
+
+              {/* OAuth Card */}
+              <Card
+                className="cursor-pointer hover:border-primary transition-colors"
+                onClick={() => setAuthMethod('oauth')}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Github className="h-5 w-5" />
+                      <CardTitle className="text-base">OAuth Device Flow</CardTitle>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">Recommended</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <ul className="text-sm space-y-1 text-muted-foreground mb-3">
+                    <li className="flex items-center gap-2">
+                      <Check className="h-3 w-3 text-green-500" />
+                      Easiest setup
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-3 w-3 text-green-500" />
+                      Automatic permissions
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-3 w-3 text-green-500" />
+                      Secure and revocable
+                    </li>
+                  </ul>
+                  <Button
+                    className="w-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOAuthLogin();
+                    }}
+                    disabled={fetching}
+                  >
+                    <Github className="mr-2 h-4 w-4" />
+                    {fetching ? 'Starting…' : 'Continue with OAuth'}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* PAT Card */}
+              <Card
+                className="cursor-pointer hover:border-primary transition-colors"
+                onClick={() => setAuthMethod('pat')}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <Key className="h-5 w-5" />
+                    <CardTitle className="text-base">Personal Access Token</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <ul className="text-sm space-y-1 text-muted-foreground mb-3">
+                    <li className="flex items-center gap-2">
+                      <Check className="h-3 w-3 text-green-500" />
+                      More control over permissions
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-3 w-3 text-green-500" />
+                      Works in restricted environments
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Check className="h-3 w-3 text-green-500" />
+                      Requires manual token creation
+                    </li>
+                  </ul>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAuthMethod('pat');
+                    }}
+                  >
+                    <Key className="mr-2 h-4 w-4" />
+                    Use PAT Instead
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
             {error && <Alert variant="destructive">{error}</Alert>}
 
-            <DialogFooter className="gap-3 flex-col sm:flex-row">
+            <DialogFooter>
               <Button
                 variant="outline"
                 onClick={() => {
                   modal.resolve(false);
                   modal.hide();
                 }}
-                className="flex-1"
+                className="w-full"
               >
-                Skip
-              </Button>
-              <Button
-                onClick={handleLogin}
-                disabled={fetching}
-                className="flex-1"
-              >
-                <Github className="h-4 w-4 mr-2" />
-                {fetching ? 'Starting…' : 'Sign in with GitHub'}
+                Skip for now
               </Button>
             </DialogFooter>
           </div>
