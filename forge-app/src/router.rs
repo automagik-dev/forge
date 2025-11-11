@@ -31,7 +31,7 @@ use executors::profile::ExecutorProfileId;
 use forge_config::ForgeProjectSettings;
 use server::routes::{
     self as upstream, approvals, auth, config as upstream_config, containers, drafts, events,
-    execution_processes, filesystem, images, projects, task_attempts, tasks,
+    execution_processes, filesystem, images, projects, tags, task_attempts, tasks,
 };
 use server::{DeploymentImpl, error::ApiError, routes::tasks::CreateAndStartTaskRequest};
 use services::services::container::ContainerService;
@@ -525,6 +525,7 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
         execution_processes::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()),
     );
     router = router.merge(auth::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+    router = router.merge(tags::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
     router = router.merge(filesystem::router().with_state::<ForgeAppState>(dep_clone.clone()));
     router =
         router.merge(events::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
