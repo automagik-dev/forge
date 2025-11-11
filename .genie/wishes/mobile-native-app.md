@@ -1,0 +1,430 @@
+# WISH: Forge Mobile Native App
+
+**Issue:** TBD (Create GitHub issue)
+**Branch:** `mobile-native-app`
+**Status:** 📋 DISCOVERY COMPLETE
+**Priority:** 🟡 HIGH (Major UX Enhancement)
+
+---
+
+## Problem Statement
+
+Forge's current mobile experience is **unbearable**:
+- ❌ Desktop UI squeezed onto mobile screens
+- ❌ Kanban columns unusable (<400px width each)
+- ❌ No touch gestures (swipe, long-press, pinch)
+- ❌ Tiny buttons, hard to tap
+- ❌ Horizontal scrolling required everywhere
+- ❌ No offline support
+- ❌ Binary responsive design (1 breakpoint: 1280px)
+- ❌ Modals instead of bottom sheets
+- ❌ Keyboard shortcuts don't work on mobile
+- ❌ No native features (camera, notifications, haptics)
+
+**Current UX Rating:** 2/10 on mobile
+**User Feedback:** "Impossible to use on phone"
+
+---
+
+## Desired Outcome
+
+✅ **World-class native mobile app** (Android APK)
+✅ **100% feature parity** with desktop (nothing lost)
+✅ **Touch-optimized** - all interactions designed for thumbs
+✅ **Gesture-rich** - swipe navigation, long-press menus
+✅ **Offline-capable** - core features work without internet
+✅ **Native feel** - indistinguishable from ChatGPT/Claude mobile
+✅ **Fast & smooth** - 60fps, <1.5s load time
+✅ **One-handed** - 80% tasks completable with thumb
+
+**Target UX Rating:** 9/10 on mobile
+**Inspiration:** ChatGPT, Claude, Perplexity, Gemini, Poe mobile apps
+
+---
+
+## Solution Design
+
+### Architecture Overview
+
+**Navigation:**
+```
+Bottom Navigation (4 tabs):
+┌──┬──┬──┬──┐
+│📋│💬│➕│👤│
+│  │  │  │  │
+└──┴──┴──┴──┘
+Tasks Chat New Me
+```
+
+**Key Design Decisions:**
+1. **Chat-First Interface** - Full-screen conversations (like ChatGPT)
+2. **Bottom Navigation** - Thumb-accessible, always visible
+3. **Bottom Sheets** - Not modals (one-handed operation)
+4. **Gesture Navigation** - Swipe to delete, long-press for menu
+5. **Progressive Disclosure** - Collapse by default, expand on-demand
+6. **Offline-First** - Cache data, queue actions, sync when online
+
+### Core Views (Mobile Redesign)
+
+#### 1. **Kanban Board → Tabbed Columns**
+```
+┌────────────────────────────────┐
+│ ┌────┬────┬────┬────┐         │
+│ │Todo│Rdy│Act│Done│ ← Swipe   │
+│ └────┴────┴────┴────┘         │
+├────────────────────────────────┤
+│  ┌──────────────────────────┐ │
+│  │ Task Card                │ │ ← Swipe gestures
+│  └──────────────────────────┘ │
+└────────────────────────────────┘
+```
+- One column visible at a time
+- Swipe left/right to switch columns
+- Swipe left on card → Delete
+- Long press → Menu
+
+#### 2. **Chat View → Full-Screen**
+```
+┌────────────────────────────────┐
+│  👤 User message               │
+│  🤖 AI response                │
+│  ⚙️ Tool call (collapsed)      │
+│  📄 File changes               │
+└────────────────────────────────┘
+┌────────────────────────────────┐
+│ 🤖  Type message... 📎 🎤  ➡️  │
+└────────────────────────────────┘
+```
+- Fixed bottom input bar
+- Auto-expand up to 4 lines
+- Voice input, camera, attachments
+- Executor selector (bottom sheet)
+
+#### 3. **Diffs View → File Carousel**
+```
+┌────────────────────────────────┐
+│  button.tsx (+12 -5)           │
+│  [← Prev] [Next →] [All Files] │
+├────────────────────────────────┤
+│ 44+ style={{color:'blue'}}     │
+│ 45  >Click</button>            │
+└────────────────────────────────┘
+```
+- Swipe left/right to navigate files
+- Pinch to zoom code
+- Tap line → Inline comment
+
+#### 4. **Preview → Responsive Viewports**
+```
+┌────────────────────────────────┐
+│  📱 Viewport: iPhone 14 ▼      │
+├────────────────────────────────┤
+│  <iframe preview>              │
+└────────────────────────────────┘
+```
+- Responsive viewport picker
+- Click tracking (tap element)
+- Rotate to landscape
+
+#### 5. **Task Creation → Bottom Sheet**
+```
+┌────────────────────────────────┐
+│  Title *                       │
+│  Description                   │
+│  📷 Camera  🖼️ Gallery          │
+│  Provider • Agent              │
+│  [Create & Start]              │
+└────────────────────────────────┘
+```
+- Native camera integration
+- Executor picker (sheet)
+- Full keyboard support
+
+---
+
+## Supporting Documentation
+
+### Research Documents (in `.genie/wishes/mobile-native-app/`)
+
+**1. Frontend Inventory** (`research/forge-frontend-complete-inventory.md`)
+- 1,500+ lines mapping every Forge feature
+- 164 TSX components cataloged
+- Data flow diagrams
+- Current mobile pain points
+
+**2. AI Mobile Apps Analysis** (`research/ai-mobile-apps-ux-analysis.md`)
+- 10 universal UX patterns
+- Best practices from ChatGPT, Claude, Perplexity, Gemini, Poe
+- Gesture systems compared
+- Mobile-specific optimizations
+
+**3. Mobile Architecture** (`architecture/forge-mobile-architecture.md`)
+- Complete view mapping (desktop → mobile)
+- Navigation architecture
+- Screen flow diagrams
+- Offline strategy
+- Performance architecture
+
+### Key Insights
+
+**From AI Apps:**
+- ✅ Bottom nav is universal (ChatGPT, Claude, all apps)
+- ✅ Chat-first interface dominates
+- ✅ Bottom sheets > modals (one-handed)
+- ✅ Swipe gestures expected everywhere
+- ✅ Dark mode is default
+
+**Performance Targets:**
+- Bundle Size: <500KB gzipped
+- First Paint: <1.5s (3G network)
+- Frame Rate: 60fps
+- Lighthouse: >90 mobile score
+
+---
+
+## Implementation Plan
+
+### Phase 1: Foundation (Weeks 1-2)
+**Goal:** Mobile-first component library + navigation
+
+- [ ] Setup Capacitor (Android)
+- [ ] Configure mobile breakpoints
+- [ ] Create bottom navigation component
+- [ ] Create bottom sheet component
+- [ ] Setup gesture library (`use-gesture`)
+- [ ] Mobile theme (spacing, typography, colors)
+- [ ] Safe area handling (notch/Dynamic Island)
+
+**Deliverables:**
+- Mobile shell with bottom nav working
+- Bottom sheet system functional
+- Gesture library integrated
+
+---
+
+### Phase 2: Core Views (Weeks 3-5)
+**Goal:** Kanban, Chat, Diffs, Preview mobile views
+
+**Week 3: Kanban Mobile**
+- [ ] Tabbed column view
+- [ ] Task card mobile component
+- [ ] Swipe gestures (delete, archive)
+- [ ] FAB for new task
+- [ ] Pull to refresh
+
+**Week 4: Chat Mobile**
+- [ ] Full-screen conversation layout
+- [ ] Mobile input bar (auto-expand)
+- [ ] Collapsed message types
+- [ ] Attachment picker (bottom sheet)
+- [ ] Voice input integration
+
+**Week 5: Diffs & Preview Mobile**
+- [ ] File carousel navigation
+- [ ] Horizontal scroll code blocks
+- [ ] Pinch to zoom
+- [ ] Inline comment UI
+- [ ] Responsive preview selector
+
+**Deliverables:**
+- All core views functional on mobile
+- Gestures working throughout
+- Performance targets met
+
+---
+
+### Phase 3: Advanced Features (Weeks 6-8)
+**Goal:** Native integrations + offline + performance
+
+**Week 6: Native Features**
+- [ ] Camera integration (Capacitor)
+- [ ] Gallery picker
+- [ ] Push notifications setup
+- [ ] Share target registration
+- [ ] Haptic feedback throughout
+
+**Week 7: Offline Support**
+- [ ] IndexedDB caching strategy
+- [ ] Offline queue for actions
+- [ ] Sync on reconnection
+- [ ] Offline indicator UI
+- [ ] Service worker (PWA)
+
+**Week 8: Performance**
+- [ ] Code splitting optimization
+- [ ] Virtual scrolling everywhere
+- [ ] Image optimization (WebP)
+- [ ] Bundle size <500KB
+- [ ] Lighthouse score >90
+
+**Deliverables:**
+- Native app experience
+- Works offline
+- Fast & smooth (60fps)
+
+---
+
+### Phase 4: Polish & Testing (Weeks 9-10)
+**Goal:** Bug fixes, animations, accessibility, launch
+
+**Week 9: Polish**
+- [ ] All transitions smooth
+- [ ] Haptics refined
+- [ ] Dark mode optimized (OLED)
+- [ ] Landscape orientation
+- [ ] Tablet layout (bonus)
+
+**Week 10: Testing & Launch**
+- [ ] User testing (5-10 users)
+- [ ] Bug fixes from feedback
+- [ ] Performance profiling
+- [ ] Accessibility audit (TalkBack)
+- [ ] Build APK
+- [ ] App Store listing
+- [ ] Launch! 🚀
+
+**Deliverables:**
+- Production-ready Android APK
+- User-tested and validated
+- Documented
+
+---
+
+## Success Criteria
+
+### Functional Requirements
+- ✅ 100% feature parity with desktop
+- ✅ Native feel (like ChatGPT mobile)
+- ✅ Offline support for core features
+- ✅ Touch optimized (all 44x44px minimum)
+
+### Performance Targets
+- **Bundle**: <500KB gzipped
+- **Load**: <1.5s first paint (3G)
+- **FPS**: 60fps (gestures/animations)
+- **Lighthouse**: >90 mobile score
+
+### User Experience
+- **One-Handed**: 80% tasks with thumb
+- **Learning**: <5 min to master nav
+- **Efficiency**: 50% faster than desktop (quick actions)
+- **Satisfaction**: >4.5/5 rating
+
+---
+
+## Technology Stack
+
+### Core (Existing)
+- React 18
+- React Router
+- React Query
+- Tailwind CSS
+
+### Mobile-Specific (New)
+- **Capacitor**: Native features
+- **use-gesture**: Touch gestures
+- **react-spring**: Animations
+- **Virtuoso**: Virtual scrolling (already have)
+
+### Native Integrations
+- `@capacitor/camera` - Camera & gallery
+- `@capacitor/push-notifications` - Push notifications
+- `@capacitor/share` - Share target
+- `@capacitor/haptics` - Haptic feedback
+
+---
+
+## Testing Strategy
+
+### Devices
+- **Small**: iPhone SE (375px)
+- **Standard**: iPhone 14 Pro (393px), Pixel 7 (412px)
+- **Tablet**: iPad Mini (768px)
+
+### Testing Rounds
+- **Round 1** (Week 3): Kanban & Chat
+- **Round 2** (Week 6): All views + gestures
+- **Round 3** (Week 9): Final polish
+
+### Metrics
+- Task completion time
+- Error rate
+- SUS score (satisfaction)
+- Feature discoverability
+
+---
+
+## Risks & Mitigations
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| **Performance** (bundle size) | High | Code splitting, lazy loading |
+| **Gestures conflict** | Medium | Careful event handling, testing |
+| **Offline complexity** | High | Start simple, iterate |
+| **Browser quirks** | Medium | Test on real devices early |
+| **Scope creep** | High | Stick to 10-week plan, no extras |
+
+---
+
+## Success Metrics
+
+### KPIs (Post-Launch)
+- **DAU**: 2x increase (mobile vs desktop only)
+- **Session Duration**: 3x increase
+- **Feature Adoption**: >80% try all 4 tabs
+- **Retention**: >60% return after 7 days
+
+---
+
+## Related Issues
+
+- TBD: Create GitHub issue for tracking
+- Link to any existing mobile UX complaints
+
+---
+
+## Next Steps
+
+1. **✅ Discovery Complete** (This document + supporting docs)
+2. **⏭️ Design Phase** (2 weeks)
+   - Create Figma mockups
+   - Interactive prototype
+   - User testing round 1
+3. **⏭️ Development** (10 weeks)
+   - Follow phase-by-phase plan
+   - Sprint-based development
+4. **⏭️ Launch** (1 week)
+   - Beta testing
+   - App Store submission
+   - Public launch 🚀
+
+---
+
+## Notes
+
+**Why This Matters:**
+- Mobile is the future of work
+- AI apps are mobile-first (ChatGPT, Claude)
+- Forge should be accessible anywhere
+- Current mobile UX is blocking adoption
+
+**What Makes This Different:**
+- Not a responsive tweak - complete redesign
+- Research-backed (analyzed 5 leading AI apps)
+- Native feel (Capacitor for camera, notifications)
+- Offline-first (queue actions, sync later)
+- Gesture-rich (swipe, long-press everywhere)
+
+**Expected Impact:**
+- 10x better mobile UX
+- 2-3x user engagement
+- New user segment (mobile-only users)
+- Competitive advantage (best mobile UX in agentic tools)
+
+---
+
+**Total Discovery Effort:** 8,000+ lines of documentation
+**Research Docs:** 3 comprehensive documents
+**Ready For:** Design → Development → Launch
+
+🚀 Let's build the best mobile experience for agentic task management!

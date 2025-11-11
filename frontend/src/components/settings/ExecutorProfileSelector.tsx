@@ -1,7 +1,9 @@
 import { useState, useMemo, useRef, useCallback, useEffect, memo } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { Settings2, ArrowDown, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,6 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import type {
@@ -24,6 +32,8 @@ type Props = {
   disabled?: boolean;
   showLabel?: boolean;
   showVariantSelector?: boolean;
+  disableProviderChange?: boolean;
+  layout?: 'inline' | 'stacked';
 };
 
 type ProfileRowProps = {
@@ -95,7 +105,10 @@ function ExecutorProfileSelector({
   disabled = false,
   showLabel = true,
   showVariantSelector = true,
+  disableProviderChange = false,
+  layout = 'inline',
 }: Props) {
+  const { t } = useTranslation('tasks');
   const [profileSearchTerm, setProfileSearchTerm] = useState('');
   const [variantSearchTerm, setVariantSearchTerm] = useState('');
   const [profileHighlightedIndex, setProfileHighlightedIndex] = useState<number | null>(null);
@@ -234,13 +247,26 @@ function ExecutorProfileSelector({
   // Show loading state instead of returning null
   const isLoading = !profiles;
 
+  // Determine container classes based on layout
+  const containerClasses = layout === 'inline'
+    ? "flex gap-3 items-center"
+    : "space-y-3";
+
+  const selectorContainerClasses = layout === 'inline'
+    ? "flex items-center gap-2 flex-1"
+    : "space-y-1.5";
+
+  const labelClasses = layout === 'inline'
+    ? "text-sm font-medium whitespace-nowrap"
+    : "text-sm font-medium";
+
   return (
-    <div className="flex gap-3 flex-col sm:flex-row">
+    <div className={containerClasses}>
       {/* Executor Profile Selector */}
-      <div className="flex-1">
+      <div className={selectorContainerClasses}>
         {showLabel && (
-          <Label htmlFor="executor-profile" className="text-sm font-medium">
-            Provider
+          <Label htmlFor="executor-profile" className={labelClasses}>
+            {t('executorProfileSelector.provider')}
           </Label>
         )}
         <DropdownMenu
@@ -253,24 +279,42 @@ function ExecutorProfileSelector({
             }
           }}
         >
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-between text-xs mt-1.5"
-              disabled={disabled || isLoading}
-            >
-              <div className="flex items-center gap-1.5">
-                <Settings2 className="h-3 w-3" />
-                <span className="truncate">
-                  {isLoading
-                    ? 'Loading providers...'
-                    : selectedProfile?.executor || 'Select provider'}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-block w-full">
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      id="executor-profile"
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "w-full justify-between text-xs",
+                        disableProviderChange && "pointer-events-none"
+                      )}
+                      disabled={disabled || isLoading || disableProviderChange}
+                      aria-haspopup="listbox"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Settings2 className="h-3 w-3" />
+                        <span className="truncate">
+                          {isLoading
+                            ? t('executorProfileSelector.loadingProviders')
+                            : selectedProfile?.executor || t('executorProfileSelector.selectProvider')}
+                        </span>
+                      </div>
+                      <ArrowDown className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
                 </span>
-              </div>
-              <ArrowDown className="h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
+              </TooltipTrigger>
+              {disableProviderChange && (
+                <TooltipContent>
+                  {t('executorProfileSelector.disabledProviderTooltip')}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
           <DropdownMenuContent className="w-80">
             <div className="p-2">
               <div className="relative">
@@ -349,9 +393,9 @@ function ExecutorProfileSelector({
         selectedProfile &&
         hasVariants &&
         currentProfile && (
-          <div className="flex-1">
-            <Label htmlFor="executor-variant" className="text-sm font-medium">
-              Agent
+          <div className={selectorContainerClasses}>
+            <Label htmlFor="executor-variant" className={labelClasses}>
+              {t('executorProfileSelector.agent')}
             </Label>
             <DropdownMenu
               open={isLoading ? false : variantOpen}
@@ -365,10 +409,12 @@ function ExecutorProfileSelector({
             >
               <DropdownMenuTrigger asChild>
                 <Button
+                  id="executor-variant"
                   variant="outline"
                   size="sm"
-                  className="w-full justify-between text-xs mt-1.5"
+                  className="w-full justify-between text-xs"
                   disabled={disabled || isLoading}
+                  aria-haspopup="listbox"
                 >
                   <span className="truncate">
                     {isLoading
@@ -457,34 +503,34 @@ function ExecutorProfileSelector({
         selectedProfile &&
         !hasVariants &&
         currentProfile && (
-          <div className="flex-1">
-            <Label htmlFor="executor-variant" className="text-sm font-medium">
-              Agent
+          <div className={selectorContainerClasses}>
+            <Label htmlFor="executor-variant" className={labelClasses}>
+              {t('executorProfileSelector.agent')}
             </Label>
             <Button
               variant="outline"
               size="sm"
               disabled
-              className="w-full text-xs justify-start mt-1.5"
+              className="w-full text-xs justify-start"
             >
-              Default
+              {t('executorProfileSelector.default')}
             </Button>
           </div>
         )}
 
       {/* Show placeholder for variant when no profile selected */}
       {showVariantSelector && !selectedProfile && (
-        <div className="flex-1">
-          <Label htmlFor="executor-variant" className="text-sm font-medium">
-            Agent
+        <div className={selectorContainerClasses}>
+          <Label htmlFor="executor-variant" className={labelClasses}>
+            {t('executorProfileSelector.agent')}
           </Label>
           <Button
             variant="outline"
             size="sm"
             disabled
-            className="w-full text-xs justify-start mt-1.5"
+            className="w-full text-xs justify-start"
           >
-            Select provider first
+            {t('executorProfileSelector.selectProviderFirst')}
           </Button>
         </div>
       )}
