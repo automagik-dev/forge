@@ -215,7 +215,21 @@ Tasks Chat New Me
 - State management (React Query + IndexedDB structure)
 - Error handling and conflict resolution flows
 
-**8. UX Best Practices & Engagement Spec** (`specs/ux-best-practices-and-engagement-spec.md`) **NEW**
+**8. Design System & Branding Spec** (`specs/design-system-and-branding-spec.md`) **NEW**
+- 1,150 lines of comprehensive design system documentation
+- Brand colors extracted from Automagik branding (magenta-cyan gradient)
+- Dark theme (primary): OLED-optimized with brand colors
+- Light theme: Alternative for bright environments
+- Typography scale (display, headings, body, labels, code)
+- Spacing system (4px base unit)
+- Component styles (buttons, cards, badges, inputs, bottom sheets)
+- Border radius, shadows, animations, transitions
+- Haptic feedback guidelines (8 types)
+- Accessibility standards (WCAG AA compliant)
+- Implementation guide with React Native/Capacitor examples
+- Theme context and CSS variables export
+
+**9. UX Best Practices & Engagement Spec** (`specs/ux-best-practices-and-engagement-spec.md`) **NEW**
 - 15,000+ lines of comprehensive UX research and engagement strategy
 - Habit-forming UX patterns (Hooked Model, Fogg Behavior Model)
 - Analysis of leading apps (ChatGPT, Duolingo, GitHub Mobile, Notion, Linear)
@@ -261,7 +275,7 @@ Tasks Chat New Me
 - Offline strategy
 - Performance architecture
 
-**Total Planning Documentation:** 30,000+ lines across 12 comprehensive documents (8 specs + 4 research/summary docs)
+**Total Planning Documentation:** 31,000+ lines across 13 comprehensive documents (9 specs + 4 research/summary docs)
 
 ### Key Insights
 
@@ -521,8 +535,8 @@ Tasks Chat New Me
 
 ---
 
-**Total Planning Effort:** 30,000+ lines of documentation
-**Planning Docs:** 8 technical specifications + 4 research/summary documents
+**Total Planning Effort:** 31,000+ lines of documentation
+**Planning Docs:** 9 technical specifications + 4 research/summary documents
 **GitHub Issue:** [#113](https://github.com/namastexlabs/automagik-forge/issues/113)
 **Status:** ✅ Planning Complete (with Engagement Enhancements)
 **Ready For:** Design → Development → Launch
