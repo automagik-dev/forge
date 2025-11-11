@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useCallback, useEffect, memo } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
-import { Settings2, ArrowDown, Search } from 'lucide-react';
+import { Settings2, ArrowDown, Search, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,6 +9,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import type {
@@ -493,3 +499,158 @@ function ExecutorProfileSelector({
 }
 
 export default ExecutorProfileSelector;
+
+// Compact icon-only selector for chat input toolbar
+type CompactProps = {
+  profiles: Record<string, ExecutorConfig> | null;
+  selectedProfile: ExecutorProfileId | null;
+  onProfileSelect: (profile: ExecutorProfileId) => void;
+  disabled?: boolean;
+};
+
+export function CompactExecutorSelector({
+  profiles,
+  selectedProfile,
+  onProfileSelect,
+  disabled = false,
+}: CompactProps) {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [variantOpen, setVariantOpen] = useState(false);
+
+  const currentProfile = selectedProfile && profiles
+    ? profiles[selectedProfile.executor]
+    : null;
+  const hasVariants = currentProfile && Object.keys(currentProfile).length > 0;
+
+  const handleExecutorChange = useCallback((executor: string) => {
+    onProfileSelect({
+      executor: executor as BaseCodingAgent,
+      variant: null,
+    });
+    setProfileOpen(false);
+  }, [onProfileSelect]);
+
+  const handleVariantChange = useCallback((variant: string) => {
+    if (selectedProfile) {
+      onProfileSelect({
+        ...selectedProfile,
+        variant: variant === 'GENIE' ? null : variant,
+      });
+    }
+    setVariantOpen(false);
+  }, [selectedProfile, onProfileSelect]);
+
+  const profileKeys = useMemo(() => {
+    if (!profiles) return [];
+    return Object.keys(profiles).sort((a, b) => a.localeCompare(b));
+  }, [profiles]);
+
+  const variantKeys = useMemo(() => {
+    if (!currentProfile) return [];
+    return Object.keys(currentProfile).sort((a, b) => a.localeCompare(b));
+  }, [currentProfile]);
+
+  const isLoading = !profiles;
+
+  return (
+    <>
+      {/* Provider Icon Button */}
+      <TooltipProvider>
+        <Tooltip>
+          <DropdownMenu
+            open={isLoading ? false : profileOpen}
+            onOpenChange={setProfileOpen}
+          >
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={disabled || isLoading}
+                >
+                  <Settings2 className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              {profileKeys.length === 0 ? (
+                <div className="p-2 text-sm text-muted-foreground text-center">
+                  No providers found
+                </div>
+              ) : (
+                profileKeys.map((executorKey) => (
+                  <DropdownMenuItem
+                    key={executorKey}
+                    onSelect={() => handleExecutorChange(executorKey)}
+                    className={
+                      selectedProfile?.executor === executorKey
+                        ? 'bg-accent text-accent-foreground'
+                        : ''
+                    }
+                  >
+                    {executorKey}
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <TooltipContent>
+            <p className="text-xs">
+              Provider: {selectedProfile?.executor || 'None selected'}
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      {/* Agent Icon Button (only show if variants exist) */}
+      {selectedProfile && hasVariants && (
+        <TooltipProvider>
+          <Tooltip>
+            <DropdownMenu
+              open={isLoading ? false : variantOpen}
+              onOpenChange={setVariantOpen}
+            >
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={disabled || isLoading}
+                  >
+                    <Bot className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <DropdownMenuContent align="start" className="w-64">
+                {variantKeys.length === 0 ? (
+                  <div className="p-2 text-sm text-muted-foreground text-center">
+                    No agents found
+                  </div>
+                ) : (
+                  variantKeys.map((variantKey) => (
+                    <DropdownMenuItem
+                      key={variantKey}
+                      onSelect={() => handleVariantChange(variantKey)}
+                      className={
+                        selectedProfile.variant === variantKey
+                          ? 'bg-accent text-accent-foreground'
+                          : ''
+                      }
+                    >
+                      {variantKey}
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <TooltipContent>
+              <p className="text-xs">
+                Agent: {selectedProfile.variant || 'GENIE'}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+    </>
+  );
+}

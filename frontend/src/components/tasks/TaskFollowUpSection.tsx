@@ -34,7 +34,7 @@ import { useEntries } from '@/contexts/EntriesContext';
 import { useKeyCycleVariant, useKeySubmitFollowUp, Scope } from '@/keyboard';
 import { useHotkeysContext } from 'react-hotkeys-hook';
 //
-import ExecutorProfileSelector from '@/components/settings/ExecutorProfileSelector';
+import { CompactExecutorSelector } from '@/components/settings/ExecutorProfileSelector';
 import { FollowUpStatusRow } from '@/components/tasks/FollowUpStatusRow';
 import { useAttemptBranch } from '@/hooks/useAttemptBranch';
 import { FollowUpConflictSection } from '@/components/tasks/follow-up/FollowUpConflictSection';
@@ -623,7 +623,7 @@ export function TaskFollowUpSection({
                 }}
               />
               <div className="flex flex-row gap-3 items-center">
-                <div className="flex-1 flex gap-3 items-center">
+                <div className="flex gap-2 items-center">
                   {/* Image button */}
                   <Button
                     variant="outline"
@@ -639,15 +639,15 @@ export function TaskFollowUpSection({
                     />
                   </Button>
 
-                  <ExecutorProfileSelector
+                  {/* Compact icon-only executor selector */}
+                  <CompactExecutorSelector
                     profiles={profiles}
                     selectedProfile={selectedProfile}
                     onProfileSelect={setSelectedProfile}
                     disabled={!isEditable}
-                    showLabel={false}
-                    showVariantSelector={true}
                   />
                 </div>
+                <div className="flex-1" />
 
                 {isAttemptRunning ? (
                   <Button
