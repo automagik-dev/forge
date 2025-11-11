@@ -84,4 +84,20 @@ task copyFrontendAssets(type: Copy) {
     into 'src/main/assets/frontend'
 }
 
+// Task to verify Rust library was copied successfully
+task verifyRustLib {
+    doLast {
+        def rustLibFile = file('src/main/jniLibs/arm64-v8a/libforge_app.so')
+        if (!rustLibFile.exists()) {
+            throw new GradleException(
+                "ERROR: Rust library not found at ${rustLibFile.absolutePath}\n" +
+                "The APK will be incomplete without the native library.\n" +
+                "Ensure 'cargo build --target aarch64-linux-android --release' was run before building the APK."
+            )
+        }
+        println "✓ Verified Rust library exists: ${rustLibFile.absolutePath} (${rustLibFile.length() / 1024 / 1024} MB)"
+    }
+}
+
 preBuild.dependsOn copyRustLib, copyFrontendAssets
+preBuild.finalizedBy verifyRustLib
