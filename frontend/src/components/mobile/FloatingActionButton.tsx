@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Platform } from '@/lib/platform';
 import { useIsMobile } from '@/components/mobile/MobileLayout';
