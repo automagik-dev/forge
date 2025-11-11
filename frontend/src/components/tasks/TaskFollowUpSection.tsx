@@ -144,6 +144,43 @@ export function TaskFollowUpSection({
     void imageUploadRef.current?.addFiles(files);
   }, []);
 
+  // Track drag state for auto-opening tray
+  const [isDraggingOverChat, setIsDraggingOverChat] = useState(false);
+
+  // Container-level drag handlers for auto-opening upload tray
+  const handleContainerDragEnter = useCallback((e: React.DragEvent) => {
+    // Check if dragged items contain files
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      setIsDraggingOverChat(true);
+      setShowImageUpload(true); // Auto-open tray
+    }
+  }, []);
+
+  const handleContainerDragLeave = useCallback((e: React.DragEvent) => {
+    // Only reset if leaving the container entirely
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+
+    if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
+      setIsDraggingOverChat(false);
+    }
+  }, []);
+
+  const handleContainerDragOver = useCallback((e: React.DragEvent) => {
+    // Prevent default to allow drop
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+    }
+  }, []);
+
+  const handleContainerDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOverChat(false);
+    // Let ImageUploadSection handle the actual drop
+  }, []);
+
   // Track whether the follow-up textarea is focused
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
 
@@ -531,6 +568,10 @@ export function TaskFollowUpSection({
         'border-t bg-background p-4',
         isRetryActive && 'opacity-50'
       )}
+      onDragEnter={handleContainerDragEnter}
+      onDragOver={handleContainerDragOver}
+      onDragLeave={handleContainerDragLeave}
+      onDrop={handleContainerDrop}
     >
         <div className="space-y-3">
           {followUpError && (
@@ -557,6 +598,10 @@ export function TaskFollowUpSection({
                   setFollowUpMessage((prev) =>
                     appendImageMarkdown(prev, image)
                   );
+                  // Auto-hide tray after successful upload (unless actively dragging)
+                  if (!isDraggingOverChat) {
+                    setShowImageUpload(false);
+                  }
                 }}
                 disabled={!isEditable}
                 collapsible={false}
@@ -605,6 +650,10 @@ export function TaskFollowUpSection({
                 onChange={(value) => {
                   setFollowUpMessage(value);
                   if (followUpError) setFollowUpError(null);
+                  // Auto-hide upload tray when user starts typing (unless actively dragging)
+                  if (value && showImageUpload && !isDraggingOverChat) {
+                    setShowImageUpload(false);
+                  }
                 }}
                 disabled={!isEditable}
                 showLoadingOverlay={isUnqueuing || !isDraftLoaded}
