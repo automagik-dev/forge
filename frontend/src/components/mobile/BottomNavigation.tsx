@@ -37,7 +37,21 @@ export function BottomNavigation({
     }
     
     if (tab.path) {
-      navigate(tab.path);
+      const [tabPathname, tabQuery] = tab.path.split('?');
+      const params = new URLSearchParams(location.search);
+      const expectedView = new URLSearchParams(tabQuery || '').get('view');
+      
+      if (expectedView === null) {
+        params.delete('view');
+      } else {
+        params.set('view', expectedView);
+      }
+      
+      const search = params.toString();
+      navigate({
+        pathname: tabPathname,
+        search: search ? `?${search}` : '',
+      });
     } else if (tab.onClick) {
       tab.onClick();
     }
@@ -47,7 +61,19 @@ export function BottomNavigation({
   
   const isTabActive = (tab: BottomNavTab): boolean => {
     if (!tab.path) return false;
-    return location.pathname.startsWith(tab.path);
+    
+    const [tabPathname, tabQuery] = tab.path.split('?');
+    const expectedView = new URLSearchParams(tabQuery || '').get('view');
+    const currentView = new URLSearchParams(location.search).get('view');
+    
+    const pathMatches = location.pathname.startsWith(tabPathname);
+    if (!pathMatches) return false;
+    
+    if (expectedView === null) {
+      return currentView === null || currentView === 'kanban';
+    }
+    
+    return currentView === expectedView;
   };
   
   return (
