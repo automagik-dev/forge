@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { GitBranch as GitBranchIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -64,6 +66,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     parentTaskAttemptId,
   }) => {
     const modal = useModal();
+    const { t } = useTranslation('tasks');
     const { createTask, createAndStart, updateTask } =
       useTaskMutations(projectId);
     const { profiles: globalProfiles, config } = useUserSystem();
@@ -609,12 +612,12 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                     />
                   ) : isProfilesLoading ? (
                     <div className="text-sm text-muted-foreground">
-                      Loading executor profiles...
+                      {t('taskFormDialog.loadingProfiles')}
                     </div>
                   ) : (
                     <div className="text-sm text-muted-foreground">
-                      No executor profiles configured. Please configure in{' '}
-                      <a href="/settings/general" className="underline">Settings</a>.
+                      {t('taskFormDialog.noProfiles')}{' '}
+                      <Link to="/settings/general" className="underline">{t('taskFormDialog.settingsLink')}</Link>.
                     </div>
                   )}
 

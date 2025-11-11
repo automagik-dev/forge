@@ -244,6 +244,11 @@
     "creating": "Creating...",
     "start": "Start"
   },
+  "taskFormDialog": {
+    "loadingProfiles": "Loading executor profiles...",
+    "noProfiles": "No executor profiles configured. Please configure in",
+    "settingsLink": "Settings"
+  },
   "viewProcessesDialog": {
     "title": "Execution processes"
   },

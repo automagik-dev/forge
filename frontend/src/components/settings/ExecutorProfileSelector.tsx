@@ -9,6 +9,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import type {
@@ -270,24 +276,35 @@ function ExecutorProfileSelector({
             }
           }}
         >
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-between text-xs"
-              disabled={disabled || isLoading || disableProviderChange}
-            >
-              <div className="flex items-center gap-1.5">
-                <Settings2 className="h-3 w-3" />
-                <span className="truncate">
-                  {isLoading
-                    ? 'Loading providers...'
-                    : selectedProfile?.executor || 'Select provider'}
-                </span>
-              </div>
-              <ArrowDown className="h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-between text-xs"
+                    disabled={disabled || isLoading || disableProviderChange}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Settings2 className="h-3 w-3" />
+                      <span className="truncate">
+                        {isLoading
+                          ? 'Loading providers...'
+                          : selectedProfile?.executor || 'Select provider'}
+                      </span>
+                    </div>
+                    <ArrowDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              {disableProviderChange && (
+                <TooltipContent>
+                  Cannot change provider while processes are running
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
           <DropdownMenuContent className="w-80">
             <div className="p-2">
               <div className="relative">
