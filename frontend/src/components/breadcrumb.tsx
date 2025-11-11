@@ -163,52 +163,61 @@ export function Breadcrumb() {
     }> = [];
 
     if (projectId && project) {
-      // Start with target/base branch if viewing an attempt (branch origin)
-      // Use attempt's target_branch (user-selected)
-      const targetBranch = attempt?.target_branch;
-      if (targetBranch) {
-        crumbs.push({
-          label: targetBranch,
-          path: location.pathname,
-          type: 'base-branch',
-          icon: <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
-        });
-      }
+      // Always start with project name
+      crumbs.push({
+        label: project.name,
+        path: `/projects/${projectId}/tasks`,
+        type: 'project',
+      });
 
-      // Add git branch (worktree) if viewing an attempt
-      if (attempt?.branch) {
-        crumbs.push({
-          label: attempt.branch,
-          path: location.pathname,
-          type: 'git-branch',
-          icon: <GitBranch className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
-        });
-      }
+      // When viewing an attempt, show: project -> base branch -> worktree -> task
+      if (attempt) {
+        // Add target/base branch if viewing an attempt (branch origin)
+        const targetBranch = attempt?.target_branch;
+        if (targetBranch) {
+          crumbs.push({
+            label: targetBranch,
+            path: location.pathname,
+            type: 'base-branch',
+            icon: <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
+          });
+        }
 
-      // Add current task
-      if (taskId && tasksById[taskId]) {
-        crumbs.push({
-          label: tasksById[taskId].title,
-          path: `/projects/${projectId}/tasks/${taskId}`,
-          type: 'task',
-        });
-      }
+        // Add git branch (worktree) if viewing an attempt
+        if (attempt?.branch) {
+          crumbs.push({
+            label: attempt.branch,
+            path: location.pathname,
+            type: 'git-branch',
+            icon: <GitBranch className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
+          });
+        }
 
-      // If no attempt context, show traditional breadcrumb (project name for non-attempt views)
-      if (!attempt) {
-        // Insert project at beginning if not in attempt view
-        crumbs.unshift({
-          label: project.name,
-          path: `/projects/${projectId}/tasks`,
-          type: 'project',
-        });
-
+        // Add current task
+        if (taskId && tasksById[taskId]) {
+          crumbs.push({
+            label: tasksById[taskId].title,
+            path: `/projects/${projectId}/tasks/${taskId}`,
+            type: 'task',
+          });
+        }
+      } else {
+        // Traditional breadcrumb for non-attempt views: project -> parent task -> task
         // Add parent task if current task has one
         if (parentTask) {
-          crumbs.splice(1, 0, {
+          crumbs.push({
             label: parentTask.title,
             path: `/projects/${projectId}/tasks/${parentTask.id}`,
             type: 'parent-task',
+          });
+        }
+
+        // Add current task
+        if (taskId && tasksById[taskId]) {
+          crumbs.push({
+            label: tasksById[taskId].title,
+            path: `/projects/${projectId}/tasks/${taskId}`,
+            type: 'task',
           });
         }
       }
