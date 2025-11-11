@@ -1,7 +1,9 @@
 import { useState, useMemo, useRef, useCallback, useEffect, memo } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { Settings2, ArrowDown, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -106,6 +108,7 @@ function ExecutorProfileSelector({
   disableProviderChange = false,
   layout = 'inline',
 }: Props) {
+  const { t } = useTranslation('tasks');
   const [profileSearchTerm, setProfileSearchTerm] = useState('');
   const [variantSearchTerm, setVariantSearchTerm] = useState('');
   const [profileHighlightedIndex, setProfileHighlightedIndex] = useState<number | null>(null);
@@ -279,28 +282,33 @@ function ExecutorProfileSelector({
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-between text-xs"
-                    disabled={disabled || isLoading || disableProviderChange}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <Settings2 className="h-3 w-3" />
-                      <span className="truncate">
-                        {isLoading
-                          ? 'Loading providers...'
-                          : selectedProfile?.executor || 'Select provider'}
-                      </span>
-                    </div>
-                    <ArrowDown className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
+                <span className="inline-block w-full">
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "w-full justify-between text-xs",
+                        disableProviderChange && "pointer-events-none"
+                      )}
+                      disabled={disabled || isLoading || disableProviderChange}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Settings2 className="h-3 w-3" />
+                        <span className="truncate">
+                          {isLoading
+                            ? 'Loading providers...'
+                            : selectedProfile?.executor || 'Select provider'}
+                        </span>
+                      </div>
+                      <ArrowDown className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                </span>
               </TooltipTrigger>
               {disableProviderChange && (
                 <TooltipContent>
-                  Cannot change provider while processes are running
+                  {t('executorProfileSelector.disabledProviderTooltip')}
                 </TooltipContent>
               )}
             </Tooltip>
