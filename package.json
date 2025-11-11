@@ -69,7 +69,7 @@
     "cypress-plugin-tab": "^1.0.5"
   },
   "engines": {
-    "node": ">=18",
+    "node": ">=20",
     "pnpm": ">=8"
   },
   "dependencies": {
