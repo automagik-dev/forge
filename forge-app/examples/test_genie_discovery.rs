@@ -1,6 +1,5 @@
 /// Test .genie folder discovery in Forge
 /// Run with: cargo run --bin forge-app --example test_genie_discovery
-
 use std::path::PathBuf;
 
 #[tokio::main]
@@ -11,11 +10,13 @@ async fn main() {
         .init();
 
     // Test with automagik-genie workspace
-    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../automagik-genie");
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../automagik-genie");
 
     if !workspace_root.exists() {
-        eprintln!("❌ automagik-genie workspace not found at {:?}", workspace_root);
+        eprintln!(
+            "❌ automagik-genie workspace not found at {:?}",
+            workspace_root
+        );
         eprintln!("   Please clone automagik-genie repository as a sibling directory");
         std::process::exit(1);
     }
@@ -66,7 +67,10 @@ async fn main() {
                     println!();
                     println!("🔥 Hot-reload is active!");
                     println!("   File watcher is monitoring .genie/ for changes.");
-                    println!("   Try editing a .md file in {:?}", workspace_root.join(".genie"));
+                    println!(
+                        "   Try editing a .md file in {:?}",
+                        workspace_root.join(".genie")
+                    );
                     println!("   Changes will be detected and profiles will reload automatically.");
                     println!();
                     println!("Press Ctrl+C to exit...");
