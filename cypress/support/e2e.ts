@@ -1,5 +1,6 @@
 
 import './commands'
+import 'cypress-plugin-tab'
 
 Cypress.on('uncaught:exception', (err, runnable) => {
   return false

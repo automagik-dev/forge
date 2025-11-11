@@ -298,12 +298,60 @@ DEBUG=cypress:* npx cypress run
 3. Verify environment variables are set correctly
 4. Ensure all dependencies are installed
 
+## cy.prompt() - AI-Powered Test Generation
+
+This project is configured with Cypress Cloud for AI-powered test generation using `cy.prompt()`.
+
+### What is cy.prompt()?
+
+`cy.prompt()` is a Cypress Cloud feature that generates test code from natural language prompts. Instead of writing explicit assertions, you describe what to test in plain English.
+
+### Configuration
+
+- **Project ID**: `85rhk2`
+- **Cypress Cloud**: [https://cloud.cypress.io/projects/85rhk2](https://cloud.cypress.io/projects/85rhk2)
+
+### Using cy.prompt()
+
+```typescript
+describe('Mobile Features', () => {
+  it('should test bottom navigation', () => {
+    cy.prompt(`
+      Test that the bottom navigation displays all 4 tabs (Tasks, Chat, New, Me) 
+      on iPhone 14 Pro viewport (393x852). Verify each tab is visible, has proper 
+      touch target size (44x44px minimum), and navigates to the correct view when tapped.
+    `)
+  })
+})
+```
+
+### Running with Cypress Cloud
+
+```bash
+# Run tests and record to Cypress Cloud
+npx cypress run --record --key f36c81f7-4417-43fe-9b3a-63666e5ee7f9
+
+# Or use environment variable
+export CYPRESS_RECORD_KEY=f36c81f7-4417-43fe-9b3a-63666e5ee7f9
+npx cypress run --record
+```
+
+### Examples
+
+See `cypress/e2e/cy-prompt-examples/mobile-smoke-tests.prompt.cy.ts` for example prompts based on the mobile-native-app.md specification.
+
+For detailed guidance on writing effective prompts, see [PROMPT_GUIDE.md](./PROMPT_GUIDE.md).
+
 ## Resources
 
 - [Cypress Documentation](https://docs.cypress.io/)
+- [cy.prompt() Documentation](https://docs.cypress.io/api/commands/prompt)
+- [cy.prompt() vs MCP Agents](https://www.cypress.io/blog/cy-prompt-vs-mcp-agents-ai-designed-for-testing-not-just-tasks)
+- [cy.prompt() Guide](./PROMPT_GUIDE.md)
 - [Mobile Native App Specs](../.genie/wishes/mobile-native-app.md)
 - [Phase 1 Foundation Spec](../.genie/wishes/mobile-native-app/specs/phase-1-foundation-technical-spec.md)
 - [Component API Contracts](../.genie/wishes/mobile-native-app/specs/component-api-contracts.md)
+- [Cypress Cloud Dashboard](https://cloud.cypress.io/projects/85rhk2)
 
 ## Contributing
 

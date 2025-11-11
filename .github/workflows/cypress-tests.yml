@@ -10,8 +10,9 @@ jobs:
   cypress-run:
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
-        viewport: [iphone-14-pro, ipad-mini, desktop]
+        containers: [1, 2]
     
     steps:
       - name: Checkout
@@ -33,9 +34,7 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Install dependencies
-        run: |
-          pnpm install
-          cd frontend && pnpm install
+        run: pnpm install
 
       - name: Build backend
         run: cargo build --release
@@ -57,27 +56,34 @@ jobs:
         env:
           PORT: 3000
 
+      - name: Wait for servers
+        run: |
+          npx wait-on http://localhost:3000 http://localhost:8887/health --timeout 60000
+
       - name: Run Cypress tests
         uses: cypress-io/github-action@v6
         with:
           working-directory: .
           browser: chrome
-          config: viewportWidth=${{ matrix.viewport == 'iphone-14-pro' && '393' || matrix.viewport == 'ipad-mini' && '768' || '1280' }},viewportHeight=${{ matrix.viewport == 'iphone-14-pro' && '852' || matrix.viewport == 'ipad-mini' && '1024' || '720' }}
+          record: true
+          parallel: true
         env:
           CYPRESS_BASE_URL: http://localhost:3000
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload screenshots on failure
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: cypress-screenshots-${{ matrix.viewport }}
+          name: cypress-screenshots-${{ matrix.containers }}
           path: cypress/screenshots
 
       - name: Upload videos
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cypress-videos-${{ matrix.viewport }}
+          name: cypress-videos-${{ matrix.containers }}
           path: cypress/videos
 
   mobile-specific-tests:
