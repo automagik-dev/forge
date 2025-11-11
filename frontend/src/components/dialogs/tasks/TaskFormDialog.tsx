@@ -74,7 +74,8 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
 
     // Use project profiles if available (synchronized agents), fallback to global profiles
     const profiles = projectProfiles?.executors || globalProfiles;
-    const isProfilesLoading = isLoadingProjectProfiles && !globalProfiles;
+    const hasProfiles = profiles && Object.keys(profiles).length > 0;
+    const isProfilesLoading = isLoadingProjectProfiles && (!globalProfiles || Object.keys(globalProfiles).length === 0);
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -600,7 +601,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
               {!isEditMode && (
                 <div className="space-y-3 pt-2 border-t">
                   {/* Executor Profile Selector */}
-                  {profiles ? (
+                  {hasProfiles ? (
                     <ExecutorProfileSelector
                       profiles={profiles}
                       selectedProfile={selectedExecutorProfile}

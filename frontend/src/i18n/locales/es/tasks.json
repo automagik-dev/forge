@@ -255,7 +255,13 @@
     "settingsLink": "Configuración"
   },
   "executorProfileSelector": {
-    "disabledProviderTooltip": "No se puede cambiar el proveedor mientras los procesos están en ejecución"
+    "disabledProviderTooltip": "No se puede cambiar el proveedor mientras los procesos están en ejecución",
+    "provider": "Proveedor",
+    "agent": "Agente",
+    "default": "Predeterminado",
+    "selectProviderFirst": "Selecciona el proveedor primero",
+    "loadingProviders": "Cargando proveedores...",
+    "selectProvider": "Seleccionar proveedor"
   },
   "viewProcessesDialog": {
     "title": "Execution processes"

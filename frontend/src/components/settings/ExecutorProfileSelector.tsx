@@ -266,7 +266,7 @@ function ExecutorProfileSelector({
       <div className={selectorContainerClasses}>
         {showLabel && (
           <Label htmlFor="executor-profile" className={labelClasses}>
-            Provider
+            {t('executorProfileSelector.provider')}
           </Label>
         )}
         <DropdownMenu
@@ -285,6 +285,7 @@ function ExecutorProfileSelector({
                 <span className="inline-block w-full">
                   <DropdownMenuTrigger asChild>
                     <Button
+                      id="executor-profile"
                       variant="outline"
                       size="sm"
                       className={cn(
@@ -292,13 +293,14 @@ function ExecutorProfileSelector({
                         disableProviderChange && "pointer-events-none"
                       )}
                       disabled={disabled || isLoading || disableProviderChange}
+                      aria-haspopup="listbox"
                     >
                       <div className="flex items-center gap-1.5">
                         <Settings2 className="h-3 w-3" />
                         <span className="truncate">
                           {isLoading
-                            ? 'Loading providers...'
-                            : selectedProfile?.executor || 'Select provider'}
+                            ? t('executorProfileSelector.loadingProviders')
+                            : selectedProfile?.executor || t('executorProfileSelector.selectProvider')}
                         </span>
                       </div>
                       <ArrowDown className="h-3 w-3" />
@@ -393,7 +395,7 @@ function ExecutorProfileSelector({
         currentProfile && (
           <div className={selectorContainerClasses}>
             <Label htmlFor="executor-variant" className={labelClasses}>
-              Agent
+              {t('executorProfileSelector.agent')}
             </Label>
             <DropdownMenu
               open={isLoading ? false : variantOpen}
@@ -407,10 +409,12 @@ function ExecutorProfileSelector({
             >
               <DropdownMenuTrigger asChild>
                 <Button
+                  id="executor-variant"
                   variant="outline"
                   size="sm"
                   className="w-full justify-between text-xs"
                   disabled={disabled || isLoading}
+                  aria-haspopup="listbox"
                 >
                   <span className="truncate">
                     {isLoading
@@ -501,7 +505,7 @@ function ExecutorProfileSelector({
         currentProfile && (
           <div className={selectorContainerClasses}>
             <Label htmlFor="executor-variant" className={labelClasses}>
-              Agent
+              {t('executorProfileSelector.agent')}
             </Label>
             <Button
               variant="outline"
@@ -509,7 +513,7 @@ function ExecutorProfileSelector({
               disabled
               className="w-full text-xs justify-start"
             >
-              Default
+              {t('executorProfileSelector.default')}
             </Button>
           </div>
         )}
@@ -518,7 +522,7 @@ function ExecutorProfileSelector({
       {showVariantSelector && !selectedProfile && (
         <div className={selectorContainerClasses}>
           <Label htmlFor="executor-variant" className={labelClasses}>
-            Agent
+            {t('executorProfileSelector.agent')}
           </Label>
           <Button
             variant="outline"
@@ -526,7 +530,7 @@ function ExecutorProfileSelector({
             disabled
             className="w-full text-xs justify-start"
           >
-            Select provider first
+            {t('executorProfileSelector.selectProviderFirst')}
           </Button>
         </div>
       )}
