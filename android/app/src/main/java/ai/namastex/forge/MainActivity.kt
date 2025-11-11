@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.WebSettings
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.coroutines.*
 
@@ -40,10 +42,24 @@ class MainActivity : AppCompatActivity() {
 
         // Start Rust server in background
         serverJob = CoroutineScope(Dispatchers.IO).launch {
-            val port = startServer()
-            withContext(Dispatchers.Main) {
-                // Load app once server is ready
-                webView.loadUrl("http://127.0.0.1:$port")
+            try {
+                val port = startServer()
+                
+                if (port <= 0) {
+                    withContext(Dispatchers.Main) {
+                        showServerStartupError()
+                    }
+                    return@launch
+                }
+                
+                withContext(Dispatchers.Main) {
+                    // Load app once server is ready
+                    webView.loadUrl("http://127.0.0.1:$port")
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    showServerStartupError(e.message)
+                }
             }
         }
     }
@@ -60,5 +76,24 @@ class MainActivity : AppCompatActivity() {
         } else {
             super.onBackPressed()
         }
+    }
+
+    private fun showServerStartupError(details: String? = null) {
+        val message = buildString {
+            append("Failed to start the Forge backend server.\n\n")
+            if (details != null) {
+                append("Error: $details\n\n")
+            }
+            append("Please check the logs (adb logcat) for more details.")
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Server Startup Failed")
+            .setMessage(message)
+            .setPositiveButton("Exit") { _, _ ->
+                finish()
+            }
+            .setCancelable(false)
+            .show()
     }
 }

@@ -63,9 +63,11 @@ forge-config = { path = "../forge-extensions/config" }
 
 # Android JNI
 jni = { version = "0.21", optional = true }
+android_logger = { version = "0.14", optional = true }
+log = "0.4"
 
 [features]
-android = ["jni"]
+android = ["jni", "android_logger"]
 
 [dev-dependencies]
 httpmock = "0.7"

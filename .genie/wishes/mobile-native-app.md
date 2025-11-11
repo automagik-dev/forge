@@ -1,8 +1,8 @@
 # WISH: Forge Mobile Native App
 
-**Issue:** TBD (Create GitHub issue)
+**Issue:** [#113](https://github.com/namastexlabs/automagik-forge/issues/113)
 **Branch:** `mobile-native-app`
-**Status:** 📋 DISCOVERY COMPLETE
+**Status:** 📋 PLANNING EXPANSION COMPLETE
 **Priority:** 🟡 HIGH (Major UX Enhancement)
 
 ---
@@ -144,26 +144,100 @@ Tasks Chat New Me
 
 ## Supporting Documentation
 
-### Research Documents (in `.genie/wishes/mobile-native-app/`)
+### Technical Specifications (in `.genie/wishes/mobile-native-app/specs/`)
+
+**1. Phase 1 Foundation Technical Spec** (`specs/phase-1-foundation-technical-spec.md`)
+- 985 lines of detailed Phase 1 implementation guidance
+- Capacitor setup and configuration
+- Mobile breakpoints and responsive design system
+- Bottom navigation component architecture
+- Bottom sheets system with gesture support
+- Gesture library integration (use-gesture)
+- Mobile theme (spacing, typography, colors, safe areas)
+- Testing strategy and performance targets
+
+**2. Component API Contracts** (`specs/component-api-contracts.md`)
+- 700+ lines of TypeScript interfaces
+- Core types and data structures
+- Navigation component contracts (BottomNavigation, BottomSheet)
+- Gesture system types (SwipeGesture, LongPressGesture, PinchGesture)
+- Layout and view contracts (MobileLayout, TasksKanbanView, ConversationView)
+- Native features interfaces (Camera, Notifications, Haptics)
+- State management types (offline-first patterns)
+
+**3. Capacitor Native Features Spec** (`specs/capacitor-native-features-spec.md`)
+- 2,500 lines covering all native integrations
+- Camera integration (permissions, configuration, React hooks, UI)
+- Push notifications (Firebase setup, implementation, React hooks)
+- Haptic feedback (8 types: light, medium, heavy, success, warning, error, selection, vibrate)
+- Share target (text, URL, files, tasks, conversations)
+- Status bar & keyboard management
+- App state & lifecycle handling
+- File system operations
+- Network status monitoring
+- Complete testing strategy with device matrix
+
+**4. Offline Strategy Spec** (`specs/offline-strategy-spec.md`)
+- 2,000 lines of offline-first architecture
+- IndexedDB schema for all entities (projects, tasks, attempts, conversations, diffs)
+- Offline queue system with retry logic and exponential backoff
+- Sync strategy with background synchronization
+- Conflict resolution (version-mismatch, deleted, concurrent-edit)
+- React hooks for offline-first data fetching (useOfflineTasks, useOfflineConversation)
+- Testing strategy with offline scenarios
+
+**5. Performance Monitoring Spec** (`specs/performance-monitoring-spec.md`)
+- 2,200 lines of performance optimization guidance
+- Performance budgets (bundle: <500KB, load: <1.5s, FPS: 60, memory: <100MB)
+- Monitoring strategy (Web Vitals, navigation timing, resource timing, long tasks)
+- Optimization techniques (code splitting, lazy loading, tree shaking, memoization)
+- Bundle analysis tools and CI/CD integration
+- Runtime performance monitoring (React DevTools Profiler, Chrome DevTools)
+- Network performance optimization (caching, batching, compression)
+
+**6. Migration Strategy** (`specs/migration-strategy.md`)
+- 2,500 lines of step-by-step migration guidance
+- Component migration pattern with platform detection
+- Routing migration from desktop to mobile navigation
+- State management migration to offline-first
+- API integration migration for offline support
+- Testing strategy with device matrix
+- Feature flags for gradual rollout (MOBILE_LAYOUT, OFFLINE_MODE, NATIVE_FEATURES)
+- Rollback procedures and success criteria
+
+**7. Data Flow Architecture** (`specs/data-flow-architecture.md`)
+- 2,000+ lines of data flow diagrams and architecture
+- Offline-first data flow (read and write flows)
+- Task management flow (view, create, update tasks)
+- Conversation flow (view conversation, send follow-ups)
+- Native features flow (camera, push notifications)
+- Sync flow (background sync, periodic sync)
+- State management (React Query + IndexedDB structure)
+- Error handling and conflict resolution flows
+
+### Research Documents (in `.genie/wishes/mobile-native-app/research/`)
 
 **1. Frontend Inventory** (`research/forge-frontend-complete-inventory.md`)
-- 1,500+ lines mapping every Forge feature
+- 2,587 lines mapping every Forge feature
 - 164 TSX components cataloged
 - Data flow diagrams
 - Current mobile pain points
 
 **2. AI Mobile Apps Analysis** (`research/ai-mobile-apps-ux-analysis.md`)
-- 10 universal UX patterns
+- 985 lines analyzing 10 universal UX patterns
 - Best practices from ChatGPT, Claude, Perplexity, Gemini, Poe
 - Gesture systems compared
 - Mobile-specific optimizations
 
-**3. Mobile Architecture** (`architecture/forge-mobile-architecture.md`)
+**3. Mobile Architecture** (`research/forge-mobile-architecture.md`)
+- 985 lines of architecture documentation
 - Complete view mapping (desktop → mobile)
 - Navigation architecture
 - Screen flow diagrams
 - Offline strategy
 - Performance architecture
+
+**Total Planning Documentation:** 15,000+ lines across 10 comprehensive documents
 
 ### Key Insights
 
@@ -378,8 +452,8 @@ Tasks Chat New Me
 
 ## Related Issues
 
-- TBD: Create GitHub issue for tracking
-- Link to any existing mobile UX complaints
+- **Primary Tracking Issue:** [#113 - Mobile Native App](https://github.com/namastexlabs/automagik-forge/issues/113)
+- All planning documentation linked in issue description
 
 ---
 
@@ -423,8 +497,10 @@ Tasks Chat New Me
 
 ---
 
-**Total Discovery Effort:** 8,000+ lines of documentation
-**Research Docs:** 3 comprehensive documents
+**Total Planning Effort:** 15,000+ lines of documentation
+**Planning Docs:** 7 technical specifications + 3 research documents
+**GitHub Issue:** [#113](https://github.com/namastexlabs/automagik-forge/issues/113)
+**Status:** ✅ Planning Complete
 **Ready For:** Design → Development → Launch
 
 🚀 Let's build the best mobile experience for agentic task management!
