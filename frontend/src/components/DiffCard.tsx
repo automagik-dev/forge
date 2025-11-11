@@ -252,7 +252,7 @@ export default function DiffCard({
   const expandable = true;
 
   return (
-    <div className="my-4 border">
+    <div className="my-4 glass-medium rounded-lg border-white/10 hover-lift">
       <div className="flex items-center px-4 py-2">
         {expandable && (
           <Button

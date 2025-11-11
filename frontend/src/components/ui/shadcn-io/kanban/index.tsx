@@ -163,8 +163,7 @@ export const KanbanHeader = (props: KanbanHeaderProps) => {
   return (
     <Card
       className={cn(
-        'sticky top-0 z-20 flex shrink-0 items-center gap-2 p-3 border-b border-dashed flex gap-2',
-        'bg-background',
+        'sticky top-0 z-20 flex shrink-0 items-center gap-2 p-3 border-b border-white/10 flex gap-2 font-secondary',
         props.className
       )}
       style={{
