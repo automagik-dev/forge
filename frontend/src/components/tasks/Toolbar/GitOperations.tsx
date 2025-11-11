@@ -21,6 +21,7 @@ import { Err } from '@/lib/api';
 import type { GitOperationError } from 'shared/types';
 import { showModal } from '@/lib/modals';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import {
   Tooltip,
   TooltipContent,
@@ -52,10 +53,17 @@ function GitOperations({
   setError,
 }: GitOperationsProps) {
   const { t } = useTranslation('tasks');
+  const navigate = useNavigate();
 
   // Git operation hooks
   const rebaseMutation = useRebase(selectedAttempt.id, projectId);
-  const mergeMutation = useMerge(selectedAttempt.id);
+  const mergeMutation = useMerge(
+    selectedAttempt.id,
+    () => {
+      // Navigate to kanban view on successful merge
+      navigate(`/projects/${projectId}/tasks`);
+    }
+  );
   const pushMutation = usePush(selectedAttempt.id);
 
   // Git status calculations

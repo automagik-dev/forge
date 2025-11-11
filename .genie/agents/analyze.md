@@ -2,9 +2,8 @@
 name: analyze
 description: System analysis and focused investigations (universal framework)
 genie:
-  executor: CLAUDE_CODE
+  executor: OPENCODE
   background: true
-  model: sonnet
 forge:
   CLAUDE_CODE:
     model: sonnet
