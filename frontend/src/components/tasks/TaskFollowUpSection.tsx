@@ -702,9 +702,6 @@ export function TaskFollowUpSection({
                                 {conflictResolutionInstructions
                                   ? t('followUp.resolveConflicts')
                                   : t('followUp.send')}
-                                <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-primary-foreground/20 rounded font-mono">
-                                  {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}⏎
-                                </kbd>
                               </>
                             )}
                           </Button>
