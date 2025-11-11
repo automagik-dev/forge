@@ -54,7 +54,7 @@ export function BottomNavigation({
     <nav
       className={cn(
         'fixed bottom-0 left-0 right-0 z-[var(--z-mobile-bottom-nav)]',
-        'bg-background border-t border-border',
+        'bg-[#2A2435] border-t border-[#3E3850]',
         'pb-safe',
         className
       )}
@@ -74,8 +74,8 @@ export function BottomNavigation({
                 'touch-target-comfortable',
                 'transition-colors duration-200',
                 'no-select-mobile',
-                isActive && 'text-primary',
-                !isActive && 'text-muted-foreground',
+                isActive && 'text-[#E91EFF]',
+                !isActive && 'text-[#A8A8B8]',
                 tab.disabled && 'opacity-50 cursor-not-allowed'
               )}
               aria-label={tab.label}

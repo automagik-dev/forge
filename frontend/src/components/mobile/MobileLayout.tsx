@@ -53,13 +53,13 @@ export function MobileLayout({
   
   return (
     <div className={cn(
-      'h-screen-mobile flex flex-col',
+      'h-screen flex flex-col bg-[#1A1625]',
       isNative && 'pt-safe',
       className
     )}>
       <main className={cn(
         'flex-1 overflow-auto mobile-scroll',
-        showBottomNav && 'pb-16',
+        showBottomNav && 'pb-16 pb-safe',
         contentClassName
       )}>
         {children}
