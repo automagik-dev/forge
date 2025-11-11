@@ -8,3 +8,9 @@ export type { BottomSheetProps } from './BottomSheet';
 
 export { MobileLayout, useIsMobile } from './MobileLayout';
 export type { MobileLayoutProps } from './MobileLayout';
+
+export { FloatingActionButton, useFAB } from './FloatingActionButton';
+export type { FloatingActionButtonProps } from './FloatingActionButton';
+
+export { ProgressiveDisclosure, CollapsibleSection } from './ProgressiveDisclosure';
+export type { ProgressiveDisclosureProps, CollapsibleSectionProps } from './ProgressiveDisclosure';
