@@ -395,7 +395,11 @@ impl GenieProfileLoader {
         // 1. Scan global agents (.genie/agents/)
         let global_agents_dir = genie_root.join("agents");
         if global_agents_dir.exists() {
-            files.extend(Self::scan_directory(&global_agents_dir, None, AgentType::Agent)?);
+            files.extend(Self::scan_directory(
+                &global_agents_dir,
+                None,
+                AgentType::Agent,
+            )?);
         }
 
         // 2. Scan collective agents
@@ -460,7 +464,11 @@ impl GenieProfileLoader {
                 }
 
                 // Recursively scan subdirectories
-                files.extend(Self::scan_directory(&path, collective.clone(), agent_type.clone())?);
+                files.extend(Self::scan_directory(
+                    &path,
+                    collective.clone(),
+                    agent_type.clone(),
+                )?);
                 continue;
             }
 
@@ -582,8 +590,8 @@ impl GenieProfileLoader {
         let front_matter_yaml = &captures[1];
         let body = captures[2].trim().to_string();
 
-        let metadata: AgentFrontmatter = serde_yaml::from_str(front_matter_yaml)
-            .context("Failed to parse frontmatter YAML")?;
+        let metadata: AgentFrontmatter =
+            serde_yaml::from_str(front_matter_yaml).context("Failed to parse frontmatter YAML")?;
 
         Ok((metadata, body))
     }
