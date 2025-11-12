@@ -22,6 +22,11 @@ openssl-sys = { version = "0.9", features = ["vendored"] }
 ts-rs = { git = "https://github.com/xazukx/ts-rs.git", branch = "use-ts-enum", features = ["uuid-impl", "chrono-impl", "no-serde-warnings", "serde-json-impl"] }
 schemars = { version = "1.0.4", features = ["derive", "chrono04", "uuid1", "preserve_order"] }
 
+# Patch icu_decimal to 2.0.0 to avoid thread-safety bug in 2.1.1
+# codex-protocol fails to compile with 2.1.1 (Rc instead of Arc issue)
+[patch.crates-io]
+icu_decimal = { git = "https://github.com/unicode-org/icu4x.git", tag = "icu@2.0.0" }
+
 [profile.release]
 debug = true
 split-debuginfo = "packed"
