@@ -66,7 +66,8 @@ const ArchiveTaskConfirmationDialog =
           </DialogHeader>
 
           <Alert variant="default" className="mb-4">
-            <strong>Note:</strong> Archived tasks can be viewed but will be hidden from the main workflow.
+            <strong>Note:</strong> Archived tasks can be viewed but will be
+            hidden from the main workflow.
           </Alert>
 
           {error && (
@@ -84,10 +85,7 @@ const ArchiveTaskConfirmationDialog =
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleConfirmArchive}
-              disabled={isArchiving}
-            >
+            <Button onClick={handleConfirmArchive} disabled={isArchiving}>
               {isArchiving ? 'Archiving...' : 'Archive Task'}
             </Button>
           </DialogFooter>
