@@ -1,4 +1,4 @@
-.PHONY: help dev prod backend frontend build test clean publish beta version check-cargo check-android-deps check-submodules
+.PHONY: help dev prod backend frontend build test clean publish beta version check-cargo check-android-deps check-submodules publish-automagik publish-automagik-quick
 
 # Default target
 help:
@@ -17,9 +17,10 @@ help:
 	@echo "  make clean     - Clean build artifacts"
 	@echo ""
 	@echo "🚀 Release Workflows:"
-	@echo "  make publish   - Complete release pipeline (auto version bump + build + npm)"
-	@echo "  make beta      - Auto-incremented beta release"
-	@echo "  make version   - Show current version info"
+	@echo "  make publish           - Complete release pipeline (main branch → npm as @automagik/forge)"
+	@echo "  make publish-automagik - A/B test from dev: full release → npm as unscoped 'automagik'"
+	@echo "  make beta              - Auto-incremented beta release"
+	@echo "  make version           - Show current version info"
 	@echo ""
 
 # Check and install cargo if needed (OS agnostic)
@@ -180,3 +181,7 @@ version:
 	@echo "  Forge Config: $$(grep 'version =' forge-extensions/config/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
 
 	@echo "  Upstream:     $$(grep 'version =' upstream/crates/server/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/'")
+
+# A/B test publish: full release pipeline from dev branch, publish as 'automagik'
+publish-automagik:
+	@bash scripts/publish-automagik.sh
