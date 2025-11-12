@@ -4,6 +4,7 @@ import type {
   ProvidePatDialogProps,
   DeleteTaskConfirmationDialogProps,
   CancelTaskConfirmationDialogProps,
+  ArchiveTaskDialogProps,
   TaskFormDialogProps,
   EditorSelectionDialogProps,
 } from '@/components/dialogs';
@@ -33,6 +34,7 @@ declare module '@ebay/nice-modal-react' {
     'task-form': TaskFormDialogProps;
     'delete-task-confirmation': DeleteTaskConfirmationDialogProps;
     'cancel-task-confirmation': CancelTaskConfirmationDialogProps;
+    'archive-task-confirmation': ArchiveTaskDialogProps;
     'editor-selection': EditorSelectionDialogProps;
   }
 }

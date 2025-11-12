@@ -40,10 +40,11 @@ export {
 export {
   CancelTaskConfirmationDialog,
   type CancelTaskConfirmationDialogProps,
-  // Backward compatibility
-  ArchiveTaskConfirmationDialog,
-  type ArchiveTaskConfirmationDialogProps,
 } from './tasks/ArchiveTaskConfirmationDialog';
+export {
+  ArchiveTaskDialog,
+  type ArchiveTaskDialogProps,
+} from './tasks/ArchiveTaskDialog';
 export {
   TagEditDialog,
   type TagEditDialogProps,
