@@ -78,6 +78,7 @@ export function BottomNavigation({
   
   return (
     <nav
+      data-testid="bottom-navigation"
       className={cn(
         'fixed bottom-0 left-0 right-0 z-[var(--z-mobile-bottom-nav)]',
         'glass-medium border-t border-white/15',
@@ -92,6 +93,7 @@ export function BottomNavigation({
           return (
             <button
               key={tab.id}
+              data-testid={`bottom-nav-${tab.id}`}
               onClick={() => handleTabClick(tab)}
               disabled={tab.disabled}
               className={cn(
@@ -103,7 +105,8 @@ export function BottomNavigation({
                 'font-secondary',
                 isActive && 'text-brand-magenta',
                 !isActive && 'text-secondary-foreground hover:text-foreground',
-                tab.disabled && 'opacity-50 cursor-not-allowed'
+                tab.disabled && 'opacity-50 cursor-not-allowed',
+                isActive && 'active'
               )}
               aria-label={tab.label}
               aria-current={isActive ? 'page' : undefined}
