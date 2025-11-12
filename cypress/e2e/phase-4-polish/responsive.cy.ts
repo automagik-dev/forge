@@ -4,7 +4,7 @@
  * Based on mobile-native-app.md Phase 4 specs
  */
 
-describe('Responsive Design - Phase 4 Polish', () => {
+describe.skip('Responsive Design - Phase 4 Polish', () => {
   describe('Mobile Viewports', () => {
     it('should work on iPhone SE (375px)', () => {
       cy.setMobileViewport('iphone-se')

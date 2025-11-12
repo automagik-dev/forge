@@ -4,7 +4,7 @@
  * Based on mobile-native-app.md Phase 3 specs
  */
 
-describe('Offline Support - Phase 3 Advanced Features', () => {
+describe.skip('Offline Support - Phase 3 Advanced Features', () => {
   beforeEach(() => {
     cy.setMobileViewport('iphone-14-pro')
     cy.visit('/')

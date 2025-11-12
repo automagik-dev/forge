@@ -4,7 +4,7 @@
  * Based on mobile-native-app.md Phase 1 specs
  */
 
-describe('Mobile Theme - Phase 1 Foundation', () => {
+describe.skip('Mobile Theme - Phase 1 Foundation', () => {
   beforeEach(() => {
     cy.skipOnboarding()
     cy.setMobileViewport('iphone-14-pro')

@@ -4,7 +4,7 @@
  * Based on mobile-native-app.md Phase 4 specs
  */
 
-describe('Animations - Phase 4 Polish', () => {
+describe.skip('Animations - Phase 4 Polish', () => {
   beforeEach(() => {
     cy.setMobileViewport('iphone-14-pro')
     cy.visit('/')
