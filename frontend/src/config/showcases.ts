@@ -17,7 +17,7 @@ export const showcases = {
         descriptionKey: 'showcases.taskPanel.installation.description',
         media: {
           type: 'youtube',
-          src: 'https://youtu.be/sMNd2G8pi9A',
+          src: 'https://youtu.be/wSxHAWZHO3o',
         },
       },
       {
@@ -25,7 +25,7 @@ export const showcases = {
         descriptionKey: 'showcases.taskPanel.codeReview.description',
         media: {
           type: 'youtube',
-          src: 'https://youtu.be/wSxHAWZHO3o',
+          src: 'https://youtu.be/sMNd2G8pi9A',
         },
       },
       {
