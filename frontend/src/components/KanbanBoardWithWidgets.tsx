@@ -27,14 +27,14 @@ export const KanbanBoardWithWidgets: React.FC<KanbanBoardWithWidgetsProps> = ({
   projectId,
   className = 'grid grid-cols-5 gap-4 p-4 bg-gray-100 h-screen overflow-hidden',
 }) => {
-  const columnStatuses: TaskStatus[] = ['todo', 'inprogress', 'inreview', 'done', 'archived', 'agent'];
+  const columnStatuses: TaskStatus[] = ['todo', 'inprogress', 'inreview', 'done', 'cancelled', 'agent'];
 
   // Hook must be called at the top level, not inside map
   const todoTasks = useFilteredTasks(tasks, 'todo');
   const inprogressTasks = useFilteredTasks(tasks, 'inprogress');
   const inreviewTasks = useFilteredTasks(tasks, 'inreview');
   const doneTasks = useFilteredTasks(tasks, 'done');
-  const archivedTasks = useFilteredTasks(tasks, 'archived');
+  const cancelledTasks = useFilteredTasks(tasks, 'cancelled');
   const agentTasks = useFilteredTasks(tasks, 'agent');
 
   const tasksByStatus: Record<TaskStatus, Task[]> = {
@@ -42,7 +42,7 @@ export const KanbanBoardWithWidgets: React.FC<KanbanBoardWithWidgetsProps> = ({
     inprogress: inprogressTasks,
     inreview: inreviewTasks,
     done: doneTasks,
-    archived: archivedTasks,
+    cancelled: cancelledTasks,
     agent: agentTasks,
   };
 

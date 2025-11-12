@@ -38,6 +38,9 @@ export {
   type DeleteTaskConfirmationDialogProps,
 } from './tasks/DeleteTaskConfirmationDialog';
 export {
+  CancelTaskConfirmationDialog,
+  type CancelTaskConfirmationDialogProps,
+  // Backward compatibility
   ArchiveTaskConfirmationDialog,
   type ArchiveTaskConfirmationDialogProps,
 } from './tasks/ArchiveTaskConfirmationDialog';

@@ -63,7 +63,7 @@ const TASK_STATUSES = [
   'inprogress',
   'inreview',
   'done',
-  'archived',
+  'cancelled',
 ] as const;
 
 function DiffsPanelContainer({

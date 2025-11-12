@@ -38,6 +38,17 @@ export function ActionsDropdown({ task, attempt }: ActionsDropdownProps) {
     openTaskForm({ projectId, initialTask: task });
   };
 
+  const handleCancel = async () => {
+    if (!task) return;
+    try {
+      await NiceModal.show('cancel-task-confirmation', {
+        task,
+      });
+    } catch {
+      // User cancelled or error occurred
+    }
+  };
+
   const handleDelete = async () => {
     if (!projectId || !task) return;
     try {
@@ -147,6 +158,12 @@ export function ActionsDropdown({ task, attempt }: ActionsDropdownProps) {
               <DropdownMenuItem disabled={!projectId} onClick={handleDuplicate}>
                 <Copy className="h-4 w-4 mr-2" />
                 {t('actionsMenu.duplicate')}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!task || task.status === 'cancelled'}
+                onClick={handleCancel}
+              >
+                Cancel Task
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={!projectId}

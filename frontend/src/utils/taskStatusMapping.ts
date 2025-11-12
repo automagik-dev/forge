@@ -7,7 +7,7 @@ export const COLUMN_DISPLAY_NAMES: Record<TaskStatus, string> = {
   inprogress: 'Forge',
   inreview: 'Review',
   done: 'Done',
-  archived: 'Archived',
+  cancelled: 'Cancelled',
   agent: 'Agent', // Background agent execution tasks
 };
 
@@ -17,7 +17,7 @@ export const COLUMN_STATUS_TO_GENIE: Record<TaskStatus, 'wish' | 'forge' | 'revi
   inprogress: 'forge',
   inreview: 'review',
   done: null,
-  archived: null,
+  cancelled: null,
   agent: null, // Agent tasks don't map to main Kanban columns
 };
 
@@ -27,7 +27,7 @@ export const COLUMN_ICONS: Record<TaskStatus, LucideIcon> = {
   inprogress: Hammer,
   inreview: Target,
   done: CheckCircle2,
-  archived: XCircle,
+  cancelled: XCircle,
   agent: Sparkles, // Use Sparkles for agent tasks (magical execution)
 };
 

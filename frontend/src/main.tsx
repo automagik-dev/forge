@@ -25,7 +25,7 @@ import {
   TaskFormDialog,
   EditorSelectionDialog,
   DeleteTaskConfirmationDialog,
-  ArchiveTaskConfirmationDialog,
+  CancelTaskConfirmationDialog,
   FolderPickerDialog,
   TagEditDialog,
   ChangeTargetBranchDialog,
@@ -50,7 +50,8 @@ NiceModal.register('privacy-opt-in', PrivacyOptInDialog);
 NiceModal.register('provide-pat', ProvidePatDialog);
 NiceModal.register('release-notes', ReleaseNotesDialog);
 NiceModal.register('delete-task-confirmation', DeleteTaskConfirmationDialog);
-NiceModal.register('archive-task-confirmation', ArchiveTaskConfirmationDialog);
+NiceModal.register('cancel-task-confirmation', CancelTaskConfirmationDialog);
+NiceModal.register('archive-task-confirmation', CancelTaskConfirmationDialog); // Alias for backward compatibility
 NiceModal.register('task-form', TaskFormDialog);
 NiceModal.register('editor-selection', EditorSelectionDialog);
 NiceModal.register('folder-picker', FolderPickerDialog);

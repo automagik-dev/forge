@@ -13,25 +13,25 @@ import { tasksApi } from '@/lib/api';
 import type { TaskWithAttemptStatus } from 'shared/types';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
 
-export interface ArchiveTaskConfirmationDialogProps {
+export interface CancelTaskConfirmationDialogProps {
   task: TaskWithAttemptStatus;
 }
 
-const ArchiveTaskConfirmationDialog =
-  NiceModal.create<ArchiveTaskConfirmationDialogProps>(({ task }) => {
+const CancelTaskConfirmationDialog =
+  NiceModal.create<CancelTaskConfirmationDialogProps>(({ task }) => {
     const modal = useModal();
-    const [isArchiving, setIsArchiving] = useState(false);
+    const [isCancelling, setIsCancelling] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleConfirmArchive = async () => {
-      setIsArchiving(true);
+    const handleConfirmCancel = async () => {
+      setIsCancelling(true);
       setError(null);
 
       try {
         await tasksApi.update(task.id, {
           title: null,
           description: null,
-          status: 'archived',
+          status: 'cancelled',
           parent_task_attempt: null,
           image_ids: null,
         });
@@ -39,14 +39,14 @@ const ArchiveTaskConfirmationDialog =
         modal.hide();
       } catch (err: unknown) {
         const errorMessage =
-          err instanceof Error ? err.message : 'Failed to archive task';
+          err instanceof Error ? err.message : 'Failed to cancel task';
         setError(errorMessage);
       } finally {
-        setIsArchiving(false);
+        setIsCancelling(false);
       }
     };
 
-    const handleCancelArchive = () => {
+    const handleCancelDialog = () => {
       modal.reject();
       modal.hide();
     };
@@ -54,19 +54,19 @@ const ArchiveTaskConfirmationDialog =
     return (
       <Dialog
         open={modal.visible}
-        onOpenChange={(open) => !open && handleCancelArchive()}
+        onOpenChange={(open) => !open && handleCancelDialog()}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Archive Task</DialogTitle>
+            <DialogTitle>Cancel Task</DialogTitle>
             <DialogDescription>
-              Are you sure you want to archive{' '}
+              Are you sure you want to cancel{' '}
               <span className="font-semibold">"{task.title}"</span>?
             </DialogDescription>
           </DialogHeader>
 
           <Alert variant="default" className="mb-4">
-            <strong>Note:</strong> Archived tasks can be viewed but will be hidden from the main workflow.
+            <strong>Note:</strong> Cancelled tasks can be viewed but will be hidden from the main workflow.
           </Alert>
 
           {error && (
@@ -78,17 +78,17 @@ const ArchiveTaskConfirmationDialog =
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={handleCancelArchive}
-              disabled={isArchiving}
+              onClick={handleCancelDialog}
+              disabled={isCancelling}
               autoFocus
             >
-              Cancel
+              Back
             </Button>
             <Button
-              onClick={handleConfirmArchive}
-              disabled={isArchiving}
+              onClick={handleConfirmCancel}
+              disabled={isCancelling}
             >
-              {isArchiving ? 'Archiving...' : 'Archive Task'}
+              {isCancelling ? 'Cancelling...' : 'Cancel Task'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -96,4 +96,9 @@ const ArchiveTaskConfirmationDialog =
     );
   });
 
-export { ArchiveTaskConfirmationDialog };
+// Export with new name
+export { CancelTaskConfirmationDialog };
+
+// Backward compatibility alias
+export { CancelTaskConfirmationDialog as ArchiveTaskConfirmationDialog };
+export type { CancelTaskConfirmationDialogProps as ArchiveTaskConfirmationDialogProps };
