@@ -110,7 +110,7 @@ export function UserSystemProvider({ children }: UserSystemProviderProps) {
     }
   }, [config?.language]);
 
-  // Check GitHub token validity after config loads and when GitHub config changes
+  // Check GitHub token validity after config loads and when auth tokens change
   useEffect(() => {
     if (loading) return;
     const checkToken = async () => {
@@ -129,7 +129,7 @@ export function UserSystemProvider({ children }: UserSystemProviderProps) {
       }
     };
     checkToken();
-  }, [loading, config?.github]);
+  }, [loading, config?.github?.oauth_token, config?.github?.pat]);
 
   const updateConfig = useCallback((updates: Partial<Config>) => {
     setConfig((prev) => (prev ? { ...prev, ...updates } : null));
