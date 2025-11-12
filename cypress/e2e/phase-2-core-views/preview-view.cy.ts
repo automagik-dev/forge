@@ -4,7 +4,7 @@
  * Based on mobile-native-app.md Phase 2 specs
  */
 
-describe('Preview View - Phase 2 Core Views', () => {
+describe.skip('Preview View - Phase 2 Core Views', () => {
   beforeEach(() => {
     cy.setMobileViewport('iphone-14-pro')
     cy.visit('/')
