@@ -205,7 +205,6 @@ jobs:
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |
           cargo build --release --target ${{ matrix.target }}
-          cargo build --release --target ${{ matrix.target }} --bin mcp_task_server
         shell: bash
 
       - name: Build Rust binaries (Linux zigbuild)
@@ -224,7 +223,6 @@ jobs:
         run: |
           # Use cargo-zigbuild (via zig toolchain) for Linux cross targets
           cargo zigbuild --release --target ${{ matrix.target }}
-          cargo zigbuild --release --target ${{ matrix.target }} --bin mcp_task_server
         shell: bash
 
       - name: Build Rust binaries (non-Windows, native)
@@ -243,7 +241,6 @@ jobs:
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |
           cargo build --release --target ${{ matrix.target }}
-          cargo build --release --target ${{ matrix.target }} --bin mcp_task_server
         shell: bash
       
       - name: Package binaries (Windows)
@@ -257,7 +254,7 @@ jobs:
           Move-Item "automagik-forge.zip" "npx-cli/dist/${{ matrix.platform }}/"
           Remove-Item "automagik-forge.exe"
 
-          Copy-Item "target/${{ matrix.target }}/release/mcp_task_server.exe" "automagik-forge-mcp.exe"
+          Copy-Item "target/${{ matrix.target }}/release/forge-app.exe" "automagik-forge-mcp.exe"
           Compress-Archive -Path "automagik-forge-mcp.exe" -DestinationPath "automagik-forge-mcp.zip" -Force
           Move-Item "automagik-forge-mcp.zip" "npx-cli/dist/${{ matrix.platform }}/"
           Remove-Item "automagik-forge-mcp.exe"
@@ -273,7 +270,7 @@ jobs:
           mv automagik-forge.zip npx-cli/dist/${{ matrix.platform }}/
           rm automagik-forge
 
-          cp target/${{ matrix.target }}/release/mcp_task_server automagik-forge-mcp
+          cp target/${{ matrix.target }}/release/forge-app automagik-forge-mcp
           zip -q automagik-forge-mcp.zip automagik-forge-mcp
           mv automagik-forge-mcp.zip npx-cli/dist/${{ matrix.platform }}/
           rm automagik-forge-mcp
@@ -454,7 +451,6 @@ jobs:
           CARGO_TARGET_AARCH64_LINUX_ANDROID_AR: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
         run: |
           cargo build --release --target aarch64-linux-android
-          cargo build --release --target aarch64-linux-android --bin mcp_task_server
 
       - name: Build Rust library for Android (JNI for APK)
         if: env.SKIP_APK != 'true'
@@ -494,7 +490,7 @@ jobs:
           mv automagik-forge.zip npx-cli/dist/android-arm64/
           rm automagik-forge
 
-          cp target/aarch64-linux-android/release/mcp_task_server automagik-forge-mcp
+          cp target/aarch64-linux-android/release/forge-app automagik-forge-mcp
           zip -q automagik-forge-mcp.zip automagik-forge-mcp
           mv automagik-forge-mcp.zip npx-cli/dist/android-arm64/
           rm automagik-forge-mcp

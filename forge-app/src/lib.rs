@@ -34,7 +34,8 @@ fn find_process_using_port(port: u16, _host: &str) -> Option<String> {
 
     // Try using ss command first (more modern)
     if let Ok(output) = Command::new("ss").args(["-tulpn"]).output()
-        && let Ok(stdout) = String::from_utf8(output.stdout) {
+        && let Ok(stdout) = String::from_utf8(output.stdout)
+    {
         for line in stdout.lines() {
             if line.contains(&format!(":{}", port)) {
                 // Extract PID from ss output (format: users:(("process",pid=12345,fd=3)))
@@ -53,7 +54,8 @@ fn find_process_using_port(port: u16, _host: &str) -> Option<String> {
     if let Ok(output) = Command::new("lsof")
         .args(["-i", &format!(":{}", port), "-t"])
         .output()
-        && let Ok(pid_str) = String::from_utf8(output.stdout) {
+        && let Ok(pid_str) = String::from_utf8(output.stdout)
+    {
         let pid = pid_str.trim();
         if !pid.is_empty() {
             return Some(format!("Process with PID {} is using this port", pid));

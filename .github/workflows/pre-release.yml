@@ -269,7 +269,6 @@ jobs:
       - name: Build backend for target
         run: |
           cargo build --release --target ${{ matrix.target }} --bin forge-app
-          cargo build --release --target ${{ matrix.target }} --bin mcp_task_server
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: ${{ matrix.target == 'aarch64-unknown-linux-gnu' && 'aarch64-linux-gnu-gcc' || '' }}
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
@@ -293,10 +292,10 @@ jobs:
           mkdir -p dist
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             cp target/${{ matrix.target }}/release/forge-app.exe dist/automagik-forge-${{ matrix.name }}.exe
-            cp target/${{ matrix.target }}/release/mcp_task_server.exe dist/automagik-forge-mcp-${{ matrix.name }}.exe
+            cp target/${{ matrix.target }}/release/forge-app.exe dist/automagik-forge-mcp-${{ matrix.name }}.exe
           else
             cp target/${{ matrix.target }}/release/forge-app dist/automagik-forge-${{ matrix.name }}
-            cp target/${{ matrix.target }}/release/mcp_task_server dist/automagik-forge-mcp-${{ matrix.name }}
+            cp target/${{ matrix.target }}/release/forge-app dist/automagik-forge-mcp-${{ matrix.name }}
           fi
 
       # Code signing for macOS only
@@ -340,7 +339,7 @@ jobs:
         if: runner.os == 'macOS'
         uses: indygreg/apple-code-sign-action@v1
         with:
-          input_path: target/${{ matrix.target }}/release/mcp_task_server
+          input_path: target/${{ matrix.target }}/release/forge-app
           output_path: automagik-forge-mcp
           p12_file: certificate.p12
           p12_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
