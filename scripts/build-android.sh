@@ -172,6 +172,7 @@ if [ "$IS_CI" = true ]; then
 [target.aarch64-linux-android]
 linker = "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang"
 ar = "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
 EOF
 
   export CC="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang"

@@ -97,6 +97,7 @@ jobs:
           echo "[target.aarch64-linux-android]" > ~/.cargo/config.toml
           echo "linker = \"$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang\"" >> ~/.cargo/config.toml
           echo "ar = \"$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar\"" >> ~/.cargo/config.toml
+          echo "rustflags = [\"-C\", \"link-arg=-Wl,-z,max-page-size=16384\"]" >> ~/.cargo/config.toml
 
       - name: Build Rust library for Android
         env:
