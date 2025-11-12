@@ -9,7 +9,7 @@ export const showcases = {
         descriptionKey: 'showcases.taskPanel.companion.description',
         media: {
           type: 'youtube',
-          src: 'https://youtu.be/wSxHAWZHO3o',
+          src: 'https://youtu.be/171__WnIKlM',
         },
       },
       {
@@ -25,7 +25,7 @@ export const showcases = {
         descriptionKey: 'showcases.taskPanel.codeReview.description',
         media: {
           type: 'youtube',
-          src: 'https://youtu.be/171__WnIKlM',
+          src: 'https://youtu.be/wSxHAWZHO3o',
         },
       },
       {
