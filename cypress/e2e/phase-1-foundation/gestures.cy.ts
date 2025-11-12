@@ -6,6 +6,7 @@
 
 describe('Gestures - Phase 1 Foundation', () => {
   beforeEach(() => {
+    cy.skipOnboarding()
     cy.setMobileViewport('iphone-14-pro')
     cy.visit('/')
     cy.waitForAppReady()
