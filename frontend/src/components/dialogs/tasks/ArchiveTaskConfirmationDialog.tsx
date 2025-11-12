@@ -29,10 +29,10 @@ const ArchiveTaskConfirmationDialog =
 
       try {
         await tasksApi.update(task.id, {
-          title: null,
-          description: null,
+          title: task.title,
+          description: task.description,
           status: 'archived',
-          parent_task_attempt: null,
+          parent_task_attempt: task.parent_task_attempt,
           image_ids: null,
         });
         modal.resolve();
