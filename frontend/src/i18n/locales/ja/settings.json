@@ -112,7 +112,7 @@
       },
       "privacy": {
         "title": "プライバシー",
-        "description": "匿名の使用データを共有してVibe-Kanbanの改善にご協力ください。",
+        "description": "匿名の使用データを共有してAutomagik Forgeの改善にご協力ください。",
         "telemetry": {
           "label": "テレメトリを有効化",
           "helper": "アプリケーションの改善に役立つ匿名の使用イベント追跡を有効にします。プロンプトやプロジェクト情報は収集されません。"

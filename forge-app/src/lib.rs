@@ -2,8 +2,8 @@
 //!
 //! Provides reusable modules for forge binaries.
 
-pub mod services;
 pub mod router;
+pub mod services;
 
 #[cfg(all(target_os = "android", feature = "android"))]
 pub mod android;
@@ -16,8 +16,12 @@ use tokio::signal;
 /// This is a helper function that attempts to identify which process is using a port.
 /// Platform-specific implementations provide varying levels of detail.
 fn check_port_conflict(port: u16, host: &str) -> String {
-    find_process_using_port(port, host)
-        .unwrap_or_else(|| format!("Port {} may be in use by another process (unable to identify which)", port))
+    find_process_using_port(port, host).unwrap_or_else(|| {
+        format!(
+            "Port {} may be in use by another process (unable to identify which)",
+            port
+        )
+    })
 }
 
 /// Attempt to find which process is using a given port.
@@ -29,20 +33,17 @@ fn find_process_using_port(port: u16, _host: &str) -> Option<String> {
     use std::process::Command;
 
     // Try using ss command first (more modern)
-    if let Ok(output) = Command::new("ss")
-        .args(["-tulpn"])
-        .output()
+    if let Ok(output) = Command::new("ss").args(["-tulpn"]).output()
+        && let Ok(stdout) = String::from_utf8(output.stdout)
     {
-        if let Ok(stdout) = String::from_utf8(output.stdout) {
-            for line in stdout.lines() {
-                if line.contains(&format!(":{}", port)) {
-                    // Extract PID from ss output (format: users:(("process",pid=12345,fd=3)))
-                    if let Some(pid_start) = line.find("pid=") {
-                        let pid_str = &line[pid_start + 4..];
-                        if let Some(pid_end) = pid_str.find(',') {
-                            let pid = &pid_str[..pid_end];
-                            return Some(format!("Process with PID {} is using this port", pid));
-                        }
+        for line in stdout.lines() {
+            if line.contains(&format!(":{}", port)) {
+                // Extract PID from ss output (format: users:(("process",pid=12345,fd=3)))
+                if let Some(pid_start) = line.find("pid=") {
+                    let pid_str = &line[pid_start + 4..];
+                    if let Some(pid_end) = pid_str.find(',') {
+                        let pid = &pid_str[..pid_end];
+                        return Some(format!("Process with PID {} is using this port", pid));
                     }
                 }
             }
@@ -53,12 +54,11 @@ fn find_process_using_port(port: u16, _host: &str) -> Option<String> {
     if let Ok(output) = Command::new("lsof")
         .args(["-i", &format!(":{}", port), "-t"])
         .output()
+        && let Ok(pid_str) = String::from_utf8(output.stdout)
     {
-        if let Ok(pid_str) = String::from_utf8(output.stdout) {
-            let pid = pid_str.trim();
-            if !pid.is_empty() {
-                return Some(format!("Process with PID {} is using this port", pid));
-            }
+        let pid = pid_str.trim();
+        if !pid.is_empty() {
+            return Some(format!("Process with PID {} is using this port", pid));
         }
     }
 
@@ -90,10 +90,7 @@ fn find_process_using_port(port: u16, _host: &str) -> Option<String> {
     use std::process::Command;
 
     // Windows uses netstat
-    if let Ok(output) = Command::new("netstat")
-        .args(["-ano"])
-        .output()
-    {
+    if let Ok(output) = Command::new("netstat").args(["-ano"]).output() {
         if let Ok(stdout) = String::from_utf8(output.stdout) {
             for line in stdout.lines() {
                 if line.contains(&format!(":{}", port)) && line.contains("LISTENING") {
@@ -114,28 +111,26 @@ fn find_process_using_port(port: u16, _host: &str) -> Option<String> {
     use std::process::Command;
 
     // Android typically has ss or netstat available
-    if let Ok(output) = Command::new("ss")
-        .args(["-tulpn"])
-        .output()
-    {
+    if let Ok(output) = Command::new("ss").args(["-tulpn"]).output() {
         if let Ok(stdout) = String::from_utf8(output.stdout) {
             for line in stdout.lines() {
                 if line.contains(&format!(":{}", port)) {
-                    return Some(format!("A process is using this port (details limited on Android)"));
+                    return Some(format!(
+                        "A process is using this port (details limited on Android)"
+                    ));
                 }
             }
         }
     }
 
     // Fallback to netstat
-    if let Ok(output) = Command::new("netstat")
-        .args(["-tuln"])
-        .output()
-    {
+    if let Ok(output) = Command::new("netstat").args(["-tuln"]).output() {
         if let Ok(stdout) = String::from_utf8(output.stdout) {
             for line in stdout.lines() {
                 if line.contains(&format!(":{}", port)) {
-                    return Some(format!("A process is using this port (details limited on Android)"));
+                    return Some(format!(
+                        "A process is using this port (details limited on Android)"
+                    ));
                 }
             }
         }
@@ -144,7 +139,12 @@ fn find_process_using_port(port: u16, _host: &str) -> Option<String> {
     None
 }
 
-#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows", target_os = "android")))]
+#[cfg(not(any(
+    target_os = "linux",
+    target_os = "macos",
+    target_os = "windows",
+    target_os = "android"
+)))]
 fn find_process_using_port(_port: u16, _host: &str) -> Option<String> {
     // For other platforms (iOS, BSD variants, etc.), we can't reliably detect the process
     None

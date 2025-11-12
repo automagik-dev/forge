@@ -36,17 +36,20 @@ fn parse_port_flag() -> Option<u16> {
         let arg = &args[i];
 
         // Handle --port=8888 or -p=8888
-        if let Some(port_str) = arg.strip_prefix("--port=").or_else(|| arg.strip_prefix("-p=")) {
-            if let Ok(port) = port_str.parse::<u16>() {
-                return Some(port);
-            }
+        if let Some(port_str) = arg
+            .strip_prefix("--port=")
+            .or_else(|| arg.strip_prefix("-p="))
+            && let Ok(port) = port_str.parse::<u16>()
+        {
+            return Some(port);
         }
 
         // Handle --port 8888 or -p 8888
-        if (arg == "--port" || arg == "-p") && i + 1 < args.len() {
-            if let Ok(port) = args[i + 1].parse::<u16>() {
-                return Some(port);
-            }
+        if (arg == "--port" || arg == "-p")
+            && i + 1 < args.len()
+            && let Ok(port) = args[i + 1].parse::<u16>()
+        {
+            return Some(port);
         }
     }
 

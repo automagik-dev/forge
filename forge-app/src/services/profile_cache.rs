@@ -1,7 +1,6 @@
 /// Profile Cache with Hot-Reload Support
 ///
 /// Watches .genie folders for changes and automatically reloads profiles.
-
 use anyhow::Result;
 use executors::profile::ExecutorConfigs;
 use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
@@ -185,9 +184,10 @@ impl ProfileCache {
         match event.kind {
             EventKind::Create(_) | EventKind::Modify(_) | EventKind::Remove(_) => {
                 // Only care about .md files
-                event.paths.iter().any(|p| {
-                    p.extension().and_then(|e| e.to_str()) == Some("md")
-                })
+                event
+                    .paths
+                    .iter()
+                    .any(|p| p.extension().and_then(|e| e.to_str()) == Some("md"))
             }
             _ => false,
         }
@@ -244,6 +244,12 @@ pub struct ProfileCacheManager {
     project_paths: Arc<RwLock<HashMap<Uuid, PathBuf>>>,
 }
 
+impl Default for ProfileCacheManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProfileCacheManager {
     pub fn new() -> Self {
         Self {
@@ -254,7 +260,10 @@ impl ProfileCacheManager {
 
     /// Get or create cache for a workspace
     pub async fn get_or_create(&self, workspace_root: PathBuf) -> Result<Arc<ProfileCache>> {
-        tracing::debug!("ProfileCacheManager::get_or_create for {:?}", workspace_root);
+        tracing::debug!(
+            "ProfileCacheManager::get_or_create for {:?}",
+            workspace_root
+        );
 
         // Check if cache exists
         {
@@ -278,14 +287,20 @@ impl ProfileCacheManager {
         tracing::debug!("File watcher started successfully");
 
         // Store cache
-        self.caches_by_path.write().await.insert(workspace_root, cache.clone());
+        self.caches_by_path
+            .write()
+            .await
+            .insert(workspace_root, cache.clone());
 
         Ok(cache)
     }
 
     /// Register a project ID → workspace path mapping
     pub async fn register_project(&self, project_id: Uuid, workspace_root: PathBuf) {
-        self.project_paths.write().await.insert(project_id, workspace_root);
+        self.project_paths
+            .write()
+            .await
+            .insert(project_id, workspace_root);
     }
 
     /// Get cached profiles for a workspace (by path)
@@ -298,9 +313,9 @@ impl ProfileCacheManager {
     pub async fn get_profiles_for_project(&self, project_id: Uuid) -> Result<ExecutorConfigs> {
         let workspace_root = {
             let paths = self.project_paths.read().await;
-            paths.get(&project_id)
-                .cloned()
-                .ok_or_else(|| anyhow::anyhow!("Project {} not registered in profile cache", project_id))?
+            paths.get(&project_id).cloned().ok_or_else(|| {
+                anyhow::anyhow!("Project {} not registered in profile cache", project_id)
+            })?
         };
 
         self.get_profiles(&workspace_root).await

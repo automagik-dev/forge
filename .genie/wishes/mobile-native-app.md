@@ -2,7 +2,7 @@
 
 **Issue:** [#113](https://github.com/namastexlabs/automagik-forge/issues/113)
 **Branch:** `mobile-native-app`
-**Status:** 📋 PLANNING EXPANSION COMPLETE
+**Status:** 📋 PLANNING COMPLETE (WITH ENGAGEMENT ENHANCEMENTS)
 **Priority:** 🟡 HIGH (Major UX Enhancement)
 
 ---
@@ -66,22 +66,42 @@ Tasks Chat New Me
 
 ### Core Views (Mobile Redesign)
 
-#### 1. **Kanban Board → Tabbed Columns**
+#### 1. **Kanban Board → Task List View (Forge Workflow)**
 ```
 ┌────────────────────────────────┐
-│ ┌────┬────┬────┬────┐         │
-│ │Todo│Rdy│Act│Done│ ← Swipe   │
-│ └────┴────┴────┴────┘         │
+│ All | WISH | FORGE | REVIEW | DONE │
 ├────────────────────────────────┤
-│  ┌──────────────────────────┐ │
-│  │ Task Card                │ │ ← Swipe gestures
-│  └──────────────────────────┘ │
+│ ✨ WISH  Task Title            │
+│         Planning phase...      │
+├────────────────────────────────┤
+│ 🔨 FORGE Running Task     4/12 │
+│         [Spinning Hammer]      │
+├────────────────────────────────┤
+│ 🎯 REVIEW Task Under Review    │
+│         Validation phase...    │
+├────────────────────────────────┤
+│ ✅ DONE  Completed Task        │
+│         Task completed!        │
 └────────────────────────────────┘
 ```
-- One column visible at a time
-- Swipe left/right to switch columns
+- **Vertical list of Task cards** (like ChatGPT, Manus)
+- Each card represents a Task with current status
+- **Forge Workflow**: WISH → FORGE → REVIEW → DONE
+  - **WISH** (`status: "todo"`): Planning phase - human and AI interact until approved
+  - **FORGE** (`status: "inprogress"`): Execution phase - TaskAttempts run, shows progress (e.g., "4/12" ExecutionProcesses)
+  - **REVIEW** (`status: "inreview"`): Validation phase - results reviewed and approved
+  - **DONE** (`status: "done"`): Task completed
+- Status icons with animations (Lucide icons):
+  - `Sparkles` WISH (planning)
+  - `Hammer` FORGE (spinning when TaskAttempt is running)
+  - `Target` REVIEW (validation)
+  - `CheckCircle2` DONE (completed)
+- Progress indicator (FORGE only): "4/12" shows ExecutionProcess count
+- Approval gates between stages (WISH→FORGE, FORGE→REVIEW, REVIEW→DONE)
 - Swipe left on card → Delete
+- Tap card → Open task details
 - Long press → Menu
+- Filter tabs: All, WISH, FORGE, REVIEW, DONE, Favorites, Scheduled
 
 #### 2. **Chat View → Full-Screen**
 ```
@@ -215,6 +235,55 @@ Tasks Chat New Me
 - State management (React Query + IndexedDB structure)
 - Error handling and conflict resolution flows
 
+**8. Design System & Branding Spec** (`specs/design-system-and-branding-spec.md`) **NEW**
+- 1,150 lines of comprehensive design system documentation
+- Brand colors extracted from Automagik branding (magenta-cyan gradient)
+- Dark theme (primary): OLED-optimized with brand colors
+- Light theme: Alternative for bright environments
+- Typography scale (display, headings, body, labels, code)
+- Spacing system (4px base unit)
+- Component styles (buttons, cards, badges, inputs, bottom sheets)
+- Border radius, shadows, animations, transitions
+- Haptic feedback guidelines (8 types)
+- Accessibility standards (WCAG AA compliant)
+- Implementation guide with React Native/Capacitor examples
+- Theme context and CSS variables export
+
+**9. Session Card Component Spec** (`specs/session-card-component-spec.md`) **NEW**
+- 600+ lines of session card component specification
+- Vertical list view design (ChatGPT/Manus-style)
+- Status icons with animations (Wish 🎯, Forge ⚙️, Review 👁️, Completed ✅)
+- Progress indicators and metadata display
+- Swipe gesture implementation
+- Filter tabs (All, Favorites, Scheduled)
+- Virtualization for performance
+- Accessibility and testing strategy
+- Migration from traditional Kanban columns
+
+**10. UX Best Practices & Engagement Spec** (`specs/ux-best-practices-and-engagement-spec.md`) **NEW**
+- 15,000+ lines of comprehensive UX research and engagement strategy
+- Habit-forming UX patterns (Hooked Model, Fogg Behavior Model)
+- Analysis of leading apps (ChatGPT, Duolingo, GitHub Mobile, Notion, Linear)
+- Ethical engagement charter (no dark patterns, productivity-first)
+- Assistant autonomy surfaces (proactive suggestions, smart drafts, scheduled windows)
+- Notification strategy (rich actions, RemoteInput, bundling, rate limits)
+- Resume & re-engagement flows (open-to-context, widgets, shortcuts, quick settings tile)
+- Quick capture surfaces (share sheet, voice-to-task, camera-to-task)
+- Personalization & smart drafts (learning preferences, context-aware suggestions)
+- Onboarding & first-time experience (60-second flow, progressive onboarding)
+- Micro-interactions & delight (haptics, animations, celebrations)
+- Measurement & instrumentation (engagement metrics, funnels, A/B testing)
+- Gap analysis against existing 7 specs with priority mapping
+- Updated implementation roadmap with engagement enhancements
+
+**Engagement Enhancements Summary** (`specs/ENGAGEMENT-ENHANCEMENTS-SUMMARY.md`) **NEW**
+- Comprehensive summary of UX research findings
+- Gap analysis table showing coverage vs new features
+- Updated phase plan with engagement additions
+- New success criteria (DAU, retention, TTFV, notification CTR)
+- Feature flags for gradual rollout
+- Risks & mitigations for engagement features
+
 ### Research Documents (in `.genie/wishes/mobile-native-app/research/`)
 
 **1. Frontend Inventory** (`research/forge-frontend-complete-inventory.md`)
@@ -237,7 +306,7 @@ Tasks Chat New Me
 - Offline strategy
 - Performance architecture
 
-**Total Planning Documentation:** 15,000+ lines across 10 comprehensive documents
+**Total Planning Documentation:** 32,000+ lines across 14 comprehensive documents (10 specs + 4 research/summary docs)
 
 ### Key Insights
 
@@ -279,9 +348,12 @@ Tasks Chat New Me
 ### Phase 2: Core Views (Weeks 3-5)
 **Goal:** Kanban, Chat, Diffs, Preview mobile views
 
-**Week 3: Kanban Mobile**
-- [ ] Tabbed column view
-- [ ] Task card mobile component
+**Week 3: Kanban Mobile (Session List View)**
+- [ ] Vertical session list view (ChatGPT/Manus-style)
+- [ ] Task session card component with status icons
+- [ ] Status icon animations (spinning gear for running tasks)
+- [ ] Progress indicators (e.g., "9/12" steps)
+- [ ] Filter tabs (All, Favorites, Scheduled)
 - [ ] Swipe gestures (delete, archive)
 - [ ] FAB for new task
 - [ ] Pull to refresh
@@ -383,6 +455,87 @@ Tasks Chat New Me
 - **Learning**: <5 min to master nav
 - **Efficiency**: 50% faster than desktop (quick actions)
 - **Satisfaction**: >4.5/5 rating
+
+---
+
+## Evaluation Matrix
+
+### 100-Point Wish Completion Audit
+
+This wish follows the standard 3-phase evaluation framework with specific checkpoints for mobile native app development.
+
+#### Discovery Phase (30 points)
+
+**Problem Definition (10 points)**
+- [x] Clear problem statement with current UX rating (2/10) and user feedback (5 pts)
+- [x] Measurable success criteria and target UX rating (9/10) (5 pts)
+
+**Research & Analysis (10 points)**
+- [x] Comprehensive frontend inventory (164 components, 2,587 lines) (3 pts)
+- [x] AI mobile apps UX analysis (5 leading apps, 10 universal patterns) (4 pts)
+- [x] Mobile architecture documentation (985 lines) (3 pts)
+
+**Solution Design (10 points)**
+- [x] Architecture overview with navigation design (5 pts)
+- [x] Core views redesign (Kanban → Task List, Chat, Diffs, Preview) (5 pts)
+
+#### Implementation Phase (40 points)
+
+**Phase 1: Foundation (10 points)**
+- [ ] Capacitor setup (Android) with working build (3 pts)
+- [ ] Bottom navigation component functional (2 pts)
+- [ ] Bottom sheet system with gesture support (3 pts)
+- [ ] Mobile theme with safe area handling (2 pts)
+
+**Phase 2: Core Views (15 points)**
+- [ ] Task List View with Forge workflow (WISH→FORGE→REVIEW→DONE) (5 pts)
+- [ ] Full-screen chat view with mobile input bar (4 pts)
+- [ ] File carousel for diffs with swipe navigation (3 pts)
+- [ ] Responsive preview with viewport picker (3 pts)
+
+**Phase 3: Advanced Features (10 points)**
+- [ ] Native camera integration (2 pts)
+- [ ] Push notifications setup (2 pts)
+- [ ] Offline support (IndexedDB + sync) (4 pts)
+- [ ] Haptic feedback throughout (2 pts)
+
+**Phase 4: Polish & Performance (5 points)**
+- [ ] Performance targets met (<500KB bundle, <1.5s load, 60fps, >90 Lighthouse) (3 pts)
+- [ ] Accessibility audit (TalkBack) (1 pt)
+- [ ] Production APK build (1 pt)
+
+#### Verification Phase (30 points)
+
+**Documentation (10 points)**
+- [x] Technical specifications (10 specs, 18,000+ lines) (5 pts)
+- [x] Implementation plan with 4 phases (5 pts)
+
+**Testing & Validation (10 points)**
+- [ ] User testing on real devices (3 device sizes) (3 pts)
+- [ ] Performance profiling and optimization (3 pts)
+- [ ] Feature parity validation (100% desktop features) (4 pts)
+
+**Success Metrics (10 points)**
+- [ ] KPIs measured (DAU, session duration, feature adoption, retention) (5 pts)
+- [ ] User satisfaction >4.5/5 rating (3 pts)
+- [ ] Lighthouse mobile score >90 (2 pts)
+
+### Approval Gates
+
+**WISH → FORGE Approval**
+- Criteria: Design mockups approved, technical specs validated, resource allocation confirmed
+- Approvers: Product Lead, Design Lead, Engineering Lead
+- Artifacts: Figma mockups, interactive prototype, technical architecture review
+
+**FORGE → REVIEW Approval**
+- Criteria: All 4 phases complete, performance targets met, feature parity validated
+- Approvers: Engineering Lead, QA Lead, Product Lead
+- Artifacts: APK build, test results, performance metrics, feature checklist
+
+**REVIEW → DONE Approval**
+- Criteria: User testing complete, bugs fixed, documentation updated, launch ready
+- Approvers: Product Lead, Engineering Lead, User Testing Lead
+- Artifacts: User testing report, bug fix log, updated documentation, App Store listing
 
 ---
 
@@ -497,10 +650,10 @@ Tasks Chat New Me
 
 ---
 
-**Total Planning Effort:** 15,000+ lines of documentation
-**Planning Docs:** 7 technical specifications + 3 research documents
+**Total Planning Effort:** 32,000+ lines of documentation
+**Planning Docs:** 10 technical specifications + 4 research/summary documents
 **GitHub Issue:** [#113](https://github.com/namastexlabs/automagik-forge/issues/113)
-**Status:** ✅ Planning Complete
+**Status:** ✅ Planning Complete (with Engagement Enhancements)
 **Ready For:** Design → Development → Launch
 
 🚀 Let's build the best mobile experience for agentic task management!

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigateWithSearch } from '@/hooks';
+import { H1, H3, H4 } from '@/components/ui/typography';
 import {
   Card,
   CardContent,
@@ -98,7 +99,7 @@ export function ProjectDetail({ projectId, onBack }: ProjectDetailProps) {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
               <AlertCircle className="h-6 w-6 text-muted-foreground" />
             </div>
-            <h3 className="mt-4 text-lg font-semibold">Project not found</h3>
+            <H3 className="mt-4">Project not found</H3>
             <p className="mt-2 text-sm text-muted-foreground">
               {error ||
                 "The project you're looking for doesn't exist or has been deleted."}
@@ -122,7 +123,7 @@ export function ProjectDetail({ projectId, onBack }: ProjectDetailProps) {
           </Button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">{project.name}</h1>
+              <H1 className="text-2xl">{project.name}</H1>
             </div>
             <p className="text-sm text-muted-foreground">
               Project details and settings
@@ -199,25 +200,25 @@ export function ProjectDetail({ projectId, onBack }: ProjectDetailProps) {
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <h4 className="text-sm font-medium text-muted-foreground">
+              <H4 className="text-sm text-muted-foreground">
                 Project ID
-              </h4>
+              </H4>
               <code className="mt-1 block text-xs bg-muted p-2 rounded font-mono">
                 {project.id}
               </code>
             </div>
             <div>
-              <h4 className="text-sm font-medium text-muted-foreground">
+              <H4 className="text-sm text-muted-foreground">
                 Created At
-              </h4>
+              </H4>
               <p className="mt-1 text-sm">
                 {new Date(project.created_at).toLocaleString()}
               </p>
             </div>
             <div>
-              <h4 className="text-sm font-medium text-muted-foreground">
+              <H4 className="text-sm text-muted-foreground">
                 Last Modified
-              </h4>
+              </H4>
               <p className="mt-1 text-sm">
                 {new Date(project.updated_at).toLocaleString()}
               </p>

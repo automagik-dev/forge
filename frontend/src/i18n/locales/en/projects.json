@@ -3,11 +3,18 @@
   "subtitle": "Manage your projects and track their progress",
   "createProject": "Create Project",
   "loading": "Loading projects...",
+  "sort": {
+    "activity": "Recent Activity",
+    "created": "Date Created",
+    "name": "Name",
+    "ascending": "Oldest First",
+    "descending": "Newest First"
+  },
   "card": {
-    "status": {
-      "active": "Active"
-    },
     "created": "Created",
+    "active": "Active",
+    "lastActive": "Active {{time}}",
+    "createdAgo": "Created {{time}}",
     "menu": {
       "viewProject": "View Project",
       "openInIDE": "Open in IDE",

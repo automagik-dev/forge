@@ -1,0 +1,6 @@
+{
+  "name": "Example Task",
+  "description": "This is an example task for testing",
+  "status": "todo",
+  "executor": "CLAUDE_CODE"
+}

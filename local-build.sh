@@ -62,7 +62,6 @@ rm -rf target/release/.fingerprint/forge-app-*/
 
 echo "🔨 Building Rust binaries with fresh frontend embed..."
 cargo build --release --bin forge-app
-cargo build --release --bin mcp_task_server
 
 echo "📦 Creating distribution package..."
 
@@ -93,8 +92,8 @@ zip_one "automagik-forge${BIN_EXT}" "automagik-forge.zip"
 rm -f "automagik-forge${BIN_EXT}"
 mv "automagik-forge.zip" "npx-cli/dist/$PLATFORM_DIR/automagik-forge.zip"
 
-# Copy and zip the MCP binary
-cp "target/release/mcp_task_server${BIN_EXT}" "automagik-forge-mcp${BIN_EXT}"
+# Copy and zip the MCP binary (currently a copy of forge-app)
+cp "target/release/forge-app${BIN_EXT}" "automagik-forge-mcp${BIN_EXT}"
 zip_one "automagik-forge-mcp${BIN_EXT}" "automagik-forge-mcp.zip"
 rm -f "automagik-forge-mcp${BIN_EXT}"
 mv "automagik-forge-mcp.zip" "npx-cli/dist/$PLATFORM_DIR/automagik-forge-mcp.zip"

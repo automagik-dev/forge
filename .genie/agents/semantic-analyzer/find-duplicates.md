@@ -2,9 +2,8 @@
 name: find-duplicates
 description: Detect near-duplicate content across markdown files using semantic similarity
 genie:
-  executor: CLAUDE_CODE
+  executor: OPENCODE
   background: false
-  model: sonnet
 forge:
   CLAUDE_CODE:
     model: sonnet

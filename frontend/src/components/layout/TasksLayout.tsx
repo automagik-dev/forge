@@ -234,7 +234,19 @@ export function TasksLayout({
   const desktopKey = isPanelOpen ? 'desktop-with-panel' : 'kanban-only';
 
   if (isMobile) {
-    const columns = isPanelOpen ? ['0fr', '1fr', '0fr'] : ['1fr', '0fr', '0fr'];
+    let columns: [string, string, string];
+    
+    if (mode === null || mode === 'kanban') {
+      columns = ['1fr', '0fr', '0fr'];
+    } else if (mode === 'chat') {
+      columns = ['0fr', '1fr', '0fr'];
+    } else if (mode === 'preview' || mode === 'diffs') {
+      columns = ['0fr', '0fr', '1fr'];
+    } else {
+      // Fallback to Tasks view for unknown modes
+      columns = ['1fr', '0fr', '0fr'];
+    }
+    
     const gridTemplateColumns = `minmax(0, ${columns[0]}) minmax(0, ${columns[1]}) minmax(0, ${columns[2]})`;
     const isKanbanVisible = columns[0] !== '0fr';
     const isAttemptVisible = columns[1] !== '0fr';

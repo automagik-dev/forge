@@ -31,6 +31,7 @@ const PrivacyOptInDialog = NiceModal.create(() => {
       contact_email_opt_in: contactEmailOptIn,
       contact_username_opt_in: contactUsernameOptIn,
     });
+    modal.hide();
   };
 
   const handleOptOut = () => {
@@ -39,6 +40,7 @@ const PrivacyOptInDialog = NiceModal.create(() => {
       contact_email_opt_in: false,
       contact_username_opt_in: false,
     });
+    modal.hide();
   };
 
   return (

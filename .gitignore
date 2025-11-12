@@ -106,3 +106,8 @@ vibe-kanban-cloud/
 *.keystore
 *.keystore.b64
 *.jks
+
+forge.db
+
+# Upstream submodule removed - ignore leftover directory
+upstream/ 

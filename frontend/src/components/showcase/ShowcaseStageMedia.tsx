@@ -15,11 +15,12 @@ interface ShowcaseStageMediaProps {
  * Handles different media types with appropriate loading states:
  * - Videos: Shows loading spinner, autoplay once, and thin progress bar
  *   displaying both buffered (light) and played (primary) progress
+ * - YouTube: Embeds YouTube videos with responsive iframe
  * - Images: Shows loading skeleton until image loads
  *
  * Uses fixed aspect ratio (16:10) to prevent layout shift during loading.
  *
- * @param media - ShowcaseMedia object with type ('image' or 'video') and src URL
+ * @param media - ShowcaseMedia object with type ('image', 'video', or 'youtube') and src URL
  */
 export function ShowcaseStageMedia({ media }: ShowcaseStageMediaProps) {
   const { t } = useTranslation('common');
@@ -28,6 +29,28 @@ export function ShowcaseStageMedia({ media }: ShowcaseStageMediaProps) {
     useVideoProgress(videoRef);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
+
+  // Helper function to convert YouTube URLs to embed format
+  const getYouTubeEmbedUrl = (url: string): string => {
+    const videoId = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]+)/)?.[1];
+    return videoId
+      ? `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0&modestbranding=1&controls=0&showinfo=0&fs=0&disablekb=1&iv_load_policy=3`
+      : url;
+  };
+
+  if (media.type === 'youtube') {
+    return (
+      <div className="relative w-full aspect-[16/10] bg-black">
+        <iframe
+          src={getYouTubeEmbedUrl(media.src)}
+          className="w-full h-full"
+          allow="autoplay; encrypted-media"
+          allowFullScreen
+          title="Showcase video"
+        />
+      </div>
+    );
+  }
 
   if (media.type === 'video') {
     const handleReplay = () => {

@@ -120,6 +120,37 @@
       "title": "Acciones de Git",
       "prMerged": "PR #{{number}} ya está fusionado"
     },
+    "tooltips": {
+      "merge": {
+        "simple": "Fusionar cambios en rama de destino",
+        "title": "Fusionar y completar tarea",
+        "description": "Esto fusionará tus cambios de la rama de tarea en la rama de destino. Tu trabajo será integrado y la tarea puede marcarse como completa.",
+        "technical": "Backend: operación git merge",
+        "conflictWarning": "Tanto tú como la rama de destino han modificado los mismos archivos. Puede ser necesaria resolución manual de conflictos."
+      },
+      "createPr": {
+        "simple": "Crear pull request",
+        "title": "Crear pull request y compartir trabajo",
+        "description": "Esto enviará tus cambios al repositorio remoto y creará un pull request para revisión del equipo.",
+        "steps": "1. Enviar a rama remota, 2. Crear PR con detalles de tarea, 3. Notificar al equipo",
+        "technical": "Backend: git push + API de GitHub",
+        "conflictWarning": "Tus cambios entran en conflicto con la rama de destino. Resuelve los conflictos antes de crear el PR."
+      },
+      "push": {
+        "simple": "Enviar cambios al PR",
+        "title": "Enviar actualizaciones al pull request",
+        "description": "Esto enviará tus últimos cambios al pull request existente.",
+        "technical": "Backend: git push",
+        "conflictWarning": "Tus cambios entran en conflicto con la rama de destino. Resuelve los conflictos antes de enviar."
+      },
+      "rebase": {
+        "simple": "Rebase sobre rama de destino",
+        "title": "Rebase y actualizar con últimos cambios",
+        "description": "Esto hará rebase de tu rama de tarea sobre la última rama de destino. Tus commits serán reproducidos sobre los últimos cambios de la rama de destino.",
+        "technical": "Backend: git fetch + git rebase",
+        "conflictWarning": "La rama de destino tiene cambios que pueden entrar en conflicto con tu trabajo. Puede que necesites resolver conflictos durante el rebase."
+      }
+    },
     "states": {
       "createPr": "Crear PR",
       "creating": "Creando...",

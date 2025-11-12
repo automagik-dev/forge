@@ -6,7 +6,7 @@ import { Projects } from '@/pages/projects';
 import { ProjectTasks } from '@/pages/project-tasks';
 import { FullAttemptLogsPage } from '@/pages/full-attempt-logs';
 import ReleaseNotesPage from '@/pages/release-notes';
-import { NormalLayout } from '@/components/layout/NormalLayout';
+import { ResponsiveLayout } from '@/components/layout/ResponsiveLayout';
 import { Footer } from '@/components/layout/Footer';
 import { usePostHog } from 'posthog-js/react';
 import type { SessionStartedEvent, SessionEndedEvent, HeartbeatEvent } from '@/types/analytics';
@@ -151,8 +151,15 @@ function AppContent() {
     };
   }, [posthog, analyticsUserId, config?.analytics_enabled]);
 
+  // Track if onboarding has been initiated in this session to prevent re-triggering
+  const onboardingInitiatedRef = useRef(false);
+
   useEffect(() => {
     let cancelled = false;
+
+    // DEV FLAG: Force show onboarding dialogs for testing
+    // Set VITE_FORCE_ONBOARDING=true in your environment to test onboarding flow
+    const forceOnboarding = import.meta.env.VITE_FORCE_ONBOARDING === 'true';
 
     const handleOnboardingComplete = async (
       onboardingConfig: OnboardingResult
@@ -198,39 +205,38 @@ function AppContent() {
     const checkOnboardingSteps = async () => {
       if (!config || cancelled) return;
 
-      if (!config.disclaimer_acknowledged) {
+      // Prevent re-running onboarding if already initiated in this session
+      if (onboardingInitiatedRef.current) return;
+      onboardingInitiatedRef.current = true;
+
+      if (!config.disclaimer_acknowledged || forceOnboarding) {
         await NiceModal.show('disclaimer');
         await handleDisclaimerAccept();
-        await NiceModal.hide('disclaimer');
       }
 
-      if (!config.onboarding_acknowledged) {
+      if (!config.onboarding_acknowledged || forceOnboarding) {
         const onboardingResult: OnboardingResult =
           await NiceModal.show('onboarding');
         await handleOnboardingComplete(onboardingResult);
-        await NiceModal.hide('onboarding');
       }
 
-      if (!config.github_login_acknowledged) {
+      if (!config.github_login_acknowledged || forceOnboarding) {
         await NiceModal.show('github-login');
         await handleGitHubLoginComplete();
-        await NiceModal.hide('github-login');
       }
 
-      if (!config.telemetry_acknowledged) {
+      if (!config.telemetry_acknowledged || forceOnboarding) {
         const privacySettings: {
           analytics_enabled: boolean;
           contact_email_opt_in: boolean;
           contact_username_opt_in: boolean;
         } = await NiceModal.show('privacy-opt-in');
         await handleTelemetryOptIn(privacySettings);
-        await NiceModal.hide('privacy-opt-in');
       }
 
       if (config.show_release_notes) {
         await NiceModal.show('release-notes');
         await handleReleaseNotesClose();
-        await NiceModal.hide('release-notes');
       }
     };
 
@@ -260,13 +266,13 @@ function AppContent() {
         <SearchProvider>
           <div className="h-screen flex flex-col bg-background">
             <SentryRoutes>
-              {/* VS Code full-page logs route (outside NormalLayout for minimal UI) */}
+              {/* VS Code full-page logs route (outside ResponsiveLayout for minimal UI) */}
               <Route
                 path="/projects/:projectId/tasks/:taskId/attempts/:attemptId/full"
                 element={<FullAttemptLogsPage />}
               />
 
-              <Route element={<NormalLayout />}>
+              <Route element={<ResponsiveLayout />}>
                 <Route path="/" element={<Projects />} />
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/projects/:projectId" element={<Projects />} />

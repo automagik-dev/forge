@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Automagik Forge</string>
+    <string name="app_name">Forge</string>
     <string name="app_description">The Vibe Coding++™ platform for human-AI development. Kanban board for AI agents with git worktree isolation.</string>
     <string name="app_tagline">Where Vibe Coding Meets Structured Execution</string>
 </resources>

@@ -2,9 +2,8 @@
 name: find-orphans
 description: Detect markdown files with no incoming @ references (orphaned documentation)
 genie:
-  executor: CLAUDE_CODE
+  executor: OPENCODE
   background: false
-  model: sonnet
 forge:
   CLAUDE_CODE:
     model: sonnet

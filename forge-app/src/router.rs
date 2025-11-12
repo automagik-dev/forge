@@ -31,7 +31,7 @@ use executors::profile::ExecutorProfileId;
 use forge_config::ForgeProjectSettings;
 use server::routes::{
     self as upstream, approvals, auth, config as upstream_config, containers, drafts, events,
-    execution_processes, filesystem, images, projects, task_attempts, tasks,
+    execution_processes, filesystem, images, projects, tags, task_attempts, tasks,
 };
 use server::{DeploymentImpl, error::ApiError, routes::tasks::CreateAndStartTaskRequest};
 use services::services::container::ContainerService;
@@ -250,7 +250,7 @@ async fn forge_create_task_attempt(
 
     // Insert use_worktree flag into forge_task_attempt_config
     sqlx::query(
-        "INSERT INTO forge_task_attempt_config (task_attempt_id, use_worktree) VALUES (?, ?)"
+        "INSERT INTO forge_task_attempt_config (task_attempt_id, use_worktree) VALUES (?, ?)",
     )
     .bind(attempt_id)
     .bind(payload.use_worktree)
@@ -277,36 +277,62 @@ async fn forge_create_task_attempt(
         .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
 
     // Load workspace-specific .genie profiles and inject into global cache just-in-time
-    if let Ok(workspace_profiles) = forge_services.load_profiles_for_workspace(&project.git_repo_path).await {
+    if let Ok(workspace_profiles) = forge_services
+        .load_profiles_for_workspace(&project.git_repo_path)
+        .await
+    {
         // Log profile details for validation
-        let variant_count = workspace_profiles.executors.values()
+        let variant_count = workspace_profiles
+            .executors
+            .values()
             .map(|config| config.configurations.len())
             .sum::<usize>();
 
-        let variant_list: Vec<String> = workspace_profiles.executors.iter()
+        let variant_list: Vec<String> = workspace_profiles
+            .executors
+            .iter()
             .flat_map(|(executor, config)| {
-                config.configurations.iter().map(move |(variant, coding_agent)| {
-                    // Extract append_prompt from the CodingAgent enum
-                    let prompt_preview = match coding_agent {
-                        executors::executors::CodingAgent::ClaudeCode(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::Codex(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::Gemini(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::Opencode(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::CursorAgent(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::QwenCode(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::Copilot(cfg) => cfg.append_prompt.get(),
-                    }.map(|p| {
-                        let trimmed = p.trim();
-                        if trimmed.len() > 60 {
-                            format!("{}...", &trimmed[..60])
-                        } else {
-                            trimmed.to_string()
+                config
+                    .configurations
+                    .iter()
+                    .map(move |(variant, coding_agent)| {
+                        // Extract append_prompt from the CodingAgent enum
+                        let prompt_preview = match coding_agent {
+                            executors::executors::CodingAgent::ClaudeCode(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::Codex(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
+                            executors::executors::CodingAgent::Gemini(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::Opencode(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::CursorAgent(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::QwenCode(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::Copilot(cfg) => {
+                                cfg.append_prompt.get()
+                            }
                         }
-                    }).unwrap_or_else(|| "<none>".to_string());
+                        .map(|p| {
+                            let trimmed = p.trim();
+                            if trimmed.len() > 60 {
+                                format!("{}...", &trimmed[..60])
+                            } else {
+                                trimmed.to_string()
+                            }
+                        })
+                        .unwrap_or_else(|| "<none>".to_string());
 
-                    format!("{}:{} ({})", executor, variant, prompt_preview)
-                })
+                        format!("{}:{} ({})", executor, variant, prompt_preview)
+                    })
             })
             .collect();
 
@@ -390,7 +416,7 @@ async fn forge_create_task_and_start(
 
     // Insert use_worktree flag into forge_task_attempt_config (defaults to true for regular tasks)
     sqlx::query(
-        "INSERT INTO forge_task_attempt_config (task_attempt_id, use_worktree) VALUES (?, ?)"
+        "INSERT INTO forge_task_attempt_config (task_attempt_id, use_worktree) VALUES (?, ?)",
     )
     .bind(task_attempt_id)
     .bind(true) // Regular tasks always use worktree
@@ -417,36 +443,62 @@ async fn forge_create_task_and_start(
         .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
 
     // Load workspace-specific .genie profiles and inject into global cache just-in-time
-    if let Ok(workspace_profiles) = forge_services.load_profiles_for_workspace(&project.git_repo_path).await {
+    if let Ok(workspace_profiles) = forge_services
+        .load_profiles_for_workspace(&project.git_repo_path)
+        .await
+    {
         // Log profile details for validation
-        let variant_count = workspace_profiles.executors.values()
+        let variant_count = workspace_profiles
+            .executors
+            .values()
             .map(|config| config.configurations.len())
             .sum::<usize>();
 
-        let variant_list: Vec<String> = workspace_profiles.executors.iter()
+        let variant_list: Vec<String> = workspace_profiles
+            .executors
+            .iter()
             .flat_map(|(executor, config)| {
-                config.configurations.iter().map(move |(variant, coding_agent)| {
-                    // Extract append_prompt from the CodingAgent enum
-                    let prompt_preview = match coding_agent {
-                        executors::executors::CodingAgent::ClaudeCode(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::Codex(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::Gemini(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::Opencode(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::CursorAgent(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::QwenCode(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::Copilot(cfg) => cfg.append_prompt.get(),
-                    }.map(|p| {
-                        let trimmed = p.trim();
-                        if trimmed.len() > 60 {
-                            format!("{}...", &trimmed[..60])
-                        } else {
-                            trimmed.to_string()
+                config
+                    .configurations
+                    .iter()
+                    .map(move |(variant, coding_agent)| {
+                        // Extract append_prompt from the CodingAgent enum
+                        let prompt_preview = match coding_agent {
+                            executors::executors::CodingAgent::ClaudeCode(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::Codex(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
+                            executors::executors::CodingAgent::Gemini(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::Opencode(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::CursorAgent(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::QwenCode(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::Copilot(cfg) => {
+                                cfg.append_prompt.get()
+                            }
                         }
-                    }).unwrap_or_else(|| "<none>".to_string());
+                        .map(|p| {
+                            let trimmed = p.trim();
+                            if trimmed.len() > 60 {
+                                format!("{}...", &trimmed[..60])
+                            } else {
+                                trimmed.to_string()
+                            }
+                        })
+                        .unwrap_or_else(|| "<none>".to_string());
 
-                    format!("{}:{} ({})", executor, variant, prompt_preview)
-                })
+                        format!("{}:{} ({})", executor, variant, prompt_preview)
+                    })
             })
             .collect();
 
@@ -525,6 +577,7 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
         execution_processes::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()),
     );
     router = router.merge(auth::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+    router = router.merge(tags::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
     router = router.merge(filesystem::router().with_state::<ForgeAppState>(dep_clone.clone()));
     router =
         router.merge(events::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
@@ -740,40 +793,38 @@ async fn handle_forge_tasks_ws(
                                 }
                             }
                             // Handle initial snapshot (replace /tasks with map)
-                            else if patch_op.path() == "/tasks" {
-                                if let json_patch::PatchOperation::Replace(op) = patch_op {
-                                    if let Some(tasks_obj) = op.value.as_object() {
-                                        // Filter out agent tasks from the initial snapshot
-                                        let mut filtered_tasks = serde_json::Map::new();
-                                        for (task_id_str, task_value) in tasks_obj {
-                                            if let Ok(task_with_status) =
-                                                serde_json::from_value::<TaskWithAttemptStatus>(task_value.clone())
-                                            {
-                                                let is_agent: bool = sqlx::query_scalar(
-                                                    "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
-                                                )
-                                                .bind(task_with_status.task.id)
-                                                .fetch_one(&db_pool)
-                                                .await
-                                                .unwrap_or(false);
+                            else if patch_op.path() == "/tasks"
+                                && let json_patch::PatchOperation::Replace(op) = patch_op
+                                && let Some(tasks_obj) = op.value.as_object() {
+                                // Filter out agent tasks from the initial snapshot
+                                let mut filtered_tasks = serde_json::Map::new();
+                                for (task_id_str, task_value) in tasks_obj {
+                                    if let Ok(task_with_status) =
+                                        serde_json::from_value::<TaskWithAttemptStatus>(task_value.clone())
+                                    {
+                                        let is_agent: bool = sqlx::query_scalar(
+                                            "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
+                                        )
+                                        .bind(task_with_status.task.id)
+                                        .fetch_one(&db_pool)
+                                        .await
+                                        .unwrap_or(false);
 
-                                                if !is_agent {
-                                                    filtered_tasks.insert(task_id_str.to_string(), task_value.clone());
-                                                }
-                                            }
+                                        if !is_agent {
+                                            filtered_tasks.insert(task_id_str.to_string(), task_value.clone());
                                         }
-
-                                        // Return filtered snapshot
-                                        let filtered_patch = json!([{
-                                            "op": "replace",
-                                            "path": "/tasks",
-                                            "value": filtered_tasks
-                                        }]);
-                                        return Some(Ok(LogMsg::JsonPatch(
-                                            serde_json::from_value(filtered_patch).unwrap()
-                                        )));
                                     }
                                 }
+
+                                // Return filtered snapshot
+                                let filtered_patch = json!([{
+                                    "op": "replace",
+                                    "path": "/tasks",
+                                    "value": filtered_tasks
+                                }]);
+                                return Some(Ok(LogMsg::JsonPatch(
+                                    serde_json::from_value(filtered_patch).unwrap()
+                                )));
                             }
                         }
                         // Pass through non-task patches
@@ -831,36 +882,62 @@ async fn forge_follow_up(
         .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
 
     // Load workspace-specific .genie profiles and inject into global cache just-in-time
-    if let Ok(workspace_profiles) = forge_services.load_profiles_for_workspace(&project.git_repo_path).await {
+    if let Ok(workspace_profiles) = forge_services
+        .load_profiles_for_workspace(&project.git_repo_path)
+        .await
+    {
         // Log profile details for validation
-        let variant_count = workspace_profiles.executors.values()
+        let variant_count = workspace_profiles
+            .executors
+            .values()
             .map(|config| config.configurations.len())
             .sum::<usize>();
 
-        let variant_list: Vec<String> = workspace_profiles.executors.iter()
+        let variant_list: Vec<String> = workspace_profiles
+            .executors
+            .iter()
             .flat_map(|(executor, config)| {
-                config.configurations.iter().map(move |(variant, coding_agent)| {
-                    // Extract append_prompt from the CodingAgent enum
-                    let prompt_preview = match coding_agent {
-                        executors::executors::CodingAgent::ClaudeCode(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::Codex(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::Gemini(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::Opencode(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::CursorAgent(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::QwenCode(cfg) => cfg.append_prompt.get(),
-                        executors::executors::CodingAgent::Copilot(cfg) => cfg.append_prompt.get(),
-                    }.map(|p| {
-                        let trimmed = p.trim();
-                        if trimmed.len() > 60 {
-                            format!("{}...", &trimmed[..60])
-                        } else {
-                            trimmed.to_string()
+                config
+                    .configurations
+                    .iter()
+                    .map(move |(variant, coding_agent)| {
+                        // Extract append_prompt from the CodingAgent enum
+                        let prompt_preview = match coding_agent {
+                            executors::executors::CodingAgent::ClaudeCode(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::Codex(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
+                            executors::executors::CodingAgent::Gemini(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::Opencode(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::CursorAgent(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::QwenCode(cfg) => {
+                                cfg.append_prompt.get()
+                            }
+                            executors::executors::CodingAgent::Copilot(cfg) => {
+                                cfg.append_prompt.get()
+                            }
                         }
-                    }).unwrap_or_else(|| "<none>".to_string());
+                        .map(|p| {
+                            let trimmed = p.trim();
+                            if trimmed.len() > 60 {
+                                format!("{}...", &trimmed[..60])
+                            } else {
+                                trimmed.to_string()
+                            }
+                        })
+                        .unwrap_or_else(|| "<none>".to_string());
 
-                    format!("{}:{} ({})", executor, variant, prompt_preview)
-                })
+                        format!("{}:{} ({})", executor, variant, prompt_preview)
+                    })
             })
             .collect();
 
@@ -881,11 +958,18 @@ async fn forge_follow_up(
 
     // Call upstream follow_up - re-parse JSON into the correct type
     let typed_payload: task_attempts::CreateFollowUpAttempt = serde_json::from_value(payload)
-        .map_err(|e| ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
-            format!("Invalid follow-up payload: {}", e)
-        )))?;
+        .map_err(|e| {
+            ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
+                format!("Invalid follow-up payload: {}", e),
+            ))
+        })?;
 
-    task_attempts::follow_up(axum::Extension(task_attempt), State(deployment), Json(typed_payload)).await
+    task_attempts::follow_up(
+        axum::Extension(task_attempt),
+        State(deployment),
+        Json(typed_payload),
+    )
+    .await
 }
 
 /// Build task_attempts router with forge override for create endpoint
@@ -1487,21 +1571,21 @@ async fn get_master_genie_neurons(
     // For each neuron task, find its latest attempt and determine type from executor variant
     for task in neuron_tasks {
         // Get latest attempt for this neuron task (fetch_all returns newest first)
-        if let Ok(attempts) = TaskAttempt::fetch_all(pool, Some(task.id)).await {
-            if let Some(attempt) = attempts.into_iter().next() {
-                // Parse executor to get variant (e.g., "CLAUDE_CODE:WISH" → "WISH")
-                let neuron_type = if let Some((_base, variant)) = attempt.executor.split_once(':') {
-                    variant.to_string() // Keep uppercase to match profile variants
-                } else {
-                    "unknown".to_string()
-                };
+        if let Ok(attempts) = TaskAttempt::fetch_all(pool, Some(task.id)).await
+            && let Some(attempt) = attempts.into_iter().next()
+        {
+            // Parse executor to get variant (e.g., "CLAUDE_CODE:WISH" → "WISH")
+            let neuron_type = if let Some((_base, variant)) = attempt.executor.split_once(':') {
+                variant.to_string() // Keep uppercase to match profile variants
+            } else {
+                "unknown".to_string()
+            };
 
-                neurons.push(Neuron {
-                    neuron_type,
-                    task,
-                    attempt,
-                });
-            }
+            neurons.push(Neuron {
+                neuron_type,
+                task,
+                attempt,
+            });
         }
     }
 

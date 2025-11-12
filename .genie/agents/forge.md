@@ -3,9 +3,8 @@ name: forge
 description: Universal forge orchestrator - breaks wishes into execution groups
   with task files and validation (all domains)
 genie:
-  executor: CLAUDE_CODE
+  executor: OPENCODE
   background: true
-  model: sonnet
 forge:
   CLAUDE_CODE:
     model: sonnet

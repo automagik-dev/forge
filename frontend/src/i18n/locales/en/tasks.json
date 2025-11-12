@@ -232,6 +232,37 @@
     "actions": {
       "title": "Git Actions",
       "prMerged": "PR #{{number}} is already merged"
+    },
+    "tooltips": {
+      "merge": {
+        "simple": "Merge changes into target branch",
+        "title": "Merge and complete task",
+        "description": "This will merge your changes from the task branch into the target branch. Your work will be integrated and the task can be marked as complete.",
+        "technical": "Backend: git merge operation",
+        "conflictWarning": "Both you and the target branch have modified the same files. Manual conflict resolution may be required."
+      },
+      "createPr": {
+        "simple": "Create pull request",
+        "title": "Create pull request and share work",
+        "description": "This will push your changes to the remote repository and create a pull request for team review.",
+        "steps": "1. Push to remote branch, 2. Create PR with task details, 3. Notify team",
+        "technical": "Backend: git push + GitHub API",
+        "conflictWarning": "Your changes conflict with the target branch. Resolve conflicts before creating PR."
+      },
+      "push": {
+        "simple": "Push changes to PR",
+        "title": "Push updates to pull request",
+        "description": "This will push your latest changes to the existing pull request.",
+        "technical": "Backend: git push",
+        "conflictWarning": "Your changes conflict with the target branch. Resolve conflicts before pushing."
+      },
+      "rebase": {
+        "simple": "Rebase onto target branch",
+        "title": "Rebase and update with latest changes",
+        "description": "This will rebase your task branch onto the latest target branch. Your commits will be replayed on top of the target branch's latest changes.",
+        "technical": "Backend: git fetch + git rebase",
+        "conflictWarning": "The target branch has changes that may conflict with your work. You may need to resolve conflicts during rebase."
+      }
     }
   },
   "createAttemptDialog": {

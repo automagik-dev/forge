@@ -149,7 +149,6 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
                 selectedProfile={selectedProfile}
                 onProfileSelect={setSelectedProfile}
                 showLabel={true}
-                layout="inline"
               />
             ) : (
               <div className="text-sm text-muted-foreground">

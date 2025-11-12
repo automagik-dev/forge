@@ -8,6 +8,7 @@ import {
   Copy,
   Check,
   GitBranch,
+  HeartPlus,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NiceModal from '@ebay/nice-modal-react';
@@ -99,6 +100,10 @@ export function NextActionCard({
     navigate({ search: '?view=diffs' });
   }, [navigate]);
 
+  const handleOpenPreview = useCallback(() => {
+    navigate({ search: '?view=preview' });
+  }, [navigate]);
+
   const handleTryAgain = useCallback(() => {
     if (!attempt?.task_id) return;
     NiceModal.show('create-attempt', {
@@ -172,6 +177,21 @@ export function NextActionCard({
           {/* Right: Icon buttons */}
           {fileCount > 0 && (
             <div className="flex items-center gap-1 shrink-0">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={handleOpenPreview}
+                    aria-label={t('attempt.preview')}
+                  >
+                    <HeartPlus className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t('attempt.preview')}</TooltipContent>
+              </Tooltip>
+
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button

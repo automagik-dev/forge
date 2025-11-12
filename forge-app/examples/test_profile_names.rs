@@ -4,8 +4,7 @@ use std::path::PathBuf;
 #[tokio::main]
 async fn main() {
     // Test with automagik-genie workspace
-    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../automagik-genie");
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../automagik-genie");
 
     if !workspace_root.exists() {
         eprintln!("❌ automagik-genie workspace not found");
@@ -35,7 +34,10 @@ async fn main() {
                     }
                 }
                 if executor_config.configurations.len() > 10 {
-                    println!("   ... and {} more", executor_config.configurations.len() - 10);
+                    println!(
+                        "   ... and {} more",
+                        executor_config.configurations.len() - 10
+                    );
                 }
                 println!();
             }

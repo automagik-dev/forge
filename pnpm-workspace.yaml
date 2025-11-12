@@ -1,2 +1,10 @@
 packages:
-  - 'frontend'
+  - frontend
+
+ignoredBuiltDependencies:
+  - cypress
+
+onlyBuiltDependencies:
+  - '@sentry/cli'
+  - core-js
+  - esbuild

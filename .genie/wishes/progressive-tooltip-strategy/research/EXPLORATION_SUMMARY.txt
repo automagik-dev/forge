@@ -1,0 +1,223 @@
+================================================================================
+GIT OPERATIONS UI IMPLEMENTATION - CODEBASE EXPLORATION COMPLETE
+================================================================================
+
+EXPLORATION SCOPE COVERED:
+✓ Current git operations UI implementation (GitOperations component)
+✓ Where git action buttons are rendered (Sync Now, Approve Task equivalent)
+✓ Existing tooltip/description patterns (2-level system implemented)
+✓ Translation file structure and i18n setup (5 languages supported)
+✓ Current state of git status display (BranchStatus type, conflict detection)
+✓ Error handling and conflict detection patterns (typed GitOperationError)
+✓ Existing issues related to git operations UX (identified 9 hard-coded strings)
+
+DELIVERABLES CREATED:
+================================================================================
+
+1. GIT_OPS_EXPLORATION.md (15 KB)
+   - Comprehensive overview of the entire implementation
+   - 12 sections covering all aspects:
+     * Current implementation details
+     * Type definitions and data structures
+     * Translation structure
+     * Dialog components
+     * Visual styling patterns
+     * Conflict detection system
+     * Merge state calculations
+     * File organization
+     * UI/UX flows
+     * Error handling patterns
+     * Key observations
+     * Related files to investigate
+   
+2. GIT_OPS_QUICK_REFERENCE.md (7.3 KB)
+   - Quick lookup guide for developers
+   - Key files table
+   - Code snippets for common patterns
+   - Translation keys checklist
+   - Type definitions summary
+   - Component props interface
+   - State management summary
+   - Testing points checklist
+   
+3. GIT_OPS_ARCHITECTURE.md (14 KB)
+   - Visual architecture and flows
+   - Component hierarchy tree
+   - Data flow diagrams
+   - State management structure
+   - Tooltip architecture (2-level system)
+   - Conflict detection flow
+   - Error handling flow
+   - Button state machine
+   - Translation integration points
+   - System integration points
+   - Accessibility considerations
+
+KEY FINDINGS:
+================================================================================
+
+CURRENT IMPLEMENTATION STRENGTHS:
+✓ Three-button UI (Merge, PR, Rebase)
+✓ Two-level tooltip system (simple + detailed)
+✓ Conflict detection (visual + text warnings)
+✓ Typed error handling (GitOperationError)
+✓ Pre-filled forms (PR dialog)
+✓ i18n ready (5 languages: en, pt-BR, es, ja, ko)
+✓ Proper state management with useMemo optimizations
+✓ Cache invalidation after operations
+✓ Accessibility features (aria-labels, keyboard nav)
+
+IDENTIFIED ISSUES/GAPS:
+✓ 9 disabled button reasons are HARD-CODED (not translated):
+  - "PR already exists for this branch"
+  - "Merge in progress"
+  - "Merge conflicts present"
+  - "Attempt is still running"
+  - "No commits ahead of base branch"
+  - "Push in progress"
+  - "No commits to create PR"
+  - "Rebase in progress"
+  - "Branch is already up-to-date"
+
+✓ Conflict warnings in tooltips not fully i18n'd (see "conflictWarning" keys)
+✓ CreatePRDialog has hardcoded strings ("Create GitHub Pull Request", etc.)
+✓ Rebase dialog implementation separate (not in GitOperations.tsx)
+
+FILE LOCATIONS:
+================================================================================
+
+MAIN COMPONENTS:
+/frontend/src/components/tasks/Toolbar/GitOperations.tsx             (555 lines)
+/frontend/src/components/dialogs/tasks/GitActionsDialog.tsx          (172 lines)
+/frontend/src/components/dialogs/tasks/CreatePRDialog.tsx            (215 lines)
+
+HOOKS:
+/frontend/src/hooks/useRebase.ts                                      (63 lines)
+/frontend/src/hooks/useMerge.ts                                       (31 lines)
+/frontend/src/hooks/usePush.ts                                        (27 lines)
+
+TRANSLATIONS:
+/frontend/src/i18n/locales/en/tasks.json                             (336 lines)
+/frontend/src/i18n/locales/pt-BR/tasks.json
+/frontend/src/i18n/locales/es/tasks.json
+/frontend/src/i18n/locales/ja/tasks.json
+/frontend/src/i18n/locales/ko/tasks.json
+
+TYPES (READ-ONLY, GENERATED):
+/shared/types.ts                                                     (auto-generated)
+
+CRITICAL DATA TYPES:
+================================================================================
+
+BranchStatus:
+- commits_behind: number | null
+- commits_ahead: number | null
+- conflicted_files: Array<string>
+- conflict_op: "rebase" | "merge" | "cherry_pick" | "revert" | null
+- is_rebase_in_progress: boolean
+- merges: Array<Merge>
+
+GitOperationError:
+- { "type": "merge_conflicts", message, op }
+- { "type": "rebase_in_progress" }
+
+Merge:
+- type: "direct" | "pr"
+- pr_info: { number, url, status: "open" | "merged" | "closed" }
+
+TRANSLATION KEYS STRUCTURE:
+================================================================================
+
+Existing Complete Keys:
+✓ git.tooltips.merge.{simple, title, description, conflictWarning, technical}
+✓ git.tooltips.createPr.{simple, title, description, steps, conflictWarning, technical}
+✓ git.tooltips.push.{simple, title, description, conflictWarning, technical}
+✓ git.tooltips.rebase.{simple, title, description, conflictWarning, technical}
+✓ git.states.{merge, merging, merged, rebase, rebasing, push, pushing, pushed, createPr}
+✓ git.errors.{changeTargetBranch, pushChanges, mergeChanges, rebaseBranch}
+
+Missing Keys (Hard-coded in Component):
+✗ git.disabledReasons.prExists
+✗ git.disabledReasons.mergeInProgress
+✗ git.disabledReasons.conflictsPresent
+✗ git.disabledReasons.attemptRunning
+✗ git.disabledReasons.noCommitsAhead
+✗ git.disabledReasons.pushInProgress
+✗ git.disabledReasons.noCommitsToCreate
+✗ git.disabledReasons.rebaseInProgress
+✗ git.disabledReasons.alreadyUpToDate
+
+COMPONENT INTERACTION FLOW:
+================================================================================
+
+1. User opens "Git Actions" dialog
+   → GitActionsDialog loads branch status
+   → Shows GitOperations component with 3 buttons
+
+2. User hovers over button
+   → Simple tooltip shows
+   → If conflict detected: button turns warning color
+
+3. User clicks info icon
+   → Detailed tooltip expands
+   → Shows technical details + conflict warnings
+
+4. User clicks action button
+   → Disabled reasons checked (shown in tooltip if disabled)
+   → If enabled: API call starts, button goes loading state
+   → Success: "Merged!/Pushed!" label shows 2s then reverts
+   → Error: Red alert box appears with error message
+
+5. User resolves issues
+   → Branch status auto-refreshes
+   → UI updates to reflect new state
+   → User can retry operation
+
+TESTING RECOMMENDATIONS:
+================================================================================
+
+Visual Testing:
+- [ ] Button colors change with conflict state (green → yellow)
+- [ ] Icons change (GitBranch → AlertTriangle) with conflicts
+- [ ] Info button appears/hides based on state
+- [ ] Tooltips expand/collapse on click
+- [ ] Success messages animate and clear
+
+Functional Testing:
+- [ ] All 3 buttons trigger correct API calls
+- [ ] Disabled buttons show reason in tooltip
+- [ ] Errors display in red alert box
+- [ ] Conflicts prevent operations
+- [ ] PR button switches to "Push" after PR created
+
+i18n Testing:
+- [ ] Switch language and verify all text translates
+- [ ] Disabled reasons translate (need translation first)
+- [ ] Tooltip content translates correctly
+- [ ] Conflict warnings translate
+
+NEXT STEPS:
+================================================================================
+
+1. For Translation Issues:
+   → Add 9 missing i18n keys to all 5 language files
+   → Keys: git.disabledReasons.*
+   → Values: Translated versions of hard-coded strings
+
+2. For Hard-coded Strings:
+   → CreatePRDialog: "Create GitHub Pull Request" → translate
+   → Use t('git.actions.createPr') pattern
+
+3. For Feature Implementation:
+   → Refer to GitOperations.tsx for tooltip pattern
+   → Use same conflict detection logic
+   → Follow state machine pattern for operations
+
+4. For Bug Fixes:
+   → Check disabled reasons are shown correctly
+   → Verify error messages appear in user's language
+   → Test conflict warnings display accurately
+
+================================================================================
+END OF EXPLORATION SUMMARY
+================================================================================

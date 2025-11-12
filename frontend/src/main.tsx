@@ -25,6 +25,7 @@ import {
   TaskFormDialog,
   EditorSelectionDialog,
   DeleteTaskConfirmationDialog,
+  ArchiveTaskConfirmationDialog,
   FolderPickerDialog,
   TagEditDialog,
   ChangeTargetBranchDialog,
@@ -49,6 +50,7 @@ NiceModal.register('privacy-opt-in', PrivacyOptInDialog);
 NiceModal.register('provide-pat', ProvidePatDialog);
 NiceModal.register('release-notes', ReleaseNotesDialog);
 NiceModal.register('delete-task-confirmation', DeleteTaskConfirmationDialog);
+NiceModal.register('archive-task-confirmation', ArchiveTaskConfirmationDialog);
 NiceModal.register('task-form', TaskFormDialog);
 NiceModal.register('editor-selection', EditorSelectionDialog);
 NiceModal.register('folder-picker', FolderPickerDialog);
@@ -102,6 +104,7 @@ if (posthogKey && posthogHost) {
     capture_pageleave: true,
     capture_performance: true, // Keep for performance monitoring (disclosed in dialog)
     autocapture: false,
+    enable_heatmaps: true, // Enable aggregate UX insights (mouse movement, clicks, scrolling)
     opt_out_capturing_by_default: true,
     mask_all_text: true, // Masks any text in error messages
     sanitize_properties: (properties) => {

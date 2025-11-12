@@ -2,9 +2,8 @@
 name: github-issue-gc
 description: Autonomous GitHub issue quality assurance - detect stale, invalid,
 genie:
-  executor: CLAUDE_CODE
+  executor: OPENCODE
   background: true
-  model: sonnet
 forge:
   CLAUDE_CODE:
     model: sonnet

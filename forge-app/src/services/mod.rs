@@ -3,8 +3,8 @@
 //! Service composition layer that wraps upstream services with forge extensions.
 //! Provides unified access to both upstream functionality and forge-specific features.
 
-mod notification_hook;
 pub mod genie_profiles;
+mod notification_hook;
 pub mod profile_cache;
 
 use anyhow::{Context, Result, anyhow};
@@ -126,9 +126,7 @@ impl ForgeServices {
         workspace_root: &Path,
     ) -> Result<executors::profile::ExecutorConfigs> {
         // Use the profile cache manager (with hot-reload)
-        self.profile_cache
-            .get_profiles(workspace_root)
-            .await
+        self.profile_cache.get_profiles(workspace_root).await
     }
 
     /// Load .genie profiles for all existing projects on server startup
@@ -182,9 +180,14 @@ impl ForgeServices {
             );
 
             tracing::debug!("Calling load_profiles_for_workspace...");
-            match self.load_profiles_for_workspace(&project.git_repo_path).await {
+            match self
+                .load_profiles_for_workspace(&project.git_repo_path)
+                .await
+            {
                 Ok(configs) => {
-                    let variant_count: usize = configs.executors.values()
+                    let variant_count: usize = configs
+                        .executors
+                        .values()
                         .map(|e| e.configurations.len())
                         .sum();
 
@@ -535,27 +538,25 @@ mod tests {
     use uuid::Uuid;
 
     async fn setup_pool() -> SqlitePool {
-        let pool = SqlitePool::connect("sqlite::memory:")
+        unsafe {
+            std::env::set_var("DATABASE_URL", "sqlite::memory:");
+        }
+        let db_service = db::DBService::new()
             .await
-            .expect("failed to create in-memory pool");
-
-        // Use upstream migrations (includes all forge-specific migrations)
-        sqlx::migrate!("../upstream/crates/db/migrations")
-            .run(&pool)
-            .await
-            .expect("failed to run upstream migrations");
-
-        pool
+            .expect("failed to create db service with migrations");
+        db_service.pool
     }
 
     async fn insert_project(pool: &SqlitePool, project_id: Uuid) {
         let unique_path = format!("/tmp/test-project-{}", project_id);
-        sqlx::query("INSERT INTO projects (id, name, git_repo_path) VALUES (?, 'Forge Project', ?)")
-            .bind(project_id)
-            .bind(unique_path)
-            .execute(pool)
-            .await
-            .expect("failed to insert project row");
+        sqlx::query(
+            "INSERT INTO projects (id, name, git_repo_path) VALUES (?, 'Forge Project', ?)",
+        )
+        .bind(project_id)
+        .bind(unique_path)
+        .execute(pool)
+        .await
+        .expect("failed to insert project row");
     }
 
     async fn insert_task_graph(pool: &SqlitePool, project_id: Uuid) -> (Uuid, Uuid) {

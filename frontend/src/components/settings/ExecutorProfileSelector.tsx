@@ -1,9 +1,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect, memo } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
-import { Settings2, ArrowDown, Search } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { Settings2, ArrowDown, Search, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,8 +30,6 @@ type Props = {
   disabled?: boolean;
   showLabel?: boolean;
   showVariantSelector?: boolean;
-  disableProviderChange?: boolean;
-  layout?: 'inline' | 'stacked';
 };
 
 type ProfileRowProps = {
@@ -105,10 +101,7 @@ function ExecutorProfileSelector({
   disabled = false,
   showLabel = true,
   showVariantSelector = true,
-  disableProviderChange = false,
-  layout = 'inline',
 }: Props) {
-  const { t } = useTranslation('tasks');
   const [profileSearchTerm, setProfileSearchTerm] = useState('');
   const [variantSearchTerm, setVariantSearchTerm] = useState('');
   const [profileHighlightedIndex, setProfileHighlightedIndex] = useState<number | null>(null);
@@ -247,26 +240,13 @@ function ExecutorProfileSelector({
   // Show loading state instead of returning null
   const isLoading = !profiles;
 
-  // Determine container classes based on layout
-  const containerClasses = layout === 'inline'
-    ? "flex gap-3 items-center"
-    : "space-y-3";
-
-  const selectorContainerClasses = layout === 'inline'
-    ? "flex items-center gap-2 flex-1"
-    : "space-y-1.5";
-
-  const labelClasses = layout === 'inline'
-    ? "text-sm font-medium whitespace-nowrap"
-    : "text-sm font-medium";
-
   return (
-    <div className={containerClasses}>
+    <div className="flex gap-3 flex-col sm:flex-row">
       {/* Executor Profile Selector */}
-      <div className={selectorContainerClasses}>
+      <div className="flex-1">
         {showLabel && (
-          <Label htmlFor="executor-profile" className={labelClasses}>
-            {t('executorProfileSelector.provider')}
+          <Label htmlFor="executor-profile" className="text-sm font-medium">
+            Provider
           </Label>
         )}
         <DropdownMenu
@@ -279,42 +259,24 @@ function ExecutorProfileSelector({
             }
           }}
         >
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-block w-full">
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      id="executor-profile"
-                      variant="outline"
-                      size="sm"
-                      className={cn(
-                        "w-full justify-between text-xs",
-                        disableProviderChange && "pointer-events-none"
-                      )}
-                      disabled={disabled || isLoading || disableProviderChange}
-                      aria-haspopup="listbox"
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <Settings2 className="h-3 w-3" />
-                        <span className="truncate">
-                          {isLoading
-                            ? t('executorProfileSelector.loadingProviders')
-                            : selectedProfile?.executor || t('executorProfileSelector.selectProvider')}
-                        </span>
-                      </div>
-                      <ArrowDown className="h-3 w-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-between text-xs mt-1.5"
+              disabled={disabled || isLoading}
+            >
+              <div className="flex items-center gap-1.5">
+                <Settings2 className="h-3 w-3" />
+                <span className="truncate">
+                  {isLoading
+                    ? 'Loading providers...'
+                    : selectedProfile?.executor || 'Select provider'}
                 </span>
-              </TooltipTrigger>
-              {disableProviderChange && (
-                <TooltipContent>
-                  {t('executorProfileSelector.disabledProviderTooltip')}
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
+              </div>
+              <ArrowDown className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
           <DropdownMenuContent className="w-80">
             <div className="p-2">
               <div className="relative">
@@ -393,9 +355,9 @@ function ExecutorProfileSelector({
         selectedProfile &&
         hasVariants &&
         currentProfile && (
-          <div className={selectorContainerClasses}>
-            <Label htmlFor="executor-variant" className={labelClasses}>
-              {t('executorProfileSelector.agent')}
+          <div className="flex-1">
+            <Label htmlFor="executor-variant" className="text-sm font-medium">
+              Agent
             </Label>
             <DropdownMenu
               open={isLoading ? false : variantOpen}
@@ -409,12 +371,10 @@ function ExecutorProfileSelector({
             >
               <DropdownMenuTrigger asChild>
                 <Button
-                  id="executor-variant"
                   variant="outline"
                   size="sm"
-                  className="w-full justify-between text-xs"
+                  className="w-full justify-between text-xs mt-1.5"
                   disabled={disabled || isLoading}
-                  aria-haspopup="listbox"
                 >
                   <span className="truncate">
                     {isLoading
@@ -503,34 +463,34 @@ function ExecutorProfileSelector({
         selectedProfile &&
         !hasVariants &&
         currentProfile && (
-          <div className={selectorContainerClasses}>
-            <Label htmlFor="executor-variant" className={labelClasses}>
-              {t('executorProfileSelector.agent')}
+          <div className="flex-1">
+            <Label htmlFor="executor-variant" className="text-sm font-medium">
+              Agent
             </Label>
             <Button
               variant="outline"
               size="sm"
               disabled
-              className="w-full text-xs justify-start"
+              className="w-full text-xs justify-start mt-1.5"
             >
-              {t('executorProfileSelector.default')}
+              Default
             </Button>
           </div>
         )}
 
       {/* Show placeholder for variant when no profile selected */}
       {showVariantSelector && !selectedProfile && (
-        <div className={selectorContainerClasses}>
-          <Label htmlFor="executor-variant" className={labelClasses}>
-            {t('executorProfileSelector.agent')}
+        <div className="flex-1">
+          <Label htmlFor="executor-variant" className="text-sm font-medium">
+            Agent
           </Label>
           <Button
             variant="outline"
             size="sm"
             disabled
-            className="w-full text-xs justify-start"
+            className="w-full text-xs justify-start mt-1.5"
           >
-            {t('executorProfileSelector.selectProviderFirst')}
+            Select provider first
           </Button>
         </div>
       )}
@@ -539,3 +499,158 @@ function ExecutorProfileSelector({
 }
 
 export default ExecutorProfileSelector;
+
+// Compact icon-only selector for chat input toolbar
+type CompactProps = {
+  profiles: Record<string, ExecutorConfig> | null;
+  selectedProfile: ExecutorProfileId | null;
+  onProfileSelect: (profile: ExecutorProfileId) => void;
+  disabled?: boolean;
+};
+
+export function CompactExecutorSelector({
+  profiles,
+  selectedProfile,
+  onProfileSelect,
+  disabled = false,
+}: CompactProps) {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [variantOpen, setVariantOpen] = useState(false);
+
+  const currentProfile = selectedProfile && profiles
+    ? profiles[selectedProfile.executor]
+    : null;
+  const hasVariants = currentProfile && Object.keys(currentProfile).length > 0;
+
+  const handleExecutorChange = useCallback((executor: string) => {
+    onProfileSelect({
+      executor: executor as BaseCodingAgent,
+      variant: null,
+    });
+    setProfileOpen(false);
+  }, [onProfileSelect]);
+
+  const handleVariantChange = useCallback((variant: string) => {
+    if (selectedProfile) {
+      onProfileSelect({
+        ...selectedProfile,
+        variant: variant === 'GENIE' ? null : variant,
+      });
+    }
+    setVariantOpen(false);
+  }, [selectedProfile, onProfileSelect]);
+
+  const profileKeys = useMemo(() => {
+    if (!profiles) return [];
+    return Object.keys(profiles).sort((a, b) => a.localeCompare(b));
+  }, [profiles]);
+
+  const variantKeys = useMemo(() => {
+    if (!currentProfile) return [];
+    return Object.keys(currentProfile).sort((a, b) => a.localeCompare(b));
+  }, [currentProfile]);
+
+  const isLoading = !profiles;
+
+  return (
+    <>
+      {/* Provider Icon Button */}
+      <TooltipProvider>
+        <Tooltip>
+          <DropdownMenu
+            open={isLoading ? false : profileOpen}
+            onOpenChange={setProfileOpen}
+          >
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={disabled || isLoading}
+                >
+                  <Settings2 className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              {profileKeys.length === 0 ? (
+                <div className="p-2 text-sm text-muted-foreground text-center">
+                  No providers found
+                </div>
+              ) : (
+                profileKeys.map((executorKey) => (
+                  <DropdownMenuItem
+                    key={executorKey}
+                    onSelect={() => handleExecutorChange(executorKey)}
+                    className={
+                      selectedProfile?.executor === executorKey
+                        ? 'bg-accent text-accent-foreground'
+                        : ''
+                    }
+                  >
+                    {executorKey}
+                  </DropdownMenuItem>
+                ))
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <TooltipContent>
+            <p className="text-xs">
+              Provider: {selectedProfile?.executor || 'None selected'}
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      {/* Agent Icon Button (only show if variants exist) */}
+      {selectedProfile && hasVariants && (
+        <TooltipProvider>
+          <Tooltip>
+            <DropdownMenu
+              open={isLoading ? false : variantOpen}
+              onOpenChange={setVariantOpen}
+            >
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={disabled || isLoading}
+                  >
+                    <Bot className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <DropdownMenuContent align="start" className="w-64">
+                {variantKeys.length === 0 ? (
+                  <div className="p-2 text-sm text-muted-foreground text-center">
+                    No agents found
+                  </div>
+                ) : (
+                  variantKeys.map((variantKey) => (
+                    <DropdownMenuItem
+                      key={variantKey}
+                      onSelect={() => handleVariantChange(variantKey)}
+                      className={
+                        selectedProfile.variant === variantKey
+                          ? 'bg-accent text-accent-foreground'
+                          : ''
+                      }
+                    >
+                      {variantKey}
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <TooltipContent>
+              <p className="text-xs">
+                Agent: {selectedProfile.variant || 'GENIE'}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+    </>
+  );
+}

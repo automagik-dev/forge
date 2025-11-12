@@ -1,0 +1,185 @@
+name: Cypress E2E Tests
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  cypress-run:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        containers: [1, 2]
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.12.4
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install frontend dependencies
+        run: cd frontend && pnpm install
+
+      - name: Build frontend
+        run: cd frontend && pnpm run build
+
+      - name: Build backend
+        run: cargo build --release
+
+      - name: Start backend server
+        run: |
+          cargo run --release --bin forge-app &
+          sleep 10
+        env:
+          BACKEND_PORT: 8887
+
+      - name: Start frontend server
+        run: |
+          cd frontend && pnpm run preview --host 127.0.0.1 --port 3000 --strictPort &
+          sleep 5
+        env:
+          PORT: 3000
+
+      - name: Wait for servers
+        run: |
+          npx wait-on http://127.0.0.1:3000 http://127.0.0.1:8887/health --timeout 120000
+
+      - name: Install Cypress binary
+        run: npx cypress install
+
+      - name: Run Cypress tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: .
+          browser: chrome
+          record: true
+          parallel: true
+          install: false
+        env:
+          CYPRESS_baseUrl: http://127.0.0.1:3000
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload screenshots on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots-${{ matrix.containers }}
+          path: cypress/screenshots
+
+      - name: Upload videos
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-videos-${{ matrix.containers }}
+          path: cypress/videos
+
+  mobile-specific-tests:
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.12.4
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Install dependencies
+        run: |
+          pnpm install
+          cd frontend && pnpm install
+
+      - name: Build frontend
+        run: cd frontend && pnpm run build
+
+      - name: Build backend
+        run: cargo build --release
+
+      - name: Start servers
+        run: |
+          cargo run --release --bin forge-app &
+          sleep 10
+          cd frontend && pnpm run preview --host 127.0.0.1 --port 3000 --strictPort &
+          sleep 5
+        env:
+          BACKEND_PORT: 8887
+          PORT: 3000
+
+      - name: Wait for servers
+        run: |
+          npx wait-on http://127.0.0.1:3000 http://127.0.0.1:8887/health --timeout 120000
+
+      - name: Install Cypress binary
+        run: npx cypress install
+
+      - name: Run Phase 1 Foundation Tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: .
+          browser: chrome
+          spec: cypress/e2e/phase-1-foundation/**/*.cy.ts
+        env:
+          CYPRESS_baseUrl: http://127.0.0.1:3000
+
+      - name: Run Phase 2 Core Views Tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: .
+          browser: chrome
+          spec: cypress/e2e/phase-2-core-views/**/*.cy.ts
+        env:
+          CYPRESS_baseUrl: http://127.0.0.1:3000
+
+      - name: Run Phase 3 Advanced Features Tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: .
+          browser: chrome
+          spec: cypress/e2e/phase-3-advanced-features/**/*.cy.ts
+        env:
+          CYPRESS_baseUrl: http://127.0.0.1:3000
+
+      - name: Run Phase 4 Polish Tests
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: .
+          browser: chrome
+          spec: cypress/e2e/phase-4-polish/**/*.cy.ts
+        env:
+          CYPRESS_baseUrl: http://127.0.0.1:3000
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cypress-results
+          path: |
+            cypress/screenshots
+            cypress/videos

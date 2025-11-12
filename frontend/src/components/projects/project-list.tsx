@@ -1,24 +1,47 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { H1, H3 } from '@/components/ui/typography';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Project } from 'shared/types';
 import { showProjectForm } from '@/lib/modals';
-import { projectsApi } from '@/lib/api';
-import { AlertCircle, Loader2, Plus } from 'lucide-react';
+import { projectsApi, tasksApi } from '@/lib/api';
+import { AlertCircle, Loader2, Plus, ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
 import ProjectCard from '@/components/projects/ProjectCard.tsx';
 import { useKeyCreate, Scope } from '@/keyboard';
+
+type SortField = 'activity' | 'created' | 'name';
+type SortDirection = 'asc' | 'desc';
+
+const STORAGE_KEY_FIELD = 'projectList.sortField';
+const STORAGE_KEY_DIR = 'projectList.sortDirection';
 
 export function ProjectList() {
   const navigate = useNavigate();
   const { t } = useTranslation('projects');
   const [projects, setProjects] = useState<Project[]>([]);
+  const [projectActivity, setProjectActivity] = useState<Map<string, Date>>(new Map());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [focusedProjectId, setFocusedProjectId] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_FIELD);
+    return (saved as SortField) || 'activity';
+  });
+  const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_DIR);
+    return (saved as SortDirection) || 'desc';
+  });
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -27,6 +50,31 @@ export function ProjectList() {
     try {
       const result = await projectsApi.getAll();
       setProjects(result);
+
+      // Fetch most recent task for each project to determine real activity
+      const activityMap = new Map<string, Date>();
+      await Promise.all(
+        result.map(async (project) => {
+          try {
+            const tasks = await tasksApi.getAll(project.id);
+            if (tasks.length > 0) {
+              // Find most recent task activity (updated_at)
+              const mostRecent = tasks.reduce((latest, task) => {
+                const taskDate = new Date(task.updated_at);
+                return taskDate > latest ? taskDate : latest;
+              }, new Date(0));
+              activityMap.set(project.id, mostRecent);
+            } else {
+              // No tasks, use project creation date
+              activityMap.set(project.id, new Date(project.created_at));
+            }
+          } catch {
+            // If task fetch fails, fall back to project creation date
+            activityMap.set(project.id, new Date(project.created_at));
+          }
+        })
+      );
+      setProjectActivity(activityMap);
     } catch (error) {
       console.error('Failed to fetch projects:', error);
       setError(t('errors.fetchFailed'));
@@ -46,6 +94,46 @@ export function ProjectList() {
     }
   };
 
+  const handleSortFieldChange = (value: SortField) => {
+    setSortField(value);
+    localStorage.setItem(STORAGE_KEY_FIELD, value);
+  };
+
+  const toggleSortDirection = () => {
+    const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    setSortDirection(newDirection);
+    localStorage.setItem(STORAGE_KEY_DIR, newDirection);
+  };
+
+  // Memoize sorted projects to avoid recomputing on every render
+  const sortedProjects = useMemo(() => {
+    const sorted = [...projects];
+
+    // First sort by field
+    switch (sortField) {
+      case 'activity':
+        sorted.sort((a, b) => {
+          const dateA = projectActivity.get(a.id) || new Date(a.created_at);
+          const dateB = projectActivity.get(b.id) || new Date(b.created_at);
+          return dateB.getTime() - dateA.getTime();
+        });
+        break;
+      case 'created':
+        sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+      case 'name':
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+    }
+
+    // Then apply direction
+    if (sortDirection === 'asc') {
+      sorted.reverse();
+    }
+
+    return sorted;
+  }, [projects, projectActivity, sortField, sortDirection]);
+
   // Semantic keyboard shortcut for creating new project
   useKeyCreate(handleCreateProject, { scope: Scope.PROJECTS });
 
@@ -55,10 +143,10 @@ export function ProjectList() {
 
   // Set initial focus when projects are loaded
   useEffect(() => {
-    if (projects.length > 0 && !focusedProjectId) {
-      setFocusedProjectId(projects[0].id);
+    if (sortedProjects.length > 0 && !focusedProjectId) {
+      setFocusedProjectId(sortedProjects[0].id);
     }
-  }, [projects, focusedProjectId]);
+  }, [sortedProjects, focusedProjectId]);
 
   useEffect(() => {
     fetchProjects();
@@ -66,15 +154,39 @@ export function ProjectList() {
 
   return (
     <div className="space-y-6 p-8 pb-16 md:pb-8 h-full overflow-auto">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+          <H1 className="tracking-tight">{t('title')}</H1>
           <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
-        <Button onClick={handleCreateProject}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t('createProject')}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Select value={sortField} onValueChange={handleSortFieldChange}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="activity">{t('sort.activity')}</SelectItem>
+              <SelectItem value="created">{t('sort.created')}</SelectItem>
+              <SelectItem value="name">{t('sort.name')}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={toggleSortDirection}
+            title={sortDirection === 'desc' ? t('sort.descending') : t('sort.ascending')}
+          >
+            {sortDirection === 'desc' ? (
+              <ArrowDownWideNarrow className="h-4 w-4" />
+            ) : (
+              <ArrowUpNarrowWide className="h-4 w-4" />
+            )}
+          </Button>
+          <Button onClick={handleCreateProject}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t('createProject')}
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -95,7 +207,7 @@ export function ProjectList() {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
               <Plus className="h-6 w-6" />
             </div>
-            <h3 className="mt-4 text-lg font-semibold">{t('empty.title')}</h3>
+            <H3 className="mt-4">{t('empty.title')}</H3>
             <p className="mt-2 text-sm text-muted-foreground">
               {t('empty.description')}
             </p>
@@ -107,7 +219,7 @@ export function ProjectList() {
         </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => (
+          {sortedProjects.map((project) => (
             <ProjectCard
               key={project.id}
               project={project}

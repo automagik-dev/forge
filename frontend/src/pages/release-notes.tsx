@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ExternalLink, Calendar, Tag } from 'lucide-react';
+import { H1, H2 } from '@/components/ui/typography';
 
 interface GitHubRelease {
   id: number;
@@ -55,9 +56,9 @@ export default function ReleaseNotesPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          <H1 className="text-gray-900 dark:text-white mb-2">
             Release Notes
-          </h1>
+          </H1>
           <p className="text-gray-600 dark:text-gray-400">
             Latest updates and improvements to Automagik Forge
           </p>
@@ -72,9 +73,9 @@ export default function ReleaseNotesPage() {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                    <H2 className="text-gray-900 dark:text-white">
                       {release.name || release.tag_name}
-                    </h2>
+                    </H2>
                     {release.prerelease && (
                       <span className="px-2 py-1 text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded">
                         Pre-release

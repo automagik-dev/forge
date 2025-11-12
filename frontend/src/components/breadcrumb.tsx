@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge, ArrowRight, Settings } from 'lucide-react';
+import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge, ArrowRight, GitCompare } from 'lucide-react';
 import { useProject } from '@/contexts/project-context';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
@@ -163,51 +163,63 @@ export function Breadcrumb() {
     }> = [];
 
     if (projectId && project) {
-      // Start with project name
+      // Always start with project name
       crumbs.push({
         label: project.name,
         path: `/projects/${projectId}/tasks`,
         type: 'project',
       });
 
-      // Add parent task if current task has one
-      if (parentTask) {
-        crumbs.push({
-          label: parentTask.title,
-          path: `/projects/${projectId}/tasks/${parentTask.id}`,
-          type: 'parent-task',
-        });
-      }
+      // When viewing an attempt, show: project -> base branch -> worktree -> task
+      if (attempt) {
+        // Add target/base branch if viewing an attempt (branch origin)
+        const targetBranch = attempt?.target_branch;
+        if (targetBranch) {
+          crumbs.push({
+            label: targetBranch,
+            path: location.pathname,
+            type: 'base-branch',
+            icon: <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
+          });
+        }
 
-      // Add current task
-      if (taskId && tasksById[taskId]) {
-        crumbs.push({
-          label: tasksById[taskId].title,
-          path: `/projects/${projectId}/tasks/${taskId}`,
-          type: 'task',
-        });
-      }
+        // Add git branch (worktree) if viewing an attempt
+        if (attempt?.branch) {
+          crumbs.push({
+            label: attempt.branch,
+            path: location.pathname,
+            type: 'git-branch',
+            icon: <GitBranch className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
+          });
+        }
 
-      // Add git branch if viewing an attempt (after task, outside task check)
-      if (attempt?.branch) {
-        crumbs.push({
-          label: attempt.branch,
-          path: location.pathname,
-          type: 'git-branch',
-          icon: <GitBranch className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
-        });
-      }
+        // Add current task
+        if (taskId && tasksById[taskId]) {
+          crumbs.push({
+            label: tasksById[taskId].title,
+            path: `/projects/${projectId}/tasks/${taskId}`,
+            type: 'task',
+          });
+        }
+      } else {
+        // Traditional breadcrumb for non-attempt views: project -> parent task -> task
+        // Add parent task if current task has one
+        if (parentTask) {
+          crumbs.push({
+            label: parentTask.title,
+            path: `/projects/${projectId}/tasks/${parentTask.id}`,
+            type: 'parent-task',
+          });
+        }
 
-      // Add target/base branch if viewing an attempt
-      // Use attempt's target_branch (user-selected)
-      const targetBranch = attempt?.target_branch;
-      if (targetBranch) {
-        crumbs.push({
-          label: targetBranch,
-          path: location.pathname,
-          type: 'base-branch',
-          icon: <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
-        });
+        // Add current task
+        if (taskId && tasksById[taskId]) {
+          crumbs.push({
+            label: tasksById[taskId].title,
+            path: `/projects/${projectId}/tasks/${taskId}`,
+            type: 'task',
+          });
+        }
       }
     }
 
@@ -360,7 +372,7 @@ export function Breadcrumb() {
                             className="inline-flex h-5 w-5 p-0 hover:bg-muted"
                             aria-label={t('branches.changeTarget.dialog.title')}
                           >
-                            <Settings className="h-3.5 w-3.5" />
+                            <GitCompare className="h-3.5 w-3.5" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent side="bottom">

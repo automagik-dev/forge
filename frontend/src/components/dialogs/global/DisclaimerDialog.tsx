@@ -15,6 +15,7 @@ const DisclaimerDialog = NiceModal.create(() => {
 
   const handleAccept = () => {
     modal.resolve('accepted');
+    modal.hide();
   };
 
   return (

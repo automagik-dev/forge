@@ -34,7 +34,7 @@ import { useEntries } from '@/contexts/EntriesContext';
 import { useKeyCycleVariant, useKeySubmitFollowUp, Scope } from '@/keyboard';
 import { useHotkeysContext } from 'react-hotkeys-hook';
 //
-import ExecutorProfileSelector from '@/components/settings/ExecutorProfileSelector';
+import { CompactExecutorSelector } from '@/components/settings/ExecutorProfileSelector';
 import { FollowUpStatusRow } from '@/components/tasks/FollowUpStatusRow';
 import { useAttemptBranch } from '@/hooks/useAttemptBranch';
 import { FollowUpConflictSection } from '@/components/tasks/follow-up/FollowUpConflictSection';
@@ -142,6 +142,43 @@ export function TaskFollowUpSection({
     if (files.length === 0) return;
     setShowImageUpload(true);
     void imageUploadRef.current?.addFiles(files);
+  }, []);
+
+  // Track drag state for auto-opening tray
+  const [isDraggingOverChat, setIsDraggingOverChat] = useState(false);
+
+  // Container-level drag handlers for auto-opening upload tray
+  const handleContainerDragEnter = useCallback((e: React.DragEvent) => {
+    // Check if dragged items contain files
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      setIsDraggingOverChat(true);
+      setShowImageUpload(true); // Auto-open tray
+    }
+  }, []);
+
+  const handleContainerDragLeave = useCallback((e: React.DragEvent) => {
+    // Only reset if leaving the container entirely
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+
+    if (x <= rect.left || x >= rect.right || y <= rect.top || y >= rect.bottom) {
+      setIsDraggingOverChat(false);
+    }
+  }, []);
+
+  const handleContainerDragOver = useCallback((e: React.DragEvent) => {
+    // Prevent default to allow drop
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+    }
+  }, []);
+
+  const handleContainerDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOverChat(false);
+    // Let ImageUploadSection handle the actual drop
   }, []);
 
   // Track whether the follow-up textarea is focused
@@ -528,11 +565,15 @@ export function TaskFollowUpSection({
   return (
     <div
       className={cn(
-        'p-4 focus-within:ring ring-inset',
+        'border-t bg-background p-4',
         isRetryActive && 'opacity-50'
       )}
+      onDragEnter={handleContainerDragEnter}
+      onDragOver={handleContainerDragOver}
+      onDragLeave={handleContainerDragLeave}
+      onDrop={handleContainerDrop}
     >
-        <div className="space-y-2">
+        <div className="space-y-3">
           {followUpError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -557,6 +598,10 @@ export function TaskFollowUpSection({
                   setFollowUpMessage((prev) =>
                     appendImageMarkdown(prev, image)
                   );
+                  // Auto-hide tray after successful upload (unless actively dragging)
+                  if (!isDraggingOverChat) {
+                    setShowImageUpload(false);
+                  }
                 }}
                 disabled={!isEditable}
                 collapsible={false}
@@ -605,6 +650,10 @@ export function TaskFollowUpSection({
                 onChange={(value) => {
                   setFollowUpMessage(value);
                   if (followUpError) setFollowUpError(null);
+                  // Auto-hide upload tray when user starts typing (unless actively dragging)
+                  if (value && showImageUpload && !isDraggingOverChat) {
+                    setShowImageUpload(false);
+                  }
                 }}
                 disabled={!isEditable}
                 showLoadingOverlay={isUnqueuing || !isDraftLoaded}
@@ -621,11 +670,11 @@ export function TaskFollowUpSection({
                   queue: { isUnqueuing: isUnqueuing, isQueued: displayQueued },
                 }}
               />
-              <div className="flex flex-row gap-2 items-center">
-                <div className="flex-1 flex gap-2">
+              <div className="flex flex-row gap-3 items-center">
+                <div className="flex gap-2 items-center">
                   {/* Image button */}
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
                     onClick={() => setShowImageUpload(!showImageUpload)}
                     disabled={!isEditable}
@@ -638,16 +687,15 @@ export function TaskFollowUpSection({
                     />
                   </Button>
 
-                  <ExecutorProfileSelector
+                  {/* Compact icon-only executor selector */}
+                  <CompactExecutorSelector
                     profiles={profiles}
                     selectedProfile={selectedProfile}
                     onProfileSelect={setSelectedProfile}
                     disabled={!isEditable}
-                    showLabel={false}
-                    showVariantSelector={true}
-                    disableProviderChange={isAttemptRunning}
                   />
                 </div>
+                <div className="flex-1" />
 
                 {isAttemptRunning ? (
                   <Button
@@ -690,7 +738,7 @@ export function TaskFollowUpSection({
                               isRetryActive
                             }
                             size="sm"
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                            className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
                           >
                             {isSendingFollowUp ? (
                               <>
@@ -703,9 +751,6 @@ export function TaskFollowUpSection({
                                 {conflictResolutionInstructions
                                   ? t('followUp.resolveConflicts')
                                   : t('followUp.send')}
-                                <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-primary-foreground/20 rounded font-mono">
-                                  ⏎
-                                </kbd>
                               </>
                             )}
                           </Button>
@@ -715,7 +760,7 @@ export function TaskFollowUpSection({
                             {conflictResolutionInstructions
                               ? t('followUp.resolveConflicts')
                               : t('followUp.send')}{' '}
-                            (Enter)
+                            ({navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Enter)
                           </p>
                         </TooltipContent>
                       </Tooltip>

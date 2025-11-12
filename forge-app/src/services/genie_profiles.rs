@@ -2,7 +2,6 @@
 ///
 /// Discovers and loads executor profiles from .genie folders in project workspaces.
 /// This enables per-project agent customization.
-
 use anyhow::{Context, Result};
 use convert_case::{Case, Casing};
 use executors::{
@@ -110,15 +109,25 @@ where
         Value::Object(map) => {
             // Known ForgeConfig field names (flat config indicators)
             let flat_fields = [
-                "model", "dangerously_skip_permissions", "sandbox", "dangerously_allow_all",
-                "model_reasoning_effort", "yolo", "force", "allow_all_tools",
-                "additional_params", "append_prompt", "claude_code_router", "plan", "approvals"
+                "model",
+                "dangerously_skip_permissions",
+                "sandbox",
+                "dangerously_allow_all",
+                "model_reasoning_effort",
+                "yolo",
+                "force",
+                "allow_all_tools",
+                "additional_params",
+                "append_prompt",
+                "claude_code_router",
+                "plan",
+                "approvals",
             ];
 
             // Check if any keys match known executor names (uppercase convention)
-            let is_per_executor = map.keys().any(|k| {
-                k.chars().all(|c| c.is_uppercase() || c == '_')
-            });
+            let is_per_executor = map
+                .keys()
+                .any(|k| k.chars().all(|c| c.is_uppercase() || c == '_'));
 
             // Check if any keys are flat config fields
             let is_flat = map.keys().any(|k| flat_fields.contains(&k.as_str()));
@@ -128,7 +137,9 @@ where
                 let mut configs = HashMap::new();
                 for (executor, config_value) in map {
                     let config: ForgeConfig = serde_json::from_value(config_value.clone())
-                        .map_err(|e| Error::custom(format!("Invalid config for {}: {}", executor, e)))?;
+                        .map_err(|e| {
+                            Error::custom(format!("Invalid config for {}: {}", executor, e))
+                        })?;
                     configs.insert(executor, config);
                 }
                 Ok(ForgeConfigMap { configs })
@@ -146,7 +157,7 @@ where
             } else {
                 // Mixed format - error
                 Err(Error::custom(
-                    "forge config cannot mix flat fields and per-executor keys. Use either flat format (forge: { model: sonnet }) or per-executor format (forge: { CLAUDE_CODE: { model: sonnet } })"
+                    "forge config cannot mix flat fields and per-executor keys. Use either flat format (forge: { model: sonnet }) or per-executor format (forge: { CLAUDE_CODE: { model: sonnet } })",
                 ))
             }
         }
@@ -278,11 +289,12 @@ impl GenieProfileLoader {
                 Ok(profiles) => {
                     for (executor, variant_name, config) in profiles {
                         // Get or create executor config
-                        let executor_config = executor_configs.entry(executor).or_insert_with(|| {
-                            ExecutorConfig {
-                                configurations: HashMap::new(),
-                            }
-                        });
+                        let executor_config =
+                            executor_configs
+                                .entry(executor)
+                                .or_insert_with(|| ExecutorConfig {
+                                    configurations: HashMap::new(),
+                                });
 
                         // Add variant
                         executor_config
@@ -383,13 +395,17 @@ impl GenieProfileLoader {
         // 1. Scan global agents (.genie/agents/)
         let global_agents_dir = genie_root.join("agents");
         if global_agents_dir.exists() {
-            files.extend(self.scan_directory(&global_agents_dir, None, AgentType::Agent)?);
+            files.extend(Self::scan_directory(
+                &global_agents_dir,
+                None,
+                AgentType::Agent,
+            )?);
         }
 
         // 2. Scan collective agents
         for collective in collectives {
             if collective.agents_dir.exists() {
-                files.extend(self.scan_directory(
+                files.extend(Self::scan_directory(
                     &collective.agents_dir,
                     Some(collective.id.clone()),
                     AgentType::Agent,
@@ -400,7 +416,7 @@ impl GenieProfileLoader {
         // 3. Scan neurons (.genie/neurons/)
         let neurons_dir = genie_root.join("neurons");
         if neurons_dir.exists() {
-            files.extend(self.scan_directory(&neurons_dir, None, AgentType::Neuron)?);
+            files.extend(Self::scan_directory(&neurons_dir, None, AgentType::Neuron)?);
         }
 
         Ok(files)
@@ -408,31 +424,38 @@ impl GenieProfileLoader {
 
     /// Scan a directory for .md files recursively
     fn scan_directory(
-        &self,
         dir: &Path,
         collective: Option<String>,
         agent_type: AgentType,
     ) -> Result<Vec<AgentFile>> {
         let mut files = Vec::new();
 
-        let entries =
-            fs::read_dir(dir).context(format!("Failed to read directory: {:?}", dir))?;
+        let entries = fs::read_dir(dir).context(format!("Failed to read directory: {:?}", dir))?;
 
         for entry in entries.flatten() {
             let path = entry.path();
 
             // Skip non-agent directories (spells, workflows, teams, etc.)
             if path.is_dir() {
-                let dir_name = path.file_name()
-                    .and_then(|n| n.to_str())
-                    .unwrap_or("");
+                let dir_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
                 // Directories to exclude from agent scanning
                 // Note: teams/ is included (will contain agent definitions in future)
                 let excluded_dirs = [
-                    "spells", "workflows", "specs", "reports",
-                    "state", "product", "qa", "wishes", "scripts",
-                    "utilities", ".cache", "node_modules", ".git", "backups"
+                    "spells",
+                    "workflows",
+                    "specs",
+                    "reports",
+                    "state",
+                    "product",
+                    "qa",
+                    "wishes",
+                    "scripts",
+                    "utilities",
+                    ".cache",
+                    "node_modules",
+                    ".git",
+                    "backups",
                 ];
 
                 if excluded_dirs.contains(&dir_name) {
@@ -441,7 +464,11 @@ impl GenieProfileLoader {
                 }
 
                 // Recursively scan subdirectories
-                files.extend(self.scan_directory(&path, collective.clone(), agent_type.clone())?);
+                files.extend(Self::scan_directory(
+                    &path,
+                    collective.clone(),
+                    agent_type.clone(),
+                )?);
                 continue;
             }
 
@@ -563,8 +590,8 @@ impl GenieProfileLoader {
         let front_matter_yaml = &captures[1];
         let body = captures[2].trim().to_string();
 
-        let metadata: AgentFrontmatter = serde_yaml::from_str(front_matter_yaml)
-            .context(format!("Failed to parse frontmatter YAML"))?;
+        let metadata: AgentFrontmatter =
+            serde_yaml::from_str(front_matter_yaml).context("Failed to parse frontmatter YAML")?;
 
         Ok((metadata, body))
     }
@@ -617,7 +644,10 @@ impl GenieProfileLoader {
 
         // Get executor-specific config, falling back to wildcard "*"
         let executor_str = executor.to_string();
-        let forge_config = metadata.forge.configs.get(&executor_str)
+        let forge_config = metadata
+            .forge
+            .configs
+            .get(&executor_str)
             .or_else(|| metadata.forge.configs.get("*"));
 
         // Add forge.* fields to the config (if config exists for this executor)

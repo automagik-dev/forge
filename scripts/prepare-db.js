@@ -6,8 +6,15 @@ const path = require('path');
 
 console.log('Preparing database for SQLx...');
 
+const upstreamDir = path.join(__dirname, '..', 'upstream');
+if (!fs.existsSync(upstreamDir)) {
+  console.log('ℹ️  Upstream submodule was removed. This script is no longer needed.');
+  console.log('   Database migrations are now managed via Cargo git dependencies.');
+  process.exit(0);
+}
+
 // Change to backend directory (in upstream submodule)
-const backendDir = path.join(__dirname, '..', 'upstream', 'crates/db');
+const backendDir = path.join(upstreamDir, 'crates/db');
 process.chdir(backendDir);
 
 // Create temporary database file

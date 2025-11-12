@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { useHotkeysContext } from 'react-hotkeys-hook';
 import { useKeyExit } from '@/keyboard/hooks';
 import { Scope } from '@/keyboard/registry';
+import { H1 } from '@/components/ui/typography';
 
 const settingsNavigation = [
   {
@@ -57,9 +58,9 @@ export function SettingsLayout() {
       <div className="container mx-auto px-4 py-8">
         {/* Header with title and close button */}
         <div className="flex items-center justify-between sticky top-0 bg-background z-10 py-4 -mx-4 px-4">
-          <h1 className="text-2xl font-semibold">
+          <H1 className="text-2xl">
             {t('settings.layout.nav.title')}
-          </h1>
+          </H1>
           <Button
             variant="ghost"
             onClick={handleBack}
@@ -87,7 +88,7 @@ export function SettingsLayout() {
                           'hover:text-accent-foreground',
                           isActive
                             ? 'text-primary-foreground'
-                            : 'text-secondary-foreground'
+                            : 'text-foreground/80 dark:text-secondary-foreground'
                         )
                       }
                     >

@@ -1,5 +1,5 @@
 export interface ShowcaseMedia {
-  type: 'image' | 'video';
+  type: 'image' | 'video' | 'youtube';
   src: string;
   poster?: string;
   alt?: string;

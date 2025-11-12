@@ -30,6 +30,7 @@ import { useUserSystem } from '@/components/config-provider';
 
 import { toPrettyCase } from '@/utils/string';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
+import { H2 } from '@/components/ui/typography';
 
 export type OnboardingResult = {
   profile: ExecutorProfileId;
@@ -60,6 +61,7 @@ const OnboardingDialog = NiceModal.create(() => {
         remote_ssh_user: null,
       },
     } as OnboardingResult);
+    modal.hide();
   };
 
   const isValid =
@@ -80,10 +82,10 @@ const OnboardingDialog = NiceModal.create(() => {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
-          <h2 className="text-xl flex items-center gap-2">
+          <H2 className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
             Choose Your AI Provider
-          </h2>
+          </H2>
           <div className="space-y-2">
             <Label htmlFor="profile">Default Provider</Label>
             <div className="flex gap-2">
@@ -169,10 +171,10 @@ const OnboardingDialog = NiceModal.create(() => {
         </div>
 
         <div className="space-y-2">
-          <h2 className="text-xl flex items-center gap-2">
+          <H2 className="flex items-center gap-2">
             <Code className="h-4 w-4" />
             Choose Your Code Editor
-          </h2>
+          </H2>
 
           <div className="space-y-2">
             <Label htmlFor="editor">Preferred Editor</Label>
