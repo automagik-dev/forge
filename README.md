@@ -31,6 +31,35 @@
 
 ---
 
+## 📦 Quick Start
+
+### Prerequisites
+
+- Node.js 18+ and pnpm 8+ (tested with pnpm 10.12.4)
+- Git repository to work with
+
+### Installation
+
+```bash
+# Install globally
+npm install -g @automagik/forge
+
+# Or run directly with npx
+npx @automagik/forge
+```
+
+### First Run
+
+```bash
+# Navigate to your project
+cd your-project
+
+# Launch Forge (browser opens automatically to http://localhost:8887)
+automagik-forge
+```
+
+---
+
 ## 🚀 What is Automagik Forge?
 
 **Automagik Forge** is the vibe coding++ platform where humans stay in control. It's the structured home for your AI-powered tasks - plan them yourself or use Genie to help, experiment with different providers and agents to find what works, review everything before shipping. Perfect for development, content, and any AI-assisted work.
@@ -300,35 +329,6 @@ The Power: You're in control, not hoping AI gets it right
 | **Open Source** | ✅ 100% open-source | ❌ Proprietary |
 | **Pricing Model** | ✅ Free forever | 💰 Usage-based credits |
 | **Self-Hostable** | ✅ Your infrastructure | ❌ Cloud-only |
-
----
-
-## 📦 Quick Start
-
-### Prerequisites
-
-- Node.js 18+ and pnpm 8+ (tested with pnpm 10.12.4)
-- Git repository to work with
-
-### Installation
-
-```bash
-# Install globally
-npm install -g @automagik/forge
-
-# Or run directly with npx
-npx @automagik/forge
-```
-
-### First Run
-
-```bash
-# Navigate to your project
-cd your-project
-
-# Launch Forge (browser opens automatically to http://localhost:8887)
-automagik-forge
-```
 
 ---
 
