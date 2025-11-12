@@ -5,6 +5,7 @@ import { BottomNavigation, BottomNavTab } from './BottomNavigation';
 import { BottomNavIcons } from './BottomNavigationIcons';
 import { usePlatform } from '@/lib/platform';
 import { useProject } from '@/contexts/project-context';
+import NiceModal from '@ebay/nice-modal-react';
 
 export interface MobileLayoutProps {
   children: React.ReactNode;
@@ -25,52 +26,35 @@ export function MobileLayout({
   const location = useLocation();
   
   const tabs: BottomNavTab[] = React.useMemo(() => {
-    if (projectId && location.pathname.includes('/tasks')) {
-      const basePath = `/projects/${projectId}/tasks`;
-      
-      return [
-        {
-          id: 'tasks',
-          label: 'Tasks',
-          icon: BottomNavIcons.Tasks.default,
-          activeIcon: BottomNavIcons.Tasks.active,
-          path: basePath,
-        },
-        {
-          id: 'chat',
-          label: 'Chat',
-          icon: BottomNavIcons.Chat.default,
-          activeIcon: BottomNavIcons.Chat.active,
-          path: `${basePath}?view=chat`,
-        },
-        {
-          id: 'review',
-          label: 'Review',
-          icon: BottomNavIcons.Review.default,
-          activeIcon: BottomNavIcons.Review.active,
-          path: `${basePath}?view=preview`,
-        },
-        {
-          id: 'changes',
-          label: 'Changes',
-          icon: BottomNavIcons.Changes.default,
-          activeIcon: BottomNavIcons.Changes.active,
-          path: `${basePath}?view=diffs`,
-        },
-      ];
-    }
+    const basePath = projectId ? `/projects/${projectId}/tasks` : '/projects';
     
     return [
       {
-        id: 'projects',
-        label: 'Projects',
+        id: 'tasks',
+        label: 'Tasks',
         icon: BottomNavIcons.Tasks.default,
         activeIcon: BottomNavIcons.Tasks.active,
-        path: '/projects',
+        path: basePath,
       },
       {
-        id: 'settings',
-        label: 'Settings',
+        id: 'chat',
+        label: 'Chat',
+        icon: BottomNavIcons.Chat.default,
+        activeIcon: BottomNavIcons.Chat.active,
+        path: projectId ? `${basePath}?view=chat` : '/chat',
+      },
+      {
+        id: 'new',
+        label: 'New',
+        icon: BottomNavIcons.New.default,
+        activeIcon: BottomNavIcons.New.active,
+        onClick: () => {
+          NiceModal.show('task-form', { projectId });
+        },
+      },
+      {
+        id: 'me',
+        label: 'Me',
         icon: BottomNavIcons.Me.default,
         activeIcon: BottomNavIcons.Me.active,
         path: '/settings',
