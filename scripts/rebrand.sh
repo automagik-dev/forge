@@ -499,7 +499,7 @@ After restoration, verify:
 - [ ] `cargo check --workspace` passes
 - [ ] `advanced_tools.rs` compiles (if restored)
 - [ ] `pub mod advanced_tools;` in `crates/server/src/mcp/mod.rs`
-- [ ] MCP server starts: `cargo run --bin mcp_task_server -- --advanced`
+- [ ] MCP server starts: `cargo run -p forge-app -- --mcp`
 - [ ] Default MCP config has `forge` and `genie` servers
 - [ ] Backend port 8887 configured in MCP config
 - [ ] Genie notification sounds present
