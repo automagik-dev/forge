@@ -1,4 +1,4 @@
-.PHONY: help dev prod backend frontend build test clean publish beta version check-cargo check-android-deps check-submodules publish-automagik publish-automagik-quick
+.PHONY: help dev prod backend frontend build test clean publish beta version check-cargo check-android-deps publish-automagik publish-automagik-quick
 
 # Default target
 help:
@@ -106,21 +106,12 @@ check-android-deps:
 		fi; \
 	fi
   
-# Initialize git submodules
-check-submodules:
-	@git config submodule.recurse true 2>/dev/null || true
-	@if [ ! -f "upstream/Cargo.toml" ]; then \
-		echo "📦 Initializing git submodules..."; \
-		git submodule update --init --recursive; \
-		echo "✅ Submodules initialized"; \
-	fi
-
 # Development mode - hot reload (backend first, then frontend)
-dev: check-android-deps check-cargo check-submodules
+dev: check-android-deps check-cargo
 	@bash scripts/dev/run-dev.sh
 
 # Production mode - test what will be published
-prod: check-android-deps check-cargo check-submodules
+prod: check-android-deps check-cargo
 	@echo "📦 Building and running production package..."
 	@bash scripts/dev/run-prod.sh
 
@@ -138,7 +129,7 @@ frontend:
 	@npm run frontend:dev
 
 # Build production package (without launching)
-build: check-android-deps check-cargo check-submodules
+build: check-android-deps check-cargo
 	@echo "🔨 Building production package..."
 	@bash scripts/build/build.sh
 
@@ -179,8 +170,6 @@ version:
 	@echo "  Forge App:    $$(grep 'version =' forge-app/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
 	@echo "  Forge Omni:   $$(grep 'version =' forge-extensions/omni/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
 	@echo "  Forge Config: $$(grep 'version =' forge-extensions/config/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
-
-	@echo "  Upstream:     $$(grep 'version =' upstream/crates/server/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/'")
 
 # A/B test publish: full release pipeline from dev branch, publish as 'automagik'
 publish-automagik:

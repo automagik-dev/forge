@@ -13,8 +13,10 @@ echo ""
 
 # Verify location
 if [ ! -d "upstream" ]; then
-    echo "❌ ERROR: Must run from automagik-forge root"
-    exit 1
+    echo "ℹ️  Upstream submodule was removed and converted to Cargo git dependencies."
+    echo "   This rebranding script is no longer needed."
+    echo "   The forge-core dependency is managed via Cargo.toml git dependencies."
+    exit 0
 fi
 
 # Create timestamped backup/report directory

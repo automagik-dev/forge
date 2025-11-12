@@ -54,12 +54,9 @@ jobs:
       - name: Build frontend
         run: cd frontend && npm run build
 
-      - name: Check upstream alignment
-        run: ./scripts/check-upstream-alignment.sh
-
       - name: Checks
         run: |
           cargo fmt --all -- --check
           npm run generate-types:check
           cargo test --workspace
-          cargo clippy --all --all-targets -- -D warnings    
+          cargo clippy --all --all-targets -- -D warnings        
