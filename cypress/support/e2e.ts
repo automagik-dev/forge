@@ -26,11 +26,16 @@ Cypress.Commands.add('skipOnboarding', () => {
       }
       res.send()
     })
-  })
+  }).as('getConfig')
 })
 
 Cypress.Commands.add('waitForAppReady', () => {
   cy.get('[data-testid="app-root"]', { timeout: 10000 }).should('exist')
+  cy.get('body').then(($body) => {
+    if ($body.find('.fixed.inset-0').length > 0) {
+      cy.get('.fixed.inset-0', { timeout: 10000 }).should('not.exist')
+    }
+  })
 })
 
 Cypress.Commands.add('checkMobileLayout', () => {
