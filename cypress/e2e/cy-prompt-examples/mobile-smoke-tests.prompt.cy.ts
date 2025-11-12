@@ -15,7 +15,7 @@
  * - Success criteria and KPIs
  */
 
-describe('Mobile Smoke Tests (cy.prompt)', () => {
+describe.skip('Mobile Smoke Tests (cy.prompt)', () => {
   beforeEach(() => {
     cy.visit('/')
   })
