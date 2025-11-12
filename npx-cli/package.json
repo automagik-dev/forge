@@ -14,7 +14,15 @@
     "mcp",
     "vibe-coding",
     "cli",
-    "npx"
+    "npx",
+    "git-worktree",
+    "developer-tools",
+    "coding-assistant",
+    "model-context-protocol",
+    "agent-orchestration",
+    "ai-developer-tools",
+    "parallel-execution",
+    "isolated-environment"
   ],
   "author": "Namastex Labs",
   "license": "MIT",

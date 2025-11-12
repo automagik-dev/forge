@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/automagik-forge"><img alt="npm version" src="https://img.shields.io/npm/v/automagik-forge?style=flat-square&color=00D9FF" /></a>
+  <a href="https://www.npmjs.com/package/@automagik/forge"><img alt="npm version" src="https://img.shields.io/npm/v/@automagik/forge?style=flat-square&color=00D9FF" /></a>
   <a href="https://github.com/namastexlabs/automagik-forge/actions"><img alt="Build Status" src="https://img.shields.io/github/actions/workflow/status/namastexlabs/automagik-forge/test.yml?branch=main&style=flat-square" /></a>
   <a href="https://github.com/namastexlabs/automagik-forge/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/namastexlabs/automagik-forge?style=flat-square&color=00D9FF" /></a>
   <a href="https://discord.gg/xcW8c7fF3R"><img alt="Discord" src="https://img.shields.io/discord/1095114867012292758?style=flat-square&color=00D9FF&label=discord" /></a>
@@ -467,7 +467,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## 🔗 Links
 
 - **Website**: [forge.automag.ik](https://forge.automag.ik)
-- **NPM Package**: [npmjs.com/package/automagik-forge](https://www.npmjs.com/package/automagik-forge)
+- **NPM Package**: [npmjs.com/package/@automagik/forge](https://www.npmjs.com/package/@automagik/forge)
 - **GitHub**: [github.com/namastexlabs/automagik-forge](https://github.com/namastexlabs/automagik-forge)
 - **Discord**: [discord.gg/xcW8c7fF3R](https://discord.gg/xcW8c7fF3R)
 - **Twitter**: [@namastexlabs](https://twitter.com/namastexlabs)
