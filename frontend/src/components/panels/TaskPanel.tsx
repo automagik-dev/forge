@@ -372,12 +372,10 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
                                 latestAttempt,
                               })
                             }
+                            aria-label={t('taskPanel.startNewAttempt')}
+                            title={t('taskPanel.startNewAttempt')}
                           >
-                            {displayedAttempts.length === 0 ? (
-                              <Play size={16} />
-                            ) : (
-                              <PlusIcon size={16} />
-                            )}
+                            <Play size={16} />
                           </Button>
                         </span>
                       </div>

@@ -268,7 +268,8 @@
     "errorLoadingAttempts": "Failed to load attempts",
     "loadingAttempts": "Loading attempts...",
     "noAttempts": "No attempts yet",
-    "noTaskSelected": "No task selected"
+    "noTaskSelected": "No task selected",
+    "startNewAttempt": "새 시도 시작"
   },
   "todos": {
     "title_one": "Todos ({{count}})",
