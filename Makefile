@@ -1,4 +1,4 @@
-.PHONY: help dev prod backend frontend build test clean publish beta version check-cargo check-android-deps publish-automagik publish-automagik-quick
+.PHONY: help dev prod backend frontend build test clean publish beta version npm check-cargo check-android-deps publish-automagik publish-automagik-quick
 
 # Default target
 help:
@@ -18,6 +18,7 @@ help:
 	@echo ""
 	@echo "🚀 Release Workflows:"
 	@echo "  make publish           - Complete release pipeline (main branch → npm as @automagik/forge)"
+	@echo "  make npm [RUN_ID=xxx]  - Manual npm publish from artifacts (when automated publish fails)"
 	@echo "  make publish-automagik - A/B test from dev: full release → npm as unscoped 'automagik'"
 	@echo "  make beta              - Auto-incremented beta release"
 	@echo "  make version           - Show current version info"
@@ -170,6 +171,10 @@ version:
 	@echo "  Forge App:    $$(grep 'version =' forge-app/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
 	@echo "  Forge Omni:   $$(grep 'version =' forge-extensions/omni/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
 	@echo "  Forge Config: $$(grep 'version =' forge-extensions/config/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
+
+# Manual NPM publish from downloaded artifacts (when automated publish fails)
+npm:
+	@bash scripts/publish-npm.sh $(RUN_ID)
 
 # A/B test publish: full release pipeline from dev branch, publish as 'automagik'
 publish-automagik:
