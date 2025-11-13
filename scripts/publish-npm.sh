@@ -48,7 +48,12 @@ else
     echo ""
 fi
 
-# Step 2: Reorganize artifacts to npx-cli/dist/
+# Step 2: Clean old binaries and reorganize artifacts
+echo "🧹 Cleaning old binaries from npx-cli/dist/..."
+rm -rf npx-cli/dist/*
+echo "✅ Cleaned"
+echo ""
+
 echo "🔄 Reorganizing artifacts..."
 cd publish-temp
 

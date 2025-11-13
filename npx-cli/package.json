@@ -36,7 +36,9 @@
     "dotenv": "^16.4.5"
   },
   "files": [
-    "dist",
+    "dist/**/*.zip",
+    "dist/**/README.txt",
+    "!dist/android-apk/**",
     "bin"
   ],
   "publishConfig": {
