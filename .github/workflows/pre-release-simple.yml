@@ -117,8 +117,10 @@ jobs:
           
           # Stage package.json files
           git add package.json npx-cli/package.json frontend/package.json
-          # Stage pnpm lockfile if it exists
+          # Stage lockfiles (these get updated by npm version and cargo set-version)
           if [ -f pnpm-lock.yaml ]; then git add pnpm-lock.yaml; fi
+          if [ -f npx-cli/package-lock.json ]; then git add npx-cli/package-lock.json; fi
+          if [ -f Cargo.lock ]; then git add Cargo.lock; fi
           # Stage all Cargo.toml files (exclude upstream submodule)
           git add $(find . -name Cargo.toml -not -path './upstream/*')
           
