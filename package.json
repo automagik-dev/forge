@@ -66,6 +66,7 @@
     "concurrently": "^8.2.2",
     "cypress": "^15.6.0",
     "cypress-plugin-tab": "^1.0.5",
+    "dotenv-cli": "^11.0.0",
     "typescript": "^5.9.2"
   },
   "engines": {
