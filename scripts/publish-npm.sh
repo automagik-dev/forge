@@ -165,7 +165,7 @@ echo ""
 echo "Package:  $PKG_NAME@$PKG_VERSION"
 echo "NPM Tag:  $NPM_TAG"
 echo "User:     $NPM_USER"
-echo "Provenance: ENABLED (GitHub Actions OIDC)"
+echo "Provenance: Manual publish (no provenance - use GitHub Actions for provenance)"
 echo ""
 read -p "Proceed with publish? (y/n): " -n 1 -r
 echo
@@ -178,16 +178,18 @@ echo ""
 echo "📤 Publishing to npm..."
 
 # Step 9: Publish
+# Note: --provenance only works in GitHub Actions, not local CLI
 cd npx-cli
-npm publish --access public --tag "$NPM_TAG" --provenance || {
+npm publish --access public --tag "$NPM_TAG" || {
     echo ""
     echo "❌ Publish failed!"
     echo ""
-    echo "If you see provenance errors, make sure:"
-    echo "  1. You've set up npm provenance at:"
-    echo "     https://www.npmjs.com/package/@automagik/forge/access"
-    echo "  2. Your npm account has 2FA enabled"
-    echo "  3. You're using a recent npm version (npm --version)"
+    echo "Common issues:"
+    echo "  1. Check if you have publish permissions for this package"
+    echo "  2. Verify 2FA code if prompted"
+    echo "  3. Make sure you're logged in: npm whoami"
+    echo ""
+    echo "For provenance publishing, use the automated GitHub Actions workflow"
     echo ""
     exit 1
 }
