@@ -53,7 +53,7 @@ export const KanbanBoard = ({ id, children, className }: KanbanBoardProps) => {
   return (
     <div
       className={cn(
-        'flex min-h-full flex-col',
+        'flex min-h-full flex-col pt-2',
         isOver ? 'outline-primary' : 'outline-black',
         className
       )}
