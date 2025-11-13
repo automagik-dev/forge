@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useJsonPatchWsStream } from './useJsonPatchWsStream';
 import type { ExecutionProcess } from 'shared/types';
 
@@ -25,11 +25,15 @@ export const useExecutionProcesses = (
   opts?: { showSoftDeleted?: boolean }
 ): UseExecutionProcessesResult => {
   const showSoftDeleted = opts?.showSoftDeleted;
-  const params = new URLSearchParams({ task_attempt_id: taskAttemptId });
-  if (typeof showSoftDeleted === 'boolean') {
-    params.set('show_soft_deleted', String(showSoftDeleted));
-  }
-  const endpoint = `/api/execution-processes/stream/ws?${params.toString()}`;
+
+  // Memoize endpoint to prevent unnecessary WebSocket reconnections
+  const endpoint = useMemo(() => {
+    const params = new URLSearchParams({ task_attempt_id: taskAttemptId });
+    if (typeof showSoftDeleted === 'boolean') {
+      params.set('show_soft_deleted', String(showSoftDeleted));
+    }
+    return `/api/execution-processes/stream/ws?${params.toString()}`;
+  }, [taskAttemptId, showSoftDeleted]);
 
   const initialData = useCallback(
     (): ExecutionProcessState => ({ execution_processes: {} }),

@@ -131,7 +131,7 @@ export const useConversationHistory = ({
           resolve(allEntries);
         },
         onError: (err) => {
-          console.warn!(
+          console.warn(
             `Error loading entries for historic execution process ${executionProcess.id}`,
             err
           );
