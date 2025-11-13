@@ -71,7 +71,7 @@ jobs:
         shell: bash
         run: |
           if [ "${{ steps.cache-binaries.outputs.cache-hit }}" == "true" ]; then
-            if [ -f "npx-cli/dist/${{ matrix.platform }}/automagik-forge.zip" ] && [ -f "npx-cli/dist/${{ matrix.platform }}/automagik-forge-mcp.zip" ]; then
+            if [ -f "npx-cli/dist/${{ matrix.platform }}/automagik-forge.zip" ]; then
               echo "SKIP_BUILD=true" >> $GITHUB_ENV
               echo "✅ Cache hit! Skipping build for ${{ matrix.platform }}"
             else
@@ -254,11 +254,6 @@ jobs:
           Move-Item "automagik-forge.zip" "npx-cli/dist/${{ matrix.platform }}/"
           Remove-Item "automagik-forge.exe"
 
-          Copy-Item "target/${{ matrix.target }}/release/forge-app.exe" "automagik-forge-mcp.exe"
-          Compress-Archive -Path "automagik-forge-mcp.exe" -DestinationPath "automagik-forge-mcp.zip" -Force
-          Move-Item "automagik-forge-mcp.zip" "npx-cli/dist/${{ matrix.platform }}/"
-          Remove-Item "automagik-forge-mcp.exe"
-
       - name: Package binaries (Linux/macOS)
         if: runner.os != 'Windows' && env.SKIP_BUILD != 'true'
         shell: bash
@@ -269,11 +264,6 @@ jobs:
           zip -q automagik-forge.zip automagik-forge
           mv automagik-forge.zip npx-cli/dist/${{ matrix.platform }}/
           rm automagik-forge
-
-          cp target/${{ matrix.target }}/release/forge-app automagik-forge-mcp
-          zip -q automagik-forge-mcp.zip automagik-forge-mcp
-          mv automagik-forge-mcp.zip npx-cli/dist/${{ matrix.platform }}/
-          rm automagik-forge-mcp
       
       - name: Save packaged binaries cache
         if: env.SKIP_BUILD != 'true'
@@ -318,7 +308,7 @@ jobs:
           SKIP_APK=false
           
           if [ "${{ steps.cache-android-cli.outputs.cache-hit }}" == "true" ]; then
-            if [ -f "npx-cli/dist/android-arm64/automagik-forge.zip" ] && [ -f "npx-cli/dist/android-arm64/automagik-forge-mcp.zip" ]; then
+            if [ -f "npx-cli/dist/android-arm64/automagik-forge.zip" ]; then
               SKIP_CLI=true
               echo "✅ Cache hit! Skipping Android CLI build"
             else
@@ -430,6 +420,7 @@ jobs:
           echo "[target.aarch64-linux-android]" > ~/.cargo/config.toml
           echo "linker = \"$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang\"" >> ~/.cargo/config.toml
           echo "ar = \"$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar\"" >> ~/.cargo/config.toml
+          echo "rustflags = [\"-C\", \"link-arg=-Wl,-z,max-page-size=16384\"]" >> ~/.cargo/config.toml
 
       - name: Build Rust binaries for Android (CLI for Termux)
         if: env.SKIP_CLI != 'true'
@@ -489,11 +480,6 @@ jobs:
           zip -q automagik-forge.zip automagik-forge
           mv automagik-forge.zip npx-cli/dist/android-arm64/
           rm automagik-forge
-
-          cp target/aarch64-linux-android/release/forge-app automagik-forge-mcp
-          zip -q automagik-forge-mcp.zip automagik-forge-mcp
-          mv automagik-forge-mcp.zip npx-cli/dist/android-arm64/
-          rm automagik-forge-mcp
 
       - name: Package APK
         if: env.SKIP_APK != 'true'
@@ -626,9 +612,6 @@ jobs:
             if [ ! -f "npx-cli/dist/$platform/automagik-forge.zip" ]; then
               MISSING_BINARIES+=("$platform/automagik-forge.zip")
             fi
-            if [ ! -f "npx-cli/dist/$platform/automagik-forge-mcp.zip" ]; then
-              MISSING_BINARIES+=("$platform/automagik-forge-mcp.zip")
-            fi
           done
           
           # Check Android APK (optional but log if missing)
@@ -652,7 +635,6 @@ jobs:
           echo "Platform binaries:"
           for platform in "${REQUIRED_PLATFORMS[@]}"; do
             echo "  ✓ $platform/automagik-forge.zip"
-            echo "  ✓ $platform/automagik-forge-mcp.zip"
           done
       
       - name: Determine NPM tag

@@ -1,5 +1,29 @@
 [
   {
+    "tag_name": "v0.7.0",
+    "name": "Automagik Forge v0.7.0",
+    "body": "Hey there! 🎉\n\nWe've made Forge even smoother for you:\n\n✨ **Mobile got a major glow-up** — The app feels way more natural on your phone now, with better navigation and a cleaner interface.\n\n🎯 **Android works reliably** — We fixed some startup hiccups, so you can count on it working when you need it.\n\n🖼️ **Preview is now in your control** — Not happy with auto-detection? You can manually set your preview URL exactly how you want it.\n\nThanks for using Forge! Enjoy the smoother experience. 💙",
+    "html_url": "https://github.com/namastexlabs/automagik-forge/releases/tag/v0.7.0",
+    "published_at": "2025-11-12T18:29:28Z",
+    "prerelease": false
+  },
+  {
+    "tag_name": "v0.7.1",
+    "name": "Automagik Forge v0.7.1",
+    "body": "Hey there! 🎉\n\nWe've made Forge feel more like a natural conversation partner:\n\n🔧 **Mobile-first design** — Whether you're on your phone or desktop, Forge now adapts beautifully to your screen. Your input bar stays right there, ready for the next command.\n\n📱 **Native Android app** — You can now run Forge directly on Android devices (phones, tablets, Termux terminals). Same powerful tool, no desktop needed.\n\n⚡ **Faster, smoother experience** — We've optimized everything behind the scenes so Forge responds quicker and feels snappier when you're working.\n\nThanks for being part of this journey. Keep building amazing things! ✨",
+    "html_url": "https://github.com/namastexlabs/automagik-forge/releases/tag/v0.7.1",
+    "published_at": "2025-11-12T20:27:56Z",
+    "prerelease": false
+  },
+  {
+    "tag_name": "v0.7.2",
+    "name": "Automagik Forge v0.7.2",
+    "body": "Hey there! 👋 We've just rolled out v0.7.2 with some great improvements:\n\n✨ **Faster Downloads** — We've trimmed down the package size by 63%, so Forge installs and updates much quicker.\n\n🤖 **Better Mobile Support** — Fixed some compatibility issues for Android users, so everything runs more smoothly on your mobile devices.\n\nNothing fancy here — just making Forge faster and more reliable for you. Enjoy! 🚀",
+    "html_url": "https://github.com/namastexlabs/automagik-forge/releases/tag/v0.7.2",
+    "published_at": "2025-11-13T00:00:00Z",
+    "prerelease": false
+  },
+  {
     "tag_name": "v0.6.0",
     "name": "Automagik Forge v0.6.0",
     "body": "Hey! I'm excited to share what's new in this release.\n\n✨ **Smarter task conversations** - You can now chat with your tasks in a new view mode that feels more natural and interactive.\n\n⚡ **Faster setup** - When you start working, everything just works automatically. No more configuration headaches on a fresh install.\n\n📊 **Better task insights** - See how your tasks connect to each other with improved navigation and relationship visualization.\n\nI also improved how I understand your project structure, so I can provide better guidance tailored to your workspace. The experience should feel smoother overall.\n\nGrab it and let me know what you think!",

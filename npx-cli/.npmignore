@@ -13,3 +13,6 @@
 .env.*
 !.env.example
 node_modules/
+
+# Exclude Android APK (too large, not needed for npx usage)
+dist/android-apk/

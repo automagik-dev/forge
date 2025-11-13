@@ -11,3 +11,8 @@ rustflags = ["-C", "link-arg=/DEBUG:FASTLINK"]
 
 [target.aarch64-pc-windows-msvc]
 rustflags = ["-C", "link-arg=/DEBUG:FASTLINK"]
+
+# Android ARM64 - Fix TLS alignment for Bionic (requires 64-byte alignment)
+# See: https://github.com/rust-lang/rust/issues/109717
+[target.aarch64-linux-android]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]

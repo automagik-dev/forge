@@ -1,7 +1,7 @@
 {
   "name": "@automagik/forge",
   "private": false,
-  "version": "0.7.0",
+  "version": "0.7.2",
   "description": "Automagik Forge: AI agent task management and kanban board for Vibe Coding with git worktree isolation",
   "keywords": [
     "ai",
@@ -14,7 +14,15 @@
     "mcp",
     "vibe-coding",
     "cli",
-    "npx"
+    "npx",
+    "git-worktree",
+    "developer-tools",
+    "coding-assistant",
+    "model-context-protocol",
+    "agent-orchestration",
+    "ai-developer-tools",
+    "parallel-execution",
+    "isolated-environment"
   ],
   "author": "Namastex Labs",
   "license": "MIT",
@@ -28,7 +36,9 @@
     "dotenv": "^16.4.5"
   },
   "files": [
-    "dist",
+    "dist/**/*.zip",
+    "dist/**/README.txt",
+    "!dist/android-apk/**",
     "bin"
   ],
   "publishConfig": {
