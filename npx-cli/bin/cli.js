@@ -22,7 +22,7 @@ function getEffectiveArch() {
   const nodeArch = process.arch;
 
   if (platform === "darwin") {
-    // If Node itself is arm64, we’re natively on Apple silicon
+    // If Node itself is arm64, we're natively on Apple silicon
     if (nodeArch === "arm64") return "arm64";
 
     // Otherwise check for Rosetta translation
@@ -52,15 +52,15 @@ function getEffectiveArch() {
 
 function isAndroid() {
   if (process.platform === "android") return true;
-  
+
   if (process.env.TERMUX_VERSION) return true;
   if (process.env.ANDROID_ROOT || process.env.ANDROID_DATA) return true;
-  
+
   try {
     if (fs.existsSync("/system/bin/getprop")) return true;
   } catch {
   }
-  
+
   return false;
 }
 
@@ -101,7 +101,7 @@ const isMcpMode = process.argv.includes("--mcp");
 // ensure output dir
 fs.mkdirSync(extractDir, { recursive: true });
 
-function extractAndRun(baseName, launch) {
+function extractAndRun(baseName, args, launch) {
   const binName = getBinaryName(baseName);
   const binPath = path.join(extractDir, binName);
   const zipName = `${baseName}.zip`;
@@ -139,12 +139,12 @@ function extractAndRun(baseName, launch) {
       fs.chmodSync(binPath, 0o755);
     } catch { }
   }
-  return launch(binPath);
+  return launch(binPath, args);
 }
 
 if (isMcpMode) {
-  extractAndRun("automagik-forge-mcp", (bin) => {
-    const proc = spawn(bin, [], { stdio: "inherit" });
+  extractAndRun("automagik-forge", ["--mcp"], (bin, args) => {
+    const proc = spawn(bin, args, { stdio: "inherit" });
     proc.on("exit", (c) => process.exit(c || 0));
     proc.on("error", (e) => {
       console.error("❌ MCP server error:", e.message);
@@ -158,7 +158,7 @@ if (isMcpMode) {
   });
 } else {
   console.log(`📦 Extracting automagik-forge...`);
-  extractAndRun("automagik-forge", (bin) => {
+  extractAndRun("automagik-forge", [], (bin) => {
     // Log port configuration
     const backendPort = process.env.BACKEND_PORT || process.env.PORT;
     const displayPort = backendPort || "8887";
