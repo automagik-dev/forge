@@ -154,12 +154,12 @@ export function ProjectList() {
 
   return (
     <div className="space-y-6 p-8 pb-16 md:pb-8 h-full overflow-auto">
-      <div className="flex justify-between items-center gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
         <div>
           <H1 className="tracking-tight">{t('title')}</H1>
           <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Select value={sortField} onValueChange={handleSortFieldChange}>
             <SelectTrigger className="w-[180px]">
               <SelectValue />
