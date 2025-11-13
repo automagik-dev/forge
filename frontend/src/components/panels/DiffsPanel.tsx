@@ -155,10 +155,10 @@ function DiffsPanelContent({
   t,
 }: DiffsPanelContentProps) {
   return (
-    <div className="h-full flex flex-col relative">
+    <div className="h-full flex flex-col overflow-hidden">
       {diffs.length > 0 && (
         <NewCardHeader
-          className="sticky top-0 z-10"
+          className="shrink-0 sticky top-0 z-10"
           actions={
             <>
               <DiffViewSwitch />
@@ -206,11 +206,11 @@ function DiffsPanelContent({
         </NewCardHeader>
       )}
       {gitOps && selectedAttempt && (
-        <div className="px-3">
+        <div className="shrink-0 px-3">
           <GitOperations selectedAttempt={selectedAttempt} {...gitOps} />
         </div>
       )}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <Loader />
