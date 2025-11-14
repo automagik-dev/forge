@@ -132,7 +132,7 @@ backend:
 	@echo "⚙️  Starting backend server (dev mode)..."
 	@if [ -n "$(BP)" ]; then \
 		echo "   Using manual port override: $(BP)"; \
-		BACKEND_PORT=$(BP) npm run backend:dev:watch; \
+		BACKEND_PORT=$(BP) npm run backend:dev; \
 	else \
 		echo "   Using dynamic port allocation (.env or auto-detect)..."; \
 		npm run backend:dev; \
