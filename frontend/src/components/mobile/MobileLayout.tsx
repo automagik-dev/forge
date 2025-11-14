@@ -92,8 +92,8 @@ export function MobileLayout({
           id: 'kanban',
           label: t('mobile.navigation.kanban'),
           icon: <Kanban size={20} />,
-          // Kanban board shows all tasks in the project
-          path: basePath,
+          // Kanban board shows traditional board view with ?view=kanban
+          path: `${basePath}?view=kanban`,
         },
         {
           id: 'genie',

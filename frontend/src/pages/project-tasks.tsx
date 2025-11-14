@@ -706,7 +706,7 @@ export function ProjectTasks() {
           </CardContent>
         </Card>
       </div>
-    ) : mode === 'list' ? (
+    ) : mode === 'list' || (isMobilePortrait && mode !== 'kanban') ? (
       <div className="w-full h-full overflow-y-auto mobile-scroll">
         <TasksListView
           tasks={filteredTasks}
