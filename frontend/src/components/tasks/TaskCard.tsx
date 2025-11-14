@@ -126,7 +126,7 @@ export function TaskCard({
         forwardedRef={localRef}
       >
       <div className="flex flex-1 gap-2 items-center min-w-0">
-        <H4 className="flex-1 min-w-0 line-clamp-2 font-light text-sm">
+        <H4 className="flex-1 min-w-0 line-clamp-2 font-semibold text-base">
           {task.title}
         </H4>
         <div className="flex items-center space-x-1">
