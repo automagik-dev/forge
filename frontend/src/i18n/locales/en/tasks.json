@@ -331,7 +331,8 @@
     "buttons": {
       "previous": "Previous",
       "next": "Next",
-      "finish": "Finish"
+      "finish": "Finish",
+      "skip": "Skip"
     }
   }
 }
