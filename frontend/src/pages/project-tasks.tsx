@@ -241,7 +241,7 @@ export function ProjectTasks() {
 
   const rawMode = searchParams.get('view') as LayoutMode;
   const mode: LayoutMode =
-    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat' || rawMode === 'list'
+    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat'
       ? rawMode
       : null;
 
@@ -706,7 +706,7 @@ export function ProjectTasks() {
           </CardContent>
         </Card>
       </div>
-    ) : mode === 'list' || (isMobilePortrait && mode !== 'kanban') ? (
+    ) : isMobilePortrait && mode !== 'kanban' ? (
       <div className="w-full h-full overflow-y-auto mobile-scroll">
         <TasksListView
           tasks={filteredTasks}
