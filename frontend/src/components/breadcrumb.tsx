@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge, ArrowRight, GitCompare } from 'lucide-react';
+import { ChevronRight, ChevronDown, GitBranch, GitMerge, ArrowRight, GitCompare } from 'lucide-react';
 import { useProject } from '@/contexts/project-context';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
@@ -290,60 +290,69 @@ export function Breadcrumb() {
   return (
     <nav aria-label="Breadcrumb" className="px-3 py-2 text-sm flex items-center justify-between">
       <ol className="flex items-center gap-1">
-        {/* Home icon to navigate back to project */}
-        <li className="flex items-center gap-1">
-          <Link
-            to={`/projects/${projectId}/tasks`}
-            className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-            aria-label="Go to project home"
-          >
-            <Home className="h-4 w-4" />
-          </Link>
-        </li>
-
         {breadcrumbs.map((crumb, index) => {
           const isCurrentProject = crumb.type === 'project';
           const isParentTask = crumb.type === 'parent-task';
           const isGitBranch = crumb.type === 'git-branch';
           const isBaseBranch = crumb.type === 'base-branch';
           const isLastCrumb = index === breadcrumbs.length - 1;
+          const isFirstItem = index === 0;
 
           return (
             <li key={`${crumb.type}-${crumb.path}-${index}`} className={`flex items-center gap-1 ${isParentTask ? 'hidden lg:flex' : ''}`}>
-              {/* Separator */}
-              {!isGitBranch ? (
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              {/* Separator - skip for first item (project) */}
+              {!isFirstItem && (
+                !isGitBranch ? (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                )
               )}
 
               {/* Content */}
               {isCurrentProject ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-ring rounded-sm px-1 -mx-1">
-                    <span className={isLastCrumb ? 'text-foreground font-medium' : ''}>
-                      {crumb.label}
-                    </span>
-                    <ChevronDown className="h-3 w-3 opacity-50" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56 bg-popover">
-                    {projects && projects.length > 0 ? (
-                      projects.map((proj) => (
-                        <DropdownMenuItem
-                          key={proj.id}
-                          onClick={() => handleProjectSwitch(proj.id)}
-                          className={proj.id === projectId ? 'bg-accent' : ''}
-                        >
-                          <span className="truncate">{proj.name}</span>
-                        </DropdownMenuItem>
-                      ))
-                    ) : (
-                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                        No projects available
-                      </div>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <>
+                  {/* Project dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-ring rounded-sm px-1 -mx-1">
+                      <span className={isLastCrumb ? 'text-foreground font-medium' : ''}>
+                        {crumb.label}
+                      </span>
+                      <ChevronDown className="h-3 w-3 opacity-50" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-56 bg-popover">
+                      {projects && projects.length > 0 ? (
+                        projects.map((proj) => (
+                          <DropdownMenuItem
+                            key={proj.id}
+                            onClick={() => handleProjectSwitch(proj.id)}
+                            className={proj.id === projectId ? 'bg-accent' : ''}
+                          >
+                            <span className="truncate">{proj.name}</span>
+                          </DropdownMenuItem>
+                        ))
+                      ) : (
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                          No projects available
+                        </div>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Board link - only show if not on tasks page */}
+                  {!isLastCrumb && (
+                    <>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      <Link
+                        to={`/projects/${projectId}/tasks`}
+                        className="text-muted-foreground hover:text-foreground transition-colors px-1 -mx-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        aria-label="Go to board view"
+                      >
+                        Board
+                      </Link>
+                    </>
+                  )}
+                </>
               ) : isGitBranch || isBaseBranch ? (
                 <div className="flex items-center gap-1">
                   <TooltipProvider>
