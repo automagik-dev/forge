@@ -181,7 +181,6 @@ export function Navbar() {
                     <Settings className="h-4 w-4" />
                   </Link>
                 </Button>
-                <ThemeToggle />
                 <Button
                   variant="ghost"
                   size="icon"
@@ -192,6 +191,7 @@ export function Navbar() {
                 </Button>
               </>
             )}
+            <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
