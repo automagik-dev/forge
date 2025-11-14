@@ -6,7 +6,7 @@ import { paths } from '@/lib/paths';
 import type { TaskWithAttemptStatus, Task } from 'shared/types';
 import { NewCardContent } from '../ui/new-card';
 import { Button } from '../ui/button';
-import { PlusIcon, Edit2, Network, GitFork, Play } from 'lucide-react';
+import { Edit2, Network, GitFork, Play } from 'lucide-react';
 import NiceModal from '@ebay/nice-modal-react';
 import MarkdownRenderer from '@/components/ui/markdown-renderer';
 import { attemptsApi, tasksApi } from '@/lib/api';
@@ -372,12 +372,10 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
                                 latestAttempt,
                               })
                             }
+                            aria-label={t('taskPanel.startNewAttempt')}
+                            title={t('taskPanel.startNewAttempt')}
                           >
-                            {displayedAttempts.length === 0 ? (
-                              <Play size={16} />
-                            ) : (
-                              <PlusIcon size={16} />
-                            )}
+                            <Play size={16} />
                           </Button>
                         </span>
                       </div>

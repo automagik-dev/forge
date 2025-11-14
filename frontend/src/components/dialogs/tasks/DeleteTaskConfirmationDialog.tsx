@@ -24,6 +24,8 @@ const DeleteTaskConfirmationDialog =
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const hasRunningAttempt = task.has_in_progress_attempt;
+
     const handleConfirmDelete = async () => {
       setIsDeleting(true);
       setError(null);
@@ -65,6 +67,13 @@ const DeleteTaskConfirmationDialog =
             task and cannot be undone.
           </Alert>
 
+          {hasRunningAttempt && (
+            <Alert variant="warning" className="mb-4">
+              <strong>Cannot delete:</strong> Task has running execution
+              processes. Please wait for them to complete or stop them first.
+            </Alert>
+          )}
+
           {error && (
             <Alert variant="destructive" className="mb-4">
               {error}
@@ -83,7 +92,8 @@ const DeleteTaskConfirmationDialog =
             <Button
               variant="destructive"
               onClick={handleConfirmDelete}
-              disabled={isDeleting}
+              disabled={isDeleting || hasRunningAttempt}
+              className={hasRunningAttempt ? 'opacity-50 cursor-not-allowed' : ''}
             >
               {isDeleting ? 'Deleting...' : 'Delete Task'}
             </Button>
