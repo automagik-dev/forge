@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { KanbanCard } from '@/components/ui/shadcn-io/kanban';
-import { CheckCircle, Loader2, XCircle, Play, Bot, Paperclip, Clock, Link2, Server, Archive } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle, Bot, Paperclip, Clock, Link2, Server } from 'lucide-react';
 import type { TaskWithAttemptStatus, ImageResponse } from 'shared/types';
-import { ActionsDropdown } from '@/components/ui/ActionsDropdown';
-import { Button } from '@/components/ui/button';
+import { TaskActions } from '@/components/tasks/TaskActions';
 import { Badge } from '@/components/ui/badge';
 import { imagesApi } from '@/lib/api';
-import NiceModal from '@ebay/nice-modal-react';
 import { H4 } from '@/components/ui/typography';
 
 type Task = TaskWithAttemptStatus;
@@ -52,35 +50,11 @@ export function TaskCard({
   onViewDetails,
   isOpen,
 }: TaskCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
   const [images, setImages] = useState<ImageResponse[]>([]);
 
   const handleClick = useCallback(() => {
     onViewDetails(task);
   }, [task, onViewDetails]);
-
-  const handlePlay = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (!task) return;
-      NiceModal.show('create-attempt', {
-        taskId: task.id,
-        latestAttempt: null,
-      });
-    },
-    [task]
-  );
-
-  const handleArchive = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (!task) return;
-      NiceModal.show('archive-task-confirmation', {
-        task,
-      });
-    },
-    [task]
-  );
 
   const localRef = useRef<HTMLDivElement>(null);
 
@@ -111,10 +85,7 @@ export function TaskCard({
   }, [isOpen]);
 
   return (
-    <div
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <div>
       <KanbanCard
         key={task.id}
         id={task.id}
@@ -142,50 +113,14 @@ export function TaskCard({
           {task.last_attempt_failed && !task.has_merged_attempt && (
             <XCircle className="h-3 w-3 text-destructive" />
           )}
-          {/* Play Button (on hover, only when no attempts exist) */}
-          {isHovered && !task.executor && (
-            <div
-              onPointerDown={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-                onClick={handlePlay}
-                aria-label="Start new attempt"
-              >
-                <Play className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-          {/* Archive Button (on hover, only for non-archived tasks) */}
-          {isHovered && status !== 'archived' && (
-            <div
-              onPointerDown={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-                onClick={handleArchive}
-                aria-label="Archive task"
-              >
-                <Archive className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-          {/* Actions Menu */}
-          <div
-            onPointerDown={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <ActionsDropdown task={task} />
-          </div>
+          {/* Task Actions */}
+          <TaskActions
+            task={task}
+            showQuickActions={true}
+            alwaysShowQuickActions={false}
+            compact={true}
+            onViewDetails={onViewDetails}
+          />
         </div>
       </div>
 

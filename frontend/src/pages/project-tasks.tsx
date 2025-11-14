@@ -635,32 +635,6 @@ export function ProjectTasks() {
     [projectId, navigate]
   );
 
-  const handleArchiveTask = useCallback(
-    async (task: Task) => {
-      try {
-        await tasksApi.update(task.id, {
-          title: task.title,
-          description: task.description,
-          status: 'archived',
-          parent_task_attempt: task.parent_task_attempt,
-          image_ids: null,
-        });
-      } catch (err) {
-        console.error('Failed to archive task:', err);
-      }
-    },
-    []
-  );
-
-  const handleNewAttempt = useCallback(
-    (task: Task) => {
-      // TODO: Implement create new attempt flow
-      // This would typically open a dialog to configure executor and start a new attempt
-      console.log('Create new attempt for task:', task.id);
-    },
-    []
-  );
-
   const isInitialTasksLoad = isLoading && tasks.length === 0;
 
   if (projectError) {
@@ -716,8 +690,7 @@ export function ProjectTasks() {
           onProjectClick={() => navigate('/projects')}
           onViewDiff={handleViewDiff}
           onViewPreview={handleViewPreview}
-          onArchive={handleArchiveTask}
-          onNewAttempt={handleNewAttempt}
+          branches={branches}
         />
       </div>
     ) : (
@@ -728,16 +701,39 @@ export function ProjectTasks() {
             onClick={() => navigate('/projects')}
             className="sticky top-0 z-20 px-4 py-3 bg-[#1A1625]/95 backdrop-blur-sm border-b border-white/10 hover:bg-white/5 transition-colors"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ChevronDown className="w-4 h-4 text-muted-foreground rotate-90" />
-                <span className="font-primary text-sm font-semibold text-foreground">
-                  {currentProject.name}
+            <div className="flex flex-col gap-2">
+              {/* Top row: project name and task count */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ChevronDown className="w-4 h-4 text-muted-foreground rotate-90" />
+                  <span className="font-primary text-sm font-semibold text-foreground">
+                    {currentProject.name}
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
                 </span>
               </div>
-              <span className="text-xs text-muted-foreground">
-                {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
-              </span>
+
+              {/* Bottom row: git branch info */}
+              {branches.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const currentBranch = branches.find((b) => b.is_current);
+                    if (!currentBranch) return null;
+
+                    return (
+                      <div className="flex items-center gap-1.5">
+                        <div className="inline-flex items-center gap-1 h-5 px-1.5 rounded-md bg-secondary/70 text-secondary-foreground text-xs">
+                          <span className="text-[10px]">⎇</span>
+                          <span>{currentBranch.name}</span>
+                        </div>
+                        {/* TODO: Add commits ahead/behind badges when main workspace branch status API is available */}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           </button>
         )}
