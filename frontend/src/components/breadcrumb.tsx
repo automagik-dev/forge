@@ -30,6 +30,7 @@ import NiceModal from '@ebay/nice-modal-react';
 import type { LayoutMode } from '@/components/layout/TasksLayout';
 import type { Task, GitBranch as GitBranchType } from 'shared/types';
 import { projectsApi } from '@/lib/api';
+import { GitActionsGroup } from '@/components/breadcrumb/git-actions';
 
 export function Breadcrumb() {
   const location = useLocation();
@@ -473,6 +474,16 @@ export function Breadcrumb() {
                 )}
               </div>
             </TooltipProvider>
+          )}
+
+          {/* Git Actions: Approve, Create PR, Push to PR, etc. */}
+          {branchStatus && attempt && projectId && (
+            <GitActionsGroup
+              task={currentTask}
+              attempt={attempt}
+              branchStatus={branchStatus}
+              projectId={projectId}
+            />
           )}
 
           {/* Action buttons */}
