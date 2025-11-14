@@ -47,14 +47,16 @@ export function ApproveButton({
   // Determine button state
   const isDisabled = hasConflicts || isApproving;
 
-  // Button label
+  // Button label with commit count upfront
+  const commitCount = branchStatus?.commits_ahead ?? 0;
   let label: string;
   if (isApproving) {
     label = hasCodeChanges ? t('git.states.mergingAndCompleting') : t('git.states.completing');
   } else if (hasConflicts) {
     label = t('git.states.resolveConflicts');
   } else if (hasCodeChanges) {
-    label = t('git.states.approveMerge');
+    // Show count upfront: "↑3 Approve & Merge"
+    label = `↑${commitCount} ${t('git.states.approveMerge')}`;
   } else {
     label = t('git.states.approve');
   }

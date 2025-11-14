@@ -24,7 +24,8 @@ export function CreatePRButton({
 }: CreatePRButtonProps) {
   const { t } = useTranslation('tasks');
 
-  const hasCommits = (branchStatus?.commits_ahead ?? 0) > 0;
+  const commitCount = branchStatus?.commits_ahead ?? 0;
+  const hasCommits = commitCount > 0;
   const hasConflicts = (branchStatus?.conflicted_files?.length ?? 0) > 0;
 
   // Don't show if no commits to create PR for
@@ -37,6 +38,8 @@ export function CreatePRButton({
       projectId,
     });
   };
+
+  const label = t('git.states.createPr');
 
   const tooltipContent = hasConflicts
     ? t('git.tooltips.createPr.conflictWarning')
@@ -54,7 +57,7 @@ export function CreatePRButton({
             className={`inline-flex items-center justify-center gap-0.5 h-6 px-2 rounded-md border text-xs font-medium cursor-pointer transition-colors ${colorClasses} ${hasConflicts ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <GitPullRequest className="h-3 w-3" />
-            <span className="text-[10px]">{t('git.states.createPr')}</span>
+            <span className="text-[10px]">{label}</span>
           </button>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-xs text-xs">

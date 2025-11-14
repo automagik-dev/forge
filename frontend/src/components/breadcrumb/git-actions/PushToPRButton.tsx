@@ -20,8 +20,8 @@ export function PushToPRButton({ attempt, branchStatus }: PushToPRButtonProps) {
   const pushMutation = usePush(attempt.id);
   const [pushSuccess, setPushSuccess] = useState(false);
 
-  const hasNewCommits = (branchStatus?.remote_commits_ahead ?? 0) > 0 ||
-                        (branchStatus?.commits_ahead ?? 0) > 0;
+  const commitCount = (branchStatus?.remote_commits_ahead ?? 0) || (branchStatus?.commits_ahead ?? 0);
+  const hasNewCommits = commitCount > 0;
   const pushing = pushMutation.isPending;
 
   // Don't show if no new commits and not in a pushing/success state
@@ -40,7 +40,7 @@ export function PushToPRButton({ attempt, branchStatus }: PushToPRButtonProps) {
     }
   };
 
-  // Button label and icon
+  // Button label and icon with commit count
   let label: string;
   let icon: React.ReactNode;
 
@@ -51,7 +51,7 @@ export function PushToPRButton({ attempt, branchStatus }: PushToPRButtonProps) {
     label = t('git.states.pushing');
     icon = <Loader2 className="h-3 w-3 animate-spin" />;
   } else {
-    label = t('git.states.push');
+    label = `↑${commitCount} ${t('git.states.push')}`;
     icon = <Upload className="h-3 w-3" />;
   }
 
