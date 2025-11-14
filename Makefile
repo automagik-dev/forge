@@ -11,8 +11,8 @@ help:
 	@echo ""
 	@echo "Specific Targets:"
 	@echo "  make backend              - Start backend only (dev mode)"
-	@echo "  make frontend             - Start frontend only (dev mode, FP=8888 BP=8887)"
-	@echo "  make frontend FP=XXXX     - Start frontend with custom ports"
+	@echo "  make frontend             - Start frontend only (uses .env or auto-allocated ports)"
+	@echo "  make frontend FP=XXXX     - Override frontend port (BP for backend port)"
 	@echo "  make build                - Build production package (no launch)"
 	@echo "  make test                 - Run full test suite"
 	@echo "  make clean                - Clean build artifacts"
@@ -126,14 +126,24 @@ backend:
 	@npm run backend:dev
 
 # Frontend only
-FP ?= 8888
-BP ?= 8887
+# Allow port overrides via FP (frontend) and BP (backend) parameters
+# If not provided, uses dynamic port allocation from setup-dev-environment.js
+FP ?=
+BP ?=
 
 frontend:
 	@echo "🎨 Starting frontend server (dev mode)..."
-	@echo "   Frontend Port: $(FP)"
-	@echo "   Backend Port:  $(BP)"
-	@FRONTEND_PORT=$(FP) BACKEND_PORT=$(BP) npm run frontend:dev
+	@if [ -n "$(FP)" ] || [ -n "$(BP)" ]; then \
+		echo "   Using manual port override..."; \
+		if [ -n "$(FP)" ]; then echo "   Frontend Port: $(FP)"; fi; \
+		if [ -n "$(BP)" ]; then echo "   Backend Port: $(BP)"; fi; \
+		FRONTEND_PORT=$(FP) BACKEND_PORT=$(BP) npm run frontend:dev; \
+	else \
+		echo "   Using dynamic port allocation (.env or auto-detect)..."; \
+		FRONTEND_PORT=$$(node scripts/setup-dev-environment.js frontend) \
+		BACKEND_PORT=$$(node scripts/setup-dev-environment.js backend) \
+		npm run frontend:dev; \
+	fi
 
 # Build production package (without launching)
 build: check-android-deps check-cargo
