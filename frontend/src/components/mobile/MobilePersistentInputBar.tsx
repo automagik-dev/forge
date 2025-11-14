@@ -13,6 +13,8 @@ export interface MobilePersistentInputBarProps {
   placeholder?: string;
   isSending?: boolean;
   className?: string;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }
 
 export function MobilePersistentInputBar({
@@ -23,6 +25,8 @@ export function MobilePersistentInputBar({
   placeholder = 'Type a message...',
   isSending = false,
   className,
+  onFocus,
+  onBlur,
 }: MobilePersistentInputBarProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isVoiceRecording, setIsVoiceRecording] = useState(false);
@@ -53,6 +57,11 @@ export function MobilePersistentInputBar({
     }
 
     onSend();
+
+    // After sending, blur the textarea to show the bottom nav again
+    if (textareaRef.current) {
+      textareaRef.current.blur();
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -116,6 +125,8 @@ export function MobilePersistentInputBar({
             value={value}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
+            onFocus={onFocus}
+            onBlur={onBlur}
             disabled={disabled || isSending}
             placeholder={placeholder}
             rows={1}

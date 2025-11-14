@@ -749,8 +749,25 @@ export function ProjectTasks() {
       </div>
     );
 
-  // Breadcrumb is always shown in the main navbar - no need to duplicate it here
-  const rightHeader = null;
+  // Mobile chat header - shows task name and back navigation
+  const rightHeader = isMobilePortrait && mode === 'chat' && selectedTask ? (
+    <button
+      onClick={() => navigate({ pathname: location.pathname, search: '?view=kanban' })}
+      className="w-full px-4 py-3 bg-[#1A1625]/95 backdrop-blur-sm hover:bg-white/5 transition-colors text-left"
+    >
+      <div className="flex items-center gap-2">
+        <ChevronDown className="w-4 h-4 text-muted-foreground rotate-90" />
+        <div className="flex-1 min-w-0">
+          <div className="font-primary text-sm font-semibold text-foreground truncate">
+            {selectedTask.title}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Tap to return to board
+          </div>
+        </div>
+      </div>
+    </button>
+  ) : null;
 
   // Allow rendering attempt content for agent tasks (Master Genie) where selectedTask is null
   // but we have an attempt to show, OR when in chat view (ChatPanel creates attempt on first message)

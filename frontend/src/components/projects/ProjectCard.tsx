@@ -107,8 +107,8 @@ function ProjectCard({
   };
 
   const handleProjectClick = () => {
-    // Navigate to tasks page - default view shows kanban board
-    navigate(`/projects/${project.id}/tasks`);
+    // Navigate to tasks page with kanban view
+    navigate(`/projects/${project.id}/tasks?view=kanban`);
   };
 
   return (
