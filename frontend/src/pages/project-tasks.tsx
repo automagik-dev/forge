@@ -885,7 +885,6 @@ export function ProjectTasks() {
       mode={mode}
       isMobile={isMobile}
       rightHeader={rightHeader}
-      onKanbanClick={handleClosePanel}
     />
   );
 
