@@ -65,6 +65,9 @@ Customize phases below for orchestration and spell routing.
 - `@.genie/spells/forge-integration.md`
 - `@.genie/code/spells/triad-maintenance-protocol.md`
 
+**Performance & Architecture:**
+- `@.genie/code/spells/real-time-data-standard.md` - Canonical pattern for real-time data (React Query, WebSocket, no manual state)
+
 ## Workflow Architecture
 
 **Pattern:** `Wish → Forge → Review`
