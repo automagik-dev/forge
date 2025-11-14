@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertTriangle, Plus } from 'lucide-react';
+import { AlertTriangle, Plus, ChevronDown } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import { tasksApi } from '@/lib/api';
 import type { GitBranch } from 'shared/types';
@@ -721,14 +721,35 @@ export function ProjectTasks() {
         />
       </div>
     ) : (
-      <div className="w-full h-full overflow-x-auto overflow-y-auto overscroll-x-contain touch-pan-y">
-        <TaskKanbanBoard
-          groupedTasks={groupedFilteredTasks}
-          onDragEnd={handleDragEnd}
-          onViewTaskDetails={handleViewTaskDetails}
-          selectedTask={selectedTask || undefined}
-          onCreateTask={handleCreateNewTask}
-        />
+      <div className="w-full h-full flex flex-col">
+        {/* Mobile header for kanban view */}
+        {isMobilePortrait && currentProject && (
+          <button
+            onClick={() => navigate('/projects')}
+            className="sticky top-0 z-20 px-4 py-3 bg-[#1A1625]/95 backdrop-blur-sm border-b border-white/10 hover:bg-white/5 transition-colors"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ChevronDown className="w-4 h-4 text-muted-foreground rotate-90" />
+                <span className="font-primary text-sm font-semibold text-foreground">
+                  {currentProject.name}
+                </span>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
+              </span>
+            </div>
+          </button>
+        )}
+        <div className="flex-1 overflow-x-auto overflow-y-auto overscroll-x-contain touch-pan-y">
+          <TaskKanbanBoard
+            groupedTasks={groupedFilteredTasks}
+            onDragEnd={handleDragEnd}
+            onViewTaskDetails={handleViewTaskDetails}
+            selectedTask={selectedTask || undefined}
+            onCreateTask={handleCreateNewTask}
+          />
+        </div>
       </div>
     );
 
