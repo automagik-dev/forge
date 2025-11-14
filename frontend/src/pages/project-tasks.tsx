@@ -635,32 +635,6 @@ export function ProjectTasks() {
     [projectId, navigate]
   );
 
-  const handleArchiveTask = useCallback(
-    async (task: Task) => {
-      try {
-        await tasksApi.update(task.id, {
-          title: task.title,
-          description: task.description,
-          status: 'archived',
-          parent_task_attempt: task.parent_task_attempt,
-          image_ids: null,
-        });
-      } catch (err) {
-        console.error('Failed to archive task:', err);
-      }
-    },
-    []
-  );
-
-  const handleNewAttempt = useCallback(
-    (task: Task) => {
-      // TODO: Implement create new attempt flow
-      // This would typically open a dialog to configure executor and start a new attempt
-      console.log('Create new attempt for task:', task.id);
-    },
-    []
-  );
-
   const isInitialTasksLoad = isLoading && tasks.length === 0;
 
   if (projectError) {
@@ -716,8 +690,7 @@ export function ProjectTasks() {
           onProjectClick={() => navigate('/projects')}
           onViewDiff={handleViewDiff}
           onViewPreview={handleViewPreview}
-          onArchive={handleArchiveTask}
-          onNewAttempt={handleNewAttempt}
+          branches={branches}
         />
       </div>
     ) : (

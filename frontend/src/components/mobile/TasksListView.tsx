@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import type { TaskWithAttemptStatus } from 'shared/types';
+import type { TaskWithAttemptStatus, GitBranch } from 'shared/types';
 import {
   Hammer,
   CheckCircle2,
@@ -10,11 +10,9 @@ import {
   ChevronDown,
   ChevronUp,
   Target,
-  GitCompareArrows,
-  Eye,
-  Plus
 } from 'lucide-react';
 import { Lamp } from '@/components/icons/Lamp';
+import { TaskActions } from '@/components/tasks/TaskActions';
 
 type Task = TaskWithAttemptStatus;
 
@@ -27,8 +25,7 @@ interface TasksListViewProps {
   onProjectClick?: () => void;
   onViewDiff?: (task: Task) => void;
   onViewPreview?: (task: Task) => void;
-  onArchive?: (task: Task) => void;
-  onNewAttempt?: (task: Task) => void;
+  branches?: GitBranch[];
 }
 
 type Phase = 'wish' | 'forge' | 'review' | 'done' | 'archived';
@@ -114,8 +111,7 @@ export function TasksListView({
   onProjectClick,
   onViewDiff,
   onViewPreview,
-  onArchive,
-  onNewAttempt,
+  branches,
 }: TasksListViewProps) {
   const [expandedPhases, setExpandedPhases] = useState<Record<Phase, boolean>>({
     wish: true,
@@ -198,8 +194,6 @@ export function TasksListView({
                 isSelected={task.id === selectedTaskId}
                 onViewDiff={onViewDiff}
                 onViewPreview={onViewPreview}
-                onArchive={onArchive}
-                onNewAttempt={onNewAttempt}
               />
             ))}
           </div>
@@ -216,16 +210,39 @@ export function TasksListView({
           onClick={onProjectClick}
           className="sticky top-0 z-20 px-4 py-3 bg-[#1A1625]/95 backdrop-blur-sm border-b border-white/10 hover:bg-white/5 transition-colors"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ChevronDown className="w-4 h-4 text-muted-foreground rotate-90" />
-              <span className="font-primary text-sm font-semibold text-foreground">
-                {projectName}
+          <div className="flex flex-col gap-2">
+            {/* Top row: project name and task count */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ChevronDown className="w-4 h-4 text-muted-foreground rotate-90" />
+                <span className="font-primary text-sm font-semibold text-foreground">
+                  {projectName}
+                </span>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
               </span>
             </div>
-            <span className="text-xs text-muted-foreground">
-              {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
-            </span>
+
+            {/* Bottom row: git branch info */}
+            {branches && branches.length > 0 && (
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const currentBranch = branches.find((b) => b.is_current);
+                  if (!currentBranch) return null;
+
+                  return (
+                    <div className="flex items-center gap-1.5">
+                      <div className="inline-flex items-center gap-1 h-5 px-1.5 rounded-md bg-secondary/70 text-secondary-foreground text-xs">
+                        <span className="text-[10px]">⎇</span>
+                        <span>{currentBranch.name}</span>
+                      </div>
+                      {/* TODO: Add commits ahead/behind badges when main workspace branch status API is available */}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         </button>
       )}
@@ -250,8 +267,6 @@ interface TaskListItemProps {
   isSelected: boolean;
   onViewDiff?: (task: Task) => void;
   onViewPreview?: (task: Task) => void;
-  onArchive?: (task: Task) => void;
-  onNewAttempt?: (task: Task) => void;
 }
 
 function TaskListItem({
@@ -261,33 +276,12 @@ function TaskListItem({
   isSelected,
   onViewDiff,
   onViewPreview,
-  onArchive,
-  onNewAttempt
 }: TaskListItemProps) {
   const config = phaseConfigs[phase];
   const timeAgo = formatTimeAgo(task.updated_at);
   const isRunning = task.has_in_progress_attempt;
   const hasApproved = task.has_merged_attempt;
   const hasFailed = task.last_attempt_failed;
-
-  const handleAction = (e: React.MouseEvent, action: 'diff' | 'view' | 'archive' | 'new') => {
-    e.stopPropagation();
-
-    switch (action) {
-      case 'diff':
-        onViewDiff?.(task);
-        break;
-      case 'view':
-        onViewPreview?.(task);
-        break;
-      case 'archive':
-        onArchive?.(task);
-        break;
-      case 'new':
-        onNewAttempt?.(task);
-        break;
-    }
-  };
 
   return (
     <div
@@ -354,41 +348,15 @@ function TaskListItem({
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={(e) => handleAction(e, 'diff')}
-                className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 transition-colors text-xs"
-                title="View diffs"
-              >
-                <GitCompareArrows className="w-3 h-3" />
-                <span>Diff</span>
-              </button>
-              <button
-                onClick={(e) => handleAction(e, 'view')}
-                className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 transition-colors text-xs"
-                title="View preview"
-              >
-                <Eye className="w-3 h-3" />
-                <span>View</span>
-              </button>
-              {phase !== 'archived' && (
-                <button
-                  onClick={(e) => handleAction(e, 'archive')}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 transition-colors text-xs"
-                  title="Archive task"
-                >
-                  <Archive className="w-3 h-3" />
-                </button>
-              )}
-              <button
-                onClick={(e) => handleAction(e, 'new')}
-                className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/20 hover:bg-blue-500/30 transition-colors text-xs text-blue-400"
-                title="New attempt"
-              >
-                <Plus className="w-3 h-3" />
-                <span>Attempt</span>
-              </button>
-            </div>
+            <TaskActions
+              task={task}
+              showQuickActions={true}
+              alwaysShowQuickActions={true}
+              compact={true}
+              onViewDiff={onViewDiff}
+              onViewPreview={onViewPreview}
+              onViewDetails={onClick}
+            />
           </div>
         </div>
       </button>
