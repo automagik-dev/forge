@@ -6,6 +6,7 @@ import { useProjectTasks } from '@/hooks/useProjectTasks';
 import { useTaskAttempt } from '@/hooks/useTaskAttempt';
 import { useBranchStatus } from '@/hooks/useBranchStatus';
 import { useChangeTargetBranch } from '@/hooks/useChangeTargetBranch';
+import { useRebase } from '@/hooks/useRebase';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -61,6 +62,10 @@ export function Breadcrumb() {
     projectId || ''
   );
   const isChangingTargetBranch = changeTargetBranchMutation.isPending;
+
+  // Rebase mutation
+  const rebaseMutation = useRebase(attempt?.id || '', projectId || '');
+  const [rebasing, setRebasing] = useState(false);
 
   // Fetch branches when attempt is available
   useEffect(() => {
@@ -299,13 +304,24 @@ export function Breadcrumb() {
         upstreamBranch?: string;
       }>('rebase-dialog', {
         branches: branchesToUse,
-        isRebasing: false,
+        isRebasing: rebasing,
         initialTargetBranch: attempt.target_branch,
         initialUpstreamBranch: attempt.target_branch,
       });
 
       if (result.action === 'confirmed' && result.branchName && result.upstreamBranch) {
-        // Rebase logic would go here (handled by the dialog/mutation)
+        // Execute the rebase
+        setRebasing(true);
+        try {
+          await rebaseMutation.mutateAsync({
+            newBaseBranch: result.branchName,
+            oldBaseBranch: result.upstreamBranch,
+          });
+        } catch (err: any) {
+          console.error('Rebase failed:', err.message || t('git.errors.rebaseBranch'));
+        } finally {
+          setRebasing(false);
+        }
       }
     } catch (error) {
       // User cancelled
