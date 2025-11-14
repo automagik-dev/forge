@@ -3,6 +3,10 @@
     "addTask": "タスクを追加"
   },
   "actionsMenu": {
+    "view": "表示",
+    "viewDetails": "詳細を表示",
+    "viewDiff": "差分を表示",
+    "viewPreview": "プレビューを表示",
     "attempt": "Attempt",
     "createNewAttempt": "Create new attempt",
     "createSubtask": "Create subtask",
@@ -10,7 +14,8 @@
     "gitActions": "Gitアクション",
     "openInIde": "Open attempt in IDE",
     "task": "Task",
-    "viewProcesses": "View processes"
+    "viewProcesses": "View processes",
+    "archive": "アーカイブ"
   },
   "attempt": {
     "actions": {
