@@ -254,7 +254,7 @@ export function TaskCard({
         {/* Time Badge */}
         <Badge variant="outline" className="text-xs text-muted-foreground gap-1 h-5 px-1.5 border-none bg-transparent">
           <Clock className="h-3 w-3" />
-          <span>{formatRelativeTime(task.created_at)}</span>
+          <span>{formatRelativeTime(task.updated_at)}</span>
         </Badge>
       </div>
     </KanbanCard>
