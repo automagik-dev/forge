@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { BottomNavigation, BottomNavTab } from './BottomNavigation';
 import { usePlatform } from '@/lib/platform';
 import { useProject } from '@/contexts/project-context';
-import { Kanban, GitCompareArrows, FileText, Settings, Heart, ListTodo } from 'lucide-react';
+import { Kanban, GitCompareArrows, FileText, Settings, Heart } from 'lucide-react';
 import { Lamp } from '@/components/icons/Lamp';
 import { DiffActionSheet } from './DiffActionSheet';
 // TODO: Import and wire up TasksDrawer and TasksListView with proper data
@@ -78,21 +78,15 @@ export function MobileLayout({
       return baseTabs;
     }
 
-    // When inside a project (not in a specific task), show: Tasks/Kanban/Genie/Config
+    // When inside a project (not in a specific task), show: Kanban/Genie/Config
     if (projectId) {
       return [
-        {
-          id: 'tasks',
-          label: t('mobile.navigation.tasks'),
-          icon: <ListTodo size={20} />,
-          // Tasks shows list view with ?view=list parameter
-          path: `${basePath}?view=list`,
-        },
         {
           id: 'kanban',
           label: t('mobile.navigation.kanban'),
           icon: <Kanban size={20} />,
           // Kanban board shows traditional board view with ?view=kanban
+          // Default (no view param) shows mobile-optimized list view
           path: `${basePath}?view=kanban`,
         },
         {
