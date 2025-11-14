@@ -117,16 +117,28 @@ export function MobileLayout({
       ];
     }
 
-    // Default fallback (no project) - just show projects and config
+    // Default fallback (no project) - show tasks, chat, new, me
     return [
       {
-        id: 'projects',
-        label: t('mobile.navigation.projects'),
-        icon: <Kanban size={20} />,
+        id: 'tasks',
+        label: t('mobile.navigation.tasks'),
+        icon: <ListTodo size={20} />,
         path: '/projects',
       },
       {
-        id: 'config',
+        id: 'chat',
+        label: t('mobile.navigation.genie'),
+        icon: <Lamp size={26} />,
+        path: '/chat',
+      },
+      {
+        id: 'new',
+        label: t('mobile.navigation.new'),
+        icon: <Plus size={20} />,
+        onClick: () => openTaskForm({}),
+      },
+      {
+        id: 'me',
         label: t('mobile.navigation.config'),
         icon: <Settings size={20} />,
         path: '/settings',
