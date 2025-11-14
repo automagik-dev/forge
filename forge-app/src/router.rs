@@ -729,14 +729,25 @@ async fn handle_forge_tasks_ws(
     deployment: DeploymentImpl,
     project_id: Uuid,
 ) -> anyhow::Result<()> {
-    // Get the raw stream from upstream (includes initial snapshot + live updates)
+    // Batch query: Fetch ALL agent task IDs for this project upfront (O(1) query instead of O(N))
+    // This eliminates N+1 pattern and speeds up WebSocket connection establishment
     let db_pool = deployment.db().pool.clone();
+    let agent_task_ids: std::collections::HashSet<Uuid> = sqlx::query_scalar(
+        "SELECT task_id FROM forge_agents WHERE project_id = ?"
+    )
+    .bind(project_id)
+    .fetch_all(&db_pool)
+    .await?
+    .into_iter()
+    .collect();
+
+    // Get the raw stream from upstream (includes initial snapshot + live updates)
     let stream = deployment
         .events()
         .stream_tasks_raw(project_id)
         .await?
         .filter_map(move |msg_result| {
-            let db_pool = db_pool.clone();
+            let agent_task_ids = agent_task_ids.clone();
             async move {
                 match msg_result {
                     Ok(LogMsg::JsonPatch(patch)) => {
@@ -749,14 +760,8 @@ async fn handle_forge_tasks_ws(
                                         if let Ok(task_with_status) =
                                             serde_json::from_value::<TaskWithAttemptStatus>(op.value.clone())
                                         {
-                                            // Check if this task is an agent task
-                                            let is_agent: bool = sqlx::query_scalar(
-                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
-                                            )
-                                            .bind(task_with_status.task.id)
-                                            .fetch_one(&db_pool)
-                                            .await
-                                            .unwrap_or(false);
+                                            // Check if this task is an agent task (O(1) in-memory lookup)
+                                            let is_agent = agent_task_ids.contains(&task_with_status.task.id);
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -769,14 +774,8 @@ async fn handle_forge_tasks_ws(
                                         if let Ok(task_with_status) =
                                             serde_json::from_value::<TaskWithAttemptStatus>(op.value.clone())
                                         {
-                                            // Check if this task is an agent task
-                                            let is_agent: bool = sqlx::query_scalar(
-                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
-                                            )
-                                            .bind(task_with_status.task.id)
-                                            .fetch_one(&db_pool)
-                                            .await
-                                            .unwrap_or(false);
+                                            // Check if this task is an agent task (O(1) in-memory lookup)
+                                            let is_agent = agent_task_ids.contains(&task_with_status.task.id);
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -802,13 +801,8 @@ async fn handle_forge_tasks_ws(
                                     if let Ok(task_with_status) =
                                         serde_json::from_value::<TaskWithAttemptStatus>(task_value.clone())
                                     {
-                                        let is_agent: bool = sqlx::query_scalar(
-                                            "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
-                                        )
-                                        .bind(task_with_status.task.id)
-                                        .fetch_one(&db_pool)
-                                        .await
-                                        .unwrap_or(false);
+                                        // Check if this task is an agent task (O(1) in-memory lookup)
+                                        let is_agent = agent_task_ids.contains(&task_with_status.task.id);
 
                                         if !is_agent {
                                             filtered_tasks.insert(task_id_str.to_string(), task_value.clone());

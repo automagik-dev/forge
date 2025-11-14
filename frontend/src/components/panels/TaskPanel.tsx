@@ -38,7 +38,7 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
   } = useTaskAttempts(task?.id);
 
   // Use React Query hooks for parent and children tasks (real-time-data-standard.md)
-  const { data: parentTask = null } = useParentTask(task?.parent_task_attempt);
+  const { data: parentTask = null } = useParentTask(task?.parent_task_attempt ?? undefined);
   const { data: childrenTasks = [] } = useChildrenTasks(attempts[0]?.id);
 
   // Initialize edit state when task changes
