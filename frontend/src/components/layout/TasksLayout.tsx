@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { AnimatePresence, motion } from 'framer-motion';
 
-export type LayoutMode = 'chat' | 'preview' | 'diffs' | 'kanban' | null;
+export type LayoutMode = 'chat' | 'preview' | 'diffs' | 'kanban' | 'list' | null;
 
 interface TasksLayoutProps {
   kanban: ReactNode;
