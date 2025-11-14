@@ -139,20 +139,15 @@ backend:
 	fi
 
 # Frontend only
-
 frontend:
 	@echo "🎨 Starting frontend server (dev mode)..."
-	@if [ -n "$(FP)" ] || [ -n "$(BP)" ]; then \
-		echo "   Using manual port override..."; \
-		if [ -n "$(FP)" ]; then echo "   Frontend Port: $(FP)"; fi; \
-		if [ -n "$(BP)" ]; then echo "   Backend Port: $(BP)"; fi; \
-		FRONTEND_PORT=$(FP) BACKEND_PORT=$(BP) npm run frontend:dev; \
-	else \
-		echo "   Using dynamic port allocation (.env or auto-detect)..."; \
-		FRONTEND_PORT=$$(node scripts/setup-dev-environment.js frontend) \
-		BACKEND_PORT=$$(node scripts/setup-dev-environment.js backend) \
-		npm run frontend:dev; \
-	fi
+	@DYNAMIC_FP=$$(node scripts/setup-dev-environment.js frontend); \
+	DYNAMIC_BP=$$(node scripts/setup-dev-environment.js backend); \
+	FINAL_FP=$${FP:-$$DYNAMIC_FP}; \
+	FINAL_BP=$${BP:-$$DYNAMIC_BP}; \
+	echo "   Frontend Port: $$FINAL_FP"; \
+	echo "   Backend Port: $$FINAL_BP"; \
+	FRONTEND_PORT=$$FINAL_FP BACKEND_PORT=$$FINAL_BP npm run frontend:dev
 
 # Build production package (without launching)
 build: check-android-deps check-cargo
