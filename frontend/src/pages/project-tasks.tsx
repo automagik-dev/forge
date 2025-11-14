@@ -806,6 +806,7 @@ export function ProjectTasks() {
             mode={mode}
             isMobile={isMobilePortrait}
             rightHeader={rightHeader}
+            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
@@ -825,6 +826,7 @@ export function ProjectTasks() {
             mode={mode}
             isMobile={isMobilePortrait}
             rightHeader={rightHeader}
+            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
@@ -843,6 +845,7 @@ export function ProjectTasks() {
             mode={mode}
             isMobile={isMobile}
             rightHeader={rightHeader}
+            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
@@ -856,6 +859,7 @@ export function ProjectTasks() {
       mode={mode}
       isMobile={isMobile}
       rightHeader={rightHeader}
+      onKanbanClick={handleClosePanel}
     />
   );
 

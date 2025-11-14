@@ -56,7 +56,7 @@ function AuxRouter({ mode, aux }: { mode: LayoutMode; aux: ReactNode }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
+          transition={{ duration: 0.12, ease: [0.25, 0.1, 0.25, 1] }}
           className="h-full min-h-0"
         >
           {aux}
@@ -75,11 +75,13 @@ function SplitView({
   rightContent,
   rightHeader,
   rightLabel,
+  onRightContentClick,
 }: {
   attempt: ReactNode;
   rightContent: ReactNode;
   rightHeader?: ReactNode;
   rightLabel: string;
+  onRightContentClick?: () => void;
 }) {
   const [sizes] = useState<SplitSizes>(() =>
     loadSizes(STORAGE_KEYS.ATTEMPT_AUX, DEFAULT_ATTEMPT_AUX)
@@ -139,6 +141,7 @@ function SplitView({
             className="min-w-0 min-h-0 overflow-hidden"
             role="region"
             aria-label={rightLabel}
+            onClick={onRightContentClick}
           >
             {rightContent}
           </Panel>
@@ -161,12 +164,14 @@ function DesktopSimple({
   aux,
   mode,
   rightHeader,
+  onKanbanClick,
 }: {
   kanban: ReactNode;
   attempt: ReactNode;
   aux: ReactNode;
   mode: LayoutMode;
   rightHeader?: ReactNode;
+  onKanbanClick?: () => void;
 }) {
   // mode='chat' → Full screen chat only
   if (mode === 'chat') {
@@ -190,6 +195,7 @@ function DesktopSimple({
         rightContent={kanban}
         rightHeader={rightHeader}
         rightLabel="Kanban board"
+        onRightContentClick={onKanbanClick}
       />
     );
   }
@@ -230,7 +236,8 @@ export function TasksLayout({
   mode,
   isMobile = false,
   rightHeader,
-}: TasksLayoutProps) {
+  onKanbanClick,
+}: TasksLayoutProps & { onKanbanClick?: () => void }) {
   const desktopKey = isPanelOpen ? 'desktop-with-panel' : 'kanban-only';
 
   if (isMobile) {
@@ -257,7 +264,7 @@ export function TasksLayout({
         className="h-full min-h-0 grid"
         style={{
           gridTemplateColumns,
-          transition: 'grid-template-columns 250ms cubic-bezier(0.2, 0, 0, 1)',
+          transition: 'grid-template-columns 150ms cubic-bezier(0.25, 0.1, 0.25, 1)',
         }}
       >
         <div
@@ -318,6 +325,7 @@ export function TasksLayout({
         aux={aux}
         mode={mode}
         rightHeader={rightHeader}
+        onKanbanClick={onKanbanClick}
       />
     );
   }
@@ -330,7 +338,7 @@ export function TasksLayout({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
+        transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
       >
         {desktopNode}
       </motion.div>
