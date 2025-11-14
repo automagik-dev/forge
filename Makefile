@@ -10,11 +10,13 @@ help:
 	@echo "  make forge     - Alias for 'make prod'"
 	@echo ""
 	@echo "Specific Targets:"
-	@echo "  make backend   - Start backend only (dev mode)"
-	@echo "  make frontend  - Start frontend only (dev mode)"
-	@echo "  make build     - Build production package (no launch)"
-	@echo "  make test      - Run full test suite"
-	@echo "  make clean     - Clean build artifacts"
+	@echo "  make backend              - Start backend only (uses .env or auto-allocated port)"
+	@echo "  make backend BP=XXXX      - Override backend port"
+	@echo "  make frontend             - Start frontend only (uses .env or auto-allocated ports)"
+	@echo "  make frontend FP=XXXX     - Override frontend port (BP for backend port)"
+	@echo "  make build                - Build production package (no launch)"
+	@echo "  make test                 - Run full test suite"
+	@echo "  make clean                - Clean build artifacts"
 	@echo ""
 	@echo "🚀 Release Workflows:"
 	@echo "  make publish           - Complete release pipeline (main branch → npm as @automagik/forge)"
@@ -119,15 +121,33 @@ prod: check-android-deps check-cargo
 # Alias for prod
 forge: prod
 
+# Port override parameters (shared between backend and frontend targets)
+# FP = Frontend Port, BP = Backend Port
+# If not provided, uses dynamic port allocation from setup-dev-environment.js
+FP ?=
+BP ?=
+
 # Backend only
 backend:
 	@echo "⚙️  Starting backend server (dev mode)..."
-	@npm run backend:dev
+	@if [ -n "$(BP)" ]; then \
+		echo "   Using manual port override: $(BP)"; \
+		BACKEND_PORT=$(BP) npm run backend:dev; \
+	else \
+		echo "   Using dynamic port allocation (.env or auto-detect)..."; \
+		npm run backend:dev; \
+	fi
 
 # Frontend only
 frontend:
 	@echo "🎨 Starting frontend server (dev mode)..."
-	@npm run frontend:dev
+	@DYNAMIC_FP=$$(node scripts/setup-dev-environment.js frontend); \
+	DYNAMIC_BP=$$(node scripts/setup-dev-environment.js backend); \
+	FINAL_FP=$${FP:-$$DYNAMIC_FP}; \
+	FINAL_BP=$${BP:-$$DYNAMIC_BP}; \
+	echo "   Frontend Port: $$FINAL_FP"; \
+	echo "   Backend Port: $$FINAL_BP"; \
+	FRONTEND_PORT=$$FINAL_FP BACKEND_PORT=$$FINAL_BP npm run frontend:dev
 
 # Build production package (without launching)
 build: check-android-deps check-cargo

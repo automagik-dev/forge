@@ -115,6 +115,8 @@ export function ProjectTasks() {
   const [searchParams, setSearchParams] = useSearchParams();
   const isXL = useMediaQuery('(min-width: 1280px)');
   const isMobile = !isXL;
+  const isLandscape = useMediaQuery('(orientation: landscape)');
+  const isMobilePortrait = isMobile && !isLandscape;
   const posthog = usePostHog();
 
   const {
@@ -656,7 +658,7 @@ export function ProjectTasks() {
           </CardContent>
         </Card>
       </div>
-    ) : isMobile ? (
+    ) : isMobilePortrait ? (
       <div className="w-full h-full overflow-y-auto mobile-scroll">
         <TasksListView
           tasks={filteredTasks}
@@ -748,7 +750,7 @@ export function ProjectTasks() {
             aux={auxContent}
             isPanelOpen={isPanelOpen}
             mode={mode}
-            isMobile={isMobile}
+            isMobile={isMobilePortrait}
             rightHeader={rightHeader}
           />
         </ExecutionProcessesProvider>
@@ -767,7 +769,7 @@ export function ProjectTasks() {
             aux={auxContent}
             isPanelOpen={isPanelOpen}
             mode={mode}
-            isMobile={isMobile}
+            isMobile={isMobilePortrait}
             rightHeader={rightHeader}
           />
         </ExecutionProcessesProvider>
