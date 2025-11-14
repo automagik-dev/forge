@@ -680,7 +680,7 @@ export function ProjectTasks() {
           </CardContent>
         </Card>
       </div>
-    ) : mode === 'list' || isMobilePortrait ? (
+    ) : mode === 'list' ? (
       <div className="w-full h-full overflow-y-auto mobile-scroll">
         <TasksListView
           tasks={filteredTasks}

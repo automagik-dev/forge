@@ -5,9 +5,10 @@ import { cn } from '@/lib/utils';
 import { BottomNavigation, BottomNavTab } from './BottomNavigation';
 import { usePlatform } from '@/lib/platform';
 import { useProject } from '@/contexts/project-context';
-import { Kanban, GitCompareArrows, FileText, Settings, Heart, ListTodo } from 'lucide-react';
+import { Kanban, GitCompareArrows, FileText, Settings, Heart, ListTodo, Plus } from 'lucide-react';
 import { Lamp } from '@/components/icons/Lamp';
 import { DiffActionSheet } from './DiffActionSheet';
+import { openTaskForm } from '@/lib/openTaskForm';
 // TODO: Import and wire up TasksDrawer and TasksListView with proper data
 // import { TasksDrawer } from './TasksDrawer';
 // import { TasksListView } from './TasksListView';
@@ -63,22 +64,22 @@ export function MobileLayout({
 
       // Add diff action badges (green for approve, orange for sync)
       // These appear in all task views, always visible
-      baseTabs.push({
-        id: 'diff-actions',
-        label: t('mobile.navigation.actions'),
-        icon: (
-          <div className="relative flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-green-500" />
-            <div className="w-3 h-3 rounded-full bg-orange-500" />
-          </div>
-        ),
-        onClick: () => setShowDiffActions(true),
-      });
+      // baseTabs.push({
+      //   id: 'diff-actions',
+      //   label: t('mobile.navigation.actions'),
+      //   icon: (
+      //     <div className="relative flex items-center gap-1">
+      //       <div className="w-3 h-3 rounded-full bg-green-500" />
+      //       <div className="w-3 h-3 rounded-full bg-orange-500" />
+      //     </div>
+      //   ),
+      //   onClick: () => setShowDiffActions(true),
+      // });
 
       return baseTabs;
     }
 
-    // When inside a project (not in a specific task), show: Tasks/Kanban/Genie/Config
+    // When inside a project (not in a specific task), show: Tasks/Kanban/New/Genie/Config
     if (projectId) {
       return [
         {
@@ -94,6 +95,12 @@ export function MobileLayout({
           icon: <Kanban size={20} />,
           // Kanban board shows all tasks in the project
           path: basePath,
+        },
+        {
+          id: 'new',
+          label: t('mobile.navigation.new'),
+          icon: <Plus size={20} />,
+          onClick: () => openTaskForm({ projectId }),
         },
         {
           id: 'genie',
