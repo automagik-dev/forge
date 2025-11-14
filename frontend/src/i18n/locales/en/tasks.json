@@ -218,7 +218,12 @@
       "pushing": "Pushing...",
       "push": "Push",
       "creating": "Creating...",
-      "createPr": "Create PR"
+      "createPr": "Create PR",
+      "approve": "Approve",
+      "approveMerge": "Approve & Merge",
+      "mergingAndCompleting": "Merging & Completing...",
+      "completing": "Completing...",
+      "resolveConflicts": "Resolve Conflicts"
     },
     "errors": {
       "changeTargetBranch": "Failed to change target branch",
@@ -255,7 +260,9 @@
         "title": "Push updates to pull request",
         "description": "This will push your latest changes to the existing pull request.",
         "technical": "Backend: git push",
-        "conflictWarning": "Your changes conflict with the target branch. Resolve conflicts before pushing."
+        "conflictWarning": "Your changes conflict with the target branch. Resolve conflicts before pushing.",
+        "success": "Changes pushed successfully",
+        "inProgress": "Pushing changes..."
       },
       "rebase": {
         "simple": "Rebase onto target branch",
@@ -263,6 +270,13 @@
         "description": "This will rebase your task branch onto the latest target branch. Your commits will be replayed on top of the target branch's latest changes.",
         "technical": "Backend: git fetch + git rebase",
         "conflictWarning": "The target branch has changes that may conflict with your work. You may need to resolve conflicts during rebase."
+      },
+      "approve": "Marks task as complete (no code changes to merge)",
+      "approveMerge": "Merges {{count}} commits to {{branch}} and marks task complete",
+      "resolveConflicts": "{{count}} files have conflicts: {{files}}",
+      "viewPr": "View Pull Request #{{number}} on GitHub",
+      "technical": {
+        "merge": "Technical: git merge --no-ff"
       }
     }
   },
@@ -331,7 +345,8 @@
     "buttons": {
       "previous": "Previous",
       "next": "Next",
-      "finish": "Finish"
+      "finish": "Finish",
+      "skip": "Skip"
     }
   }
 }

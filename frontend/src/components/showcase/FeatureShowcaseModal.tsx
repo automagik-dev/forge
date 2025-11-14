@@ -147,25 +147,33 @@ export function FeatureShowcaseModal({
                   </div>
 
                   {totalStages > 1 && (
-                    <div className="flex justify-end gap-2 pt-2">
-                      {currentStage > 0 && (
-                        <button
-                          onClick={handlePrevious}
-                          className="h-10 px-4 py-2 inline-flex items-center justify-center gap-2 text-sm font-medium border border-input hover:bg-accent hover:text-accent-foreground transition-colors"
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                          {t('showcases.buttons.previous')}
-                        </button>
-                      )}
+                    <div className="flex justify-between gap-2 pt-2">
                       <button
-                        onClick={handleNext}
-                        className="h-10 px-4 py-2 inline-flex items-center justify-center gap-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 border border-foreground transition-colors"
+                        onClick={onClose}
+                        className="h-10 px-4 py-2 inline-flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                       >
-                        {currentStage === totalStages - 1
-                          ? t('showcases.buttons.finish')
-                          : t('showcases.buttons.next')}
-                        <ChevronRight className="h-4 w-4" />
+                        {t('showcases.buttons.skip')}
                       </button>
+                      <div className="flex gap-2">
+                        {currentStage > 0 && (
+                          <button
+                            onClick={handlePrevious}
+                            className="h-10 px-4 py-2 inline-flex items-center justify-center gap-2 text-sm font-medium border border-input hover:bg-accent hover:text-accent-foreground transition-colors"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            {t('showcases.buttons.previous')}
+                          </button>
+                        )}
+                        <button
+                          onClick={handleNext}
+                          className="h-10 px-4 py-2 inline-flex items-center justify-center gap-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 border border-foreground transition-colors"
+                        >
+                          {currentStage === totalStages - 1
+                            ? t('showcases.buttons.finish')
+                            : t('showcases.buttons.next')}
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
