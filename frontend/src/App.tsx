@@ -164,9 +164,8 @@ function AppContent() {
     const handleOnboardingComplete = async (
       onboardingConfig: OnboardingResult
     ) => {
-      if (cancelled) return;
-
-      updateAndSaveConfig({
+      // Don't check cancelled here - we must save once the user completes the flow
+      await updateAndSaveConfig({
         onboarding_acknowledged: true,
         executor_profile: onboardingConfig.profile,
         editor: onboardingConfig.editor,
