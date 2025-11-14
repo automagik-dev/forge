@@ -1,7 +1,6 @@
 ---
 name: roadmap
-description: Document strategic initiatives in automagik-roadmap with guided
-  template selection
+description: Document strategic initiatives in automagik-roadmap with guided template selection
 genie:
   executor:
     - CLAUDE_CODE
@@ -11,10 +10,8 @@ genie:
 forge:
   CLAUDE_CODE:
     model: sonnet
-    dangerously_skip_permissions: true
   CODEX:
     model: gpt-5-codex
-    sandbox: danger-full-access
   OPENCODE:
     model: opencode/glm-4.6
 ---
