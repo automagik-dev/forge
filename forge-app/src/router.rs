@@ -96,6 +96,8 @@ pub fn create_router(services: ForgeServices, auth_required: bool) -> Router {
         .route("/docs", get(serve_swagger_ui))
         .route("/api/openapi.json", get(serve_openapi_spec))
         .route("/api/routes", get(list_routes))
+        // Public PWA manifest - must be accessible without authentication
+        .route("/site.webmanifest", get(serve_assets_public))
         .merge(forge_api_routes())
         // Upstream API at /api
         .nest("/api", upstream_api)
@@ -1082,6 +1084,11 @@ async fn serve_index() -> Response {
 
 async fn serve_assets(Path(path): Path<String>) -> Response {
     serve_static_file::<Frontend>(&path).await
+}
+
+/// Serve public assets (no auth required) - used for PWA manifest and other public files
+async fn serve_assets_public() -> Response {
+    serve_static_file::<Frontend>("site.webmanifest").await
 }
 
 async fn serve_static_file<T: RustEmbed>(path: &str) -> Response {
