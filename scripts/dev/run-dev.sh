@@ -105,6 +105,7 @@ echo ""
 # Always clean Rust build cache to ensure fresh compilation
 # Incremental compilation was causing too many issues with stale binaries
 echo "🧹 Cleaning Rust build cache..."
+. "$HOME/.cargo/env"
 cargo clean
 echo "✅ Build cache cleared - forcing fresh compilation"
 echo ""
