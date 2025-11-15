@@ -473,8 +473,8 @@ export function ProjectTasks() {
   const handleViewTaskDetails = useCallback(
     (task: Task, attemptIdToShow?: string) => {
       const params = new URLSearchParams(searchParams);
-      // Default to chat view when opening a task
-      if (!params.has('view')) {
+      const currentView = params.get('view');
+      if (!currentView || currentView === 'list') {
         params.set('view', 'chat');
       }
       const search = params.toString();
