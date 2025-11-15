@@ -474,7 +474,7 @@ export function ProjectTasks() {
     (task: Task, attemptIdToShow?: string) => {
       const params = new URLSearchParams(searchParams);
       const currentView = params.get('view');
-      if (currentView === 'list') {
+      if (!currentView || currentView === 'kanban' || currentView === 'list') {
         params.set('view', 'chat');
       }
       const search = params.toString();
@@ -850,7 +850,7 @@ export function ProjectTasks() {
     // ClickedElementsProvider accepts null attempt (used for preview click tracking)
     <ClickedElementsProvider attempt={null}>
       <ReviewProvider key={taskId || 'chat'}>
-        <ExecutionProcessesProvider key={taskId || 'chat'} attemptId={taskId || 'master-genie'}>
+        <ExecutionProcessesProvider key={taskId || 'chat'} attemptId={attempt?.id}>
           <TasksLayout
             kanban={kanbanContent}
             attempt={attemptContent}
@@ -868,7 +868,7 @@ export function ProjectTasks() {
     // Still need ExecutionProcessesProvider because TaskAttemptPanel contains RetryUiProvider
     <ClickedElementsProvider attempt={null}>
       <ReviewProvider key={taskId}>
-        <ExecutionProcessesProvider key={taskId} attemptId={taskId}>
+        <ExecutionProcessesProvider key={taskId} attemptId={attempt?.id}>
           <TasksLayout
             kanban={kanbanContent}
             attempt={attemptContent}

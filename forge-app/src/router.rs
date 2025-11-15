@@ -17,13 +17,14 @@ use futures_util::{SinkExt, StreamExt, TryStreamExt};
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use std::collections::HashSet;
 use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
 use crate::services::ForgeServices;
 use db::models::{
     image::TaskImage,
-    task::{Task, TaskWithAttemptStatus},
+    task::{Task, TaskStatus, TaskWithAttemptStatus},
     task_attempt::{CreateTaskAttempt, TaskAttempt},
 };
 use deployment::Deployment;
@@ -729,14 +730,22 @@ async fn handle_forge_tasks_ws(
     deployment: DeploymentImpl,
     project_id: Uuid,
 ) -> anyhow::Result<()> {
-    // Get the raw stream from upstream (includes initial snapshot + live updates)
     let db_pool = deployment.db().pool.clone();
+    let agent_task_ids: HashSet<Uuid> =
+        sqlx::query_scalar("SELECT task_id FROM forge_agents WHERE project_id = ?")
+            .bind(project_id)
+            .fetch_all(&db_pool)
+            .await?
+            .into_iter()
+            .collect();
+
+    // Get the raw stream from upstream (includes initial snapshot + live updates)
     let stream = deployment
         .events()
         .stream_tasks_raw(project_id)
         .await?
         .filter_map(move |msg_result| {
-            let db_pool = db_pool.clone();
+            let agent_task_ids = agent_task_ids.clone();
             async move {
                 match msg_result {
                     Ok(LogMsg::JsonPatch(patch)) => {
@@ -747,16 +756,16 @@ async fn handle_forge_tasks_ws(
                                 match patch_op {
                                     json_patch::PatchOperation::Add(op) => {
                                         if let Ok(task_with_status) =
-                                            serde_json::from_value::<TaskWithAttemptStatus>(op.value.clone())
-                                        {
-                                            // Check if this task is an agent task (query per patch to stay up-to-date)
-                                            let is_agent: bool = sqlx::query_scalar(
-                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
+                                            serde_json::from_value::<TaskWithAttemptStatus>(
+                                                op.value.clone(),
                                             )
-                                            .bind(task_with_status.task.id)
-                                            .fetch_one(&db_pool)
-                                            .await
-                                            .unwrap_or(false);
+                                        {
+                                            let is_agent = agent_task_ids
+                                                .contains(&task_with_status.task.id)
+                                                || matches!(
+                                                    task_with_status.task.status,
+                                                    TaskStatus::Agent
+                                                );
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -767,16 +776,16 @@ async fn handle_forge_tasks_ws(
                                     }
                                     json_patch::PatchOperation::Replace(op) => {
                                         if let Ok(task_with_status) =
-                                            serde_json::from_value::<TaskWithAttemptStatus>(op.value.clone())
-                                        {
-                                            // Check if this task is an agent task (query per patch to stay up-to-date)
-                                            let is_agent: bool = sqlx::query_scalar(
-                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
+                                            serde_json::from_value::<TaskWithAttemptStatus>(
+                                                op.value.clone(),
                                             )
-                                            .bind(task_with_status.task.id)
-                                            .fetch_one(&db_pool)
-                                            .await
-                                            .unwrap_or(false);
+                                        {
+                                            let is_agent = agent_task_ids
+                                                .contains(&task_with_status.task.id)
+                                                || matches!(
+                                                    task_with_status.task.status,
+                                                    TaskStatus::Agent
+                                                );
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -795,24 +804,28 @@ async fn handle_forge_tasks_ws(
                             // Handle initial snapshot (replace /tasks with map)
                             else if patch_op.path() == "/tasks"
                                 && let json_patch::PatchOperation::Replace(op) = patch_op
-                                && let Some(tasks_obj) = op.value.as_object() {
+                                && let Some(tasks_obj) = op.value.as_object()
+                            {
                                 // Filter out agent tasks from the initial snapshot
                                 let mut filtered_tasks = serde_json::Map::new();
                                 for (task_id_str, task_value) in tasks_obj {
                                     if let Ok(task_with_status) =
-                                        serde_json::from_value::<TaskWithAttemptStatus>(task_value.clone())
-                                    {
-                                        // Check if this task is an agent task (query per task to stay up-to-date)
-                                        let is_agent: bool = sqlx::query_scalar(
-                                            "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
+                                        serde_json::from_value::<TaskWithAttemptStatus>(
+                                            task_value.clone(),
                                         )
-                                        .bind(task_with_status.task.id)
-                                        .fetch_one(&db_pool)
-                                        .await
-                                        .unwrap_or(false);
+                                    {
+                                        let is_agent = agent_task_ids
+                                            .contains(&task_with_status.task.id)
+                                            || matches!(
+                                                task_with_status.task.status,
+                                                TaskStatus::Agent
+                                            );
 
                                         if !is_agent {
-                                            filtered_tasks.insert(task_id_str.to_string(), task_value.clone());
+                                            filtered_tasks.insert(
+                                                task_id_str.to_string(),
+                                                task_value.clone(),
+                                            );
                                         }
                                     }
                                 }
@@ -824,7 +837,7 @@ async fn handle_forge_tasks_ws(
                                     "value": filtered_tasks
                                 }]);
                                 return Some(Ok(LogMsg::JsonPatch(
-                                    serde_json::from_value(filtered_patch).unwrap()
+                                    serde_json::from_value(filtered_patch).unwrap(),
                                 )));
                             }
                         }
