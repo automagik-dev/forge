@@ -67,22 +67,28 @@ export function MobileLayout({
 
       // Add diff action badges (green for approve, orange for sync)
       // These appear in all task views, always visible
-      baseTabs.push({
-        id: 'diff-actions',
-        label: t('mobile.navigation.actions'),
-        icon: (
-          <div className="relative flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-green-500" />
-            <div className="w-3 h-3 rounded-full bg-orange-500" />
-          </div>
-        ),
-        onClick: () => setShowDiffActions(true),
-      });
+      // baseTabs.push({
+      //   id: 'diff-actions',
+      //   label: t('mobile.navigation.actions'),
+      //   icon: (
+      //     <div className="relative flex items-center gap-1">
+      //       <div className="w-3 h-3 rounded-full bg-green-500" />
+      //       <div className="w-3 h-3 rounded-full bg-orange-500" />
+      //     </div>
+      //   ),
+      //   onClick: () => setShowDiffActions(true),
+      // });
 
       return baseTabs;
     }
 
+<<<<<<< HEAD
     // When inside a project (not in a specific task), show: Kanban/Genie/Config
+||||||| 162f58e3
+    // When inside a project (not in a specific task), show: Tasks/Kanban/Genie/Config
+=======
+    // When inside a project (not in a specific task), show: Tasks/Kanban/New/Genie/Config
+>>>>>>> origin/release/0.7.4
     if (projectId) {
       return [
         {
@@ -92,6 +98,12 @@ export function MobileLayout({
           // Kanban board shows traditional board view with ?view=kanban
           // Default (no view param) shows mobile-optimized list view
           path: `${basePath}?view=kanban`,
+        },
+        {
+          id: 'new',
+          label: t('mobile.navigation.new'),
+          icon: <Plus size={20} />,
+          onClick: () => openTaskForm({ projectId }),
         },
         {
           id: 'genie',

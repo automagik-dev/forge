@@ -521,8 +521,13 @@ fn omni_base_url() -> String {
         return url.trim_end_matches('/').to_string();
     }
 
-    // Priority 2: localhost:8887 (npx default - single port for most users)
-    "http://localhost:8887".to_string()
+    // Priority 2: HOST/BACKEND_PORT env vars (for custom deployments)
+    let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let port = std::env::var("BACKEND_PORT")
+        .or_else(|_| std::env::var("PORT"))
+        .unwrap_or_else(|_| "8887".to_string());
+
+    format!("http://{host}:{port}")
 }
 
 #[cfg(test)]
