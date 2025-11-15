@@ -472,13 +472,18 @@ export function ProjectTasks() {
 
   const handleViewTaskDetails = useCallback(
     (task: Task, attemptIdToShow?: string) => {
-      // Always open tasks in chat view (don't preserve kanban/list view params)
+      const params = new URLSearchParams(searchParams);
+      const currentView = params.get('view');
+      if (!currentView || currentView === 'list') {
+        params.set('view', 'chat');
+      }
+      const search = params.toString();
       const pathname = attemptIdToShow
         ? paths.attempt(projectId!, task.id, attemptIdToShow)
         : `${paths.task(projectId!, task.id)}/attempts/latest`;
-      navigate({ pathname, search: '?view=chat' });
+      navigate({ pathname, search: search ? `?${search}` : '' });
     },
-    [projectId, navigate]
+    [projectId, navigate, searchParams]
   );
 
   const handleNavigateToTask = useCallback(
