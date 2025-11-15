@@ -41,6 +41,10 @@ export function ApproveButton({
       attemptId: attempt.id,
       shouldMerge: hasCodeChanges,
       projectId,
+      title: task.title,
+      description: task.description,
+      parentTaskAttempt: task.parent_task_attempt,
+      imageIds: null,
     });
   };
 

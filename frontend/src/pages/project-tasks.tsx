@@ -857,7 +857,7 @@ export function ProjectTasks() {
       aux={auxContent}
       isPanelOpen={isPanelOpen}
       mode={mode}
-      isMobile={isMobile}
+      isMobile={isMobilePortrait}
       rightHeader={rightHeader}
       onKanbanClick={handleClosePanel}
     />
