@@ -283,6 +283,13 @@ function TaskListItem({
   const hasApproved = task.has_merged_attempt;
   const hasFailed = task.last_attempt_failed;
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -291,13 +298,17 @@ function TaskListItem({
         isSelected && 'bg-white/10'
       )}
     >
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onClick}
+        onKeyDown={handleKeyDown}
         className={cn(
           'w-full text-left px-4 py-3',
           'hover:bg-white/5',
           'transition-colors',
-          'focus:outline-none'
+          'focus:outline-none focus:ring-2 focus:ring-primary/50',
+          'cursor-pointer'
         )}
       >
         <div className="flex items-start gap-3">
@@ -347,19 +358,20 @@ function TaskListItem({
               )}
             </div>
 
-            {/* Action buttons */}
-            <TaskActions
-              task={task}
-              showQuickActions={true}
-              alwaysShowQuickActions={true}
-              compact={true}
-              onViewDiff={onViewDiff}
-              onViewPreview={onViewPreview}
-              onViewDetails={onClick}
-            />
+            <div onClick={(e) => e.stopPropagation()}>
+              <TaskActions
+                task={task}
+                showQuickActions={true}
+                alwaysShowQuickActions={true}
+                compact={true}
+                onViewDiff={onViewDiff}
+                onViewPreview={onViewPreview}
+                onViewDetails={onClick}
+              />
+            </div>
           </div>
         </div>
-      </button>
+      </div>
     </div>
   );
 }
