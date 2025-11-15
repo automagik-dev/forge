@@ -28,7 +28,6 @@ import { useOpenProjectInEditor } from '@/hooks/useOpenProjectInEditor';
 import { useNavigateWithSearch } from '@/hooks';
 import { projectsApi, tasksApi } from '@/lib/api';
 import { formatRelativeTime, getLastActivityDate } from '@/lib/date-utils';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 type Props = {
   project: Project;
@@ -51,10 +50,6 @@ function ProjectCard({
   const handleOpenInEditor = useOpenProjectInEditor(project);
   const [tasks, setTasks] = useState<TaskWithAttemptStatus[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
-
-  const isMobile = useMediaQuery('(max-width: 767px)');
-  const isLandscape = useMediaQuery('(orientation: landscape)');
-  const isMobilePortrait = isMobile && !isLandscape;
 
   useEffect(() => {
     if (isFocused && ref.current) {
@@ -112,11 +107,8 @@ function ProjectCard({
   };
 
   const handleProjectClick = () => {
-    // On mobile portrait, explicitly navigate to kanban view to avoid showing list view by default
-    const path = isMobilePortrait
-      ? `/projects/${project.id}/tasks?view=kanban`
-      : `/projects/${project.id}/tasks`;
-    navigate(path);
+    // Navigate to tasks page, let ProjectTasks component decide the default view
+    navigate(`/projects/${project.id}/tasks`);
   };
 
   return (

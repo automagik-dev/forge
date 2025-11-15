@@ -82,22 +82,22 @@ export function MobileLayout({
       return baseTabs;
     }
 
+<<<<<<< HEAD
+    // When inside a project (not in a specific task), show: Kanban/Genie/Config
+||||||| 162f58e3
+    // When inside a project (not in a specific task), show: Tasks/Kanban/Genie/Config
+=======
     // When inside a project (not in a specific task), show: Tasks/Kanban/New/Genie/Config
+>>>>>>> origin/release/0.7.4
     if (projectId) {
       return [
-        {
-          id: 'tasks',
-          label: t('mobile.navigation.tasks'),
-          icon: <ListTodo size={20} />,
-          // Tasks shows list view with ?view=list parameter
-          path: `${basePath}?view=list`,
-        },
         {
           id: 'kanban',
           label: t('mobile.navigation.kanban'),
           icon: <Kanban size={20} />,
-          // Kanban board shows all tasks in the project
-          path: basePath,
+          // Kanban board shows traditional board view with ?view=kanban
+          // Default (no view param) shows mobile-optimized list view
+          path: `${basePath}?view=kanban`,
         },
         {
           id: 'new',

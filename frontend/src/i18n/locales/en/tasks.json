@@ -315,9 +315,9 @@
   },
   "actionsMenu": {
     "view": "View",
-    "viewDetails": "View Details",
-    "viewDiff": "View Diff",
-    "viewPreview": "View Preview",
+    "viewDetails": "View details",
+    "viewDiff": "View diff",
+    "viewPreview": "View preview",
     "attempt": "Attempt",
     "openInIde": "Open attempt in IDE",
     "viewProcesses": "View processes",

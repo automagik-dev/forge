@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertTriangle, Plus } from 'lucide-react';
+import { AlertTriangle, Plus, ChevronDown } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import { tasksApi } from '@/lib/api';
 import type { GitBranch } from 'shared/types';
@@ -241,7 +241,7 @@ export function ProjectTasks() {
 
   const rawMode = searchParams.get('view') as LayoutMode;
   const mode: LayoutMode =
-    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat' || rawMode === 'list'
+    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat'
       ? rawMode
       : null;
 
@@ -680,7 +680,7 @@ export function ProjectTasks() {
           </CardContent>
         </Card>
       </div>
-    ) : mode === 'list' ? (
+    ) : isMobilePortrait && mode !== 'kanban' ? (
       <div className="w-full h-full overflow-y-auto mobile-scroll">
         <TasksListView
           tasks={filteredTasks}
@@ -694,19 +694,80 @@ export function ProjectTasks() {
         />
       </div>
     ) : (
-      <div className="w-full h-full overflow-x-auto overflow-y-auto overscroll-x-contain touch-pan-y">
-        <TaskKanbanBoard
-          groupedTasks={groupedFilteredTasks}
-          onDragEnd={handleDragEnd}
-          onViewTaskDetails={handleViewTaskDetails}
-          selectedTask={selectedTask || undefined}
-          onCreateTask={handleCreateNewTask}
-        />
+      <div className="w-full h-full flex flex-col">
+        {/* Mobile header for kanban view */}
+        {isMobilePortrait && currentProject && (
+          <button
+            onClick={() => navigate('/projects')}
+            className="sticky top-0 z-20 px-4 py-3 bg-[#1A1625]/95 backdrop-blur-sm border-b border-white/10 hover:bg-white/5 transition-colors"
+          >
+            <div className="flex flex-col gap-2">
+              {/* Top row: project name and task count */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ChevronDown className="w-4 h-4 text-muted-foreground rotate-90" />
+                  <span className="font-primary text-sm font-semibold text-foreground">
+                    {currentProject.name}
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
+                </span>
+              </div>
+
+              {/* Bottom row: git branch info */}
+              {branches.length > 0 && (
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const currentBranch = branches.find((b) => b.is_current);
+                    if (!currentBranch) return null;
+
+                    return (
+                      <div className="flex items-center gap-1.5">
+                        <div className="inline-flex items-center gap-1 h-5 px-1.5 rounded-md bg-secondary/70 text-secondary-foreground text-xs">
+                          <span className="text-[10px]">⎇</span>
+                          <span>{currentBranch.name}</span>
+                        </div>
+                        {/* TODO: Add commits ahead/behind badges when main workspace branch status API is available */}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          </button>
+        )}
+        <div className="flex-1 overflow-x-auto overflow-y-auto overscroll-x-contain touch-pan-y">
+          <TaskKanbanBoard
+            groupedTasks={groupedFilteredTasks}
+            onDragEnd={handleDragEnd}
+            onViewTaskDetails={handleViewTaskDetails}
+            selectedTask={selectedTask || undefined}
+            onCreateTask={handleCreateNewTask}
+          />
+        </div>
       </div>
     );
 
-  // Breadcrumb is always shown in the main navbar - no need to duplicate it here
-  const rightHeader = null;
+  // Mobile chat header - shows task name and back navigation
+  const rightHeader = isMobilePortrait && mode === 'chat' && selectedTask ? (
+    <button
+      onClick={() => navigate({ pathname: location.pathname, search: '?view=kanban' })}
+      className="w-full px-4 py-3 bg-[#1A1625]/95 backdrop-blur-sm hover:bg-white/5 transition-colors text-left"
+    >
+      <div className="flex items-center gap-2">
+        <ChevronDown className="w-4 h-4 text-muted-foreground rotate-90" />
+        <div className="flex-1 min-w-0">
+          <div className="font-primary text-sm font-semibold text-foreground truncate">
+            {selectedTask.title}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Tap to return to board
+          </div>
+        </div>
+      </div>
+    </button>
+  ) : null;
 
   // Allow rendering attempt content for agent tasks (Master Genie) where selectedTask is null
   // but we have an attempt to show, OR when in chat view (ChatPanel creates attempt on first message)
@@ -779,7 +840,6 @@ export function ProjectTasks() {
             mode={mode}
             isMobile={isMobilePortrait}
             rightHeader={rightHeader}
-            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
@@ -799,7 +859,6 @@ export function ProjectTasks() {
             mode={mode}
             isMobile={isMobilePortrait}
             rightHeader={rightHeader}
-            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
@@ -818,7 +877,6 @@ export function ProjectTasks() {
             mode={mode}
             isMobile={isMobile}
             rightHeader={rightHeader}
-            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
@@ -832,7 +890,6 @@ export function ProjectTasks() {
       mode={mode}
       isMobile={isMobile}
       rightHeader={rightHeader}
-      onKanbanClick={handleClosePanel}
     />
   );
 

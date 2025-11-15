@@ -283,6 +283,28 @@ function TaskListItem({
   const hasApproved = task.has_merged_attempt;
   const hasFailed = task.last_attempt_failed;
 
+<<<<<<< HEAD
+||||||| 162f58e3
+  const handleAction = (e: React.MouseEvent, action: 'diff' | 'view' | 'archive' | 'new') => {
+    e.stopPropagation();
+
+    switch (action) {
+      case 'diff':
+        onViewDiff?.(task);
+        break;
+      case 'view':
+        onViewPreview?.(task);
+        break;
+      case 'archive':
+        onArchive?.(task);
+        break;
+      case 'new':
+        onNewAttempt?.(task);
+        break;
+    }
+  };
+
+=======
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -290,6 +312,7 @@ function TaskListItem({
     }
   };
 
+>>>>>>> origin/release/0.7.4
   return (
     <div
       className={cn(
@@ -358,6 +381,55 @@ function TaskListItem({
               )}
             </div>
 
+<<<<<<< HEAD
+            {/* Action buttons */}
+            <TaskActions
+              task={task}
+              showQuickActions={true}
+              alwaysShowQuickActions={true}
+              compact={true}
+              onViewDiff={onViewDiff}
+              onViewPreview={onViewPreview}
+              onViewDetails={onClick}
+            />
+||||||| 162f58e3
+            {/* Action buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => handleAction(e, 'diff')}
+                className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 transition-colors text-xs"
+                title="View diffs"
+              >
+                <GitCompareArrows className="w-3 h-3" />
+                <span>Diff</span>
+              </button>
+              <button
+                onClick={(e) => handleAction(e, 'view')}
+                className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 transition-colors text-xs"
+                title="View preview"
+              >
+                <Eye className="w-3 h-3" />
+                <span>View</span>
+              </button>
+              {phase !== 'archived' && (
+                <button
+                  onClick={(e) => handleAction(e, 'archive')}
+                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 transition-colors text-xs"
+                  title="Archive task"
+                >
+                  <Archive className="w-3 h-3" />
+                </button>
+              )}
+              <button
+                onClick={(e) => handleAction(e, 'new')}
+                className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/20 hover:bg-blue-500/30 transition-colors text-xs text-blue-400"
+                title="New attempt"
+              >
+                <Plus className="w-3 h-3" />
+                <span>Attempt</span>
+              </button>
+            </div>
+=======
             <div onClick={(e) => e.stopPropagation()}>
               <TaskActions
                 task={task}
@@ -369,6 +441,7 @@ function TaskListItem({
                 onViewDetails={onClick}
               />
             </div>
+>>>>>>> origin/release/0.7.4
           </div>
         </div>
       </div>
