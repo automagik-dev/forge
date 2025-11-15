@@ -39,11 +39,13 @@ import { OnboardingResult } from '@/components/dialogs/global/OnboardingDialog';
 import { ClickedElementsProvider } from '@/contexts/ClickedElementsProvider';
 import { GenieMasterWidget } from '@/components/genie-widgets/GenieMasterWidget';
 import { SubGenieProvider } from '@/context/SubGenieContext';
+import { useIsMobile } from '@/components/mobile/MobileLayout';
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 function AppContent() {
   const [isGenieOpen, setIsGenieOpen] = useState(false);
+  const isMobile = useIsMobile();
   const { config, analyticsUserId, updateAndSaveConfig, loading } =
     useUserSystem();
   const posthog = usePostHog();
@@ -307,11 +309,14 @@ function AppContent() {
             </SentryRoutes>
             <Footer />
           </div>
-          <GenieMasterWidget
-            isOpen={isGenieOpen}
-            onToggle={() => setIsGenieOpen(!isGenieOpen)}
-            onClose={() => setIsGenieOpen(false)}
-          />
+          {/* Hide GenieMasterWidget in mobile view - use bottom nav Genie button instead */}
+          {!isMobile && (
+            <GenieMasterWidget
+              isOpen={isGenieOpen}
+              onToggle={() => setIsGenieOpen(!isGenieOpen)}
+              onClose={() => setIsGenieOpen(false)}
+            />
+          )}
         </SearchProvider>
       </ThemeProvider>
     </I18nextProvider>

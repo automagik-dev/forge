@@ -64,7 +64,7 @@ export interface DevServerPreviewInteractedEvent {
 // View Mode Events
 // ============================================================================
 
-export type ViewMode = 'chat' | 'preview' | 'diffs' | 'kanban' | null;
+export type ViewMode = 'chat' | 'preview' | 'diffs' | 'kanban' | 'list' | null;
 export type ViewModeChangeTrigger = 'url_param' | 'keyboard_shortcut' | 'ui_button';
 
 export interface ViewModeSwitchedEvent {

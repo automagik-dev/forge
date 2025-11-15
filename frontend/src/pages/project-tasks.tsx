@@ -19,6 +19,7 @@ import { useSearch } from '@/contexts/search-context';
 import { useProject } from '@/contexts/project-context';
 import { useTaskAttempts } from '@/hooks/useTaskAttempts';
 import { useTaskAttempt } from '@/hooks/useTaskAttempt';
+import { useProjects } from '@/hooks/useProjects';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useBranchStatus, useAttemptExecution } from '@/hooks';
 import { projectsApi } from '@/lib/api';
@@ -116,7 +117,8 @@ export function ProjectTasks() {
   const isXL = useMediaQuery('(min-width: 1280px)');
   const isMobile = !isXL;
   const isLandscape = useMediaQuery('(orientation: landscape)');
-  const isMobilePortrait = isMobile && !isLandscape;
+  const isSmallScreen = useMediaQuery('(max-width: 767px)'); // Same as useIsMobile()
+  const isMobilePortrait = (isMobile && !isLandscape) || (isSmallScreen && !isLandscape);
   const posthog = usePostHog();
 
   const {
@@ -124,6 +126,9 @@ export function ProjectTasks() {
     isLoading: projectLoading,
     error: projectError,
   } = useProject();
+
+  const { data: projects } = useProjects();
+  const currentProject = projects?.find((p) => p.id === projectId);
 
   useEffect(() => {
     enableScope(Scope.KANBAN);
@@ -236,7 +241,7 @@ export function ProjectTasks() {
 
   const rawMode = searchParams.get('view') as LayoutMode;
   const mode: LayoutMode =
-    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat'
+    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat' || rawMode === 'list'
       ? rawMode
       : null;
 
@@ -468,9 +473,9 @@ export function ProjectTasks() {
   const handleViewTaskDetails = useCallback(
     (task: Task, attemptIdToShow?: string) => {
       const params = new URLSearchParams(searchParams);
-      // Default to kanban view when opening a task
-      if (!params.has('view')) {
-        params.set('view', 'kanban');
+      const currentView = params.get('view');
+      if (!currentView || currentView === 'list') {
+        params.set('view', 'chat');
       }
       const search = params.toString();
       const pathname = attemptIdToShow
@@ -613,6 +618,23 @@ export function ProjectTasks() {
     [tasksById, groupedFilteredTasks, posthog]
   );
 
+  // Action handlers for mobile task list view
+  const handleViewDiff = useCallback(
+    (task: Task) => {
+      const pathname = `${paths.task(projectId!, task.id)}/attempts/latest`;
+      navigate({ pathname, search: '?view=diffs' });
+    },
+    [projectId, navigate]
+  );
+
+  const handleViewPreview = useCallback(
+    (task: Task) => {
+      const pathname = `${paths.task(projectId!, task.id)}/attempts/latest`;
+      navigate({ pathname, search: '?view=preview' });
+    },
+    [projectId, navigate]
+  );
+
   const isInitialTasksLoad = isLoading && tasks.length === 0;
 
   if (projectError) {
@@ -658,12 +680,17 @@ export function ProjectTasks() {
           </CardContent>
         </Card>
       </div>
-    ) : isMobilePortrait ? (
+    ) : mode === 'list' ? (
       <div className="w-full h-full overflow-y-auto mobile-scroll">
         <TasksListView
           tasks={filteredTasks}
           onTaskClick={handleViewTaskDetails}
           selectedTaskId={selectedTask?.id}
+          projectName={currentProject?.name}
+          onProjectClick={() => navigate('/projects')}
+          onViewDiff={handleViewDiff}
+          onViewPreview={handleViewPreview}
+          branches={branches}
         />
       </div>
     ) : (
@@ -752,14 +779,34 @@ export function ProjectTasks() {
             mode={mode}
             isMobile={isMobilePortrait}
             rightHeader={rightHeader}
+            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
     </ClickedElementsProvider>
-  ) : isInChatView && taskId ? (
-    // Agent tasks (Master Genie) need same provider hierarchy as regular attempts
-    // Use taskId from URL since selectedTask might still be loading
+  ) : isInChatView ? (
+    // Chat view (Master Genie or task chat)
+    // Use taskId from URL if available, otherwise use a placeholder for Master Genie
     // ClickedElementsProvider accepts null attempt (used for preview click tracking)
+    <ClickedElementsProvider attempt={null}>
+      <ReviewProvider key={taskId || 'chat'}>
+        <ExecutionProcessesProvider key={taskId || 'chat'} attemptId={taskId || 'master-genie'}>
+          <TasksLayout
+            kanban={kanbanContent}
+            attempt={attemptContent}
+            aux={auxContent}
+            isPanelOpen={isPanelOpen}
+            mode={mode}
+            isMobile={isMobilePortrait}
+            rightHeader={rightHeader}
+            onKanbanClick={handleClosePanel}
+          />
+        </ExecutionProcessesProvider>
+      </ReviewProvider>
+    </ClickedElementsProvider>
+  ) : isPanelOpen && taskId ? (
+    // Task is selected but no attempt yet (e.g., task details view)
+    // Still need ExecutionProcessesProvider because TaskAttemptPanel contains RetryUiProvider
     <ClickedElementsProvider attempt={null}>
       <ReviewProvider key={taskId}>
         <ExecutionProcessesProvider key={taskId} attemptId={taskId}>
@@ -769,8 +816,9 @@ export function ProjectTasks() {
             aux={auxContent}
             isPanelOpen={isPanelOpen}
             mode={mode}
-            isMobile={isMobilePortrait}
+            isMobile={isMobile}
             rightHeader={rightHeader}
+            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
@@ -784,6 +832,7 @@ export function ProjectTasks() {
       mode={mode}
       isMobile={isMobile}
       rightHeader={rightHeader}
+      onKanbanClick={handleClosePanel}
     />
   );
 

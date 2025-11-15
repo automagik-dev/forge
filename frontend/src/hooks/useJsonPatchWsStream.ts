@@ -177,8 +177,11 @@ export const useJsonPatchWsStream = <T>(
         ws.onerror = null;
         ws.onclose = null;
 
-        // Close regardless of state
-        ws.close();
+        // Only close if connection is established or closing
+        // Avoids "closed before connection established" warning in React StrictMode
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CLOSING) {
+          ws.close();
+        }
         wsRef.current = null;
       }
       if (retryTimerRef.current) {

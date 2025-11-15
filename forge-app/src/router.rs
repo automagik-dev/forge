@@ -749,7 +749,7 @@ async fn handle_forge_tasks_ws(
                                         if let Ok(task_with_status) =
                                             serde_json::from_value::<TaskWithAttemptStatus>(op.value.clone())
                                         {
-                                            // Check if this task is an agent task
+                                            // Check if this task is an agent task (query per patch to stay up-to-date)
                                             let is_agent: bool = sqlx::query_scalar(
                                                 "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
                                             )
@@ -769,7 +769,7 @@ async fn handle_forge_tasks_ws(
                                         if let Ok(task_with_status) =
                                             serde_json::from_value::<TaskWithAttemptStatus>(op.value.clone())
                                         {
-                                            // Check if this task is an agent task
+                                            // Check if this task is an agent task (query per patch to stay up-to-date)
                                             let is_agent: bool = sqlx::query_scalar(
                                                 "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
                                             )
@@ -802,6 +802,7 @@ async fn handle_forge_tasks_ws(
                                     if let Ok(task_with_status) =
                                         serde_json::from_value::<TaskWithAttemptStatus>(task_value.clone())
                                     {
+                                        // Check if this task is an agent task (query per task to stay up-to-date)
                                         let is_agent: bool = sqlx::query_scalar(
                                             "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
                                         )

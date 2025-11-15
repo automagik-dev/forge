@@ -3,17 +3,18 @@ import { useProject } from '@/contexts/project-context';
 import { useTaskAttempts } from '@/hooks/useTaskAttempts';
 import { useNavigateWithSearch } from '@/hooks';
 import { paths } from '@/lib/paths';
-import type { TaskWithAttemptStatus, Task } from 'shared/types';
+import type { TaskWithAttemptStatus } from 'shared/types';
 import { NewCardContent } from '../ui/new-card';
 import { Button } from '../ui/button';
 import { Edit2, Network, GitFork, Play } from 'lucide-react';
 import NiceModal from '@ebay/nice-modal-react';
 import MarkdownRenderer from '@/components/ui/markdown-renderer';
-import { attemptsApi, tasksApi } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { Input } from '../ui/input';
 import { FileSearchTextarea } from '../ui/file-search-textarea';
 import { useTaskMutations } from '@/hooks/useTaskMutations';
+import { useParentTask } from '@/hooks/useParentTask';
+import { useChildrenTasks } from '@/hooks/useChildrenTasks';
 
 interface TaskPanelProps {
   task: TaskWithAttemptStatus | null;
@@ -29,8 +30,6 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
-  const [parentTask, setParentTask] = useState<Task | null>(null);
-  const [childrenTasks, setChildrenTasks] = useState<Task[]>([]);
 
   const {
     data: attempts = [],
@@ -38,43 +37,9 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
     isError: isAttemptsError,
   } = useTaskAttempts(task?.id);
 
-  // Fetch parent task relationship
-  useEffect(() => {
-    if (!task) {
-      setParentTask(null);
-      return;
-    }
-
-    // Fetch parent task if exists
-    if (task.parent_task_attempt) {
-      attemptsApi
-        .get(task.parent_task_attempt)
-        .then((attempt) => tasksApi.getById(attempt.task_id))
-        .then((parentTask) => setParentTask(parentTask))
-        .catch(() => setParentTask(null));
-    } else {
-      setParentTask(null);
-    }
-  }, [task]);
-
-  // Fetch children tasks (subtasks) - separate effect to wait for attempts to load
-  useEffect(() => {
-    if (!task) {
-      setChildrenTasks([]);
-      return;
-    }
-
-    // Fetch children tasks (subtasks)
-    const latestAttempt = attempts[0];
-    if (latestAttempt) {
-      attemptsApi
-        .getChildren(latestAttempt.id)
-        .then((relationships) => setChildrenTasks(relationships.children))
-        .catch(() => setChildrenTasks([]));
-    } else {
-      setChildrenTasks([]);
-    }
-  }, [task, attempts]);
+  // Use React Query hooks for parent and children tasks (real-time-data-standard.md)
+  const { data: parentTask = null } = useParentTask(task?.parent_task_attempt || undefined);
+  const { data: childrenTasks = [] } = useChildrenTasks(attempts[0]?.id);
 
   // Initialize edit state when task changes
   useEffect(() => {

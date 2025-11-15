@@ -60,19 +60,31 @@ export function BottomNavigation({
   };
   
   const isTabActive = (tab: BottomNavTab): boolean => {
+    // Handle tabs with onClick (like Tasks drawer) - check by tab ID
+    if (!tab.path && tab.onClick) {
+      // Tasks tab is "active" when we're viewing the tasks list
+      // This is a special case - we'll never truly show it as active since it opens a drawer
+      return false;
+    }
+
     if (!tab.path) return false;
-    
+
     const [tabPathname, tabQuery] = tab.path.split('?');
     const expectedView = new URLSearchParams(tabQuery || '').get('view');
     const currentView = new URLSearchParams(location.search).get('view');
-    
+
+    // Special case: both "/" and "/projects" show the projects list
+    if (tabPathname === '/projects' && location.pathname === '/') {
+      return true;
+    }
+
     const pathMatches = location.pathname.startsWith(tabPathname);
     if (!pathMatches) return false;
-    
+
     if (expectedView === null) {
       return currentView === null || currentView === 'kanban';
     }
-    
+
     return currentView === expectedView;
   };
   
