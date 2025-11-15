@@ -474,7 +474,7 @@ export function ProjectTasks() {
     (task: Task, attemptIdToShow?: string) => {
       const params = new URLSearchParams(searchParams);
       const currentView = params.get('view');
-      if (!currentView || currentView === 'list') {
+      if (currentView === 'list') {
         params.set('view', 'chat');
       }
       const search = params.toString();
