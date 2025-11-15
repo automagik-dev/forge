@@ -90,12 +90,10 @@ Sentry.init({
 Sentry.setTag('source', 'frontend');
 
 // PostHog configuration
-// Default keys for Namastex Labs analytics (write-only, safe to expose)
-// Users can override via VITE_POSTHOG_API_KEY environment variable
-const posthogKey = import.meta.env.VITE_POSTHOG_API_KEY ||
-  'phc_' + 'KYI6y57aVECNO9aj5O28gNAz3r7BU0cTtEf50HQJZHd';
-const posthogHost = import.meta.env.VITE_POSTHOG_API_ENDPOINT ||
-  'https://us.i.posthog.com';
+// Namastex Labs analytics keys (write-only, safe to expose)
+// Always embedded in code for consistent behavior across all build methods
+const posthogKey = 'phc_' + 'KYI6y57aVECNO9aj5O28gNAz3r7BU0cTtEf50HQJZHd';
+const posthogHost = 'https://us.i.posthog.com';
 
 if (posthogKey && posthogHost) {
   posthog.init(posthogKey, {
