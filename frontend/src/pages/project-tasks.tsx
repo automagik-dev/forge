@@ -828,6 +828,8 @@ export function ProjectTasks() {
     </div>
   );
 
+  const attemptStreamId = attempt?.id;
+
   const attemptArea = attempt ? (
     <ClickedElementsProvider attempt={attempt}>
       <ReviewProvider key={attempt.id}>
@@ -850,7 +852,10 @@ export function ProjectTasks() {
     // ClickedElementsProvider accepts null attempt (used for preview click tracking)
     <ClickedElementsProvider attempt={null}>
       <ReviewProvider key={taskId || 'chat'}>
-        <ExecutionProcessesProvider key={taskId || 'chat'} attemptId={attempt?.id}>
+        <ExecutionProcessesProvider
+          key={taskId || 'chat'}
+          attemptId={attemptStreamId}
+        >
           <TasksLayout
             kanban={kanbanContent}
             attempt={attemptContent}
@@ -868,7 +873,7 @@ export function ProjectTasks() {
     // Still need ExecutionProcessesProvider because TaskAttemptPanel contains RetryUiProvider
     <ClickedElementsProvider attempt={null}>
       <ReviewProvider key={taskId}>
-        <ExecutionProcessesProvider key={taskId} attemptId={attempt?.id}>
+        <ExecutionProcessesProvider key={taskId} attemptId={attemptStreamId}>
           <TasksLayout
             kanban={kanbanContent}
             attempt={attemptContent}
