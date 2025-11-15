@@ -20,7 +20,7 @@ export function PushToPRButton({ attempt, branchStatus }: PushToPRButtonProps) {
   const pushMutation = usePush(attempt.id);
   const [pushSuccess, setPushSuccess] = useState(false);
 
-  const commitCount = (branchStatus?.remote_commits_ahead ?? 0) || (branchStatus?.commits_ahead ?? 0);
+  const commitCount = branchStatus?.remote_commits_ahead ?? 0;
   const hasNewCommits = commitCount > 0;
   const pushing = pushMutation.isPending;
 
