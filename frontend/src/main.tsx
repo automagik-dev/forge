@@ -90,8 +90,11 @@ Sentry.init({
 Sentry.setTag('source', 'frontend');
 
 // PostHog configuration
-// Namastex Labs analytics keys (write-only, safe to expose)
-// Always embedded in code for consistent behavior across all build methods
+// SECURITY NOTE: This is a Project API Key (phc_*), which is write-only and designed
+// for client-side use. It can ONLY send events to PostHog, not read data or modify
+// project settings. This is standard practice for client-side analytics tools
+// (like Google Analytics, Mixpanel, etc.) - the key is visible in the JS bundle anyway.
+// Always embedded in code for consistent behavior across all build methods.
 const posthogKey = 'phc_' + 'KYI6y57aVECNO9aj5O28gNAz3r7BU0cTtEf50HQJZHd';
 const posthogHost = 'https://us.i.posthog.com';
 
