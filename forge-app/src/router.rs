@@ -732,14 +732,13 @@ async fn handle_forge_tasks_ws(
     // Batch query: Fetch ALL agent task IDs for this project upfront (O(1) query instead of O(N))
     // This eliminates N+1 pattern and speeds up WebSocket connection establishment
     let db_pool = deployment.db().pool.clone();
-    let agent_task_ids: std::collections::HashSet<Uuid> = sqlx::query_scalar(
-        "SELECT task_id FROM forge_agents WHERE project_id = ?"
-    )
-    .bind(project_id)
-    .fetch_all(&db_pool)
-    .await?
-    .into_iter()
-    .collect();
+    let agent_task_ids: std::collections::HashSet<Uuid> =
+        sqlx::query_scalar("SELECT task_id FROM forge_agents WHERE project_id = ?")
+            .bind(project_id)
+            .fetch_all(&db_pool)
+            .await?
+            .into_iter()
+            .collect();
 
     // Get the raw stream from upstream (includes initial snapshot + live updates)
     let stream = deployment
@@ -758,10 +757,13 @@ async fn handle_forge_tasks_ws(
                                 match patch_op {
                                     json_patch::PatchOperation::Add(op) => {
                                         if let Ok(task_with_status) =
-                                            serde_json::from_value::<TaskWithAttemptStatus>(op.value.clone())
+                                            serde_json::from_value::<TaskWithAttemptStatus>(
+                                                op.value.clone(),
+                                            )
                                         {
                                             // Check if this task is an agent task (O(1) in-memory lookup)
-                                            let is_agent = agent_task_ids.contains(&task_with_status.task.id);
+                                            let is_agent =
+                                                agent_task_ids.contains(&task_with_status.task.id);
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -772,10 +774,13 @@ async fn handle_forge_tasks_ws(
                                     }
                                     json_patch::PatchOperation::Replace(op) => {
                                         if let Ok(task_with_status) =
-                                            serde_json::from_value::<TaskWithAttemptStatus>(op.value.clone())
+                                            serde_json::from_value::<TaskWithAttemptStatus>(
+                                                op.value.clone(),
+                                            )
                                         {
                                             // Check if this task is an agent task (O(1) in-memory lookup)
-                                            let is_agent = agent_task_ids.contains(&task_with_status.task.id);
+                                            let is_agent =
+                                                agent_task_ids.contains(&task_with_status.task.id);
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -794,18 +799,25 @@ async fn handle_forge_tasks_ws(
                             // Handle initial snapshot (replace /tasks with map)
                             else if patch_op.path() == "/tasks"
                                 && let json_patch::PatchOperation::Replace(op) = patch_op
-                                && let Some(tasks_obj) = op.value.as_object() {
+                                && let Some(tasks_obj) = op.value.as_object()
+                            {
                                 // Filter out agent tasks from the initial snapshot
                                 let mut filtered_tasks = serde_json::Map::new();
                                 for (task_id_str, task_value) in tasks_obj {
                                     if let Ok(task_with_status) =
-                                        serde_json::from_value::<TaskWithAttemptStatus>(task_value.clone())
+                                        serde_json::from_value::<TaskWithAttemptStatus>(
+                                            task_value.clone(),
+                                        )
                                     {
                                         // Check if this task is an agent task (O(1) in-memory lookup)
-                                        let is_agent = agent_task_ids.contains(&task_with_status.task.id);
+                                        let is_agent =
+                                            agent_task_ids.contains(&task_with_status.task.id);
 
                                         if !is_agent {
-                                            filtered_tasks.insert(task_id_str.to_string(), task_value.clone());
+                                            filtered_tasks.insert(
+                                                task_id_str.to_string(),
+                                                task_value.clone(),
+                                            );
                                         }
                                     }
                                 }
@@ -817,7 +829,7 @@ async fn handle_forge_tasks_ws(
                                     "value": filtered_tasks
                                 }]);
                                 return Some(Ok(LogMsg::JsonPatch(
-                                    serde_json::from_value(filtered_patch).unwrap()
+                                    serde_json::from_value(filtered_patch).unwrap(),
                                 )));
                             }
                         }

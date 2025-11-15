@@ -134,15 +134,16 @@ backend:
 		echo "   Using manual port override: $(BP)"; \
 		BACKEND_PORT=$(BP) npm run backend:dev; \
 	else \
-		echo "   Using dynamic port allocation (.env or auto-detect)..."; \
-		npm run backend:dev; \
+		DYNAMIC_BP=$$(node scripts/setup-dev-environment.js backend); \
+		echo "   Backend Port: $$DYNAMIC_BP"; \
+		BACKEND_PORT=$$DYNAMIC_BP npm run backend:dev; \
 	fi
 
 # Frontend only
 frontend:
 	@echo "🎨 Starting frontend server (dev mode)..."
-	@DYNAMIC_FP=$$(node scripts/setup-dev-environment.js frontend); \
-	DYNAMIC_BP=$$(node scripts/setup-dev-environment.js backend); \
+	@DYNAMIC_FP=$$(node scripts/setup-dev-environment.js read-frontend); \
+	DYNAMIC_BP=$$(node scripts/setup-dev-environment.js read-backend); \
 	FINAL_FP=$${FP:-$$DYNAMIC_FP}; \
 	FINAL_BP=$${BP:-$$DYNAMIC_BP}; \
 	echo "   Frontend Port: $$FINAL_FP"; \
