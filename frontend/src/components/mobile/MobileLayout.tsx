@@ -82,13 +82,7 @@ export function MobileLayout({
       return baseTabs;
     }
 
-<<<<<<< HEAD
-    // When inside a project (not in a specific task), show: Kanban/Genie/Config
-||||||| 162f58e3
-    // When inside a project (not in a specific task), show: Tasks/Kanban/Genie/Config
-=======
-    // When inside a project (not in a specific task), show: Tasks/Kanban/New/Genie/Config
->>>>>>> origin/release/0.7.4
+    // When inside a project (not in a specific task), show: Kanban/New/Genie/Config
     if (projectId) {
       return [
         {
