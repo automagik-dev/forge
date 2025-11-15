@@ -5,6 +5,53 @@ set -euo pipefail
 echo "🚀 Starting Automagik Forge development environment..."
 echo ""
 
+# Check and install jq if needed
+if ! command -v jq >/dev/null 2>&1; then
+    echo "📦 jq is not installed. Installing to ~/.local/bin..."
+
+    # Create ~/.local/bin if it doesn't exist
+    mkdir -p ~/.local/bin
+
+    # Detect OS and architecture
+    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+    ARCH=$(uname -m)
+
+    # Map architecture names to jq naming convention
+    case "$ARCH" in
+        x86_64|amd64)
+            JQ_ARCH="amd64"
+            ;;
+        aarch64|arm64)
+            JQ_ARCH="arm64"
+            ;;
+        i386|i686)
+            JQ_ARCH="i386"
+            ;;
+        *)
+            echo "❌ Unsupported architecture: $ARCH"
+            echo "   Please install jq manually: https://jqlang.github.io/jq/download/"
+            exit 1
+            ;;
+    esac
+
+    # Download jq binary
+    JQ_URL="https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-${OS}-${JQ_ARCH}"
+
+    if curl -fsSL "$JQ_URL" -o ~/.local/bin/jq; then
+        chmod +x ~/.local/bin/jq
+
+        # Add ~/.local/bin to PATH if not already there
+        if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+            export PATH="$HOME/.local/bin:$PATH"
+        fi
+
+        echo "✅ jq installed successfully to ~/.local/bin/jq"
+    else
+        echo "❌ Failed to download jq from $JQ_URL"
+        echo "   Please install manually: https://jqlang.github.io/jq/download/"
+        exit 1
+    fi
+fi
 
 # Get ports from setup script (single atomic call to prevent race conditions)
 SETUP_JSON=$(node scripts/setup-dev-environment.js get 2>/dev/null | tail -1)
