@@ -40,7 +40,10 @@ export function MobileLayout({
 
     // When inside a task (any view), show: Task/Diff/View + Diff Action Badges
     if (taskId && projectId) {
-      const taskPath = `${basePath}/${taskId}`;
+      const attemptId = location.pathname.match(/\/attempts\/([^/?]+)/)?.[1];
+      const taskPath = attemptId 
+        ? `${basePath}/${taskId}/attempts/${attemptId}`
+        : `${basePath}/${taskId}/attempts/latest`;
       const baseTabs: BottomNavTab[] = [
         {
           id: 'task',
