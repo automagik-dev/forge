@@ -239,6 +239,12 @@ export function detectAllWorkflows(elements: ElementMeta[]): WorkflowMeta[] {
 
 /**
  * Generates workflow method code
+ * 
+ * TODO: Fix parameter-element misalignment when optional elements are filtered.
+ * Currently assumes nth parameter matches nth element, but when optional elements
+ * are filtered out (e.g., login without username), indices become misaligned.
+ * Solution: Attach parameter names to elements or generate parameters dynamically
+ * based on present elements. See PR #192 comment for details.
  */
 export function generateWorkflowMethod(workflow: WorkflowMeta, elements: ElementMeta[]): string {
   const params = workflow.parameters.join(', ')
