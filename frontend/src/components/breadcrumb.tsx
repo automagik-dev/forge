@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronRight, ChevronDown, GitBranch, GitMerge, ArrowRight, GitCompare } from 'lucide-react';
+import { ChevronRight, ChevronDown, GitBranch, GitMerge, ArrowRight, GitCompare, FolderOpen, KanbanSquare } from 'lucide-react';
 import { useProject } from '@/contexts/project-context';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
@@ -331,6 +331,33 @@ export function Breadcrumb() {
   return (
     <nav aria-label="Breadcrumb" className="px-3 py-2 text-sm flex items-center justify-between">
       <ol className="flex items-center gap-1">
+        {/* Folder icon to navigate to projects home */}
+        <li className="flex items-center gap-1">
+          <Link
+            to="/projects"
+            className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            aria-label="Go to projects"
+          >
+            <FolderOpen className="h-4 w-4" />
+          </Link>
+        </li>
+
+        {/* Separator */}
+        <li className="flex items-center">
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </li>
+
+        {/* Kanban icon to navigate back to project tasks */}
+        <li className="flex items-center gap-1">
+          <Link
+            to={`/projects/${projectId}/tasks`}
+            className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            aria-label="Go to project tasks"
+          >
+            <KanbanSquare className="h-4 w-4" />
+          </Link>
+        </li>
+
         {breadcrumbs.map((crumb, index) => {
           const isCurrentProject = crumb.type === 'project';
           const isParentTask = crumb.type === 'parent-task';
