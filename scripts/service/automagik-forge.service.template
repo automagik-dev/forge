@@ -1,0 +1,47 @@
+[Unit]
+Description=Automagik Forge - Vibe Coding++ Platform
+Documentation=https://github.com/namastexlabs/automagik-forge
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=namastex
+Group=namastex
+WorkingDirectory=/home/namastex/prod/automagik-forge
+
+# Use nvm node binary
+Environment="PATH=/home/namastex/.nvm/versions/node/v22.21.1/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="NODE_ENV=production"
+
+# Load environment variables from .env file
+EnvironmentFile=/home/namastex/prod/automagik-forge/.env
+
+# Start forge
+ExecStart=/home/namastex/.nvm/versions/node/v22.21.1/bin/automagik-forge
+
+# Restart configuration
+Restart=always
+RestartSec=10
+StartLimitInterval=300
+StartLimitBurst=5
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/namastex/.local/share/automagik-forge
+ReadWritePaths=/home/namastex/prod/automagik-forge
+
+# Resource limits
+LimitNOFILE=65536
+TasksMax=4096
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=automagik-forge
+
+[Install]
+WantedBy=multi-user.target

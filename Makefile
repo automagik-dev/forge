@@ -1,4 +1,4 @@
-.PHONY: help dev prod backend frontend ensure-frontend-stub build-frontend build test clean publish beta version npm check-cargo check-android-deps publish-automagik publish-automagik-quick
+.PHONY: help dev prod backend frontend ensure-frontend-stub build-frontend build test clean publish beta version npm check-cargo check-android-deps publish-automagik publish-automagik-quick service
 
 # Default target
 help:
@@ -19,6 +19,9 @@ help:
 	@echo "  make build                - Build production package (no launch)"
 	@echo "  make test                 - Run full test suite"
 	@echo "  make clean                - Clean build artifacts"
+	@echo ""
+	@echo "🐧 Linux Service Deployment (Ubuntu/Debian only):"
+	@echo "  make service              - Transform 'make prod' into systemd service"
 	@echo ""
 	@echo "🚀 Release Workflows:"
 	@echo "  make publish           - Complete release pipeline (main branch → npm as @automagik/forge)"
@@ -216,3 +219,28 @@ npm:
 # A/B test publish: full release pipeline from dev branch, publish as 'automagik'
 publish-automagik:
 	@bash scripts/publish-automagik.sh
+
+# Install as systemd service (Ubuntu/Debian only)
+service:
+	@echo "🐧 Installing Automagik Forge as systemd service..."
+	@echo ""
+	@if [ ! -f /etc/os-release ]; then \
+		echo "❌ Error: Cannot detect OS (requires /etc/os-release)"; \
+		exit 1; \
+	fi; \
+	. /etc/os-release; \
+	if [ "$$ID" != "ubuntu" ] && [ "$$ID" != "debian" ]; then \
+		echo "❌ Error: Unsupported OS ($$PRETTY_NAME)"; \
+		echo ""; \
+		echo "This target only supports:"; \
+		echo "  - Ubuntu 18.04+"; \
+		echo "  - Debian 10+"; \
+		echo ""; \
+		echo "For other systems, see DEPLOYMENT.md for manual setup."; \
+		exit 1; \
+	fi; \
+	if ! command -v systemctl >/dev/null 2>&1; then \
+		echo "❌ Error: systemd not found"; \
+		exit 1; \
+	fi; \
+	bash scripts/service/install-service.sh
