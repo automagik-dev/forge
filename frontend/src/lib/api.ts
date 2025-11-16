@@ -97,12 +97,17 @@ const makeRequest = async (
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= effectiveMaxRetries; attempt++) {
+    // Check if caller already aborted before starting/retrying
+    const callerSignal = options.signal as AbortSignal | undefined;
+    if (callerSignal?.aborted) {
+      throw new DOMException('Request aborted by caller', 'AbortError');
+    }
+
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
       // Compose timeout signal with caller's signal (if provided)
-      const callerSignal = options.signal as AbortSignal | undefined;
       if (callerSignal) {
         callerSignal.addEventListener('abort', () => controller.abort(), { once: true });
       }
@@ -122,12 +127,17 @@ const makeRequest = async (
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
 
+      // If caller aborted, stop immediately (don't retry)
+      if (callerSignal?.aborted) {
+        throw lastError;
+      }
+
       // Skip retry logic for non-idempotent methods
       if (!isIdempotent) {
         throw lastError;
       }
 
-      // Idempotent methods: retry with exponential backoff
+      // Idempotent methods: retry with exponential backoff (only for timeout, not caller abort)
       if (lastError.name === 'AbortError') {
         if (attempt < effectiveMaxRetries) {
           const backoffMs = 1000 * Math.pow(2, attempt);
