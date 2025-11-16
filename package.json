@@ -48,6 +48,7 @@
     "test:e2e:phase2": "cypress run --spec 'cypress/e2e/phase-2-core-views/**/*.cy.ts'",
     "test:e2e:phase3": "cypress run --spec 'cypress/e2e/phase-3-advanced-features/**/*.cy.ts'",
     "test:e2e:phase4": "cypress run --spec 'cypress/e2e/phase-4-polish/**/*.cy.ts'",
+    "cypress:generate": "tsx .genie/scripts/helpers/cypress/generate.ts",
     "frontend:lint": "cd frontend && npm run lint",
     "frontend:dev": "cd frontend && BACKEND_PORT=${BACKEND_PORT:-3001} VITE_OPEN=true npm run dev -- --port ${FRONTEND_PORT:-3000} --host",
     "frontend:check": "cd frontend && npm run check",
@@ -63,10 +64,14 @@
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
+    "@types/node": "^24.10.1",
+    "cheerio": "^1.1.2",
     "concurrently": "^8.2.2",
     "cypress": "^15.6.0",
     "cypress-plugin-tab": "^1.0.5",
     "dotenv-cli": "^11.0.0",
+    "puppeteer": "^24.30.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.2"
   },
   "engines": {
