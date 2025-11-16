@@ -16,6 +16,7 @@ import { useAttemptCreation } from '@/hooks/useAttemptCreation';
 import { useNavigateWithSearch } from '@/hooks';
 import { useProject } from '@/contexts/project-context';
 import { useUserSystem } from '@/components/config-provider';
+import { useDefaultBaseBranch } from '@/hooks/useDefaultBaseBranch';
 import { projectsApi } from '@/lib/api';
 import { paths } from '@/lib/paths';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
@@ -39,6 +40,7 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
     const { t } = useTranslation('tasks');
     const { profiles, config } = useUserSystem();
     const hasProfiles = profiles && Object.keys(profiles).length > 0;
+    const { defaultBranch } = useDefaultBaseBranch(projectId);
     const { createAttempt, isCreating, error } = useAttemptCreation({
       taskId,
       onSuccess: (attempt) => {
@@ -96,8 +98,10 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
 
       setSelectedBranch((prev) => {
         if (prev) return prev;
+        // Priority: 1) Latest attempt's target branch, 2) User's default branch, 3) Current branch
         return (
           latestAttempt?.target_branch ??
+          defaultBranch ??
           branches.find((b) => b.is_current)?.name ??
           null
         );
@@ -108,6 +112,7 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
       latestAttempt?.target_branch,
       config?.executor_profile,
       branches,
+      defaultBranch,
     ]);
 
     const handleCreate = async () => {

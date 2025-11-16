@@ -7,6 +7,7 @@ import { useTaskAttempt } from '@/hooks/useTaskAttempt';
 import { useBranchStatus } from '@/hooks/useBranchStatus';
 import { useChangeTargetBranch } from '@/hooks/useChangeTargetBranch';
 import { useRebase } from '@/hooks/useRebase';
+import { useDefaultBaseBranch } from '@/hooks/useDefaultBaseBranch';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -67,15 +68,18 @@ export function Breadcrumb() {
   const rebaseMutation = useRebase(attempt?.id || '', projectId || '');
   const [rebasing, setRebasing] = useState(false);
 
-  // Fetch branches when attempt is available
+  // Fetch branches when attempt is available OR when in board view
   useEffect(() => {
-    if (!attempt?.id || !projectId) return;
+    if (!projectId) return;
 
     projectsApi
       .getBranches(projectId)
       .then(setBranches)
       .catch(() => setBranches([]));
-  }, [attempt?.id, projectId]);
+  }, [projectId]);
+
+  // Use default base branch hook for board view
+  const { defaultBranch, setDefaultBranch } = useDefaultBaseBranch(projectId);
 
   // Calculate conflicts for disabling change target branch button
   const hasConflictsCalculated = useMemo(
@@ -162,7 +166,7 @@ export function Breadcrumb() {
     const crumbs: Array<{
       label: string;
       path: string;
-      type?: 'project' | 'task' | 'parent-task' | 'git-branch' | 'base-branch';
+      type?: 'project' | 'task' | 'parent-task' | 'git-branch' | 'base-branch' | 'board-base-branch';
       icon?: React.ReactNode;
       onClick?: () => void;
     }> = [];
@@ -207,6 +211,17 @@ export function Breadcrumb() {
           });
         }
       } else {
+        // Board view or task view without attempt
+        // Show default base branch in board view (when no task is selected)
+        if (!taskId) {
+          crumbs.push({
+            label: defaultBranch,
+            path: location.pathname,
+            type: 'board-base-branch',
+            icon: <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
+          });
+        }
+
         // Traditional breadcrumb for non-attempt views: project -> parent task -> task
         // Add parent task if current task has one
         if (parentTask) {
@@ -328,6 +343,36 @@ export function Breadcrumb() {
     }
   };
 
+  // Handler for changing default base branch in board view
+  const handleChangeDefaultBaseBranch = async () => {
+    // Ensure branches are loaded
+    let branchesToUse = branches;
+    if (branchesToUse.length === 0 && projectId) {
+      try {
+        branchesToUse = await projectsApi.getBranches(projectId);
+        setBranches(branchesToUse);
+      } catch (err) {
+        branchesToUse = [];
+      }
+    }
+
+    try {
+      const result = await showModal<{
+        action: 'confirmed' | 'canceled';
+        branchName: string;
+      }>('change-target-branch-dialog', {
+        branches: branchesToUse,
+        isChangingTargetBranch: false,
+      });
+
+      if (result.action === 'confirmed' && result.branchName) {
+        setDefaultBranch(result.branchName);
+      }
+    } catch (error) {
+      // User cancelled
+    }
+  };
+
   return (
     <nav aria-label="Breadcrumb" className="px-3 py-2 text-sm flex items-center justify-between">
       <ol className="flex items-center gap-1">
@@ -336,6 +381,7 @@ export function Breadcrumb() {
           const isParentTask = crumb.type === 'parent-task';
           const isGitBranch = crumb.type === 'git-branch';
           const isBaseBranch = crumb.type === 'base-branch';
+          const isBoardBaseBranch = crumb.type === 'board-base-branch';
           const isLastCrumb = index === breadcrumbs.length - 1;
           const isFirstItem = index === 0;
 
@@ -394,7 +440,7 @@ export function Breadcrumb() {
                     </>
                   )}
                 </>
-              ) : isGitBranch || isBaseBranch ? (
+              ) : isGitBranch || isBaseBranch || isBoardBaseBranch ? (
                 <div className="flex items-center gap-1">
                   <TooltipProvider>
                     <Tooltip>
@@ -409,7 +455,7 @@ export function Breadcrumb() {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  {/* Add change target branch button next to base branch */}
+                  {/* Add change target branch button next to base branch (attempt view) */}
                   {isBaseBranch && attempt && (
                     <TooltipProvider>
                       <Tooltip>
@@ -427,6 +473,27 @@ export function Breadcrumb() {
                         </TooltipTrigger>
                         <TooltipContent side="bottom">
                           {t('branches.changeTarget.dialog.title')}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                  {/* Add change default base branch button (board view) */}
+                  {isBoardBaseBranch && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            onClick={handleChangeDefaultBaseBranch}
+                            className="inline-flex h-5 w-5 p-0 hover:bg-muted"
+                            aria-label="Change default base branch"
+                          >
+                            <GitCompare className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          Change default base branch
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
