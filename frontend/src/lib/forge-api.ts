@@ -105,9 +105,17 @@ const makeRequest = async (
         throw lastError;
       }
 
+      // Check if abort came from caller (not timeout)
+      // If caller aborted, don't retry - they want the request to stop immediately
+      const callerSignal = options.signal as AbortSignal | undefined;
+      if (lastError.name === 'AbortError' && callerSignal?.aborted) {
+        // Caller explicitly aborted - don't retry
+        throw lastError;
+      }
+
       // Idempotent methods: retry with exponential backoff
       if (lastError.name === 'AbortError') {
-        // Timeout - retry with exponential backoff
+        // Timeout abort (not caller abort) - retry with exponential backoff
         if (attempt < effectiveMaxRetries) {
           const backoffMs = 1000 * Math.pow(2, attempt); // 1s, 2s, 4s
           await new Promise((resolve) => setTimeout(resolve, backoffMs));
