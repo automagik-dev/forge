@@ -70,17 +70,26 @@ const makeRequest = async (
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
       // Compose timeout signal with caller's signal (if provided)
-      // If caller's signal aborts, we abort too
+      // Use AbortSignal.any() for proper signal composition (modern browsers)
+      // Falls back to event listener approach for older browsers
       const callerSignal = options.signal as AbortSignal | undefined;
+      let composedSignal = controller.signal;
+
       if (callerSignal) {
-        callerSignal.addEventListener('abort', () => controller.abort(), { once: true });
+        if ('any' in AbortSignal && typeof AbortSignal.any === 'function') {
+          // Modern approach: use AbortSignal.any() to compose signals
+          composedSignal = AbortSignal.any([controller.signal, callerSignal]);
+        } else {
+          // Fallback: listen to caller's signal and abort our controller
+          callerSignal.addEventListener('abort', () => controller.abort(), { once: true });
+        }
       }
 
       try {
         const response = await fetch(url, {
           ...options,
           headers,
-          signal: controller.signal,
+          signal: composedSignal,
         });
 
         clearTimeout(timeout);
