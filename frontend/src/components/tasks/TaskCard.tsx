@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { imagesApi } from '@/lib/api';
 import NiceModal from '@ebay/nice-modal-react';
 import { H4 } from '@/components/ui/typography';
-import { getProviderIcon, getProviderLabel } from '@/components/common/ProfileVariantBadge';
+import { ProviderIcon, getProviderName } from '@/components/providers/ProviderIcon';
 
 type Task = TaskWithAttemptStatus;
 
@@ -221,16 +221,12 @@ export function TaskCard({
       {/* Metadata Badges */}
       <div className="flex flex-wrap gap-1.5 items-center mt-2">
         {/* Executor Badge */}
-        {task.executor && (() => {
-          const ProviderIcon = getProviderIcon(task.executor);
-          const label = getProviderLabel(task.executor);
-          return (
-            <Badge variant="secondary" className="text-xs gap-1 h-5 px-1.5 bg-secondary/70 dark:bg-secondary text-foreground dark:text-secondary-foreground">
-              <ProviderIcon className="h-3 w-3" />
-              <span>{label}</span>
-            </Badge>
-          );
-        })()}
+        {task.executor && (
+          <Badge variant="secondary" className="text-xs gap-1 h-5 px-1.5 bg-secondary/70 dark:bg-secondary text-foreground dark:text-secondary-foreground">
+            <ProviderIcon executor={task.executor} className="h-3 w-3" />
+            <span>{getProviderName(task.executor)}</span>
+          </Badge>
+        )}
 
         {/* Subtask Badge */}
         {task.parent_task_attempt && (
