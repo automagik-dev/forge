@@ -53,7 +53,7 @@ export const KanbanBoard = ({ id, children, className }: KanbanBoardProps) => {
   return (
     <div
       className={cn(
-        'flex min-h-full flex-col',
+        'flex min-h-full flex-col pt-2',
         isOver ? 'outline-primary' : 'outline-black',
         className
       )}
@@ -284,7 +284,12 @@ export const KanbanProvider = ({
     >
       <div
         className={cn(
-          'inline-grid grid-flow-col auto-cols-[minmax(200px,400px)] divide-x border-x min-h-full',
+          // Responsive grid: horizontal on landscape (aspect-ratio >= 1/1), vertical on portrait
+          'inline-grid divide-x border-x min-h-full',
+          // Landscape (horizontal): use grid-flow-col for side-by-side columns
+          'landscape:grid-flow-col landscape:auto-cols-[minmax(200px,400px)]',
+          // Portrait (vertical): use grid-flow-row for stacked columns
+          'portrait:grid-flow-row portrait:auto-rows-auto portrait:grid-cols-1 portrait:divide-y portrait:divide-x-0',
           className
         )}
       >

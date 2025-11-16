@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Settings, Cpu, Server, X, FolderOpen } from 'lucide-react';
+import { Settings, Cpu, Server, X, FolderOpen, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useEffect } from 'react';
@@ -8,6 +8,7 @@ import { useHotkeysContext } from 'react-hotkeys-hook';
 import { useKeyExit } from '@/keyboard/hooks';
 import { Scope } from '@/keyboard/registry';
 import { H1 } from '@/components/ui/typography';
+import { useIsMobile } from '@/components/mobile/MobileLayout';
 
 const settingsNavigation = [
   {
@@ -31,6 +32,7 @@ const settingsNavigation = [
 export function SettingsLayout() {
   const { t } = useTranslation('settings');
   const { enableScope, disableScope } = useHotkeysContext();
+  const isMobile = useIsMobile();
 
   // Enable SETTINGS scope when component mounts
   useEffect(() => {
@@ -66,8 +68,17 @@ export function SettingsLayout() {
             onClick={handleBack}
             className="h-8 px-2 rounded-none border border-foreground/20 hover:border-foreground/30 transition-all hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 flex items-center gap-1.5"
           >
-            <X className="h-4 w-4" />
-            <span className="text-xs font-medium">ESC</span>
+            {isMobile ? (
+              <>
+                <ArrowLeft className="h-4 w-4" />
+                <span className="text-xs font-medium">{t('common:mobile.navigation.back')}</span>
+              </>
+            ) : (
+              <>
+                <X className="h-4 w-4" />
+                <span className="text-xs font-medium">ESC</span>
+              </>
+            )}
           </Button>
         </div>
         <div className="flex flex-col lg:flex-row gap-8">

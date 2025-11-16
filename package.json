@@ -52,9 +52,9 @@
     "frontend:dev": "cd frontend && BACKEND_PORT=${BACKEND_PORT:-3001} VITE_OPEN=true npm run dev -- --port ${FRONTEND_PORT:-3000} --host",
     "frontend:check": "cd frontend && npm run check",
     "backend:lint": "cargo clippy --workspace --all-targets --all-features -- -D warnings",
-    "backend:dev": "BACKEND_PORT=$(node scripts/setup-dev-environment.js backend) npm run backend:dev:watch",
+    "backend:dev": "bash -c 'BACKEND_PORT=${BACKEND_PORT:-$(node scripts/setup-dev-environment.js backend)} npm run backend:dev:watch'",
     "backend:check": "cargo check",
-    "backend:dev:watch": "dotenv run -- bash -c 'DISABLE_BROWSER_OPEN=1 DISABLE_WORKTREE_ORPHAN_CLEANUP=1 RUST_LOG=debug cargo watch -w forge-app/src -w forge-extensions -x \"run --bin forge-app\"'",
+    "backend:dev:watch": "dotenv -e .env -- bash -c 'DISABLE_BROWSER_OPEN=1 DISABLE_WORKTREE_ORPHAN_CLEANUP=1 RUST_LOG=debug cargo watch -w forge-app/src -w forge-extensions -x \"run --bin forge-app\"'",
     "generate-types": "cargo run --bin generate-forge-types",
     "generate-types:check": "cargo run --bin generate-forge-types -- --check",
     "prepare-db": "node scripts/prepare-db.js",
@@ -66,6 +66,7 @@
     "concurrently": "^8.2.2",
     "cypress": "^15.6.0",
     "cypress-plugin-tab": "^1.0.5",
+    "dotenv-cli": "^11.0.0",
     "typescript": "^5.9.2"
   },
   "engines": {

@@ -141,5 +141,30 @@
     "crafted": "Crafted with 💙 by",
     "updateAvailable": "Update available",
     "connecting": "Connecting..."
+  },
+  "mobile": {
+    "navigation": {
+      "projects": "Projects",
+      "tasks": "Tasks",
+      "kanban": "Kanban",
+      "genie": "Genie",
+      "config": "Config",
+      "task": "Task",
+      "diff": "Diff",
+      "view": "View",
+      "actions": "Actions",
+      "back": "Back"
+    },
+    "diffActions": {
+      "title": "Diff Actions",
+      "description": "Sync or approve this task",
+      "sync": "Sync",
+      "syncing": "Syncing...",
+      "approve": "Approve Task",
+      "approving": "Approving..."
+    },
+    "tasksDrawer": {
+      "title": "Tasks"
+    }
   }
 }

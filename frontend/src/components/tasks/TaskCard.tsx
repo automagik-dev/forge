@@ -126,7 +126,7 @@ export function TaskCard({
         forwardedRef={localRef}
       >
       <div className="flex flex-1 gap-2 items-center min-w-0">
-        <H4 className="flex-1 min-w-0 line-clamp-2 font-light text-sm">
+        <H4 className="flex-1 min-w-0 line-clamp-2 font-semibold text-base">
           {task.title}
         </H4>
         <div className="flex items-center space-x-1">
@@ -254,7 +254,7 @@ export function TaskCard({
         {/* Time Badge */}
         <Badge variant="outline" className="text-xs text-muted-foreground gap-1 h-5 px-1.5 border-none bg-transparent">
           <Clock className="h-3 w-3" />
-          <span>{formatRelativeTime(task.created_at)}</span>
+          <span>{formatRelativeTime(task.updated_at)}</span>
         </Badge>
       </div>
     </KanbanCard>

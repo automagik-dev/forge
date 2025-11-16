@@ -18,18 +18,14 @@ describe('Bottom Navigation - Phase 1 Foundation', () => {
       cy.get('[data-testid="bottom-navigation"]').should('be.visible')
     })
 
-    it('should have 4 navigation tabs (Tasks, Chat, New, Me)', () => {
-      cy.get('[data-testid="bottom-nav-tasks"]').should('be.visible')
-      cy.get('[data-testid="bottom-nav-chat"]').should('be.visible')
-      cy.get('[data-testid="bottom-nav-new"]').should('be.visible')
-      cy.get('[data-testid="bottom-nav-me"]').should('be.visible')
+    it('should have 2 navigation tabs at root (Projects, Config)', () => {
+      cy.get('[data-testid="bottom-nav-projects"]').should('be.visible')
+      cy.get('[data-testid="bottom-nav-config"]').should('be.visible')
     })
 
     it('should have proper touch target sizes (minimum 44x44px)', () => {
-      cy.checkTouchTarget('[data-testid="bottom-nav-tasks"]')
-      cy.checkTouchTarget('[data-testid="bottom-nav-chat"]')
-      cy.checkTouchTarget('[data-testid="bottom-nav-new"]')
-      cy.checkTouchTarget('[data-testid="bottom-nav-me"]')
+      cy.checkTouchTarget('[data-testid="bottom-nav-projects"]')
+      cy.checkTouchTarget('[data-testid="bottom-nav-config"]')
     })
 
     it('should be fixed at the bottom of the screen', () => {
@@ -41,10 +37,8 @@ describe('Bottom Navigation - Phase 1 Foundation', () => {
     })
 
     it('should display icons for each tab', () => {
-      cy.get('[data-testid="bottom-nav-tasks"] svg').should('exist')
-      cy.get('[data-testid="bottom-nav-chat"] svg').should('exist')
-      cy.get('[data-testid="bottom-nav-new"] svg').should('exist')
-      cy.get('[data-testid="bottom-nav-me"] svg').should('exist')
+      cy.get('[data-testid="bottom-nav-projects"] svg').should('exist')
+      cy.get('[data-testid="bottom-nav-config"] svg').should('exist')
     })
   })
 
@@ -104,16 +98,14 @@ describe('Bottom Navigation - Phase 1 Foundation', () => {
 
   describe('Accessibility', () => {
     it('should have proper ARIA labels', () => {
-      cy.get('[data-testid="bottom-nav-tasks"]').should('have.attr', 'aria-label')
-      cy.get('[data-testid="bottom-nav-chat"]').should('have.attr', 'aria-label')
-      cy.get('[data-testid="bottom-nav-new"]').should('have.attr', 'aria-label')
-      cy.get('[data-testid="bottom-nav-me"]').should('have.attr', 'aria-label')
+      cy.get('[data-testid="bottom-nav-projects"]').should('have.attr', 'aria-label')
+      cy.get('[data-testid="bottom-nav-config"]').should('have.attr', 'aria-label')
     })
 
     it.skip('should be keyboard navigable', () => {
-      cy.get('[data-testid="bottom-nav-tasks"]').focus().should('have.focus')
-      cy.get('[data-testid="bottom-nav-tasks"]').type('{enter}')
-      cy.url().should('include', '/tasks')
+      cy.get('[data-testid="bottom-nav-projects"]').focus().should('have.focus')
+      cy.get('[data-testid="bottom-nav-projects"]').type('{enter}')
+      cy.url().should('include', '/projects')
     })
   })
 

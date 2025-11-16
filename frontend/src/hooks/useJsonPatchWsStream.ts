@@ -53,6 +53,12 @@ export const useJsonPatchWsStream = <T>(
     }, delay);
   }
 
+  // Store options in a ref to avoid recreating WebSocket on every options change
+  const optionsRef = useRef(options);
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
+
   useEffect(() => {
     if (!enabled || !endpoint) {
       // Close connection and reset state
@@ -78,8 +84,8 @@ export const useJsonPatchWsStream = <T>(
       dataRef.current = initialData();
 
       // Inject initial entry if provided
-      if (options.injectInitialEntry) {
-        options.injectInitialEntry(dataRef.current);
+      if (optionsRef.current.injectInitialEntry) {
+        optionsRef.current.injectInitialEntry(dataRef.current);
       }
     }
 
@@ -110,8 +116,8 @@ export const useJsonPatchWsStream = <T>(
           // Handle JsonPatch messages (same as SSE json_patch event)
           if ('JsonPatch' in msg) {
             const patches: Operation[] = msg.JsonPatch;
-            const filtered = options.deduplicatePatches
-              ? options.deduplicatePatches(patches)
+            const filtered = optionsRef.current.deduplicatePatches
+              ? optionsRef.current.deduplicatePatches(patches)
               : patches;
 
             if (!filtered.length || !dataRef.current) return;
@@ -171,8 +177,11 @@ export const useJsonPatchWsStream = <T>(
         ws.onerror = null;
         ws.onclose = null;
 
-        // Close regardless of state
-        ws.close();
+        // Only close if connection is established or closing
+        // Avoids "closed before connection established" warning in React StrictMode
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CLOSING) {
+          ws.close();
+        }
         wsRef.current = null;
       }
       if (retryTimerRef.current) {
@@ -187,8 +196,6 @@ export const useJsonPatchWsStream = <T>(
     endpoint,
     enabled,
     initialData,
-    options.injectInitialEntry,
-    options.deduplicatePatches,
     retryNonce,
   ]);
 

@@ -96,6 +96,8 @@ pub fn create_router(services: ForgeServices, auth_required: bool) -> Router {
         .route("/docs", get(serve_swagger_ui))
         .route("/api/openapi.json", get(serve_openapi_spec))
         .route("/api/routes", get(list_routes))
+        // Public PWA manifest - must be accessible without authentication
+        .route("/site.webmanifest", get(serve_assets_public))
         .merge(forge_api_routes())
         // Upstream API at /api
         .nest("/api", upstream_api)
@@ -729,14 +731,24 @@ async fn handle_forge_tasks_ws(
     deployment: DeploymentImpl,
     project_id: Uuid,
 ) -> anyhow::Result<()> {
-    // Get the raw stream from upstream (includes initial snapshot + live updates)
+    // Batch query: Fetch ALL agent task IDs for this project upfront (O(1) query instead of O(N))
+    // This eliminates N+1 pattern and speeds up WebSocket connection establishment
     let db_pool = deployment.db().pool.clone();
+    let agent_task_ids: std::collections::HashSet<Uuid> =
+        sqlx::query_scalar("SELECT task_id FROM forge_agents WHERE project_id = ?")
+            .bind(project_id)
+            .fetch_all(&db_pool)
+            .await?
+            .into_iter()
+            .collect();
+
+    // Get the raw stream from upstream (includes initial snapshot + live updates)
     let stream = deployment
         .events()
         .stream_tasks_raw(project_id)
         .await?
         .filter_map(move |msg_result| {
-            let db_pool = db_pool.clone();
+            let agent_task_ids = agent_task_ids.clone();
             async move {
                 match msg_result {
                     Ok(LogMsg::JsonPatch(patch)) => {
@@ -747,16 +759,13 @@ async fn handle_forge_tasks_ws(
                                 match patch_op {
                                     json_patch::PatchOperation::Add(op) => {
                                         if let Ok(task_with_status) =
-                                            serde_json::from_value::<TaskWithAttemptStatus>(op.value.clone())
-                                        {
-                                            // Check if this task is an agent task
-                                            let is_agent: bool = sqlx::query_scalar(
-                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
+                                            serde_json::from_value::<TaskWithAttemptStatus>(
+                                                op.value.clone(),
                                             )
-                                            .bind(task_with_status.task.id)
-                                            .fetch_one(&db_pool)
-                                            .await
-                                            .unwrap_or(false);
+                                        {
+                                            // Check if this task is an agent task (O(1) in-memory lookup)
+                                            let is_agent =
+                                                agent_task_ids.contains(&task_with_status.task.id);
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -767,16 +776,13 @@ async fn handle_forge_tasks_ws(
                                     }
                                     json_patch::PatchOperation::Replace(op) => {
                                         if let Ok(task_with_status) =
-                                            serde_json::from_value::<TaskWithAttemptStatus>(op.value.clone())
-                                        {
-                                            // Check if this task is an agent task
-                                            let is_agent: bool = sqlx::query_scalar(
-                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
+                                            serde_json::from_value::<TaskWithAttemptStatus>(
+                                                op.value.clone(),
                                             )
-                                            .bind(task_with_status.task.id)
-                                            .fetch_one(&db_pool)
-                                            .await
-                                            .unwrap_or(false);
+                                        {
+                                            // Check if this task is an agent task (O(1) in-memory lookup)
+                                            let is_agent =
+                                                agent_task_ids.contains(&task_with_status.task.id);
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -795,23 +801,25 @@ async fn handle_forge_tasks_ws(
                             // Handle initial snapshot (replace /tasks with map)
                             else if patch_op.path() == "/tasks"
                                 && let json_patch::PatchOperation::Replace(op) = patch_op
-                                && let Some(tasks_obj) = op.value.as_object() {
+                                && let Some(tasks_obj) = op.value.as_object()
+                            {
                                 // Filter out agent tasks from the initial snapshot
                                 let mut filtered_tasks = serde_json::Map::new();
                                 for (task_id_str, task_value) in tasks_obj {
                                     if let Ok(task_with_status) =
-                                        serde_json::from_value::<TaskWithAttemptStatus>(task_value.clone())
-                                    {
-                                        let is_agent: bool = sqlx::query_scalar(
-                                            "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
+                                        serde_json::from_value::<TaskWithAttemptStatus>(
+                                            task_value.clone(),
                                         )
-                                        .bind(task_with_status.task.id)
-                                        .fetch_one(&db_pool)
-                                        .await
-                                        .unwrap_or(false);
+                                    {
+                                        // Check if this task is an agent task (O(1) in-memory lookup)
+                                        let is_agent =
+                                            agent_task_ids.contains(&task_with_status.task.id);
 
                                         if !is_agent {
-                                            filtered_tasks.insert(task_id_str.to_string(), task_value.clone());
+                                            filtered_tasks.insert(
+                                                task_id_str.to_string(),
+                                                task_value.clone(),
+                                            );
                                         }
                                     }
                                 }
@@ -823,7 +831,7 @@ async fn handle_forge_tasks_ws(
                                     "value": filtered_tasks
                                 }]);
                                 return Some(Ok(LogMsg::JsonPatch(
-                                    serde_json::from_value(filtered_patch).unwrap()
+                                    serde_json::from_value(filtered_patch).unwrap(),
                                 )));
                             }
                         }
@@ -1076,6 +1084,11 @@ async fn serve_index() -> Response {
 
 async fn serve_assets(Path(path): Path<String>) -> Response {
     serve_static_file::<Frontend>(&path).await
+}
+
+/// Serve public assets (no auth required) - used for PWA manifest and other public files
+async fn serve_assets_public() -> Response {
+    serve_static_file::<Frontend>("site.webmanifest").await
 }
 
 async fn serve_static_file<T: RustEmbed>(path: &str) -> Response {

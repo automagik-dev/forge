@@ -73,16 +73,100 @@ class ApiError<E = unknown> extends Error {
   }
 }
 
-const makeRequest = async (url: string, options: RequestInit = {}) => {
+/**
+ * Helper function for fetch with timeout and retry logic.
+ * IMPORTANT: Retries only happen for idempotent methods (GET, HEAD, OPTIONS).
+ * Non-idempotent methods (POST, PUT, DELETE, PATCH) fail fast to avoid duplicates.
+ */
+const makeRequest = async (
+  url: string,
+  options: RequestInit = {},
+  timeoutMs: number = 30000,
+  maxRetries: number = 2
+): Promise<Response> => {
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
 
-  return fetch(url, {
-    ...options,
-    headers,
-  });
+  // Only retry for idempotent methods (GET, HEAD, OPTIONS)
+  const method = (options.method || 'GET').toUpperCase();
+  const isIdempotent = ['GET', 'HEAD', 'OPTIONS'].includes(method);
+  const effectiveMaxRetries = isIdempotent ? maxRetries : 0;
+
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= effectiveMaxRetries; attempt++) {
+    // Check if caller already aborted before starting/retrying
+    const callerSignal = options.signal as AbortSignal | undefined;
+    if (callerSignal?.aborted) {
+      throw new DOMException('Request aborted by caller', 'AbortError');
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+      // Compose timeout signal with caller's signal (if provided)
+      if (callerSignal) {
+        callerSignal.addEventListener('abort', () => controller.abort(), { once: true });
+      }
+
+      try {
+        const response = await fetch(url, {
+          ...options,
+          headers,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+        return response;
+      } finally {
+        clearTimeout(timeout);
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      // If caller aborted, stop immediately (don't retry)
+      if (callerSignal?.aborted) {
+        throw lastError;
+      }
+
+      // Skip retry logic for non-idempotent methods
+      if (!isIdempotent) {
+        throw lastError;
+      }
+
+      // Idempotent methods: retry with exponential backoff (only for timeout, not caller abort)
+      if (lastError.name === 'AbortError') {
+        if (attempt < effectiveMaxRetries) {
+          const backoffMs = 1000 * Math.pow(2, attempt);
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+          console.warn(
+            `[API] ${method} ${url} timed out (attempt ${attempt + 1}/${effectiveMaxRetries + 1}). Retrying in ${backoffMs}ms...`
+          );
+          continue;
+        }
+      } else if (lastError.name === 'TypeError' && lastError.message === 'Failed to fetch') {
+        if (attempt < effectiveMaxRetries) {
+          const backoffMs = 1000 * Math.pow(2, attempt);
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+          console.warn(
+            `[API] ${method} ${url} failed: ${lastError.message} (attempt ${attempt + 1}/${effectiveMaxRetries + 1}). Retrying in ${backoffMs}ms...`
+          );
+          continue;
+        }
+      } else {
+        throw lastError;
+      }
+
+      if (attempt === effectiveMaxRetries) {
+        throw lastError;
+      }
+    }
+  }
+
+  throw lastError || new Error(`Request to ${url} failed after ${effectiveMaxRetries + 1} attempts`);
 };
 
 export interface FollowUpResponse {

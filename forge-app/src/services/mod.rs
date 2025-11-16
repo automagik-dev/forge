@@ -516,16 +516,13 @@ fn format_status_summary(status: &str, executor: &str, branch: &str) -> String {
 }
 
 fn omni_base_url() -> String {
+    // Priority 1: Explicit PUBLIC_BASE_URL (for tunnels/production)
     if let Ok(url) = std::env::var("PUBLIC_BASE_URL") {
         return url.trim_end_matches('/').to_string();
     }
 
-    let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let port = std::env::var("BACKEND_PORT")
-        .or_else(|_| std::env::var("PORT"))
-        .unwrap_or_else(|_| "8887".to_string());
-
-    format!("http://{host}:{port}")
+    // Priority 2: localhost:8887 (npx default - single port for most users)
+    "http://localhost:8887".to_string()
 }
 
 #[cfg(test)]

@@ -39,11 +39,13 @@ import { OnboardingResult } from '@/components/dialogs/global/OnboardingDialog';
 import { ClickedElementsProvider } from '@/contexts/ClickedElementsProvider';
 import { GenieMasterWidget } from '@/components/genie-widgets/GenieMasterWidget';
 import { SubGenieProvider } from '@/context/SubGenieContext';
+import { useIsMobile } from '@/components/mobile/MobileLayout';
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 function AppContent() {
   const [isGenieOpen, setIsGenieOpen] = useState(false);
+  const isMobile = useIsMobile();
   const { config, analyticsUserId, updateAndSaveConfig, loading } =
     useUserSystem();
   const posthog = usePostHog();
@@ -164,9 +166,8 @@ function AppContent() {
     const handleOnboardingComplete = async (
       onboardingConfig: OnboardingResult
     ) => {
-      if (cancelled) return;
-
-      updateAndSaveConfig({
+      // Don't check cancelled here - we must save once the user completes the flow
+      await updateAndSaveConfig({
         onboarding_acknowledged: true,
         executor_profile: onboardingConfig.profile,
         editor: onboardingConfig.editor,
@@ -174,12 +175,12 @@ function AppContent() {
     };
 
     const handleDisclaimerAccept = async () => {
-      if (cancelled) return;
+      // Don't check cancelled here - we must save once the user clicks the button
       await updateAndSaveConfig({ disclaimer_acknowledged: true });
     };
 
     const handleGitHubLoginComplete = async () => {
-      if (cancelled) return;
+      // Don't check cancelled here - we must save once the user completes the flow
       await updateAndSaveConfig({ github_login_acknowledged: true });
     };
 
@@ -188,7 +189,7 @@ function AppContent() {
       contact_email_opt_in: boolean;
       contact_username_opt_in: boolean;
     }) => {
-      if (cancelled) return;
+      // Don't check cancelled here - we must save once the user completes the flow
       await updateAndSaveConfig({
         telemetry_acknowledged: true,
         analytics_enabled: privacySettings.analytics_enabled,
@@ -198,7 +199,7 @@ function AppContent() {
     };
 
     const handleReleaseNotesClose = async () => {
-      if (cancelled) return;
+      // Don't check cancelled here - we must save once the user closes the dialog
       await updateAndSaveConfig({ show_release_notes: false });
     };
 
@@ -240,12 +241,13 @@ function AppContent() {
       }
     };
 
-    const runOnboarding = async () => {
+    // Run onboarding flow
+    // Note: We use an async IIFE pattern here to properly handle the async operation
+    // while still allowing the effect cleanup to set the cancelled flag
+    (async () => {
       if (!config || cancelled) return;
       await checkOnboardingSteps();
-    };
-
-    runOnboarding();
+    })();
 
     return () => {
       cancelled = true;
@@ -307,11 +309,14 @@ function AppContent() {
             </SentryRoutes>
             <Footer />
           </div>
-          <GenieMasterWidget
-            isOpen={isGenieOpen}
-            onToggle={() => setIsGenieOpen(!isGenieOpen)}
-            onClose={() => setIsGenieOpen(false)}
-          />
+          {/* Hide GenieMasterWidget in mobile view - use bottom nav Genie button instead */}
+          {!isMobile && (
+            <GenieMasterWidget
+              isOpen={isGenieOpen}
+              onToggle={() => setIsGenieOpen(!isGenieOpen)}
+              onClose={() => setIsGenieOpen(false)}
+            />
+          )}
         </SearchProvider>
       </ThemeProvider>
     </I18nextProvider>
