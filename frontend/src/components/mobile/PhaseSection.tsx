@@ -1,58 +1,10 @@
 import { cn } from '@/lib/utils';
 import type { TaskWithAttemptStatus } from 'shared/types';
-import {
-  Hammer,
-  CheckCircle2,
-  Archive,
-  ChevronDown,
-  ChevronUp,
-  Target
-} from 'lucide-react';
-import { Lamp } from '@/components/icons/Lamp';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { TaskCard } from './TaskCard';
+import { phaseConfigs, type Phase } from './tasks.config';
 
 type Task = TaskWithAttemptStatus;
-type Phase = 'wish' | 'forge' | 'review' | 'done' | 'archived';
-
-interface PhaseConfig {
-  label: string;
-  icon: React.ReactNode;
-  color: string;
-  bgColor: string;
-}
-
-const phaseConfigs: Record<Phase, PhaseConfig> = {
-  wish: {
-    label: 'Wish',
-    icon: <Lamp size={20} />,
-    color: 'text-yellow-500',
-    bgColor: 'bg-yellow-500/10',
-  },
-  forge: {
-    label: 'Forge',
-    icon: <Hammer className="w-5 h-5" />,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-500/10',
-  },
-  review: {
-    label: 'Review',
-    icon: <Target className="w-5 h-5" />,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-500/10',
-  },
-  done: {
-    label: 'Done',
-    icon: <CheckCircle2 className="w-5 h-5" />,
-    color: 'text-green-500',
-    bgColor: 'bg-green-500/10',
-  },
-  archived: {
-    label: 'Archived',
-    icon: <Archive className="w-5 h-5" />,
-    color: 'text-gray-500',
-    bgColor: 'bg-gray-500/10',
-  },
-};
 
 export interface PhaseSectionProps {
   phase: Phase;

@@ -3,9 +3,9 @@ import { cn } from '@/lib/utils';
 import type { TaskWithAttemptStatus } from 'shared/types';
 import { ChevronDown } from 'lucide-react';
 import { PhaseSection } from './PhaseSection';
+import { getPhaseFromStatus, type Phase } from './tasks.config';
 
 type Task = TaskWithAttemptStatus;
-type Phase = 'wish' | 'forge' | 'review' | 'done' | 'archived';
 
 interface TasksListViewProps {
   tasks: Task[];
@@ -18,24 +18,6 @@ interface TasksListViewProps {
   onViewPreview?: (task: Task) => void;
   onArchive?: (task: Task) => void;
   onNewAttempt?: (task: Task) => void;
-}
-
-function getPhaseFromStatus(status: string): Phase {
-  switch (status.toLowerCase()) {
-    case 'todo':
-      return 'wish';
-    case 'inprogress':
-    case 'agent':
-      return 'forge';
-    case 'inreview':
-      return 'review';
-    case 'done':
-      return 'done';
-    case 'cancelled':
-      return 'archived';
-    default:
-      return 'wish';
-  }
 }
 
 export function TasksListView({
@@ -55,7 +37,7 @@ export function TasksListView({
     forge: true,
     review: true,
     done: true,
-    archived: false, // Collapsed by default
+    archived: false,
   });
 
   const togglePhase = (phase: Phase) => {
@@ -79,12 +61,10 @@ export function TasksListView({
     return groups;
   }, [tasks]);
 
-  // Render active phases first, then archived at the end
   const phasesOrder: Phase[] = ['wish', 'forge', 'review', 'done', 'archived'];
 
   return (
     <div className={cn('flex flex-col gap-0 pb-24', className)}>
-      {/* Project header - shows current project with click to navigate back to projects list */}
       {projectName && (
         <button
           onClick={onProjectClick}
