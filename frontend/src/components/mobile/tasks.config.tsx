@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {
   Hammer,
   CheckCircle2,
@@ -10,7 +11,7 @@ export type Phase = 'wish' | 'forge' | 'review' | 'done' | 'archived';
 
 export interface PhaseConfig {
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   color: string;
   bgColor: string;
 }
