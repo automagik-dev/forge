@@ -82,10 +82,14 @@ export function Breadcrumb() {
   const { defaultBranch, setDefaultBranch } = useDefaultBaseBranch(projectId);
 
   // Determine the effective base branch for board view
-  // Priority: 1) User's saved preference, 2) Current branch from git
+  // Priority: 1) Valid saved preference, 2) Current branch from git
   const effectiveBaseBranch = useMemo(() => {
-    if (defaultBranch) return defaultBranch;
-    // Fallback to current branch if no preference saved
+    // Validate that saved defaultBranch still exists in available branches
+    const isDefaultBranchValid = defaultBranch && branches.some((b) => b.name === defaultBranch);
+
+    if (isDefaultBranchValid) return defaultBranch;
+
+    // Fallback to current branch if no valid preference
     const currentBranch = branches.find((b) => b.is_current);
     return currentBranch?.name ?? 'main';
   }, [defaultBranch, branches]);
