@@ -171,16 +171,26 @@ export const useJsonPatchWsStream = <T>(
       if (wsRef.current) {
         const ws = wsRef.current;
 
-        // Clear all event handlers first to prevent callbacks after cleanup
-        ws.onopen = null;
+        // Clear event handlers to prevent callbacks after cleanup
         ws.onmessage = null;
         ws.onerror = null;
         ws.onclose = null;
 
-        // Only close if connection is established or closing
-        // Avoids "closed before connection established" warning in React StrictMode
-        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CLOSING) {
-          ws.close();
+        if (ws.readyState === WebSocket.CONNECTING) {
+          ws.onopen = () => {
+            ws.onopen = null;
+            try {
+              ws.close(1000, 'cleanup');
+            } catch (e) {
+              console.debug('WebSocket close during cleanup failed:', e);
+            }
+          };
+        } else if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CLOSING) {
+          try {
+            ws.close(1000, 'cleanup');
+          } catch (e) {
+            console.debug('WebSocket close during cleanup failed:', e);
+          }
         }
         wsRef.current = null;
       }
