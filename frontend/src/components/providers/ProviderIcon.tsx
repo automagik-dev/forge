@@ -1,6 +1,6 @@
 import { Terminal } from 'lucide-react';
 import { BaseCodingAgent } from 'shared/types';
-import { siClaude, siGooglegemini, siGithubcopilot, siOpenai } from 'simple-icons';
+import { siClaude, siGooglegemini, siGithubcopilot, siOpenai, siAmp } from 'simple-icons';
 import { useTheme } from '@/components/theme-provider';
 import { ThemeMode } from 'shared/types';
 
@@ -93,11 +93,33 @@ export function ProviderIcon({
     case 'CODEX':
       iconPath = siOpenai.path;
       iconTitle = siOpenai.title;
-      // Use theme-aware color instead of brand color
       fillColor = isDark ? '#ffffff' : '#000000';
       break;
+    case 'AMP':
+      iconPath = siAmp.path;
+      iconTitle = siAmp.title;
+      fillColor = isDark ? '#ffffff' : '#000000';
+      break;
+    case 'OPENCODE':
+      // OpenCode uses custom SVG files
+      return (
+        <img
+          src={isDark ? '/providers/opencode-dark.svg' : '/providers/opencode-light.svg'}
+          alt="OpenCode"
+          className={className}
+        />
+      );
+    case 'QWEN_CODE':
+      // Qwen uses custom SVG files
+      return (
+        <img
+          src={isDark ? '/providers/qwen-dark.svg' : '/providers/qwen-light.svg'}
+          alt="Qwen"
+          className={className}
+        />
+      );
     default:
-      // Fallback to generic terminal icon for others
+      // Fallback to generic terminal icon for unknown providers
       return <Terminal className={className} />;
   }
 
