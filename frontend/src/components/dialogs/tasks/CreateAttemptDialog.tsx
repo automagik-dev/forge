@@ -16,6 +16,7 @@ import { useAttemptCreation } from '@/hooks/useAttemptCreation';
 import { useNavigateWithSearch } from '@/hooks';
 import { useProject } from '@/contexts/project-context';
 import { useUserSystem } from '@/components/config-provider';
+import { useDefaultBaseBranch } from '@/hooks/useDefaultBaseBranch';
 import { useProjectProfiles } from '@/hooks/useProjectProfiles';
 import { projectsApi } from '@/lib/api';
 import { paths } from '@/lib/paths';
@@ -46,6 +47,7 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
     const hasProjectExecutors = projectExecutors && Object.keys(projectExecutors).length > 0;
     const profiles = hasProjectExecutors ? projectExecutors : globalProfiles;
     const hasProfiles = profiles && Object.keys(profiles).length > 0;
+    const { defaultBranch } = useDefaultBaseBranch(projectId);
     const isProfilesLoading = isLoadingProjectProfiles && (!globalProfiles || Object.keys(globalProfiles).length === 0);
 
     const { createAttempt, isCreating, error } = useAttemptCreation({
@@ -105,8 +107,14 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
 
       setSelectedBranch((prev) => {
         if (prev) return prev;
+
+        // Validate that saved defaultBranch still exists in available branches
+        const isDefaultBranchValid = defaultBranch && branches.some((b) => b.name === defaultBranch);
+
+        // Priority: 1) Latest attempt's target branch, 2) Valid user's default branch, 3) Current branch
         return (
           latestAttempt?.target_branch ??
+          (isDefaultBranchValid ? defaultBranch : null) ??
           branches.find((b) => b.is_current)?.name ??
           null
         );
@@ -117,6 +125,7 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
       latestAttempt?.target_branch,
       config?.executor_profile,
       branches,
+      defaultBranch,
     ]);
 
     const handleCreate = async () => {

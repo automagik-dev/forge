@@ -23,6 +23,17 @@ Cypress.Commands.add('skipOnboarding', () => {
         res.body.config.github_login_acknowledged = true
         res.body.config.telemetry_acknowledged = true
         res.body.config.show_release_notes = false
+        // Disable all showcase/feature modals
+        if (!res.body.config.showcases) {
+          res.body.config.showcases = { seen_features: [] }
+        }
+        // Mark all features as seen to prevent showcase modals
+        res.body.config.showcases.seen_features = [
+          'mobile-pwa',
+          'mobile-bottom-nav',
+          'mobile-gestures',
+          'all'
+        ]
       }
       res.send()
     })

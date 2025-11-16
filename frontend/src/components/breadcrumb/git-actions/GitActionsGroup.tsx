@@ -3,6 +3,7 @@ import { ApproveButton } from './ApproveButton';
 import { CreatePRButton } from './CreatePRButton';
 import { PushToPRButton } from './PushToPRButton';
 import { ViewPRButton } from './ViewPRButton';
+import { UpdateNeededBadge } from './UpdateNeededBadge';
 import type { TaskWithAttemptStatus, TaskAttempt, BranchStatus } from 'shared/types';
 
 interface GitActionsGroupProps {
@@ -44,6 +45,9 @@ export function GitActionsGroup({
 
   return (
     <div className="flex items-center gap-2">
+      {/* Update Needed Badge - always show if base branch is behind */}
+      <UpdateNeededBadge branchStatus={branchStatus} />
+
       {prInfo?.hasOpenPR ? (
         // PR Workflow: Show Push to PR and View PR buttons
         <>
