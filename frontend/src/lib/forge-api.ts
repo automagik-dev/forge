@@ -34,10 +34,13 @@ class ApiError<E = unknown> extends Error {
  * Automatically configures the 'Content-Type' to 'application/json'.
  * Includes exponential backoff retry for transient failures (timeout, network errors).
  *
+ * IMPORTANT: Retries only happen for idempotent methods (GET, HEAD, OPTIONS).
+ * Non-idempotent methods (POST, PUT, DELETE, PATCH) are not retried to avoid duplicate operations.
+ *
  * @param {string} url - The URL of the API endpoint
  * @param {RequestInit} options - The options for the request (method, body, etc.)
  * @param {number} timeoutMs - Timeout in milliseconds (default: 30000)
- * @param {number} maxRetries - Maximum number of retry attempts (default: 2)
+ * @param {number} maxRetries - Maximum number of retry attempts (default: 2, only for idempotent methods)
  * @returns {Promise<Response>} - A promise that resolves to the Response object from fetch.
  * @example
  * const response = await makeRequest('/api/data', { method: 'GET' }, 30000, 2);
@@ -53,9 +56,15 @@ const makeRequest = async (
     ...(options.headers || {}),
   };
 
+  // Only retry for idempotent methods (GET, HEAD, OPTIONS)
+  // Non-idempotent methods (POST, PUT, DELETE, PATCH) are not retried to avoid duplicates
+  const method = (options.method || 'GET').toUpperCase();
+  const isIdempotent = ['GET', 'HEAD', 'OPTIONS'].includes(method);
+  const effectiveMaxRetries = isIdempotent ? maxRetries : 0;
+
   let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  for (let attempt = 0; attempt <= effectiveMaxRetries; attempt++) {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -75,41 +84,45 @@ const makeRequest = async (
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
 
-      // Don't retry on certain error types
-      if (lastError.name === 'TypeError' && lastError.message === 'Failed to fetch') {
-        // This might be CORS or other non-retryable error
-        if (attempt === maxRetries) throw lastError;
-        // For now, retry anyway as it could be a transient network issue
-      } else if (lastError.name === 'AbortError') {
+      // Skip retry logic for non-idempotent methods
+      if (!isIdempotent) {
+        throw lastError;
+      }
+
+      // Idempotent methods: retry with exponential backoff
+      if (lastError.name === 'AbortError') {
         // Timeout - retry with exponential backoff
-        if (attempt < maxRetries) {
+        if (attempt < effectiveMaxRetries) {
           const backoffMs = 1000 * Math.pow(2, attempt); // 1s, 2s, 4s
           await new Promise((resolve) => setTimeout(resolve, backoffMs));
           console.warn(
-            `[Forge API] Request to ${url} timed out (attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${backoffMs}ms...`
+            `[Forge API] ${method} request to ${url} timed out (attempt ${attempt + 1}/${effectiveMaxRetries + 1}). Retrying in ${backoffMs}ms...`
+          );
+          continue;
+        }
+      } else if (lastError.name === 'TypeError' && lastError.message === 'Failed to fetch') {
+        // Network error - might be transient
+        if (attempt < effectiveMaxRetries) {
+          const backoffMs = 1000 * Math.pow(2, attempt);
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+          console.warn(
+            `[Forge API] ${method} request to ${url} failed: ${lastError.message} (attempt ${attempt + 1}/${effectiveMaxRetries + 1}). Retrying in ${backoffMs}ms...`
           );
           continue;
         }
       } else {
-        // Other errors - retry once
-        if (attempt < maxRetries) {
-          const backoffMs = 1000 * Math.pow(2, attempt);
-          await new Promise((resolve) => setTimeout(resolve, backoffMs));
-          console.warn(
-            `[Forge API] Request to ${url} failed: ${lastError.message} (attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${backoffMs}ms...`
-          );
-          continue;
-        }
+        // Other error types - don't retry
+        throw lastError;
       }
 
-      if (attempt === maxRetries) {
+      if (attempt === effectiveMaxRetries) {
         throw lastError;
       }
     }
   }
 
   // Exhausted all retries
-  throw lastError || new Error(`Request to ${url} failed after ${maxRetries + 1} attempts`);
+  throw lastError || new Error(`Request to ${url} failed after ${effectiveMaxRetries + 1} attempts`);
 };
 
 /**
