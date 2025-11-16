@@ -5,9 +5,10 @@ const STORAGE_KEY = 'forge:defaultBaseBranch';
 /**
  * Hook to manage the default base branch for new task attempts.
  * This is stored per-project in localStorage.
+ * Returns null if no preference is saved, allowing fallback to current branch.
  */
 export function useDefaultBaseBranch(projectId: string | undefined) {
-  const [defaultBranch, setDefaultBranch] = useState<string>('main');
+  const [defaultBranch, setDefaultBranch] = useState<string | null>(null);
 
   useEffect(() => {
     if (!projectId) return;
@@ -17,8 +18,8 @@ export function useDefaultBaseBranch(projectId: string | undefined) {
     if (stored) {
       setDefaultBranch(stored);
     } else {
-      // Default to 'main' if not set
-      setDefaultBranch('main');
+      // Return null if no preference - let CreateAttemptDialog use current branch
+      setDefaultBranch(null);
     }
   }, [projectId]);
 

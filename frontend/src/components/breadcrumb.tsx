@@ -81,6 +81,15 @@ export function Breadcrumb() {
   // Use default base branch hook for board view
   const { defaultBranch, setDefaultBranch } = useDefaultBaseBranch(projectId);
 
+  // Determine the effective base branch for board view
+  // Priority: 1) User's saved preference, 2) Current branch from git
+  const effectiveBaseBranch = useMemo(() => {
+    if (defaultBranch) return defaultBranch;
+    // Fallback to current branch if no preference saved
+    const currentBranch = branches.find((b) => b.is_current);
+    return currentBranch?.name ?? 'main';
+  }, [defaultBranch, branches]);
+
   // Calculate conflicts for disabling change target branch button
   const hasConflictsCalculated = useMemo(
     () => Boolean((branchStatus?.conflicted_files?.length ?? 0) > 0),
@@ -215,7 +224,7 @@ export function Breadcrumb() {
         // Show default base branch in board view (when no task is selected)
         if (!taskId) {
           crumbs.push({
-            label: defaultBranch,
+            label: effectiveBaseBranch,
             path: location.pathname,
             type: 'board-base-branch',
             icon: <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
