@@ -25,9 +25,9 @@ export function useMobileTaskActions() {
     [taskId, tasksById]
   );
 
-  // Get attempts to find the latest if no specific attemptId in URL
+  // Get attempts to find the latest if no specific attemptId in URL or if 'latest' is specified
   const { data: attempts = [] } = useTaskAttempts(taskId, {
-    enabled: !!taskId && !routeAttemptId,
+    enabled: !!taskId && (!routeAttemptId || routeAttemptId === 'latest'),
   });
 
   const latestAttemptId = useMemo(() => {
