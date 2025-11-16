@@ -39,12 +39,6 @@ if ! command -v jq >/dev/null 2>&1; then
 
     if curl -fsSL "$JQ_URL" -o ~/.local/bin/jq; then
         chmod +x ~/.local/bin/jq
-
-        # Add ~/.local/bin to PATH if not already there
-        if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
-            export PATH="$HOME/.local/bin:$PATH"
-        fi
-
         echo "✅ jq installed successfully to ~/.local/bin/jq"
     else
         echo "❌ Failed to download jq from $JQ_URL"
@@ -52,6 +46,14 @@ if ! command -v jq >/dev/null 2>&1; then
         exit 1
     fi
 fi
+
+# Ensure ~/.local/bin is in PATH (needed for jq)
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
+# Refresh command hash table to find newly installed jq
+hash -r 2>/dev/null || true
 
 # Get ports from setup script (single atomic call to prevent race conditions)
 SETUP_JSON=$(node scripts/setup-dev-environment.js get 2>/dev/null | tail -1)
