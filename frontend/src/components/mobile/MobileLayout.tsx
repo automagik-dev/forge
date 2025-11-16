@@ -146,10 +146,11 @@ export function MobileLayout({
       <main
         className={cn(
           'flex-1 overflow-auto mobile-scroll',
-          showBottomNav && 'pb-safe',
           contentClassName
         )}
-        style={showBottomNav ? { paddingBottom: mobileTheme.spacing.bottomNav } : undefined}
+        style={showBottomNav ? { 
+          paddingBottom: `calc(${mobileTheme.spacing.bottomNav}px + env(safe-area-inset-bottom, 0px))` 
+        } : undefined}
       >
         {children}
       </main>
