@@ -59,19 +59,23 @@ export function useMobileTaskActions() {
   const rebaseMutation = useRebase(latestAttemptId, projectId);
 
   // Calculate action availability
+  const branchRequired = !!latestAttemptId && !!currentAttempt?.container_ref;
+  const branchReady = !!branchStatus && !isBranchStatusLoading;
   const hasCodeChanges = (branchStatus?.commits_ahead ?? 0) > 0;
   const hasConflicts = (branchStatus?.conflicted_files?.length ?? 0) > 0;
-  const canApprove = selectedTask?.status === 'inreview' && !hasConflicts;
-  const canSync = !!latestAttemptId && !!currentAttempt?.container_ref && !hasConflicts;
+  const canApprove = selectedTask?.status === 'inreview' && (!branchRequired || (branchReady && !hasConflicts));
+  const canSync = !!latestAttemptId && !!currentAttempt?.container_ref && branchReady && !hasConflicts;
   const isSyncing = rebaseMutation.isPending;
 
   // Action handlers
   const handleSync = () => {
+    if (branchRequired && !branchReady) return;
     if (!canSync) return;
     rebaseMutation.mutate({});
   };
 
   const handleApprove = () => {
+    if (branchRequired && !branchReady) return;
     if (!canApprove || !selectedTask || !latestAttemptId || !projectId) return;
     approve({
       taskId: selectedTask.id,
@@ -86,21 +90,25 @@ export function useMobileTaskActions() {
 
   // Disabled reasons
   const syncDisabledReason = !canSync
-    ? hasConflicts
-      ? 'Resolve conflicts first'
-      : !latestAttemptId
-        ? 'No attempt selected'
-        : !currentAttempt?.container_ref
-          ? 'No worktree available'
-          : null
+    ? branchRequired && !branchReady
+      ? 'Checking branch status...'
+      : hasConflicts
+        ? 'Resolve conflicts first'
+        : !latestAttemptId
+          ? 'No attempt selected'
+          : !currentAttempt?.container_ref
+            ? 'No worktree available'
+            : null
     : null;
 
   const approveDisabledReason = !canApprove
-    ? hasConflicts
-      ? 'Resolve conflicts first'
-      : selectedTask?.status !== 'inreview'
-        ? 'Task must be in review'
-        : 'Cannot approve task'
+    ? branchRequired && !branchReady
+      ? 'Checking branch status...'
+      : hasConflicts
+        ? 'Resolve conflicts first'
+        : selectedTask?.status !== 'inreview'
+          ? 'Task must be in review'
+          : 'Cannot approve task'
     : null;
 
   return {
