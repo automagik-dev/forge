@@ -9,72 +9,56 @@ Version 0.7.3 introduces mobile native app (Phase 0-3), progressive disclosure t
 
 ### Required Actions
 
-#### 1. Node.js 22 Upgrade 🔴 REQUIRED
+#### 1. Node.js 20+ Environment 🔴 REQUIRED
 
-**Current Requirement:** Node.js 22+
+**Current Requirement:** Node.js >= 20 (CI currently runs Node 22)
 
-**Why:** Cypress 15.6.0 requires Node.js 22 for full compatibility.
+**Why:** The repo root (`package.json`) and GitHub Actions workflows target Node 20+, and the pre-release pipeline currently provisions Node 22. Staying on 20.x or 22.x keeps parity with CI.
 
-**How to Upgrade:**
+**How to Verify or Upgrade:**
 ```bash
 # Using nvm (recommended)
+nvm install 20
+nvm use 20
+
+# Optionally track Node 22 if you want parity with CI
 nvm install 22
-nvm use 22
 nvm alias default 22
 
 # Verify version
-node --version  # Should show v22.x.x
+node --version  # Should show v20.x.x or v22.x.x
 ```
 
 **Alternative:** Download from [nodejs.org](https://nodejs.org/)
 
 ---
 
-#### 2. Upstream Submodule Cleanup 🟡 RECOMMENDED
-
-**Issue:** Lingering submodule references may cause git warnings.
-
-**Fix:**
-```bash
-# Remove submodule references
-git submodule deinit -f upstream
-rm -rf .git/modules/upstream
-
-# Verify cleanup
-git submodule status  # Should show no upstream
-```
-
----
-
-#### 3. Clean Dependency Install 🟡 RECOMMENDED
+#### 2. Clean Dependency Install 🟡 RECOMMENDED
 
 **Reason:** Dependency restructuring (Cypress 15.6.0, PostHog updates)
 
 **Command:**
 ```bash
-# Remove old dependencies
-rm -rf node_modules pnpm-lock.yaml
-
-# Fresh install
+# Install using the checked-in pnpm-lock.yaml (do NOT delete it)
 pnpm install
 
 # Verify
 pnpm run check
-npm run lint
+pnpm run lint
 ```
 
 ---
 
 ### Breaking Changes
 
-#### 1. PostHog Telemetry Always Active ⚠️ BREAKING
+#### 1. PostHog Telemetry Default On (Configurable) ⚠️ BREAKING
 
 **Previous Behavior:**
 - Could disable via `VITE_POSTHOG_API_KEY=""`
 - Telemetry opt-out possible
 
 **New Behavior:**
-- Always active with hardcoded API key
+- Default-enabled with hardcoded API key, but respects user opt-out through Settings → Analytics
 - PostHog project key: `phc_KYI6y57aVECNO9aj5O28gNAz3r7BU0cTtEf50HQJZHd`
 
 **Why:**
@@ -83,14 +67,16 @@ npm run lint
 - Helps track app usage for improvements
 
 **Impact:**
-- Analytics always running
-- Events sent to PostHog on user interactions
+- Analytics starts enabled for new installs
+- Users can disable it (toggles `config.analytics_enabled` used in `frontend/src/App.tsx`)
 
-**Mitigation (if privacy required):**
+**Opt-out paths (choose one):**
 
-**Network-level blocking:** Block `us.i.posthog.com` via firewall/hosts file
+1. **In-app toggle (preferred):** Settings → Analytics → disable “Allow Automagik to collect product analytics.”
+2. **Config file:** Set `"analytics_enabled": false` inside `dev_assets/user-config.json`.
+3. **Network-level blocking (last resort):** Block `us.i.posthog.com`.
 
-**Example (hosts file):**
+**Hosts file example:**
 ```bash
 # /etc/hosts (Linux/Mac) or C:\Windows\System32\drivers\etc\hosts (Windows)
 127.0.0.1 us.i.posthog.com
@@ -243,16 +229,17 @@ nvm use 22
 
 ---
 
-#### Problem: Git submodule warnings
+#### Problem: Git submodule warnings (legacy clones only)
 ```
 warning: Could not unset core.worktree setting in submodule 'upstream'
 ```
 
-**Solution:**
+**Solution:** This applied only to repositories cloned before the upstream submodule was removed (≤ v0.6). If you still see the warning, remove the leftover metadata:
 ```bash
-git submodule deinit -f upstream
+git submodule deinit -f upstream || true
 rm -rf .git/modules/upstream
 ```
+Fresh clones on v0.7.3+ can ignore this section.
 
 ---
 
