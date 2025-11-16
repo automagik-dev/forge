@@ -19,7 +19,11 @@ interface ProfileVariantBadgeProps {
   showIcon?: boolean;
 }
 
-function getProviderIcon(executor: BaseCodingAgent): LucideIcon {
+/**
+ * Get the icon component for a given executor.
+ * Can accept BaseCodingAgent enum or string.
+ */
+export function getProviderIcon(executor: BaseCodingAgent | string): LucideIcon {
   switch (executor) {
     case 'CLAUDE_CODE':
       return Bot;
@@ -42,7 +46,11 @@ function getProviderIcon(executor: BaseCodingAgent): LucideIcon {
   }
 }
 
-function getProviderLabel(executor: BaseCodingAgent): string {
+/**
+ * Get human-readable label for a given executor.
+ * Can accept BaseCodingAgent enum or string.
+ */
+export function getProviderLabel(executor: BaseCodingAgent | string): string {
   switch (executor) {
     case 'CLAUDE_CODE':
       return 'Claude Code';
