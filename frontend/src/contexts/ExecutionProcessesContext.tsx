@@ -20,9 +20,10 @@ const ExecutionProcessesContext =
   createContext<ExecutionProcessesContextType | null>(null);
 
 export const ExecutionProcessesProvider: React.FC<{
-  attemptId: string;
+  attemptId?: string | null;
   children: React.ReactNode;
 }> = ({ attemptId, children }) => {
+  const sanitizedAttemptId = attemptId ?? '';
   const {
     executionProcesses,
     executionProcessesById,
@@ -30,7 +31,7 @@ export const ExecutionProcessesProvider: React.FC<{
     isLoading,
     isConnected,
     error,
-  } = useExecutionProcesses(attemptId, { showSoftDeleted: true });
+  } = useExecutionProcesses(sanitizedAttemptId, { showSoftDeleted: true });
 
   const visible = useMemo(
     () => executionProcesses.filter((p) => !p.dropped),

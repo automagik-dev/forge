@@ -114,7 +114,7 @@ export function MobileLayout({
       ];
     }
 
-    // Default fallback (no project) - show tasks, chat, new, me
+    // Default fallback (no project) - show tasks, chat, me
     return [
       {
         id: 'tasks',
@@ -127,12 +127,6 @@ export function MobileLayout({
         label: t('mobile.navigation.genie'),
         icon: <Lamp size={26} />,
         path: '/chat',
-      },
-      {
-        id: 'new',
-        label: t('mobile.navigation.new'),
-        icon: <Plus size={20} />,
-        onClick: () => openTaskForm({}),
       },
       {
         id: 'me',

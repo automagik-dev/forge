@@ -23,7 +23,7 @@ use uuid::Uuid;
 use crate::services::ForgeServices;
 use db::models::{
     image::TaskImage,
-    task::{Task, TaskWithAttemptStatus},
+    task::{Task, TaskStatus, TaskWithAttemptStatus},
     task_attempt::{CreateTaskAttempt, TaskAttempt},
 };
 use deployment::Deployment;
@@ -747,16 +747,25 @@ async fn handle_forge_tasks_ws(
                                 match patch_op {
                                     json_patch::PatchOperation::Add(op) => {
                                         if let Ok(task_with_status) =
-                                            serde_json::from_value::<TaskWithAttemptStatus>(op.value.clone())
+                                            serde_json::from_value::<TaskWithAttemptStatus>(
+                                                op.value.clone(),
+                                            )
                                         {
                                             // Check if this task is an agent task (query per patch to stay up-to-date)
-                                            let is_agent: bool = sqlx::query_scalar(
-                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
-                                            )
-                                            .bind(task_with_status.task.id)
-                                            .fetch_one(&db_pool)
-                                            .await
-                                            .unwrap_or(false);
+                                            let is_agent: bool = if matches!(
+                                                task_with_status.task.status,
+                                                TaskStatus::Agent
+                                            ) {
+                                                true
+                                            } else {
+                                                sqlx::query_scalar(
+                                                    "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)",
+                                                )
+                                                .bind(task_with_status.task.id)
+                                                .fetch_one(&db_pool)
+                                                .await
+                                                .unwrap_or(false)
+                                            };
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -767,16 +776,25 @@ async fn handle_forge_tasks_ws(
                                     }
                                     json_patch::PatchOperation::Replace(op) => {
                                         if let Ok(task_with_status) =
-                                            serde_json::from_value::<TaskWithAttemptStatus>(op.value.clone())
+                                            serde_json::from_value::<TaskWithAttemptStatus>(
+                                                op.value.clone(),
+                                            )
                                         {
                                             // Check if this task is an agent task (query per patch to stay up-to-date)
-                                            let is_agent: bool = sqlx::query_scalar(
-                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
-                                            )
-                                            .bind(task_with_status.task.id)
-                                            .fetch_one(&db_pool)
-                                            .await
-                                            .unwrap_or(false);
+                                            let is_agent: bool = if matches!(
+                                                task_with_status.task.status,
+                                                TaskStatus::Agent
+                                            ) {
+                                                true
+                                            } else {
+                                                sqlx::query_scalar(
+                                                    "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)",
+                                                )
+                                                .bind(task_with_status.task.id)
+                                                .fetch_one(&db_pool)
+                                                .await
+                                                .unwrap_or(false)
+                                            };
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -795,24 +813,37 @@ async fn handle_forge_tasks_ws(
                             // Handle initial snapshot (replace /tasks with map)
                             else if patch_op.path() == "/tasks"
                                 && let json_patch::PatchOperation::Replace(op) = patch_op
-                                && let Some(tasks_obj) = op.value.as_object() {
+                                && let Some(tasks_obj) = op.value.as_object()
+                            {
                                 // Filter out agent tasks from the initial snapshot
                                 let mut filtered_tasks = serde_json::Map::new();
                                 for (task_id_str, task_value) in tasks_obj {
                                     if let Ok(task_with_status) =
-                                        serde_json::from_value::<TaskWithAttemptStatus>(task_value.clone())
+                                            serde_json::from_value::<TaskWithAttemptStatus>(
+                                                task_value.clone(),
+                                            )
                                     {
                                         // Check if this task is an agent task (query per task to stay up-to-date)
-                                        let is_agent: bool = sqlx::query_scalar(
-                                            "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
-                                        )
-                                        .bind(task_with_status.task.id)
-                                        .fetch_one(&db_pool)
-                                        .await
-                                        .unwrap_or(false);
+                                        let is_agent: bool = if matches!(
+                                            task_with_status.task.status,
+                                            TaskStatus::Agent
+                                        ) {
+                                            true
+                                        } else {
+                                            sqlx::query_scalar(
+                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)",
+                                            )
+                                            .bind(task_with_status.task.id)
+                                            .fetch_one(&db_pool)
+                                            .await
+                                            .unwrap_or(false)
+                                        };
 
                                         if !is_agent {
-                                            filtered_tasks.insert(task_id_str.to_string(), task_value.clone());
+                                            filtered_tasks.insert(
+                                                task_id_str.to_string(),
+                                                task_value.clone(),
+                                            );
                                         }
                                     }
                                 }
@@ -824,7 +855,7 @@ async fn handle_forge_tasks_ws(
                                     "value": filtered_tasks
                                 }]);
                                 return Some(Ok(LogMsg::JsonPatch(
-                                    serde_json::from_value(filtered_patch).unwrap()
+                                    serde_json::from_value(filtered_patch).unwrap(),
                                 )));
                             }
                         }
@@ -1347,22 +1378,68 @@ async fn get_project_profiles(
     Path(project_id): Path<Uuid>,
     State(services): State<ForgeServices>,
 ) -> Result<Json<ApiResponse<executors::profile::ExecutorConfigs>>, StatusCode> {
-    services
+    match services
         .profile_cache
         .get_profiles_for_project(project_id)
         .await
-        .map(|profiles| {
+    {
+        Ok(profiles) => {
             tracing::debug!(
                 "Retrieved {} executor profiles for project {}",
                 profiles.executors.len(),
                 project_id
             );
-            Json(ApiResponse::success(profiles))
-        })
-        .map_err(|e| {
-            tracing::error!("Failed to load profiles for project {}: {}", project_id, e);
-            StatusCode::NOT_FOUND
-        })
+            Ok(Json(ApiResponse::success(profiles)))
+        }
+        Err(initial_error) => {
+            tracing::warn!(
+                "Profile cache miss for project {}: {}. Attempting on-demand registration.",
+                project_id,
+                initial_error
+            );
+
+            let project_exists = services
+                .ensure_project_registered_in_profile_cache(project_id)
+                .await
+                .map_err(|e| {
+                    tracing::error!(
+                        "Failed to ensure project {} is registered in profile cache: {}",
+                        project_id,
+                        e
+                    );
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })?;
+
+            if !project_exists {
+                tracing::warn!(
+                    "Project {} not found when trying to load executor profiles",
+                    project_id
+                );
+                return Err(StatusCode::NOT_FOUND);
+            }
+
+            services
+                .profile_cache
+                .get_profiles_for_project(project_id)
+                .await
+                .map(|profiles| {
+                    tracing::info!(
+                        "Loaded {} executor profiles for project {} after on-demand registration",
+                        profiles.executors.len(),
+                        project_id
+                    );
+                    Json(ApiResponse::success(profiles))
+                })
+                .map_err(|e| {
+                    tracing::error!(
+                        "Failed to load profiles for project {} after registration: {}",
+                        project_id,
+                        e
+                    );
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })
+        }
+    }
 }
 
 async fn get_omni_status(State(services): State<ForgeServices>) -> Result<Json<Value>, StatusCode> {

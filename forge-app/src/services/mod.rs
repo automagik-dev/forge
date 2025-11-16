@@ -8,6 +8,7 @@ mod notification_hook;
 pub mod profile_cache;
 
 use anyhow::{Context, Result, anyhow};
+use db::models::project::Project;
 use deployment::Deployment;
 use serde::Deserialize;
 use serde_json::json;
@@ -129,14 +130,36 @@ impl ForgeServices {
         self.profile_cache.get_profiles(workspace_root).await
     }
 
+    /// Ensure a project's executor profiles are available in the cache.
+    ///
+    /// Projects created after the server starts are not registered automatically,
+    /// so we fetch the project, warm the cache for its workspace, and register it.
+    pub async fn ensure_project_registered_in_profile_cache(
+        &self,
+        project_id: Uuid,
+    ) -> Result<bool> {
+        let Some(project) = Project::find_by_id(&self.pool, project_id).await? else {
+            return Ok(false);
+        };
+
+        let workspace_root = project.git_repo_path.clone();
+
+        // Warm cache/watchers for this workspace before registering
+        self.load_profiles_for_workspace(&workspace_root).await?;
+
+        self.profile_cache
+            .register_project(project_id, workspace_root)
+            .await;
+
+        Ok(true)
+    }
+
     /// Load .genie profiles for all existing projects on server startup
     ///
     /// This method is called during server initialization to discover and cache
     /// .genie profiles for all existing projects in the database. For each project
     /// with a .genie folder, it initializes the profile cache and starts file watching.
     pub async fn load_genie_profiles_for_all_projects(&self) -> Result<()> {
-        use db::models::project::Project;
-
         tracing::info!("Starting to load .genie profiles for all projects...");
 
         // Query all projects from database
