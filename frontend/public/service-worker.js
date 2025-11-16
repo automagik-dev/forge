@@ -2,11 +2,11 @@
  * Automagik Forge Service Worker
  *
  * Provides offline support and asset caching for PWA functionality.
- * Uses a cache-first strategy for assets and network-first for API calls.
+ * Uses a cache-first strategy for static assets.
+ * API calls are NEVER cached to prevent auth/session data leakage.
  */
 
 const CACHE_NAME = 'forge-v1';
-const API_CACHE_NAME = 'forge-api-v1';
 const STALE_WHILE_REVALIDATE_TIMEOUT = 3000; // 3s timeout for stale-while-revalidate
 
 // Assets to cache on install (critical assets for offline support)
@@ -58,7 +58,9 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME && cacheName !== API_CACHE_NAME) {
+          // Delete all caches except current CACHE_NAME
+          // This includes old 'forge-api-v1' cache (no longer used for security)
+          if (cacheName !== CACHE_NAME) {
             console.log('[Service Worker] Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
@@ -82,9 +84,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API calls: network-first with cache fallback
+  // API calls: NEVER cache (authenticated, user-specific data)
+  // Caching API responses ignores auth headers and can leak data between users
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(networkFirstStrategy(event.request, API_CACHE_NAME));
+    // Let network handle API calls directly, no caching
     return;
   }
 

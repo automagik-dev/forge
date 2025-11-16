@@ -69,6 +69,13 @@ const makeRequest = async (
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
+      // Compose timeout signal with caller's signal (if provided)
+      // If caller's signal aborts, we abort too
+      const callerSignal = options.signal as AbortSignal | undefined;
+      if (callerSignal) {
+        callerSignal.addEventListener('abort', () => controller.abort(), { once: true });
+      }
+
       try {
         const response = await fetch(url, {
           ...options,
