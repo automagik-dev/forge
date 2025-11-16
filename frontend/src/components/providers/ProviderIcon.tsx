@@ -1,6 +1,6 @@
-import { Terminal } from 'lucide-react';
+import { Terminal, Bot } from 'lucide-react';
 import { BaseCodingAgent } from 'shared/types';
-import { siClaude, siGooglegemini, siGithubcopilot, siOpenai, siAmp } from 'simple-icons';
+import { siClaude, siGooglegemini, siGithubcopilot, siOpenai, siAlibabacloud } from 'simple-icons';
 import { useTheme } from '@/components/theme-provider';
 import { ThemeMode } from 'shared/types';
 
@@ -95,29 +95,16 @@ export function ProviderIcon({
       iconTitle = siOpenai.title;
       fillColor = isDark ? '#ffffff' : '#000000';
       break;
-    case 'AMP':
-      iconPath = siAmp.path;
-      iconTitle = siAmp.title;
+    case 'QWEN_CODE':
+      // Qwen is an Alibaba Cloud product
+      iconPath = siAlibabacloud.path;
+      iconTitle = siAlibabacloud.title;
       fillColor = isDark ? '#ffffff' : '#000000';
       break;
+    case 'AMP':
     case 'OPENCODE':
-      // OpenCode uses custom SVG files
-      return (
-        <img
-          src={isDark ? '/providers/opencode-dark.svg' : '/providers/opencode-light.svg'}
-          alt="OpenCode"
-          className={className}
-        />
-      );
-    case 'QWEN_CODE':
-      // Qwen uses custom SVG files
-      return (
-        <img
-          src={isDark ? '/providers/qwen-dark.svg' : '/providers/qwen-light.svg'}
-          alt="Qwen"
-          className={className}
-        />
-      );
+      // Use Bot icon for providers without specific logos
+      return <Bot className={className} />;
     default:
       // Fallback to generic terminal icon for unknown providers
       return <Terminal className={className} />;
