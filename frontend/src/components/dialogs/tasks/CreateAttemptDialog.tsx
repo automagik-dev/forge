@@ -17,6 +17,7 @@ import { useNavigateWithSearch } from '@/hooks';
 import { useProject } from '@/contexts/project-context';
 import { useUserSystem } from '@/components/config-provider';
 import { useDefaultBaseBranch } from '@/hooks/useDefaultBaseBranch';
+import { useProjectProfiles } from '@/hooks/useProjectProfiles';
 import { projectsApi } from '@/lib/api';
 import { paths } from '@/lib/paths';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
@@ -38,9 +39,17 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
     const navigate = useNavigateWithSearch();
     const { projectId } = useProject();
     const { t } = useTranslation('tasks');
-    const { profiles, config } = useUserSystem();
+    const { profiles: globalProfiles, config } = useUserSystem();
+    const { data: projectProfiles, isLoading: isLoadingProjectProfiles } = useProjectProfiles(projectId);
+
+    // Use project profiles if available (synchronized agents), fallback to global profiles
+    const projectExecutors = projectProfiles?.executors;
+    const hasProjectExecutors = projectExecutors && Object.keys(projectExecutors).length > 0;
+    const profiles = hasProjectExecutors ? projectExecutors : globalProfiles;
     const hasProfiles = profiles && Object.keys(profiles).length > 0;
     const { defaultBranch } = useDefaultBaseBranch(projectId);
+    const isProfilesLoading = isLoadingProjectProfiles && (!globalProfiles || Object.keys(globalProfiles).length === 0);
+
     const { createAttempt, isCreating, error } = useAttemptCreation({
       taskId,
       onSuccess: (attempt) => {
@@ -155,6 +164,10 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
                 onProfileSelect={setSelectedProfile}
                 showLabel={true}
               />
+            ) : isProfilesLoading ? (
+              <div className="text-sm text-muted-foreground">
+                {t('taskFormDialog.loadingProfiles')}
+              </div>
             ) : (
               <div className="text-sm text-muted-foreground">
                 {t('taskFormDialog.noProfiles')}{' '}

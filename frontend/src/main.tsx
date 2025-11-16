@@ -155,6 +155,41 @@ const queryClient = new QueryClient({
   },
 });
 
+// Register Service Worker for PWA support
+// This enables offline functionality, asset caching, and persistent install prompt
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/service-worker.js')
+      .then((registration) => {
+        console.log('[PWA] Service Worker registered successfully:', registration);
+
+        // Listen for updates to the service worker
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (!newWorker) return;
+
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New service worker is ready and there's an old one
+              console.log('[PWA] New service worker update available');
+              // Notify user about update (optional - can show a toast/banner)
+              window.dispatchEvent(
+                new CustomEvent('sw-update-available', { detail: { registration } })
+              );
+            }
+          });
+        });
+      })
+      .catch((error) => {
+        console.warn('[PWA] Service Worker registration failed:', error);
+        // This is not critical - the app still works without SW
+      });
+  });
+} else {
+  console.info('[PWA] Service Workers not supported in this browser');
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>

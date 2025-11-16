@@ -96,6 +96,8 @@ pub fn create_router(services: ForgeServices, auth_required: bool) -> Router {
         .route("/docs", get(serve_swagger_ui))
         .route("/api/openapi.json", get(serve_openapi_spec))
         .route("/api/routes", get(list_routes))
+        // Public PWA manifest - must be accessible without authentication
+        .route("/site.webmanifest", get(serve_assets_public))
         .merge(forge_api_routes())
         // Upstream API at /api
         .nest("/api", upstream_api)
@@ -729,24 +731,14 @@ async fn handle_forge_tasks_ws(
     deployment: DeploymentImpl,
     project_id: Uuid,
 ) -> anyhow::Result<()> {
-    // Batch query: Fetch ALL agent task IDs for this project upfront (O(1) query instead of O(N))
-    // This eliminates N+1 pattern and speeds up WebSocket connection establishment
-    let db_pool = deployment.db().pool.clone();
-    let agent_task_ids: std::collections::HashSet<Uuid> =
-        sqlx::query_scalar("SELECT task_id FROM forge_agents WHERE project_id = ?")
-            .bind(project_id)
-            .fetch_all(&db_pool)
-            .await?
-            .into_iter()
-            .collect();
-
     // Get the raw stream from upstream (includes initial snapshot + live updates)
+    // Filter out agent tasks by checking status == "agent" directly from the patch data
+    // This is O(1) with zero DB overhead and always up-to-date (no staleness issues)
     let stream = deployment
         .events()
         .stream_tasks_raw(project_id)
         .await?
         .filter_map(move |msg_result| {
-            let agent_task_ids = agent_task_ids.clone();
             async move {
                 match msg_result {
                     Ok(LogMsg::JsonPatch(patch)) => {
@@ -761,9 +753,9 @@ async fn handle_forge_tasks_ws(
                                                 op.value.clone(),
                                             )
                                         {
-                                            // Check if this task is an agent task (O(1) in-memory lookup)
+                                            // Check if this task is an agent task by status (O(1) string comparison)
                                             let is_agent =
-                                                agent_task_ids.contains(&task_with_status.task.id);
+                                                task_with_status.task.status.to_string() == "agent";
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -778,9 +770,9 @@ async fn handle_forge_tasks_ws(
                                                 op.value.clone(),
                                             )
                                         {
-                                            // Check if this task is an agent task (O(1) in-memory lookup)
+                                            // Check if this task is an agent task by status (O(1) string comparison)
                                             let is_agent =
-                                                agent_task_ids.contains(&task_with_status.task.id);
+                                                task_with_status.task.status.to_string() == "agent";
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -809,9 +801,9 @@ async fn handle_forge_tasks_ws(
                                             task_value.clone(),
                                         )
                                     {
-                                        // Check if this task is an agent task (O(1) in-memory lookup)
+                                        // Check if this task is an agent task by status (O(1) string comparison)
                                         let is_agent =
-                                            agent_task_ids.contains(&task_with_status.task.id);
+                                            task_with_status.task.status.to_string() == "agent";
 
                                         if !is_agent {
                                             filtered_tasks.insert(
@@ -1082,6 +1074,11 @@ async fn serve_index() -> Response {
 
 async fn serve_assets(Path(path): Path<String>) -> Response {
     serve_static_file::<Frontend>(&path).await
+}
+
+/// Serve public assets (no auth required) - used for PWA manifest and other public files
+async fn serve_assets_public() -> Response {
+    serve_static_file::<Frontend>("site.webmanifest").await
 }
 
 async fn serve_static_file<T: RustEmbed>(path: &str) -> Response {
