@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { AlertTriangle, Plus } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import { tasksApi } from '@/lib/api';
-import type { GitBranch } from 'shared/types';
 import { openTaskForm } from '@/lib/openTaskForm';
 import { FeatureShowcaseModal } from '@/components/showcase/FeatureShowcaseModal';
 import { showcases } from '@/config/showcases';
@@ -21,8 +20,6 @@ import { useTaskAttempts } from '@/hooks/useTaskAttempts';
 import { useTaskAttempt } from '@/hooks/useTaskAttempt';
 import { useProjects } from '@/hooks/useProjects';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { useBranchStatus, useAttemptExecution } from '@/hooks';
-import { projectsApi } from '@/lib/api';
 import { paths } from '@/lib/paths';
 import { ExecutionProcessesProvider } from '@/contexts/ExecutionProcessesContext';
 import { ClickedElementsProvider } from '@/contexts/ClickedElementsProvider';
@@ -69,37 +66,12 @@ const TASK_STATUSES = [
 
 function DiffsPanelContainer({
   attempt,
-  selectedTask,
-  projectId,
-  branchStatus,
-  branches,
-  setGitError,
 }: {
   attempt: any;
-  selectedTask: any;
-  projectId: string;
-  branchStatus: any;
-  branches: GitBranch[];
-  setGitError: (error: string | null) => void;
 }) {
-  const { isAttemptRunning } = useAttemptExecution(attempt?.id);
-
   return (
     <DiffsPanel
       selectedAttempt={attempt}
-      gitOps={
-        attempt && selectedTask
-          ? {
-              task: selectedTask,
-              projectId,
-              branchStatus: branchStatus ?? null,
-              branches,
-              isAttemptRunning,
-              setError: setGitError,
-              selectedBranch: branchStatus?.target_branch_name ?? null,
-            }
-          : undefined
-      }
     />
   );
 }
@@ -226,18 +198,6 @@ export function ProjectTasks() {
   const effectiveAttemptId = attemptId === 'latest' ? undefined : attemptId;
   const isTaskView = !!taskId && !effectiveAttemptId;
   const { data: attempt } = useTaskAttempt(effectiveAttemptId);
-
-  const { data: branchStatus } = useBranchStatus(attempt?.id, attempt);
-  const [branches, setBranches] = useState<GitBranch[]>([]);
-  const [gitError, setGitError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!projectId) return;
-    projectsApi
-      .getBranches(projectId)
-      .then(setBranches)
-      .catch(() => setBranches([]));
-  }, [projectId]);
 
   const rawMode = searchParams.get('view') as LayoutMode;
   const mode: LayoutMode =
@@ -755,11 +715,6 @@ export function ProjectTasks() {
           {({ logs, followUp }) => (
             <>
               <ChatPanelActions attempt={attempt} task={selectedTask} />
-              {gitError && (
-                <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded">
-                  <div className="text-destructive text-sm">{gitError}</div>
-                </div>
-              )}
               <div className="flex-1 min-h-0 flex flex-col">{logs}</div>
 
               <div className="shrink-0 border-t">
@@ -784,11 +739,6 @@ export function ProjectTasks() {
       {mode === 'diffs' && attempt && selectedTask && (
         <DiffsPanelContainer
           attempt={attempt}
-          selectedTask={selectedTask}
-          projectId={projectId!}
-          branchStatus={branchStatus}
-          branches={branches}
-          setGitError={setGitError}
         />
       )}
     </div>
