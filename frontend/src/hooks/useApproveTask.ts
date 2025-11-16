@@ -10,7 +10,6 @@ interface ApproveTaskParams {
   title: string;
   description: string | null;
   parentTaskAttempt: string | null;
-  imageIds: string[] | null;
 }
 
 export function useApproveTask() {
@@ -25,7 +24,6 @@ export function useApproveTask() {
       title,
       description,
       parentTaskAttempt,
-      imageIds,
     }: ApproveTaskParams) => {
       // If code changes, merge first
       if (shouldMerge) {
@@ -33,13 +31,14 @@ export function useApproveTask() {
       }
 
       // Then mark complete, preserving existing field values
+      // Note: We only update status to 'done', preserving all other fields
+      // Using type assertion since we intentionally omit image_ids to preserve existing images
       await tasksApi.update(taskId, {
         title,
         description,
         status: 'done',
         parent_task_attempt: parentTaskAttempt,
-        image_ids: imageIds,
-      });
+      } as Parameters<typeof tasksApi.update>[1]);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });

@@ -8,9 +8,7 @@ import { useProject } from '@/contexts/project-context';
 import { Kanban, GitCompareArrows, FileText, Settings, Heart, ListTodo } from 'lucide-react';
 import { Lamp } from '@/components/icons/Lamp';
 import { DiffActionSheet } from './DiffActionSheet';
-// TODO: Import and wire up TasksDrawer and TasksListView with proper data
-// import { TasksDrawer } from './TasksDrawer';
-// import { TasksListView } from './TasksListView';
+import { useMobileTaskActions } from '@/hooks/useMobileTaskActions';
 
 export interface MobileLayoutProps {
   children: React.ReactNode;
@@ -32,7 +30,18 @@ export function MobileLayout({
   const location = useLocation();
   const { taskId } = useParams<{ taskId?: string }>();
   const [showDiffActions, setShowDiffActions] = useState(false);
-  // const [showTasksDrawer, setShowTasksDrawer] = useState(false); // TODO: Re-enable when TasksDrawer is wired up
+
+  // Mobile task actions (sync/approve)
+  const {
+    handleSync,
+    handleApprove,
+    isSyncing,
+    isApproving,
+    canSync,
+    canApprove,
+    syncDisabledReason,
+    approveDisabledReason,
+  } = useMobileTaskActions();
 
   const tabs: BottomNavTab[] = React.useMemo(() => {
     const basePath = projectId ? `/projects/${projectId}/tasks` : '/projects';
@@ -143,22 +152,18 @@ export function MobileLayout({
 
       {showBottomNav && <BottomNavigation tabs={tabs} />}
 
-      {/* Tasks Drawer - slides from left */}
-      {/* TODO: Wire up TasksListView with proper tasks data and click handler */}
-      {/* For now, drawer is implemented but content needs to be connected to task data */}
-
       {/* Diff Action Sheet - shows sync/approve options */}
       <DiffActionSheet
         open={showDiffActions}
         onClose={() => setShowDiffActions(false)}
-        onSync={() => {
-          // TODO: Implement sync (rebase) action
-          console.log('Sync clicked - TODO: implement rebase');
-        }}
-        onApprove={() => {
-          // TODO: Implement approve (merge) action
-          console.log('Approve clicked - TODO: implement merge');
-        }}
+        onSync={handleSync}
+        onApprove={handleApprove}
+        isSyncing={isSyncing}
+        isApproving={isApproving}
+        canSync={canSync}
+        canApprove={canApprove}
+        syncDisabledReason={syncDisabledReason}
+        approveDisabledReason={approveDisabledReason}
       />
     </div>
   );
