@@ -107,10 +107,14 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
 
       setSelectedBranch((prev) => {
         if (prev) return prev;
-        // Priority: 1) Latest attempt's target branch, 2) User's default branch, 3) Current branch
+
+        // Validate that saved defaultBranch still exists in available branches
+        const isDefaultBranchValid = defaultBranch && branches.some((b) => b.name === defaultBranch);
+
+        // Priority: 1) Latest attempt's target branch, 2) Valid user's default branch, 3) Current branch
         return (
           latestAttempt?.target_branch ??
-          defaultBranch ??
+          (isDefaultBranchValid ? defaultBranch : null) ??
           branches.find((b) => b.is_current)?.name ??
           null
         );
