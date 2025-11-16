@@ -1,6 +1,6 @@
 import { Terminal } from 'lucide-react';
 import { BaseCodingAgent } from 'shared/types';
-import { siAnthropic, siGoogle, siGithub, siOpenai } from 'simple-icons';
+import { siClaude, siGooglegemini, siGithubcopilot, siOpenai } from 'simple-icons';
 import { useTheme } from '@/components/theme-provider';
 import { ThemeMode } from 'shared/types';
 
@@ -65,14 +65,16 @@ export function ProviderIcon({
 
   switch (executor) {
     case 'CLAUDE_CODE':
-      iconPath = siAnthropic.path;
-      iconTitle = siAnthropic.title;
-      fillColor = '#' + siAnthropic.hex; // Anthropic brand color
+      iconPath = siClaude.path;
+      iconTitle = siClaude.title;
+      // Use theme-aware color instead of brand color
+      fillColor = isDark ? '#ffffff' : '#000000';
       break;
     case 'GEMINI':
-      iconPath = siGoogle.path;
-      iconTitle = siGoogle.title;
-      fillColor = '#' + siGoogle.hex; // Google brand color
+      iconPath = siGooglegemini.path;
+      iconTitle = siGooglegemini.title;
+      // Use theme-aware color instead of brand color
+      fillColor = isDark ? '#ffffff' : '#000000';
       break;
     case 'CURSOR_AGENT':
       // Cursor can use the IDE icon we already have
@@ -84,14 +86,15 @@ export function ProviderIcon({
         />
       );
     case 'COPILOT':
-      iconPath = siGithub.path;
-      iconTitle = siGithub.title;
+      iconPath = siGithubcopilot.path;
+      iconTitle = siGithubcopilot.title;
       fillColor = isDark ? '#ffffff' : '#000000';
       break;
     case 'CODEX':
       iconPath = siOpenai.path;
       iconTitle = siOpenai.title;
-      fillColor = '#' + siOpenai.hex; // OpenAI brand color
+      // Use theme-aware color instead of brand color
+      fillColor = isDark ? '#ffffff' : '#000000';
       break;
     default:
       // Fallback to generic terminal icon for others
