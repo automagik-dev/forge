@@ -1,6 +1,6 @@
 import { Terminal, Bot } from 'lucide-react';
 import { BaseCodingAgent } from 'shared/types';
-import { siClaude, siGooglegemini, siGithubcopilot, siOpenai, siAlibabacloud } from 'simple-icons';
+import { siClaude, siGooglegemini, siGithubcopilot, siOpenai } from 'simple-icons';
 import { useTheme } from '@/components/theme-provider';
 import { ThemeMode } from 'shared/types';
 
@@ -96,10 +96,8 @@ export function ProviderIcon({
       fillColor = isDark ? '#ffffff' : '#000000';
       break;
     case 'QWEN_CODE':
-      // Qwen is an Alibaba Cloud product
-      iconPath = siAlibabacloud.path;
-      iconTitle = siAlibabacloud.title;
-      fillColor = isDark ? '#ffffff' : '#000000';
+      // Use Bot icon for Qwen
+      return <Bot className={className} />;
       break;
     case 'AMP':
     case 'OPENCODE':

@@ -85,6 +85,53 @@ function LinkOverride({
   );
 }
 
+function ImageOverride({
+  src,
+  alt,
+  title,
+  ...props
+}: {
+  src?: string;
+  alt?: string;
+  title?: string;
+  [key: string]: any;
+}) {
+  let imageSrc = typeof src === 'string' ? src.trim() : '';
+
+  // Convert .forge-images/ paths to /api/images/ paths
+  // Example: .forge-images/e6363133-7e74-4ad8-87e1-345f57531d53.png
+  // Becomes: /api/images/e6363133-7e74-4ad8-87e1-345f57531d53/file
+  if (imageSrc.startsWith('.forge-images/')) {
+    const filename = imageSrc.replace('.forge-images/', '');
+    const imageId = filename.replace(/\.[^.]+$/, ''); // Remove extension
+    imageSrc = `/api/images/${imageId}/file`;
+  }
+
+  // Allow API image paths and external https images
+  const isApiImage = imageSrc.startsWith('/api/images/');
+  const isExternalImage = /^https:\/\//i.test(imageSrc);
+
+  if (!imageSrc || (!isApiImage && !isExternalImage)) {
+    // Invalid or unsafe image source
+    return (
+      <span className="inline-block px-2 py-1 text-xs bg-muted rounded">
+        [Image: {alt || 'no source'}]
+      </span>
+    );
+  }
+
+  return (
+    <img
+      {...props}
+      src={imageSrc}
+      alt={alt || ''}
+      title={title}
+      className="max-w-full h-auto rounded border border-border my-2"
+      loading="lazy"
+    />
+  );
+}
+
 function InlineCodeOverride({ children, className, ...props }: any) {
   // Only highlight inline code, not fenced code blocks
   const hasLanguage =
@@ -121,6 +168,7 @@ function MarkdownRenderer({
   const overrides = useMemo(
     () => ({
       a: { component: LinkOverride },
+      img: { component: ImageOverride },
       code: { component: InlineCodeOverride },
       strong: {
         component: ({ children, ...props }: any) => (

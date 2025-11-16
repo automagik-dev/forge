@@ -258,7 +258,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
 
     // Handle image upload success by inserting markdown into description
     const handleImageUploaded = useCallback((image: ImageResponse) => {
-      const markdownText = `![${image.original_name}](${image.file_path})`;
+      const markdownText = `![${image.original_name}](/api/images/${image.id}/file)`;
       setDescription((prev) => {
         if (prev.trim() === '') {
           return markdownText;

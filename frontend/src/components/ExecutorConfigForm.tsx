@@ -90,7 +90,7 @@ export function ExecutorConfigForm({
   return (
     <div className="space-y-8">
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-6">
           <Form
             schema={schema}
             formData={formData}

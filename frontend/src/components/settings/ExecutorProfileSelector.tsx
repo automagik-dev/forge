@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/tooltip';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { ProviderIcon } from '@/components/providers/ProviderIcon';
 import type {
   BaseCodingAgent,
   ExecutorConfig,
@@ -58,7 +59,10 @@ const ProfileRow = memo(function ProfileRow({
       onSelect={onSelect}
       className={classes.trim()}
     >
-      {executorKey}
+      <div className="flex items-center gap-2">
+        <ProviderIcon executor={executorKey as BaseCodingAgent} className="h-4 w-4" />
+        <span>{executorKey}</span>
+      </div>
     </DropdownMenuItem>
   );
 });
@@ -267,7 +271,11 @@ function ExecutorProfileSelector({
               disabled={disabled || isLoading}
             >
               <div className="flex items-center gap-1.5">
-                <Settings2 className="h-3 w-3" />
+                {selectedProfile?.executor ? (
+                  <ProviderIcon executor={selectedProfile.executor} className="h-3 w-3" />
+                ) : (
+                  <Settings2 className="h-3 w-3" />
+                )}
                 <span className="truncate">
                   {isLoading
                     ? 'Loading providers...'
@@ -568,7 +576,11 @@ export function CompactExecutorSelector({
                   size="sm"
                   disabled={disabled || isLoading}
                 >
-                  <Settings2 className="h-4 w-4" />
+                  {selectedProfile?.executor ? (
+                    <ProviderIcon executor={selectedProfile.executor} className="h-4 w-4" />
+                  ) : (
+                    <Settings2 className="h-4 w-4" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
@@ -588,7 +600,10 @@ export function CompactExecutorSelector({
                         : ''
                     }
                   >
-                    {executorKey}
+                    <div className="flex items-center gap-2">
+                      <ProviderIcon executor={executorKey as BaseCodingAgent} className="h-4 w-4" />
+                      <span>{executorKey}</span>
+                    </div>
                   </DropdownMenuItem>
                 ))
               )}
