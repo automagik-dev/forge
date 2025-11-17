@@ -81,6 +81,16 @@ export function UserSystemProvider({ children }: UserSystemProviderProps) {
     const loadUserSystem = async () => {
       try {
         const userSystemInfo: UserSystemInfo = await configApi.getConfig();
+
+        // Restore sound_volume from localStorage if backend doesn't have it
+        const storedVolume = localStorage.getItem('notification_sound_volume');
+        if (storedVolume !== null && userSystemInfo.config.notifications.sound_volume === undefined) {
+          const volume = parseFloat(storedVolume);
+          if (!isNaN(volume) && volume >= 0 && volume <= 1) {
+            userSystemInfo.config.notifications.sound_volume = volume;
+          }
+        }
+
         setConfig(userSystemInfo.config);
         setEnvironment(userSystemInfo.environment);
         setAnalyticsUserId(userSystemInfo.analytics_user_id);
@@ -154,7 +164,18 @@ export function UserSystemProvider({ children }: UserSystemProviderProps) {
         : null;
       try {
         if (!newConfig) return false;
+
+        // Preserve sound_volume before saving (backend doesn't support it yet)
+        const volumeToPreserve = newConfig.notifications.sound_volume;
+
         const saved = await configApi.saveConfig(newConfig);
+
+        // Restore sound_volume after backend save (temporary until backend supports it)
+        if (volumeToPreserve !== undefined) {
+          saved.notifications.sound_volume = volumeToPreserve;
+          localStorage.setItem('notification_sound_volume', volumeToPreserve.toString());
+        }
+
         setConfig(saved);
         return true;
       } catch (err) {
