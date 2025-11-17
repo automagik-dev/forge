@@ -572,6 +572,7 @@ export function Breadcrumb() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
+                    data-rebase-button
                     onClick={handleRebaseClick}
                     className="inline-flex items-center justify-center gap-0.5 h-6 px-2 rounded-md bg-amber-100/60 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-medium cursor-pointer hover:bg-amber-200/60 dark:hover:bg-amber-800/40 transition-colors"
                   >
