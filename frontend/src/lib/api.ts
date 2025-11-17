@@ -347,6 +347,11 @@ export const projectsApi = {
     );
     return handleApiResponse<SearchResult[]>(response);
   },
+
+  getBranchStatus: async (id: string): Promise<BranchStatus> => {
+    const response = await makeRequest(`/api/forge/projects/${id}/branch-status`);
+    return handleApiResponse<BranchStatus>(response);
+  },
 };
 
 // Task Management APIs
