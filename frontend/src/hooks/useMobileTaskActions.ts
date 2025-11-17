@@ -25,9 +25,10 @@ export function useMobileTaskActions() {
     [taskId, tasksById]
   );
 
-  // Get attempts to find the latest if no specific attemptId in URL or if 'latest' is specified
+  // Always fetch attempts to ensure we have attempt data and can check branch status
+  // This is needed even when viewing a specific attempt to get branch status for approval
   const { data: attempts = [] } = useTaskAttempts(taskId, {
-    enabled: !!taskId && (!routeAttemptId || routeAttemptId === 'latest'),
+    enabled: !!taskId,
   });
 
   const latestAttemptId = useMemo(() => {
