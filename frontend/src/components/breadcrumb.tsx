@@ -631,6 +631,17 @@ export function Breadcrumb() {
           )}
         </div>
       )}
+
+      {/* Board view: Show git actions for project-level operations */}
+      {!currentTask && projectId && (
+        <div className="flex items-center gap-2">
+          <GitActionsGroup
+            task={{} as TaskWithAttemptStatus}
+            projectId={projectId}
+            isProjectLevel={true}
+          />
+        </div>
+      )}
     </nav>
   );
 }
