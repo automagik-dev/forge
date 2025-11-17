@@ -79,9 +79,9 @@ export function DevServerLogsView({
 
       {/* Logs viewer with copy button */}
       {showLogs && (
-        <div className={`${height} flex flex-col`}>
-          {/* Copy button inside logs panel */}
-          <div className="flex items-center justify-end px-3 py-2 border-b bg-background/50 shrink-0">
+        <div className={`${height} flex flex-col relative`}>
+          {/* Copy button overlay on logs panel */}
+          <div className="absolute top-2 right-2 z-10">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -106,7 +106,7 @@ export function DevServerLogsView({
             </TooltipProvider>
           </div>
 
-          {/* Actual logs content */}
+          {/* Actual logs content - full height */}
           <div className="flex-1 overflow-hidden">
             {logs ? (
               <ProcessLogsViewerContent logs={logs} error={error ?? null} />
