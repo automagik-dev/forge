@@ -63,6 +63,8 @@
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
+    "@types/cheerio": "^1.0.0",
+    "cheerio": "^1.1.2",
     "concurrently": "^8.2.2",
     "cypress": "^15.6.0",
     "cypress-plugin-tab": "^1.0.5",

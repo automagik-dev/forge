@@ -50,7 +50,7 @@ function AppContent() {
     useUserSystem();
   const posthog = usePostHog();
   const sessionStartTimeRef = useRef<number>(Date.now());
-  const heartbeatIntervalRef = useRef<number | null>(null);
+  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const eventCountRef = useRef<number>(0);
 
   // Track page navigation

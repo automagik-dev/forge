@@ -141,6 +141,7 @@ export function GeneralSettings() {
 
   const playSound = async (soundFile: SoundFile) => {
     const audio = new Audio(`/api/sounds/${soundFile}`);
+    audio.volume = 0.3; // Set volume to 30% of maximum
     try {
       await audio.play();
     } catch (err) {
