@@ -1,5 +1,13 @@
 [
   {
+    "tag_name": "v0.7.4",
+    "name": "Automagik Forge v0.7.4",
+    "body": "Hey there! 🎉\n\nWe've been hard at work making Forge more reliable and easier to use. Here's what's new:\n\n✨ **Smoother startup** – We fixed pesky initialization issues that could trip you up when first running Forge. It should now start more reliably, even in tricky environments.\n\n🔧 **Better error messages** – When something goes wrong during startup, you'll get much clearer information about what happened and how to fix it.\n\n⚡ **Under-the-hood improvements** – We've streamlined some internal processes to make everything feel snappier and more stable.\n\nThanks for using Forge! Let us know if you spot anything we can improve. 🧞",
+    "html_url": "https://github.com/namastexlabs/automagik-forge/releases/tag/v0.7.4",
+    "published_at": "2025-11-17T20:28:23Z",
+    "prerelease": false
+  },
+  {
     "tag_name": "v0.7.0",
     "name": "Automagik Forge v0.7.0",
     "body": "Hey there! 🎉\n\nWe've made Forge even smoother for you:\n\n✨ **Mobile got a major glow-up** — The app feels way more natural on your phone now, with better navigation and a cleaner interface.\n\n🎯 **Android works reliably** — We fixed some startup hiccups, so you can count on it working when you need it.\n\n🖼️ **Preview is now in your control** — Not happy with auto-detection? You can manually set your preview URL exactly how you want it.\n\nThanks for using Forge! Enjoy the smoother experience. 💙",
