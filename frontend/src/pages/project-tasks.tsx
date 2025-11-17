@@ -7,6 +7,7 @@ import { AlertTriangle, Plus } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import { tasksApi } from '@/lib/api';
 import { openTaskForm } from '@/lib/openTaskForm';
+import { openAttemptForm } from '@/lib/openAttemptForm';
 import { FeatureShowcaseModal } from '@/components/showcase/FeatureShowcaseModal';
 import { showcases } from '@/config/showcases';
 import { useShowcaseTrigger } from '@/hooks/useShowcaseTrigger';
@@ -204,17 +205,6 @@ export function ProjectTasks() {
     rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat' || rawMode === 'list'
       ? rawMode
       : null;
-
-  // TODO: Remove this redirect after v0.1.0 (legacy URL support for bookmarked links)
-  // Migrates old `view=logs` to `view=diffs`
-  useEffect(() => {
-    const view = searchParams.get('view');
-    if (view === 'logs') {
-      const params = new URLSearchParams(searchParams);
-      params.set('view', 'diffs');
-      setSearchParams(params, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
 
   const setMode = useCallback(
     (newMode: LayoutMode, trigger: ViewModeChangeTrigger = 'ui_button') => {
@@ -614,9 +604,10 @@ export function ProjectTasks() {
 
   const handleNewAttempt = useCallback(
     (task: Task) => {
-      // TODO: Implement create new attempt flow
-      // This would typically open a dialog to configure executor and start a new attempt
-      console.log('Create new attempt for task:', task.id);
+      openAttemptForm({
+        taskId: task.id,
+        latestAttempt: task.latestAttempt,
+      });
     },
     []
   );
