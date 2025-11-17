@@ -1,5 +1,5 @@
 import { Check, AlertTriangle, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Tooltip,
   TooltipContent,
@@ -25,7 +25,8 @@ export function ApproveButton({
 }: ApproveButtonProps) {
   const { t } = useTranslation('tasks');
   const { approve, isApproving } = useApproveTask();
-  const [, setShouldShake] = useState(false);
+  const [shouldShake, setShouldShake] = useState(false);
+  const updateBadgeRef = useRef<HTMLElement | null>(null);
 
   const hasCodeChanges = (branchStatus?.commits_ahead ?? 0) > 0;
   const hasConflicts = (branchStatus?.conflicted_files?.length ?? 0) > 0;
