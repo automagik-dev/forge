@@ -606,7 +606,7 @@ export function ProjectTasks() {
     (task: Task) => {
       openAttemptForm({
         taskId: task.id,
-        latestAttempt: task.latestAttempt,
+        latestAttempt: null,
       });
     },
     []
