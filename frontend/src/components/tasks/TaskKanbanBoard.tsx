@@ -30,6 +30,8 @@ function TaskKanbanBoard({
   selectedTask,
   onCreateTask,
 }: TaskKanbanBoardProps) {
+  console.log('[TaskKanbanBoard] selectedTask:', selectedTask?.id, selectedTask?.title);
+
   return (
     <KanbanProvider onDragEnd={onDragEnd}>
       {Object.entries(groupedTasks).map(([status, statusTasks]) => (
@@ -41,16 +43,22 @@ function TaskKanbanBoard({
             onAddTask={onCreateTask}
           />
           <KanbanCards>
-            {statusTasks.map((task, index) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                index={index}
-                status={status}
-                onViewDetails={onViewTaskDetails}
-                isOpen={selectedTask?.id === task.id}
-              />
-            ))}
+            {statusTasks.map((task, index) => {
+              const isOpen = selectedTask?.id === task.id;
+              if (isOpen) {
+                console.log('[TaskKanbanBoard] Highlighting task:', task.id, task.title);
+              }
+              return (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  index={index}
+                  status={status}
+                  onViewDetails={onViewTaskDetails}
+                  isOpen={isOpen}
+                />
+              );
+            })}
           </KanbanCards>
         </KanbanBoard>
       ))}

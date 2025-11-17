@@ -747,6 +747,7 @@ function DisplayConversationEntry({
         <PendingApprovalEntry
           pendingStatus={status}
           executionProcessId={executionProcessId}
+          attemptId={taskAttempt?.id}
         >
           {content}
         </PendingApprovalEntry>
