@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Terminal, ChevronDown, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import ProcessLogsViewer, {
   ProcessLogsViewerContent,
 } from '../ProcessLogsViewer';
@@ -22,7 +28,6 @@ export function DevServerLogsView({
   showLogs,
   onToggle,
   height = 'h-60',
-  showToggleText = true,
   logs,
   error,
 }: DevServerLogsViewProps) {
@@ -55,49 +60,60 @@ export function DevServerLogsView({
 
   return (
     <div className="border-t bg-background">
-      {/* Logs toolbar */}
-      <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/50">
-        <div className="flex items-center gap-2">
-          <Terminal className="h-4 w-4 text-muted-foreground" />
+      {/* Clickable logs header */}
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-3 py-2 border-b bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
+        aria-label={showLogs ? t('preview.logs.hide') : t('preview.logs.show')}
+      >
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <Terminal className="h-4 w-4 text-muted-foreground shrink-0" />
           <span className="text-sm font-medium text-foreground">
             {t('preview.logs.title')}
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleCopyLogs}
-            disabled={!logs || logs.length === 0}
-          >
-            {copied ? (
-              <Check className="h-4 w-4 mr-1" />
-            ) : (
-              <Copy className="h-4 w-4 mr-1" />
-            )}
-            {copied ? t('preview.logs.copied') : t('preview.logs.copy')}
-          </Button>
-          <Button size="sm" variant="ghost" onClick={onToggle}>
-            <ChevronDown
-              className={`h-4 w-4 mr-1 ${showToggleText ? 'transition-transform' : ''} ${showLogs ? '' : 'rotate-180'}`}
-            />
-            {showToggleText
-              ? showLogs
-                ? t('preview.logs.hide')
-                : t('preview.logs.show')
-              : t('preview.logs.hide')}
-          </Button>
-        </div>
-      </div>
+        <ChevronDown
+          className={`h-4 w-4 text-muted-foreground transition-transform shrink-0 ${showLogs ? '' : 'rotate-180'}`}
+        />
+      </button>
 
-      {/* Logs viewer */}
+      {/* Logs viewer with copy button */}
       {showLogs && (
-        <div className={height}>
-          {logs ? (
-            <ProcessLogsViewerContent logs={logs} error={error ?? null} />
-          ) : (
-            <ProcessLogsViewer processId={latestDevServerProcess.id} />
-          )}
+        <div className={`${height} flex flex-col`}>
+          {/* Copy button inside logs panel */}
+          <div className="flex items-center justify-end px-3 py-2 border-b bg-background/50 shrink-0">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="icon"
+                    size="sm"
+                    onClick={handleCopyLogs}
+                    disabled={!logs || logs.length === 0}
+                    aria-label={copied ? t('preview.logs.copied') : t('preview.logs.copy')}
+                  >
+                    {copied ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {copied ? t('preview.logs.copied') : t('preview.logs.copy')}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
+          {/* Actual logs content */}
+          <div className="flex-1 overflow-hidden">
+            {logs ? (
+              <ProcessLogsViewerContent logs={logs} error={error ?? null} />
+            ) : (
+              <ProcessLogsViewer processId={latestDevServerProcess.id} />
+            )}
+          </div>
         </div>
       )}
     </div>
