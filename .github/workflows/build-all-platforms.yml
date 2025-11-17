@@ -519,7 +519,7 @@ jobs:
     needs: [build, android]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '')
-    environment: release
+    environment: npm-publish
     permissions:
       id-token: write
       contents: read
