@@ -94,7 +94,8 @@ Sentry.setTag('source', 'frontend');
 // for client-side use. It can ONLY send events to PostHog, not read data or modify
 // project settings. This is standard practice for client-side analytics tools
 // (like Google Analytics, Mixpanel, etc.) - the key is visible in the JS bundle anyway.
-// Always embedded in code for consistent behavior across all build methods.
+// Hard-coded to ensure consistent analytics across all build methods (make dev, make prod, npm).
+// Users control analytics via the Privacy Opt-In dialog, not environment variables.
 const posthogKey = 'phc_' + 'KYI6y57aVECNO9aj5O28gNAz3r7BU0cTtEf50HQJZHd';
 const posthogHost = 'https://us.i.posthog.com';
 
