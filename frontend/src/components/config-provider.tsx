@@ -17,6 +17,7 @@ import {
 import type { ExecutorConfig } from 'shared/types';
 import { configApi, githubAuthApi } from '../lib/api';
 import { updateLanguageFromConfig } from '../i18n/config';
+import { useNotificationVolumeSync } from '../hooks/useNotificationVolumeSync';
 
 interface UserSystemState {
   config: Config | null;
@@ -119,6 +120,9 @@ export function UserSystemProvider({ children }: UserSystemProviderProps) {
       updateLanguageFromConfig(config.language);
     }
   }, [config?.language]);
+
+  // Sync notification volume with localStorage (temporary until backend supports it)
+  useNotificationVolumeSync(config);
 
   // Check GitHub token validity after config loads and when auth tokens change
   useEffect(() => {

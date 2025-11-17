@@ -103,7 +103,9 @@
           "helper": "Play a sound when task attempts finish running.",
           "fileLabel": "Sound",
           "filePlaceholder": "Select sound",
-          "fileHelper": "Choose the sound to play when tasks complete. Click the volume button to preview."
+          "fileHelper": "Choose the sound to play when tasks complete. Click the volume button to preview.",
+          "volumeLabel": "Volume",
+          "volumeHelper": "Adjust the notification sound volume"
         },
         "push": {
           "label": "Push Notifications",
