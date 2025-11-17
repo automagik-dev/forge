@@ -15,17 +15,13 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { TaskAttempt } from 'shared/types';
-import GitOperations, {
-  type GitOperationsInputs,
-} from '@/components/tasks/Toolbar/GitOperations.tsx';
 import { Virtuoso } from 'react-virtuoso';
 
 interface DiffsPanelProps {
   selectedAttempt: TaskAttempt | null;
-  gitOps?: GitOperationsInputs;
 }
 
-export function DiffsPanel({ selectedAttempt, gitOps }: DiffsPanelProps) {
+export function DiffsPanel({ selectedAttempt }: DiffsPanelProps) {
   const { t } = useTranslation('tasks');
   const [loading, setLoading] = useState(true);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
@@ -118,7 +114,6 @@ export function DiffsPanel({ selectedAttempt, gitOps }: DiffsPanelProps) {
       handleCollapseAll={handleCollapseAll}
       toggle={toggle}
       selectedAttempt={selectedAttempt}
-      gitOps={gitOps}
       loading={loading}
       t={t}
     />
@@ -135,7 +130,6 @@ interface DiffsPanelContentProps {
   handleCollapseAll: () => void;
   toggle: (id: string) => void;
   selectedAttempt: TaskAttempt | null;
-  gitOps?: GitOperationsInputs;
   loading: boolean;
   t: (key: string, params?: any) => string;
 }
@@ -150,15 +144,14 @@ function DiffsPanelContent({
   handleCollapseAll,
   toggle,
   selectedAttempt,
-  gitOps,
   loading,
   t,
 }: DiffsPanelContentProps) {
   return (
-    <div className="h-full flex flex-col relative">
+    <div className="h-full flex flex-col overflow-hidden">
       {diffs.length > 0 && (
         <NewCardHeader
-          className="sticky top-0 z-10"
+          className="shrink-0 sticky top-0 z-10"
           actions={
             <>
               <DiffViewSwitch />
@@ -205,12 +198,7 @@ function DiffsPanelContent({
           </div>
         </NewCardHeader>
       )}
-      {gitOps && selectedAttempt && (
-        <div className="px-3">
-          <GitOperations selectedAttempt={selectedAttempt} {...gitOps} />
-        </div>
-      )}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <Loader />

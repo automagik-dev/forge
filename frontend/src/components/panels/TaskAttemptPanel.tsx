@@ -99,7 +99,7 @@ const TaskAttemptPanel = ({
             followUp: (
               <TaskFollowUpSection
                 task={task}
-                selectedAttemptId={task?.id}
+                selectedAttemptId={undefined} // No attempt yet for agent tasks
                 jumpToLogsTab={() => {}}
                 isInChatView={isInChatView}
                 taskIdFromUrl={taskIdFromUrl}

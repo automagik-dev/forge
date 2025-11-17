@@ -516,10 +516,12 @@ fn format_status_summary(status: &str, executor: &str, branch: &str) -> String {
 }
 
 fn omni_base_url() -> String {
+    // Priority 1: Explicit PUBLIC_BASE_URL (for tunnels/production)
     if let Ok(url) = std::env::var("PUBLIC_BASE_URL") {
         return url.trim_end_matches('/').to_string();
     }
 
+    // Priority 2: HOST/BACKEND_PORT env vars (for custom deployments)
     let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let port = std::env::var("BACKEND_PORT")
         .or_else(|_| std::env::var("PORT"))
@@ -755,5 +757,62 @@ mod tests {
         assert!(summary.contains("forge-agent"));
         assert!(summary.contains("feature/auth"));
         assert!(summary.starts_with("✅"));
+    }
+
+    #[test]
+    fn omni_base_url_respects_env_vars() {
+        let previous_public = std::env::var("PUBLIC_BASE_URL").ok();
+        let previous_host = std::env::var("HOST").ok();
+        let previous_backend_port = std::env::var("BACKEND_PORT").ok();
+        let previous_port = std::env::var("PORT").ok();
+
+        unsafe {
+            std::env::set_var("PUBLIC_BASE_URL", "https://forge.example.com");
+            std::env::set_var("HOST", "10.0.0.1");
+            std::env::set_var("BACKEND_PORT", "9999");
+        }
+        assert_eq!(omni_base_url(), "https://forge.example.com");
+
+        unsafe {
+            std::env::remove_var("PUBLIC_BASE_URL");
+            std::env::set_var("HOST", "10.0.0.2");
+            std::env::set_var("BACKEND_PORT", "9999");
+        }
+        assert_eq!(omni_base_url(), "http://10.0.0.2:9999");
+
+        unsafe {
+            std::env::remove_var("BACKEND_PORT");
+            std::env::set_var("PORT", "8080");
+        }
+        assert_eq!(omni_base_url(), "http://10.0.0.2:8080");
+
+        unsafe {
+            std::env::remove_var("HOST");
+            std::env::remove_var("PORT");
+        }
+        assert_eq!(omni_base_url(), "http://127.0.0.1:8887");
+
+        unsafe {
+            if let Some(url) = previous_public {
+                std::env::set_var("PUBLIC_BASE_URL", url);
+            } else {
+                std::env::remove_var("PUBLIC_BASE_URL");
+            }
+            if let Some(host) = previous_host {
+                std::env::set_var("HOST", host);
+            } else {
+                std::env::remove_var("HOST");
+            }
+            if let Some(port) = previous_backend_port {
+                std::env::set_var("BACKEND_PORT", port);
+            } else {
+                std::env::remove_var("BACKEND_PORT");
+            }
+            if let Some(port) = previous_port {
+                std::env::set_var("PORT", port);
+            } else {
+                std::env::remove_var("PORT");
+            }
+        }
     }
 }

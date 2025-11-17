@@ -17,6 +17,8 @@ import {
   MessageCircle,
   Menu,
   Plus,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { SearchBar } from '@/components/search-bar';
@@ -26,6 +28,9 @@ import { useProject } from '@/contexts/project-context';
 import { useOpenProjectInEditor } from '@/hooks/useOpenProjectInEditor';
 import { useDiscordOnlineCount } from '@/hooks/useDiscordOnlineCount';
 import { Breadcrumb } from '@/components/breadcrumb';
+import { useTheme } from '@/components/theme-provider';
+import { getActualTheme } from '@/utils/theme';
+import { ThemeMode } from 'shared/types';
 
 const INTERNAL_NAV = [
   { label: 'Projects', icon: FolderOpen, to: '/projects' },
@@ -49,6 +54,40 @@ const EXTERNAL_LINKS = [
     href: 'https://discord.gg/CEbzP5Hteh',
   },
 ];
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const actualTheme = getActualTheme(theme);
+
+  const toggleTheme = () => {
+    setTheme(actualTheme === 'light' ? ThemeMode.DARK : ThemeMode.LIGHT);
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleTheme}
+      aria-label={`Switch to ${actualTheme === 'light' ? 'dark' : 'light'} theme`}
+      className="relative"
+    >
+      <Sun
+        className={`h-4 w-4 absolute transition-all duration-300 ${
+          actualTheme === 'light'
+            ? 'rotate-0 scale-100 opacity-100 text-orange-400'
+            : 'rotate-90 scale-0 opacity-0'
+        }`}
+      />
+      <Moon
+        className={`h-4 w-4 absolute transition-all duration-300 ${
+          actualTheme === 'dark'
+            ? 'rotate-0 scale-100 opacity-100'
+            : '-rotate-90 scale-0 opacity-0'
+        }`}
+      />
+    </Button>
+  );
+}
 
 export function Navbar() {
   const location = useLocation();
@@ -152,6 +191,7 @@ export function Navbar() {
                 </Button>
               </>
             )}
+            <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button

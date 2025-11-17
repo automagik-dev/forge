@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Play,
@@ -8,7 +8,6 @@ import {
   Copy,
   Check,
   GitBranch,
-  HeartPlus,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import NiceModal from '@ebay/nice-modal-react';
@@ -49,6 +48,7 @@ export function NextActionCard({
   const { project } = useProject();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const shouldNavigateToPreview = useRef(false);
 
   const { data: attempt } = useQuery({
     queryKey: ['attempt', attemptId],
@@ -60,6 +60,12 @@ export function NextActionCard({
   const { fileCount, added, deleted, error } = useDiffSummary(
     attemptId ?? null
   );
+
+  const handleDevServerStartSuccess = useCallback(() => {
+    // Mark that we should navigate to preview once the server is actually running
+    shouldNavigateToPreview.current = true;
+  }, []);
+
   const {
     start,
     stop,
@@ -67,7 +73,17 @@ export function NextActionCard({
     isStopping,
     runningDevServer,
     latestDevServerProcess,
-  } = useDevServer(attemptId);
+  } = useDevServer(attemptId, {
+    onStartSuccess: handleDevServerStartSuccess,
+  });
+
+  // Navigate to preview mode when the dev server is actually running
+  useEffect(() => {
+    if (shouldNavigateToPreview.current && runningDevServer) {
+      shouldNavigateToPreview.current = false;
+      navigate({ search: '?view=preview' });
+    }
+  }, [runningDevServer, navigate]);
 
   const projectHasDevScript = Boolean(project?.dev_script);
 
@@ -98,10 +114,6 @@ export function NextActionCard({
 
   const handleOpenDiffs = useCallback(() => {
     navigate({ search: '?view=diffs' });
-  }, [navigate]);
-
-  const handleOpenPreview = useCallback(() => {
-    navigate({ search: '?view=preview' });
   }, [navigate]);
 
   const handleTryAgain = useCallback(() => {
@@ -177,21 +189,6 @@ export function NextActionCard({
           {/* Right: Icon buttons */}
           {fileCount > 0 && (
             <div className="flex items-center gap-1 shrink-0">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0"
-                    onClick={handleOpenPreview}
-                    aria-label={t('attempt.preview')}
-                  >
-                    <HeartPlus className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{t('attempt.preview')}</TooltipContent>
-              </Tooltip>
-
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button

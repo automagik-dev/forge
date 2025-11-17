@@ -205,6 +205,32 @@ function copyDevAssets() {
 }
 
 /**
+ * Read saved ports without verifying availability
+ * This is used when you want to know what ports are configured,
+ * even if they're currently in use (e.g., backend is already running)
+ */
+function readPorts() {
+  // Priority 1: Check .env file for configured ports
+  const envPorts = loadEnvPorts();
+  if (envPorts) {
+    return envPorts;
+  }
+
+  // Priority 2: Load from .dev-ports.json
+  const savedPorts = loadPorts();
+  if (savedPorts) {
+    return savedPorts;
+  }
+
+  // Priority 3: Return defaults
+  return {
+    frontend: 3000,
+    backend: 3001,
+    source: "default",
+  };
+}
+
+/**
  * Clear saved ports
  */
 function clearPorts() {
@@ -253,19 +279,39 @@ if (require.main === module) {
         .catch(console.error);
       break;
 
+    case "read-frontend":
+      // Read saved frontend port without verifying availability
+      copyDevAssets();
+      const frontendPorts = readPorts();
+      console.log(frontendPorts.frontend);
+      break;
+
+    case "read-backend":
+      // Read saved backend port without verifying availability
+      copyDevAssets();
+      const backendPorts = readPorts();
+      console.log(backendPorts.backend);
+      break;
+
     default:
       console.log("Usage:");
       console.log(
-        "  node setup-dev-environment.js get     - Setup dev environment (ports + assets)"
+        "  node setup-dev-environment.js get            - Setup dev environment (ports + assets)"
       );
       console.log(
-        "  node setup-dev-environment.js frontend - Get frontend port only"
+        "  node setup-dev-environment.js frontend       - Get frontend port (allocate if needed)"
       );
       console.log(
-        "  node setup-dev-environment.js backend  - Get backend port only"
+        "  node setup-dev-environment.js backend        - Get backend port (allocate if needed)"
       );
       console.log(
-        "  node setup-dev-environment.js clear    - Clear saved ports"
+        "  node setup-dev-environment.js read-frontend  - Read saved frontend port (no allocation)"
+      );
+      console.log(
+        "  node setup-dev-environment.js read-backend   - Read saved backend port (no allocation)"
+      );
+      console.log(
+        "  node setup-dev-environment.js clear          - Clear saved ports"
       );
       break;
   }

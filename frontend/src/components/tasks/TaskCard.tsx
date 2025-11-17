@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { KanbanCard } from '@/components/ui/shadcn-io/kanban';
-import { CheckCircle, Loader2, XCircle, Play, Bot, Paperclip, Clock, Link2, Server, Archive } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle, Play, Paperclip, Clock, Link2, Server, Archive } from 'lucide-react';
 import type { TaskWithAttemptStatus, ImageResponse } from 'shared/types';
 import { ActionsDropdown } from '@/components/ui/ActionsDropdown';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { imagesApi } from '@/lib/api';
 import NiceModal from '@ebay/nice-modal-react';
 import { H4 } from '@/components/ui/typography';
+import { ProviderIcon, getProviderName } from '@/components/providers/ProviderIcon';
 
 type Task = TaskWithAttemptStatus;
 
@@ -126,7 +127,7 @@ export function TaskCard({
         forwardedRef={localRef}
       >
       <div className="flex flex-1 gap-2 items-center min-w-0">
-        <H4 className="flex-1 min-w-0 line-clamp-2 font-light text-sm">
+        <H4 className="flex-1 min-w-0 line-clamp-2 font-semibold text-base">
           {task.title}
         </H4>
         <div className="flex items-center space-x-1">
@@ -222,8 +223,8 @@ export function TaskCard({
         {/* Executor Badge */}
         {task.executor && (
           <Badge variant="secondary" className="text-xs gap-1 h-5 px-1.5 bg-secondary/70 dark:bg-secondary text-foreground dark:text-secondary-foreground">
-            <Bot className="h-3 w-3" />
-            <span>{task.executor}</span>
+            <ProviderIcon executor={task.executor} className="h-3 w-3" />
+            <span>{getProviderName(task.executor)}</span>
           </Badge>
         )}
 
@@ -254,7 +255,7 @@ export function TaskCard({
         {/* Time Badge */}
         <Badge variant="outline" className="text-xs text-muted-foreground gap-1 h-5 px-1.5 border-none bg-transparent">
           <Clock className="h-3 w-3" />
-          <span>{formatRelativeTime(task.created_at)}</span>
+          <span>{formatRelativeTime(task.updated_at)}</span>
         </Badge>
       </div>
     </KanbanCard>

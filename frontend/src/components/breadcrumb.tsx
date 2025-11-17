@@ -1,11 +1,13 @@
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronRight, ChevronDown, Home, GitBranch, GitMerge, ArrowRight, GitCompare } from 'lucide-react';
+import { ChevronRight, ChevronDown, GitBranch, GitMerge, ArrowRight, GitCompare, FolderOpen, KanbanSquare } from 'lucide-react';
 import { useProject } from '@/contexts/project-context';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
 import { useTaskAttempt } from '@/hooks/useTaskAttempt';
 import { useBranchStatus } from '@/hooks/useBranchStatus';
 import { useChangeTargetBranch } from '@/hooks/useChangeTargetBranch';
+import { useRebase } from '@/hooks/useRebase';
+import { useDefaultBaseBranch } from '@/hooks/useDefaultBaseBranch';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -26,10 +28,10 @@ import { TaskPanelHeaderActions } from '@/components/panels/TaskPanelHeaderActio
 import { AttemptHeaderActions } from '@/components/panels/AttemptHeaderActions';
 import { TaskRelationshipBadges } from '@/components/tasks/TaskRelationshipBadges';
 import { showModal } from '@/lib/modals';
-import NiceModal from '@ebay/nice-modal-react';
 import type { LayoutMode } from '@/components/layout/TasksLayout';
 import type { Task, GitBranch as GitBranchType } from 'shared/types';
 import { projectsApi } from '@/lib/api';
+import { GitActionsGroup } from '@/components/breadcrumb/git-actions';
 
 export function Breadcrumb() {
   const location = useLocation();
@@ -62,15 +64,35 @@ export function Breadcrumb() {
   );
   const isChangingTargetBranch = changeTargetBranchMutation.isPending;
 
-  // Fetch branches when attempt is available
+  // Rebase mutation
+  const rebaseMutation = useRebase(attempt?.id || '', projectId || '');
+  const [rebasing, setRebasing] = useState(false);
+
+  // Fetch branches when attempt is available OR when in board view
   useEffect(() => {
-    if (!attempt?.id || !projectId) return;
+    if (!projectId) return;
 
     projectsApi
       .getBranches(projectId)
       .then(setBranches)
       .catch(() => setBranches([]));
-  }, [attempt?.id, projectId]);
+  }, [projectId]);
+
+  // Use default base branch hook for board view
+  const { defaultBranch, setDefaultBranch } = useDefaultBaseBranch(projectId);
+
+  // Determine the effective base branch for board view
+  // Priority: 1) Valid saved preference, 2) Current branch from git
+  const effectiveBaseBranch = useMemo(() => {
+    // Validate that saved defaultBranch still exists in available branches
+    const isDefaultBranchValid = defaultBranch && branches.some((b) => b.name === defaultBranch);
+
+    if (isDefaultBranchValid) return defaultBranch;
+
+    // Fallback to current branch if no valid preference
+    const currentBranch = branches.find((b) => b.is_current);
+    return currentBranch?.name ?? 'main';
+  }, [defaultBranch, branches]);
 
   // Calculate conflicts for disabling change target branch button
   const hasConflictsCalculated = useMemo(
@@ -157,7 +179,7 @@ export function Breadcrumb() {
     const crumbs: Array<{
       label: string;
       path: string;
-      type?: 'project' | 'task' | 'parent-task' | 'git-branch' | 'base-branch';
+      type?: 'project' | 'task' | 'parent-task' | 'git-branch' | 'base-branch' | 'board-base-branch';
       icon?: React.ReactNode;
       onClick?: () => void;
     }> = [];
@@ -202,6 +224,17 @@ export function Breadcrumb() {
           });
         }
       } else {
+        // Board view or task view without attempt
+        // Show default base branch in board view (when no task is selected)
+        if (!taskId) {
+          crumbs.push({
+            label: effectiveBaseBranch,
+            path: location.pathname,
+            type: 'board-base-branch',
+            icon: <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
+          });
+        }
+
         // Traditional breadcrumb for non-attempt views: project -> parent task -> task
         // Add parent task if current task has one
         if (parentTask) {
@@ -276,28 +309,110 @@ export function Breadcrumb() {
     }
   };
 
-  // Git actions dialog handler
-  const handleGitActionsClick = (e: React.MouseEvent) => {
+  // Rebase dialog handler - directly open rebase dialog
+  const handleRebaseClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!attempt?.id || !currentTask || !projectId) return;
-    NiceModal.show('git-actions', {
-      attemptId: attempt.id,
-      task: currentTask,
-      projectId,
-    });
+    if (!attempt || !projectId) return;
+
+    // Ensure branches are loaded
+    let branchesToUse = branches;
+    if (branchesToUse.length === 0) {
+      try {
+        branchesToUse = await projectsApi.getBranches(projectId);
+        setBranches(branchesToUse);
+      } catch (err) {
+        branchesToUse = [];
+      }
+    }
+
+    try {
+      const result = await showModal<{
+        action: 'confirmed' | 'canceled';
+        branchName?: string;
+        upstreamBranch?: string;
+      }>('rebase-dialog', {
+        branches: branchesToUse,
+        isRebasing: rebasing,
+        initialTargetBranch: attempt.target_branch,
+        initialUpstreamBranch: attempt.target_branch,
+      });
+
+      if (result.action === 'confirmed' && result.branchName && result.upstreamBranch) {
+        // Execute the rebase
+        setRebasing(true);
+        try {
+          await rebaseMutation.mutateAsync({
+            newBaseBranch: result.branchName,
+            oldBaseBranch: result.upstreamBranch,
+          });
+        } catch (err: any) {
+          console.error('Rebase failed:', err.message || t('git.errors.rebaseBranch'));
+        } finally {
+          setRebasing(false);
+        }
+      }
+    } catch (error) {
+      // User cancelled
+    }
+  };
+
+  // Handler for changing default base branch in board view
+  const handleChangeDefaultBaseBranch = async () => {
+    // Ensure branches are loaded
+    let branchesToUse = branches;
+    if (branchesToUse.length === 0 && projectId) {
+      try {
+        branchesToUse = await projectsApi.getBranches(projectId);
+        setBranches(branchesToUse);
+      } catch (err) {
+        branchesToUse = [];
+      }
+    }
+
+    try {
+      const result = await showModal<{
+        action: 'confirmed' | 'canceled';
+        branchName: string;
+      }>('change-target-branch-dialog', {
+        branches: branchesToUse,
+        isChangingTargetBranch: false,
+      });
+
+      if (result.action === 'confirmed' && result.branchName) {
+        setDefaultBranch(result.branchName);
+      }
+    } catch (error) {
+      // User cancelled
+    }
   };
 
   return (
     <nav aria-label="Breadcrumb" className="px-3 py-2 text-sm flex items-center justify-between">
       <ol className="flex items-center gap-1">
-        {/* Home icon to navigate back to project */}
+        {/* Folder icon to navigate to projects home */}
+        <li className="flex items-center gap-1">
+          <Link
+            to="/projects"
+            className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            aria-label="Go to projects"
+          >
+            <FolderOpen className="h-4 w-4" />
+          </Link>
+        </li>
+
+        {/* Separator */}
+        <li className="flex items-center">
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </li>
+
+        {/* Kanban icon to navigate back to project tasks */}
         <li className="flex items-center gap-1">
           <Link
             to={`/projects/${projectId}/tasks`}
             className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-            aria-label="Go to project home"
+            aria-label="Go to project tasks"
           >
-            <Home className="h-4 w-4" />
+            <KanbanSquare className="h-4 w-4" />
           </Link>
         </li>
 
@@ -306,45 +421,66 @@ export function Breadcrumb() {
           const isParentTask = crumb.type === 'parent-task';
           const isGitBranch = crumb.type === 'git-branch';
           const isBaseBranch = crumb.type === 'base-branch';
+          const isBoardBaseBranch = crumb.type === 'board-base-branch';
           const isLastCrumb = index === breadcrumbs.length - 1;
+          const isFirstItem = index === 0;
 
           return (
             <li key={`${crumb.type}-${crumb.path}-${index}`} className={`flex items-center gap-1 ${isParentTask ? 'hidden lg:flex' : ''}`}>
-              {/* Separator */}
-              {!isGitBranch ? (
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              {/* Separator - skip for first item (project) */}
+              {!isFirstItem && (
+                !isGitBranch ? (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                )
               )}
 
               {/* Content */}
               {isCurrentProject ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-ring rounded-sm px-1 -mx-1">
-                    <span className={isLastCrumb ? 'text-foreground font-medium' : ''}>
-                      {crumb.label}
-                    </span>
-                    <ChevronDown className="h-3 w-3 opacity-50" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56 bg-popover">
-                    {projects && projects.length > 0 ? (
-                      projects.map((proj) => (
-                        <DropdownMenuItem
-                          key={proj.id}
-                          onClick={() => handleProjectSwitch(proj.id)}
-                          className={proj.id === projectId ? 'bg-accent' : ''}
-                        >
-                          <span className="truncate">{proj.name}</span>
-                        </DropdownMenuItem>
-                      ))
-                    ) : (
-                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                        No projects available
-                      </div>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : isGitBranch || isBaseBranch ? (
+                <>
+                  {/* Project dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-ring rounded-sm px-1 -mx-1">
+                      <span className={isLastCrumb ? 'text-foreground font-medium' : ''}>
+                        {crumb.label}
+                      </span>
+                      <ChevronDown className="h-3 w-3 opacity-50" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-56 bg-popover">
+                      {projects && projects.length > 0 ? (
+                        projects.map((proj) => (
+                          <DropdownMenuItem
+                            key={proj.id}
+                            onClick={() => handleProjectSwitch(proj.id)}
+                            className={proj.id === projectId ? 'bg-accent' : ''}
+                          >
+                            <span className="truncate">{proj.name}</span>
+                          </DropdownMenuItem>
+                        ))
+                      ) : (
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                          No projects available
+                        </div>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Board link - only show if not on tasks page */}
+                  {!isLastCrumb && (
+                    <>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      <Link
+                        to={`/projects/${projectId}/tasks`}
+                        className="text-muted-foreground hover:text-foreground transition-colors px-1 -mx-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        aria-label="Go to board view"
+                      >
+                        Board
+                      </Link>
+                    </>
+                  )}
+                </>
+              ) : isGitBranch || isBaseBranch || isBoardBaseBranch ? (
                 <div className="flex items-center gap-1">
                   <TooltipProvider>
                     <Tooltip>
@@ -359,7 +495,7 @@ export function Breadcrumb() {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                  {/* Add change target branch button next to base branch */}
+                  {/* Add change target branch button next to base branch (attempt view) */}
                   {isBaseBranch && attempt && (
                     <TooltipProvider>
                       <Tooltip>
@@ -377,6 +513,27 @@ export function Breadcrumb() {
                         </TooltipTrigger>
                         <TooltipContent side="bottom">
                           {t('branches.changeTarget.dialog.title')}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                  {/* Add change default base branch button (board view) */}
+                  {isBoardBaseBranch && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            onClick={handleChangeDefaultBaseBranch}
+                            className="inline-flex h-5 w-5 p-0 hover:bg-muted"
+                            aria-label="Change default base branch"
+                          >
+                            <GitCompare className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          Change default base branch
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -419,51 +576,35 @@ export function Breadcrumb() {
       {/* Right side: Git status badges */}
       {currentTask && (
         <div className="flex items-center gap-2">
-          {/* Compact git status badges */}
-          {branchStatus && attempt && (
+          {/* Compact git status badge - only show behind (rebase needed) */}
+          {branchStatus && attempt && (branchStatus.commits_behind ?? 0) > 0 && (
             <TooltipProvider>
-              <div className="flex items-center gap-1">
-                {/* Ahead badge */}
-                {(branchStatus.commits_ahead ?? 0) > 0 && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={handleGitActionsClick}
-                        className="inline-flex items-center justify-center gap-0.5 h-6 px-1.5 rounded-md bg-emerald-100/70 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-medium cursor-pointer hover:bg-emerald-200/70 dark:hover:bg-emerald-800/40 transition-colors"
-                      >
-                        <span className="text-[10px]">↑</span>
-                        <span className="text-[10px]">{branchStatus.commits_ahead}</span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">
-                      +{branchStatus.commits_ahead ?? 0}{' '}
-                      {t('git.status.commits', { count: branchStatus.commits_ahead ?? 0 })}{' '}
-                      {t('git.status.ahead')}
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-
-                {/* Behind badge */}
-                {(branchStatus.commits_behind ?? 0) > 0 && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={handleGitActionsClick}
-                        className="inline-flex items-center justify-center gap-0.5 h-6 px-1.5 rounded-md bg-amber-100/60 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-medium cursor-pointer hover:bg-amber-200/60 dark:hover:bg-amber-800/40 transition-colors"
-                      >
-                        <span className="text-[10px]">↓</span>
-                        <span className="text-[10px]">{branchStatus.commits_behind}</span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">
-                      {branchStatus.commits_behind ?? 0}{' '}
-                      {t('git.status.commits', { count: branchStatus.commits_behind ?? 0 })}{' '}
-                      {t('git.status.behind')}
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleRebaseClick}
+                    className="inline-flex items-center justify-center gap-0.5 h-6 px-2 rounded-md bg-amber-100/60 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-medium cursor-pointer hover:bg-amber-200/60 dark:hover:bg-amber-800/40 transition-colors"
+                  >
+                    <span className="text-[10px]">↓{branchStatus.commits_behind} Rebase</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  {branchStatus.commits_behind ?? 0}{' '}
+                  {t('git.status.commits', { count: branchStatus.commits_behind ?? 0 })}{' '}
+                  {t('git.status.behind')} - Click to rebase
+                </TooltipContent>
+              </Tooltip>
             </TooltipProvider>
+          )}
+
+          {/* Git Actions: Approve, Create PR, Push to PR, etc. */}
+          {branchStatus && attempt && projectId && (
+            <GitActionsGroup
+              task={currentTask}
+              attempt={attempt}
+              branchStatus={branchStatus}
+              projectId={projectId}
+            />
           )}
 
           {/* Action buttons */}

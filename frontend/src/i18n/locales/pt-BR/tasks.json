@@ -109,7 +109,8 @@
     "loadingAttempts": "Loading attempts...",
     "errorLoadingAttempts": "Failed to load attempts",
     "attemptsCount": "Attempts ({{count}})",
-    "noAttempts": "No attempts yet"
+    "noAttempts": "No attempts yet",
+    "startNewAttempt": "Iniciar nova tentativa"
   },
   "processes": {
     "selectAttempt": "Select an attempt to view execution processes.",
@@ -324,7 +325,8 @@
     "buttons": {
       "previous": "Previous",
       "next": "Next",
-      "finish": "Finish"
+      "finish": "Finish",
+      "skip": "Pular"
     }
   }
 }

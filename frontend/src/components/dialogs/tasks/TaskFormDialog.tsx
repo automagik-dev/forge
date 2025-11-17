@@ -73,7 +73,9 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     const { data: projectProfiles, isLoading: isLoadingProjectProfiles } = useProjectProfiles(projectId);
 
     // Use project profiles if available (synchronized agents), fallback to global profiles
-    const profiles = projectProfiles?.executors || globalProfiles;
+    const projectExecutors = projectProfiles?.executors;
+    const hasProjectExecutors = projectExecutors && Object.keys(projectExecutors).length > 0;
+    const profiles = hasProjectExecutors ? projectExecutors : globalProfiles;
     const hasProfiles = profiles && Object.keys(profiles).length > 0;
     const isProfilesLoading = isLoadingProjectProfiles && (!globalProfiles || Object.keys(globalProfiles).length === 0);
 
@@ -256,7 +258,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
 
     // Handle image upload success by inserting markdown into description
     const handleImageUploaded = useCallback((image: ImageResponse) => {
-      const markdownText = `![${image.original_name}](${image.file_path})`;
+      const markdownText = `![${image.original_name}](/api/images/${image.id}/file)`;
       setDescription((prev) => {
         if (prev.trim() === '') {
           return markdownText;

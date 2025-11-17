@@ -42,14 +42,18 @@ export default {
         'lg': '1024px',  // Tablets (landscape)
         'xl': '1280px',  // Desktop
         '2xl': '1536px', // Large desktop
-        
+
         'mobile': { 'max': '767px' },      // Mobile only
         'tablet': { 'min': '768px', 'max': '1023px' }, // Tablet only
         'desktop': { 'min': '1024px' },    // Desktop and up
-        
+
         'h-sm': { 'raw': '(max-height: 667px)' },  // Short screens
         'h-md': { 'raw': '(min-height: 668px) and (max-height: 844px)' },
-        'h-lg': { 'raw': '(min-height: 845px)' }   // Tall screens
+        'h-lg': { 'raw': '(min-height: 845px)' },   // Tall screens
+
+        // Orientation-based breakpoints for Kanban responsivity
+        'landscape': { 'raw': '(orientation: landscape)' },
+        'portrait': { 'raw': '(orientation: portrait)' },
       },
       
       spacing: {
