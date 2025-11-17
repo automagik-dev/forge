@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Play,
@@ -48,7 +48,7 @@ export function NextActionCard({
   const { project } = useProject();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
-  const [isWaitingForDevServer, setIsWaitingForDevServer] = useState(false);
+  const shouldNavigateToPreview = useRef(false);
 
   const { data: attempt } = useQuery({
     queryKey: ['attempt', attemptId],
@@ -63,8 +63,7 @@ export function NextActionCard({
 
   const handleDevServerStartSuccess = useCallback(() => {
     // Mark that we should navigate to preview once the server is actually running
-    console.log('[NextActionCard] Dev server start API call succeeded, waiting for server to run');
-    setIsWaitingForDevServer(true);
+    shouldNavigateToPreview.current = true;
   }, []);
 
   const {
@@ -80,18 +79,11 @@ export function NextActionCard({
 
   // Navigate to preview mode when the dev server is actually running
   useEffect(() => {
-    console.log('[NextActionCard] Effect triggered:', {
-      isWaitingForDevServer,
-      runningDevServer: !!runningDevServer,
-      runningDevServerId: runningDevServer?.id,
-    });
-
-    if (isWaitingForDevServer && runningDevServer) {
-      console.log('[NextActionCard] Dev server is running! Navigating to preview mode');
-      setIsWaitingForDevServer(false);
+    if (shouldNavigateToPreview.current && runningDevServer) {
+      shouldNavigateToPreview.current = false;
       navigate({ search: '?view=preview' });
     }
-  }, [isWaitingForDevServer, runningDevServer, navigate]);
+  }, [runningDevServer, navigate]);
 
   const projectHasDevScript = Boolean(project?.dev_script);
 
