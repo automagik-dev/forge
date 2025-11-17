@@ -30,7 +30,7 @@ export function Logo({ className = '' }: { className?: string }) {
     }
   }, [theme]);
 
-  const logoSrc = isDark ? '/forge-dark.svg' : '/forge-clear.svg';
+  const logoSrc = isDark ? '/forge-clear.svg' : '/forge-dark.svg';
 
   return (
     <img
