@@ -657,7 +657,7 @@ export function ProjectTasks() {
           </CardContent>
         </Card>
       </div>
-    ) : mode === 'list' || isMobilePortrait ? (
+    ) : isMobilePortrait ? (
       <div className="w-full h-full overflow-y-auto mobile-scroll">
         <TasksListView
           tasks={filteredTasks}
@@ -747,7 +747,6 @@ export function ProjectTasks() {
             mode={mode}
             isMobile={isMobilePortrait}
             rightHeader={rightHeader}
-            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
@@ -767,7 +766,6 @@ export function ProjectTasks() {
             mode={mode}
             isMobile={isMobilePortrait}
             rightHeader={rightHeader}
-            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
@@ -786,7 +784,6 @@ export function ProjectTasks() {
             mode={mode}
             isMobile={isMobile}
             rightHeader={rightHeader}
-            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
@@ -800,7 +797,6 @@ export function ProjectTasks() {
       mode={mode}
       isMobile={isMobilePortrait}
       rightHeader={rightHeader}
-      onKanbanClick={handleClosePanel}
     />
   );
 
