@@ -61,20 +61,17 @@ export function ProviderIcon({
   // For simple-icons, we'll use inline SVG with the icon path
   let iconPath = '';
   let iconTitle = '';
+  // Use explicit fill color to ensure proper rendering in both light and dark modes
   let fillColor = isDark ? '#ffffff' : '#000000';
 
   switch (executor) {
     case 'CLAUDE_CODE':
       iconPath = siClaude.path;
       iconTitle = siClaude.title;
-      // Use theme-aware color instead of brand color
-      fillColor = isDark ? '#ffffff' : '#000000';
       break;
     case 'GEMINI':
       iconPath = siGooglegemini.path;
       iconTitle = siGooglegemini.title;
-      // Use theme-aware color instead of brand color
-      fillColor = isDark ? '#ffffff' : '#000000';
       break;
     case 'CURSOR_AGENT':
       // Cursor can use the IDE icon we already have
@@ -88,12 +85,10 @@ export function ProviderIcon({
     case 'COPILOT':
       iconPath = siGithubcopilot.path;
       iconTitle = siGithubcopilot.title;
-      fillColor = isDark ? '#ffffff' : '#000000';
       break;
     case 'CODEX':
       iconPath = siOpenai.path;
       iconTitle = siOpenai.title;
-      fillColor = isDark ? '#ffffff' : '#000000';
       break;
     case 'QWEN_CODE':
       // Use Bot icon for Qwen
@@ -116,9 +111,14 @@ export function ProviderIcon({
       className={className}
       fill={fillColor}
       aria-label={iconTitle}
+      style={{
+        color: isDark ? '#ffffff' : '#000000',
+        // Ensure the SVG always uses explicit fill, not inherited color
+        fillOpacity: 1,
+      }}
     >
       <title>{providerName}</title>
-      <path d={iconPath} />
+      <path d={iconPath} fill={fillColor} />
     </svg>
   );
 }
