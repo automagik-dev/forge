@@ -161,9 +161,10 @@ const queryClient = new QueryClient({
   },
 });
 
-// Register Service Worker for PWA support
+// Register Service Worker for PWA support (production only)
 // This enables offline functionality, asset caching, and persistent install prompt
-if ('serviceWorker' in navigator) {
+// Only enabled in production to avoid caching issues during development
+if ('serviceWorker' in navigator && import.meta.env.MODE === 'production') {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/service-worker.js')
@@ -192,6 +193,8 @@ if ('serviceWorker' in navigator) {
         // This is not critical - the app still works without SW
       });
   });
+} else if ('serviceWorker' in navigator) {
+  console.info('[PWA] Service Worker disabled in development mode');
 } else {
   console.info('[PWA] Service Workers not supported in this browser');
 }
