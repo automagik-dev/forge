@@ -87,12 +87,12 @@ export function Footer() {
             className="flex items-center hover:opacity-80 transition-opacity"
           >
             <img
-              src="/logo-light.svg"
+              src="/logo-dark.svg"
               alt="Namastex Labs"
               className="h-3.5 w-auto dark:hidden"
             />
             <img
-              src="/logo-dark.svg"
+              src="/logo-light.svg"
               alt="Namastex Labs"
               className="h-3.5 w-auto hidden dark:block"
             />
