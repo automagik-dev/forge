@@ -76,29 +76,40 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = () => {
   }
 
   // Lamp button - hidden at edge, slides in on hover from right
+  // Fixed hover zone prevents flicker when lamp slides in
   return (
     <div
-      className="fixed z-50 transition-all duration-300"
+      className="fixed z-50"
       style={{
         bottom: '46px', // 30px up from bottom-4
-        right: isHovering ? '20px' : '-20px',
+        right: 0,
+        width: '80px', // Stable hover detection zone
+        height: '60px',
       }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
-      <button
-        onClick={isLoading ? undefined : handleOpenChat}
-        disabled={isLoading}
-        className="p-2 transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-        aria-label="Open Master Genie"
-        title="Master Genie - AI Assistant"
+      <div
+        className="absolute transition-all duration-300"
+        style={{
+          right: isHovering ? '20px' : '-20px',
+          top: 0,
+        }}
       >
-        {isLoading ? (
-          <Loader2 className="h-10 w-10 text-foreground drop-shadow-lg animate-spin" />
-        ) : (
-          <Lamp className="h-10 w-10 text-foreground drop-shadow-lg" />
-        )}
-      </button>
+        <button
+          onClick={isLoading ? undefined : handleOpenChat}
+          disabled={isLoading}
+          className="p-2 transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Open Master Genie"
+          title="Master Genie - AI Assistant"
+        >
+          {isLoading ? (
+            <Loader2 className="h-10 w-10 text-foreground drop-shadow-lg animate-spin" />
+          ) : (
+            <Lamp className="h-10 w-10 text-zinc-700 dark:text-foreground drop-shadow-lg" />
+          )}
+        </button>
+      </div>
     </div>
   );
 };
