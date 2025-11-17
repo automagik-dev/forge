@@ -422,9 +422,12 @@ export function ProjectTasks() {
 
   const handleViewTaskDetails = useCallback(
     (task: Task, attemptIdToShow?: string) => {
-      // Preserve all current search params (including view mode)
-      // (Genie lamp widget uses separate navigation and always forces chat view)
-      const search = searchParams.toString();
+      const params = new URLSearchParams(searchParams);
+      // Default to chat view when opening a task
+      if (!params.has('view')) {
+        params.set('view', 'chat');
+      }
+      const search = params.toString();
       const pathname = attemptIdToShow
         ? paths.attempt(projectId!, task.id, attemptIdToShow)
         : `${paths.task(projectId!, task.id)}/attempts/latest`;
@@ -744,6 +747,7 @@ export function ProjectTasks() {
             mode={mode}
             isMobile={isMobilePortrait}
             rightHeader={rightHeader}
+            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
@@ -763,6 +767,7 @@ export function ProjectTasks() {
             mode={mode}
             isMobile={isMobilePortrait}
             rightHeader={rightHeader}
+            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
@@ -781,6 +786,7 @@ export function ProjectTasks() {
             mode={mode}
             isMobile={isMobile}
             rightHeader={rightHeader}
+            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
@@ -794,6 +800,7 @@ export function ProjectTasks() {
       mode={mode}
       isMobile={isMobilePortrait}
       rightHeader={rightHeader}
+      onKanbanClick={handleClosePanel}
     />
   );
 
