@@ -533,7 +533,13 @@ jobs:
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
-      
+
+      - name: Upgrade npm for trusted publishing (requires npm 11.5.1+)
+        run: |
+          echo "Current npm version: $(npm -v)"
+          npm install -g npm@11.6.2
+          echo "Upgraded npm version: $(npm -v)"
+
       - name: Restore cached binaries for all platforms
         shell: bash
         run: |
