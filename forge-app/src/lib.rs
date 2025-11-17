@@ -166,6 +166,36 @@ pub async fn run_server_with_readiness(
         tracing::info!("GitHub authentication required for frontend access");
     }
 
+    // Ensure asset directory exists before initializing services
+    // This prevents "unable to open database file" errors when the directory
+    // doesn't exist and SQLite tries to create the database file
+    let asset_path = utils::assets::asset_dir();
+    tracing::info!("Asset directory: {:?}", asset_path);
+
+    // Verify directory is writable by checking if we can access it
+    if !asset_path.exists() {
+        tracing::error!("Asset directory does not exist after creation attempt: {:?}", asset_path);
+        return Err(anyhow::anyhow!("Failed to create asset directory: {:?}", asset_path));
+    }
+
+    // Check if DATABASE_URL is set (may override default path)
+    if let Ok(db_url) = std::env::var("DATABASE_URL") {
+        tracing::info!("DATABASE_URL is set: {}", db_url);
+    } else {
+        let default_db_path = asset_path.join("db.sqlite");
+        tracing::info!("Database will be created at: {:?}", default_db_path);
+
+        // Pre-create parent directory for database (defensive fix)
+        if let Some(parent) = default_db_path.parent() {
+            if !parent.exists() {
+                tracing::warn!("Database parent directory doesn't exist, creating: {:?}", parent);
+                std::fs::create_dir_all(parent).map_err(|e| {
+                    anyhow::anyhow!("Failed to create database directory {:?}: {}", parent, e)
+                })?;
+            }
+        }
+    }
+
     // Initialize services
     tracing::info!("Initializing forge services using upstream deployment");
     let services = services::ForgeServices::new().await?;
