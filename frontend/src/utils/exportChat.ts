@@ -1,5 +1,5 @@
 import type { PatchTypeWithKey } from '@/hooks/useConversationHistory';
-import type { TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
+import type { TaskAttempt, TaskWithAttemptStatus, ActionType, ToolStatus } from 'shared/types';
 
 interface ExportMetadata {
   task?: TaskWithAttemptStatus | null;
@@ -80,18 +80,8 @@ ${content}
 function formatToolUse(
   entry: {
     tool_name: string;
-    action_type: {
-      action: string;
-      path?: string;
-      command?: string;
-      result?: { output?: string };
-      query?: string;
-      url?: string;
-      tool_name?: string;
-      arguments?: unknown;
-      result?: unknown;
-    };
-    status: { status: string };
+    action_type: ActionType;
+    status: ToolStatus;
   },
   timestamp: string | null
 ): string {
@@ -126,11 +116,20 @@ function formatToolUse(
     }
   }
 
-  const statusText = status.status === 'success' ? '✓ Success' :
-                     status.status === 'failed' ? '✗ Failed' :
-                     status.status === 'pending_approval' ? '⏳ Pending Approval' :
-                     status.status === 'denied' ? '⛔ Denied' :
-                     status.status;
+  let statusText = '⏳ Pending';
+  if (status.status === 'success') {
+    statusText = '✓ Success';
+  } else if (status.status === 'failed') {
+    statusText = '✗ Failed';
+  } else if (status.status === 'pending_approval') {
+    statusText = '⏳ Pending Approval';
+  } else if (status.status === 'denied') {
+    statusText = '⛔ Denied';
+  } else if (status.status === 'created') {
+    statusText = '⏳ Created';
+  } else if (status.status === 'timed_out') {
+    statusText = '⌛ Timed Out';
+  }
 
   let result = `### ${title}\n**Status:** ${statusText}`;
   if (ts) result += `\n**Timestamp:** ${ts}`;
