@@ -79,9 +79,9 @@ export function DevServerLogsView({
 
       {/* Logs viewer with copy button */}
       {showLogs && (
-        <div className={`${height} flex flex-col relative`}>
-          {/* Copy button overlay on logs panel */}
-          <div className="absolute top-2 right-2 z-10">
+        <div className={`${height} flex flex-col relative bg-background`}>
+          {/* Copy button overlay on logs panel with smooth background */}
+          <div className="absolute top-3 right-3 z-10 bg-background/80 backdrop-blur-sm rounded-md p-1">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -91,6 +91,7 @@ export function DevServerLogsView({
                     onClick={handleCopyLogs}
                     disabled={!logs || logs.length === 0}
                     aria-label={copied ? t('preview.logs.copied') : t('preview.logs.copy')}
+                    className="hover:bg-muted transition-colors"
                   >
                     {copied ? (
                       <Check className="h-4 w-4" />
