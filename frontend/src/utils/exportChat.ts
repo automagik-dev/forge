@@ -84,7 +84,6 @@ function formatToolUse(
       action: string;
       path?: string;
       command?: string;
-      result?: { output?: string };
       query?: string;
       url?: string;
       tool_name?: string;
@@ -109,8 +108,11 @@ function formatToolUse(
   } else if (action_type.action === 'command_run') {
     title += ` - Run command`;
     details = `**Command:** \`${action_type.command}\`\n\n`;
-    if (action_type.result?.output) {
-      details += `**Output:**\n\`\`\`\n${action_type.result.output}\n\`\`\`\n\n`;
+    if (action_type.result && typeof action_type.result === 'object' && 'output' in action_type.result) {
+      const commandResult = action_type.result as { output?: string };
+      if (commandResult.output) {
+        details += `**Output:**\n\`\`\`\n${commandResult.output}\n\`\`\`\n\n`;
+      }
     }
   } else if (action_type.action === 'search') {
     title += ` - Search: "${action_type.query}"`;
