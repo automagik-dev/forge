@@ -9,7 +9,7 @@ import { Kanban, GitCompareArrows, FileText, Settings, Heart, ListTodo } from 'l
 import { Lamp } from '@/components/icons/Lamp';
 import { DiffActionSheet } from './DiffActionSheet';
 import { useMobileTaskActions } from '@/hooks/useMobileTaskActions';
-import { mobileTheme } from '@/styles/mobile-theme';
+import { mobileTheme, getMobileSpacing } from '@/styles/mobile-theme';
 
 export interface MobileLayoutProps {
   children: React.ReactNode;
@@ -148,9 +148,13 @@ export function MobileLayout({
           'flex-1 overflow-auto mobile-scroll',
           contentClassName
         )}
-        style={showBottomNav ? { 
-          paddingBottom: `calc(${mobileTheme.spacing.bottomNav}px + env(safe-area-inset-bottom, 0px))` 
-        } : undefined}
+        style={
+          showBottomNav
+            ? {
+                paddingBottom: `calc(${getMobileSpacing('bottomNav')} + env(safe-area-inset-bottom, 0px))`,
+              }
+            : undefined
+        }
       >
         {children}
       </main>

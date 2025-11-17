@@ -27,11 +27,11 @@ export const mobileTheme = {
    * Values in pixels for consistent sizing
    */
   spacing: {
-    bottomNav: 64,      // h-16 (4rem = 64px) - Bottom navigation bar height
-    inputBar: 52,       // Input bar minimum height
-    fab: 56,            // Floating action button size
-    drawer: 'auto',     // Drawer height (auto-calculated)
-    sheet: 'auto',      // Bottom sheet height (snap-based)
+    bottomNav: 'var(--mobile-bottom-nav-height)', // defined in index.css
+    inputBar: 'var(--mobile-input-bar-height)',
+    fab: 'var(--touch-target-comfortable)',
+    drawer: 'auto',      // Drawer height (auto-calculated)
+    sheet: 'auto',       // Bottom sheet height (snap-based)
   },
 
   /**
@@ -85,8 +85,8 @@ export const mobileTheme = {
    * Uses CSS variables from index.css
    */
   colors: {
-    bottomNavBg: 'rgb(var(--background))',
-    bottomNavBorder: 'rgb(var(--border))',
+    bottomNavBg: 'hsl(var(--background))',
+    bottomNavBorder: 'hsl(var(--border))',
   },
 } as const;
 
