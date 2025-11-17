@@ -109,6 +109,11 @@ if (posthogKey && posthogHost) {
     enable_heatmaps: true, // Enable aggregate UX insights (mouse movement, clicks, scrolling)
     opt_out_capturing_by_default: true,
     mask_all_text: true, // Masks any text in error messages
+    session_recording: {
+      maskAllInputs: true, // Mask all input field values
+      maskTextSelector: '*', // Mask all text content by default
+      blockSelector: '[data-private]', // Block elements marked as private
+    },
     sanitize_properties: (properties) => {
       // Don't sanitize for namastexers (detected later via email)
       if (properties?.tracking_tier === 'namastexer') {
