@@ -405,17 +405,6 @@ export function Breadcrumb() {
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </li>
 
-        {/* Kanban icon to navigate back to project tasks */}
-        <li className="flex items-center gap-1">
-          <Link
-            to={`/projects/${projectId}/tasks`}
-            className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-            aria-label="Go to project tasks"
-          >
-            <KanbanSquare className="h-4 w-4" />
-          </Link>
-        </li>
-
         {breadcrumbs.map((crumb, index) => {
           const isCurrentProject = crumb.type === 'project';
           const isParentTask = crumb.type === 'parent-task';
@@ -472,9 +461,10 @@ export function Breadcrumb() {
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       <Link
                         to={`/projects/${projectId}/tasks`}
-                        className="text-muted-foreground hover:text-foreground transition-colors px-1 -mx-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors px-1 -mx-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
                         aria-label="Go to board view"
                       >
+                        <KanbanSquare className="h-3.5 w-3.5" />
                         Board
                       </Link>
                     </>
