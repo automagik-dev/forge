@@ -84,6 +84,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const acceptHeader = (event.request.headers.get('accept') || '').toLowerCase();
+  const isNavigationRequest =
+    event.request.mode === 'navigate' ||
+    (event.request.destination === 'document' && acceptHeader.includes('text/html'));
+
+  if (isNavigationRequest) {
+    event.respondWith(appShellStrategy(event.request, CACHE_NAME));
+    return;
+  }
+
   // API calls: NEVER cache (authenticated, user-specific data)
   // Caching API responses ignores auth headers and can leak data between users
   if (url.pathname.startsWith('/api/')) {
@@ -208,6 +218,31 @@ function staleWhileRevalidateStrategy(request, cacheName) {
     // Return cached version immediately if available
     return response || fetchPromise;
   });
+}
+
+/**
+ * App shell strategy: ensure SPA routes can start offline by falling back to cached index.html.
+ */
+async function appShellStrategy(request, cacheName) {
+  try {
+    return await fetch(request);
+  } catch (error) {
+    console.warn('[Service Worker] Navigation request failed, serving app shell from cache:', request.url, error);
+    const cache = await caches.open(cacheName);
+    const cachedIndex = await cache.match('/index.html');
+    if (cachedIndex) {
+      return cachedIndex;
+    }
+    const cachedRoot = await cache.match('/');
+    if (cachedRoot) {
+      return cachedRoot;
+    }
+
+    return new Response('Offline - App shell not cached', {
+      status: 503,
+      statusText: 'Service Unavailable',
+    });
+  }
 }
 
 /**
