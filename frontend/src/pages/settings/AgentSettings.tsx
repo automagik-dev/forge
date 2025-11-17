@@ -20,6 +20,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { JSONEditor } from '@/components/ui/json-editor';
 import { Loader2 } from 'lucide-react';
+import { ProviderSelect } from '@/components/ui/provider-select';
 
 import { ExecutorConfigForm } from '@/components/ExecutorConfigForm';
 import { useProfiles } from '@/hooks/useProfiles';
@@ -409,31 +410,17 @@ export function AgentSettings() {
                   <Label htmlFor="executor-type">
                     {t('settings.agents.editor.agentLabel')}
                   </Label>
-                  <Select
+                  <ProviderSelect
+                    id="executor-type"
                     value={selectedExecutorType}
                     onValueChange={(value) => {
                       setSelectedExecutorType(value);
                       // Reset configuration selection when executor type changes
                       setSelectedConfiguration('GENIE');
                     }}
-                  >
-                    <SelectTrigger id="executor-type">
-                      <SelectValue
-                        placeholder={t(
-                          'settings.agents.editor.agentPlaceholder'
-                        )}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.keys(localParsedProfiles.executors).map(
-                        (type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        )
-                      )}
-                    </SelectContent>
-                  </Select>
+                    providers={Object.keys(localParsedProfiles.executors)}
+                    placeholder={t('settings.agents.editor.agentPlaceholder')}
+                  />
                 </div>
 
                 <div className="space-y-2">

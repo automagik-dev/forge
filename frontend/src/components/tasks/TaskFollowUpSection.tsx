@@ -47,6 +47,7 @@ import { useDraftAutosave } from '@/hooks/follow-up/useDraftAutosave';
 import { useDraftQueue } from '@/hooks/follow-up/useDraftQueue';
 import { useFollowUpSend } from '@/hooks/follow-up/useFollowUpSend';
 import { useDefaultVariant } from '@/hooks/follow-up/useDefaultVariant';
+import { useDefaultBaseBranch } from '@/hooks/useDefaultBaseBranch';
 import { buildResolveConflictsInstructions } from '@/lib/conflicts';
 import { appendImageMarkdown } from '@/utils/markdownImages';
 import { useTranslation } from 'react-i18next';
@@ -304,6 +305,9 @@ export function TaskFollowUpSection({
   // Use projectId from URL as fallback when task is still loading
   const effectiveProjectId = task?.project_id ?? projectIdFromUrl;
 
+  // Get user's configured default base branch (for create-and-start)
+  const { defaultBranch } = useDefaultBaseBranch(effectiveProjectId);
+
   // Handle navigation when new task/attempt is created (Master Genie first message)
   const handleNewTaskCreated = useCallback(
     (taskId: string, attemptId: string) => {
@@ -325,6 +329,7 @@ export function TaskFollowUpSection({
         ? profiles[selectedProfile.executor]
         : null,
       defaultExecutor: selectedProfile?.executor,
+      defaultBranch,
       message: followUpMessage,
       conflictMarkdown: conflictResolutionInstructions,
       reviewMarkdown,

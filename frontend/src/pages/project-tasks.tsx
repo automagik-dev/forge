@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -6,8 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { AlertTriangle, Plus } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import { tasksApi } from '@/lib/api';
-import type { GitBranch } from 'shared/types';
 import { openTaskForm } from '@/lib/openTaskForm';
+import { openAttemptForm } from '@/lib/openAttemptForm';
 import { FeatureShowcaseModal } from '@/components/showcase/FeatureShowcaseModal';
 import { showcases } from '@/config/showcases';
 import { useShowcaseTrigger } from '@/hooks/useShowcaseTrigger';
@@ -19,9 +19,8 @@ import { useSearch } from '@/contexts/search-context';
 import { useProject } from '@/contexts/project-context';
 import { useTaskAttempts } from '@/hooks/useTaskAttempts';
 import { useTaskAttempt } from '@/hooks/useTaskAttempt';
+import { useProjects } from '@/hooks/useProjects';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { useBranchStatus, useAttemptExecution } from '@/hooks';
-import { projectsApi } from '@/lib/api';
 import { paths } from '@/lib/paths';
 import { ExecutionProcessesProvider } from '@/contexts/ExecutionProcessesContext';
 import { ClickedElementsProvider } from '@/contexts/ClickedElementsProvider';
@@ -68,37 +67,12 @@ const TASK_STATUSES = [
 
 function DiffsPanelContainer({
   attempt,
-  selectedTask,
-  projectId,
-  branchStatus,
-  branches,
-  setGitError,
 }: {
   attempt: any;
-  selectedTask: any;
-  projectId: string;
-  branchStatus: any;
-  branches: GitBranch[];
-  setGitError: (error: string | null) => void;
 }) {
-  const { isAttemptRunning } = useAttemptExecution(attempt?.id);
-
   return (
     <DiffsPanel
       selectedAttempt={attempt}
-      gitOps={
-        attempt && selectedTask
-          ? {
-              task: selectedTask,
-              projectId,
-              branchStatus: branchStatus ?? null,
-              branches,
-              isAttemptRunning,
-              setError: setGitError,
-              selectedBranch: branchStatus?.target_branch_name ?? null,
-            }
-          : undefined
-      }
     />
   );
 }
@@ -116,7 +90,8 @@ export function ProjectTasks() {
   const isXL = useMediaQuery('(min-width: 1280px)');
   const isMobile = !isXL;
   const isLandscape = useMediaQuery('(orientation: landscape)');
-  const isMobilePortrait = isMobile && !isLandscape;
+  const isSmallScreen = useMediaQuery('(max-width: 767px)'); // Same as useIsMobile()
+  const isMobilePortrait = (isMobile && !isLandscape) || (isSmallScreen && !isLandscape);
   const posthog = usePostHog();
 
   const {
@@ -124,6 +99,9 @@ export function ProjectTasks() {
     isLoading: projectLoading,
     error: projectError,
   } = useProject();
+
+  const { data: projects } = useProjects();
+  const currentProject = projects?.find((p) => p.id === projectId);
 
   useEffect(() => {
     enableScope(Scope.KANBAN);
@@ -222,34 +200,11 @@ export function ProjectTasks() {
   const isTaskView = !!taskId && !effectiveAttemptId;
   const { data: attempt } = useTaskAttempt(effectiveAttemptId);
 
-  const { data: branchStatus } = useBranchStatus(attempt?.id, attempt);
-  const [branches, setBranches] = useState<GitBranch[]>([]);
-  const [gitError, setGitError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!projectId) return;
-    projectsApi
-      .getBranches(projectId)
-      .then(setBranches)
-      .catch(() => setBranches([]));
-  }, [projectId]);
-
   const rawMode = searchParams.get('view') as LayoutMode;
   const mode: LayoutMode =
-    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat'
+    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat' || rawMode === 'list'
       ? rawMode
       : null;
-
-  // TODO: Remove this redirect after v0.1.0 (legacy URL support for bookmarked links)
-  // Migrates old `view=logs` to `view=diffs`
-  useEffect(() => {
-    const view = searchParams.get('view');
-    if (view === 'logs') {
-      const params = new URLSearchParams(searchParams);
-      params.set('view', 'diffs');
-      setSearchParams(params, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
 
   const setMode = useCallback(
     (newMode: LayoutMode, trigger: ViewModeChangeTrigger = 'ui_button') => {
@@ -468,9 +423,9 @@ export function ProjectTasks() {
   const handleViewTaskDetails = useCallback(
     (task: Task, attemptIdToShow?: string) => {
       const params = new URLSearchParams(searchParams);
-      // Default to kanban view when opening a task
+      // Default to chat view when opening a task
       if (!params.has('view')) {
-        params.set('view', 'kanban');
+        params.set('view', 'chat');
       }
       const search = params.toString();
       const pathname = attemptIdToShow
@@ -613,6 +568,50 @@ export function ProjectTasks() {
     [tasksById, groupedFilteredTasks, posthog]
   );
 
+  // Action handlers for mobile task list view
+  const handleViewDiff = useCallback(
+    (task: Task) => {
+      const pathname = `${paths.task(projectId!, task.id)}/attempts/latest`;
+      navigate({ pathname, search: '?view=diffs' });
+    },
+    [projectId, navigate]
+  );
+
+  const handleViewPreview = useCallback(
+    (task: Task) => {
+      const pathname = `${paths.task(projectId!, task.id)}/attempts/latest`;
+      navigate({ pathname, search: '?view=preview' });
+    },
+    [projectId, navigate]
+  );
+
+  const handleArchiveTask = useCallback(
+    async (task: Task) => {
+      try {
+        await tasksApi.update(task.id, {
+          title: task.title,
+          description: task.description,
+          status: 'archived',
+          parent_task_attempt: task.parent_task_attempt,
+          image_ids: null,
+        });
+      } catch (err) {
+        console.error('Failed to archive task:', err);
+      }
+    },
+    []
+  );
+
+  const handleNewAttempt = useCallback(
+    (task: Task) => {
+      openAttemptForm({
+        taskId: task.id,
+        latestAttempt: null,
+      });
+    },
+    []
+  );
+
   const isInitialTasksLoad = isLoading && tasks.length === 0;
 
   if (projectError) {
@@ -658,12 +657,18 @@ export function ProjectTasks() {
           </CardContent>
         </Card>
       </div>
-    ) : isMobilePortrait ? (
+    ) : mode === 'list' || isMobilePortrait ? (
       <div className="w-full h-full overflow-y-auto mobile-scroll">
         <TasksListView
           tasks={filteredTasks}
           onTaskClick={handleViewTaskDetails}
           selectedTaskId={selectedTask?.id}
+          projectName={currentProject?.name}
+          onProjectClick={() => navigate('/projects')}
+          onViewDiff={handleViewDiff}
+          onViewPreview={handleViewPreview}
+          onArchive={handleArchiveTask}
+          onNewAttempt={handleNewAttempt}
         />
       </div>
     ) : (
@@ -701,11 +706,6 @@ export function ProjectTasks() {
           {({ logs, followUp }) => (
             <>
               <ChatPanelActions attempt={attempt} task={selectedTask} />
-              {gitError && (
-                <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded">
-                  <div className="text-destructive text-sm">{gitError}</div>
-                </div>
-              )}
               <div className="flex-1 min-h-0 flex flex-col">{logs}</div>
 
               <div className="shrink-0 border-t">
@@ -730,11 +730,6 @@ export function ProjectTasks() {
       {mode === 'diffs' && attempt && selectedTask && (
         <DiffsPanelContainer
           attempt={attempt}
-          selectedTask={selectedTask}
-          projectId={projectId!}
-          branchStatus={branchStatus}
-          branches={branches}
-          setGitError={setGitError}
         />
       )}
     </div>
@@ -752,14 +747,34 @@ export function ProjectTasks() {
             mode={mode}
             isMobile={isMobilePortrait}
             rightHeader={rightHeader}
+            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
     </ClickedElementsProvider>
-  ) : isInChatView && taskId ? (
-    // Agent tasks (Master Genie) need same provider hierarchy as regular attempts
-    // Use taskId from URL since selectedTask might still be loading
+  ) : isInChatView ? (
+    // Chat view (Master Genie or task chat)
+    // Use taskId from URL if available, otherwise use a placeholder for Master Genie
     // ClickedElementsProvider accepts null attempt (used for preview click tracking)
+    <ClickedElementsProvider attempt={null}>
+      <ReviewProvider key={taskId || 'chat'}>
+        <ExecutionProcessesProvider key={taskId || 'chat'} attemptId={taskId || 'master-genie'}>
+          <TasksLayout
+            kanban={kanbanContent}
+            attempt={attemptContent}
+            aux={auxContent}
+            isPanelOpen={isPanelOpen}
+            mode={mode}
+            isMobile={isMobilePortrait}
+            rightHeader={rightHeader}
+            onKanbanClick={handleClosePanel}
+          />
+        </ExecutionProcessesProvider>
+      </ReviewProvider>
+    </ClickedElementsProvider>
+  ) : isPanelOpen && taskId ? (
+    // Task is selected but no attempt yet (e.g., task details view)
+    // Still need ExecutionProcessesProvider because TaskAttemptPanel contains RetryUiProvider
     <ClickedElementsProvider attempt={null}>
       <ReviewProvider key={taskId}>
         <ExecutionProcessesProvider key={taskId} attemptId={taskId}>
@@ -769,8 +784,9 @@ export function ProjectTasks() {
             aux={auxContent}
             isPanelOpen={isPanelOpen}
             mode={mode}
-            isMobile={isMobilePortrait}
+            isMobile={isMobile}
             rightHeader={rightHeader}
+            onKanbanClick={handleClosePanel}
           />
         </ExecutionProcessesProvider>
       </ReviewProvider>
@@ -782,8 +798,9 @@ export function ProjectTasks() {
       aux={auxContent}
       isPanelOpen={isPanelOpen}
       mode={mode}
-      isMobile={isMobile}
+      isMobile={isMobilePortrait}
       rightHeader={rightHeader}
+      onKanbanClick={handleClosePanel}
     />
   );
 

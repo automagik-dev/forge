@@ -7,6 +7,7 @@ type Args = {
   task?: TaskWithAttemptStatus | null;
   currentProfile?: Record<string, any> | null;
   defaultExecutor?: string; // User's configured default executor (e.g., "CLAUDE_CODE")
+  defaultBranch?: string | null; // User's configured default base branch
   message: string;
   conflictMarkdown: string | null;
   reviewMarkdown: string;
@@ -28,6 +29,7 @@ export function useFollowUpSend({
   task,
   currentProfile,
   defaultExecutor,
+  defaultBranch,
   message,
   conflictMarkdown,
   reviewMarkdown,
@@ -111,7 +113,7 @@ export function useFollowUpSend({
             description: firstMessage, // User's message goes here!
           },
           executor_profile_id: executorProfileId as ExecutorProfileId,
-          base_branch: 'dev', // TODO: Get from project config
+          base_branch: defaultBranch || 'dev', // Use configured default, fallback to 'dev'
           use_worktree: false, // CRITICAL: Genie uses current branch!
         } as any);
 

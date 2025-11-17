@@ -1,22 +1,27 @@
-.PHONY: help dev prod backend frontend build test clean publish beta version npm check-cargo check-android-deps publish-automagik publish-automagik-quick
+.PHONY: help dev prod backend frontend ensure-frontend-stub build-frontend build test clean publish beta version npm check-cargo check-android-deps publish-automagik publish-automagik-quick service
 
 # Default target
 help:
 	@echo "🔧 Automagik Forge - Development Commands"
 	@echo ""
 	@echo "Quick Start:"
-	@echo "  make dev       - Start dev environment (backend first, then frontend)"
+	@echo "  make dev       - Start dev environment (backend + frontend together)"
 	@echo "  make prod      - Build and run production package (QA testing)"
 	@echo "  make forge     - Alias for 'make prod'"
 	@echo ""
-	@echo "Specific Targets:"
-	@echo "  make backend              - Start backend only (uses .env or auto-allocated port)"
-	@echo "  make backend BP=XXXX      - Override backend port"
-	@echo "  make frontend             - Start frontend only (uses .env or auto-allocated ports)"
-	@echo "  make frontend FP=XXXX     - Override frontend port (BP for backend port)"
+	@echo "Isolated Development (run separately in different terminals):"
+	@echo "  make backend              - Backend only (stub dist, no frontend build)"
+	@echo "  make backend BP=XXXX      - Backend with custom port"
+	@echo "  make frontend             - Frontend only (dev server with hot reload)"
+	@echo "  make frontend FP=XXXX     - Frontend with custom port"
+	@echo ""
+	@echo "Other Targets:"
 	@echo "  make build                - Build production package (no launch)"
 	@echo "  make test                 - Run full test suite"
 	@echo "  make clean                - Clean build artifacts"
+	@echo ""
+	@echo "🐧 Linux Service Deployment (Ubuntu/Debian only):"
+	@echo "  make service              - Transform 'make prod' into systemd service"
 	@echo ""
 	@echo "🚀 Release Workflows:"
 	@echo "  make publish           - Complete release pipeline (main branch → npm as @automagik/forge)"
@@ -127,22 +132,37 @@ forge: prod
 FP ?=
 BP ?=
 
-# Backend only
-backend:
+# Create stub frontend/dist for backend compilation (dev isolation)
+ensure-frontend-stub:
+	@if [ ! -d "frontend/dist" ] || [ -z "$$(ls -A frontend/dist 2>/dev/null)" ]; then \
+		echo "📁 Creating stub frontend/dist for backend compilation..."; \
+		mkdir -p frontend/dist; \
+		echo '<!DOCTYPE html><html><body><h1>Dev Mode</h1><p>Use separate frontend dev server at http://localhost:3000</p></body></html>' > frontend/dist/index.html; \
+		echo "✅ Stub created (backend can compile, frontend runs independently)"; \
+	fi
+
+# Build full frontend assets (for production)
+build-frontend:
+	@echo "🔨 Building production frontend..."; \
+	cd frontend && pnpm install && pnpm run build
+
+# Backend only (dev isolation - no frontend build required)
+backend: ensure-frontend-stub
 	@echo "⚙️  Starting backend server (dev mode)..."
 	@if [ -n "$(BP)" ]; then \
 		echo "   Using manual port override: $(BP)"; \
 		BACKEND_PORT=$(BP) npm run backend:dev; \
 	else \
-		echo "   Using dynamic port allocation (.env or auto-detect)..."; \
-		npm run backend:dev; \
+		DYNAMIC_BP=$$(node scripts/setup-dev-environment.js backend); \
+		echo "   Backend Port: $$DYNAMIC_BP"; \
+		BACKEND_PORT=$$DYNAMIC_BP npm run backend:dev; \
 	fi
 
 # Frontend only
 frontend:
 	@echo "🎨 Starting frontend server (dev mode)..."
-	@DYNAMIC_FP=$$(node scripts/setup-dev-environment.js frontend); \
-	DYNAMIC_BP=$$(node scripts/setup-dev-environment.js backend); \
+	@DYNAMIC_FP=$$(node scripts/setup-dev-environment.js read-frontend); \
+	DYNAMIC_BP=$$(node scripts/setup-dev-environment.js read-backend); \
 	FINAL_FP=$${FP:-$$DYNAMIC_FP}; \
 	FINAL_BP=$${BP:-$$DYNAMIC_BP}; \
 	echo "   Frontend Port: $$FINAL_FP"; \
@@ -199,3 +219,28 @@ npm:
 # A/B test publish: full release pipeline from dev branch, publish as 'automagik'
 publish-automagik:
 	@bash scripts/publish-automagik.sh
+
+# Install as systemd service (Ubuntu/Debian only)
+service:
+	@echo "🐧 Installing Automagik Forge as systemd service..."
+	@echo ""
+	@if [ ! -f /etc/os-release ]; then \
+		echo "❌ Error: Cannot detect OS (requires /etc/os-release)"; \
+		exit 1; \
+	fi; \
+	. /etc/os-release; \
+	if [ "$$ID" != "ubuntu" ] && [ "$$ID" != "debian" ]; then \
+		echo "❌ Error: Unsupported OS ($$PRETTY_NAME)"; \
+		echo ""; \
+		echo "This target only supports:"; \
+		echo "  - Ubuntu 18.04+"; \
+		echo "  - Debian 10+"; \
+		echo ""; \
+		echo "For other systems, see DEPLOYMENT.md for manual setup."; \
+		exit 1; \
+	fi; \
+	if ! command -v systemctl >/dev/null 2>&1; then \
+		echo "❌ Error: systemd not found"; \
+		exit 1; \
+	fi; \
+	bash scripts/service/install-service.sh

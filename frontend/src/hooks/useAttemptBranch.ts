@@ -5,10 +5,18 @@ export function useAttemptBranch(attemptId?: string) {
   const query = useQuery({
     queryKey: ['attemptBranch', attemptId],
     queryFn: async () => {
-      const attempt = await attemptsApi.get(attemptId!);
-      return attempt.branch ?? null;
+      try {
+        const attempt = await attemptsApi.get(attemptId!);
+        return attempt.branch ?? null;
+      } catch (error) {
+        // Handle 404 - task attempt may not exist yet
+        // This can happen when viewing a task without attempts
+        console.debug(`[useAttemptBranch] Failed to load attempt ${attemptId}:`, error);
+        return null;
+      }
     },
     enabled: !!attemptId,
+    retry: false, // Don't retry 404s
   });
 
   return {

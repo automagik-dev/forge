@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Migration guide for v0.7.3 with accurate analytics, Node.js, and installation instructions
+
 ### Fixed
 - Git hooks now run fast unit tests instead of slow package validation tests
 - Pre-push hook properly detects git hook context via GIT_DIR environment variable
-

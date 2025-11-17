@@ -90,12 +90,14 @@ Sentry.init({
 Sentry.setTag('source', 'frontend');
 
 // PostHog configuration
-// Default keys for Namastex Labs analytics (write-only, safe to expose)
-// Users can override via VITE_POSTHOG_API_KEY environment variable
-const posthogKey = import.meta.env.VITE_POSTHOG_API_KEY ||
-  'phc_' + 'KYI6y57aVECNO9aj5O28gNAz3r7BU0cTtEf50HQJZHd';
-const posthogHost = import.meta.env.VITE_POSTHOG_API_ENDPOINT ||
-  'https://us.i.posthog.com';
+// SECURITY NOTE: This is a Project API Key (phc_*), which is write-only and designed
+// for client-side use. It can ONLY send events to PostHog, not read data or modify
+// project settings. This is standard practice for client-side analytics tools
+// (like Google Analytics, Mixpanel, etc.) - the key is visible in the JS bundle anyway.
+// Hard-coded to ensure consistent analytics across all build methods (make dev, make prod, npm).
+// Users control analytics via the Privacy Opt-In dialog, not environment variables.
+const posthogKey = 'phc_' + 'KYI6y57aVECNO9aj5O28gNAz3r7BU0cTtEf50HQJZHd';
+const posthogHost = 'https://us.i.posthog.com';
 
 if (posthogKey && posthogHost) {
   posthog.init(posthogKey, {
@@ -107,6 +109,11 @@ if (posthogKey && posthogHost) {
     enable_heatmaps: true, // Enable aggregate UX insights (mouse movement, clicks, scrolling)
     opt_out_capturing_by_default: true,
     mask_all_text: true, // Masks any text in error messages
+    session_recording: {
+      maskAllInputs: true, // Mask all input field values
+      maskTextSelector: '*', // Mask all text content by default
+      blockSelector: '[data-private]', // Block elements marked as private
+    },
     sanitize_properties: (properties) => {
       // Don't sanitize for namastexers (detected later via email)
       if (properties?.tracking_tier === 'namastexer') {
@@ -153,6 +160,44 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Register Service Worker for PWA support (production only)
+// This enables offline functionality, asset caching, and persistent install prompt
+// Only enabled in production to avoid caching issues during development
+if ('serviceWorker' in navigator && import.meta.env.MODE === 'production') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/service-worker.js')
+      .then((registration) => {
+        console.log('[PWA] Service Worker registered successfully:', registration);
+
+        // Listen for updates to the service worker
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (!newWorker) return;
+
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New service worker is ready and there's an old one
+              console.log('[PWA] New service worker update available');
+              // Notify user about update (optional - can show a toast/banner)
+              window.dispatchEvent(
+                new CustomEvent('sw-update-available', { detail: { registration } })
+              );
+            }
+          });
+        });
+      })
+      .catch((error) => {
+        console.warn('[PWA] Service Worker registration failed:', error);
+        // This is not critical - the app still works without SW
+      });
+  });
+} else if ('serviceWorker' in navigator) {
+  console.info('[PWA] Service Worker disabled in development mode');
+} else {
+  console.info('[PWA] Service Workers not supported in this browser');
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
