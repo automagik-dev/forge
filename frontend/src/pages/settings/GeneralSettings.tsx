@@ -26,6 +26,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Slider } from '@/components/ui/slider';
 import { ChevronDown, Key, Loader2, Volume2 } from 'lucide-react';
 import {
   BaseCodingAgent,
@@ -36,6 +37,7 @@ import {
   UiLanguage,
 } from 'shared/types';
 import { getLanguageOptions } from '@/i18n/languages';
+import { ProviderSelect } from '@/components/ui/provider-select';
 
 import { toPrettyCase } from '@/utils/string';
 import { useTheme } from '@/components/theme-provider';
@@ -139,9 +141,10 @@ export function GeneralSettings() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [hasUnsavedChanges]);
 
-  const playSound = async (soundFile: SoundFile) => {
+  const playSound = async (soundFile: SoundFile, volume?: number) => {
     const audio = new Audio(`/api/sounds/${soundFile}`);
-    audio.volume = 0.3; // Set volume to 30% of maximum
+    // Use provided volume or draft config volume, defaulting to 0.3 (30%)
+    audio.volume = volume ?? draft?.notifications.sound_volume ?? 0.3;
     try {
       await audio.play();
     } catch (err) {
@@ -321,7 +324,8 @@ export function GeneralSettings() {
               {t('settings.general.taskExecution.executor.label')}
             </Label>
             <div className="grid grid-cols-2 gap-2">
-              <Select
+              <ProviderSelect
+                id="executor"
                 value={draft?.executor_profile?.executor ?? ''}
                 onValueChange={(value: string) => {
                   const variants = profiles?.[value];
@@ -348,26 +352,16 @@ export function GeneralSettings() {
                     executor_profile: newProfile,
                   });
                 }}
+                providers={
+                  profiles
+                    ? Object.keys(profiles).sort((a, b) => a.localeCompare(b))
+                    : []
+                }
+                placeholder={t(
+                  'settings.general.taskExecution.executor.placeholder'
+                )}
                 disabled={!profiles}
-              >
-                <SelectTrigger id="executor">
-                  <SelectValue
-                    placeholder={t(
-                      'settings.general.taskExecution.executor.placeholder'
-                    )}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {profiles &&
-                    Object.entries(profiles)
-                      .sort((a, b) => a[0].localeCompare(b[0]))
-                      .map(([profileKey]) => (
-                        <SelectItem key={profileKey} value={profileKey}>
-                          {profileKey}
-                        </SelectItem>
-                      ))}
-                </SelectContent>
-              </Select>
+              />
 
               {/* Show variant selector if selected profile has variants */}
               {(() => {
@@ -714,6 +708,38 @@ export function GeneralSettings() {
               <p className="text-sm text-muted-foreground">
                 {t('settings.general.notifications.sound.fileHelper')}
               </p>
+              <div className="space-y-2 mt-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="sound-volume">
+                    {t('settings.general.notifications.sound.volumeLabel', 'Volume')}
+                  </Label>
+                  <span className="text-sm text-muted-foreground">
+                    {Math.round((draft.notifications.sound_volume ?? 0.3) * 100)}%
+                  </span>
+                </div>
+                <Slider
+                  id="sound-volume"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={[Math.round((draft.notifications.sound_volume ?? 0.3) * 100)]}
+                  onValueChange={(values) => {
+                    const volume = values[0] / 100;
+                    updateDraft({
+                      notifications: {
+                        ...draft.notifications,
+                        sound_volume: volume,
+                      },
+                    });
+                    // Preview sound at new volume
+                    playSound(draft.notifications.sound_file, volume);
+                  }}
+                  className="w-full"
+                />
+                <p className="text-sm text-muted-foreground">
+                  {t('settings.general.notifications.sound.volumeHelper', 'Adjust the notification sound volume')}
+                </p>
+              </div>
             </div>
           )}
           <div className="flex items-center space-x-2">
