@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter, Routes, Route, Router } from 'react-router-dom';
+import { createMemoryHistory } from 'history';
 import { BottomNavigation, useBottomNavigation } from '../BottomNavigation';
 import { Home, Settings } from 'lucide-react';
 
@@ -35,13 +36,17 @@ describe('BottomNavigation', () => {
   });
 
   const renderWithRouter = (ui: React.ReactElement, initialPath = '/') => {
-    return render(
-      <MemoryRouter initialEntries={[initialPath]}>
-        <Routes>
-          <Route path="*" element={ui} />
-        </Routes>
-      </MemoryRouter>
-    );
+    const history = createMemoryHistory({ initialEntries: [initialPath] });
+    return {
+      history,
+      ...render(
+        <Router location={history.location} navigator={history}>
+          <Routes>
+            <Route path="*" element={ui} />
+          </Routes>
+        </Router>
+      ),
+    };
   };
 
   it('renders all tabs', () => {
@@ -64,17 +69,17 @@ describe('BottomNavigation', () => {
     const homeTab = screen.getByTestId('bottom-nav-home');
     const settingsTab = screen.getByTestId('bottom-nav-settings');
 
-    expect(within(homeTab).getByRole('img', { hidden: true })).toBeInTheDocument();
-    expect(within(settingsTab).getByRole('img', { hidden: true })).toBeInTheDocument();
+    expect(homeTab.querySelector('svg')).not.toBeNull();
+    expect(settingsTab.querySelector('svg')).not.toBeNull();
   });
 
   it('navigates to tab path when clicked', () => {
-    renderWithRouter(<BottomNavigation tabs={defaultTabs} />);
+    const { history } = renderWithRouter(<BottomNavigation tabs={defaultTabs} />);
 
     const homeTab = screen.getByTestId('bottom-nav-home');
     fireEvent.click(homeTab);
 
-    expect(window.location.pathname).toBe('/home');
+    expect(history.location.pathname).toBe('/home');
   });
 
   it('calls onTabChange when tab is clicked', () => {
@@ -197,31 +202,31 @@ describe('BottomNavigation', () => {
       },
     ];
 
-    renderWithRouter(<BottomNavigation tabs={tabsWithDisabled} />, '/');
+    const { history } = renderWithRouter(<BottomNavigation tabs={tabsWithDisabled} />, '/');
 
     const disabledTab = screen.getByTestId('bottom-nav-disabled');
     fireEvent.click(disabledTab);
 
-    expect(window.location.pathname).toBe('/');
+    expect(history.location.pathname).toBe('/');
   });
 
   it('handles query parameters in tab paths', () => {
     const tabsWithQuery = [
       {
-        id: 'filtered',
-        label: 'Filtered',
+        id: 'list',
+        label: 'List',
         icon: <Home size={20} />,
-        path: '/items?filter=active',
+        path: '/items?view=list',
       },
     ];
 
-    renderWithRouter(<BottomNavigation tabs={tabsWithQuery} />);
+    const { history } = renderWithRouter(<BottomNavigation tabs={tabsWithQuery} />);
 
-    const filteredTab = screen.getByTestId('bottom-nav-filtered');
-    fireEvent.click(filteredTab);
+    const listTab = screen.getByTestId('bottom-nav-list');
+    fireEvent.click(listTab);
 
-    expect(window.location.pathname).toBe('/items');
-    expect(window.location.search).toBe('?filter=active');
+    expect(history.location.pathname).toBe('/items');
+    expect(history.location.search).toBe('?view=list');
   });
 
   it('displays activeIcon when tab is active', () => {
