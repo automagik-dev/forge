@@ -9,6 +9,7 @@ import { Kanban, GitCompareArrows, FileText, Settings, Heart, ListTodo } from 'l
 import { Lamp } from '@/components/icons/Lamp';
 import { DiffActionSheet } from './DiffActionSheet';
 import { useMobileTaskActions } from '@/hooks/useMobileTaskActions';
+import { mobileTheme, getMobileSpacing } from '@/styles/mobile-theme';
 
 export interface MobileLayoutProps {
   children: React.ReactNode;
@@ -142,11 +143,19 @@ export function MobileLayout({
       isNative && 'pt-safe',
       className
     )}>
-      <main className={cn(
-        'flex-1 overflow-auto mobile-scroll',
-        showBottomNav && 'pb-16 pb-safe',
-        contentClassName
-      )}>
+      <main
+        className={cn(
+          'flex-1 overflow-auto mobile-scroll',
+          contentClassName
+        )}
+        style={
+          showBottomNav
+            ? {
+                paddingBottom: `calc(${getMobileSpacing('bottomNav')} + env(safe-area-inset-bottom, 0px))`,
+              }
+            : undefined
+        }
+      >
         {children}
       </main>
 
@@ -174,17 +183,17 @@ export function MobileLayout({
  */
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState(false);
-  
+
   React.useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < mobileTheme.breakpoints.mobile);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  
+
   return isMobile;
 }

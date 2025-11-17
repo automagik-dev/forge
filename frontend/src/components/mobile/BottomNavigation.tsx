@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Platform } from '@/lib/platform';
+import { getMobileSpacing } from '@/styles/mobile-theme';
 
 export interface BottomNavTab {
   id: string;
@@ -98,7 +99,10 @@ export function BottomNavigation({
         className
       )}
     >
-      <div className="flex items-center justify-around h-16">
+      <div
+        className="flex items-center justify-around"
+        style={{ height: getMobileSpacing('bottomNav') }}
+      >
         {tabs.map((tab) => {
           const isActive = isTabActive(tab);
           
