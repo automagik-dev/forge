@@ -36,6 +36,7 @@ import {
   UiLanguage,
 } from 'shared/types';
 import { getLanguageOptions } from '@/i18n/languages';
+import { ProviderSelect } from '@/components/ui/provider-select';
 
 import { toPrettyCase } from '@/utils/string';
 import { useTheme } from '@/components/theme-provider';
@@ -321,7 +322,8 @@ export function GeneralSettings() {
               {t('settings.general.taskExecution.executor.label')}
             </Label>
             <div className="grid grid-cols-2 gap-2">
-              <Select
+              <ProviderSelect
+                id="executor"
                 value={draft?.executor_profile?.executor ?? ''}
                 onValueChange={(value: string) => {
                   const variants = profiles?.[value];
@@ -348,26 +350,16 @@ export function GeneralSettings() {
                     executor_profile: newProfile,
                   });
                 }}
+                providers={
+                  profiles
+                    ? Object.keys(profiles).sort((a, b) => a.localeCompare(b))
+                    : []
+                }
+                placeholder={t(
+                  'settings.general.taskExecution.executor.placeholder'
+                )}
                 disabled={!profiles}
-              >
-                <SelectTrigger id="executor">
-                  <SelectValue
-                    placeholder={t(
-                      'settings.general.taskExecution.executor.placeholder'
-                    )}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {profiles &&
-                    Object.entries(profiles)
-                      .sort((a, b) => a[0].localeCompare(b[0]))
-                      .map(([profileKey]) => (
-                        <SelectItem key={profileKey} value={profileKey}>
-                          {profileKey}
-                        </SelectItem>
-                      ))}
-                </SelectContent>
-              </Select>
+              />
 
               {/* Show variant selector if selected profile has variants */}
               {(() => {
