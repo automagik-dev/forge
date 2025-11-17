@@ -81,7 +81,7 @@ export function DevServerLogsView({
       {showLogs && (
         <div className={`${height} flex flex-col relative bg-background`}>
           {/* Copy button overlay on logs panel with smooth background */}
-          <div className="absolute top-3 right-3 z-10 bg-background/80 backdrop-blur-sm rounded-md p-1">
+          <div className="absolute top-3 right-3 z-10 bg-background/80 backdrop-blur-sm rounded-lg p-2">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
