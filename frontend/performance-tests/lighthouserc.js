@@ -4,11 +4,13 @@
  * Performance budget and lighthouse configuration for mobile web validation
  */
 
+const targetUrl = process.env.LHCI_TARGET_URL || 'http://localhost:3000';
+
 module.exports = {
   ci: {
     collect: {
       // URL to test
-      url: ['http://localhost:3000'],
+      url: [targetUrl],
       // Number of runs to average
       numberOfRuns: 3,
       settings: {

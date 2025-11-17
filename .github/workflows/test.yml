@@ -54,6 +54,11 @@ jobs:
       - name: Build frontend
         run: cd frontend && npm run build
 
+      - name: Bundle size guard
+        run: cd frontend && pnpm run perf:bundle
+        env:
+          PERF_ENFORCE: "1"
+
       - name: Checks
         run: |
           cargo fmt --all -- --check

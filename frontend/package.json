@@ -18,11 +18,12 @@
     "cap:run:android": "npx cap run android",
     "cap:build:android": "npm run build && npx cap sync && cd ../android && ./gradlew assembleDebug",
     "perf:bundle": "tsx performance-tests/bundle-size.test.ts",
-    "perf:lighthouse": "lhci autorun --config=performance-tests/lighthouserc.js",
-    "perf:load-time": "tsx performance-tests/load-time.test.ts",
-    "perf:animation": "tsx performance-tests/animation-fps.test.ts",
-    "perf:all": "npm run perf:bundle && npm run perf:lighthouse",
-    "perf:baseline": "npm run build && npm run perf:bundle"
+    "perf:lighthouse": "tsx performance-tests/run-server-tests.ts lighthouse",
+    "perf:load-time": "tsx performance-tests/run-server-tests.ts load-time",
+    "perf:animation": "tsx performance-tests/run-server-tests.ts animation-fps",
+    "perf:server-tests": "tsx performance-tests/run-server-tests.ts",
+    "perf:all": "npm run perf:bundle && npm run perf:server-tests",
+    "perf:baseline": "npm run perf:bundle"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.4",

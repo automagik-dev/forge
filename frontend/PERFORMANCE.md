@@ -53,14 +53,7 @@ This document tracks performance baselines and targets for the Automagik Forge f
 
 **Status:** ⚠️ Not yet measured (requires running dev server)
 
-**How to measure:**
-```bash
-# Terminal 1: Start development server
-pnpm run preview
-
-# Terminal 2: Run load time test
-pnpm run perf:load-time
-```
+**How to measure:** `pnpm run perf:load-time` (auto-starts `vite preview`; run `pnpm exec puppeteer browsers install chrome` once to install the browser binary)
 
 **Expected Metrics:**
 - First Contentful Paint (FCP): <1.5s
@@ -98,14 +91,7 @@ pnpm run perf:lighthouse
 - Drawer animations
 - Mobile layout transitions
 
-**How to measure:**
-```bash
-# Terminal 1: Start development server
-pnpm run preview
-
-# Terminal 2: Run animation FPS test
-pnpm run perf:animation
-```
+**How to measure:** `pnpm run perf:animation` (auto-starts `vite preview`; requires `pnpm exec puppeteer browsers install chrome` beforehand)
 
 **Target:** Maintain 60 FPS (16.67ms per frame) during all animations
 
@@ -115,7 +101,7 @@ pnpm run perf:animation
 
 ```bash
 # Build and measure bundle size
-pnpm run perf:baseline
+pnpm run perf:bundle  # builds automatically if dist/ missing
 
 # Individual tests
 pnpm run perf:bundle          # Bundle size analysis
@@ -123,7 +109,7 @@ pnpm run perf:lighthouse      # Lighthouse CI audit
 pnpm run perf:load-time       # Load time measurement
 pnpm run perf:animation       # Animation FPS testing
 
-# Run all performance tests
+# Run bundle + Lighthouse + load + animation suites
 pnpm run perf:all
 ```
 
@@ -148,9 +134,9 @@ Performance tests run automatically in CI/CD:
 
 ### Current CI Steps
 1. ✅ Build frontend (`npm run build`)
-2. ✅ Bundle size analysis (fails if >500KB gzipped)
-3. ⚠️ Lighthouse CI (pending integration)
-4. ⚠️ Load time validation (pending integration)
+2. ✅ Bundle size analysis (`pnpm run perf:bundle`, fails if any bundle >500KB gzipped)
+3. ⚠️ Lighthouse CI (covered via `pnpm run perf:lighthouse`, manual until we stabilize metrics)
+4. ⚠️ Load time validation (`pnpm run perf:load-time`)
 
 ### GitHub Actions Configuration
 

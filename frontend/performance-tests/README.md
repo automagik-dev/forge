@@ -5,10 +5,10 @@ Automated performance validation tests for Automagik Forge frontend.
 ## Quick Start
 
 ```bash
-# Build and measure bundle size (fastest)
-pnpm run perf:baseline
+# Build and measure bundle size (automatically builds dist/)
+pnpm run perf:bundle
 
-# Run all performance tests (requires dev server)
+# Run bundle + Lighthouse + load-time + animation suites (starts/stops preview automatically)
 pnpm run perf:all
 ```
 
@@ -47,16 +47,7 @@ pnpm run perf:bundle
 
 **Target:** >90 for all metrics (Performance, Accessibility, Best Practices, SEO)
 
-**Prerequisites:** Development server must be running on `localhost:3000`
-
-**Usage:**
-```bash
-# Terminal 1: Start dev server
-pnpm run preview
-
-# Terminal 2: Run Lighthouse
-pnpm run perf:lighthouse
-```
+**Command:** `pnpm run perf:lighthouse` (starts/stops `vite preview` automatically)
 
 **What it checks:**
 - Performance score (>90)
@@ -79,16 +70,9 @@ pnpm run perf:lighthouse
 
 **Target:** <1.5s Time to Interactive (TTI)
 
-**Prerequisites:** Development server must be running on `localhost:3000`
+**Command:** `pnpm run perf:load-time` (auto-starts preview server)
 
-**Usage:**
-```bash
-# Terminal 1: Start dev server
-pnpm run preview
-
-# Terminal 2: Run load time test
-pnpm run perf:load-time
-```
+> ℹ️  First run `pnpm exec puppeteer browsers install chrome` to download the headless Chrome binary required by Puppeteer.
 
 **What it measures:**
 - First Contentful Paint (FCP)
@@ -105,16 +89,9 @@ pnpm run perf:load-time
 
 **Target:** 60 FPS (16.67ms per frame, minimum 55 FPS acceptable)
 
-**Prerequisites:** Development server must be running on `localhost:3000`
+**Command:** `pnpm run perf:animation` (auto-starts preview server)
 
-**Usage:**
-```bash
-# Terminal 1: Start dev server
-pnpm run preview
-
-# Terminal 2: Run animation FPS test
-pnpm run perf:animation
-```
+> ℹ️  First run `pnpm exec puppeteer browsers install chrome` to download the headless Chrome binary required by Puppeteer.
 
 **What it tests:**
 - Bottom Navigation transitions
