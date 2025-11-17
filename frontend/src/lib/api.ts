@@ -334,6 +334,18 @@ export const projectsApi = {
     return handleApiResponse<GitBranch[]>(response);
   },
 
+  getBranchStatus: async (id: string): Promise<BranchStatus> => {
+    const response = await makeRequest(`/api/projects/${id}/branch-status`);
+    return handleApiResponse<BranchStatus>(response);
+  },
+
+  pullProject: async (id: string): Promise<void> => {
+    const response = await makeRequest(`/api/projects/${id}/pull`, {
+      method: 'POST',
+    });
+    return handleApiResponse<void>(response);
+  },
+
   searchFiles: async (
     id: string,
     query: string,

@@ -5,6 +5,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
 import { useTaskAttempt } from '@/hooks/useTaskAttempt';
 import { useBranchStatus } from '@/hooks/useBranchStatus';
+import { useProjectBranchStatus } from '@/hooks/useProjectBranchStatus';
 import { useChangeTargetBranch } from '@/hooks/useChangeTargetBranch';
 import { useRebase } from '@/hooks/useRebase';
 import { useDefaultBaseBranch } from '@/hooks/useDefaultBaseBranch';
@@ -53,6 +54,9 @@ export function Breadcrumb() {
 
   // Get branch status for git status badges
   const { data: branchStatus } = useBranchStatus(attempt?.id, attempt);
+
+  // Get project branch status for board view (when no attempt selected)
+  const { data: projectBranchStatus } = useProjectBranchStatus(projectId);
 
   // Fetch branches for change target branch dialog
   const [branches, setBranches] = useState<GitBranchType[]>([]);
@@ -386,6 +390,19 @@ export function Breadcrumb() {
     }
   };
 
+  // Handler for pulling updates to main project repo (board view)
+  const handleProjectPullClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!projectId) return;
+
+    try {
+      await projectsApi.pullProject(projectId);
+      // Success - the hook will automatically refetch and update the UI
+    } catch (err: any) {
+      console.error('Project pull failed:', err.message || 'Failed to pull project updates');
+    }
+  };
+
   return (
     <nav aria-label="Breadcrumb" className="px-3 py-2 text-sm flex items-center justify-between">
       <ol className="flex items-center gap-1">
@@ -579,9 +596,10 @@ export function Breadcrumb() {
       </ol>
 
       {/* Right side: Git status badges */}
-      {currentTask && (
+      {(currentTask || projectId) && (
         <div className="flex items-center gap-2">
           {/* Compact git status badge - only show behind (rebase needed) */}
+          {/* Show for attempt view */}
           {branchStatus && attempt && (branchStatus.commits_behind ?? 0) > 0 && (
             <TooltipProvider>
               <Tooltip>
@@ -603,8 +621,29 @@ export function Breadcrumb() {
             </TooltipProvider>
           )}
 
+          {/* Show for board view (no attempt selected) */}
+          {projectBranchStatus && !attempt && projectId && (projectBranchStatus.commits_behind ?? 0) > 0 && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleProjectPullClick}
+                    className="inline-flex items-center justify-center gap-0.5 h-6 px-2 rounded-md bg-amber-100/60 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-medium cursor-pointer hover:bg-amber-200/60 dark:hover:bg-amber-800/40 transition-colors"
+                  >
+                    <span className="text-[10px]">↓{projectBranchStatus.commits_behind} Update</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  {projectBranchStatus.commits_behind ?? 0}{' '}
+                  {t('git.status.commits', { count: projectBranchStatus.commits_behind ?? 0 })}{' '}
+                  {t('git.status.behind')} - Click to update
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
           {/* Git Actions: Approve, Create PR, Push to PR, etc. */}
-          {branchStatus && attempt && projectId && (
+          {branchStatus && attempt && projectId && currentTask && (
             <GitActionsGroup
               task={currentTask}
               attempt={attempt}
@@ -614,20 +653,24 @@ export function Breadcrumb() {
           )}
 
           {/* Action buttons */}
-          {isTaskView ? (
-            <TaskPanelHeaderActions
-              task={currentTask}
-              onClose={() => navigate(`/projects/${projectId}/tasks`, { replace: true })}
-            />
-          ) : (
-            <AttemptHeaderActions
-              mode={mode}
-              onModeChange={setMode}
-              task={currentTask}
-              attempt={attempt ?? null}
-              onNavigateToTask={handleNavigateToTask}
-              onClose={() => navigate(`/projects/${projectId}/tasks`, { replace: true })}
-            />
+          {currentTask && (
+            <>
+              {isTaskView ? (
+                <TaskPanelHeaderActions
+                  task={currentTask}
+                  onClose={() => navigate(`/projects/${projectId}/tasks`, { replace: true })}
+                />
+              ) : (
+                <AttemptHeaderActions
+                  mode={mode}
+                  onModeChange={setMode}
+                  task={currentTask}
+                  attempt={attempt ?? null}
+                  onNavigateToTask={handleNavigateToTask}
+                  onClose={() => navigate(`/projects/${projectId}/tasks`, { replace: true })}
+                />
+              )}
+            </>
           )}
         </div>
       )}
