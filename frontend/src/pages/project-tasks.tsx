@@ -422,7 +422,7 @@ export function ProjectTasks() {
 
   const handleViewTaskDetails = useCallback(
     (task: Task, attemptIdToShow?: string) => {
-      // Preserve current view mode from searchParams
+      // Preserve all current search params (including view mode)
       // (Genie lamp widget uses separate navigation and always forces chat view)
       const search = searchParams.toString();
       const pathname = attemptIdToShow
