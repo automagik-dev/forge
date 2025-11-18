@@ -1,10 +1,8 @@
 name: Cypress E2E Tests
 
+# Temporarily manual-only while the Cypress suite is being rewritten.
 on:
-  push:
-    branches: [main, dev]
-  pull_request:
-    branches: [main, dev]
+  workflow_dispatch:
 
 jobs:
   cypress-run:
