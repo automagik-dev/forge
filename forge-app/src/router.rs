@@ -126,6 +126,10 @@ fn forge_api_routes() -> Router<ForgeAppState> {
             "/api/forge/projects/{project_id}/branch-status",
             get(get_project_branch_status),
         )
+        .route(
+            "/api/forge/projects/{project_id}/pull",
+            post(post_project_pull),
+        )
         .route("/api/forge/omni/status", get(get_omni_status))
         .route("/api/forge/omni/instances", get(list_omni_instances))
         .route("/api/forge/omni/validate", post(validate_omni_config))
@@ -1416,10 +1420,18 @@ async fn get_project_profiles(
         })
 }
 
+#[derive(Deserialize)]
+struct BranchStatusQuery {
+    /// Optional base branch to compare against (defaults to "main")
+    base: Option<String>,
+}
+
 /// Get branch status for a project's main repository
 /// This checks the git status of the project's working directory (not worktree)
+/// Supports optional ?base=<branch> query parameter to specify target branch
 async fn get_project_branch_status(
     Path(project_id): Path<Uuid>,
+    Query(query): Query<BranchStatusQuery>,
     State(deployment): State<DeploymentImpl>,
 ) -> Result<Json<Value>, StatusCode> {
     use db::models::project::Project;
@@ -1454,8 +1466,8 @@ async fn get_project_branch_status(
         }
     };
 
-    // Get commits behind/ahead compared to main (or origin/main)
-    let target_branch = "main";
+    // Get target branch from query parameter or default to "main"
+    let target_branch = query.base.as_deref().unwrap_or("main");
     let commits_behind_ahead_output = Command::new("git")
         .current_dir(&project.git_repo_path)
         .args(&["rev-list", "--left-right", "--count", &format!("{}...{}", target_branch, current_branch)])
@@ -1525,6 +1537,56 @@ async fn get_project_branch_status(
     });
 
     Ok(Json(response))
+}
+
+/// Pull updates for a project's main repository
+/// This performs a git fetch to update remote tracking branches
+async fn post_project_pull(
+    Path(project_id): Path<Uuid>,
+    State(deployment): State<DeploymentImpl>,
+) -> Result<Json<Value>, StatusCode> {
+    use db::models::project::Project;
+    use std::process::Command;
+
+    // Get project
+    let project = match Project::find_by_id(&deployment.db().pool, project_id).await {
+        Ok(Some(p)) => p,
+        Ok(None) => {
+            tracing::error!("Project {} not found", project_id);
+            return Err(StatusCode::NOT_FOUND);
+        }
+        Err(e) => {
+            tracing::error!("Database error finding project {}: {}", project_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    // Run git fetch (safe, non-conflicting operation)
+    tracing::info!("Fetching updates for project {} at {:?}", project_id, project.git_repo_path);
+
+    let fetch_output = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args(&["fetch", "origin"])
+        .output();
+
+    match fetch_output {
+        Ok(output) if output.status.success() => {
+            tracing::info!("Successfully fetched updates for project {}", project_id);
+            Ok(Json(json!({
+                "success": true,
+                "message": "Successfully fetched updates from remote"
+            })))
+        }
+        Ok(output) => {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            tracing::error!("Git fetch failed for project {}: {}", project_id, stderr);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Err(e) => {
+            tracing::error!("Failed to execute git fetch for project {}: {}", project_id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
 
 async fn get_omni_status(State(services): State<ForgeServices>) -> Result<Json<Value>, StatusCode> {

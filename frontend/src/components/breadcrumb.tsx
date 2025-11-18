@@ -55,9 +55,6 @@ export function Breadcrumb() {
   // Get branch status for git status badges
   const { data: branchStatus } = useBranchStatus(attempt?.id, attempt);
 
-  // Get project branch status for board view (when no attempt selected)
-  const { data: projectBranchStatus } = useProjectBranchStatus(projectId);
-
   // Fetch branches for change target branch dialog
   const [branches, setBranches] = useState<GitBranchType[]>([]);
 
@@ -97,6 +94,11 @@ export function Breadcrumb() {
     const currentBranch = branches.find((b) => b.is_current);
     return currentBranch?.name ?? 'main';
   }, [defaultBranch, branches]);
+
+  // Get project branch status for board view (when no attempt selected)
+  // Use effectiveBaseBranch to compare against user's chosen base branch
+  const { data: projectBranchStatus, refetch: refetchProjectBranchStatus } =
+    useProjectBranchStatus(projectId, effectiveBaseBranch);
 
   // Calculate conflicts for disabling change target branch button
   const hasConflictsCalculated = useMemo(
@@ -396,13 +398,13 @@ export function Breadcrumb() {
     if (!projectId) return;
 
     try {
-      // Option A: If you implement the pull endpoint, uncomment this:
-      // await projectsApi.pullProject(projectId);
+      // Fetch updates from remote (git fetch)
+      await projectsApi.pullProject(projectId);
 
-      // Option B: For now, just show a message (badge will still display status)
-      console.log('Pull action coming soon - status badge is working');
+      // Refetch branch status to show updated commits_behind count
+      await refetchProjectBranchStatus();
 
-      // Success - the hook will automatically refetch and update the UI
+      console.log('Successfully fetched updates from remote');
     } catch (err: any) {
       console.error('Project pull failed:', err.message || 'Failed to pull project updates');
     }
