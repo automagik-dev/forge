@@ -56,7 +56,8 @@ export function TaskCard({
   const [isHovered, setIsHovered] = useState(false);
   const [images, setImages] = useState<ImageResponse[]>([]);
 
-  const handleClick = useCallback(() => {
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
     onViewDetails(task);
   }, [task, onViewDetails]);
 

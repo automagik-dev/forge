@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { useExecutionProcesses } from '@/hooks/useExecutionProcesses';
+import { useTaskCompletionNotification } from '@/hooks/useTaskCompletionNotification';
 import type { ExecutionProcess } from 'shared/types';
 
 type ExecutionProcessesContextType = {
@@ -32,6 +33,9 @@ export const ExecutionProcessesProvider: React.FC<{
     isConnected,
     error,
   } = useExecutionProcesses(sanitizedAttemptId, { showSoftDeleted: true });
+
+  // Monitor for task completion and play notification sound
+  useTaskCompletionNotification(executionProcesses);
 
   const visible = useMemo(
     () => executionProcesses.filter((p) => !p.dropped),

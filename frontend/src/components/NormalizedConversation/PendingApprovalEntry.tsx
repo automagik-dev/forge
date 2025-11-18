@@ -24,6 +24,8 @@ import { TabNavContext } from '@/contexts/TabNavigationContext';
 import { useKeyApproveRequest, useKeyDenyApproval, Scope } from '@/keyboard';
 import { useProject } from '@/contexts/project-context';
 import { useApprovalForm } from '@/contexts/ApprovalFormContext';
+import { useBranchStatus } from '@/hooks';
+import { useTaskAttempt } from '@/hooks/useTaskAttempt';
 
 const DEFAULT_DENIAL_REASON = 'User denied this tool use request.';
 
@@ -32,6 +34,7 @@ interface PendingApprovalEntryProps {
   pendingStatus: Extract<ToolStatus, { status: 'pending_approval' }>;
   executionProcessId?: string;
   children: ReactNode;
+  attemptId?: string;
 }
 
 function useApprovalCountdown(
@@ -77,12 +80,18 @@ function ActionButtons({
   isResponding,
   onApprove,
   onStartDeny,
+  needsRebase,
+  rebaseCommitCount,
 }: {
   disabled: boolean;
   isResponding: boolean;
   onApprove: () => void;
   onStartDeny: () => void;
+  needsRebase: boolean;
+  rebaseCommitCount: number;
 }) {
+  const approveDisabled = disabled || needsRebase;
+
   return (
     <div className="flex items-center gap-1.5 pr-4">
       <Tooltip>
@@ -91,7 +100,7 @@ function ActionButtons({
             onClick={onApprove}
             variant="ghost"
             className="h-8 w-8 rounded-full p-0"
-            disabled={disabled}
+            disabled={approveDisabled}
             aria-label={isResponding ? 'Submitting approval' : 'Approve'}
             aria-busy={isResponding}
           >
@@ -99,7 +108,13 @@ function ActionButtons({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>{isResponding ? 'Submitting…' : 'Approve request'}</p>
+          <p>
+            {needsRebase
+              ? `Please rebase with target branch first (${rebaseCommitCount} new ${rebaseCommitCount === 1 ? 'commit' : 'commits'})`
+              : isResponding
+                ? 'Submitting…'
+                : 'Approve request'}
+          </p>
         </TooltipContent>
       </Tooltip>
 
@@ -174,6 +189,7 @@ const PendingApprovalEntry = ({
   pendingStatus,
   executionProcessId,
   children,
+  attemptId,
 }: PendingApprovalEntryProps) => {
   const [isResponding, setIsResponding] = useState(false);
   const [hasResponded, setHasResponded] = useState(false);
@@ -189,6 +205,13 @@ const PendingApprovalEntry = ({
 
   const denyReasonRef = useRef<HTMLTextAreaElement | null>(null);
   const { projectId } = useProject();
+
+  // Check if branch needs rebase before approval
+  // Fetch the attempt object to enable branch status check
+  const { data: attempt } = useTaskAttempt(attemptId);
+  const { data: branchStatus } = useBranchStatus(attemptId, attempt);
+  const needsRebase = (branchStatus?.remote_commits_behind ?? 0) > 0;
+  const rebaseCommitCount = branchStatus?.remote_commits_behind ?? 0;
 
   const { enableScope, disableScope, activeScopes } = useHotkeysContext();
   const tabNav = useContext(TabNavContext);
@@ -341,6 +364,8 @@ const PendingApprovalEntry = ({
                   isResponding={isResponding}
                   onApprove={handleApprove}
                   onStartDeny={handleStartDeny}
+                  needsRebase={needsRebase}
+                  rebaseCommitCount={rebaseCommitCount}
                 />
               )}
             </div>

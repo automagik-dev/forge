@@ -293,13 +293,13 @@ export function TasksLayout({
         </div>
 
         <div
-          className="min-w-0 min-h-0 overflow-hidden border-l"
+          className="min-w-0 min-h-0 overflow-hidden border-l flex flex-col"
           aria-hidden={!isAuxVisible}
           aria-label={mode === 'preview' ? 'Preview' : 'Diffs'}
           role="region"
           style={{ pointerEvents: isAuxVisible ? 'auto' : 'none' }}
         >
-          {aux}
+          <div className="flex-1 min-h-0 overflow-auto">{aux}</div>
         </div>
       </div>
     );
