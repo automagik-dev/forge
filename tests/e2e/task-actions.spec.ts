@@ -18,7 +18,7 @@ test.describe('Task Actions', () => {
     await setupTasksView(page);
 
     // Wait for tasks to load
-    await expect(page.getByTestId('task-card')).toBeVisible({ timeout: 20000 });
+    await expect(page.getByTestId('task-card').first()).toBeVisible({ timeout: 20000 });
   });
 
   test('shows quick actions on hover', async ({ page }) => {
