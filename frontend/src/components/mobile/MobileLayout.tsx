@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { BottomNavigation, BottomNavTab } from './BottomNavigation';
 import { usePlatform } from '@/lib/platform';
 import { useProject } from '@/contexts/project-context';
+import { useMobileNavigation } from '@/contexts/MobileNavigationContext';
 import { Kanban, GitCompareArrows, FileText, Settings, Heart, ListTodo } from 'lucide-react';
 import { Lamp } from '@/components/icons/Lamp';
 import { DiffActionSheet } from './DiffActionSheet';
@@ -14,6 +15,7 @@ import { mobileTheme, getMobileSpacing } from '@/styles/mobile-theme';
 export interface MobileLayoutProps {
   children: React.ReactNode;
   showBottomNav?: boolean;
+  hideBottomNav?: boolean;
   className?: string;
   contentClassName?: string;
 }
@@ -21,6 +23,7 @@ export interface MobileLayoutProps {
 export function MobileLayout({
   children,
   showBottomNav = true,
+  hideBottomNav: hideBottomNavProp = false,
   className,
   contentClassName
 }: MobileLayoutProps) {
@@ -31,6 +34,10 @@ export function MobileLayout({
   const location = useLocation();
   const { taskId } = useParams<{ taskId?: string }>();
   const [showDiffActions, setShowDiffActions] = useState(false);
+
+  // Use context to get dynamic hide state (from input focus)
+  const { hideBottomNav: hideBottomNavContext } = useMobileNavigation();
+  const hideBottomNav = hideBottomNavProp || hideBottomNavContext;
 
   // Mobile task actions (sync/approve)
   const {
@@ -159,7 +166,15 @@ export function MobileLayout({
         {children}
       </main>
 
-      {showBottomNav && <BottomNavigation tabs={tabs} />}
+      {showBottomNav && (
+        <BottomNavigation
+          tabs={tabs}
+          className={cn(
+            'transition-transform duration-300 ease-in-out',
+            hideBottomNav && 'translate-y-full'
+          )}
+        />
+      )}
 
       {/* Diff Action Sheet - shows sync/approve options */}
       <DiffActionSheet
