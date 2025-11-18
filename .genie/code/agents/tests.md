@@ -10,8 +10,10 @@ genie:
 forge:
   CLAUDE_CODE:
     model: sonnet
+    dangerously_skip_permissions: true
   CODEX:
     model: gpt-5-codex
+    sandbox: danger-full-access
   OPENCODE:
     model: opencode/glm-4.6
 ---
@@ -144,7 +146,7 @@ Benefits:
 - **Purpose:** Validate end-to-end user journeys in production-like environment
 - **Scope:** Happy paths + critical error paths (e.g., payment failure handling)
 - **Coverage Target:** Top 10 user flows by traffic volume
-- **Tooling:** Playwright, Cypress, Selenium
+- **Tooling:** Playwright
 
 #### 4. Manual Testing (Human Validation)
 - **Purpose:** Exploratory testing, UX validation, accessibility checks

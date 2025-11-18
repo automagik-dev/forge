@@ -2,6 +2,16 @@
   width: 100%;
 }
 
+@media (max-width: 767px) {
+  .diff-tailwindcss-wrapper .container {
+    max-width: 100%;
+  }
+  .diff-tailwindcss-wrapper table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
 @media (min-width: 640px) {
   .diff-tailwindcss-wrapper .container {
     max-width: 640px;

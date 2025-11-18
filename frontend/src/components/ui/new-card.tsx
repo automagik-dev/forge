@@ -31,7 +31,7 @@ const NewCardHeader = React.forwardRef<HTMLDivElement, NewCardHeaderProps>(
       {actions ? (
         <>
           <div className="min-w-0 flex-1 py-3">{children}</div>
-          <div className="flex items-center gap-4">{actions}</div>
+          <div className="flex items-center gap-2 sm:gap-4">{actions}</div>
         </>
       ) : (
         children

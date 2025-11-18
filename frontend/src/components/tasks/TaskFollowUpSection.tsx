@@ -60,6 +60,7 @@ interface TaskFollowUpSectionProps {
   isInChatView?: boolean;
   taskIdFromUrl?: string;
   projectId?: string; // Project ID from URL (fallback when task is still loading)
+  onInputFocusChange?: (isFocused: boolean) => void; // Callback to notify parent about input focus
 }
 
 export function TaskFollowUpSection({
@@ -68,6 +69,7 @@ export function TaskFollowUpSection({
   jumpToLogsTab,
   isInChatView = false,
   projectId: projectIdFromUrl,
+  onInputFocusChange,
 }: TaskFollowUpSectionProps) {
   const { t } = useTranslation('tasks');
   const navigate = useNavigate();
@@ -184,6 +186,12 @@ export function TaskFollowUpSection({
 
   // Track whether the follow-up textarea is focused
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
+
+  // Notify parent when focus changes (for hiding bottom nav on mobile)
+  const handleFocusChange = useCallback((isFocused: boolean) => {
+    setIsTextareaFocused(isFocused);
+    onInputFocusChange?.(isFocused);
+  }, [onInputFocusChange]);
 
   // Get profile from execution history (if exists)
   const { selectedVariant: variantFromHistory, currentProfile: profileFromHistory } =
@@ -673,7 +681,7 @@ export function TaskFollowUpSection({
                 disabled={!isEditable}
                 showLoadingOverlay={isUnqueuing || !isDraftLoaded}
                 onPasteFiles={handlePasteImages}
-                onFocusChange={setIsTextareaFocused}
+                onFocusChange={handleFocusChange}
               />
               <FollowUpStatusRow
                 status={{

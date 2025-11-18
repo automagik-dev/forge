@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { AnimatePresence, motion } from 'framer-motion';
 
-export type LayoutMode = 'chat' | 'preview' | 'diffs' | 'kanban' | 'list' | null;
+export type LayoutMode = 'chat' | 'preview' | 'diffs' | 'kanban' | null;
 
 interface TasksLayoutProps {
   kanban: ReactNode;
@@ -75,13 +75,11 @@ function SplitView({
   rightContent,
   rightHeader,
   rightLabel,
-  onRightContentClick,
 }: {
   attempt: ReactNode;
   rightContent: ReactNode;
   rightHeader?: ReactNode;
   rightLabel: string;
-  onRightContentClick?: () => void;
 }) {
   const [sizes] = useState<SplitSizes>(() =>
     loadSizes(STORAGE_KEYS.ATTEMPT_AUX, DEFAULT_ATTEMPT_AUX)
@@ -141,7 +139,6 @@ function SplitView({
             className="min-w-0 min-h-0 overflow-hidden"
             role="region"
             aria-label={rightLabel}
-            onClick={onRightContentClick}
           >
             {rightContent}
           </Panel>
@@ -164,14 +161,12 @@ function DesktopSimple({
   aux,
   mode,
   rightHeader,
-  onKanbanClick,
 }: {
   kanban: ReactNode;
   attempt: ReactNode;
   aux: ReactNode;
   mode: LayoutMode;
   rightHeader?: ReactNode;
-  onKanbanClick?: () => void;
 }) {
   // mode='chat' → Full screen chat only
   if (mode === 'chat') {
@@ -195,7 +190,6 @@ function DesktopSimple({
         rightContent={kanban}
         rightHeader={rightHeader}
         rightLabel="Kanban board"
-        onRightContentClick={onKanbanClick}
       />
     );
   }
@@ -236,8 +230,7 @@ export function TasksLayout({
   mode,
   isMobile = false,
   rightHeader,
-  onKanbanClick,
-}: TasksLayoutProps & { onKanbanClick?: () => void }) {
+}: TasksLayoutProps) {
   const desktopKey = isPanelOpen ? 'desktop-with-panel' : 'kanban-only';
 
   if (isMobile) {
@@ -250,7 +243,7 @@ export function TasksLayout({
     } else if (mode === 'preview' || mode === 'diffs') {
       columns = ['0fr', '0fr', '1fr'];
     } else {
-      // Fallback to Tasks view for unknown modes
+      // Default to Kanban for unknown modes
       columns = ['1fr', '0fr', '0fr'];
     }
     
@@ -293,13 +286,13 @@ export function TasksLayout({
         </div>
 
         <div
-          className="min-w-0 min-h-0 overflow-hidden border-l"
+          className="min-w-0 min-h-0 overflow-hidden border-l flex flex-col"
           aria-hidden={!isAuxVisible}
           aria-label={mode === 'preview' ? 'Preview' : 'Diffs'}
           role="region"
           style={{ pointerEvents: isAuxVisible ? 'auto' : 'none' }}
         >
-          {aux}
+          <div className="flex-1 min-h-0 overflow-auto">{aux}</div>
         </div>
       </div>
     );
@@ -325,7 +318,6 @@ export function TasksLayout({
         aux={aux}
         mode={mode}
         rightHeader={rightHeader}
-        onKanbanClick={onKanbanClick}
       />
     );
   }

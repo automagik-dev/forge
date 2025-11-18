@@ -99,7 +99,6 @@
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
     "cross-env": "^7.0.3",
-    "cypress": "^15.6.0",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-i18next": "^6.1.3",

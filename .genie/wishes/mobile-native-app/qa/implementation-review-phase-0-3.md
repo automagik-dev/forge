@@ -212,8 +212,8 @@ const phaseConfigs: Record<Phase, PhaseConfig> = {
 - Deduction: -5 pts
 
 #### Integration Tests (6/8 pts)
-- ✅ Cypress test infrastructure exists
-- ✅ `bottom-navigation.cy.ts` updated (12 insertions, 20 deletions)
+- ✅ E2E test infrastructure exists (Playwright)
+- ✅ Mobile-specific tests updated
 - ⚠️ Some tests skipped (temporary, per release notes)
 - Deduction: -2 pts
 
@@ -329,7 +329,7 @@ const phaseConfigs: Record<Phase, PhaseConfig> = {
 
 ### Test Coverage (-8 pts)
 4. **-5 pts:** No dedicated unit tests for mobile components
-5. **-2 pts:** Some Cypress tests skipped (temporary)
+5. **-2 pts:** Some E2E tests skipped (temporary)
 6. **-1 pt:** No formal manual testing checklist
 
 ### Feature Completeness (-2 pts)
@@ -354,7 +354,7 @@ const phaseConfigs: Record<Phase, PhaseConfig> = {
    - Load time measurement
    - Create metrics tracking
 
-3. **Re-enable skipped Cypress tests**
+3. **Re-enable skipped E2E tests**
    - Fix modal overlay issues
    - Restore full test coverage
    - Document any remaining skipped tests
@@ -398,7 +398,7 @@ const phaseConfigs: Record<Phase, PhaseConfig> = {
 ### Short-term (Next Sprint)
 4. Add mobile component unit tests
 5. Measure performance baseline
-6. Re-enable skipped Cypress tests
+6. Re-enable skipped E2E tests
 7. Plan Phase 4 work (offline support, gestures)
 
 ### Long-term (Next Month)

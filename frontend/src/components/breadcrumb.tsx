@@ -5,6 +5,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
 import { useTaskAttempt } from '@/hooks/useTaskAttempt';
 import { useBranchStatus } from '@/hooks/useBranchStatus';
+import { useProjectBranchStatus } from '@/hooks/useProjectBranchStatus';
 import { useChangeTargetBranch } from '@/hooks/useChangeTargetBranch';
 import { useRebase } from '@/hooks/useRebase';
 import { useDefaultBaseBranch } from '@/hooks/useDefaultBaseBranch';
@@ -93,6 +94,11 @@ export function Breadcrumb() {
     const currentBranch = branches.find((b) => b.is_current);
     return currentBranch?.name ?? 'main';
   }, [defaultBranch, branches]);
+
+  // Get project branch status for board view (when no attempt selected)
+  // Use effectiveBaseBranch to compare against user's chosen base branch
+  const { data: projectBranchStatus, refetch: refetchProjectBranchStatus } =
+    useProjectBranchStatus(projectId, effectiveBaseBranch);
 
   // Calculate conflicts for disabling change target branch button
   const hasConflictsCalculated = useMemo(
@@ -386,6 +392,24 @@ export function Breadcrumb() {
     }
   };
 
+  // Handler for pulling updates to main project repo (board view)
+  const handleProjectPullClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!projectId) return;
+
+    try {
+      // Fetch updates from remote (git fetch)
+      await projectsApi.pullProject(projectId);
+
+      // Refetch branch status to show updated commits_behind count
+      await refetchProjectBranchStatus();
+
+      console.log('Successfully fetched updates from remote');
+    } catch (err: any) {
+      console.error('Project pull failed:', err.message || 'Failed to pull project updates');
+    }
+  };
+
   return (
     <nav aria-label="Breadcrumb" className="px-3 py-2 text-sm flex items-center justify-between">
       <ol className="flex items-center gap-1">
@@ -397,6 +421,22 @@ export function Breadcrumb() {
             aria-label="Go to projects"
           >
             <FolderOpen className="h-4 w-4" />
+          </Link>
+        </li>
+
+        {/* Separator */}
+        <li className="flex items-center">
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </li>
+
+        {/* Kanban icon to navigate back to project tasks */}
+        <li className="flex items-center gap-1">
+          <Link
+            to={`/projects/${projectId}/tasks`}
+            className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            aria-label="Go to project tasks"
+          >
+            <KanbanSquare className="h-4 w-4" />
           </Link>
         </li>
 
@@ -583,6 +623,27 @@ export function Breadcrumb() {
                   {branchStatus.commits_behind ?? 0}{' '}
                   {t('git.status.commits', { count: branchStatus.commits_behind ?? 0 })}{' '}
                   {t('git.status.behind')} - Click to rebase
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {/* Show for board view (no attempt selected) */}
+          {projectBranchStatus && !attempt && projectId && (projectBranchStatus.commits_behind ?? 0) > 0 && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleProjectPullClick}
+                    className="inline-flex items-center justify-center gap-0.5 h-6 px-2 rounded-md bg-amber-100/60 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-medium cursor-pointer hover:bg-amber-200/60 dark:hover:bg-amber-800/40 transition-colors"
+                  >
+                    <span className="text-[10px]">↓{projectBranchStatus.commits_behind} Update</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  {projectBranchStatus.commits_behind ?? 0}{' '}
+                  {t('git.status.commits', { count: projectBranchStatus.commits_behind ?? 0 })}{' '}
+                  {t('git.status.behind')} - Click to update
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

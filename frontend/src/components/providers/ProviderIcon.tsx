@@ -62,7 +62,7 @@ export function ProviderIcon({
   let iconPath = '';
   let iconTitle = '';
   // Use explicit fill color to ensure proper rendering in both light and dark modes
-  let fillColor = isDark ? '#ffffff' : '#000000';
+  const fillColor = isDark ? '#ffffff' : '#000000';
 
   switch (executor) {
     case 'CLAUDE_CODE':
