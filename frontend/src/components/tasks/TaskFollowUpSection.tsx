@@ -519,11 +519,18 @@ export function TaskFollowUpSection({
   ]);
 
   // When a process completes (e.g., agent resolved conflicts), refresh branch status promptly
+  // Also auto-send queued messages
   const prevRunningRef = useRef<boolean>(isAttemptRunning);
   useEffect(() => {
     if (prevRunningRef.current && !isAttemptRunning && selectedAttemptId) {
       refetchBranchStatus();
       refetchAttemptBranch();
+
+      // Auto-send queued messages when execution completes
+      if (draft?.queued && !draft?.sending) {
+        console.log('[Auto-send] Execution completed with queued message - sending now');
+        onSendFollowUp();
+      }
     }
     prevRunningRef.current = isAttemptRunning;
   }, [
@@ -531,6 +538,9 @@ export function TaskFollowUpSection({
     selectedAttemptId,
     refetchBranchStatus,
     refetchAttemptBranch,
+    draft?.queued,
+    draft?.sending,
+    onSendFollowUp,
   ]);
 
   // When server indicates sending started, clear draft and images; hide upload panel
