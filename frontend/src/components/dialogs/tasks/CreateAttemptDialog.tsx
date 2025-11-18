@@ -152,7 +152,7 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
 
     return (
       <Dialog open={modal.visible} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent data-testid="create-attempt-modal" className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>{t('createAttemptDialog.title')}</DialogTitle>
             <DialogDescription>

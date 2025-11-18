@@ -56,7 +56,7 @@ const ArchiveTaskConfirmationDialog =
         open={modal.visible}
         onOpenChange={(open) => !open && handleCancelArchive()}
       >
-        <DialogContent>
+        <DialogContent data-testid="archive-confirmation-modal">
           <DialogHeader>
             <DialogTitle>Archive Task</DialogTitle>
             <DialogDescription>
@@ -77,6 +77,7 @@ const ArchiveTaskConfirmationDialog =
 
           <DialogFooter>
             <Button
+              data-testid="archive-modal-cancel"
               variant="outline"
               onClick={handleCancelArchive}
               disabled={isArchiving}
@@ -85,6 +86,7 @@ const ArchiveTaskConfirmationDialog =
               Cancel
             </Button>
             <Button
+              data-testid="archive-modal-confirm"
               onClick={handleConfirmArchive}
               disabled={isArchiving}
             >

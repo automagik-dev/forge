@@ -39,6 +39,13 @@ export function TaskCard({
   const isRunning = task.has_in_progress_attempt;
   const hasApproved = task.has_merged_attempt;
   const hasFailed = task.last_attempt_failed;
+  const derivedTaskState = isRunning
+    ? 'in-progress'
+    : hasApproved
+      ? 'merged'
+      : hasFailed
+        ? 'failed'
+        : 'idle';
 
   const handleAction = (e: React.MouseEvent, action: 'diff' | 'view' | 'archive' | 'new') => {
     e.stopPropagation();
@@ -61,6 +68,15 @@ export function TaskCard({
 
   return (
     <div
+      data-testid="task-list-item"
+      data-task-id={task.id}
+      data-status={task.status}
+      data-phase={phase}
+      data-task-state={derivedTaskState}
+      data-has-executor={task.executor ? 'true' : 'false'}
+      data-has-in-progress-attempt={isRunning ? 'true' : 'false'}
+      data-has-merged-attempt={hasApproved ? 'true' : 'false'}
+      data-last-attempt-failed={hasFailed ? 'true' : 'false'}
       className={cn(
         'w-full border-b border-white/5',
         'transition-all duration-200',
@@ -96,11 +112,14 @@ export function TaskCard({
             </h4>
 
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-2">
-              <span>{timeAgo}</span>
+              <span data-testid="time-badge">{timeAgo}</span>
               {hasApproved && (
                 <>
                   <span>•</span>
-                  <div className="flex items-center gap-1 text-green-500">
+                  <div
+                    data-testid="task-state-indicator-merged"
+                    className="flex items-center gap-1 text-green-500"
+                  >
                     <GitMerge className="w-3 h-3" />
                     <span>approved</span>
                   </div>
@@ -109,13 +128,21 @@ export function TaskCard({
               {isRunning && (
                 <>
                   <span>•</span>
-                  <span className="text-blue-500 font-medium">running</span>
+                  <span
+                    data-testid="task-state-indicator-in-progress"
+                    className="text-blue-500 font-medium"
+                  >
+                    running
+                  </span>
                 </>
               )}
               {hasFailed && !hasApproved && !isRunning && (
                 <>
                   <span>•</span>
-                  <div className="flex items-center gap-1 text-yellow-500">
+                  <div
+                    data-testid="task-state-indicator-failed"
+                    className="flex items-center gap-1 text-yellow-500"
+                  >
                     <Bell className="w-3 h-3" />
                     <span>failed</span>
                   </div>
@@ -126,6 +153,7 @@ export function TaskCard({
             {/* Action buttons */}
             <div className="flex items-center gap-2">
               <button
+                data-testid="task-action-mobile-diff"
                 onClick={(e) => handleAction(e, 'diff')}
                 className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 transition-colors text-xs"
                 title="View diffs"
@@ -134,6 +162,7 @@ export function TaskCard({
                 <span>Diff</span>
               </button>
               <button
+                data-testid="task-action-mobile-view"
                 onClick={(e) => handleAction(e, 'view')}
                 className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 transition-colors text-xs"
                 title="View preview"
@@ -143,6 +172,7 @@ export function TaskCard({
               </button>
               {phase !== 'archived' && (
                 <button
+                  data-testid="task-action-quick-archive"
                   onClick={(e) => handleAction(e, 'archive')}
                   className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/5 hover:bg-white/10 transition-colors text-xs"
                   title="Archive task"
@@ -151,6 +181,7 @@ export function TaskCard({
                 </button>
               )}
               <button
+                data-testid="task-action-quick-play"
                 onClick={(e) => handleAction(e, 'new')}
                 className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/20 hover:bg-blue-500/30 transition-colors text-xs text-blue-400"
                 title="New attempt"

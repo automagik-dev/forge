@@ -67,6 +67,7 @@ export function TasksListView({
     <div className={cn('flex flex-col gap-0 pb-24', className)}>
       {projectName && (
         <button
+          data-testid="mobile-project-header"
           onClick={onProjectClick}
           className="sticky top-0 z-20 px-4 py-3 bg-[#1A1625]/95 backdrop-blur-sm border-b border-white/10 hover:bg-white/5 transition-colors"
         >

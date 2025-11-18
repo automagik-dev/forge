@@ -184,6 +184,7 @@ export function TaskActions({
           onClick={(e) => e.stopPropagation()}
         >
           <Button
+            data-testid="task-action-quick-play"
             variant="ghost"
             size={compact ? 'sm' : 'default'}
             className={cn(compact ? 'h-6 w-6 p-0' : 'h-8 w-8 p-0')}
@@ -202,6 +203,7 @@ export function TaskActions({
           onClick={(e) => e.stopPropagation()}
         >
           <Button
+            data-testid="task-action-quick-archive"
             variant="ghost"
             size={compact ? 'sm' : 'default'}
             className={cn(compact ? 'h-6 w-6 p-0' : 'h-8 w-8 p-0')}
@@ -222,15 +224,17 @@ export function TaskActions({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
+              data-testid="task-actions-menu-trigger"
               variant="icon"
               size={compact ? 'sm' : 'default'}
               aria-label="More actions"
+              aria-haspopup="menu"
               onClick={(e) => e.stopPropagation()}
             >
               <MoreHorizontal className={cn(compact ? 'h-3.5 w-3.5' : 'h-4 w-4')} />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent data-testid="task-actions-menu" align="end">
             {/* View Actions */}
             <DropdownMenuLabel>{t('actionsMenu.view')}</DropdownMenuLabel>
             {onViewDetails && (

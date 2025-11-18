@@ -496,7 +496,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     return (
       <>
         <Dialog open={modal.visible} onOpenChange={handleDialogOpenChange}>
-          <DialogContent className="sm:max-w-[550px]">
+          <DialogContent data-testid="task-form-modal" className="sm:max-w-[550px]">
             <DialogHeader>
               <DialogTitle>
                 {isEditMode ? 'Edit Task' : isSubtaskMode ? 'Create Subtask' : 'Create New Task'}

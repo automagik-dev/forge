@@ -55,6 +55,13 @@ export function TaskCard({
 }: TaskCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [images, setImages] = useState<ImageResponse[]>([]);
+  const derivedTaskState = task.has_in_progress_attempt
+    ? 'in-progress'
+    : task.has_merged_attempt
+      ? 'merged'
+      : task.last_attempt_failed
+        ? 'failed'
+        : 'idle';
 
   const handleClick = useCallback(() => {
     onViewDetails(task);
@@ -113,6 +120,14 @@ export function TaskCard({
 
   return (
     <div
+      data-testid="task-card"
+      data-task-id={task.id}
+      data-status={status}
+      data-task-state={derivedTaskState}
+      data-has-executor={task.executor ? 'true' : 'false'}
+      data-has-in-progress-attempt={task.has_in_progress_attempt ? 'true' : 'false'}
+      data-has-merged-attempt={task.has_merged_attempt ? 'true' : 'false'}
+      data-last-attempt-failed={task.last_attempt_failed ? 'true' : 'false'}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -133,15 +148,24 @@ export function TaskCard({
         <div className="flex items-center space-x-1">
           {/* In Progress Spinner */}
           {task.has_in_progress_attempt && (
-            <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+            <Loader2
+              data-testid="task-state-indicator-in-progress"
+              className="h-3 w-3 animate-spin text-blue-500"
+            />
           )}
           {/* Merged Indicator */}
           {task.has_merged_attempt && (
-            <CheckCircle className="h-3 w-3 text-green-500" />
+            <CheckCircle
+              data-testid="task-state-indicator-merged"
+              className="h-3 w-3 text-green-500"
+            />
           )}
           {/* Failed Indicator */}
           {task.last_attempt_failed && !task.has_merged_attempt && (
-            <XCircle className="h-3 w-3 text-destructive" />
+            <XCircle
+              data-testid="task-state-indicator-failed"
+              className="h-3 w-3 text-destructive"
+            />
           )}
           {/* Play Button (on hover, only when no attempts exist) */}
           {isHovered && !task.executor && (
@@ -151,6 +175,7 @@ export function TaskCard({
               onClick={(e) => e.stopPropagation()}
             >
               <Button
+                data-testid="task-action-quick-play"
                 variant="ghost"
                 size="sm"
                 className="h-6 w-6 p-0"
@@ -169,6 +194,7 @@ export function TaskCard({
               onClick={(e) => e.stopPropagation()}
             >
               <Button
+                data-testid="task-action-quick-archive"
                 variant="ghost"
                 size="sm"
                 className="h-6 w-6 p-0"
@@ -253,7 +279,11 @@ export function TaskCard({
         )}
 
         {/* Time Badge */}
-        <Badge variant="outline" className="text-xs text-muted-foreground gap-1 h-5 px-1.5 border-none bg-transparent">
+        <Badge
+          data-testid="time-badge"
+          variant="outline"
+          className="text-xs text-muted-foreground gap-1 h-5 px-1.5 border-none bg-transparent"
+        >
           <Clock className="h-3 w-3" />
           <span>{formatRelativeTime(task.updated_at)}</span>
         </Badge>

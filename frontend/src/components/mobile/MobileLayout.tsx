@@ -130,11 +130,14 @@ export function MobileLayout({
   }, [projectId, taskId, location.pathname, searchParams, t]);
   
   return (
-    <div className={cn(
-      'h-screen flex flex-col bg-[#1A1625]',
-      isNative && 'pt-safe',
-      className
-    )}>
+    <div
+      data-testid="mobile-layout"
+      className={cn(
+        'h-screen flex flex-col bg-[#1A1625]',
+        isNative && 'pt-safe',
+        className
+      )}
+    >
       <main
         className={cn(
           'flex-1 overflow-auto mobile-scroll',
