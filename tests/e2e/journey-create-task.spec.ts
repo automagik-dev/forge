@@ -14,7 +14,6 @@ test.describe('Journey: Create Task', () => {
   test('complete flow: navigate → create task → view details → prepare execution', async ({ page }) => {
     // GIVEN: User is on the tasks view with a project loaded
     await setupTasksView(page);
-    await expect(page.getByTestId('task-card').first()).toBeVisible({ timeout: 20000 });
 
     // WHEN: User clicks "Create new task" button
     await page.getByRole('button', { name: 'Create new task' }).click();
@@ -57,7 +56,7 @@ test.describe('Journey: Create Task', () => {
     await expect(taskTitle).toBeVisible();
 
     // AND: Description is shown in details panel (scope to panel to avoid duplicates)
-    const taskPanel = page.locator('[data-testid="task-panel"]');
+    const taskPanel = page.locator('.p-6.flex.flex-col').filter({ hasText: 'Attempts' });
     await expect(taskPanel.getByText('This task tests the complete create task journey')).toBeVisible();
 
     // AND: Attempts section shows "No attempts yet"

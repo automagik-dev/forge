@@ -152,7 +152,6 @@ export function TaskCard({
               onClick={(e) => e.stopPropagation()}
             >
               <Button
-                data-testid="task-action-quick-play"
                 variant="ghost"
                 size="sm"
                 className="h-6 w-6 p-0"
@@ -171,7 +170,6 @@ export function TaskCard({
               onClick={(e) => e.stopPropagation()}
             >
               <Button
-                data-testid="task-action-quick-archive"
                 variant="ghost"
                 size="sm"
                 className="h-6 w-6 p-0"

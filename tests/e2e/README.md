@@ -36,11 +36,11 @@ test.describe('Feature Name', () => {
 
   test('what the test does', async ({ page }) => {
     // GIVEN: Initial state
-    const element = page.getByTestId('some-element');
-    await expect(element).toBeVisible();
+    const button = page.getByRole('button', { name: 'Submit' });
+    await expect(button).toBeVisible();
 
     // WHEN: User action
-    await element.click();
+    await button.click();
 
     // THEN: Expected result
     await expect(page.getByText('Expected text')).toBeVisible();
@@ -65,29 +65,24 @@ test.describe('Feature Name', () => {
    page.getByText('Delete Task')
    ```
 
-4. **`getByTestId()`** - Test IDs (when above don't work)
+4. **CSS selectors** - Last resort (when semantic selectors aren't available)
    ```ts
-   page.getByTestId('task-card')
-   ```
-
-5. **CSS Selectors** - Last resort only
-   ```ts
-   page.locator('.some-class') // Avoid!
+   page.locator('.specific-class') // Avoid when possible!
    ```
 
 ## Common Patterns
 
 ### Hovering
 ```typescript
-const card = page.getByTestId('task-card');
+const card = page.getByRole('article').first();
 await card.hover(); // Real browser hover - no synthetic events!
-await expect(card.getByTestId('hover-action')).toBeVisible();
+await expect(card.getByRole('button', { name: 'Archive' })).toBeVisible();
 ```
 
 ### Dropdown Menus
 ```typescript
-await page.getByTestId('menu-trigger').click();
-const menu = page.getByTestId('menu');
+await page.getByRole('button', { name: 'Actions' }).click();
+const menu = page.getByRole('menu');
 await expect(menu).toBeVisible();
 await menu.getByText('Option 1').click();
 ```
@@ -95,9 +90,11 @@ await menu.getByText('Option 1').click();
 ### Modals
 ```typescript
 await page.getByRole('button', { name: 'Delete' }).click();
-const modal = page.getByRole('dialog'); // or getByTestId if needed
+const modal = page.getByRole('dialog');
 await expect(modal).toBeVisible();
 await modal.getByRole('button', { name: 'Confirm' }).click();
+
+Always prefer semantic selectors (getByRole, getByLabel, getByText).
 ```
 
 ### API Calls (Setup/Cleanup)

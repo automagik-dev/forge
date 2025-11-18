@@ -108,7 +108,6 @@ export const KanbanCard = ({
 
   return (
     <Card
-      data-testid="task-card"
       className={cn(
         'p-3 outline-none border-b flex-col space-y-2 transition-all duration-200',
         isDragging && 'cursor-grabbing',
