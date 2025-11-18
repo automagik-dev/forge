@@ -111,3 +111,6 @@ forge.db
 
 # Upstream submodule removed - ignore leftover directory
 upstream/ 
+
+# Vite generated files
+*.timestamp-*.mjs
