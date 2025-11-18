@@ -64,11 +64,13 @@
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
     "@types/cheerio": "^1.0.0",
+    "@types/node": "^22.19.1",
     "cheerio": "^1.1.2",
     "concurrently": "^8.2.2",
     "cypress": "^15.6.0",
     "cypress-plugin-tab": "^1.0.5",
     "dotenv-cli": "^11.0.0",
+    "puppeteer": "^23.11.1",
     "typescript": "^5.9.2"
   },
   "engines": {
