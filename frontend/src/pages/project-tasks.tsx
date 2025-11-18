@@ -23,6 +23,7 @@ import { paths } from '@/lib/paths';
 import { ExecutionProcessesProvider } from '@/contexts/ExecutionProcessesContext';
 import { ClickedElementsProvider } from '@/contexts/ClickedElementsProvider';
 import { ReviewProvider } from '@/contexts/ReviewProvider';
+import { useMobileNavigation } from '@/contexts/MobileNavigationContext';
 import {
   useKeyCreate,
   useKeyExit,
@@ -128,6 +129,14 @@ export function ProjectTasks() {
   // Panel is open if we have a regular task OR an agent task (Master Genie) with attemptId OR in chat view
   const isInChatView = searchParams.get('view') === 'chat';
   const isPanelOpen = Boolean(taskId && (selectedTask || attemptId || isInChatView));
+
+  // Track input focus to hide bottom navigation on mobile
+  const { setHideBottomNav } = useMobileNavigation();
+
+  // Update context when input focus changes
+  const handleInputFocusChange = useCallback((isFocused: boolean) => {
+    setHideBottomNav(isFocused);
+  }, [setHideBottomNav]);
 
   const { isOpen: showTaskPanelShowcase, close: closeTaskPanelShowcase } =
     useShowcaseTrigger(showcases.taskPanel, {
@@ -639,6 +648,7 @@ export function ProjectTasks() {
           isInChatView={isInChatView}
           taskIdFromUrl={taskId}
           projectId={projectId}
+          onInputFocusChange={handleInputFocusChange}
         >
           {({ logs, followUp }) => (
             <>

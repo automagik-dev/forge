@@ -8,6 +8,7 @@ import { MobileSearchOverlay } from './MobileSearchOverlay';
 import { MobileMoreMenu } from './MobileMoreMenu';
 import { usePlatform } from '@/lib/platform';
 import { useProject } from '@/contexts/project-context';
+import { useMobileNavigation } from '@/contexts/MobileNavigationContext';
 import { Kanban, GitCompareArrows, FileText, Settings, Heart, ListTodo } from 'lucide-react';
 import { Lamp } from '@/components/icons/Lamp';
 import { DiffActionSheet } from './DiffActionSheet';
@@ -17,6 +18,7 @@ import { mobileTheme, getMobileSpacing } from '@/styles/mobile-theme';
 export interface MobileLayoutProps {
   children: React.ReactNode;
   showBottomNav?: boolean;
+  hideBottomNav?: boolean;
   showHeader?: boolean;
   className?: string;
   contentClassName?: string;
@@ -25,6 +27,7 @@ export interface MobileLayoutProps {
 export function MobileLayout({
   children,
   showBottomNav = true,
+  hideBottomNav: hideBottomNavProp = false,
   showHeader = true,
   className,
   contentClassName
@@ -38,6 +41,10 @@ export function MobileLayout({
   const [showDiffActions, setShowDiffActions] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+
+  // Use context to get dynamic hide state (from input focus)
+  const { hideBottomNav: hideBottomNavContext } = useMobileNavigation();
+  const hideBottomNav = hideBottomNavProp || hideBottomNavContext;
 
   // Mobile task actions (sync/approve)
   const {
@@ -158,7 +165,7 @@ export function MobileLayout({
         )}
         style={{
           paddingTop: showHeader ? '32px' : undefined, // Header height
-          paddingBottom: showBottomNav
+          paddingBottom: showBottomNav && !hideBottomNav
             ? `calc(${getMobileSpacing('bottomNav')} + env(safe-area-inset-bottom, 0px))`
             : undefined
         }}
@@ -167,7 +174,15 @@ export function MobileLayout({
       </main>
 
       {/* Bottom Navigation */}
-      {showBottomNav && <BottomNavigation tabs={tabs} />}
+      {showBottomNav && (
+        <BottomNavigation
+          tabs={tabs}
+          className={cn(
+            'transition-transform duration-300 ease-in-out',
+            hideBottomNav && 'translate-y-full'
+          )}
+        />
+      )}
 
       {/* Search Overlay */}
       <MobileSearchOverlay

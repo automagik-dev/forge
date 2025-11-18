@@ -13,6 +13,7 @@ interface TaskAttemptPanelProps {
   isInChatView?: boolean;
   taskIdFromUrl?: string;
   projectId?: string; // Project ID from URL (for Master Genie when task is still loading)
+  onInputFocusChange?: (isFocused: boolean) => void; // Callback to notify parent about input focus
   children: (sections: { logs: ReactNode; followUp: ReactNode }) => ReactNode;
 }
 
@@ -22,6 +23,7 @@ const TaskAttemptPanel = ({
   isInChatView,
   taskIdFromUrl,
   projectId,
+  onInputFocusChange,
   children,
 }: TaskAttemptPanelProps) => {
   // Allow rendering without attempt for agent tasks (Master Genie)
@@ -104,6 +106,7 @@ const TaskAttemptPanel = ({
                 isInChatView={isInChatView}
                 taskIdFromUrl={taskIdFromUrl}
                 projectId={projectId}
+                onInputFocusChange={onInputFocusChange}
               />
             ),
           })}
@@ -132,6 +135,7 @@ const TaskAttemptPanel = ({
               isInChatView={isInChatView}
               taskIdFromUrl={taskIdFromUrl}
               projectId={projectId}
+              onInputFocusChange={onInputFocusChange}
             />
           ),
         })}

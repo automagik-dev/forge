@@ -26,6 +26,7 @@ import {
 } from '@/components/config-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { SearchProvider } from '@/contexts/search-context';
+import { MobileNavigationProvider } from '@/contexts/MobileNavigationContext';
 
 import { HotkeysProvider } from 'react-hotkeys-hook';
 
@@ -266,8 +267,9 @@ function AppContent() {
     <I18nextProvider i18n={i18n}>
       <ThemeProvider initialTheme={config?.theme || ThemeMode.SYSTEM}>
         <SearchProvider>
-          <div className="h-screen flex flex-col bg-background">
-            <SentryRoutes>
+          <MobileNavigationProvider>
+            <div className="h-screen flex flex-col bg-background">
+              <SentryRoutes>
               {/* VS Code full-page logs route (outside ResponsiveLayout for minimal UI) */}
               <Route
                 path="/projects/:projectId/tasks/:taskId/attempts/:attemptId/full"
@@ -317,6 +319,7 @@ function AppContent() {
               onClose={() => setIsGenieOpen(false)}
             />
           )}
+          </MobileNavigationProvider>
         </SearchProvider>
       </ThemeProvider>
     </I18nextProvider>
