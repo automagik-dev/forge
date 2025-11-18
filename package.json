@@ -49,6 +49,7 @@
     "test:e2e:phase3": "cypress run --spec 'cypress/e2e/phase-3-advanced-features/**/*.cy.ts'",
     "test:e2e:phase4": "cypress run --spec 'cypress/e2e/phase-4-polish/**/*.cy.ts'",
     "testgen": "node scripts/generate-cypress-tests.mjs",
+    "testgen:forge": "node scripts/create-forge-task-from-diff.mjs",
     "frontend:lint": "cd frontend && npm run lint",
     "frontend:dev": "cd frontend && BACKEND_PORT=${BACKEND_PORT:-3001} VITE_OPEN=true npm run dev -- --port ${FRONTEND_PORT:-3000} --host",
     "frontend:check": "cd frontend && npm run check",
