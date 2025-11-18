@@ -53,7 +53,6 @@ import TaskPanel from '@/components/panels/TaskPanel';
 import TodoPanel from '@/components/tasks/TodoPanel';
 import { NewCard } from '@/components/ui/new-card';
 import { ChatPanelActions } from '@/components/panels/ChatPanelActions';
-import { TasksListView } from '@/components/mobile/TasksListView';
 
 type Task = TaskWithAttemptStatus;
 
@@ -202,7 +201,7 @@ export function ProjectTasks() {
 
   const rawMode = searchParams.get('view') as LayoutMode;
   const mode: LayoutMode =
-    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat' || rawMode === 'list'
+    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat'
       ? rawMode
       : null;
 
@@ -656,20 +655,6 @@ export function ProjectTasks() {
             </p>
           </CardContent>
         </Card>
-      </div>
-    ) : mode === 'list' || isMobilePortrait ? (
-      <div className="w-full h-full overflow-y-auto mobile-scroll">
-        <TasksListView
-          tasks={filteredTasks}
-          onTaskClick={handleViewTaskDetails}
-          selectedTaskId={selectedTask?.id}
-          projectName={currentProject?.name}
-          onProjectClick={() => navigate('/projects')}
-          onViewDiff={handleViewDiff}
-          onViewPreview={handleViewPreview}
-          onArchive={handleArchiveTask}
-          onNewAttempt={handleNewAttempt}
-        />
       </div>
     ) : (
       <div className="w-full h-full overflow-x-auto overflow-y-auto overscroll-x-contain touch-pan-y">
