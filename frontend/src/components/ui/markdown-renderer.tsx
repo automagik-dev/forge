@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button.tsx';
 import { Check, Clipboard } from 'lucide-react';
 import { writeClipboardViaBridge } from '@/vscode/bridge';
+import MermaidDiagram from '@/components/ui/mermaid-diagram.tsx';
 
 const HIGHLIGHT_LINK =
   'rounded-sm bg-muted/50 px-1 py-0.5 underline-offset-2 transition-colors';
@@ -154,6 +155,34 @@ function InlineCodeOverride({ children, className, ...props }: any) {
   );
 }
 
+function PreOverride({ children, ...props }: any) {
+  // Check if this is a mermaid code block
+  const childClassName = children?.props?.className || '';
+  const isMermaid =
+    typeof childClassName === 'string' &&
+    (childClassName.includes('lang-mermaid') ||
+      childClassName.includes('language-mermaid'));
+
+  if (isMermaid) {
+    // Extract the mermaid code from children
+    const code =
+      typeof children?.props?.children === 'string'
+        ? children.props.children
+        : '';
+    return <MermaidDiagram chart={code} />;
+  }
+
+  // Default pre rendering for code blocks
+  return (
+    <pre
+      {...props}
+      className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-sm bg-muted/50 rounded-sm p-2 my-2"
+    >
+      {children}
+    </pre>
+  );
+}
+
 interface MarkdownRendererProps {
   content: string;
   className?: string;
@@ -170,6 +199,7 @@ function MarkdownRenderer({
       a: { component: LinkOverride },
       img: { component: ImageOverride },
       code: { component: InlineCodeOverride },
+      pre: { component: PreOverride },
       strong: {
         component: ({ children, ...props }: any) => (
           <span {...props} className="">
@@ -245,14 +275,67 @@ function MarkdownRenderer({
           </li>
         ),
       },
-      pre: {
+      table: {
         component: ({ children, ...props }: any) => (
-          <pre
+          <div className="overflow-x-auto my-4">
+            <table
+              {...props}
+              className="min-w-full border-collapse border border-border"
+            >
+              {children}
+            </table>
+          </div>
+        ),
+      },
+      thead: {
+        component: ({ children, ...props }: any) => (
+          <thead {...props} className="bg-muted/50">
+            {children}
+          </thead>
+        ),
+      },
+      tbody: {
+        component: ({ children, ...props }: any) => (
+          <tbody {...props}>{children}</tbody>
+        ),
+      },
+      tr: {
+        component: ({ children, ...props }: any) => (
+          <tr {...props} className="border-b border-border">
+            {children}
+          </tr>
+        ),
+      },
+      th: {
+        component: ({ children, ...props }: any) => (
+          <th
             {...props}
-            className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-sm bg-muted/50 rounded-sm p-2 my-2"
+            className="border border-border px-4 py-2 text-left font-medium"
           >
             {children}
-          </pre>
+          </th>
+        ),
+      },
+      td: {
+        component: ({ children, ...props }: any) => (
+          <td {...props} className="border border-border px-4 py-2">
+            {children}
+          </td>
+        ),
+      },
+      blockquote: {
+        component: ({ children, ...props }: any) => (
+          <blockquote
+            {...props}
+            className="border-l-4 border-primary/50 pl-4 py-2 my-4 italic bg-muted/20"
+          >
+            {children}
+          </blockquote>
+        ),
+      },
+      hr: {
+        component: ({ ...props }: any) => (
+          <hr {...props} className="my-6 border-t border-border" />
         ),
       },
     }),
