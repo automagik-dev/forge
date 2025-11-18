@@ -96,6 +96,7 @@ export function ActionsDropdown({ task, attempt }: ActionsDropdownProps) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
+            data-testid="task-actions-menu-trigger"
             variant="icon"
             aria-label="Actions"
             onClick={(e) => e.stopPropagation()}
@@ -103,7 +104,7 @@ export function ActionsDropdown({ task, attempt }: ActionsDropdownProps) {
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent data-testid="task-actions-menu" align="end">
           {hasAttemptActions && (
             <>
               <DropdownMenuLabel>{t('actionsMenu.attempt')}</DropdownMenuLabel>

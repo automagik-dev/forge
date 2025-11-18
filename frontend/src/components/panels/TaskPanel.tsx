@@ -145,7 +145,7 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
   return (
     <>
       <NewCardContent>
-        <div className="p-6 flex flex-col h-full max-h-[calc(100vh-8rem)]">
+        <div data-testid="task-panel" className="p-6 flex flex-col h-full max-h-[calc(100vh-8rem)]">
           <div className="space-y-3 overflow-y-auto flex-shrink min-h-0">
             {/* Editable Title */}
             <div className="group relative">

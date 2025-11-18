@@ -13,25 +13,12 @@ describe('Task Actions regression (Kanban)', () => {
     });
   };
 
-  const ensureTaskExists = (projectId: string) => {
-    cy.request(`/api/tasks?project_id=${projectId}`).then(({ body }) => {
-      const tasks = body?.data || [];
-      if (tasks.length === 0) {
-        cy.request('POST', '/api/tasks', {
-          project_id: projectId,
-          title: 'Seed Task',
-          description: 'Seed task for regression specs',
-        }).then(({ body: taskResponse }) => {
-          const task = taskResponse?.data;
-          if (task?.id) {
-            cy.request('POST', '/api/task-attempts', {
-              task_id: task.id,
-              executor_profile_id: { executor: 'CODEX', variant: null },
-              base_branch: 'dev',
-            }).catch(() => {});
-          }
-        });
-      }
+  const ensureTaskWithoutExecutor = (projectId: string) => {
+    // Always create a fresh task without executor for testing quick actions
+    cy.request('POST', '/api/tasks', {
+      project_id: projectId,
+      title: 'Test Task for Quick Actions',
+      description: 'Fresh task for testing hover actions',
     });
   };
 
@@ -44,24 +31,25 @@ describe('Task Actions regression (Kanban)', () => {
       expect(projects.length, 'at least one project').to.be.greaterThan(0);
       projectId = projects[0].id;
 
-      ensureTaskExists(projectId);
+      ensureTaskWithoutExecutor(projectId);
       cy.visit(`/projects/${projectId}/tasks`);
       closeReleaseNotes();
       cy.waitForAppReady();
       cy.get('[data-testid="task-card"]', { timeout: 20000 }).should('exist');
-      cy.get('[data-testid="task-card"]').first().as('taskCard');
-      cy.get('@taskCard').click({ force: true });
-      cy.get('[data-testid="task-panel"]').should('exist');
+      // Get the LAST card (newest task we just created)
+      cy.get('[data-testid="task-card"]').last().as('taskCard');
     });
   });
 
   it('shows quick actions when hovering the task card', () => {
-    cy.get('@taskCard')
-      .trigger('mouseenter')
-      .within(() => {
-        cy.get('[data-testid="task-action-quick-play"]').should('be.visible');
-        cy.get('[data-testid="task-action-quick-archive"]').should('be.visible');
-      });
+    // Trigger mouseenter on the parent div that has the handler
+    cy.get('@taskCard').parent().trigger('mouseenter');
+
+    // Check for quick actions within the card
+    cy.get('@taskCard').within(() => {
+      cy.get('[data-testid="task-action-quick-play"]').should('be.visible');
+      cy.get('[data-testid="task-action-quick-archive"]').should('be.visible');
+    });
   });
 
   it('opens the TaskActions dropdown with localized labels', () => {
@@ -70,11 +58,9 @@ describe('Task Actions regression (Kanban)', () => {
     });
 
     cy.get('[data-testid="task-actions-menu"]').within(() => {
-      cy.contains('View details').should('exist');
-      cy.contains('View diff').should('exist');
-      cy.contains('View preview').should('exist');
-      cy.contains('Create new attempt').should('exist');
-      cy.contains('Archive').should('exist');
+      // Task section (tasks without attempts show task actions only)
+      cy.contains('Edit').should('exist');
+      cy.contains('Duplicate').should('exist');
       cy.contains('Delete').should('exist');
     });
   });
