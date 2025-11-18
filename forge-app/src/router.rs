@@ -1433,7 +1433,7 @@ async fn get_project_branch_status(
     Path(project_id): Path<Uuid>,
     Query(query): Query<BranchStatusQuery>,
     State(deployment): State<DeploymentImpl>,
-) -> Result<Json<Value>, StatusCode> {
+) -> Result<Json<ApiResponse<Value>>, StatusCode> {
     use db::models::project::Project;
     use std::process::Command;
 
@@ -1545,7 +1545,7 @@ async fn get_project_branch_status(
         "conflicted_files": []
     });
 
-    Ok(Json(response))
+    Ok(Json(ApiResponse::success(response)))
 }
 
 /// Pull updates for a project's main repository
