@@ -29,7 +29,6 @@ dependencies = [
  "actix-rt",
  "actix-service",
  "actix-utils",
- "base64 0.22.1",
  "bitflags 2.10.0",
  "bytes",
  "bytestring",
@@ -42,12 +41,9 @@ dependencies = [
  "httpdate",
  "itoa",
  "language-tags",
- "local-channel",
  "mime",
  "percent-encoding",
  "pin-project-lite",
- "rand 0.9.2",
- "sha1",
  "smallvec",
  "tokio",
  "tokio-util",
@@ -117,9 +113,9 @@ dependencies = [
 
 [[package]]
 name = "actix-web"
-version = "4.11.0"
+version = "4.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a597b77b5c6d6a1e1097fddde329a83665e25c5437c696a3a9a4aa514a614dea"
+checksum = "2233f53f6cb18ae038ce1f0713ca0c72ca0c4b71fe9aaeb59924ce2c89c6dd85"
 dependencies = [
  "actix-codec",
  "actix-http",
@@ -148,7 +144,7 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "smallvec",
- "socket2 0.5.10",
+ "socket2 0.6.1",
  "time",
  "tracing",
  "url",
@@ -854,7 +850,21 @@ name = "codex-app-server-protocol"
 version = "0.44.0"
 source = "git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb#6712987a51cbc0124fd4df633e091f08562aa5fb"
 dependencies = [
- "codex-protocol",
+ "codex-protocol 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb)",
+ "paste",
+ "serde",
+ "serde_json",
+ "strum_macros",
+ "ts-rs 11.1.0",
+ "uuid",
+]
+
+[[package]]
+name = "codex-app-server-protocol"
+version = "0.44.0"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
+dependencies = [
+ "codex-protocol 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "paste",
  "serde",
  "serde_json",
@@ -871,7 +881,28 @@ dependencies = [
  "base64 0.22.1",
  "icu_decimal",
  "icu_locale_core",
- "mcp-types",
+ "mcp-types 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb)",
+ "mime_guess",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "strum",
+ "strum_macros",
+ "sys-locale",
+ "tracing",
+ "ts-rs 11.1.0",
+ "uuid",
+]
+
+[[package]]
+name = "codex-protocol"
+version = "0.44.0"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
+dependencies = [
+ "base64 0.22.1",
+ "icu_decimal",
+ "icu_locale_core",
+ "mcp-types 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "mime_guess",
  "serde",
  "serde_json",
@@ -1102,7 +1133,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "chrono",
- "executors",
+ "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb)",
  "futures-util",
  "regex",
  "sentry-tracing",
@@ -1117,7 +1148,34 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ts-rs 11.0.1",
- "utils",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb)",
+ "uuid",
+]
+
+[[package]]
+name = "db"
+version = "0.0.115"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
+ "futures-util",
+ "regex",
+ "sentry-tracing",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "strum",
+ "strum_macros",
+ "thiserror 2.0.17",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
+ "ts-rs 11.0.1",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "uuid",
 ]
 
@@ -1152,22 +1210,22 @@ dependencies = [
 [[package]]
 name = "deployment"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb#6712987a51cbc0124fd4df633e091f08562aa5fb"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
 dependencies = [
  "anyhow",
  "async-trait",
  "axum",
- "db",
- "executors",
+ "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
+ "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "futures",
  "git2",
  "serde_json",
- "services",
+ "services 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "sqlx",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
- "utils",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
 ]
 
 [[package]]
@@ -1499,8 +1557,8 @@ dependencies = [
  "bon",
  "bytes",
  "chrono",
- "codex-app-server-protocol",
- "codex-protocol",
+ "codex-app-server-protocol 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb)",
+ "codex-protocol 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb)",
  "command-group",
  "convert_case",
  "derivative",
@@ -1512,7 +1570,7 @@ dependencies = [
  "futures-io",
  "json-patch",
  "lazy_static",
- "mcp-types",
+ "mcp-types 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb)",
  "os_pipe",
  "regex",
  "rust-embed",
@@ -1534,7 +1592,59 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ts-rs 11.0.1",
- "utils",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb)",
+ "uuid",
+ "winsplit",
+ "xdg",
+]
+
+[[package]]
+name = "executors"
+version = "0.0.115"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
+dependencies = [
+ "agent-client-protocol",
+ "async-trait",
+ "axum",
+ "bon",
+ "bytes",
+ "chrono",
+ "codex-app-server-protocol 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
+ "codex-protocol 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
+ "command-group",
+ "convert_case",
+ "derivative",
+ "directories",
+ "dirs 5.0.1",
+ "enum_dispatch",
+ "fork_stream",
+ "futures",
+ "futures-io",
+ "json-patch",
+ "lazy_static",
+ "mcp-types 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
+ "os_pipe",
+ "regex",
+ "rust-embed",
+ "schemars 1.1.0",
+ "sentry-tracing",
+ "serde",
+ "serde_json",
+ "sha2",
+ "shlex",
+ "sqlx",
+ "strip-ansi-escapes",
+ "strum",
+ "strum_macros",
+ "thiserror 2.0.17",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "ts-rs 11.0.1",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "uuid",
  "winsplit",
  "xdg",
@@ -1651,7 +1761,7 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "forge-app"
-version = "0.7.2"
+version = "0.7.4"
 dependencies = [
  "android_logger",
  "anyhow",
@@ -1659,9 +1769,9 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "convert_case",
- "db",
+ "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "deployment",
- "executors",
+ "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "forge-config",
  "forge-omni",
  "futures-util",
@@ -1679,7 +1789,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "server",
- "services",
+ "services 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "sqlx",
  "tokio",
  "tower-http 0.5.2",
@@ -1687,20 +1797,20 @@ dependencies = [
  "tracing-subscriber",
  "ts-rs 11.0.1",
  "urlencoding",
- "utils",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "uuid",
 ]
 
 [[package]]
 name = "forge-config"
-version = "0.7.2"
+version = "0.7.4"
 dependencies = [
  "anyhow",
  "chrono",
  "forge-omni",
  "serde",
  "serde_json",
- "services",
+ "services 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb)",
  "sqlx",
  "tokio",
  "tracing",
@@ -1710,7 +1820,7 @@ dependencies = [
 
 [[package]]
 name = "forge-omni"
-version = "0.7.2"
+version = "0.7.4"
 dependencies = [
  "anyhow",
  "reqwest",
@@ -2861,20 +2971,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6373607a59f0be73a39b6fe456b8192fcc3585f602af20751600e974dd455e77"
 
 [[package]]
-name = "local-channel"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6cbc85e69b8df4b8bb8b89ec634e7189099cea8927a276b7384ce5488e53ec8"
-dependencies = [
- "futures-core",
- "futures-sink",
- "local-waker",
-]
-
-[[package]]
 name = "local-deployment"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb#6712987a51cbc0124fd4df633e091f08562aa5fb"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -2883,9 +2982,9 @@ dependencies = [
  "bytes",
  "chrono",
  "command-group",
- "db",
+ "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "deployment",
- "executors",
+ "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "futures",
  "ignore",
  "json-patch",
@@ -2899,7 +2998,7 @@ dependencies = [
  "rust-embed",
  "serde",
  "serde_json",
- "services",
+ "services 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "sqlx",
  "tokio",
  "tokio-stream",
@@ -2907,7 +3006,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ts-rs 11.0.1",
- "utils",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "uuid",
 ]
 
@@ -2966,6 +3065,16 @@ checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
 name = "mcp-types"
 version = "0.44.0"
 source = "git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb#6712987a51cbc0124fd4df633e091f08562aa5fb"
+dependencies = [
+ "serde",
+ "serde_json",
+ "ts-rs 11.1.0",
+]
+
+[[package]]
+name = "mcp-types"
+version = "0.44.0"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
 dependencies = [
  "serde",
  "serde_json",
@@ -3526,9 +3635,9 @@ checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
 name = "open"
-version = "5.3.2"
+version = "5.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2483562e62ea94312f3576a7aca397306df7990b8d89033e18766744377ef95"
+checksum = "43bb73a7fa3799b198970490a51174027ba0d4ec504b03cd08caf513d40024bc"
 dependencies = [
  "is-wsl",
  "libc",
@@ -4680,19 +4789,19 @@ dependencies = [
 [[package]]
 name = "server"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb#6712987a51cbc0124fd4df633e091f08562aa5fb"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
 dependencies = [
  "anyhow",
  "async-trait",
  "axum",
  "chrono",
  "command-group",
- "db",
+ "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "deployment",
  "dirs 5.0.1",
  "dotenv",
  "dotenvy",
- "executors",
+ "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "futures-util",
  "git2",
  "ignore",
@@ -4709,7 +4818,7 @@ dependencies = [
  "schemars 1.1.0",
  "serde",
  "serde_json",
- "services",
+ "services 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "sqlx",
  "strip-ansi-escapes",
  "thiserror 2.0.17",
@@ -4719,7 +4828,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ts-rs 11.0.1",
- "utils",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "uuid",
 ]
 
@@ -4736,11 +4845,11 @@ dependencies = [
  "chrono",
  "command-group",
  "dashmap",
- "db",
+ "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb)",
  "directories",
  "dirs 5.0.1",
  "dunce",
- "executors",
+ "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb)",
  "fst",
  "futures",
  "futures-util",
@@ -4776,7 +4885,65 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "ts-rs 11.0.1",
- "utils",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb)",
+ "uuid",
+ "xdg",
+]
+
+[[package]]
+name = "services"
+version = "0.0.115"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
+ "backon",
+ "base64 0.22.1",
+ "chrono",
+ "command-group",
+ "dashmap",
+ "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
+ "directories",
+ "dirs 5.0.1",
+ "dunce",
+ "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
+ "fst",
+ "futures",
+ "futures-util",
+ "git2",
+ "ignore",
+ "json-patch",
+ "lazy_static",
+ "libc",
+ "moka",
+ "notify 8.2.0",
+ "notify-debouncer-full",
+ "notify-rust",
+ "octocrab",
+ "once_cell",
+ "open",
+ "openssl-sys",
+ "os_info",
+ "regex",
+ "reqwest",
+ "rust-embed",
+ "secrecy",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sqlx",
+ "strum",
+ "strum_macros",
+ "tempfile",
+ "thiserror 2.0.17",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
+ "ts-rs 11.0.1",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
  "uuid",
  "xdg",
 ]
@@ -5954,6 +6121,43 @@ checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
 name = "utils"
 version = "0.0.115"
 source = "git+https://github.com/namastexlabs/forge-core.git?rev=6712987a51cbc0124fd4df633e091f08562aa5fb#6712987a51cbc0124fd4df633e091f08562aa5fb"
+dependencies = [
+ "async-stream",
+ "axum",
+ "base64 0.22.1",
+ "bytes",
+ "chrono",
+ "directories",
+ "futures",
+ "futures-util",
+ "git2",
+ "json-patch",
+ "libc",
+ "open",
+ "regex",
+ "rust-embed",
+ "sentry",
+ "sentry-tracing",
+ "serde",
+ "serde_json",
+ "shellexpand",
+ "similar",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
+ "ts-rs 11.0.1",
+ "uuid",
+ "which",
+ "windows-sys 0.61.2",
+ "winreg",
+]
+
+[[package]]
+name = "utils"
+version = "0.0.115"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
 dependencies = [
  "async-stream",
  "axum",

@@ -111,8 +111,35 @@ if (posthogKey && posthogHost) {
     mask_all_text: true, // Masks any text in error messages
     session_recording: {
       maskAllInputs: true, // Mask all input field values
-      maskTextSelector: '*', // Mask all text content by default
+      maskTextSelector: '*', // Mask ALL text content (universal selector)
       blockSelector: '[data-private]', // Block elements marked as private
+      collectFonts: false, // Don't need font data
+      // Mask sensitive data in network requests
+      maskCapturedNetworkRequestFn: (request) => {
+        // Redact sensitive fields in request/response bodies
+        const sensitiveFields = ['email', 'password', 'token', 'apiKey', 'api_key', 'secret', 'authorization'];
+
+        if (request.requestBody) {
+          sensitiveFields.forEach(field => {
+            const regex = new RegExp(`"${field}"\\s*:\\s*"[^"]*"`, 'gi');
+            request.requestBody = request.requestBody?.replace(regex, `"${field}": "[REDACTED]"`);
+          });
+        }
+
+        if (request.responseBody) {
+          sensitiveFields.forEach(field => {
+            const regex = new RegExp(`"${field}"\\s*:\\s*"[^"]*"`, 'gi');
+            request.responseBody = request.responseBody?.replace(regex, `"${field}": "[REDACTED]"`);
+          });
+        }
+
+        // Redact Authorization headers
+        if (request.requestHeaders?.Authorization) {
+          request.requestHeaders.Authorization = '[REDACTED]';
+        }
+
+        return request;
+      },
     },
     sanitize_properties: (properties) => {
       // Don't sanitize for namastexers (detected later via email)
