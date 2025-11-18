@@ -13,7 +13,7 @@ sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "uuid"
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 forge-omni = { path = "../omni" }
-services = { git = "https://github.com/namastexlabs/forge-core.git", rev = "6712987a51cbc0124fd4df633e091f08562aa5fb" }
+services = { git = "https://github.com/namastexlabs/forge-core.git", rev = "d249509cf075a5fe7fbfd97284f93d5f6a5a972c" }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
