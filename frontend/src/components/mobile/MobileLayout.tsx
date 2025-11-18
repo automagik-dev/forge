@@ -156,7 +156,7 @@ export function MobileLayout({
           contentClassName
         )}
         style={
-          showBottomNav
+          showBottomNav && !hideBottomNav
             ? {
                 paddingBottom: `calc(${getMobileSpacing('bottomNav')} + env(safe-area-inset-bottom, 0px))`,
               }
