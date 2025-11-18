@@ -4,7 +4,7 @@ import { defineConfig, devices } from '@playwright/test';
  * Playwright Configuration - LLM-Friendly Testing Framework
  *
  * Philosophy:
- * - Real browser events (no synthetic event issues like Cypress)
+ * - Real browser events (no synthetic event issues)
  * - Accessibility-first selectors (role, label, text)
  * - Clear error messages for LLM debugging
  * - Auto-wait for elements (no manual waits needed)
