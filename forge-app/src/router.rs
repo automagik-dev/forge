@@ -1540,7 +1540,7 @@ async fn get_project_branch_status(
 }
 
 /// Pull updates for a project's main repository
-/// This performs a git fetch to update remote tracking branches
+/// This performs a git pull --rebase to update the working tree with remote changes
 async fn post_project_pull(
     Path(project_id): Path<Uuid>,
     State(deployment): State<DeploymentImpl>,
@@ -1561,29 +1561,63 @@ async fn post_project_pull(
         }
     };
 
-    // Run git fetch (safe, non-conflicting operation)
-    tracing::info!("Fetching updates for project {} at {:?}", project_id, project.git_repo_path);
-
-    let fetch_output = Command::new("git")
+    // Get current branch name
+    let branch_output = Command::new("git")
         .current_dir(&project.git_repo_path)
-        .args(&["fetch", "origin"])
+        .args(&["rev-parse", "--abbrev-ref", "HEAD"])
         .output();
 
-    match fetch_output {
+    let current_branch = match branch_output {
         Ok(output) if output.status.success() => {
-            tracing::info!("Successfully fetched updates for project {}", project_id);
+            String::from_utf8_lossy(&output.stdout).trim().to_string()
+        }
+        Ok(output) => {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            tracing::error!("Failed to get current branch for project {}: {}", project_id, stderr);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+        Err(e) => {
+            tracing::error!("Failed to execute git rev-parse for project {}: {}", project_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    // Run git pull to actually update the working tree
+    tracing::info!("Pulling updates for project {} branch {} at {:?}", project_id, current_branch, project.git_repo_path);
+
+    let pull_output = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args(&["pull", "--rebase", "origin", &current_branch])
+        .output();
+
+    match pull_output {
+        Ok(output) if output.status.success() => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            tracing::info!("Successfully pulled updates for project {}: {}", project_id, stdout);
             Ok(Json(json!({
                 "success": true,
-                "message": "Successfully fetched updates from remote"
+                "message": format!("Successfully pulled updates from origin/{}", current_branch)
             })))
         }
         Ok(output) => {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            tracing::error!("Git fetch failed for project {}: {}", project_id, stderr);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            let stdout = String::from_utf8_lossy(&output.stdout);
+
+            // Check if it's a merge conflict or dirty working tree
+            if stderr.contains("conflict") || stderr.contains("Cannot rebase") {
+                tracing::warn!("Git pull conflict for project {}: {} {}", project_id, stdout, stderr);
+                Ok(Json(json!({
+                    "success": false,
+                    "message": "Cannot pull: working tree has conflicts or uncommitted changes. Please resolve manually.",
+                    "details": stderr.to_string()
+                })))
+            } else {
+                tracing::error!("Git pull failed for project {}: {} {}", project_id, stdout, stderr);
+                Err(StatusCode::INTERNAL_SERVER_ERROR)
+            }
         }
         Err(e) => {
-            tracing::error!("Failed to execute git fetch for project {}: {}", project_id, e);
+            tracing::error!("Failed to execute git pull for project {}: {}", project_id, e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
