@@ -122,6 +122,14 @@ fn forge_api_routes() -> Router<ForgeAppState> {
             "/api/forge/projects/{project_id}/profiles",
             get(get_project_profiles),
         )
+        .route(
+            "/api/forge/projects/{project_id}/branch-status",
+            get(get_project_branch_status),
+        )
+        .route(
+            "/api/forge/projects/{project_id}/pull",
+            post(post_project_pull),
+        )
         .route("/api/forge/omni/status", get(get_omni_status))
         .route("/api/forge/omni/instances", get(list_omni_instances))
         .route("/api/forge/omni/validate", post(validate_omni_config))
@@ -1410,6 +1418,175 @@ async fn get_project_profiles(
             tracing::error!("Failed to load profiles for project {}: {}", project_id, e);
             StatusCode::NOT_FOUND
         })
+}
+
+#[derive(Deserialize)]
+struct BranchStatusQuery {
+    /// Optional base branch to compare against (defaults to "main")
+    base: Option<String>,
+}
+
+/// Get branch status for a project's main repository
+/// This checks the git status of the project's working directory (not worktree)
+/// Supports optional ?base=<branch> query parameter to specify target branch
+async fn get_project_branch_status(
+    Path(project_id): Path<Uuid>,
+    Query(query): Query<BranchStatusQuery>,
+    State(deployment): State<DeploymentImpl>,
+) -> Result<Json<Value>, StatusCode> {
+    use db::models::project::Project;
+    use std::process::Command;
+
+    // Get project to determine workspace root
+    let project = match Project::find_by_id(&deployment.db().pool, project_id).await {
+        Ok(Some(p)) => p,
+        Ok(None) => {
+            tracing::error!("Project {} not found", project_id);
+            return Err(StatusCode::NOT_FOUND);
+        }
+        Err(e) => {
+            tracing::error!("Database error finding project {}: {}", project_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    // Get current branch
+    let current_branch_output = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args(&["rev-parse", "--abbrev-ref", "HEAD"])
+        .output();
+
+    let current_branch = match current_branch_output {
+        Ok(output) if output.status.success() => {
+            String::from_utf8_lossy(&output.stdout).trim().to_string()
+        }
+        _ => {
+            tracing::warn!("Failed to get current branch for project {}, defaulting to 'main'", project_id);
+            "main".to_string()
+        }
+    };
+
+    // Get target branch from query parameter or default to "main"
+    let target_branch = query.base.as_deref().unwrap_or("main");
+    let commits_behind_ahead_output = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args(&["rev-list", "--left-right", "--count", &format!("{}...{}", target_branch, current_branch)])
+        .output();
+
+    let (commits_behind, commits_ahead) = match commits_behind_ahead_output {
+        Ok(output) if output.status.success() => {
+            let output_str = String::from_utf8_lossy(&output.stdout);
+            let parts: Vec<&str> = output_str.trim().split_whitespace().collect();
+            if parts.len() == 2 {
+                (
+                    parts[0].parse::<i32>().ok(),
+                    parts[1].parse::<i32>().ok(),
+                )
+            } else {
+                (None, None)
+            }
+        }
+        _ => (None, None),
+    };
+
+    // Check for uncommitted changes
+    let status_output = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args(&["status", "--porcelain"])
+        .output();
+
+    let (has_uncommitted_changes, uncommitted_count, untracked_count) = match status_output {
+        Ok(output) if output.status.success() => {
+            let status_str = String::from_utf8_lossy(&output.stdout).to_string();
+            let status_lines: Vec<&str> = status_str.lines().collect();
+            let uncommitted = status_lines.iter().filter(|l| !l.starts_with("??")).count();
+            let untracked = status_lines.iter().filter(|l| l.starts_with("??")).count();
+            (!status_lines.is_empty(), Some(uncommitted as i32), Some(untracked as i32))
+        }
+        _ => (false, None, None),
+    };
+
+    // Get HEAD commit OID
+    let head_oid_output = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args(&["rev-parse", "HEAD"])
+        .output();
+
+    let head_oid = match head_oid_output {
+        Ok(output) if output.status.success() => {
+            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+        }
+        _ => None,
+    };
+
+    // Build response matching BranchStatus structure
+    let response = json!({
+        "commits_behind": commits_behind,
+        "commits_ahead": commits_ahead,
+        "has_uncommitted_changes": has_uncommitted_changes,
+        "head_oid": head_oid,
+        "uncommitted_count": uncommitted_count,
+        "untracked_count": untracked_count,
+        "target_branch_name": target_branch,
+        "remote_commits_behind": null,
+        "remote_commits_ahead": null,
+        "merges": [],
+        "is_rebase_in_progress": false,
+        "conflict_op": null,
+        "conflicted_files": []
+    });
+
+    Ok(Json(response))
+}
+
+/// Pull updates for a project's main repository
+/// This performs a git fetch to update remote tracking branches
+async fn post_project_pull(
+    Path(project_id): Path<Uuid>,
+    State(deployment): State<DeploymentImpl>,
+) -> Result<Json<Value>, StatusCode> {
+    use db::models::project::Project;
+    use std::process::Command;
+
+    // Get project
+    let project = match Project::find_by_id(&deployment.db().pool, project_id).await {
+        Ok(Some(p)) => p,
+        Ok(None) => {
+            tracing::error!("Project {} not found", project_id);
+            return Err(StatusCode::NOT_FOUND);
+        }
+        Err(e) => {
+            tracing::error!("Database error finding project {}: {}", project_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    // Run git fetch (safe, non-conflicting operation)
+    tracing::info!("Fetching updates for project {} at {:?}", project_id, project.git_repo_path);
+
+    let fetch_output = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args(&["fetch", "origin"])
+        .output();
+
+    match fetch_output {
+        Ok(output) if output.status.success() => {
+            tracing::info!("Successfully fetched updates for project {}", project_id);
+            Ok(Json(json!({
+                "success": true,
+                "message": "Successfully fetched updates from remote"
+            })))
+        }
+        Ok(output) => {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            tracing::error!("Git fetch failed for project {}: {}", project_id, stderr);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+        Err(e) => {
+            tracing::error!("Failed to execute git fetch for project {}: {}", project_id, e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
 
 async fn get_omni_status(State(services): State<ForgeServices>) -> Result<Json<Value>, StatusCode> {
