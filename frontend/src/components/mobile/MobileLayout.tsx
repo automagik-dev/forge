@@ -88,21 +88,13 @@ export function MobileLayout({
       return baseTabs;
     }
 
-    // When inside a project (not in a specific task), show: Tasks/Kanban/Genie/Config
+    // When inside a project (not in a specific task), show: Tasks/Genie/Config
     if (projectId) {
       return [
         {
           id: 'tasks',
           label: t('mobile.navigation.tasks'),
           icon: <ListTodo size={20} />,
-          // Tasks shows list view with ?view=list parameter
-          path: `${basePath}?view=list`,
-        },
-        {
-          id: 'kanban',
-          label: t('mobile.navigation.kanban'),
-          icon: <Kanban size={20} />,
-          // Kanban board shows all tasks in the project
           path: basePath,
         },
         {
