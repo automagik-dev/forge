@@ -214,6 +214,7 @@
       "merge": "Merge",
       "rebasing": "Rebasing...",
       "rebase": "Rebase",
+      "rebaseRequired": "Rebase Required",
       "pushed": "Pushed!",
       "pushing": "Pushing...",
       "push": "Push",

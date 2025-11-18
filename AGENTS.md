@@ -358,6 +358,12 @@ ACE (Agentic Context Engineering) ensures framework optimization is data-driven,
 - Feature branches → `dev` via PR
 - Stable releases: `dev` → `main`
 
+**Forge Task Creation:**
+- ALWAYS use `dev` as base branch when creating task attempts
+- Forge creates isolated git worktrees, providing extra PR layer: task → `dev` → `main`
+- Never use `main` as base branch (no exceptions)
+- Command: `mcp__forge__start_task_attempt(base_branch: "dev")`
+
 **Technical Implementation:** Code collective responsibility.
 
 ## Quality Standards
