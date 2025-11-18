@@ -432,7 +432,7 @@ export function Breadcrumb() {
         {/* Kanban icon to navigate back to project tasks */}
         <li className="flex items-center gap-1">
           <Link
-            to="/projects"
+            to={`/projects/${projectId}/tasks`}
             className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
             aria-label="Go to project tasks"
           >

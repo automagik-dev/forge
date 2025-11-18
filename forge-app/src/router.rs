@@ -1468,9 +1468,18 @@ async fn get_project_branch_status(
 
     // Get target branch from query parameter or default to "main"
     let target_branch = query.base.as_deref().unwrap_or("main");
+
+    // Fetch from remote to ensure we have latest refs
+    let _ = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args(&["fetch", "origin"])
+        .output();
+
+    // Compare against remote tracking branch (origin/target_branch)
+    let remote_branch = format!("origin/{}", target_branch);
     let commits_behind_ahead_output = Command::new("git")
         .current_dir(&project.git_repo_path)
-        .args(&["rev-list", "--left-right", "--count", &format!("{}...{}", target_branch, current_branch)])
+        .args(&["rev-list", "--left-right", "--count", &format!("{}...{}", remote_branch, current_branch)])
         .output();
 
     let (commits_behind, commits_ahead) = match commits_behind_ahead_output {
