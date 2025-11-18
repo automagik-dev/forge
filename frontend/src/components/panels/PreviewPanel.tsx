@@ -184,14 +184,14 @@ export function PreviewPanel() {
 
         {/* Building state - show friendly info message */}
         {buildState === 'building' && runningDevServer && !isReady && (
-          <Alert className="space-y-2 border-blue-500 bg-blue-50 dark:bg-blue-950 dark:border-blue-800">
+          <Alert className="mx-2 sm:mx-4 my-2 space-y-2 border-blue-500 bg-blue-50 dark:bg-blue-950 dark:border-blue-800">
             <div className="flex items-start gap-2">
-              <Loader2 className="h-4 w-4 animate-spin mt-0.5 text-blue-600 dark:text-blue-400" />
-              <div className="flex-1 space-y-1">
-                <p className="font-bold text-blue-900 dark:text-blue-100">
+              <Loader2 className="h-4 w-4 animate-spin mt-0.5 text-blue-600 dark:text-blue-400 shrink-0" />
+              <div className="flex-1 space-y-1 min-w-0">
+                <p className="font-bold text-blue-900 dark:text-blue-100 text-sm sm:text-base">
                   {t('preview.buildingAlert.title')}
                 </p>
-                <p className="text-sm text-blue-800 dark:text-blue-200">
+                <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-200">
                   {t('preview.buildingAlert.description')}
                 </p>
               </div>
@@ -201,24 +201,24 @@ export function PreviewPanel() {
 
         {/* Idle/Error state - show troubleshooting message */}
         {(buildState === 'idle' || buildState === 'error') && runningDevServer && !isReady && (
-          <Alert variant="destructive" className="space-y-2">
+          <Alert variant="destructive" className="mx-2 sm:mx-4 my-2 space-y-2">
             <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 space-y-2">
-                <p className="font-bold">{t('preview.troubleAlert.title')}</p>
-                <p className="text-sm">{t('preview.troubleAlert.description')}</p>
-                <ol className="list-decimal list-inside space-y-2 text-sm">
-                  <li>{t('preview.troubleAlert.item1')}</li>
-                  <li>
+              <div className="flex-1 space-y-2 min-w-0">
+                <p className="font-bold text-sm sm:text-base">{t('preview.troubleAlert.title')}</p>
+                <p className="text-xs sm:text-sm">{t('preview.troubleAlert.description')}</p>
+                <ol className="list-decimal list-inside space-y-2 text-xs sm:text-sm overflow-x-auto">
+                  <li className="break-words">{t('preview.troubleAlert.item1')}</li>
+                  <li className="break-words">
                     {t('preview.troubleAlert.item2')}{' '}
-                    <code className="text-xs">http://localhost:3000</code>{' '}
+                    <code className="text-xs break-all">http://localhost:3000</code>{' '}
                     {t('preview.troubleAlert.item2Suffix')}
                   </li>
-                  <li>
+                  <li className="break-words">
                     {t('preview.troubleAlert.item3')}{' '}
                     <a
                       href="https://github.com/namastexlabs/forge-inspector"
                       target="_blank"
-                      className="underline font-bold"
+                      className="underline font-bold break-all"
                     >
                       {t('preview.troubleAlert.item3Link')}
                     </a>
@@ -229,6 +229,7 @@ export function PreviewPanel() {
                   onClick={handleStopAndEdit}
                   disabled={isStoppingDevServer}
                   size="sm"
+                  className="w-full sm:w-auto"
                 >
                   {isStoppingDevServer && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

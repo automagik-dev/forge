@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/tooltip';
 import type { TaskAttempt } from 'shared/types';
 import { Virtuoso } from 'react-virtuoso';
+import { useIsMobile } from '@/components/mobile';
 
 interface DiffsPanelProps {
   selectedAttempt: TaskAttempt | null;
@@ -147,15 +148,17 @@ function DiffsPanelContent({
   loading,
   t,
 }: DiffsPanelContentProps) {
+  const isMobile = useIsMobile();
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {diffs.length > 0 && (
         <NewCardHeader
           className="shrink-0 sticky top-0 z-10"
           actions={
-            <>
-              <DiffViewSwitch />
-              <div className="h-4 w-px bg-border" />
+            <div className="flex items-center gap-1 sm:gap-2">
+              {!isMobile && <DiffViewSwitch />}
+              {!isMobile && <div className="h-4 w-px bg-border" />}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -168,6 +171,7 @@ function DiffsPanelContent({
                           ? t('diff.expandAll')
                           : t('diff.collapseAll')
                       }
+                      className={isMobile ? 'h-8 w-8' : ''}
                     >
                       {allCollapsed ? (
                         <ChevronsDown className="h-4 w-4" />
@@ -181,19 +185,31 @@ function DiffsPanelContent({
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-            </>
+            </div>
           }
         >
-          <div className="flex items-center">
+          <div className="flex items-center min-w-0">
             <span
-              className="text-sm text-muted-foreground whitespace-nowrap"
+              className={`text-muted-foreground ${isMobile ? 'text-xs truncate' : 'text-sm whitespace-nowrap'}`}
               aria-live="polite"
             >
-              {t('diff.filesChanged', { count: fileCount })}{' '}
-              <span className="text-green-600 dark:text-green-500">
-                +{added}
-              </span>{' '}
-              <span className="text-red-600 dark:text-red-500">-{deleted}</span>
+              {isMobile ? (
+                <>
+                  {fileCount} {' '}
+                  <span className="text-green-600 dark:text-green-500">
+                    +{added}
+                  </span>{' '}
+                  <span className="text-red-600 dark:text-red-500">-{deleted}</span>
+                </>
+              ) : (
+                <>
+                  {t('diff.filesChanged', { count: fileCount })}{' '}
+                  <span className="text-green-600 dark:text-green-500">
+                    +{added}
+                  </span>{' '}
+                  <span className="text-red-600 dark:text-red-500">-{deleted}</span>
+                </>
+              )}
             </span>
           </div>
         </NewCardHeader>

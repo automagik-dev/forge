@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/tooltip';
 import { NewCardHeader } from '@/components/ui/new-card';
 import { validateAndNormalizeUrl } from '@/hooks/useManualPreviewUrl';
+import { useIsMobile } from '@/components/mobile';
 
 interface PreviewToolbarProps {
   mode: 'noServer' | 'error' | 'ready';
@@ -34,6 +35,7 @@ export function PreviewToolbar({
   onSetManualUrl,
 }: PreviewToolbarProps) {
   const { t } = useTranslation('tasks');
+  const isMobile = useIsMobile();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const [editError, setEditError] = useState<string | null>(null);
@@ -72,7 +74,7 @@ export function PreviewToolbar({
 
   const actions =
     mode !== 'noServer' ? (
-      <>
+      <div className="flex items-center gap-1">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -80,6 +82,7 @@ export function PreviewToolbar({
                 variant="icon"
                 aria-label={t('preview.toolbar.refresh')}
                 onClick={onRefresh}
+                className={isMobile ? 'h-8 w-8' : ''}
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>
@@ -90,23 +93,25 @@ export function PreviewToolbar({
           </Tooltip>
         </TooltipProvider>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="icon"
-                aria-label={t('preview.toolbar.copyUrl')}
-                onClick={onCopyUrl}
-                disabled={!url}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              {t('preview.toolbar.copyUrl')}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        {!isMobile && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="icon"
+                  aria-label={t('preview.toolbar.copyUrl')}
+                  onClick={onCopyUrl}
+                  disabled={!url}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {t('preview.toolbar.copyUrl')}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
 
         <TooltipProvider>
           <Tooltip>
@@ -116,6 +121,7 @@ export function PreviewToolbar({
                 aria-label={t('preview.toolbar.openInTab')}
                 asChild
                 disabled={!url}
+                className={isMobile ? 'h-8 w-8' : ''}
               >
                 <a
                   href={url}
@@ -143,6 +149,7 @@ export function PreviewToolbar({
                 aria-label={t('preview.toolbar.stopDevServer')}
                 onClick={onStop}
                 disabled={isStopping}
+                className={isMobile ? 'h-8 w-8' : ''}
               >
                 {isStopping ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -156,7 +163,7 @@ export function PreviewToolbar({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-      </>
+      </div>
     ) : undefined;
 
   return (
@@ -198,12 +205,12 @@ export function PreviewToolbar({
         ) : (
           <>
             {isManualUrl && (
-              <span className="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded font-medium">
+              <span className="text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded font-medium shrink-0">
                 Manual
               </span>
             )}
             <span
-              className="text-sm text-muted-foreground font-mono truncate whitespace-nowrap"
+              className={`text-muted-foreground font-mono truncate ${isMobile ? 'text-xs' : 'text-sm'}`}
               aria-live="polite"
             >
               {url || <Loader2 className="h-4 w-4 animate-spin" />}
@@ -217,7 +224,7 @@ export function PreviewToolbar({
                         variant="icon"
                         size="sm"
                         onClick={handleEditClick}
-                        className="h-6 w-6"
+                        className={isMobile ? 'h-7 w-7 shrink-0' : 'h-6 w-6 shrink-0'}
                       >
                         <Edit3 className="h-3 w-3" />
                       </Button>
@@ -227,7 +234,7 @@ export function PreviewToolbar({
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                {isManualUrl && (
+                {isManualUrl && !isMobile && (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -235,7 +242,7 @@ export function PreviewToolbar({
                           variant="ghost"
                           size="sm"
                           onClick={handleResetToAuto}
-                          className="h-6 text-xs"
+                          className="h-6 text-xs shrink-0"
                         >
                           Reset to auto
                         </Button>

@@ -30,6 +30,7 @@ import {
   useIgnoreWhitespaceDiff,
 } from '@/stores/useDiffViewStore';
 import { useProject } from '@/contexts/project-context';
+import { useIsMobile } from '@/components/mobile';
 
 type Props = {
   diff: Diff;
@@ -81,6 +82,7 @@ export default function DiffCard({
   const globalMode = useDiffViewMode();
   const ignoreWhitespace = useIgnoreWhitespaceDiff();
   const { projectId } = useProject();
+  const isMobile = useIsMobile();
 
   const oldName = diff.oldPath || undefined;
   const newName = diff.newPath || oldName || 'unknown';
@@ -206,28 +208,28 @@ export default function DiffCard({
   // Title row
   const title = (
     <p
-      className="text-xs font-mono overflow-x-auto flex-1"
+      className="text-xs font-mono overflow-x-auto flex-1 min-w-0"
       style={{ color: 'hsl(var(--muted-foreground) / 0.7)' }}
     >
-      <Icon className="h-3 w-3 inline mr-2" aria-hidden />
-      {label && <span className="mr-2">{label}</span>}
+      <Icon className="h-3 w-3 inline mr-2 shrink-0" aria-hidden />
+      {label && <span className="mr-2 shrink-0">{label}</span>}
       {diff.change === 'renamed' && oldName ? (
-        <span className="inline-flex items-center gap-2">
-          <span>{oldName}</span>
-          <span aria-hidden>→</span>
-          <span>{newName}</span>
+        <span className="inline-flex items-center gap-2 min-w-0">
+          <span className="truncate">{oldName}</span>
+          <span aria-hidden className="shrink-0">→</span>
+          <span className="truncate">{newName}</span>
         </span>
       ) : (
-        <span>{newName}</span>
+        <span className="truncate">{newName}</span>
       )}
-      <span className="ml-3" style={{ color: 'hsl(var(--console-success))' }}>
+      <span className="ml-3 shrink-0" style={{ color: 'hsl(var(--console-success))' }}>
         +{add}
       </span>
-      <span className="ml-2" style={{ color: 'hsl(var(--console-error))' }}>
+      <span className="ml-2 shrink-0" style={{ color: 'hsl(var(--console-error))' }}>
         -{del}
       </span>
       {commentsForFile.length > 0 && (
-        <span className="ml-3 inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-primary/10 text-primary rounded">
+        <span className="ml-3 shrink-0 inline-flex items-center gap-1 px-2 py-0.5 text-xs bg-primary/10 text-primary rounded">
           <MessageSquare className="h-3 w-3" />
           {commentsForFile.length}
         </span>
@@ -253,20 +255,20 @@ export default function DiffCard({
 
   return (
     <div className="my-4 border">
-      <div className="flex items-center px-4 py-2">
+      <div className="flex items-center px-2 sm:px-4 py-2 gap-1 sm:gap-0 min-w-0">
         {expandable && (
           <Button
             variant="ghost"
             size="sm"
             onClick={onToggle}
-            className="h-6 w-6 p-0 mr-2"
+            className={`p-0 mr-1 sm:mr-2 shrink-0 ${isMobile ? 'h-8 w-8' : 'h-6 w-6'}`}
             title={expanded ? 'Collapse' : 'Expand'}
             aria-expanded={expanded}
           >
             {expanded ? (
-              <ChevronUp className="h-3 w-3" />
+              <ChevronUp className={isMobile ? 'h-4 w-4' : 'h-3 w-3'} />
             ) : (
-              <ChevronRight className="h-3 w-3" />
+              <ChevronRight className={isMobile ? 'h-4 w-4' : 'h-3 w-3'} />
             )}
           </Button>
         )}
@@ -278,25 +280,25 @@ export default function DiffCard({
             e.stopPropagation();
             handleOpenInIDE();
           }}
-          className="h-6 w-6 p-0 ml-2"
+          className={`p-0 ml-1 sm:ml-2 shrink-0 ${isMobile ? 'h-8 w-8' : 'h-6 w-6'}`}
           title="Open in IDE"
           disabled={diff.change === 'deleted'}
         >
-          <ExternalLink className="h-3 w-3" aria-hidden />
+          <ExternalLink className={isMobile ? 'h-4 w-4' : 'h-3 w-3'} aria-hidden />
         </Button>
       </div>
 
       {expanded && diffFile && (
-        <div>
+        <div className="overflow-x-auto">
           <DiffView
             diffFile={diffFile}
-            diffViewWrap={false}
+            diffViewWrap={isMobile}
             diffViewTheme={theme}
             diffViewHighlight
             diffViewMode={
-              globalMode === 'split' ? DiffModeEnum.Split : DiffModeEnum.Unified
+              globalMode === 'split' && !isMobile ? DiffModeEnum.Split : DiffModeEnum.Unified
             }
-            diffViewFontSize={12}
+            diffViewFontSize={isMobile ? 11 : 12}
             diffViewAddWidget
             onAddWidgetClick={handleAddWidgetClick}
             renderWidgetLine={renderWidgetLine}
