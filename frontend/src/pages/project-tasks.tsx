@@ -7,7 +7,6 @@ import { AlertTriangle, Plus } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import { tasksApi } from '@/lib/api';
 import { openTaskForm } from '@/lib/openTaskForm';
-import { openAttemptForm } from '@/lib/openAttemptForm';
 import { FeatureShowcaseModal } from '@/components/showcase/FeatureShowcaseModal';
 import { showcases } from '@/config/showcases';
 import { useShowcaseTrigger } from '@/hooks/useShowcaseTrigger';
@@ -19,7 +18,6 @@ import { useSearch } from '@/contexts/search-context';
 import { useProject } from '@/contexts/project-context';
 import { useTaskAttempts } from '@/hooks/useTaskAttempts';
 import { useTaskAttempt } from '@/hooks/useTaskAttempt';
-import { useProjects } from '@/hooks/useProjects';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { paths } from '@/lib/paths';
 import { ExecutionProcessesProvider } from '@/contexts/ExecutionProcessesContext';
@@ -53,7 +51,6 @@ import TaskPanel from '@/components/panels/TaskPanel';
 import TodoPanel from '@/components/tasks/TodoPanel';
 import { NewCard } from '@/components/ui/new-card';
 import { ChatPanelActions } from '@/components/panels/ChatPanelActions';
-import { TasksListView } from '@/components/mobile/TasksListView';
 
 type Task = TaskWithAttemptStatus;
 
@@ -100,8 +97,6 @@ export function ProjectTasks() {
     error: projectError,
   } = useProject();
 
-  const { data: projects } = useProjects();
-  const currentProject = projects?.find((p) => p.id === projectId);
 
   useEffect(() => {
     enableScope(Scope.KANBAN);
@@ -202,7 +197,7 @@ export function ProjectTasks() {
 
   const rawMode = searchParams.get('view') as LayoutMode;
   const mode: LayoutMode =
-    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat' || rawMode === 'list'
+    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat'
       ? rawMode
       : null;
 
@@ -568,50 +563,6 @@ export function ProjectTasks() {
     [tasksById, groupedFilteredTasks, posthog]
   );
 
-  // Action handlers for mobile task list view
-  const handleViewDiff = useCallback(
-    (task: Task) => {
-      const pathname = `${paths.task(projectId!, task.id)}/attempts/latest`;
-      navigate({ pathname, search: '?view=diffs' });
-    },
-    [projectId, navigate]
-  );
-
-  const handleViewPreview = useCallback(
-    (task: Task) => {
-      const pathname = `${paths.task(projectId!, task.id)}/attempts/latest`;
-      navigate({ pathname, search: '?view=preview' });
-    },
-    [projectId, navigate]
-  );
-
-  const handleArchiveTask = useCallback(
-    async (task: Task) => {
-      try {
-        await tasksApi.update(task.id, {
-          title: task.title,
-          description: task.description,
-          status: 'archived',
-          parent_task_attempt: task.parent_task_attempt,
-          image_ids: null,
-        });
-      } catch (err) {
-        console.error('Failed to archive task:', err);
-      }
-    },
-    []
-  );
-
-  const handleNewAttempt = useCallback(
-    (task: Task) => {
-      openAttemptForm({
-        taskId: task.id,
-        latestAttempt: null,
-      });
-    },
-    []
-  );
-
   const isInitialTasksLoad = isLoading && tasks.length === 0;
 
   if (projectError) {
@@ -656,20 +607,6 @@ export function ProjectTasks() {
             </p>
           </CardContent>
         </Card>
-      </div>
-    ) : mode === 'list' || isMobilePortrait ? (
-      <div className="w-full h-full overflow-y-auto mobile-scroll">
-        <TasksListView
-          tasks={filteredTasks}
-          onTaskClick={handleViewTaskDetails}
-          selectedTaskId={selectedTask?.id}
-          projectName={currentProject?.name}
-          onProjectClick={() => navigate('/projects')}
-          onViewDiff={handleViewDiff}
-          onViewPreview={handleViewPreview}
-          onArchive={handleArchiveTask}
-          onNewAttempt={handleNewAttempt}
-        />
       </div>
     ) : (
       <div className="w-full h-full overflow-x-auto overflow-y-auto overscroll-x-contain touch-pan-y">

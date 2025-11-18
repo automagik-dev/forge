@@ -437,6 +437,20 @@ git commit -m "chore: update upstream to $NAMASTEX_TAG and rebrand"
 
 ---
 
+## 🤖 LLM-Driven Test Helpers
+
+Need Cypress coverage fast? We ship two optional helpers:
+
+- `pnpm testgen --base origin/dev --head HEAD`  
+  Sends the diff to an OpenAI-compatible endpoint (set `OPENAI_API_KEY`) and writes specs under `cypress/e2e/generated/`.
+
+- `pnpm testgen:forge --project <project-id> [--executor CODEX]`  
+  Calls the local Forge REST API to create a task and immediately start an AI executor (Codex by default) with a prompt that contains the diff. Great for comparing Forge/Genie task flows vs. direct LLM output.
+
+Both commands accept `--base/--head` to scope the git diff. The Forge helper also respects `FORGE_API_URL` (`http://127.0.0.1:8887` by default).
+
+---
+
 ## 🤝 Contributing
 
 We love contributions! However, to maintain project coherence:

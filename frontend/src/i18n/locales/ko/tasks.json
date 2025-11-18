@@ -3,6 +3,10 @@
     "addTask": "작업 추가"
   },
   "actionsMenu": {
+    "view": "보기",
+    "viewDetails": "세부 정보 보기",
+    "viewDiff": "차이점 보기",
+    "viewPreview": "미리보기",
     "attempt": "Attempt",
     "createNewAttempt": "Create new attempt",
     "createSubtask": "Create subtask",
@@ -10,7 +14,8 @@
     "gitActions": "Git 작업",
     "openInIde": "Open attempt in IDE",
     "task": "Task",
-    "viewProcesses": "View processes"
+    "viewProcesses": "View processes",
+    "archive": "보관"
   },
   "attempt": {
     "actions": {

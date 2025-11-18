@@ -15,7 +15,6 @@ export default defineConfig({
     video: true,
     screenshotOnRunFailure: true,
     chromeWebSecurity: false,
-    experimentalStudio: true,
     setupNodeEvents(on, config) {},
   },
 

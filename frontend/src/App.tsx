@@ -336,7 +336,8 @@ function App() {
       <UserSystemProvider>
         <ClickedElementsProvider>
           <ProjectProvider>
-            <HotkeysProvider initiallyActiveScopes={['*', 'global', 'kanban', 'dialog', 'projects', 'settings', 'edit-comment', 'approvals', 'follow-up', 'follow-up-ready']}>
+            {/* Keep 'global' active at all times so the hotkeys scope stack is never empty */}
+            <HotkeysProvider initiallyActiveScopes={['global', 'kanban', 'dialog', 'projects', 'settings', 'edit-comment', 'approvals', 'follow-up', 'follow-up-ready']}>
               <SubGenieProvider>
                 <NiceModal.Provider>
                   <AppContent />

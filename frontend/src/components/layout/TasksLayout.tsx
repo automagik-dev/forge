@@ -2,7 +2,7 @@ import { ReactNode, useState } from 'react';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
 import { AnimatePresence, motion } from 'framer-motion';
 
-export type LayoutMode = 'chat' | 'preview' | 'diffs' | 'kanban' | 'list' | null;
+export type LayoutMode = 'chat' | 'preview' | 'diffs' | 'kanban' | null;
 
 interface TasksLayoutProps {
   kanban: ReactNode;
@@ -250,7 +250,7 @@ export function TasksLayout({
     } else if (mode === 'preview' || mode === 'diffs') {
       columns = ['0fr', '0fr', '1fr'];
     } else {
-      // Fallback to Tasks view for unknown modes
+      // Default to Kanban for unknown modes
       columns = ['1fr', '0fr', '0fr'];
     }
     
