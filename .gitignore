@@ -118,3 +118,8 @@ upstream/
 # Cypress test artifacts
 cypress/screenshots/
 cypress/videos/
+
+# Playwright test artifacts
+test-results/
+playwright-report/
+playwright/.cache/
