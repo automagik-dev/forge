@@ -6,11 +6,21 @@ This framework is designed to be **LLM-friendly** - meaning both humans and AI a
 
 ### Core Principles
 
-1. **Real Browser Events** - No synthetic event issues (Playwright uses real CDP)
-2. **Accessibility-First Selectors** - Use semantic roles, not brittle CSS selectors
-3. **Auto-Wait** - Playwright waits automatically, no manual `cy.wait()`
-4. **Clear Structure** - Given/When/Then pattern for readability
-5. **Reusable Helpers** - DRY principle with helper functions
+1. **User Journey Testing** - Tests follow complete user flows from start to finish, not isolated micro-interactions
+2. **Real Browser Events** - No synthetic event issues (Playwright uses real CDP)
+3. **Accessibility-First Selectors** - Use semantic roles, not brittle CSS selectors
+4. **Auto-Wait** - Playwright waits automatically, no manual `cy.wait()`
+5. **Clear Structure** - Given/When/Then pattern for readability
+6. **Reusable Helpers** - DRY principle with helper functions
+
+### User Journey Focus
+
+**Tests should make sense when you watch them run.** They should follow real user workflows:
+
+✅ **Good**: Test the complete flow of creating a task and starting an attempt
+❌ **Bad**: Test that hovering shows a button
+
+See `USER-JOURNEYS.md` for documented user journeys and testing strategy.
 
 ## Test Structure Template
 
@@ -183,11 +193,14 @@ await page.click('button'); // YES!
 
 ## Adding New Tests
 
-1. **Create test file**: `tests/e2e/feature-name.spec.ts`
-2. **Add test helpers** if needed in `helpers.ts`
-3. **Add data-testid** to components if semantic selectors don't work
-4. **Run test locally** before committing
-5. **Update this README** if you discover new patterns
+1. **Identify the user journey**: See `USER-JOURNEYS.md` for documented journeys
+2. **Create test file**: `tests/e2e/journey-name.spec.ts` (follow user journey naming)
+3. **Follow the complete flow**: Don't test micro-interactions, test the full journey
+4. **Use the template**: See `journey-create-task.spec.ts` as reference
+5. **Add test helpers** if needed in `helpers.ts`
+6. **Add data-testid** to components if semantic selectors don't work
+7. **Run test locally** before committing
+8. **Update USER-JOURNEYS.md** if you discover new journeys
 
 ## Framework Improvements
 

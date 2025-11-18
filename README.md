@@ -437,17 +437,38 @@ git commit -m "chore: update upstream to $NAMASTEX_TAG and rebrand"
 
 ---
 
-## 🤖 LLM-Driven Test Helpers
+## 🧪 E2E Testing with Playwright
 
-Need Cypress coverage fast? We ship two optional helpers:
+Forge uses **Playwright** for end-to-end testing with an LLM-friendly approach:
 
-- `pnpm testgen --base origin/dev --head HEAD`  
-  Sends the diff to an OpenAI-compatible endpoint (set `OPENAI_API_KEY`) and writes specs under `cypress/e2e/generated/`.
+### Running Tests
 
-- `pnpm testgen:forge --project <project-id> [--executor CODEX]`  
-  Calls the local Forge REST API to create a task and immediately start an AI executor (Codex by default) with a prompt that contains the diff. Great for comparing Forge/Genie task flows vs. direct LLM output.
+```bash
+# Run all tests
+pnpm test:e2e
 
-Both commands accept `--base/--head` to scope the git diff. The Forge helper also respects `FORGE_API_URL` (`http://127.0.0.1:8887` by default).
+# Run with UI mode (visual debugging)
+pnpm test:e2e:ui
+
+# Run in headed mode (see browser)
+pnpm test:e2e:headed
+
+# Debug mode (step through tests)
+pnpm test:e2e:debug
+```
+
+### Writing Tests
+
+Our E2E tests follow **user journey patterns** - complete flows from start to finish:
+- See `tests/e2e/USER-JOURNEYS.md` for documented user journeys
+- Use `tests/e2e/journey-create-task.spec.ts` as a template
+- Follow the framework guide in `tests/e2e/README.md`
+
+**Why Playwright?**
+- ✅ Real browser events (no synthetic event issues)
+- ✅ Auto-wait built-in (no manual timeouts)
+- ✅ Accessibility-first selectors (semantic, non-invasive)
+- ✅ Excellent debugging (screenshots, videos, time-travel traces)
 
 ---
 

@@ -71,23 +71,30 @@ This opens a visual interface where you can:
 - Inspect elements
 - Time-travel debug
 
-## 📚 The Three Sacred Files
+## 📚 The Four Sacred Files
 
-### 1. `tests/e2e/README.md` - THE FRAMEWORK BIBLE
+### 1. `tests/e2e/USER-JOURNEYS.md` - THE JOURNEY MAP 🗺️
+- Documented user journeys with screenshots
+- Testing philosophy: follow complete user flows, not micro-interactions
+- What makes a good E2E test
+- **START HERE** to understand user flows
+
+### 2. `tests/e2e/README.md` - THE FRAMEWORK BIBLE
 - All patterns and best practices
 - Selector hierarchy
-- Common patterns (hover, modals, dropdowns)
+- Common patterns (modals, forms, navigation)
 - Anti-patterns (what NOT to do)
-- **READ THIS FIRST**
+- **READ THIS SECOND**
 
-### 2. `tests/e2e/helpers.ts` - Your Utility Belt
+### 3. `tests/e2e/helpers.ts` - Your Utility Belt
 - `setupTasksView()` - Standard test setup
 - `skipOnboarding()` - Skip onboarding
 - `createTestTask()` - Create test data
 - Add more as you find patterns!
 
-### 3. `tests/e2e/task-actions.spec.ts` - THE TEMPLATE
+### 4. `tests/e2e/journey-create-task.spec.ts` - THE TEMPLATE
 - Copy this for new tests
+- Shows complete user journey (create task → start attempt)
 - Shows Given/When/Then pattern
 - Shows helper usage
 - Shows all selector types
@@ -99,16 +106,33 @@ When asking an LLM to write/fix tests:
 ### ✅ Good Prompt
 
 ```
-Write a Playwright test for the delete task feature.
+Write a Playwright test for the complete user journey of deleting a task.
+
+The journey should:
+1. Navigate to a project and see tasks
+2. Click on an existing task to open details
+3. Click delete button
+4. Confirm deletion in modal
+5. Verify task is removed from kanban board
+
 Use getByRole for buttons, getByTestId for custom components.
-Follow the Given/When/Then pattern from task-actions.spec.ts.
+Follow the Given/When/Then pattern from journey-create-task.spec.ts.
 Use helpers from helpers.ts for setup.
+Check USER-JOURNEYS.md for documented flows.
 ```
 
 ### ❌ Bad Prompt
 
 ```
 Write a test for deleting tasks
+```
+
+### 🎯 Journey-Based Prompts
+
+```
+Write tests for Journey 1 from USER-JOURNEYS.md - the complete create task flow.
+Follow the structure in journey-create-task.spec.ts.
+Include edge cases like cancelling and validating required fields.
 ```
 
 ## 🐛 Debugging Failed Tests

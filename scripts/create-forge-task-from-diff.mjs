@@ -14,7 +14,7 @@
  *     --base origin/dev --head HEAD \
  *     --branch dev \
  *     --executor CODEX \
- *     --title "Codex: regenerate Cypress tests"
+ *     --title "Codex: regenerate Playwright tests"
  *
  * The Forge server must be running locally (make dev / npx @automagik/forge).
  */
@@ -146,9 +146,9 @@ function buildDescription(diff, base, head) {
   const snippet =
     diff.length > DIFF_LIMIT ? `${diff.slice(0, DIFF_LIMIT)}\n...\n(truncated)` : diff;
   return [
-    `Automated request: generate Cypress/regression tests for diff ${base}...${head}.`,
+    `Automated request: generate Playwright E2E tests for diff ${base}...${head}.`,
     '',
-    'Focus on TaskActions/Kanban/mobile flows where applicable. Use existing helpers (cy.setMobileViewport, etc.).',
+    'Focus on TaskActions/Kanban/mobile flows where applicable. Use existing helpers from tests/e2e/helpers.ts.',
     '',
     'Diff:',
     '```diff',
