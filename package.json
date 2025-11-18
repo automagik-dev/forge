@@ -87,6 +87,7 @@
     "framer-motion": "^12.23.22",
     "lodash": "^4.17.21",
     "react-resizable-panels": "^3.0.6",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "webpack": "^5.102.1"
   }
 }

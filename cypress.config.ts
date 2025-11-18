@@ -1,4 +1,5 @@
 import { defineConfig } from "cypress";
+import path from "path";
 
 export default defineConfig({
   projectId: "85rhk2",
@@ -30,5 +31,13 @@ export default defineConfig({
   retries: {
     runMode: 2,
     openMode: 0,
+  },
+
+  component: {
+    devServer: {
+      framework: "react",
+      bundler: "vite",
+      viteConfig: path.resolve(__dirname, "frontend/vite.config.ts"),
+    },
   },
 });

@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MoreVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
