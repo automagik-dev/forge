@@ -53,7 +53,7 @@ const DeleteTaskConfirmationDialog =
         open={modal.visible}
         onOpenChange={(open) => !open && handleCancelDelete()}
       >
-        <DialogContent>
+        <DialogContent data-testid="delete-confirmation-modal">
           <DialogHeader>
             <DialogTitle>Delete Task</DialogTitle>
             <DialogDescription>

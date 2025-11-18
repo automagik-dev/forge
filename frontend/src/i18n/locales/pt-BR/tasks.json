@@ -294,6 +294,10 @@
     "diffs": "Diffs"
   },
   "actionsMenu": {
+    "view": "Visualizar",
+    "viewDetails": "Ver detalhes",
+    "viewDiff": "Ver diferenças",
+    "viewPreview": "Ver pré-visualização",
     "attempt": "Attempt",
     "openInIde": "Open attempt in IDE",
     "viewProcesses": "View processes",
@@ -301,7 +305,8 @@
     "createSubtask": "Create subtask",
     "gitActions": "Git actions",
     "task": "Task",
-    "duplicate": "Duplicate"
+    "duplicate": "Duplicate",
+    "archive": "Arquivar"
   },
   "showcases": {
     "taskPanel": {

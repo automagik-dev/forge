@@ -111,3 +111,15 @@ forge.db
 
 # Upstream submodule removed - ignore leftover directory
 upstream/ 
+
+# Vite generated files
+*.timestamp-*.mjs
+
+# Cypress test artifacts
+cypress/screenshots/
+cypress/videos/
+
+# Playwright test artifacts
+test-results/
+playwright-report/
+playwright/.cache/

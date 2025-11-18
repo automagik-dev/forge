@@ -347,6 +347,19 @@ export const projectsApi = {
     );
     return handleApiResponse<SearchResult[]>(response);
   },
+
+  getBranchStatus: async (id: string, baseBranch?: string): Promise<BranchStatus> => {
+    const queryParam = baseBranch ? `?base=${encodeURIComponent(baseBranch)}` : '';
+    const response = await makeRequest(`/api/forge/projects/${id}/branch-status${queryParam}`);
+    return handleApiResponse<BranchStatus>(response);
+  },
+
+  pullProject: async (id: string): Promise<void> => {
+    const response = await makeRequest(`/api/forge/projects/${id}/pull`, {
+      method: 'POST',
+    });
+    return handleApiResponse<void>(response);
+  },
 };
 
 // Task Management APIs

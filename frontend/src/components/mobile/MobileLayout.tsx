@@ -3,6 +3,9 @@ import { useSearchParams, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { BottomNavigation, BottomNavTab } from './BottomNavigation';
+import { MobileHeader } from './MobileHeader';
+import { MobileSearchOverlay } from './MobileSearchOverlay';
+import { MobileMoreMenu } from './MobileMoreMenu';
 import { usePlatform } from '@/lib/platform';
 import { useProject } from '@/contexts/project-context';
 import { useMobileNavigation } from '@/contexts/MobileNavigationContext';
@@ -16,6 +19,7 @@ export interface MobileLayoutProps {
   children: React.ReactNode;
   showBottomNav?: boolean;
   hideBottomNav?: boolean;
+  showHeader?: boolean;
   className?: string;
   contentClassName?: string;
 }
@@ -24,6 +28,7 @@ export function MobileLayout({
   children,
   showBottomNav = true,
   hideBottomNav: hideBottomNavProp = false,
+  showHeader = true,
   className,
   contentClassName
 }: MobileLayoutProps) {
@@ -34,6 +39,8 @@ export function MobileLayout({
   const location = useLocation();
   const { taskId } = useParams<{ taskId?: string }>();
   const [showDiffActions, setShowDiffActions] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   // Use context to get dynamic hide state (from input focus)
   const { hideBottomNav: hideBottomNavContext } = useMobileNavigation();
@@ -95,21 +102,13 @@ export function MobileLayout({
       return baseTabs;
     }
 
-    // When inside a project (not in a specific task), show: Tasks/Kanban/Genie/Config
+    // When inside a project (not in a specific task), show: Tasks/Genie/Config
     if (projectId) {
       return [
         {
           id: 'tasks',
           label: t('mobile.navigation.tasks'),
           icon: <ListTodo size={20} />,
-          // Tasks shows list view with ?view=list parameter
-          path: `${basePath}?view=list`,
-        },
-        {
-          id: 'kanban',
-          label: t('mobile.navigation.kanban'),
-          icon: <Kanban size={20} />,
-          // Kanban board shows all tasks in the project
           path: basePath,
         },
         {
@@ -150,22 +149,31 @@ export function MobileLayout({
       isNative && 'pt-safe',
       className
     )}>
+      {/* Mobile Header */}
+      {showHeader && (
+        <MobileHeader
+          onSearchClick={() => setShowSearch(true)}
+          onMoreClick={() => setShowMoreMenu(true)}
+        />
+      )}
+
+      {/* Main content */}
       <main
         className={cn(
           'flex-1 overflow-auto mobile-scroll',
           contentClassName
         )}
-        style={
-          showBottomNav && !hideBottomNav
-            ? {
-                paddingBottom: `calc(${getMobileSpacing('bottomNav')} + env(safe-area-inset-bottom, 0px))`,
-              }
+        style={{
+          paddingTop: showHeader ? '32px' : undefined, // Header height
+          paddingBottom: showBottomNav && !hideBottomNav
+            ? `calc(${getMobileSpacing('bottomNav')} + env(safe-area-inset-bottom, 0px))`
             : undefined
-        }
+        }}
       >
         {children}
       </main>
 
+      {/* Bottom Navigation */}
       {showBottomNav && (
         <BottomNavigation
           tabs={tabs}
@@ -175,6 +183,18 @@ export function MobileLayout({
           )}
         />
       )}
+
+      {/* Search Overlay */}
+      <MobileSearchOverlay
+        open={showSearch}
+        onClose={() => setShowSearch(false)}
+      />
+
+      {/* More Menu */}
+      <MobileMoreMenu
+        open={showMoreMenu}
+        onClose={() => setShowMoreMenu(false)}
+      />
 
       {/* Diff Action Sheet - shows sync/approve options */}
       <DiffActionSheet

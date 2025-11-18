@@ -48,6 +48,12 @@
     "test:e2e:phase2": "cypress run --spec 'cypress/e2e/phase-2-core-views/**/*.cy.ts'",
     "test:e2e:phase3": "cypress run --spec 'cypress/e2e/phase-3-advanced-features/**/*.cy.ts'",
     "test:e2e:phase4": "cypress run --spec 'cypress/e2e/phase-4-polish/**/*.cy.ts'",
+    "test:playwright": "playwright test",
+    "test:playwright:ui": "playwright test --ui",
+    "test:playwright:headed": "playwright test --headed",
+    "test:playwright:debug": "playwright test --debug",
+    "testgen": "node scripts/generate-cypress-tests.mjs",
+    "testgen:forge": "node scripts/create-forge-task-from-diff.mjs",
     "frontend:lint": "cd frontend && npm run lint",
     "frontend:dev": "cd frontend && BACKEND_PORT=${BACKEND_PORT:-3001} VITE_OPEN=true npm run dev -- --port ${FRONTEND_PORT:-3000} --host",
     "frontend:check": "cd frontend && npm run check",
@@ -62,13 +68,17 @@
     "prepack": "npm run build:npx"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/container-queries": "^0.1.1",
     "@types/cheerio": "^1.0.0",
+    "@types/node": "^22.19.1",
     "cheerio": "^1.1.2",
     "concurrently": "^8.2.2",
     "cypress": "^15.6.0",
     "cypress-plugin-tab": "^1.0.5",
     "dotenv-cli": "^11.0.0",
+    "playwright": "^1.56.1",
+    "puppeteer": "^23.11.1",
     "typescript": "^5.9.2"
   },
   "engines": {
@@ -83,6 +93,7 @@
     "framer-motion": "^12.23.22",
     "lodash": "^4.17.21",
     "react-resizable-panels": "^3.0.6",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "webpack": "^5.102.1"
   }
 }

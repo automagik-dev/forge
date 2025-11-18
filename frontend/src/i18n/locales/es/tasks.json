@@ -3,6 +3,10 @@
     "addTask": "Agregar tarea"
   },
   "actionsMenu": {
+    "view": "Ver",
+    "viewDetails": "Ver detalles",
+    "viewDiff": "Ver diferencias",
+    "viewPreview": "Ver vista previa",
     "attempt": "Attempt",
     "createNewAttempt": "Create new attempt",
     "createSubtask": "Create subtask",
@@ -10,7 +14,8 @@
     "gitActions": "Acciones de Git",
     "openInIde": "Open attempt in IDE",
     "task": "Task",
-    "viewProcesses": "View processes"
+    "viewProcesses": "View processes",
+    "archive": "Archivar"
   },
   "attempt": {
     "actions": {

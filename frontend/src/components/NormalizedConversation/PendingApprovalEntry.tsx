@@ -25,6 +25,7 @@ import { useKeyApproveRequest, useKeyDenyApproval, Scope } from '@/keyboard';
 import { useProject } from '@/contexts/project-context';
 import { useApprovalForm } from '@/contexts/ApprovalFormContext';
 import { useBranchStatus } from '@/hooks';
+import { useTaskAttempt } from '@/hooks/useTaskAttempt';
 
 const DEFAULT_DENIAL_REASON = 'User denied this tool use request.';
 
@@ -206,7 +207,9 @@ const PendingApprovalEntry = ({
   const { projectId } = useProject();
 
   // Check if branch needs rebase before approval
-  const { data: branchStatus } = useBranchStatus(attemptId);
+  // Fetch the attempt object to enable branch status check
+  const { data: attempt } = useTaskAttempt(attemptId);
+  const { data: branchStatus } = useBranchStatus(attemptId, attempt);
   const needsRebase = (branchStatus?.remote_commits_behind ?? 0) > 0;
   const rebaseCommitCount = branchStatus?.remote_commits_behind ?? 0;
 
