@@ -3,6 +3,9 @@ import { useSearchParams, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { BottomNavigation, BottomNavTab } from './BottomNavigation';
+import { MobileHeader } from './MobileHeader';
+import { MobileSearchOverlay } from './MobileSearchOverlay';
+import { MobileMoreMenu } from './MobileMoreMenu';
 import { usePlatform } from '@/lib/platform';
 import { useProject } from '@/contexts/project-context';
 import { Kanban, GitCompareArrows, FileText, Settings, Heart, ListTodo } from 'lucide-react';
@@ -14,6 +17,7 @@ import { mobileTheme, getMobileSpacing } from '@/styles/mobile-theme';
 export interface MobileLayoutProps {
   children: React.ReactNode;
   showBottomNav?: boolean;
+  showHeader?: boolean;
   className?: string;
   contentClassName?: string;
 }
@@ -21,6 +25,7 @@ export interface MobileLayoutProps {
 export function MobileLayout({
   children,
   showBottomNav = true,
+  showHeader = true,
   className,
   contentClassName
 }: MobileLayoutProps) {
@@ -31,6 +36,8 @@ export function MobileLayout({
   const location = useLocation();
   const { taskId } = useParams<{ taskId?: string }>();
   const [showDiffActions, setShowDiffActions] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
 
   // Mobile task actions (sync/approve)
   const {
@@ -143,23 +150,44 @@ export function MobileLayout({
       isNative && 'pt-safe',
       className
     )}>
+      {/* Mobile Header */}
+      {showHeader && (
+        <MobileHeader
+          onSearchClick={() => setShowSearch(true)}
+          onMoreClick={() => setShowMoreMenu(true)}
+        />
+      )}
+
+      {/* Main content */}
       <main
         className={cn(
           'flex-1 overflow-auto mobile-scroll',
           contentClassName
         )}
-        style={
-          showBottomNav
-            ? {
-                paddingBottom: `calc(${getMobileSpacing('bottomNav')} + env(safe-area-inset-bottom, 0px))`,
-              }
+        style={{
+          paddingTop: showHeader ? '32px' : undefined, // Header height
+          paddingBottom: showBottomNav
+            ? `calc(${getMobileSpacing('bottomNav')} + env(safe-area-inset-bottom, 0px))`
             : undefined
-        }
+        }}
       >
         {children}
       </main>
 
+      {/* Bottom Navigation */}
       {showBottomNav && <BottomNavigation tabs={tabs} />}
+
+      {/* Search Overlay */}
+      <MobileSearchOverlay
+        open={showSearch}
+        onClose={() => setShowSearch(false)}
+      />
+
+      {/* More Menu */}
+      <MobileMoreMenu
+        open={showMoreMenu}
+        onClose={() => setShowMoreMenu(false)}
+      />
 
       {/* Diff Action Sheet - shows sync/approve options */}
       <DiffActionSheet
