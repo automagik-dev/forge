@@ -2,7 +2,10 @@
 name: garbage-collector
 description: Autonomous documentation quality assurance - detect bloat,
 genie:
-  executor: OPENCODE
+  executor:
+    - CLAUDE_CODE
+    - CODEX
+    - OPENCODE
   background: true
 forge:
   CLAUDE_CODE:

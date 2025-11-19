@@ -1,9 +1,11 @@
 ---
 name: wish
-description: Universal wish architect - converts ideas into roadmap-aligned
-  wishes with spec contracts (all domains)
+description: Universal wish architect - converts ideas into roadmap-aligned wishes with spec contracts (all domains)
 genie:
-  executor: OPENCODE
+  executor:
+    - CLAUDE_CODE
+    - CODEX
+    - OPENCODE
   background: true
 forge:
   CLAUDE_CODE:
