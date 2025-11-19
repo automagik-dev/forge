@@ -1,11 +1,12 @@
-import { Check, AlertTriangle, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { Check, AlertTriangle, Loader2, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useApproveTask } from '@/hooks/useApproveTask';
 import type { TaskWithAttemptStatus, TaskAttempt, BranchStatus } from 'shared/types';
 import { useTranslation } from 'react-i18next';
@@ -24,8 +25,16 @@ export function ApproveButton({
   projectId,
 }: ApproveButtonProps) {
   const { t } = useTranslation('tasks');
-  const { approve, isApproving } = useApproveTask();
+  const { approve, isApproving, error } = useApproveTask();
   const [, setShouldShake] = useState(false);
+  const [showError, setShowError] = useState(false);
+
+  // Show error when it occurs
+  useEffect(() => {
+    if (error) {
+      setShowError(true);
+    }
+  }, [error]);
 
   const hasCodeChanges = (branchStatus?.commits_ahead ?? 0) > 0;
   const hasConflicts = (branchStatus?.conflicted_files?.length ?? 0) > 0;
@@ -118,33 +127,65 @@ export function ApproveButton({
     : 'bg-blue-100/70 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-200/70 dark:hover:bg-blue-800/40';
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            disabled={isDisabled}
-            onClick={handleClick}
-            className={`inline-flex items-center justify-center gap-0.5 h-6 px-2 rounded-md border text-xs font-medium transition-colors ${colorClasses} ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-          >
-            {isApproving ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : needsRebase || hasConflicts ? (
-              <AlertTriangle className="h-3 w-3" />
-            ) : (
-              <Check className="h-3 w-3" />
+    <>
+      {/* Error Alert */}
+      {showError && error && (
+        <div className="fixed top-4 right-4 z-50 max-w-md animate-in slide-in-from-top-2">
+          <Alert variant="destructive" className="pr-10">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Approval Failed</AlertTitle>
+            <AlertDescription>
+              <p className="mb-2">{error.message}</p>
+              {error.type === 'merge_failed' && (
+                <p className="text-xs opacity-90">
+                  Try rebasing with the target branch or resolve any conflicts before approving.
+                </p>
+              )}
+              {error.type === 'verification_failed' && (
+                <p className="text-xs opacity-90">
+                  Please check the branch status and try again.
+                </p>
+              )}
+            </AlertDescription>
+            <button
+              onClick={() => setShowError(false)}
+              className="absolute top-2 right-2 p-1 rounded-md hover:bg-destructive/20 transition-colors"
+              aria-label="Close error"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </Alert>
+        </div>
+      )}
+
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              disabled={isDisabled}
+              onClick={handleClick}
+              className={`inline-flex items-center justify-center gap-0.5 h-6 px-2 rounded-md border text-xs font-medium transition-colors ${colorClasses} ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              {isApproving ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : needsRebase || hasConflicts ? (
+                <AlertTriangle className="h-3 w-3" />
+              ) : (
+                <Check className="h-3 w-3" />
+              )}
+              <span className="text-[10px]">{label}</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs text-xs">
+            <p>{tooltipContent}</p>
+            {hasCodeChanges && !hasConflicts && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {t('git.tooltips.technical.merge')}
+              </p>
             )}
-            <span className="text-[10px]">{label}</span>
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" className="max-w-xs text-xs">
-          <p>{tooltipContent}</p>
-          {hasCodeChanges && !hasConflicts && (
-            <p className="text-[10px] text-muted-foreground mt-1">
-              {t('git.tooltips.technical.merge')}
-            </p>
-          )}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </>
   );
 }
