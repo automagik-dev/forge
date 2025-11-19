@@ -4,6 +4,11 @@
  * Provides offline support and asset caching for PWA functionality.
  * Uses a cache-first strategy for static assets.
  * API calls are NEVER cached to prevent auth/session data leakage.
+ *
+ * OFFLINE REQUIREMENTS:
+ * - Critical assets MUST cache successfully during installation
+ * - Installation fails if assets cannot be cached (old SW stays active)
+ * - Retry logic attempts to cache up to 3 times with exponential backoff
  */
 
 const CACHE_NAME = 'forge-v1';
@@ -28,23 +33,39 @@ const CACHE_PATTERNS = {
 };
 
 /**
+ * Retry caching with exponential backoff
+ * @param {Cache} cache - Cache instance
+ * @param {string[]} assets - Assets to cache
+ * @param {number} maxRetries - Maximum retry attempts (default: 3)
+ * @returns {Promise<void>}
+ */
+async function cacheWithRetry(cache, assets, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await cache.addAll(assets);
+      console.log('[Service Worker] Critical assets cached successfully');
+      return;
+    } catch (error) {
+      console.warn(`[Service Worker] Cache attempt ${i + 1}/${maxRetries} failed:`, error);
+      if (i === maxRetries - 1) {
+        throw error; // Final attempt failed - let installation fail
+      }
+      // Exponential backoff: 1s, 2s, 4s
+      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i)));
+    }
+  }
+}
+
+/**
  * Install event - cache critical assets for offline support
  */
 self.addEventListener('install', (event) => {
   console.log('[Service Worker] Installing...');
 
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching critical assets');
-      return cache.addAll(CRITICAL_ASSETS).catch((error) => {
-        // Some assets might not exist yet - that's ok
-        console.warn('[Service Worker] Failed to cache some critical assets:', error);
-        return Promise.resolve();
-      });
-    }).then(() => {
-      // Force activation of new service worker
-      return self.skipWaiting();
-    })
+    caches.open(CACHE_NAME)
+      .then((cache) => cacheWithRetry(cache, CRITICAL_ASSETS))
+      .then(() => self.skipWaiting())
   );
 });
 
