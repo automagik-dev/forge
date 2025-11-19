@@ -17,6 +17,10 @@ use futures_util::{SinkExt, StreamExt, TryStreamExt};
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use std::collections::HashSet;
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::RwLock;
 use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
@@ -741,14 +745,63 @@ async fn handle_forge_tasks_ws(
 ) -> anyhow::Result<()> {
     let pool = deployment.db().pool.clone();
 
+    // Batch query for all agent task IDs at initialization (fixes N+1 pattern)
+    let agent_task_ids: Arc<RwLock<HashSet<Uuid>>> = {
+        let agent_tasks: Vec<Uuid> = sqlx::query_scalar(
+            "SELECT task_id FROM forge_agents fa
+             INNER JOIN tasks t ON fa.task_id = t.id
+             WHERE t.project_id = ?"
+        )
+        .bind(project_id)
+        .fetch_all(&pool)
+        .await
+        .unwrap_or_else(|e| {
+            tracing::warn!("Failed to fetch initial agent task IDs for project {}: {}", project_id, e);
+            Vec::new()
+        });
+
+        Arc::new(RwLock::new(agent_tasks.into_iter().collect()))
+    };
+
+    // Spawn background task to refresh agent task IDs periodically
+    let refresh_cache = agent_task_ids.clone();
+    let refresh_pool = pool.clone();
+    let refresh_project_id = project_id;
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(5));
+        loop {
+            interval.tick().await;
+
+            match sqlx::query_scalar::<_, Uuid>(
+                "SELECT task_id FROM forge_agents fa
+                 INNER JOIN tasks t ON fa.task_id = t.id
+                 WHERE t.project_id = ?"
+            )
+            .bind(refresh_project_id)
+            .fetch_all(&refresh_pool)
+            .await
+            {
+                Ok(tasks) => {
+                    let mut cache = refresh_cache.write().await;
+                    cache.clear();
+                    cache.extend(tasks);
+                    tracing::trace!("Refreshed agent task cache for project {}: {} tasks", refresh_project_id, cache.len());
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to refresh agent task cache for project {}: {}", refresh_project_id, e);
+                }
+            }
+        }
+    });
+
     // Get the raw stream from upstream (includes initial snapshot + live updates)
-    // Filter out agent tasks by checking forge_agents table (matches REST endpoint behavior)
+    // Filter out agent tasks by checking cache (no per-operation DB queries)
     let stream = deployment
         .events()
         .stream_tasks_raw(project_id)
         .await?
         .filter_map(move |msg_result| {
-            let pool = pool.clone();
+            let agent_task_ids = agent_task_ids.clone();
             async move {
                 match msg_result {
                     Ok(LogMsg::JsonPatch(patch)) => {
@@ -763,17 +816,9 @@ async fn handle_forge_tasks_ws(
                                                 op.value.clone(),
                                             )
                                         {
-                                            // Check if this task is in forge_agents table (matches REST filtering)
-                                            let is_agent: bool = sqlx::query_scalar(
-                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
-                                            )
-                                            .bind(task_with_status.task.id)
-                                            .fetch_one(&pool)
-                                            .await
-                                            .unwrap_or_else(|e| {
-                                                tracing::warn!("Failed to check forge_agents for task {}: {}", task_with_status.task.id, e);
-                                                false
-                                            });
+                                            // Check cache instead of DB query (fixes N+1)
+                                            let cache = agent_task_ids.read().await;
+                                            let is_agent = cache.contains(&task_with_status.task.id);
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -788,17 +833,9 @@ async fn handle_forge_tasks_ws(
                                                 op.value.clone(),
                                             )
                                         {
-                                            // Check if this task is in forge_agents table (matches REST filtering)
-                                            let is_agent: bool = sqlx::query_scalar(
-                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
-                                            )
-                                            .bind(task_with_status.task.id)
-                                            .fetch_one(&pool)
-                                            .await
-                                            .unwrap_or_else(|e| {
-                                                tracing::warn!("Failed to check forge_agents for task {}: {}", task_with_status.task.id, e);
-                                                false
-                                            });
+                                            // Check cache instead of DB query (fixes N+1)
+                                            let cache = agent_task_ids.read().await;
+                                            let is_agent = cache.contains(&task_with_status.task.id);
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -819,35 +856,8 @@ async fn handle_forge_tasks_ws(
                                 && let json_patch::PatchOperation::Replace(op) = patch_op
                                 && let Some(tasks_obj) = op.value.as_object()
                             {
-                                let task_ids: Vec<Uuid> = tasks_obj
-                                    .iter()
-                                    .filter_map(|(_, task_value)| {
-                                        serde_json::from_value::<TaskWithAttemptStatus>(task_value.clone())
-                                            .ok()
-                                            .map(|t| t.task.id)
-                                    })
-                                    .collect();
-
-                                let agent_task_ids: std::collections::HashSet<Uuid> = if !task_ids.is_empty() {
-                                    let placeholders = task_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
-                                    let query_str = format!("SELECT task_id FROM forge_agents WHERE task_id IN ({})", placeholders);
-
-                                    let mut query = sqlx::query_scalar(&query_str);
-                                    for task_id in &task_ids {
-                                        query = query.bind(task_id);
-                                    }
-
-                                    query.fetch_all(&pool)
-                                        .await
-                                        .unwrap_or_else(|e| {
-                                            tracing::warn!("Failed to fetch agent task IDs: {}", e);
-                                            Vec::new()
-                                        })
-                                        .into_iter()
-                                        .collect()
-                                } else {
-                                    std::collections::HashSet::new()
-                                };
+                                // Use cache for snapshot filtering too
+                                let cache = agent_task_ids.read().await;
 
                                 // Filter out agent tasks from the initial snapshot
                                 let mut filtered_tasks = serde_json::Map::new();
@@ -857,8 +867,8 @@ async fn handle_forge_tasks_ws(
                                             task_value.clone(),
                                         )
                                     {
-                                        // Check if this task is in the agent_task_ids set
-                                        if !agent_task_ids.contains(&task_with_status.task.id) {
+                                        // Check if this task is in the agent_task_ids cache
+                                        if !cache.contains(&task_with_status.task.id) {
                                             filtered_tasks.insert(
                                                 task_id_str.to_string(),
                                                 task_value.clone(),
