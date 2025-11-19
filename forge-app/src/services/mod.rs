@@ -539,9 +539,30 @@ fn format_status_summary(status: &str, executor: &str, branch: &str) -> String {
 }
 
 fn omni_base_url() -> String {
+    use url::Url;
+
     // Priority 1: Explicit PUBLIC_BASE_URL (for tunnels/production)
-    if let Ok(url) = std::env::var("PUBLIC_BASE_URL") {
-        return url.trim_end_matches('/').to_string();
+    if let Ok(url_str) = std::env::var("PUBLIC_BASE_URL") {
+        // Validate URL format and scheme
+        match Url::parse(&url_str) {
+            Ok(parsed_url) => {
+                // Only allow http and https schemes
+                if parsed_url.scheme() == "http" || parsed_url.scheme() == "https" {
+                    return url_str.trim_end_matches('/').to_string();
+                } else {
+                    tracing::warn!(
+                        "PUBLIC_BASE_URL has invalid scheme '{}' (only http/https allowed), falling back to HOST/PORT",
+                        parsed_url.scheme()
+                    );
+                }
+            }
+            Err(e) => {
+                tracing::warn!(
+                    "PUBLIC_BASE_URL is not a valid URL ({}), falling back to HOST/PORT",
+                    e
+                );
+            }
+        }
     }
 
     // Priority 2: HOST/BACKEND_PORT env vars (for custom deployments)
@@ -550,7 +571,41 @@ fn omni_base_url() -> String {
         .or_else(|_| std::env::var("PORT"))
         .unwrap_or_else(|_| "8887".to_string());
 
-    format!("http://{host}:{port}")
+    // Sanitize host: only allow alphanumeric, dots, hyphens, and colons (for IPv6)
+    let sanitized_host = sanitize_hostname(&host);
+    if sanitized_host != host {
+        tracing::warn!(
+            "HOST env var contains invalid characters, sanitized '{}' -> '{}'",
+            host,
+            sanitized_host
+        );
+    }
+
+    // Sanitize port: only allow digits
+    let sanitized_port = sanitize_port(&port);
+    if sanitized_port != port {
+        tracing::warn!(
+            "PORT env var contains invalid characters, sanitized '{}' -> '{}'",
+            port,
+            sanitized_port
+        );
+    }
+
+    format!("http://{}:{}", sanitized_host, sanitized_port)
+}
+
+/// Sanitize hostname to prevent injection attacks
+/// Allows: alphanumeric, dots, hyphens, colons (for IPv6), square brackets (for IPv6)
+fn sanitize_hostname(host: &str) -> String {
+    host.chars()
+        .filter(|c| c.is_alphanumeric() || *c == '.' || *c == '-' || *c == ':' || *c == '[' || *c == ']')
+        .collect()
+}
+
+/// Sanitize port to prevent injection attacks
+/// Allows: digits only
+fn sanitize_port(port: &str) -> String {
+    port.chars().filter(|c| c.is_ascii_digit()).collect()
 }
 
 #[cfg(test)]
@@ -836,6 +891,180 @@ mod tests {
             } else {
                 std::env::remove_var("PORT");
             }
+        }
+    }
+
+    #[test]
+    fn test_omni_base_url_rejects_javascript_scheme() {
+        unsafe {
+            std::env::set_var("PUBLIC_BASE_URL", "javascript:alert(1)");
+        }
+        // Should fall back to HOST/PORT when invalid scheme detected
+        let result = omni_base_url();
+        assert!(result.starts_with("http://"));
+        assert!(!result.contains("javascript"));
+        unsafe {
+            std::env::remove_var("PUBLIC_BASE_URL");
+        }
+    }
+
+    #[test]
+    fn test_omni_base_url_rejects_data_scheme() {
+        unsafe {
+            std::env::set_var("PUBLIC_BASE_URL", "data:text/html,<script>alert(1)</script>");
+        }
+        // Should fall back to HOST/PORT when invalid scheme detected
+        let result = omni_base_url();
+        assert!(result.starts_with("http://"));
+        assert!(!result.contains("data:"));
+        unsafe {
+            std::env::remove_var("PUBLIC_BASE_URL");
+        }
+    }
+
+    #[test]
+    fn test_omni_base_url_rejects_file_scheme() {
+        unsafe {
+            std::env::set_var("PUBLIC_BASE_URL", "file:///etc/passwd");
+        }
+        // Should fall back to HOST/PORT when invalid scheme detected
+        let result = omni_base_url();
+        assert!(result.starts_with("http://"));
+        assert!(!result.contains("file://"));
+        unsafe {
+            std::env::remove_var("PUBLIC_BASE_URL");
+        }
+    }
+
+    #[test]
+    fn test_omni_base_url_rejects_invalid_url() {
+        unsafe {
+            std::env::set_var("PUBLIC_BASE_URL", "not-a-valid-url");
+        }
+        // Should fall back to HOST/PORT when URL parsing fails
+        let result = omni_base_url();
+        assert_eq!(result, "http://127.0.0.1:8887");
+        unsafe {
+            std::env::remove_var("PUBLIC_BASE_URL");
+        }
+    }
+
+    #[test]
+    fn test_sanitize_hostname_removes_newlines() {
+        let malicious = "evil.com\nX-Injected: true";
+        let sanitized = sanitize_hostname(malicious);
+        assert_eq!(sanitized, "evil.comX-Injectedtrue");
+        assert!(!sanitized.contains('\n'));
+    }
+
+    #[test]
+    fn test_sanitize_hostname_allows_ipv4() {
+        let ipv4 = "192.168.1.1";
+        let sanitized = sanitize_hostname(ipv4);
+        assert_eq!(sanitized, ipv4);
+    }
+
+    #[test]
+    fn test_sanitize_hostname_allows_ipv6() {
+        let ipv6 = "[::1]";
+        let sanitized = sanitize_hostname(ipv6);
+        assert_eq!(sanitized, ipv6);
+
+        let ipv6_full = "[2001:db8::1]";
+        let sanitized_full = sanitize_hostname(ipv6_full);
+        assert_eq!(sanitized_full, ipv6_full);
+    }
+
+    #[test]
+    fn test_sanitize_hostname_allows_valid_domains() {
+        let domain = "api.example-test.com";
+        let sanitized = sanitize_hostname(domain);
+        assert_eq!(sanitized, domain);
+    }
+
+    #[test]
+    fn test_sanitize_hostname_removes_special_chars() {
+        let malicious = "evil.com?param=value";
+        let sanitized = sanitize_hostname(malicious);
+        assert_eq!(sanitized, "evil.comparamvalue");
+        assert!(!sanitized.contains('?'));
+    }
+
+    #[test]
+    fn test_sanitize_port_removes_non_digits() {
+        let malicious = "8080?evil=param";
+        let sanitized = sanitize_port(malicious);
+        assert_eq!(sanitized, "8080");
+    }
+
+    #[test]
+    fn test_sanitize_port_removes_newlines() {
+        let malicious = "8080\nX-Injected: true";
+        let sanitized = sanitize_port(malicious);
+        assert_eq!(sanitized, "8080");
+        assert!(!sanitized.contains('\n'));
+    }
+
+    #[test]
+    fn test_sanitize_port_allows_valid_port() {
+        let valid = "8887";
+        let sanitized = sanitize_port(valid);
+        assert_eq!(sanitized, valid);
+    }
+
+    #[test]
+    fn test_omni_base_url_sanitizes_host_injection() {
+        unsafe {
+            std::env::remove_var("PUBLIC_BASE_URL");
+            std::env::set_var("HOST", "evil.com\nX-Injected: header");
+            std::env::set_var("BACKEND_PORT", "8080");
+        }
+        let result = omni_base_url();
+        assert_eq!(result, "http://evil.comX-Injectedheader:8080");
+        assert!(!result.contains('\n'));
+        unsafe {
+            std::env::remove_var("HOST");
+            std::env::remove_var("BACKEND_PORT");
+        }
+    }
+
+    #[test]
+    fn test_omni_base_url_sanitizes_port_injection() {
+        unsafe {
+            std::env::remove_var("PUBLIC_BASE_URL");
+            std::env::set_var("HOST", "localhost");
+            std::env::set_var("BACKEND_PORT", "8080?evil=param");
+        }
+        let result = omni_base_url();
+        assert_eq!(result, "http://localhost:8080");
+        assert!(!result.contains('?'));
+        unsafe {
+            std::env::remove_var("HOST");
+            std::env::remove_var("BACKEND_PORT");
+        }
+    }
+
+    #[test]
+    fn test_omni_base_url_accepts_valid_https() {
+        unsafe {
+            std::env::set_var("PUBLIC_BASE_URL", "https://secure.example.com");
+        }
+        let result = omni_base_url();
+        assert_eq!(result, "https://secure.example.com");
+        unsafe {
+            std::env::remove_var("PUBLIC_BASE_URL");
+        }
+    }
+
+    #[test]
+    fn test_omni_base_url_accepts_valid_http() {
+        unsafe {
+            std::env::set_var("PUBLIC_BASE_URL", "http://local.example.com");
+        }
+        let result = omni_base_url();
+        assert_eq!(result, "http://local.example.com");
+        unsafe {
+            std::env::remove_var("PUBLIC_BASE_URL");
         }
     }
 }
