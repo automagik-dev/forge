@@ -1033,6 +1033,144 @@ async fn forge_follow_up(
     .await
 }
 
+/// Forge override for get_task_attempt_branch_status
+/// Adds remote_commits_behind and remote_commits_ahead calculation
+///
+/// TODO: Remove this override when forge-core fix is merged
+/// Upstream issue: https://github.com/namastexlabs/forge-core/issues/TBD (will be created in Track 2)
+/// Tracking issue: https://github.com/namastexlabs/automagik-forge/issues/TBD (will be created in Track 2)
+///
+/// This override wraps the upstream implementation and adds calculation for remote_commits_behind
+/// and remote_commits_ahead by comparing the local branch against its remote tracking branch
+/// (e.g., forge/task-xyz vs origin/forge/task-xyz). These values are needed for the
+/// UpdateNeededBadge and PushToPRButton components.
+async fn forge_get_task_attempt_branch_status(
+    axum::Extension(task_attempt): axum::Extension<TaskAttempt>,
+    State(deployment): State<DeploymentImpl>,
+) -> Result<Json<ApiResponse<Value>>, ApiError> {
+    use std::process::Command;
+
+    // Call upstream to get basic branch status - this returns all the standard fields
+    // We'll then augment it with remote tracking information
+    let upstream_result = task_attempts::get_task_attempt_branch_status(
+        axum::Extension(task_attempt.clone()),
+        State(deployment.clone()),
+    )
+    .await;
+
+    // If upstream fails, propagate the error
+    let Json(api_response) = upstream_result?;
+
+    // Serialize the ApiResponse to JSON so we can modify it
+    let branch_status_value = serde_json::to_value(&api_response)
+        .map_err(|e| {
+            ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
+                format!("Failed to serialize upstream response: {}", e)
+            ))
+        })?;
+
+    // Extract the actual data object (ApiResponse has a wrapper structure)
+    let mut branch_status = if let Some(data) = branch_status_value.get("data").cloned() {
+        data
+    } else if branch_status_value.is_object() {
+        // If it's already the data object, use it directly
+        branch_status_value.clone()
+    } else {
+        // Fallback: serialize the response to Value and return
+        let fallback_value = serde_json::to_value(&api_response).unwrap_or(json!({}));
+        return Ok(Json(ApiResponse::success(fallback_value)));
+    };
+
+    // Get worktree path from task attempt's container_ref
+    // container_ref is an Option, so we need to unwrap it or use a default
+    let container_ref_str = task_attempt.container_ref.as_ref()
+        .ok_or_else(|| {
+            ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
+                "Task attempt has no container_ref".to_string()
+            ))
+        })?;
+    let worktree_path = std::path::PathBuf::from(container_ref_str);
+
+    // Get current branch in the worktree
+    let current_branch_output = Command::new("git")
+        .current_dir(&worktree_path)
+        .args(&["rev-parse", "--abbrev-ref", "HEAD"])
+        .output();
+
+    let current_branch = match current_branch_output {
+        Ok(output) if output.status.success() => {
+            String::from_utf8_lossy(&output.stdout).trim().to_string()
+        }
+        _ => {
+            tracing::warn!(
+                "Failed to get current branch for task attempt {}, cannot calculate remote commits",
+                task_attempt.id
+            );
+            // Return upstream response as-is if we can't get the current branch
+            // We already have branch_status as Value, so return that
+            return Ok(Json(ApiResponse::success(branch_status)));
+        }
+    };
+
+    // Fetch from remote to ensure we have latest refs (don't fail if this fails)
+    let _ = Command::new("git")
+        .current_dir(&worktree_path)
+        .args(&["fetch", "origin", &current_branch])
+        .output();
+
+    // Get remote tracking branch (e.g., origin/forge/task-xyz)
+    let remote_tracking_branch = format!("origin/{}", current_branch);
+
+    let remote_commits_output = Command::new("git")
+        .current_dir(&worktree_path)
+        .args(&[
+            "rev-list",
+            "--left-right",
+            "--count",
+            &format!("{}...{}", remote_tracking_branch, current_branch),
+        ])
+        .output();
+
+    let (remote_commits_behind, remote_commits_ahead) = match remote_commits_output {
+        Ok(output) if output.status.success() => {
+            let output_str = String::from_utf8_lossy(&output.stdout);
+            let parts: Vec<&str> = output_str.trim().split_whitespace().collect();
+            if parts.len() == 2 {
+                (
+                    parts[0].parse::<i32>().ok(),
+                    parts[1].parse::<i32>().ok(),
+                )
+            } else {
+                (None, None)
+            }
+        }
+        _ => {
+            // Remote tracking branch might not exist yet (e.g., new local branch not pushed)
+            tracing::debug!(
+                "Remote tracking branch {} not found for task attempt {}, likely not pushed yet",
+                remote_tracking_branch,
+                task_attempt.id
+            );
+            (None, None)
+        }
+    };
+
+    // Add the calculated values to the branch status
+    if let Some(obj) = branch_status.as_object_mut() {
+        obj.insert(
+            "remote_commits_behind".to_string(),
+            json!(remote_commits_behind),
+        );
+        obj.insert(
+            "remote_commits_ahead".to_string(),
+            json!(remote_commits_ahead),
+        );
+    }
+
+    // Return the augmented response
+    Ok(Json(ApiResponse::success(branch_status)))
+}
+
 /// Build task_attempts router with forge override for create endpoint
 fn build_task_attempts_router_with_forge_override(
     deployment: &DeploymentImpl,
@@ -1059,7 +1197,7 @@ fn build_task_attempts_router_with_forge_override(
         .route("/start-dev-server", post(task_attempts::start_dev_server))
         .route(
             "/branch-status",
-            get(task_attempts::get_task_attempt_branch_status),
+            get(forge_get_task_attempt_branch_status), // Forge override to calculate remote_commits_behind/ahead
         )
         .route("/diff/ws", get(task_attempts::stream_task_attempt_diff_ws))
         .route("/merge", post(task_attempts::merge_task_attempt))
