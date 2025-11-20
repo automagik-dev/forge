@@ -57,6 +57,8 @@ export function Breadcrumb() {
 
   // Fetch branches for change target branch dialog
   const [branches, setBranches] = useState<GitBranchType[]>([]);
+  const [branchesLoading, setBranchesLoading] = useState(false);
+  const [branchesError, setBranchesError] = useState(false);
 
   // Change target branch mutation
   const changeTargetBranchMutation = useChangeTargetBranch(
@@ -73,10 +75,22 @@ export function Breadcrumb() {
   useEffect(() => {
     if (!projectId) return;
 
+    setBranchesLoading(true);
+    setBranchesError(false);
+
     projectsApi
       .getBranches(projectId)
-      .then(setBranches)
-      .catch(() => setBranches([]));
+      .then((branches) => {
+        setBranches(branches);
+        setBranchesError(false);
+      })
+      .catch(() => {
+        setBranches([]);
+        setBranchesError(true);
+      })
+      .finally(() => {
+        setBranchesLoading(false);
+      });
   }, [projectId]);
 
   // Use default base branch hook for board view
@@ -84,7 +98,11 @@ export function Breadcrumb() {
 
   // Determine the effective base branch for board view
   // Priority: 1) Valid saved preference, 2) Current branch from git
+  // Returns null while loading to prevent showing incorrect branch
   const effectiveBaseBranch = useMemo(() => {
+    // Don't calculate until branches are loaded
+    if (branchesLoading) return null;
+
     // Validate that saved defaultBranch still exists in available branches
     const isDefaultBranchValid = defaultBranch && branches.some((b) => b.name === defaultBranch);
 
@@ -92,13 +110,14 @@ export function Breadcrumb() {
 
     // Fallback to current branch if no valid preference
     const currentBranch = branches.find((b) => b.is_current);
-    return currentBranch?.name ?? 'main';
-  }, [defaultBranch, branches]);
+    return currentBranch?.name ?? null;
+  }, [defaultBranch, branches, branchesLoading]);
 
   // Get project branch status for board view (when no attempt selected)
   // Use effectiveBaseBranch to compare against user's chosen base branch
+  // Convert null to undefined for the hook
   const { data: projectBranchStatus, refetch: refetchProjectBranchStatus } =
-    useProjectBranchStatus(projectId, effectiveBaseBranch);
+    useProjectBranchStatus(projectId, effectiveBaseBranch ?? undefined);
 
   // Calculate conflicts for disabling change target branch button
   const hasConflictsCalculated = useMemo(
@@ -232,12 +251,29 @@ export function Breadcrumb() {
       } else {
         // Board view or task view without attempt
         // Show default base branch in board view (when no task is selected)
-        if (!taskId) {
+        // Only render when branches are loaded and we have a valid branch
+        if (!taskId && effectiveBaseBranch) {
           crumbs.push({
             label: effectiveBaseBranch,
             path: location.pathname,
             type: 'board-base-branch',
             icon: <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
+          });
+        } else if (!taskId && branchesLoading) {
+          // Show loading placeholder for branch
+          crumbs.push({
+            label: '...',
+            path: location.pathname,
+            type: 'board-base-branch',
+            icon: <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0 animate-pulse" />,
+          });
+        } else if (!taskId && branchesError) {
+          // Show error state
+          crumbs.push({
+            label: 'Error loading branches',
+            path: location.pathname,
+            type: 'board-base-branch',
+            icon: <GitMerge className="h-3.5 w-3.5 text-destructive shrink-0" />,
           });
         }
 
