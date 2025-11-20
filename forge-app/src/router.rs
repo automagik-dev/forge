@@ -1037,8 +1037,8 @@ async fn forge_follow_up(
 /// Adds remote_commits_behind and remote_commits_ahead calculation
 ///
 /// TODO: Remove this override when forge-core fix is merged
-/// Upstream issue: https://github.com/namastexlabs/forge-core/issues/TBD (will be created in Track 2)
-/// Tracking issue: https://github.com/namastexlabs/automagik-forge/issues/TBD (will be created in Track 2)
+/// Upstream: namastexlabs/forge-core (issues disabled - cannot report)
+/// Tracking issue: https://github.com/automagik-dev/forge/issues/232
 ///
 /// This override wraps the upstream implementation and adds calculation for remote_commits_behind
 /// and remote_commits_ahead by comparing the local branch against its remote tracking branch
