@@ -108,6 +108,8 @@ vibe-kanban-cloud/
 *.jks
 
 forge.db
+forge.db.backup-*
+forge.db.before-*
 
 # Upstream submodule removed - ignore leftover directory
 upstream/ 

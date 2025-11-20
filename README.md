@@ -392,7 +392,7 @@ git push origin main --force
 NAMASTEX_TAG="${LATEST_TAG%-*}-namastex"
 git tag -a $NAMASTEX_TAG -m "Namastex release based on $LATEST_TAG"
 git push origin $NAMASTEX_TAG
-gh release create $NAMASTEX_TAG --repo namastexlabs/vibe-kanban --title "$NAMASTEX_TAG" --notes "Based on $LATEST_TAG"
+gh release create $NAMASTEX_TAG --repo automagik.dev/vibe-kanban --title "$NAMASTEX_TAG" --notes "Based on $LATEST_TAG"
 
 # 3. Update gitmodule (in automagik-forge repo)
 cd upstream

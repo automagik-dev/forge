@@ -1,12 +1,12 @@
 ---
 name: review
-description: Universal review orchestrator - wish audits, code review, and QA
-  validation with evidence-based verdicts (all domains)
+description: Universal review orchestrator - wish audits, code review, and QA validation with evidence-based verdicts (all domains)
 forge_profile_name: DEFAULT
 genie:
   executor:
     - CLAUDE_CODE
     - CODEX
+    - OPENCODE
   background: true
 forge:
   CLAUDE_CODE:

@@ -1,9 +1,11 @@
 ---
 name: forge
-description: Universal forge orchestrator - breaks wishes into execution groups
-  with task files and validation (all domains)
+description: Universal forge orchestrator - breaks wishes into execution groups with task files and validation (all domains)
 genie:
-  executor: OPENCODE
+  executor:
+    - CLAUDE_CODE
+    - CODEX
+    - OPENCODE
   background: true
 forge:
   CLAUDE_CODE:
