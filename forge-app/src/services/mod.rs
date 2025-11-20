@@ -760,6 +760,7 @@ mod tests {
     }
 
     #[tokio::test(flavor = "multi_thread")]
+    #[serial_test::serial]
     async fn process_next_notification_marks_sent() {
         let pool = setup_pool().await;
         let project_id = Uuid::new_v4();
@@ -850,6 +851,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn omni_base_url_respects_env_vars() {
         let previous_public = std::env::var("PUBLIC_BASE_URL").ok();
         let previous_host = std::env::var("HOST").ok();
@@ -907,6 +909,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_omni_base_url_rejects_javascript_scheme() {
         unsafe {
             std::env::set_var("PUBLIC_BASE_URL", "javascript:alert(1)");
@@ -921,6 +924,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_omni_base_url_rejects_data_scheme() {
         unsafe {
             std::env::set_var("PUBLIC_BASE_URL", "data:text/html,<script>alert(1)</script>");
@@ -935,6 +939,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_omni_base_url_rejects_file_scheme() {
         unsafe {
             std::env::set_var("PUBLIC_BASE_URL", "file:///etc/passwd");
@@ -949,6 +954,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_omni_base_url_rejects_invalid_url() {
         unsafe {
             std::env::set_var("PUBLIC_BASE_URL", "not-a-valid-url");
@@ -1025,6 +1031,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_omni_base_url_sanitizes_host_injection() {
         unsafe {
             std::env::remove_var("PUBLIC_BASE_URL");
@@ -1041,6 +1048,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_omni_base_url_sanitizes_port_injection() {
         unsafe {
             std::env::remove_var("PUBLIC_BASE_URL");
@@ -1057,6 +1065,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_omni_base_url_accepts_valid_https() {
         unsafe {
             std::env::set_var("PUBLIC_BASE_URL", "https://secure.example.com");
@@ -1069,6 +1078,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_omni_base_url_accepts_valid_http() {
         unsafe {
             std::env::set_var("PUBLIC_BASE_URL", "http://local.example.com");

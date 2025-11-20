@@ -72,3 +72,4 @@ android = ["jni", "android_logger"]
 
 [dev-dependencies]
 httpmock = "0.7"
+serial_test = "3.0"
