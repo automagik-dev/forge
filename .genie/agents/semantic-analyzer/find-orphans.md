@@ -2,7 +2,10 @@
 name: find-orphans
 description: Detect markdown files with no incoming @ references (orphaned documentation)
 genie:
-  executor: OPENCODE
+  executor:
+    - CLAUDE_CODE
+    - CODEX
+    - OPENCODE
   background: false
 forge:
   CLAUDE_CODE:
