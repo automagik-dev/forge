@@ -1780,7 +1780,7 @@ async fn get_github_releases() -> Result<Json<ApiResponse<Vec<GitHubRelease>>>, 
     let client = reqwest::Client::new();
 
     match client
-        .get("https://api.github.com/repos/namastexlabs/automagik-forge/releases")
+        .get("https://api.github.com/repos/automagik.dev/automagik-forge/releases")
         .header("User-Agent", "automagik-forge")
         .header("Accept", "application/vnd.github+json")
         .send()

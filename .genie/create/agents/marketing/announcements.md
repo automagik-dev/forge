@@ -64,7 +64,7 @@ npm install -g automagik-genie@{latest|next}
 
 **Command:**
 ```bash
-gh api repos/namastexlabs/automagik-genie/discussions \
+gh api repos/automagik.dev/automagik-genie/discussions \
   --method POST \
   -f category_id={ANNOUNCEMENTS_CATEGORY} \
   -f title="🧞 Genie v{VERSION} Released!" \
