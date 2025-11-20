@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDevserverPreview } from '@/hooks/useDevserverPreview';
 import { useDevServer } from '@/hooks/useDevServer';
@@ -23,6 +23,7 @@ export function PreviewPanel() {
   const [isReady, setIsReady] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showLogs, setShowLogs] = useState(false);
+  const [copiedError, setCopiedError] = useState(false);
   const listenerRef = useRef<ClickToComponentListener | null>(null);
 
   const { t } = useTranslation('tasks');
@@ -104,15 +105,22 @@ export function PreviewPanel() {
     };
   }, [previewState.status, previewState.url, addElement]);
 
-  // Auto-show logs when dev server is running but not ready
+  // Detect if dev server has failed
+  const devServerFailed = useMemo(() => {
+    return latestDevServerProcess?.status === 'failed';
+  }, [latestDevServerProcess?.status]);
+
+  // Auto-show logs when dev server is running but not ready or when failed
   useEffect(() => {
-    if (runningDevServer && !isReady && latestDevServerProcess) {
+    if (devServerFailed) {
+      setShowLogs(true);
+    } else if (runningDevServer && !isReady && latestDevServerProcess) {
       // Only show logs if actively building or in error state
       if (buildState === 'building' || buildState === 'error' || buildState === 'idle') {
         setShowLogs(true);
       }
     }
-  }, [buildState, isReady, latestDevServerProcess, runningDevServer]);
+  }, [buildState, isReady, latestDevServerProcess, runningDevServer, devServerFailed]);
 
   const isPreviewReady =
     previewState.status === 'ready' &&
@@ -136,6 +144,26 @@ export function PreviewPanel() {
 
   const handleStopAndEdit = () => {
     stopDevServer();
+  };
+
+  const handleCopyError = async () => {
+    if (!logStream.logs || logStream.logs.length === 0) {
+      return;
+    }
+
+    try {
+      const logsText = logStream.logs
+        .map((log) => `[${log.type}] ${log.content}`)
+        .join('\n');
+
+      const errorSummary = `Dev server startup failed. Here are the logs:\n\n${logsText}`;
+      await navigator.clipboard.writeText(errorSummary);
+      setCopiedError(true);
+
+      setTimeout(() => setCopiedError(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy error:', err);
+    }
   };
 
   if (!attemptId) {
@@ -199,8 +227,56 @@ export function PreviewPanel() {
           </Alert>
         )}
 
+        {/* Failed server state - show clear error message with copy button */}
+        {devServerFailed && (
+          <Alert variant="destructive" className="space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  <p className="font-bold text-lg">Dev Server Startup Failed</p>
+                </div>
+                <p className="text-sm">
+                  The dev server failed to start. Check the logs below for details.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="destructive"
+                    onClick={handleCopyError}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    {copiedError ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        Copy Error for Genie
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleStartDevServer}
+                    disabled={isStartingDevServer}
+                    size="sm"
+                  >
+                    {isStartingDevServer && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Retry
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Alert>
+        )}
+
         {/* Idle/Error state - show troubleshooting message */}
-        {(buildState === 'idle' || buildState === 'error') && runningDevServer && !isReady && (
+        {!devServerFailed && (buildState === 'idle' || buildState === 'error') && runningDevServer && !isReady && (
           <Alert variant="destructive" className="space-y-2">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 space-y-2">
