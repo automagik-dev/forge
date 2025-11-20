@@ -595,11 +595,23 @@ fn omni_base_url() -> String {
 }
 
 /// Sanitize hostname to prevent injection attacks
-/// Allows: alphanumeric, dots, hyphens, colons (for IPv6), square brackets (for IPv6)
+/// Allows: alphanumeric, dots, hyphens
+/// Also allows colons and square brackets only for IPv6 addresses (when wrapped in brackets or contains multiple colons)
 fn sanitize_hostname(host: &str) -> String {
-    host.chars()
-        .filter(|c| c.is_alphanumeric() || *c == '.' || *c == '-' || *c == ':' || *c == '[' || *c == ']')
-        .collect()
+    // Check if this looks like an IPv6 address (contains [ or has multiple colons)
+    let is_ipv6 = host.starts_with('[') || host.matches(':').count() > 1;
+
+    if is_ipv6 {
+        // For IPv6, allow colons and square brackets
+        host.chars()
+            .filter(|c| c.is_alphanumeric() || *c == '.' || *c == '-' || *c == ':' || *c == '[' || *c == ']')
+            .collect()
+    } else {
+        // For regular hostnames, don't allow colons (prevents header injection)
+        host.chars()
+            .filter(|c| c.is_alphanumeric() || *c == '.' || *c == '-')
+            .collect()
+    }
 }
 
 /// Sanitize port to prevent injection attacks
