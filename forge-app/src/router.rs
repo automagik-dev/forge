@@ -1112,14 +1112,36 @@ async fn forge_get_task_attempt_branch_status(
         }
     };
 
-    // Fetch from remote to ensure we have latest refs (don't fail if this fails)
-    let _ = Command::new("git")
+    // Get the configured upstream tracking branch (e.g., origin/forge/task-xyz, upstream/main, etc.)
+    let upstream_output = Command::new("git")
         .current_dir(&worktree_path)
-        .args(&["fetch", "origin", &current_branch])
+        .args(&["rev-parse", "--abbrev-ref", "@{u}"])
         .output();
 
-    // Get remote tracking branch (e.g., origin/forge/task-xyz)
-    let remote_tracking_branch = format!("origin/{}", current_branch);
+    let remote_tracking_branch = match upstream_output {
+        Ok(output) if output.status.success() => {
+            String::from_utf8_lossy(&output.stdout).trim().to_string()
+        }
+        _ => {
+            // No upstream configured - branch might not be pushed yet
+            tracing::debug!(
+                "No upstream tracking branch for {} in task attempt {}, cannot calculate remote commits",
+                current_branch,
+                task_attempt.id
+            );
+            // Return upstream response as-is if no tracking branch exists
+            return Ok(Json(ApiResponse::success(branch_status)));
+        }
+    };
+
+    // Fetch from remote to ensure we have latest refs (don't fail if this fails)
+    // Extract remote name from tracking branch (e.g., "origin" from "origin/branch")
+    if let Some(remote_name) = remote_tracking_branch.split('/').next() {
+        let _ = Command::new("git")
+            .current_dir(&worktree_path)
+            .args(&["fetch", remote_name, &current_branch])
+            .output();
+    }
 
     let remote_commits_output = Command::new("git")
         .current_dir(&worktree_path)
