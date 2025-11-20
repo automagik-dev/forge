@@ -1668,29 +1668,42 @@ async fn get_project_branch_status(
         _ => (None, None),
     };
 
-    // Compare local branch to its remote tracking branch (e.g., forge/task-xyz vs origin/forge/task-xyz)
+    // Get the configured upstream tracking branch (e.g., origin/main, upstream/main, etc.)
     // This tells us if we need to push (local ahead) or pull (remote ahead)
-    let remote_tracking_branch = format!("origin/{}", current_branch);
-    let remote_commits_output = Command::new("git")
+    let upstream_output = Command::new("git")
         .current_dir(&project.git_repo_path)
-        .args(&["rev-list", "--left-right", "--count", &format!("{}...{}", remote_tracking_branch, current_branch)])
+        .args(&["rev-parse", "--abbrev-ref", "@{u}"])
         .output();
 
-    let (remote_commits_behind, remote_commits_ahead) = match remote_commits_output {
+    let (remote_commits_behind, remote_commits_ahead) = match upstream_output {
         Ok(output) if output.status.success() => {
-            let output_str = String::from_utf8_lossy(&output.stdout);
-            let parts: Vec<&str> = output_str.trim().split_whitespace().collect();
-            if parts.len() == 2 {
-                (
-                    parts[0].parse::<i32>().ok(),
-                    parts[1].parse::<i32>().ok(),
-                )
-            } else {
-                (None, None)
+            let remote_tracking_branch = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+            // Compare local to its configured upstream
+            let remote_commits_output = Command::new("git")
+                .current_dir(&project.git_repo_path)
+                .args(&["rev-list", "--left-right", "--count", &format!("{}...{}", remote_tracking_branch, current_branch)])
+                .output();
+
+            match remote_commits_output {
+                Ok(output) if output.status.success() => {
+                    let output_str = String::from_utf8_lossy(&output.stdout);
+                    let parts: Vec<&str> = output_str.trim().split_whitespace().collect();
+                    if parts.len() == 2 {
+                        (
+                            parts[0].parse::<i32>().ok(),
+                            parts[1].parse::<i32>().ok(),
+                        )
+                    } else {
+                        (None, None)
+                    }
+                }
+                _ => (None, None)
             }
         }
         _ => {
-            // Remote tracking branch might not exist yet (e.g., new local branch not pushed)
+            // No upstream tracking branch configured (e.g., new local branch not pushed)
+            tracing::debug!("No upstream tracking branch for {} in project {}", current_branch, project_id);
             (None, None)
         }
     };
