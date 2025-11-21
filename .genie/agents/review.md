@@ -1,6 +1,7 @@
 ---
 name: review
-description: Universal review orchestrator - wish audits, code review, and QA validation with evidence-based verdicts (all domains)
+description: Universal review orchestrator - wish audits, code review, and QA
+  validation with evidence-based verdicts (all domains)
 forge_profile_name: DEFAULT
 genie:
   executor:
@@ -11,6 +12,7 @@ genie:
 forge:
   CLAUDE_CODE:
     model: sonnet
+    dangerously_skip_permissions: true
   CODEX:
     model: gpt-5.1-codex
 ---

@@ -1,6 +1,7 @@
 ---
 name: forge
-description: Universal forge orchestrator - breaks wishes into execution groups with task files and validation (all domains)
+description: Universal forge orchestrator - breaks wishes into execution groups
+  with task files and validation (all domains)
 genie:
   executor:
     - CLAUDE_CODE
@@ -10,6 +11,7 @@ genie:
 forge:
   CLAUDE_CODE:
     model: sonnet
+    dangerously_skip_permissions: true
   CODEX:
     model: gpt-5-codex
   OPENCODE:
