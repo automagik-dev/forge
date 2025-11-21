@@ -98,6 +98,11 @@ vibe-kanban-cloud/
 .genie.backup-*
 .genie/backups/
 
+# Genie helper scripts dependencies
+.genie/scripts/helpers/package.json
+.genie/scripts/helpers/package-lock.json
+.genie/scripts/helpers/node_modules/
+
 # Build marker for incremental builds
 .build_commit
 /.sqlx/
@@ -108,6 +113,8 @@ vibe-kanban-cloud/
 *.jks
 
 forge.db
+forge.db.backup-*
+forge.db.before-*
 
 # Upstream submodule removed - ignore leftover directory
 upstream/ 

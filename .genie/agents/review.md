@@ -2,16 +2,19 @@
 name: review
 description: Universal review orchestrator - wish audits, code review, and QA
   validation with evidence-based verdicts (all domains)
+forge_profile_name: DEFAULT
 genie:
-  executor: OPENCODE
+  executor:
+    - CLAUDE_CODE
+    - CODEX
+    - OPENCODE
   background: true
 forge:
   CLAUDE_CODE:
     model: sonnet
+    dangerously_skip_permissions: true
   CODEX:
-    model: gpt-5-codex
-  OPENCODE:
-    model: opencode/glm-4.6
+    model: gpt-5.1-codex
 ---
 
 ## Framework Reference

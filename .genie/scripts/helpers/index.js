@@ -208,6 +208,18 @@ const HELPERS = {
       '$ genie helper create-frontmatter .genie/agents/my-agent.md',
       '$ genie helper create-frontmatter .genie/spells/learn.md --type=spell'
     ]
+  },
+  'check-permissions': {
+    script: 'check-permissions.js',
+    description: 'Validate dangerously_skip_permissions settings in agent frontmatter',
+    usage: [
+      'genie helper check-permissions',
+      'genie helper check-permissions --fix'
+    ],
+    examples: [
+      '$ genie helper check-permissions',
+      '$ genie helper check-permissions --fix'
+    ]
   }
 };
 

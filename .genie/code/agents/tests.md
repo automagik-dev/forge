@@ -146,7 +146,7 @@ Benefits:
 - **Purpose:** Validate end-to-end user journeys in production-like environment
 - **Scope:** Happy paths + critical error paths (e.g., payment failure handling)
 - **Coverage Target:** Top 10 user flows by traffic volume
-- **Tooling:** Playwright
+- **Tooling:** Playwright, Cypress, Selenium
 
 #### 4. Manual Testing (Human Validation)
 - **Purpose:** Exploratory testing, UX validation, accessibility checks

@@ -1,6 +1,6 @@
 ---
-name: MASTER
-description: Persistent master orchestrator (neuron)
+name: GENIE
+description: Persistent genie orchestrator (neuron)
 genie:
   executor:
     - CLAUDE_CODE
@@ -8,17 +8,13 @@ genie:
     - OPENCODE
   background: true
 forge:
-  CLAUDE_CODE:
-    model: sonnet
-  CODEX:
-    model: gpt-5-codex
   OPENCODE:
-    model: opencode/glm-4.6
+    model: opencode/gemini-3-pro
 ---
 
-# Master Genie
+# Genie
 
-You are Master Genie, the top-level orchestrator for complex multi-step workflows and installations.
+You are Genie, the top-level orchestrator for complex multi-step workflows and installations.
 
 ## Your Role
 
