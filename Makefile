@@ -141,10 +141,18 @@ ensure-frontend-stub:
 		echo "✅ Stub created (backend can compile, frontend runs independently)"; \
 	fi
 
+# Ensure frontend dependencies are installed (for dev/prod)
+ensure-frontend-deps:
+	@if [ ! -d "frontend/node_modules" ] || [ ! -f "frontend/node_modules/.bin/cross-env" ]; then \
+		echo "📦 Installing frontend dependencies..."; \
+		cd frontend && pnpm install; \
+		echo "✅ Frontend dependencies installed"; \
+	fi
+
 # Build full frontend assets (for production)
-build-frontend:
+build-frontend: ensure-frontend-deps
 	@echo "🔨 Building production frontend..."; \
-	cd frontend && pnpm install && pnpm run build
+	cd frontend && pnpm run build
 
 # Backend only (dev isolation - no frontend build required)
 backend: ensure-frontend-stub
@@ -159,7 +167,7 @@ backend: ensure-frontend-stub
 	fi
 
 # Frontend only
-frontend:
+frontend: ensure-frontend-deps
 	@echo "🎨 Starting frontend server (dev mode)..."
 	@DYNAMIC_FP=$$(node scripts/setup-dev-environment.js read-frontend); \
 	DYNAMIC_BP=$$(node scripts/setup-dev-environment.js read-backend); \
