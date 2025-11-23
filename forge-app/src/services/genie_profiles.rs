@@ -613,10 +613,18 @@ impl GenieProfileLoader {
     }
 
     /// Derive variant name from metadata and file info
-    /// Project scoping is handled by profile cache, so no prefix needed
+    /// Includes project prefix to prevent name collisions when multiple projects are loaded
     fn derive_variant_name(&self, metadata: &AgentFrontmatter, file: &AgentFile) -> String {
-        // Build the variant name based on agent type
-        if file.agent_type == AgentType::Neuron {
+        // Extract project name from workspace_root
+        let project_prefix = self
+            .workspace_root
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("unknown")
+            .to_case(Case::ScreamingSnake);
+
+        // Build base name based on agent type
+        let base_name = if file.agent_type == AgentType::Neuron {
             // Neurons: NAME
             metadata.name.to_case(Case::ScreamingSnake)
         } else if let Some(collective) = &file.collective {
@@ -627,7 +635,10 @@ impl GenieProfileLoader {
         } else {
             // Global agents: NAME
             metadata.name.to_case(Case::ScreamingSnake)
-        }
+        };
+
+        // Prefix with project name to ensure uniqueness across projects
+        format!("{}_{}", project_prefix, base_name)
     }
 
     /// Build CodingAgent from metadata
