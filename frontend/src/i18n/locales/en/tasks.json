@@ -287,6 +287,7 @@
     "baseBranch": "Base branch",
     "loadingBranches": "Loading branches...",
     "selectBranch": "Select branch",
+    "useWorktree": "Use isolated git worktree (recommended)",
     "error": "Failed to create attempt. Please try again.",
     "creating": "Creating...",
     "start": "Start"
