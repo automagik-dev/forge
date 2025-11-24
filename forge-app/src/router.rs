@@ -936,10 +936,7 @@ async fn handle_forge_tasks_ws(
                                 && let json_patch::PatchOperation::Replace(op) = patch_op
                                 && let Some(tasks_obj) = op.value.as_object()
                             {
-                                // Use cache for snapshot filtering too
-                                let cache = agent_task_ids.read().await;
-
-                                // Filter out agent tasks from the initial snapshot
+                                // Filter out agent tasks from the initial snapshot using hybrid approach
                                 let mut filtered_tasks = serde_json::Map::new();
                                 for (task_id_str, task_value) in tasks_obj {
                                     if let Ok(task_with_status) =
@@ -947,8 +944,45 @@ async fn handle_forge_tasks_ws(
                                             task_value.clone(),
                                         )
                                     {
-                                        // Check if this task is in the agent_task_ids cache
-                                        if !cache.contains(&task_with_status.task.id) {
+                                        let task_id = task_with_status.task.id;
+
+                                        // First check cache (read lock, released before any await)
+                                        let in_cache = {
+                                            let cache = agent_task_ids.read().await;
+                                            cache.contains(&task_id)
+                                        };
+
+                                        let is_agent = if in_cache {
+                                            true
+                                        } else {
+                                            // Fallback: DB query for tasks not in cache
+                                            // This ensures newly created agent tasks are filtered immediately
+                                            let is_agent_db: bool = sqlx::query_scalar(
+                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)",
+                                            )
+                                            .bind(task_id)
+                                            .fetch_one(&pool)
+                                            .await
+                                            .unwrap_or_else(|e| {
+                                                tracing::warn!(
+                                                    "Failed to check forge_agents for task {}: {}",
+                                                    task_id,
+                                                    e
+                                                );
+                                                false
+                                            });
+
+                                            // If it's an agent, update cache so subsequent patches don't hit DB
+                                            if is_agent_db {
+                                                let mut cache = agent_task_ids.write().await;
+                                                cache.insert(task_id);
+                                            }
+
+                                            is_agent_db
+                                        };
+
+                                        // Only include non-agent tasks in the filtered snapshot
+                                        if !is_agent {
                                             filtered_tasks.insert(
                                                 task_id_str.to_string(),
                                                 task_value.clone(),
