@@ -750,13 +750,17 @@ async fn handle_forge_tasks_ws(
         let agent_tasks: Vec<Uuid> = sqlx::query_scalar(
             "SELECT task_id FROM forge_agents fa
              INNER JOIN tasks t ON fa.task_id = t.id
-             WHERE t.project_id = ?"
+             WHERE t.project_id = ?",
         )
         .bind(project_id)
         .fetch_all(&pool)
         .await
         .unwrap_or_else(|e| {
-            tracing::warn!("Failed to fetch initial agent task IDs for project {}: {}", project_id, e);
+            tracing::warn!(
+                "Failed to fetch initial agent task IDs for project {}: {}",
+                project_id,
+                e
+            );
             Vec::new()
         });
 
@@ -764,10 +768,11 @@ async fn handle_forge_tasks_ws(
     };
 
     // Spawn background task to refresh agent task IDs periodically
+    // Store the handle so we can abort it when the WebSocket closes
     let refresh_cache = agent_task_ids.clone();
     let refresh_pool = pool.clone();
     let refresh_project_id = project_id;
-    tokio::spawn(async move {
+    let refresh_task_handle = tokio::spawn(async move {
         let mut interval = tokio::time::interval(Duration::from_secs(5));
         loop {
             interval.tick().await;
@@ -775,7 +780,7 @@ async fn handle_forge_tasks_ws(
             match sqlx::query_scalar::<_, Uuid>(
                 "SELECT task_id FROM forge_agents fa
                  INNER JOIN tasks t ON fa.task_id = t.id
-                 WHERE t.project_id = ?"
+                 WHERE t.project_id = ?",
             )
             .bind(refresh_project_id)
             .fetch_all(&refresh_pool)
@@ -785,10 +790,18 @@ async fn handle_forge_tasks_ws(
                     let mut cache = refresh_cache.write().await;
                     cache.clear();
                     cache.extend(tasks);
-                    tracing::trace!("Refreshed agent task cache for project {}: {} tasks", refresh_project_id, cache.len());
+                    tracing::trace!(
+                        "Refreshed agent task cache for project {}: {} tasks",
+                        refresh_project_id,
+                        cache.len()
+                    );
                 }
                 Err(e) => {
-                    tracing::warn!("Failed to refresh agent task cache for project {}: {}", refresh_project_id, e);
+                    tracing::warn!(
+                        "Failed to refresh agent task cache for project {}: {}",
+                        refresh_project_id,
+                        e
+                    );
                 }
             }
         }
@@ -818,7 +831,8 @@ async fn handle_forge_tasks_ws(
                                         {
                                             // Check cache instead of DB query (fixes N+1)
                                             let cache = agent_task_ids.read().await;
-                                            let is_agent = cache.contains(&task_with_status.task.id);
+                                            let is_agent =
+                                                cache.contains(&task_with_status.task.id);
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -835,7 +849,8 @@ async fn handle_forge_tasks_ws(
                                         {
                                             // Check cache instead of DB query (fixes N+1)
                                             let cache = agent_task_ids.read().await;
-                                            let is_agent = cache.contains(&task_with_status.task.id);
+                                            let is_agent =
+                                                cache.contains(&task_with_status.task.id);
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -921,6 +936,10 @@ async fn handle_forge_tasks_ws(
             }
         }
     }
+
+    // Cancel the background cache refresh task when WebSocket closes
+    refresh_task_handle.abort();
+
     Ok(())
 }
 
@@ -1062,12 +1081,11 @@ async fn forge_get_task_attempt_branch_status(
     let Json(api_response) = upstream_result?;
 
     // Serialize the ApiResponse to JSON so we can modify it
-    let branch_status_value = serde_json::to_value(&api_response)
-        .map_err(|e| {
-            ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
-                format!("Failed to serialize upstream response: {}", e)
-            ))
-        })?;
+    let branch_status_value = serde_json::to_value(&api_response).map_err(|e| {
+        ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
+            format!("Failed to serialize upstream response: {}", e),
+        ))
+    })?;
 
     // Extract the actual data object (ApiResponse has a wrapper structure)
     let mut branch_status = if let Some(data) = branch_status_value.get("data").cloned() {
@@ -1083,12 +1101,11 @@ async fn forge_get_task_attempt_branch_status(
 
     // Get worktree path from task attempt's container_ref
     // container_ref is an Option, so we need to unwrap it or use a default
-    let container_ref_str = task_attempt.container_ref.as_ref()
-        .ok_or_else(|| {
-            ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
-                "Task attempt has no container_ref".to_string()
-            ))
-        })?;
+    let container_ref_str = task_attempt.container_ref.as_ref().ok_or_else(|| {
+        ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
+            "Task attempt has no container_ref".to_string(),
+        ))
+    })?;
     let worktree_path = std::path::PathBuf::from(container_ref_str);
 
     // Get current branch in the worktree
@@ -1158,10 +1175,7 @@ async fn forge_get_task_attempt_branch_status(
             let output_str = String::from_utf8_lossy(&output.stdout);
             let parts: Vec<&str> = output_str.trim().split_whitespace().collect();
             if parts.len() == 2 {
-                (
-                    parts[0].parse::<i32>().ok(),
-                    parts[1].parse::<i32>().ok(),
-                )
+                (parts[0].parse::<i32>().ok(), parts[1].parse::<i32>().ok())
             } else {
                 (None, None)
             }
@@ -1631,7 +1645,10 @@ async fn get_project_branch_status(
             String::from_utf8_lossy(&output.stdout).trim().to_string()
         }
         _ => {
-            tracing::warn!("Failed to get current branch for project {}, defaulting to 'main'", project_id);
+            tracing::warn!(
+                "Failed to get current branch for project {}, defaulting to 'main'",
+                project_id
+            );
             "main".to_string()
         }
     };
@@ -1649,7 +1666,12 @@ async fn get_project_branch_status(
     let remote_branch = format!("origin/{}", target_branch);
     let commits_behind_ahead_output = Command::new("git")
         .current_dir(&project.git_repo_path)
-        .args(&["rev-list", "--left-right", "--count", &format!("{}...{}", remote_branch, current_branch)])
+        .args(&[
+            "rev-list",
+            "--left-right",
+            "--count",
+            &format!("{}...{}", remote_branch, current_branch),
+        ])
         .output();
 
     let (commits_behind, commits_ahead) = match commits_behind_ahead_output {
@@ -1657,10 +1679,7 @@ async fn get_project_branch_status(
             let output_str = String::from_utf8_lossy(&output.stdout);
             let parts: Vec<&str> = output_str.trim().split_whitespace().collect();
             if parts.len() == 2 {
-                (
-                    parts[0].parse::<i32>().ok(),
-                    parts[1].parse::<i32>().ok(),
-                )
+                (parts[0].parse::<i32>().ok(), parts[1].parse::<i32>().ok())
             } else {
                 (None, None)
             }
@@ -1682,7 +1701,12 @@ async fn get_project_branch_status(
             // Compare local to its configured upstream
             let remote_commits_output = Command::new("git")
                 .current_dir(&project.git_repo_path)
-                .args(&["rev-list", "--left-right", "--count", &format!("{}...{}", remote_tracking_branch, current_branch)])
+                .args(&[
+                    "rev-list",
+                    "--left-right",
+                    "--count",
+                    &format!("{}...{}", remote_tracking_branch, current_branch),
+                ])
                 .output();
 
             match remote_commits_output {
@@ -1690,20 +1714,21 @@ async fn get_project_branch_status(
                     let output_str = String::from_utf8_lossy(&output.stdout);
                     let parts: Vec<&str> = output_str.trim().split_whitespace().collect();
                     if parts.len() == 2 {
-                        (
-                            parts[0].parse::<i32>().ok(),
-                            parts[1].parse::<i32>().ok(),
-                        )
+                        (parts[0].parse::<i32>().ok(), parts[1].parse::<i32>().ok())
                     } else {
                         (None, None)
                     }
                 }
-                _ => (None, None)
+                _ => (None, None),
             }
         }
         _ => {
             // No upstream tracking branch configured (e.g., new local branch not pushed)
-            tracing::debug!("No upstream tracking branch for {} in project {}", current_branch, project_id);
+            tracing::debug!(
+                "No upstream tracking branch for {} in project {}",
+                current_branch,
+                project_id
+            );
             (None, None)
         }
     };
@@ -1720,7 +1745,11 @@ async fn get_project_branch_status(
             let status_lines: Vec<&str> = status_str.lines().collect();
             let uncommitted = status_lines.iter().filter(|l| !l.starts_with("??")).count();
             let untracked = status_lines.iter().filter(|l| l.starts_with("??")).count();
-            (!status_lines.is_empty(), Some(uncommitted as i32), Some(untracked as i32))
+            (
+                !status_lines.is_empty(),
+                Some(uncommitted as i32),
+                Some(untracked as i32),
+            )
         }
         _ => (false, None, None),
     };
@@ -1792,17 +1821,30 @@ async fn post_project_pull(
         }
         Ok(output) => {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            tracing::error!("Failed to get current branch for project {}: {}", project_id, stderr);
+            tracing::error!(
+                "Failed to get current branch for project {}: {}",
+                project_id,
+                stderr
+            );
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
         Err(e) => {
-            tracing::error!("Failed to execute git rev-parse for project {}: {}", project_id, e);
+            tracing::error!(
+                "Failed to execute git rev-parse for project {}: {}",
+                project_id,
+                e
+            );
             return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
     };
 
     // Run git pull to actually update the working tree
-    tracing::info!("Pulling updates for project {} branch {} at {:?}", project_id, current_branch, project.git_repo_path);
+    tracing::info!(
+        "Pulling updates for project {} branch {} at {:?}",
+        project_id,
+        current_branch,
+        project.git_repo_path
+    );
 
     let pull_output = Command::new("git")
         .current_dir(&project.git_repo_path)
@@ -1812,7 +1854,11 @@ async fn post_project_pull(
     match pull_output {
         Ok(output) if output.status.success() => {
             let stdout = String::from_utf8_lossy(&output.stdout);
-            tracing::info!("Successfully pulled updates for project {}: {}", project_id, stdout);
+            tracing::info!(
+                "Successfully pulled updates for project {}: {}",
+                project_id,
+                stdout
+            );
             Ok(Json(json!({
                 "success": true,
                 "message": format!("Successfully pulled updates from origin/{}", current_branch)
@@ -1824,19 +1870,33 @@ async fn post_project_pull(
 
             // Check if it's a merge conflict or dirty working tree
             if stderr.contains("conflict") || stderr.contains("Cannot rebase") {
-                tracing::warn!("Git pull conflict for project {}: {} {}", project_id, stdout, stderr);
+                tracing::warn!(
+                    "Git pull conflict for project {}: {} {}",
+                    project_id,
+                    stdout,
+                    stderr
+                );
                 Ok(Json(json!({
                     "success": false,
                     "message": "Cannot pull: working tree has conflicts or uncommitted changes. Please resolve manually.",
                     "details": stderr.to_string()
                 })))
             } else {
-                tracing::error!("Git pull failed for project {}: {} {}", project_id, stdout, stderr);
+                tracing::error!(
+                    "Git pull failed for project {}: {} {}",
+                    project_id,
+                    stdout,
+                    stderr
+                );
                 Err(StatusCode::INTERNAL_SERVER_ERROR)
             }
         }
         Err(e) => {
-            tracing::error!("Failed to execute git pull for project {}: {}", project_id, e);
+            tracing::error!(
+                "Failed to execute git pull for project {}: {}",
+                project_id,
+                e
+            );
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }

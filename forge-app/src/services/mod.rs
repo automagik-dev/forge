@@ -604,7 +604,9 @@ fn sanitize_hostname(host: &str) -> String {
     if is_ipv6 {
         // For IPv6, allow colons and square brackets
         host.chars()
-            .filter(|c| c.is_alphanumeric() || *c == '.' || *c == '-' || *c == ':' || *c == '[' || *c == ']')
+            .filter(|c| {
+                c.is_alphanumeric() || *c == '.' || *c == '-' || *c == ':' || *c == '[' || *c == ']'
+            })
             .collect()
     } else {
         // For regular hostnames, don't allow colons (prevents header injection)
@@ -927,7 +929,10 @@ mod tests {
     #[serial_test::serial]
     fn test_omni_base_url_rejects_data_scheme() {
         unsafe {
-            std::env::set_var("PUBLIC_BASE_URL", "data:text/html,<script>alert(1)</script>");
+            std::env::set_var(
+                "PUBLIC_BASE_URL",
+                "data:text/html,<script>alert(1)</script>",
+            );
         }
         // Should fall back to HOST/PORT when invalid scheme detected
         let result = omni_base_url();
