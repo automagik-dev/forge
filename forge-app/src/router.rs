@@ -808,13 +808,14 @@ async fn handle_forge_tasks_ws(
     });
 
     // Get the raw stream from upstream (includes initial snapshot + live updates)
-    // Filter out agent tasks by checking cache (no per-operation DB queries)
+    // Filter out agent tasks using cache with DB fallback for unknown tasks
     let stream = deployment
         .events()
         .stream_tasks_raw(project_id)
         .await?
         .filter_map(move |msg_result| {
             let agent_task_ids = agent_task_ids.clone();
+            let pool = pool.clone();
             async move {
                 match msg_result {
                     Ok(LogMsg::JsonPatch(patch)) => {
@@ -829,10 +830,42 @@ async fn handle_forge_tasks_ws(
                                                 op.value.clone(),
                                             )
                                         {
-                                            // Check cache instead of DB query (fixes N+1)
-                                            let cache = agent_task_ids.read().await;
-                                            let is_agent =
-                                                cache.contains(&task_with_status.task.id);
+                                            let task_id = task_with_status.task.id;
+
+                                            // First check cache (read lock, released before any await)
+                                            let in_cache = {
+                                                let cache = agent_task_ids.read().await;
+                                                cache.contains(&task_id)
+                                            };
+
+                                            let is_agent = if in_cache {
+                                                true
+                                            } else {
+                                                // Fallback: DB query for tasks not in cache
+                                                // This ensures newly created agent tasks are filtered immediately
+                                                let is_agent_db: bool = sqlx::query_scalar(
+                                                    "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)",
+                                                )
+                                                .bind(task_id)
+                                                .fetch_one(&pool)
+                                                .await
+                                                .unwrap_or_else(|e| {
+                                                    tracing::warn!(
+                                                        "Failed to check forge_agents for task {}: {}",
+                                                        task_id,
+                                                        e
+                                                    );
+                                                    false
+                                                });
+
+                                                // If it's an agent, update cache so subsequent patches don't hit DB
+                                                if is_agent_db {
+                                                    let mut cache = agent_task_ids.write().await;
+                                                    cache.insert(task_id);
+                                                }
+
+                                                is_agent_db
+                                            };
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -847,10 +880,42 @@ async fn handle_forge_tasks_ws(
                                                 op.value.clone(),
                                             )
                                         {
-                                            // Check cache instead of DB query (fixes N+1)
-                                            let cache = agent_task_ids.read().await;
-                                            let is_agent =
-                                                cache.contains(&task_with_status.task.id);
+                                            let task_id = task_with_status.task.id;
+
+                                            // First check cache (read lock, released before any await)
+                                            let in_cache = {
+                                                let cache = agent_task_ids.read().await;
+                                                cache.contains(&task_id)
+                                            };
+
+                                            let is_agent = if in_cache {
+                                                true
+                                            } else {
+                                                // Fallback: DB query for tasks not in cache
+                                                // This ensures newly created agent tasks are filtered immediately
+                                                let is_agent_db: bool = sqlx::query_scalar(
+                                                    "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)",
+                                                )
+                                                .bind(task_id)
+                                                .fetch_one(&pool)
+                                                .await
+                                                .unwrap_or_else(|e| {
+                                                    tracing::warn!(
+                                                        "Failed to check forge_agents for task {}: {}",
+                                                        task_id,
+                                                        e
+                                                    );
+                                                    false
+                                                });
+
+                                                // If it's an agent, update cache so subsequent patches don't hit DB
+                                                if is_agent_db {
+                                                    let mut cache = agent_task_ids.write().await;
+                                                    cache.insert(task_id);
+                                                }
+
+                                                is_agent_db
+                                            };
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
