@@ -392,13 +392,28 @@ test.describe('Journey 5: Real-Time Events - Complete Coverage', () => {
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(3000);
 
-      // THEN: Execution process stream should have received messages
+      // THEN: WebSocket connections should have been established
       console.log('Event Summary:\n' + getEventSummary(captured));
 
-      // Note: Execution processes stream connects but may not have messages
-      // if the attempt hasn't started any processes yet
-      // The key assertion is that the WebSocket connection was established
-      expect(captured.taskStream.length + captured.executionProcesses.length).toBeGreaterThanOrEqual(0);
+      // Assert that at least one WebSocket URL was captured (proves connection)
+      // The execution-processes stream may not emit messages if no processes started,
+      // but the task stream should always have initial snapshot on navigation
+      const hasTaskStreamConnection = captured.wsUrls.some(url =>
+        url.includes('/tasks/stream/ws')
+      );
+      const hasExecutionProcessConnection = captured.wsUrls.some(url =>
+        url.includes('/execution-processes/stream/ws')
+      );
+
+      // At minimum, task stream should connect when viewing attempt
+      expect(hasTaskStreamConnection || hasExecutionProcessConnection).toBe(true);
+
+      // If execution process stream connected, it should appear in URLs
+      if (hasExecutionProcessConnection) {
+        console.log('[PASS] Execution process WebSocket connection established');
+      } else {
+        console.log('[INFO] Execution process stream did not connect (attempt may not have started)');
+      }
     });
   });
 
