@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { attemptsApi, executionProcessesApi } from '@/lib/api';
 import { useAttemptExecution } from '@/hooks/useAttemptExecution';
+import { queryKeys } from '@/lib/queryKeys';
 import type { ExecutionProcess } from 'shared/types';
 import { usePostHog } from 'posthog-js/react';
 import type { DevServerStartedEvent, DevServerStoppedEvent } from '@/types/analytics';
@@ -52,7 +53,7 @@ export function useDevServer(
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: ['executionProcesses', attemptId],
+        queryKey: queryKeys.execution.processes(attemptId),
       });
 
       // Track dev_server_started event
@@ -96,11 +97,11 @@ export function useDevServer(
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: ['executionProcesses', attemptId],
+          queryKey: queryKeys.execution.processes(attemptId),
         }),
         runningDevServer
           ? queryClient.invalidateQueries({
-              queryKey: ['processDetails', runningDevServer.id],
+              queryKey: queryKeys.execution.processDetails(runningDevServer.id),
             })
           : Promise.resolve(),
       ]);

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { attemptsApi } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { TaskAttempt } from 'shared/types';
 
 /**
@@ -28,7 +29,7 @@ export function useBranchStatus(attemptId?: string, attempt?: TaskAttempt | null
   const isVisible = useDocumentVisible();
 
   return useQuery({
-    queryKey: ['branchStatus', attemptId],
+    queryKey: queryKeys.branch.status(attemptId),
     queryFn: () => attemptsApi.getBranchStatus(attemptId!),
     enabled: !!attemptId && hasContainer,
     // Smart polling: 15s when visible, 60s when backgrounded

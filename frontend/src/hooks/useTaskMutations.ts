@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigateWithSearch } from '@/hooks';
 import { tasksApi, attemptsApi } from '@/lib/api';
 import { paths } from '@/lib/paths';
+import { queryKeys } from '@/lib/queryKeys';
 import { trackTaskCreated, trackTaskCompleted, checkAndTrackFirstSuccess } from '@/lib/track-analytics';
 import type {
   CreateTask,
@@ -16,11 +17,11 @@ export function useTaskMutations(projectId?: string) {
   const navigate = useNavigateWithSearch();
 
   const invalidateQueries = (taskId?: string) => {
-    queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(projectId) });
     if (taskId) {
-      queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) });
       // Also invalidate attempts for event-driven cache sync
-      queryClient.invalidateQueries({ queryKey: ['taskAttempts', taskId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.taskAttempts.byTask(taskId) });
     }
   };
 
@@ -120,7 +121,7 @@ export function useTaskMutations(projectId?: string) {
     onSuccess: (_: unknown, taskId: string) => {
       invalidateQueries(taskId);
       // Remove single-task cache entry to avoid stale data flashes
-      queryClient.removeQueries({ queryKey: ['task', taskId], exact: true });
+      queryClient.removeQueries({ queryKey: queryKeys.tasks.detail(taskId), exact: true });
     },
     onError: (err) => {
       console.error('Failed to delete task:', err);

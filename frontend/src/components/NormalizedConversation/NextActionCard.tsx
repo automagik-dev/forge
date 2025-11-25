@@ -21,6 +21,7 @@ import { getIdeName } from '@/components/ide/IdeIcon';
 import { useProject } from '@/contexts/project-context';
 import { useQuery } from '@tanstack/react-query';
 import { attemptsApi } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   Tooltip,
   TooltipContent,
@@ -51,7 +52,7 @@ export function NextActionCard({
   const shouldNavigateToPreview = useRef(false);
 
   const { data: attempt } = useQuery({
-    queryKey: ['attempt', attemptId],
+    queryKey: queryKeys.attempt.detail(attemptId),
     queryFn: () => attemptsApi.get(attemptId!),
     enabled: !!attemptId && failed,
   });

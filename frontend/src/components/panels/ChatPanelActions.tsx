@@ -25,6 +25,7 @@ import {
   copyToClipboard,
   generateExportFilename,
 } from '@/utils/exportChat';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface ChatPanelActionsProps {
   attempt: TaskAttempt | undefined;
@@ -55,7 +56,7 @@ export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
       navigate(`/projects/${projectId}/tasks/${taskId}?view=chat`);
 
       // Invalidate attempts query to ensure fresh data
-      await queryClient.invalidateQueries({ queryKey: ['task-attempts', taskId] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.taskAttempts.byTask(taskId) });
     } catch (error) {
       console.error('Failed to navigate to new session:', error);
       // TODO: Show error toast

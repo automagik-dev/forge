@@ -3,6 +3,7 @@ import { useQueries } from '@tanstack/react-query';
 import { attemptsApi, executionProcessesApi } from '@/lib/api';
 import { useTaskStopping } from '@/stores/useTaskDetailsUiStore';
 import { useExecutionProcessesContext } from '@/contexts/ExecutionProcessesContext';
+import { queryKeys } from '@/lib/queryKeys';
 import type { AttemptData } from '@/lib/types';
 import type { ExecutionProcess } from 'shared/types';
 
@@ -24,7 +25,7 @@ export function useAttemptExecution(attemptId?: string, taskId?: string) {
   // Fetch details for setup processes
   const processDetailQueries = useQueries({
     queries: setupProcesses.map((process) => ({
-      queryKey: ['processDetails', process.id],
+      queryKey: queryKeys.execution.processDetails(process.id),
       queryFn: () => executionProcessesApi.getDetails(process.id),
       enabled: !!process.id,
     })),

@@ -1,12 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { attemptsApi } from '@/lib/api';
 import type { TaskRelationships } from 'shared/types';
-
-export const taskRelationshipsKeys = {
-  all: ['taskRelationships'] as const,
-  byAttempt: (attemptId: string | undefined) =>
-    ['taskRelationships', attemptId] as const,
-};
+import { queryKeys } from '@/lib/queryKeys';
 
 type Options = {
   enabled?: boolean;
@@ -19,7 +14,7 @@ export function useTaskRelationships(attemptId?: string, opts?: Options) {
   const enabled = (opts?.enabled ?? true) && !!attemptId;
 
   return useQuery<TaskRelationships>({
-    queryKey: taskRelationshipsKeys.byAttempt(attemptId),
+    queryKey: queryKeys.taskRelationships.byAttempt(attemptId),
     queryFn: async () => {
       const data = await attemptsApi.getChildren(attemptId!);
       return data;

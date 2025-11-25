@@ -11,6 +11,7 @@ import { useRebase } from '@/hooks/useRebase';
 import { useDefaultBaseBranch } from '@/hooks/useDefaultBaseBranch';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
 import { useTranslation } from 'react-i18next';
 import {
   DropdownMenu,
@@ -134,11 +135,11 @@ export function Breadcrumb() {
 
   // Get parent task if current task has one (via parent_task_attempt)
   const currentTask = taskId && tasksById[taskId] ? tasksById[taskId] : null;
-  const parentTaskAttemptId = currentTask?.parent_task_attempt;
+  const parentTaskAttemptId = currentTask?.parent_task_attempt ?? undefined;
 
   // Fetch parent task via parent_task_attempt -> task_id
   const { data: parentTask } = useQuery({
-    queryKey: ['parent-task-from-attempt', parentTaskAttemptId],
+    queryKey: queryKeys.taskRelationships.parentFromAttempt(parentTaskAttemptId),
     queryFn: async () => {
       if (!parentTaskAttemptId) return null;
 

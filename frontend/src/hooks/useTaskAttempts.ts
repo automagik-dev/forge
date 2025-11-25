@@ -2,11 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { attemptsApi } from '@/lib/api';
 import type { TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
-
-export const taskAttemptKeys = {
-  all: ['taskAttempts'] as const,
-  byTask: (taskId: string | undefined) => ['taskAttempts', taskId] as const,
-};
+import { queryKeys } from '@/lib/queryKeys';
 
 type Options = {
   enabled?: boolean;
@@ -26,7 +22,7 @@ export function useTaskAttempts(taskId?: string, opts?: Options) {
   const enabled = (opts?.enabled ?? true) && !!taskId;
 
   return useQuery<TaskAttempt[]>({
-    queryKey: taskAttemptKeys.byTask(taskId),
+    queryKey: queryKeys.taskAttempts.byTask(taskId),
     queryFn: () => attemptsApi.getAll(taskId!),
     enabled,
     staleTime: 60_000, // Fresh for 1 minute - data is immutable
@@ -62,7 +58,7 @@ export function useTaskAttemptsWithLiveStatus(
       prevStatusRef.current !== currentStatus
     ) {
       // Status changed - refresh attempts list
-      queryClient.invalidateQueries({ queryKey: taskAttemptKeys.byTask(taskId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.taskAttempts.byTask(taskId) });
     }
     prevStatusRef.current = currentStatus;
     // eslint-disable-next-line react-hooks/exhaustive-deps
