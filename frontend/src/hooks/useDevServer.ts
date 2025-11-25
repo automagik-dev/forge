@@ -46,7 +46,7 @@ export function useDevServer(
 
   // Start mutation
   const startMutation = useMutation({
-    mutationKey: ['startDevServer', attemptId],
+    mutationKey: queryKeys.mutations.devServer.start(attemptId),
     mutationFn: async () => {
       if (!attemptId) return;
       await attemptsApi.startDevServer(attemptId);
@@ -89,7 +89,7 @@ export function useDevServer(
 
   // Stop mutation
   const stopMutation = useMutation({
-    mutationKey: ['stopDevServer', runningDevServer?.id],
+    mutationKey: queryKeys.mutations.devServer.stop(runningDevServer?.id),
     mutationFn: async () => {
       if (!runningDevServer) return;
       await executionProcessesApi.stopExecutionProcess(runningDevServer.id);

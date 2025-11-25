@@ -14,7 +14,7 @@ export function useProjectMutations(options?: UseProjectMutationsOptions) {
   const queryClient = useQueryClient();
 
   const createProject = useMutation({
-    mutationKey: ['createProject'],
+    mutationKey: queryKeys.mutations.projects.create,
     mutationFn: (data: CreateProject) => projectsApi.create(data),
     onSuccess: (project: Project) => {
       queryClient.setQueryData(queryKeys.projects.detail(project.id), project);
@@ -28,7 +28,7 @@ export function useProjectMutations(options?: UseProjectMutationsOptions) {
   });
 
   const updateProject = useMutation({
-    mutationKey: ['updateProject'],
+    mutationKey: queryKeys.mutations.projects.update,
     mutationFn: ({
       projectId,
       data,

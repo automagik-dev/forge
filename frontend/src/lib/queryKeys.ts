@@ -51,6 +51,8 @@ export const queryKeys = {
       ['projectBranchStatus', projectId, baseBranch] as const,
     projectAll: (projectId: string | undefined) =>
       ['projectBranches', projectId] as const,
+    // For prefix matching all project branches (used in invalidateQueries)
+    allProjects: ['projectBranches'] as const,
   },
 
   // Projects
@@ -89,5 +91,19 @@ export const queryKeys = {
   // Attempt-specific
   attempt: {
     detail: (attemptId: string | undefined) => ['attempt', attemptId] as const,
+  },
+
+  // Mutations (for consistency with query keys)
+  mutations: {
+    projects: {
+      create: ['createProject'] as const,
+      update: ['updateProject'] as const,
+    },
+    devServer: {
+      start: (attemptId: string | undefined) =>
+        ['startDevServer', attemptId] as const,
+      stop: (processId: string | undefined) =>
+        ['stopDevServer', processId] as const,
+    },
   },
 } as const;
