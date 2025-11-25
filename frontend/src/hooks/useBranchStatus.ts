@@ -35,6 +35,8 @@ export function useBranchStatus(attemptId?: string, attempt?: TaskAttempt | null
     // Smart polling: 15s when visible, 60s when backgrounded
     // Reduces unnecessary network requests while maintaining responsiveness
     refetchInterval: isVisible ? 15000 : 60000,
+    // Ensure refetching continues when the tab is in the background
+    refetchIntervalInBackground: true,
     // Consider data fresh for 5s to prevent rapid refetches
     staleTime: 5000,
   });
