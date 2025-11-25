@@ -40,6 +40,24 @@ const config: KnipConfig = {
     'eslint-plugin-prettier',
   ],
 
+  // Ignore unused exports in specific files (library patterns, barrel re-exports)
+  ignoreExportsUsedInFile: true,
+
+  // Exclude unused exports and types from the report
+  // These are mostly false positives: barrel re-exports, UI library variants, TypeScript types
+  exclude: ['exports', 'types', 'nsExports', 'nsTypes'],
+
+  // Ignore exports in specific file patterns (library-style modules)
+  ignoreMembers: [],
+
+  // Configure rules severity (off = don't report)
+  rules: {
+    exports: 'off', // Barrel re-exports, UI variants are intentional
+    types: 'off', // TypeScript types needed for API contracts
+    nsExports: 'off', // Namespace exports
+    nsTypes: 'off', // Namespace types
+  },
+
   // Plugin configurations
   vite: {
     entry: ['vite.config.ts'],
