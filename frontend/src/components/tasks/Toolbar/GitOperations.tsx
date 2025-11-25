@@ -41,8 +41,6 @@ interface GitOperationsProps {
   layout?: 'horizontal' | 'vertical';
 }
 
-export type GitOperationsInputs = Omit<GitOperationsProps, 'selectedAttempt'>;
-
 function GitOperations({
   selectedAttempt,
   task,

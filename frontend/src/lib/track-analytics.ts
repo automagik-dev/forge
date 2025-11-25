@@ -72,6 +72,7 @@ export function trackKeyboardShortcut(event: KeyboardShortcutUsedEvent) {
 
 /**
  * Track kanban task drag event
+ * @public - Analytics tracking API
  */
 export function trackKanbanTaskDragged(event: KanbanTaskDraggedEvent) {
   captureWithContext('kanban_task_dragged', event);
@@ -79,6 +80,7 @@ export function trackKanbanTaskDragged(event: KanbanTaskDraggedEvent) {
 
 /**
  * Track child task creation
+ * @public - Analytics tracking API
  */
 export function trackChildTaskCreated(event: ChildTaskCreatedEvent) {
   captureWithContext('child_task_created', event);
@@ -86,6 +88,7 @@ export function trackChildTaskCreated(event: ChildTaskCreatedEvent) {
 
 /**
  * Track parent task navigation
+ * @public - Analytics tracking API
  */
 export function trackParentTaskNavigated(event: ParentTaskNavigatedEvent) {
   captureWithContext('parent_task_navigated', event);
@@ -93,6 +96,7 @@ export function trackParentTaskNavigated(event: ParentTaskNavigatedEvent) {
 
 /**
  * Track task relationship viewer opened
+ * @public - Analytics tracking API
  */
 export function trackTaskRelationshipViewerOpened(
   event: TaskRelationshipViewerOpenedEvent
@@ -102,6 +106,7 @@ export function trackTaskRelationshipViewerOpened(
 
 /**
  * Track breadcrumb click
+ * @public - Analytics tracking API
  */
 export function trackBreadcrumbClicked(event: BreadcrumbClickedEvent) {
   captureWithContext('breadcrumb_clicked', event);
@@ -200,6 +205,7 @@ export function trackFirstSuccess(event: FirstSuccessEvent) {
 
 /**
  * Track token usage for API calls
+ * @public - Analytics tracking API
  */
 export function trackTokenUsage(event: TokenUsageEvent) {
   captureWithContext('token_usage', event);
@@ -208,6 +214,7 @@ export function trackTokenUsage(event: TokenUsageEvent) {
 /**
  * Utility: Hash a task ID for privacy
  * Returns first 16 chars of SHA256 hash
+ * @public - Analytics utility
  */
 export function hashTaskId(taskId: string): string {
   if (!taskId) return 'unknown';

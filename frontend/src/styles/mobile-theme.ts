@@ -90,10 +90,12 @@ export const mobileTheme = {
   },
 } as const;
 
+/** @public - Mobile theme type */
 export type MobileTheme = typeof mobileTheme;
 
 /**
  * Helper to get CSS variable name for z-index
+ * @public - Mobile theme utility
  *
  * @param layer - Z-index layer name
  * @returns CSS variable name
@@ -121,6 +123,7 @@ export function getZIndexVar(layer: keyof typeof mobileTheme.zIndex): string {
 
 /**
  * Helper to check if current viewport is mobile
+ * @public - Mobile theme utility
  *
  * @returns true if viewport width is less than mobile breakpoint
  */

@@ -1,61 +1,57 @@
 import type { KnipConfig } from 'knip';
 
 const config: KnipConfig = {
-  // Entry points - where the app starts
-  entry: ['src/main.tsx', 'src/App.tsx'],
+  // Entry points - production code marked with !
+  entry: [
+    'src/main.tsx!', // Production entry
+    'src/App.tsx!', // Production entry
+  ],
 
-  // Project files to analyze
-  project: ['src/**/*.{ts,tsx}'],
+  // Project files - production vs all
+  project: [
+    'src/**/*.{ts,tsx}!', // Production code
+    '!src/**/*.test.{ts,tsx}', // Exclude tests
+    '!src/**/*.spec.{ts,tsx}', // Exclude specs
+    '!src/**/*.stories.{ts,tsx}', // Exclude storybook
+  ],
 
-  // Ignore patterns
+  // Files to completely ignore (not analyze at all)
   ignore: [
-    // Test files (covered by test framework)
-    '**/*.test.{ts,tsx}',
-    '**/*.spec.{ts,tsx}',
-    // Storybook
-    '**/*.stories.{ts,tsx}',
-    // Type definition files
-    '**/*.d.ts',
-    // Generated files
-    'src/routeTree.gen.ts',
-    // ESLint local rules (loaded by eslint-plugin-local-rules)
-    'eslint-local-rules/**',
-    // Service worker (loaded by browser)
-    'public/**',
+    '**/*.d.ts', // Type declarations
+    'src/routeTree.gen.ts', // Generated routes
+    'eslint-local-rules/**', // ESLint plugin
+    'public/**', // Static assets
   ],
 
-  // Ignore specific dependencies (used dynamically or by external tools)
+  // Dependencies used dynamically (not statically imported)
   ignoreDependencies: [
-    // Capacitor plugins (used at runtime)
-    '@capacitor/*',
-    // Used dynamically by components
-    '@ebay/nice-modal-react',
-    'framer-motion',
-    'react-resizable-panels',
-    'mermaid',
-    '@dnd-kit/utilities',
-    // Tailwind plugin
-    '@tailwindcss/typography',
-    // ESLint plugins
-    'eslint-plugin-prettier',
+    '@capacitor/*', // Runtime plugins
+    '@ebay/nice-modal-react', // Dynamic modal registration
+    'framer-motion', // Lazy loaded animations
+    'react-resizable-panels', // Dynamic panels
+    'mermaid', // Dynamic diagrams
+    '@dnd-kit/utilities', // Drag-drop utilities
+    '@tailwindcss/typography', // Tailwind CSS plugin
+    'tailwindcss-animate', // Tailwind animation plugin
+    '@sentry/vite-plugin', // Vite plugin (used in vite.config.ts)
+    'eslint-plugin-prettier', // ESLint plugins
   ],
 
-  // Ignore unused exports in specific files (library patterns, barrel re-exports)
+  // Export handling - allow re-exports in same file
   ignoreExportsUsedInFile: true,
 
-  // Exclude unused exports and types from the report
-  // These are mostly false positives: barrel re-exports, UI library variants, TypeScript types
-  exclude: ['exports', 'types', 'nsExports', 'nsTypes'],
-
-  // Ignore exports in specific file patterns (library-style modules)
-  ignoreMembers: [],
-
-  // Configure rules severity (off = don't report)
+  // Granular rules - proper severity levels
   rules: {
-    exports: 'off', // Barrel re-exports, UI variants are intentional
-    types: 'off', // TypeScript types needed for API contracts
-    nsExports: 'off', // Namespace exports
-    nsTypes: 'off', // Namespace types
+    files: 'error', // Unused files = error (block CI)
+    dependencies: 'error', // Unused deps = error (block CI)
+    devDependencies: 'error', // Unused devDeps = error
+    unlisted: 'error', // Missing deps = error
+    unresolved: 'error', // Broken imports = error
+    exports: 'warn', // Unused exports = warn (visible, not blocking)
+    types: 'warn', // Unused types = warn
+    duplicates: 'warn', // Duplicate exports = warn
+    enumMembers: 'off', // Enum members = off (too noisy)
+    classMembers: 'off', // Class members = off (performance)
   },
 
   // Plugin configurations

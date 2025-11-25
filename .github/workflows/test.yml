@@ -35,7 +35,7 @@ jobs:
         run: cd frontend && npx tsc --noEmit
 
       - name: Dead code check frontend
-        run: cd frontend && npm run lint:dead-code
+        run: cd frontend && npm run lint:dead-code:prod
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable

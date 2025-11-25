@@ -192,21 +192,3 @@ export function BottomSheet({
     document.body
   );
 }
-
-/**
- * Hook to manage bottom sheet state
- */
-export function useBottomSheet() {
-  const [isOpen, setIsOpen] = useState(false);
-  
-  const open = () => setIsOpen(true);
-  const close = () => setIsOpen(false);
-  const toggle = () => setIsOpen(prev => !prev);
-  
-  return {
-    isOpen,
-    open,
-    close,
-    toggle
-  };
-}

@@ -22,7 +22,6 @@ import {
   GitBranch,
   Project,
   CreateProject,
-  RepositoryInfo,
   SearchResult,
   Task,
   TaskAttempt,
@@ -168,12 +167,6 @@ const makeRequest = async (
 
   throw lastError || new Error(`Request to ${url} failed after ${effectiveMaxRetries + 1} attempts`);
 };
-
-export interface FollowUpResponse {
-  message: string;
-  actual_attempt_id: string;
-  created_new_attempt: boolean;
-}
 
 export type Ok<T> = { success: true; data: T };
 export type Err<E> = { success: false; error: E | undefined; message?: string };
@@ -760,14 +753,6 @@ export const githubAuthApi = {
       method: 'POST',
     });
     return handleApiResponse<DevicePollStatus>(response);
-  },
-};
-
-// GitHub APIs (only available in cloud mode)
-export const githubApi = {
-  listRepositories: async (page: number = 1): Promise<RepositoryInfo[]> => {
-    const response = await makeRequest(`/api/github/repositories?page=${page}`);
-    return handleApiResponse<RepositoryInfo[]>(response);
   },
 };
 

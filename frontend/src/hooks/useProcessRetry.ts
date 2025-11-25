@@ -97,5 +97,3 @@ export function useProcessRetry(attempt: TaskAttempt | undefined) {
     getRetryDisabledState,
   };
 }
-
-export type UseProcessRetryReturn = ReturnType<typeof useProcessRetry>;

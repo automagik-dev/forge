@@ -172,6 +172,7 @@ export function BottomNavigation({
 
 /**
  * Hook to manage bottom navigation state
+ * @public - Mobile navigation hook
  */
 export function useBottomNavigation() {
   const location = useLocation();

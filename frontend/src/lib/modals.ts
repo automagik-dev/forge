@@ -59,6 +59,7 @@ export function showProjectForm(
 
 /**
  * Hide a modal by ID
+ * @public - Modal management API
  */
 export function hideModal(modal: string): void {
   NiceModal.hide(modal);
@@ -66,6 +67,7 @@ export function hideModal(modal: string): void {
 
 /**
  * Remove a modal by ID
+ * @public - Modal management API
  */
 export function removeModal(modal: string): void {
   NiceModal.remove(modal);
@@ -73,6 +75,7 @@ export function removeModal(modal: string): void {
 
 /**
  * Hide all currently visible modals
+ * @public - Modal management API
  */
 export function hideAllModals(): void {
   // NiceModal doesn't have a direct hideAll, so we'll implement as needed
@@ -83,11 +86,10 @@ export function hideAllModals(): void {
  * Common modal result types for standardization
  */
 export type ConfirmResult = 'confirmed' | 'canceled';
-export type DeleteResult = 'deleted' | 'canceled';
-export type SaveResult = 'saved' | 'canceled';
 
 /**
  * Error handling utility for modal operations
+ * @public - Modal utility API
  */
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {

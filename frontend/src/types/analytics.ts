@@ -242,6 +242,7 @@ export interface GitHubAuthFlowEvent {
 // Union Type for All Events
 // ============================================================================
 
+/** @public - Union type for all analytics events */
 export type AnalyticsEvent =
   | { event: 'session_started'; properties: SessionStartedEvent }
   | { event: 'session_ended'; properties: SessionEndedEvent }

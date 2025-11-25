@@ -65,6 +65,7 @@ export function H4({ className, children, ...props }: TypographyProps) {
   )
 }
 
+/** @public - Design system typography component */
 export function H5({ className, children, ...props }: TypographyProps) {
   return (
     <h5
@@ -80,6 +81,7 @@ export function H5({ className, children, ...props }: TypographyProps) {
   )
 }
 
+/** @public - Design system typography component */
 export function H6({ className, children, ...props }: TypographyProps) {
   return (
     <h6
