@@ -162,22 +162,21 @@ useEffect(() => {
 
 ### Context Re-render Prevention
 
-Use selector hooks to avoid re-rendering all consumers:
+Use `use-context-selector` to avoid re-rendering all consumers when context changes:
 
 ```typescript
-// In context file
-export const useExecutionProcessSelector = <T>(
-  selector: (state: ContextType) => T,
-  equalityFn?: (a: T, b: T) => boolean
-): T => {
-  const ctx = useContext();
-  const selectedRef = useRef<T>();
-  const selected = selector(ctx);
+// In context file - uses use-context-selector library
+import { createContext, useContextSelector } from 'use-context-selector';
 
-  if (equalityFn ? !equalityFn(selectedRef.current!, selected) : selectedRef.current !== selected) {
-    selectedRef.current = selected;
-  }
-  return selectedRef.current!;
+const MyContext = createContext<ContextType | null>(null);
+
+export const useMySelector = <T>(
+  selector: (state: ContextType) => T
+): T => {
+  return useContextSelector(MyContext, (ctx) => {
+    if (!ctx) throw new Error('Must be used within Provider');
+    return selector(ctx);
+  });
 };
 
 // Usage - only re-renders when selected value changes
@@ -185,6 +184,11 @@ const processStatus = useExecutionProcessSelector(
   ctx => ctx.processes[processId]?.status
 );
 ```
+
+**Why `use-context-selector`?**
+- Standard React `useContext` triggers re-render on ANY context change
+- `use-context-selector` only re-renders when the selected slice changes
+- This prevents cascade re-renders in components that only need a subset of context
 
 ## Recommended Polling Intervals
 

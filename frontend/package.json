@@ -84,6 +84,7 @@
     "simple-icons": "^15.16.0",
     "tailwind-merge": "^2.2.0",
     "tailwindcss-animate": "^1.0.7",
+    "use-context-selector": "^2.0.0",
     "zustand": "^4.5.4"
   },
   "devDependencies": {
