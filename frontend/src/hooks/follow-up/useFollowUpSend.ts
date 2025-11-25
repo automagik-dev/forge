@@ -106,15 +106,18 @@ export function useFollowUpSend({
         });
 
         // Create task + attempt with user's first message
+        // Note: use_worktree is not available in CreateAndStartTaskRequest
+        // For Genie context (main workspace execution), the backend handles this separately
         const result = await tasksApi.createAndStart({
           task: {
             project_id: projectId,
             title: `Chat: ${firstMessage.substring(0, 50)}${firstMessage.length > 50 ? '...' : ''}`,
             description: firstMessage, // User's message goes here!
+            parent_task_attempt: null,
+            image_ids: null,
           },
           executor_profile_id: executorProfileId as ExecutorProfileId,
           base_branch: defaultBranch || 'dev', // Use configured default, fallback to 'dev'
-          use_worktree: false, // CRITICAL: Genie uses current branch!
         });
 
         console.log('[Master Genie] Task created:', result.id);

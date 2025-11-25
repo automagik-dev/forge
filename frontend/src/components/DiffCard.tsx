@@ -22,7 +22,7 @@ import {
 import '@/styles/diff-style-overrides.css';
 import { attemptsApi } from '@/lib/api';
 import type { TaskAttempt } from 'shared/types';
-import { useReview, type ReviewDraft } from '@/contexts/ReviewProvider';
+import { useReview, type ReviewDraft, type ReviewComment } from '@/contexts/ReviewProvider';
 import { CommentWidgetLine } from '@/components/diff/CommentWidgetLine';
 import { ReviewCommentRenderer } from '@/components/diff/ReviewCommentRenderer';
 import {

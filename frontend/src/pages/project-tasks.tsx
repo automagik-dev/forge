@@ -39,7 +39,7 @@ import {
 } from '@/keyboard';
 
 import TaskKanbanBoard from '@/components/tasks/TaskKanbanBoard';
-import type { TaskWithAttemptStatus } from 'shared/types';
+import type { TaskWithAttemptStatus, TaskAttempt } from 'shared/types';
 import type { DragEndEvent } from '@/components/ui/shadcn-io/kanban';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';

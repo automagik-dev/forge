@@ -16,6 +16,7 @@ import type {
   TaskCompletedEvent,
   FirstSuccessEvent,
   TokenUsageEvent,
+  ExecutorType,
 } from '@/types/analytics';
 
 // ========== NAMASTEX ANALYTICS ==========
@@ -41,7 +42,7 @@ export function getCurrentUserEmail(): string | undefined {
  * Enhanced capture function with namastexer detection
  * Automatically adds namastexer metadata for @namastex.ai accounts
  */
-function captureWithContext(eventName: string, properties: Record<string, unknown> = {}) {
+function captureWithContext<T extends object>(eventName: string, properties: T | Record<string, unknown> = {} as T) {
   const userEmail = getCurrentUserEmail();
   const isNamestexer = isNamestexEmployee(userEmail);
 
@@ -136,7 +137,7 @@ export function isFirstUse(featureName: string): boolean {
  */
 export function checkAndTrackFirstSuccess(
   taskId: string,
-  executor: string,
+  executor: ExecutorType,
   attemptCount: number
 ): boolean {
   const key = 'first_success_task_id';

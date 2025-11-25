@@ -23,9 +23,9 @@ export class McpConfigStrategyGeneral {
     full_config: Record<string, unknown>
   ): void {
     // Validate using the schema path
-    let current = full_config;
+    let current: Record<string, unknown> | undefined = full_config;
     for (const key of mcp_config.servers_path) {
-      current = current?.[key];
+      current = current?.[key] as Record<string, unknown> | undefined;
       if (current === undefined) {
         throw new Error(
           `Missing required field at path: ${mcp_config.servers_path.join('.')}`
@@ -41,9 +41,9 @@ export class McpConfigStrategyGeneral {
     full_config: Record<string, unknown>
   ): Record<string, unknown> {
     // Extract the servers object based on the path
-    let current = full_config;
+    let current: Record<string, unknown> | undefined = full_config;
     for (const key of mcp_config.servers_path) {
-      current = current?.[key];
+      current = current?.[key] as Record<string, unknown> | undefined;
       if (current === undefined) {
         throw new Error(
           `Missing required field at path: ${mcp_config.servers_path.join('.')}`

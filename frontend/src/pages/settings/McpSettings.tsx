@@ -26,7 +26,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { JSONEditor } from '@/components/ui/json-editor';
 import { Loader2 } from 'lucide-react';
-import type { BaseCodingAgent, ExecutorConfig } from 'shared/types';
+import type { BaseCodingAgent, ExecutorConfig, JsonValue } from 'shared/types';
 import { McpConfig } from 'shared/types';
 import { useUserSystem } from '@/components/config-provider';
 import { mcpServersApi } from '@/lib/api';
@@ -164,7 +164,7 @@ export function McpSettings() {
             {
               executor: selectedProfileKey as BaseCodingAgent,
             },
-            { servers: mcpServersConfig }
+            { servers: mcpServersConfig as { [key: string]: JsonValue | undefined } }
           );
 
           // Show success feedback

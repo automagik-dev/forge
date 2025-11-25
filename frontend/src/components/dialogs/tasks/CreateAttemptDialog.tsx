@@ -46,7 +46,8 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
     // Use project profiles if available (synchronized agents), fallback to global profiles
     const projectExecutors = projectProfiles?.executors;
     const hasProjectExecutors = projectExecutors && Object.keys(projectExecutors).length > 0;
-    const profiles = hasProjectExecutors ? projectExecutors : globalProfiles;
+    const profiles = (hasProjectExecutors ? projectExecutors : (globalProfiles ?? null)) as
+      Record<string, import('shared/types').ExecutorConfig> | null;
     const hasProfiles = profiles && Object.keys(profiles).length > 0;
     const { defaultBranch } = useDefaultBaseBranch(projectId);
     const isProfilesLoading = isLoadingProjectProfiles && (!globalProfiles || Object.keys(globalProfiles).length === 0);

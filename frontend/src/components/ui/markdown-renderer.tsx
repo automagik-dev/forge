@@ -1,5 +1,5 @@
 import Markdown from 'markdown-to-jsx';
-import { memo, useMemo, useState, useCallback } from 'react';
+import { memo, useMemo, useState, useCallback, isValidElement, type ReactElement } from 'react';
 import {
   Tooltip,
   TooltipContent,
@@ -168,7 +168,8 @@ function InlineCodeOverride({ children, className, ...props }: MarkdownCodeProps
 
 function PreOverride({ children, ...props }: MarkdownPreProps) {
   // Check if this is a mermaid code block
-  const childClassName = children?.props?.className || '';
+  const childElement = isValidElement(children) ? (children as ReactElement<{ className?: string; children?: string }>) : null;
+  const childClassName = childElement?.props?.className || '';
   const isMermaid =
     typeof childClassName === 'string' &&
     (childClassName.includes('lang-mermaid') ||
@@ -177,8 +178,8 @@ function PreOverride({ children, ...props }: MarkdownPreProps) {
   if (isMermaid) {
     // Extract the mermaid code from children
     const code =
-      typeof children?.props?.children === 'string'
-        ? children.props.children
+      typeof childElement?.props?.children === 'string'
+        ? childElement.props.children
         : '';
     return <MermaidDiagram chart={code} />;
   }

@@ -60,7 +60,7 @@ export const useLogStream = (processId: string): UseLogStreamResult => {
               switch (value.type) {
                 case 'STDOUT':
                 case 'STDERR':
-                  addLogEntry({ type: value.type, content: value.content });
+                  addLogEntry({ type: value.type, content: value.content ?? '' });
                   break;
                 // Ignore other patch types (NORMALIZED_ENTRY, DIFF, etc.)
                 default:

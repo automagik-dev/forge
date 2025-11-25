@@ -4,7 +4,11 @@ import { CreatePRButton } from './CreatePRButton';
 import { PushToPRButton } from './PushToPRButton';
 import { ViewPRButton } from './ViewPRButton';
 import { UpdateNeededBadge } from './UpdateNeededBadge';
-import type { TaskWithAttemptStatus, TaskAttempt, BranchStatus } from 'shared/types';
+import type { TaskWithAttemptStatus, TaskAttempt, BranchStatus, Merge } from 'shared/types';
+
+// Type guard to narrow Merge union to PR merge type
+type PrMergeType = Extract<Merge, { type: 'pr' }>;
+const isPrMerge = (m: Merge): m is PrMergeType => m.type === 'pr';
 
 interface GitActionsGroupProps {
   task: TaskWithAttemptStatus;
@@ -23,13 +27,9 @@ export function GitActionsGroup({
   const prInfo = useMemo(() => {
     if (!branchStatus?.merges) return null;
 
-    const openPR = branchStatus.merges.find(
-      (m) => m.type === 'pr' && m.pr_info?.status === 'open'
-    );
-
-    const mergedPR = branchStatus.merges.find(
-      (m) => m.type === 'pr' && m.pr_info?.status === 'merged'
-    );
+    const prMerges = branchStatus.merges.filter(isPrMerge);
+    const openPR = prMerges.find((m) => m.pr_info?.status === 'open');
+    const mergedPR = prMerges.find((m) => m.pr_info?.status === 'merged');
 
     return {
       hasOpenPR: !!openPR,
@@ -55,7 +55,7 @@ export function GitActionsGroup({
           {prInfo.openPR?.pr_info?.url && prInfo.openPR?.pr_info?.number && (
             <ViewPRButton
               prUrl={prInfo.openPR.pr_info.url}
-              prNumber={prInfo.openPR.pr_info.number}
+              prNumber={Number(prInfo.openPR.pr_info.number)}
             />
           )}
         </>
