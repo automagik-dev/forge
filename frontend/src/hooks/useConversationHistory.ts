@@ -11,7 +11,7 @@ import {
 } from 'shared/types';
 import { useExecutionProcessesContext } from '@/contexts/ExecutionProcessesContext';
 import { useEffect, useMemo, useRef } from 'react';
-import { streamJsonPatchEntries } from '@/utils/streamJsonPatchEntries';
+import { streamJsonPatchEntries, StreamController } from '@/utils/streamJsonPatchEntries';
 
 export type PatchTypeWithKey = PatchType & {
   patchKey: string;
@@ -93,6 +93,8 @@ export const useConversationHistory = ({
   const loadedInitialEntries = useRef(false);
   const lastActiveProcessId = useRef<string | null>(null);
   const onEntriesUpdatedRef = useRef<OnEntriesUpdated | null>(null);
+  // Track active WebSocket controllers to prevent memory leaks on cleanup
+  const activeControllersRef = useRef<Set<StreamController<PatchType>>>(new Set());
 
   const mergeIntoDisplayed = (
     mutator: (state: ExecutionProcessStateStore) => void
@@ -127,6 +129,7 @@ export const useConversationHistory = ({
     return new Promise<PatchType[]>((resolve) => {
       const controller = streamJsonPatchEntries<PatchType>(url, {
         onFinished: (allEntries) => {
+          activeControllersRef.current.delete(controller);
           controller.close();
           resolve(allEntries);
         },
@@ -135,10 +138,13 @@ export const useConversationHistory = ({
             `Error loading entries for historic execution process ${executionProcess.id}`,
             err
           );
+          activeControllersRef.current.delete(controller);
           controller.close();
           resolve([]);
         },
       });
+      // Track controller for cleanup on unmount
+      activeControllersRef.current.add(controller);
     });
   };
 
@@ -176,14 +182,18 @@ export const useConversationHistory = ({
         },
         onFinished: () => {
           emitEntries(displayedExecutionProcesses.current, 'running', false);
+          activeControllersRef.current.delete(controller);
           controller.close();
           resolve();
         },
         onError: () => {
+          activeControllersRef.current.delete(controller);
           controller.close();
           reject();
         },
       });
+      // Track controller for cleanup on unmount
+      activeControllersRef.current.add(controller);
     });
   };
 
@@ -573,7 +583,8 @@ export const useConversationHistory = ({
     return () => {
       cancelled = true;
     };
-  }, [attempt.id, idListKey, executionProcessesLoading]); // include idListKey so new processes trigger reload, executionProcessesLoading to hide spinner when done
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Functions use refs and are stable; adding them would cause infinite loops
+  }, [attempt.id, idListKey, executionProcessesLoading]);
 
   useEffect(() => {
     const activeProcess = getActiveAgentProcess();
@@ -591,6 +602,7 @@ export const useConversationHistory = ({
       lastActiveProcessId.current = activeProcess.id;
       loadRunningAndEmitWithBackoff(activeProcess);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Functions use refs and are intentionally stable; adding them causes infinite loops
   }, [attempt.id, idStatusKey]);
 
   // If an execution process is removed, remove it from the state
@@ -608,6 +620,7 @@ export const useConversationHistory = ({
         });
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- executionProcessesRaw is derived from idListKey; including both causes duplicate triggers
   }, [attempt.id, idListKey]);
 
   // Reset state when attempt changes
@@ -615,8 +628,23 @@ export const useConversationHistory = ({
     displayedExecutionProcesses.current = {};
     loadedInitialEntries.current = false;
     lastActiveProcessId.current = null;
+
+    // Close all active WebSocket controllers to prevent memory leaks
+    activeControllersRef.current.forEach((controller) => controller.close());
+    activeControllersRef.current.clear();
+
     emitEntries(displayedExecutionProcesses.current, 'initial', true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- emitEntries uses refs and is stable; this effect intentionally runs only on attempt.id change
   }, [attempt.id]);
+
+  // Cleanup all WebSocket controllers on unmount
+  useEffect(() => {
+    const controllers = activeControllersRef.current;
+    return () => {
+      controllers.forEach((controller) => controller.close());
+      controllers.clear();
+    };
+  }, []);
 
   return {};
 };
