@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { attemptsApi } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { TaskAttempt, ExecutorProfileId } from 'shared/types';
 
 type CreateAttemptArgs = {
@@ -29,7 +30,7 @@ export function useAttemptCreation({
       }),
     onSuccess: (newAttempt: TaskAttempt) => {
       queryClient.setQueryData(
-        ['taskAttempts', taskId],
+        queryKeys.taskAttempts.byTask(taskId),
         (old: TaskAttempt[] = []) => [newAttempt, ...old]
       );
       onSuccess?.(newAttempt);

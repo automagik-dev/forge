@@ -76,7 +76,7 @@ export const queryKeys = {
 
   // Drafts
   drafts: {
-    stream: (wsUrl: string | undefined) => ['wsJsonPatch', wsUrl] as const,
+    stream: (wsUrl: string | undefined) => ['ws-json-patch', wsUrl] as const,
     imagesForDraft: (taskId: string | undefined, idsKey: string) =>
       ['taskImagesForDraft', taskId, idsKey] as const,
   },
