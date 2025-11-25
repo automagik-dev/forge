@@ -43,7 +43,7 @@ export function useTaskAttempts(taskId?: string, opts?: Options) {
  */
 export function useTaskAttemptsWithLiveStatus(
   taskId: string | undefined,
-  task: TaskWithAttemptStatus | undefined,
+  task: TaskWithAttemptStatus | null | undefined,
   opts?: Options
 ) {
   const queryClient = useQueryClient();

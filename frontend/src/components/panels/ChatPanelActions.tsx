@@ -14,7 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useTaskAttempts } from '@/hooks/useTaskAttempts';
+import { useTaskAttemptsWithLiveStatus } from '@/hooks/useTaskAttempts';
 import type { TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -34,7 +34,7 @@ interface ChatPanelActionsProps {
 export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
   const navigate = useNavigate();
   const { projectId, taskId } = useParams<{ projectId: string; taskId: string }>();
-  const { data: attempts = [] } = useTaskAttempts(taskId);
+  const { data: attempts = [] } = useTaskAttemptsWithLiveStatus(taskId, task);
   const { t } = useTranslation('tasks');
   const queryClient = useQueryClient();
   const [isCreatingAttempt, setIsCreatingAttempt] = useState(false);

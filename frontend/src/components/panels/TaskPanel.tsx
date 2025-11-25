@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useProject } from '@/contexts/project-context';
-import { useTaskAttempts } from '@/hooks/useTaskAttempts';
+import { useTaskAttemptsWithLiveStatus } from '@/hooks/useTaskAttempts';
 import { useNavigateWithSearch } from '@/hooks';
 import { paths } from '@/lib/paths';
 import type { TaskWithAttemptStatus } from 'shared/types';
@@ -35,7 +35,7 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
     data: attempts = [],
     isLoading: isAttemptsLoading,
     isError: isAttemptsError,
-  } = useTaskAttempts(task?.id);
+  } = useTaskAttemptsWithLiveStatus(task?.id, task);
 
   // Use React Query hooks for parent and children tasks (real-time-data-standard.md)
   const { data: parentTask = null } = useParentTask(task?.parent_task_attempt || undefined);
