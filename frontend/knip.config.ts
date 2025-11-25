@@ -28,8 +28,6 @@ const config: KnipConfig = {
   ignoreDependencies: [
     // Capacitor plugins (used at runtime)
     '@capacitor/*',
-    // PostHog (analytics, initialized separately)
-    'posthog-js',
     // Used dynamically by components
     '@ebay/nice-modal-react',
     'framer-motion',
@@ -40,7 +38,6 @@ const config: KnipConfig = {
     '@tailwindcss/typography',
     // ESLint plugins
     'eslint-plugin-prettier',
-    'eslint-plugin-local-rules',
   ],
 
   // Plugin configurations
