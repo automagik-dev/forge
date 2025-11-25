@@ -407,8 +407,7 @@ export function TaskFollowUpSection({
     return true;
   }, [
     selectedAttemptId,
-    task?.id,
-    task?.status,
+    task,
     isInChatView,
     isSendingFollowUp,
     branchStatus?.merges,

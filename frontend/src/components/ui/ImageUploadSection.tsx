@@ -87,6 +87,7 @@ export const ImageUploadSection = forwardRef<
       if (collapsible && images.length > 0 && !isExpanded) {
         setIsExpanded(true);
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally not including isExpanded to avoid loop
     }, [collapsible, images.length]);
 
     const handleFiles = useCallback(

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, forwardRef } from 'react';
+import { useEffect, useRef, useState, forwardRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { AutoExpandingTextarea } from '@/components/ui/auto-expanding-textarea';
 import { projectsApi, tagsApi } from '@/lib/api';
@@ -219,7 +219,7 @@ export const FileSearchTextarea = forwardRef<
   };
 
   // Calculate dropdown position relative to textarea
-  const getDropdownPosition = () => {
+  const getDropdownPosition = useCallback(() => {
     if (!textareaRef.current) return { top: 0, left: 0, maxHeight: 240 };
 
     const textareaRect = textareaRef.current.getBoundingClientRect();
@@ -269,7 +269,7 @@ export const FileSearchTextarea = forwardRef<
     }
 
     return { top: finalTop, left: finalLeft, maxHeight };
-  };
+  }, [textareaRef]);
 
   // Use effect to reposition when dropdown content changes
   useEffect(() => {
@@ -284,7 +284,7 @@ export const FileSearchTextarea = forwardRef<
         }
       }, 0);
     }
-  }, [searchResults.length, showDropdown]);
+  }, [searchResults.length, showDropdown, getDropdownPosition]);
 
   const dropdownPosition = getDropdownPosition();
 

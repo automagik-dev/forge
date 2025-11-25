@@ -124,7 +124,7 @@ const GitHubLoginDialog = NiceModal.create(() => {
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [polling, deviceState]);
+  }, [polling, deviceState, modal, reloadSystem]);
 
   // Automatically copy code to clipboard and open GitHub URL when deviceState is set
   useEffect(() => {

@@ -214,6 +214,7 @@ export function useFollowUpSend({
     setMessage,
     projectId,
     onNewTaskCreated,
+    defaultBranch,
   ]);
 
   return {

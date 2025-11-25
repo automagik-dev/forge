@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSearchParams, useLocation, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { BottomNavigation, BottomNavTab } from './BottomNavigation';
@@ -35,8 +35,6 @@ export function MobileLayout({
   const { t } = useTranslation('common');
   const { isNative } = usePlatform();
   const { projectId } = useProject();
-  const [searchParams] = useSearchParams();
-  const location = useLocation();
   const { taskId } = useParams<{ taskId?: string }>();
   const [showDiffActions, setShowDiffActions] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -141,7 +139,7 @@ export function MobileLayout({
         path: '/settings',
       },
     ];
-  }, [projectId, taskId, location.pathname, searchParams, t]);
+  }, [projectId, taskId, t]);
   
   return (
     <div className={cn(

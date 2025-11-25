@@ -82,6 +82,7 @@ export function ProjectFormFields({
     if (!isEditing && showRecentRepos && !loading && allRepos.length === 0) {
       loadRecentRepos();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only trigger on showRecentRepos change
   }, [isEditing, showRecentRepos]);
 
   const loadRecentRepos = async () => {
