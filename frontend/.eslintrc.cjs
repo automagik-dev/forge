@@ -34,6 +34,17 @@ module.exports = {
     ],
     '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/switch-exhaustiveness-check': 'error',
+    // Prevent short polling intervals - prefer WebSocket or event-driven updates
+    // See docs/DATA_FETCHING.md for guidelines
+    'no-restricted-syntax': [
+      'warn',
+      {
+        selector:
+          'Property[key.name="refetchInterval"][value.type="Literal"][value.value<15000]',
+        message:
+          'Polling intervals under 15s are discouraged. Use WebSocket streams or event-driven invalidation instead. See docs/DATA_FETCHING.md',
+      },
+    ],
     // i18n rule - only active when LINT_I18N=true
     'i18next/no-literal-string': i18nCheck
       ? [

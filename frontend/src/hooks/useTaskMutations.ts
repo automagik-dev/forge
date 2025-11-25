@@ -19,6 +19,8 @@ export function useTaskMutations(projectId?: string) {
     queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
     if (taskId) {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+      // Also invalidate attempts for event-driven cache sync
+      queryClient.invalidateQueries({ queryKey: ['taskAttempts', taskId] });
     }
   };
 
@@ -34,7 +36,7 @@ export function useTaskMutations(projectId?: string) {
         is_subtask: !!variables.parent_task_attempt,
       });
 
-      invalidateQueries();
+      invalidateQueries(createdTask.id); // Include task ID to invalidate attempts
       if (projectId) {
         navigate(`${paths.task(projectId, createdTask.id)}/attempts/latest`);
       }
@@ -56,7 +58,7 @@ export function useTaskMutations(projectId?: string) {
         is_subtask: !!variables.task.parent_task_attempt,
       });
 
-      invalidateQueries();
+      invalidateQueries(createdTask.id); // Include task ID to invalidate attempts
       if (projectId) {
         navigate(`${paths.task(projectId, createdTask.id)}/attempts/latest`);
       }

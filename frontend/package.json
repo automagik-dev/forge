@@ -8,7 +8,7 @@
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 tsc && cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build",
     "check": "tsc --noEmit",
     "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 110",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 125",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "lint:i18n": "cross-env LINT_I18N=true eslint . --ext ts,tsx --max-warnings 0",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
