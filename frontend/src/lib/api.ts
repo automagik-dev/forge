@@ -310,7 +310,7 @@ export const projectsApi = {
   },
 
   openEditor: async (id: string, editorType?: EditorType): Promise<void> => {
-    const requestBody: any = {};
+    const requestBody: { editor_type?: EditorType } = {};
     if (editorType) requestBody.editor_type = editorType;
 
     const response = await makeRequest(`/api/projects/${id}/open-editor`, {
@@ -849,9 +849,9 @@ export const profilesApi = {
 
 // Project-specific profiles API (Forge extension)
 export const projectProfilesApi = {
-  load: async (projectId: string): Promise<any> => {
+  load: async (projectId: string): Promise<Record<string, unknown>> => {
     const response = await makeRequest(`/api/forge/projects/${projectId}/profiles`);
-    return handleApiResponse<any>(response);
+    return handleApiResponse<Record<string, unknown>>(response);
   },
 };
 

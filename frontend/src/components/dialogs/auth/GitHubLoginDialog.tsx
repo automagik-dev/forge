@@ -47,9 +47,9 @@ const GitHubLoginDialog = NiceModal.create(() => {
       setDeviceState(data);
       setPolling(true);
       setAuthMethod('oauth');
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
-      setError(e?.message || 'Network error');
+      setError((e as Error)?.message || 'Network error');
     } finally {
       setFetching(false);
     }
@@ -69,9 +69,9 @@ const GitHubLoginDialog = NiceModal.create(() => {
       await reloadSystem();
       modal.resolve(true);
       modal.hide();
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
-      setError(e?.message || 'Failed to save Personal Access Token');
+      setError((e as Error)?.message || 'Failed to save Personal Access Token');
     } finally {
       setSavingPat(false);
     }
@@ -107,14 +107,14 @@ const GitHubLoginDialog = NiceModal.create(() => {
             case DevicePollStatus.SLOW_DOWN:
               timer = setTimeout(poll, (deviceState.interval + 5) * 1000);
           }
-        } catch (e: any) {
-          if (e?.message === 'expired_token') {
+        } catch (e) {
+          if ((e as Error)?.message === 'expired_token') {
             setPolling(false);
             setError('Device code expired. Please try again.');
             setDeviceState(null);
           } else {
             setPolling(false);
-            setError(e?.message || 'Login failed.');
+            setError((e as Error)?.message || 'Login failed.');
             setDeviceState(null);
           }
         }

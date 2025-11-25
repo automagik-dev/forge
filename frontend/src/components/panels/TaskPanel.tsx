@@ -55,7 +55,7 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
     const absSec = Math.round(Math.abs(diffMs) / 1000);
 
     const rtf =
-      typeof Intl !== 'undefined' && (Intl as any).RelativeTimeFormat
+      typeof Intl !== 'undefined' && 'RelativeTimeFormat' in Intl
         ? new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
         : null;
 

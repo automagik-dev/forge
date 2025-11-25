@@ -288,9 +288,9 @@ const PendingApprovalEntry = ({
         });
         setHasResponded(true);
         clear();
-      } catch (e: any) {
+      } catch (e) {
         console.error('Approval respond failed:', e);
-        setError(e?.message || 'Failed to send response');
+        setError((e as Error)?.message || 'Failed to send response');
       } finally {
         setIsResponding(false);
       }

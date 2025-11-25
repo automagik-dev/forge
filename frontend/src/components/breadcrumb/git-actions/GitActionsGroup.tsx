@@ -24,17 +24,17 @@ export function GitActionsGroup({
     if (!branchStatus?.merges) return null;
 
     const openPR = branchStatus.merges.find(
-      (m: any) => m.type === 'pr' && m.pr_info?.status === 'open'
+      (m) => m.type === 'pr' && m.pr_info?.status === 'open'
     );
 
     const mergedPR = branchStatus.merges.find(
-      (m: any) => m.type === 'pr' && m.pr_info?.status === 'merged'
+      (m) => m.type === 'pr' && m.pr_info?.status === 'merged'
     );
 
     return {
       hasOpenPR: !!openPR,
       hasMergedPR: !!mergedPR,
-      openPR: openPR as any,
+      openPR,
     };
   }, [branchStatus?.merges]);
 

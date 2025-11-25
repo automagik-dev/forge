@@ -91,9 +91,9 @@ export function McpSettings() {
         const configJson = JSON.stringify(fullConfig, null, 2);
         setMcpServers(configJson);
         setMcpConfigPath(result.config_path);
-      } catch (err: any) {
-        if (err?.message && err.message.includes('does not support MCP')) {
-          setMcpError(err.message);
+      } catch (err) {
+        if ((err as Error)?.message && (err as Error).message.includes('does not support MCP')) {
+          setMcpError((err as Error).message);
         } else {
           console.error('Error loading MCP servers:', err);
         }
@@ -210,14 +210,14 @@ export function McpSettings() {
     }
   };
 
-  const preconfigured = (mcpConfig?.preconfigured ?? {}) as Record<string, any>;
+  const preconfigured = (mcpConfig?.preconfigured ?? {}) as Record<string, unknown>;
   const meta = (preconfigured.meta ?? {}) as Record<
     string,
     { name?: string; description?: string; url?: string; icon?: string }
   >;
   const servers = Object.fromEntries(
     Object.entries(preconfigured).filter(([k]) => k !== 'meta')
-  ) as Record<string, any>;
+  ) as Record<string, unknown>;
   const getMetaFor = (key: string) => meta[key] || {};
 
   if (!config) {

@@ -73,7 +73,7 @@ function AppContent() {
       posthog.opt_in_capturing();
 
       // Build properties object based on consent
-      const identifyProperties: Record<string, any> = {};
+      const identifyProperties: Record<string, unknown> = {};
 
       if (isNamestexer) {
         // Full tracking for namastexers (mandatory)

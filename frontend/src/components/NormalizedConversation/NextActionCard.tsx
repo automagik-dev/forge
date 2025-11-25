@@ -1,5 +1,6 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TaskWithAttemptStatus } from 'shared/types';
 import {
   Play,
   Pause,
@@ -34,7 +35,7 @@ type NextActionCardProps = {
   containerRef?: string | null;
   failed: boolean;
   execution_processes: number;
-  task?: any;
+  task?: TaskWithAttemptStatus;
 };
 
 export function NextActionCard({

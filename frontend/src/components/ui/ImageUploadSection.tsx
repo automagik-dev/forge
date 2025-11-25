@@ -150,10 +150,10 @@ export const ImageUploadSection = forwardRef<
             }
 
             setErrorMessage(null);
-          } catch (error: any) {
+          } catch (error) {
             console.error('Failed to upload image:', error);
             const message =
-              error.message || 'Failed to upload image. Please try again.';
+              (error as Error).message || 'Failed to upload image. Please try again.';
             setErrorMessage(message);
           } finally {
             setUploadingFiles((prev) => {

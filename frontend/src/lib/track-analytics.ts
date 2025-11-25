@@ -41,7 +41,7 @@ export function getCurrentUserEmail(): string | undefined {
  * Enhanced capture function with namastexer detection
  * Automatically adds namastexer metadata for @namastex.ai accounts
  */
-function captureWithContext(eventName: string, properties: Record<string, any> = {}) {
+function captureWithContext(eventName: string, properties: Record<string, unknown> = {}) {
   const userEmail = getCurrentUserEmail();
   const isNamestexer = isNamestexEmployee(userEmail);
 
@@ -165,7 +165,7 @@ export function checkAndTrackFirstSuccess(
     trackFirstSuccess({
       time_to_first_success_minutes: timeToFirstSuccessMinutes,
       attempts_before_success: attemptCount,
-      executor_used: executor as any,
+      executor_used: executor,
       days_since_signup: daysSinceSignup,
     });
 

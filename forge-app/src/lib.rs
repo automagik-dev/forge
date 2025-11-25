@@ -192,16 +192,16 @@ pub async fn run_server_with_readiness(
         tracing::info!("Database will be created at: {:?}", default_db_path);
 
         // Pre-create parent directory for database (defensive fix)
-        if let Some(parent) = default_db_path.parent() {
-            if !parent.exists() {
-                tracing::warn!(
-                    "Database parent directory doesn't exist, creating: {:?}",
-                    parent
-                );
-                std::fs::create_dir_all(parent).map_err(|e| {
-                    anyhow::anyhow!("Failed to create database directory {:?}: {}", parent, e)
-                })?;
-            }
+        if let Some(parent) = default_db_path.parent()
+            && !parent.exists()
+        {
+            tracing::warn!(
+                "Database parent directory doesn't exist, creating: {:?}",
+                parent
+            );
+            std::fs::create_dir_all(parent).map_err(|e| {
+                anyhow::anyhow!("Failed to create database directory {:?}: {}", parent, e)
+            })?;
         }
     }
 

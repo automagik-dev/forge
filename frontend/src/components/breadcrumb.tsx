@@ -388,8 +388,8 @@ export function Breadcrumb() {
             newBaseBranch: result.branchName,
             oldBaseBranch: result.upstreamBranch,
           });
-        } catch (err: any) {
-          console.error('Rebase failed:', err.message || t('git.errors.rebaseBranch'));
+        } catch (err) {
+          console.error('Rebase failed:', (err as Error).message || t('git.errors.rebaseBranch'));
         } finally {
           setRebasing(false);
         }
@@ -442,8 +442,8 @@ export function Breadcrumb() {
       await refetchProjectBranchStatus();
 
       console.log('Successfully fetched updates from remote');
-    } catch (err: any) {
-      console.error('Project pull failed:', err.message || 'Failed to pull project updates');
+    } catch (err) {
+      console.error('Project pull failed:', (err as Error).message || 'Failed to pull project updates');
     }
   };
 

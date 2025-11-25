@@ -66,7 +66,7 @@ const TASK_STATUSES = [
 function DiffsPanelContainer({
   attempt,
 }: {
-  attempt: any;
+  attempt: TaskAttempt;
 }) {
   return (
     <DiffsPanel

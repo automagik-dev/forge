@@ -343,7 +343,7 @@ export function GeneralSettings() {
 
                   // Track executor selection change
                   trackExecutorSelected({
-                    executor: value as any,
+                    executor: value,
                     is_default: false,
                     context: 'settings_change',
                   });

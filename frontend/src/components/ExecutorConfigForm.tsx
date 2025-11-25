@@ -20,12 +20,15 @@ type ExecutorType =
   | 'OPENCODE'
   | 'QWEN_CODE';
 
+// Form data type for executor configurations - dynamic based on schema
+type ExecutorFormData = Record<string, unknown>;
+
 interface ExecutorConfigFormProps {
   executor: ExecutorType;
-  value: any;
-  onSubmit?: (formData: any) => void;
-  onChange?: (formData: any) => void;
-  onSave?: (formData: any) => Promise<void>;
+  value: ExecutorFormData;
+  onSubmit?: (formData: ExecutorFormData) => void;
+  onChange?: (formData: ExecutorFormData) => void;
+  onSave?: (formData: ExecutorFormData) => Promise<void>;
   disabled?: boolean;
   isSaving?: boolean;
   isDirty?: boolean;
@@ -57,14 +60,14 @@ export function ExecutorConfigForm({
     setValidationErrors([]);
   }, [value, executor]);
 
-  const handleChange = ({ formData: newFormData }: any) => {
+  const handleChange = ({ formData: newFormData }: { formData: ExecutorFormData }) => {
     setFormData(newFormData);
     if (onChange) {
       onChange(newFormData);
     }
   };
 
-  const handleSubmit = async ({ formData: submitData }: any) => {
+  const handleSubmit = async ({ formData: submitData }: { formData: ExecutorFormData }) => {
     setValidationErrors([]);
     if (onSave) {
       await onSave(submitData);

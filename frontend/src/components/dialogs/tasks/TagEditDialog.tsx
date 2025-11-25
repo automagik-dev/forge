@@ -78,9 +78,9 @@ export const TagEditDialog = NiceModal.create<TagEditDialogProps>(({ tag }) => {
 
       modal.resolve('saved' as TagEditResult);
       modal.hide();
-    } catch (err: any) {
+    } catch (err) {
       setError(
-        err.message || t('settings.general.tags.dialog.errors.saveFailed')
+        (err as Error).message || t('settings.general.tags.dialog.errors.saveFailed')
       );
     } finally {
       setSaving(false);

@@ -1,7 +1,7 @@
 import { McpConfig } from 'shared/types';
 
 export class McpConfigStrategyGeneral {
-  static createFullConfig(cfg: McpConfig): Record<string, any> {
+  static createFullConfig(cfg: McpConfig): Record<string, unknown> {
     // create a template with servers filled in at cfg.servers
     const fullConfig = JSON.parse(JSON.stringify(cfg.template));
     let current = fullConfig;
@@ -20,7 +20,7 @@ export class McpConfigStrategyGeneral {
   }
   static validateFullConfig(
     mcp_config: McpConfig,
-    full_config: Record<string, any>
+    full_config: Record<string, unknown>
   ): void {
     // Validate using the schema path
     let current = full_config;
@@ -38,8 +38,8 @@ export class McpConfigStrategyGeneral {
   }
   static extractServersForApi(
     mcp_config: McpConfig,
-    full_config: Record<string, any>
-  ): Record<string, any> {
+    full_config: Record<string, unknown>
+  ): Record<string, unknown> {
     // Extract the servers object based on the path
     let current = full_config;
     for (const key of mcp_config.servers_path) {
@@ -55,10 +55,10 @@ export class McpConfigStrategyGeneral {
 
   static addPreconfiguredToConfig(
     mcp_config: McpConfig,
-    existingConfig: Record<string, any>,
+    existingConfig: Record<string, unknown>,
     serverKey: string
-  ): Record<string, any> {
-    const preconf = mcp_config.preconfigured as Record<string, any>;
+  ): Record<string, unknown> {
+    const preconf = mcp_config.preconfigured as Record<string, unknown>;
     if (!preconf || typeof preconf !== 'object' || !(serverKey in preconf)) {
       throw new Error(`Unknown preconfigured server '${serverKey}'`);
     }

@@ -18,8 +18,8 @@ function buildChainInnerToOuterForBanner(entry: ClickedEntry) {
   const comps = entry.payload.components ?? [];
   const s = entry.payload.selected;
 
-  // Start with selected as innermost, cast to ComponentInfo for uniform handling
-  const innerToOuter = [s as any];
+  // Start with selected as innermost
+  const innerToOuter: typeof comps = [s];
 
   // Add components that aren't duplicates
   const selectedKey = `${s.name}|${s.pathToSource}|${s.source?.lineNumber}|${s.source?.columnNumber}`;

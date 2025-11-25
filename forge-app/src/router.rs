@@ -1210,7 +1210,7 @@ async fn forge_get_task_attempt_branch_status(
     // Get current branch in the worktree
     let current_branch_output = Command::new("git")
         .current_dir(&worktree_path)
-        .args(&["rev-parse", "--abbrev-ref", "HEAD"])
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
         .output();
 
     let current_branch = match current_branch_output {
@@ -1231,7 +1231,7 @@ async fn forge_get_task_attempt_branch_status(
     // Get the configured upstream tracking branch (e.g., origin/forge/task-xyz, upstream/main, etc.)
     let upstream_output = Command::new("git")
         .current_dir(&worktree_path)
-        .args(&["rev-parse", "--abbrev-ref", "@{u}"])
+        .args(["rev-parse", "--abbrev-ref", "@{u}"])
         .output();
 
     let remote_tracking_branch = match upstream_output {
@@ -1255,13 +1255,13 @@ async fn forge_get_task_attempt_branch_status(
     if let Some(remote_name) = remote_tracking_branch.split('/').next() {
         let _ = Command::new("git")
             .current_dir(&worktree_path)
-            .args(&["fetch", remote_name, &current_branch])
+            .args(["fetch", remote_name, &current_branch])
             .output();
     }
 
     let remote_commits_output = Command::new("git")
         .current_dir(&worktree_path)
-        .args(&[
+        .args([
             "rev-list",
             "--left-right",
             "--count",
@@ -1272,7 +1272,7 @@ async fn forge_get_task_attempt_branch_status(
     let (remote_commits_behind, remote_commits_ahead) = match remote_commits_output {
         Ok(output) if output.status.success() => {
             let output_str = String::from_utf8_lossy(&output.stdout);
-            let parts: Vec<&str> = output_str.trim().split_whitespace().collect();
+            let parts: Vec<&str> = output_str.split_whitespace().collect();
             if parts.len() == 2 {
                 (parts[0].parse::<i32>().ok(), parts[1].parse::<i32>().ok())
             } else {
@@ -1736,7 +1736,7 @@ async fn get_project_branch_status(
     // Get current branch
     let current_branch_output = Command::new("git")
         .current_dir(&project.git_repo_path)
-        .args(&["rev-parse", "--abbrev-ref", "HEAD"])
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
         .output();
 
     let current_branch = match current_branch_output {
@@ -1758,14 +1758,14 @@ async fn get_project_branch_status(
     // Fetch from remote to ensure we have latest refs
     let _ = Command::new("git")
         .current_dir(&project.git_repo_path)
-        .args(&["fetch", "origin"])
+        .args(["fetch", "origin"])
         .output();
 
     // Compare against remote tracking branch (origin/target_branch)
     let remote_branch = format!("origin/{}", target_branch);
     let commits_behind_ahead_output = Command::new("git")
         .current_dir(&project.git_repo_path)
-        .args(&[
+        .args([
             "rev-list",
             "--left-right",
             "--count",
@@ -1776,7 +1776,7 @@ async fn get_project_branch_status(
     let (commits_behind, commits_ahead) = match commits_behind_ahead_output {
         Ok(output) if output.status.success() => {
             let output_str = String::from_utf8_lossy(&output.stdout);
-            let parts: Vec<&str> = output_str.trim().split_whitespace().collect();
+            let parts: Vec<&str> = output_str.split_whitespace().collect();
             if parts.len() == 2 {
                 (parts[0].parse::<i32>().ok(), parts[1].parse::<i32>().ok())
             } else {
@@ -1790,7 +1790,7 @@ async fn get_project_branch_status(
     // This tells us if we need to push (local ahead) or pull (remote ahead)
     let upstream_output = Command::new("git")
         .current_dir(&project.git_repo_path)
-        .args(&["rev-parse", "--abbrev-ref", "@{u}"])
+        .args(["rev-parse", "--abbrev-ref", "@{u}"])
         .output();
 
     let (remote_commits_behind, remote_commits_ahead) = match upstream_output {
@@ -1800,7 +1800,7 @@ async fn get_project_branch_status(
             // Compare local to its configured upstream
             let remote_commits_output = Command::new("git")
                 .current_dir(&project.git_repo_path)
-                .args(&[
+                .args([
                     "rev-list",
                     "--left-right",
                     "--count",
@@ -1811,7 +1811,7 @@ async fn get_project_branch_status(
             match remote_commits_output {
                 Ok(output) if output.status.success() => {
                     let output_str = String::from_utf8_lossy(&output.stdout);
-                    let parts: Vec<&str> = output_str.trim().split_whitespace().collect();
+                    let parts: Vec<&str> = output_str.split_whitespace().collect();
                     if parts.len() == 2 {
                         (parts[0].parse::<i32>().ok(), parts[1].parse::<i32>().ok())
                     } else {
@@ -1835,7 +1835,7 @@ async fn get_project_branch_status(
     // Check for uncommitted changes
     let status_output = Command::new("git")
         .current_dir(&project.git_repo_path)
-        .args(&["status", "--porcelain"])
+        .args(["status", "--porcelain"])
         .output();
 
     let (has_uncommitted_changes, uncommitted_count, untracked_count) = match status_output {
@@ -1856,7 +1856,7 @@ async fn get_project_branch_status(
     // Get HEAD commit OID
     let head_oid_output = Command::new("git")
         .current_dir(&project.git_repo_path)
-        .args(&["rev-parse", "HEAD"])
+        .args(["rev-parse", "HEAD"])
         .output();
 
     let head_oid = match head_oid_output {
@@ -1911,7 +1911,7 @@ async fn post_project_pull(
     // Get current branch name
     let branch_output = Command::new("git")
         .current_dir(&project.git_repo_path)
-        .args(&["rev-parse", "--abbrev-ref", "HEAD"])
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
         .output();
 
     let current_branch = match branch_output {
@@ -1947,7 +1947,7 @@ async fn post_project_pull(
 
     let pull_output = Command::new("git")
         .current_dir(&project.git_repo_path)
-        .args(&["pull", "--rebase", "origin", &current_branch])
+        .args(["pull", "--rebase", "origin", &current_branch])
         .output();
 
     match pull_output {

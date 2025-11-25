@@ -64,7 +64,7 @@ export function useProcessRetry(attempt: TaskAttempt | undefined) {
       try {
         const details =
           await executionProcessesApi.getDetails(executionProcessId);
-        const typ: any = details?.executor_action?.typ as any;
+        const typ = details?.executor_action?.typ as { type?: string; executor_profile_id?: { variant?: string } } | undefined;
         if (
           typ &&
           (typ.type === 'CodingAgentInitialRequest' ||
@@ -83,7 +83,7 @@ export function useProcessRetry(attempt: TaskAttempt | undefined) {
           prompt: newPrompt,
           variant,
           image_ids: [],
-          version: null as any,
+          version: null,
         });
       } finally {
         setBusy(false);

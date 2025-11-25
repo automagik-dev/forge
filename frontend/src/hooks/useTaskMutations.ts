@@ -31,7 +31,7 @@ export function useTaskMutations(projectId?: string) {
       // Track task creation with analytics
       // Note: executor info is not in CreateTask, will be tracked from config
       trackTaskCreated({
-        executor: (createdTask as any).executor_profile?.executor || 'unknown',
+        executor: (createdTask as Task & { executor_profile?: { executor?: string } }).executor_profile?.executor || 'unknown',
         has_description: !!variables.description,
         prompt_length: variables.description?.length || 0,
         is_subtask: !!variables.parent_task_attempt,
@@ -53,7 +53,7 @@ export function useTaskMutations(projectId?: string) {
     onSuccess: (createdTask: TaskWithAttemptStatus, variables: CreateAndStartTaskRequest) => {
       // Track task creation with analytics
       trackTaskCreated({
-        executor: (variables.executor_profile_id.executor as any) || 'unknown',
+        executor: variables.executor_profile_id.executor || 'unknown',
         has_description: !!variables.task.description,
         prompt_length: variables.task.description?.length || 0,
         is_subtask: !!variables.task.parent_task_attempt,
@@ -83,7 +83,7 @@ export function useTaskMutations(projectId?: string) {
         try {
           const attempts = await attemptsApi.getAll(updatedTask.id);
           const latestAttempt = attempts[0]; // Sorted newest first
-          const executor = (latestAttempt?.executor as any) || 'unknown';
+          const executor = (latestAttempt as { executor?: string } | undefined)?.executor || 'unknown';
           const attemptCount = attempts.length;
 
           trackTaskCompleted({

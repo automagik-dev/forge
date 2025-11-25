@@ -206,7 +206,7 @@ export function TaskFollowUpSection({
       );
       return executorKey
         ? {
-            executor: executorKey as any,
+            executor: executorKey,
             variant: variantFromHistory,
           }
         : null;
@@ -229,7 +229,7 @@ export function TaskFollowUpSection({
       );
       if (executorKey) {
         setSelectedProfile({
-          executor: executorKey as any,
+          executor: executorKey,
           variant: variantFromHistory,
         });
       }
