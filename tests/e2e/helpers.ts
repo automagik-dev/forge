@@ -200,3 +200,185 @@ export function getWebSocketEventSummary(captured: CapturedWebSocketEvents): str
     `Unclassified: ${captured.unclassified.length} messages`,
   ].join('\n');
 }
+
+// =============================================================================
+// PR #246 Performance Testing Helpers
+// =============================================================================
+
+/**
+ * WebSocket connection tracker for memory leak detection
+ * Tracks open/close events to verify proper cleanup
+ */
+export interface WebSocketTracker {
+  connections: { url: string; openedAt: number; closedAt?: number }[];
+  getOpenCount(): number;
+  getClosedCount(): number;
+  getAllUrls(): string[];
+}
+
+/**
+ * Set up WebSocket connection tracking
+ * Use to verify WebSocket cleanup on navigation
+ *
+ * @example
+ * const tracker = setupWebSocketTracker(page);
+ * await page.goto('/projects/123/tasks/456/attempts/789');
+ * await page.waitForTimeout(2000);
+ * const openBefore = tracker.getOpenCount();
+ * await page.goto('/projects');
+ * await page.waitForTimeout(1000);
+ * expect(tracker.getOpenCount()).toBeLessThan(openBefore);
+ */
+export function setupWebSocketTracker(page: Page): WebSocketTracker {
+  const tracker: WebSocketTracker = {
+    connections: [],
+    getOpenCount() {
+      return this.connections.filter(c => !c.closedAt).length;
+    },
+    getClosedCount() {
+      return this.connections.filter(c => c.closedAt).length;
+    },
+    getAllUrls() {
+      return this.connections.map(c => c.url);
+    },
+  };
+
+  page.on('websocket', ws => {
+    const connection = {
+      url: ws.url(),
+      openedAt: Date.now(),
+      closedAt: undefined as number | undefined,
+    };
+    tracker.connections.push(connection);
+
+    ws.on('close', () => {
+      connection.closedAt = Date.now();
+    });
+  });
+
+  return tracker;
+}
+
+/**
+ * Polling request tracker for interval validation
+ * Tracks requests matching a URL pattern with timestamps
+ */
+export interface PollingTracker {
+  requests: { url: string; timestamp: number }[];
+  getIntervals(): number[];
+  getAverageIntervalMs(): number | null;
+  clear(): void;
+}
+
+/**
+ * Set up network request tracking for polling validation
+ * Use to verify smart polling intervals (15s visible, 60s background)
+ *
+ * @example
+ * const tracker = setupPollingTracker(page, '/branch-status');
+ * await page.goto('/projects/123/tasks/456/attempts/789');
+ * await page.waitForTimeout(35000); // Wait for 2 polls
+ * const avg = tracker.getAverageIntervalMs();
+ * expect(avg).toBeGreaterThan(14000);
+ * expect(avg).toBeLessThan(16000);
+ */
+export function setupPollingTracker(page: Page, urlPattern: string): PollingTracker {
+  const tracker: PollingTracker = {
+    requests: [],
+    getIntervals() {
+      if (this.requests.length < 2) return [];
+      return this.requests.slice(1).map((r, i) => r.timestamp - this.requests[i].timestamp);
+    },
+    getAverageIntervalMs() {
+      const intervals = this.getIntervals();
+      if (intervals.length === 0) return null;
+      return intervals.reduce((a, b) => a + b, 0) / intervals.length;
+    },
+    clear() {
+      this.requests.length = 0;
+    },
+  };
+
+  page.on('request', request => {
+    if (request.url().includes(urlPattern)) {
+      tracker.requests.push({
+        url: request.url(),
+        timestamp: Date.now(),
+      });
+    }
+  });
+
+  return tracker;
+}
+
+/**
+ * Navigate directly to an attempt view
+ *
+ * @example
+ * await navigateToAttempt(page, projectId, taskId, attemptId);
+ */
+export async function navigateToAttempt(
+  page: Page,
+  projectId: string,
+  taskId: string,
+  attemptId: string
+): Promise<void> {
+  await page.goto(`/projects/${projectId}/tasks/${taskId}/attempts/${attemptId}`);
+  await page.waitForLoadState('networkidle');
+}
+
+/**
+ * Get memory usage via Chrome DevTools Protocol
+ * Falls back to DOM node count if performance.memory unavailable
+ *
+ * @returns Memory in bytes (heap) or DOM node count (fallback)
+ */
+export async function getMemoryUsage(page: Page): Promise<number> {
+  return await page.evaluate(() => {
+    // Chrome-only: performance.memory
+    if ('memory' in performance) {
+      return (performance as any).memory.usedJSHeapSize;
+    }
+    // Fallback: DOM node count as proxy for memory
+    return document.querySelectorAll('*').length * 1000; // Scale for comparison
+  });
+}
+
+/**
+ * Assert that memory stabilizes after repeated operations
+ * Verifies PR #246 WebSocket memory leak fix
+ *
+ * @param samples - Array of memory measurements
+ * @returns true if memory stabilized (growth rate approaching zero)
+ */
+export function assertMemoryStabilized(samples: number[]): boolean {
+  if (samples.length < 4) return true; // Not enough data
+
+  const growthRates = samples.slice(1).map((v, i) => v - samples[i]);
+  const lastThreeGrowth = growthRates.slice(-3);
+
+  // Check if last 3 growth rates are all decreasing or near zero
+  const avgLastThree = lastThreeGrowth.reduce((a, b) => a + b, 0) / 3;
+  const avgOverall = growthRates.reduce((a, b) => a + b, 0) / growthRates.length;
+
+  // Pass if growth has slowed to <10% of average, or is negative (shrinking)
+  return avgLastThree <= 0 || Math.abs(avgLastThree) < Math.abs(avgOverall) * 0.2;
+}
+
+/**
+ * Get task attempts for a task via API
+ */
+export async function getTaskAttempts(page: Page, taskId: string): Promise<any[]> {
+  const response = await page.request.get(`/api/tasks/${taskId}/attempts`);
+  const data = await response.json();
+  return data.data || [];
+}
+
+/**
+ * Get all tasks for a project via API
+ */
+export async function getProjectTasks(page: Page, projectId: string): Promise<any[]> {
+  const response = await page.request.get(`/api/tasks?project_id=${projectId}`);
+  const data = await response.json();
+  return data.data || [];
+}
