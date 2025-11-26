@@ -401,6 +401,28 @@ async fn forge_create_task_and_start(
         TaskImage::associate_many(&deployment.db().pool, task.id, image_ids).await?;
     }
 
+    // If this is a non-worktree task (Genie chat), register in forge_agents to hide from kanban
+    let use_worktree = payload.use_worktree.unwrap_or(true);
+    if !use_worktree {
+        sqlx::query(
+            r#"INSERT INTO forge_agents (id, project_id, agent_type, task_id, created_at, updated_at)
+               VALUES (?, ?, 'genie_chat', ?, datetime('now'), datetime('now'))"#,
+        )
+        .bind(Uuid::new_v4())
+        .bind(task.project_id)
+        .bind(task.id)
+        .execute(&deployment.db().pool)
+        .await?;
+
+        // Also set task status to 'agent' so it's filtered from kanban board
+        sqlx::query(
+            "UPDATE tasks SET status = 'agent', updated_at = datetime('now') WHERE id = ?",
+        )
+        .bind(task.id)
+        .execute(&deployment.db().pool)
+        .await?;
+    }
+
     deployment
         .track_if_analytics_allowed(
             "task_created",
@@ -415,10 +437,16 @@ async fn forge_create_task_and_start(
 
     let task_attempt_id = Uuid::new_v4();
 
-    // Use same logic as upstream but replace "vk" with "forge" prefix
-    let task_title_id = git_branch_id(&task.title);
-    let short_id = short_uuid(&task_attempt_id);
-    let branch_name = format!("forge/{}-{}", short_id, task_title_id);
+    // Branch naming respects use_worktree: if false, run on base branch directly (no worktree isolation)
+    let branch_name = if use_worktree {
+        // Use same logic as upstream but replace "vk" with "forge" prefix
+        let task_title_id = git_branch_id(&task.title);
+        let short_id = short_uuid(&task_attempt_id);
+        format!("forge/{}-{}", short_id, task_title_id)
+    } else {
+        // Non-worktree mode: run directly on base branch (e.g., Genie chat)
+        payload.base_branch.clone()
+    };
 
     let mut task_attempt = TaskAttempt::create(
         &deployment.db().pool,
@@ -432,12 +460,12 @@ async fn forge_create_task_and_start(
     )
     .await?;
 
-    // Insert use_worktree flag into forge_task_attempt_config (defaults to true for regular tasks)
+    // Insert use_worktree flag into forge_task_attempt_config
     sqlx::query(
         "INSERT INTO forge_task_attempt_config (task_attempt_id, use_worktree) VALUES (?, ?)",
     )
     .bind(task_attempt_id)
-    .bind(true) // Regular tasks always use worktree
+    .bind(use_worktree)
     .execute(&deployment.db().pool)
     .await?;
 
