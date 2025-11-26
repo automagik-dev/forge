@@ -13,7 +13,7 @@ export interface StreamOptions<E = unknown> {
   onFinished?: (entries: E[]) => void;
 }
 
-interface StreamController<E = unknown> {
+export interface StreamController<E = unknown> {
   /** Current entries array (immutable snapshot) */
   getEntries(): E[];
   /** Full { entries } snapshot */

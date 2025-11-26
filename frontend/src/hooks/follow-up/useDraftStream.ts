@@ -5,6 +5,7 @@ import type { Operation } from 'rfc6902';
 import useWebSocket from 'react-use-websocket';
 import type { Draft, DraftResponse } from 'shared/types';
 import { useProject } from '@/contexts/project-context';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface Drafts {
   [attemptId: string]: { follow_up: Draft; retry: DraftResponse | null };
@@ -52,7 +53,7 @@ function useDraftsStreamState(projectId?: string): Drafts | undefined {
 
   const queryClient = useQueryClient();
   const initialData = useCallback((): DraftsContainer => ({ drafts: {} }), []);
-  const queryKey = useMemo(() => ['ws-json-patch', wsUrl], [wsUrl]);
+  const queryKey = useMemo(() => queryKeys.drafts.stream(wsUrl), [wsUrl]);
 
   const { data } = useQuery<DraftsContainer>({
     queryKey,

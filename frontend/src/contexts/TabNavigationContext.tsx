@@ -8,6 +8,7 @@ interface TabNavContextType {
 
 export const TabNavContext = createContext<TabNavContextType | null>(null);
 
+/** @public - Hook for accessing tab navigation context */
 export const useTabNavigation = () => {
   const context = useContext(TabNavContext);
   if (!context) {

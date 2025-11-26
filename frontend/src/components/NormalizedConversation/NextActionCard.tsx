@@ -1,5 +1,6 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TaskWithAttemptStatus } from 'shared/types';
 import {
   Play,
   Pause,
@@ -21,6 +22,7 @@ import { getIdeName } from '@/components/ide/IdeIcon';
 import { useProject } from '@/contexts/project-context';
 import { useQuery } from '@tanstack/react-query';
 import { attemptsApi } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   Tooltip,
   TooltipContent,
@@ -33,7 +35,7 @@ type NextActionCardProps = {
   containerRef?: string | null;
   failed: boolean;
   execution_processes: number;
-  task?: any;
+  task?: TaskWithAttemptStatus;
 };
 
 export function NextActionCard({
@@ -51,7 +53,7 @@ export function NextActionCard({
   const shouldNavigateToPreview = useRef(false);
 
   const { data: attempt } = useQuery({
-    queryKey: ['attempt', attemptId],
+    queryKey: queryKeys.attempt.detail(attemptId),
     queryFn: () => attemptsApi.get(attemptId!),
     enabled: !!attemptId && failed,
   });

@@ -11,6 +11,7 @@ import { useRebase } from '@/hooks/useRebase';
 import { useDefaultBaseBranch } from '@/hooks/useDefaultBaseBranch';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
 import { useTranslation } from 'react-i18next';
 import {
   DropdownMenu,
@@ -134,11 +135,11 @@ export function Breadcrumb() {
 
   // Get parent task if current task has one (via parent_task_attempt)
   const currentTask = taskId && tasksById[taskId] ? tasksById[taskId] : null;
-  const parentTaskAttemptId = currentTask?.parent_task_attempt;
+  const parentTaskAttemptId = currentTask?.parent_task_attempt ?? undefined;
 
   // Fetch parent task via parent_task_attempt -> task_id
   const { data: parentTask } = useQuery({
-    queryKey: ['parent-task-from-attempt', parentTaskAttemptId],
+    queryKey: queryKeys.taskRelationships.parentFromAttempt(parentTaskAttemptId),
     queryFn: async () => {
       if (!parentTaskAttemptId) return null;
 
@@ -387,8 +388,8 @@ export function Breadcrumb() {
             newBaseBranch: result.branchName,
             oldBaseBranch: result.upstreamBranch,
           });
-        } catch (err: any) {
-          console.error('Rebase failed:', err.message || t('git.errors.rebaseBranch'));
+        } catch (err) {
+          console.error('Rebase failed:', (err as Error).message || t('git.errors.rebaseBranch'));
         } finally {
           setRebasing(false);
         }
@@ -441,8 +442,8 @@ export function Breadcrumb() {
       await refetchProjectBranchStatus();
 
       console.log('Successfully fetched updates from remote');
-    } catch (err: any) {
-      console.error('Project pull failed:', err.message || 'Failed to pull project updates');
+    } catch (err) {
+      console.error('Project pull failed:', (err as Error).message || 'Failed to pull project updates');
     }
   };
 

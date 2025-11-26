@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { tasksApi, attemptsApi } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import { useNavigate } from 'react-router-dom';
 
 interface ApproveTaskParams {
@@ -41,9 +42,9 @@ export function useApproveTask() {
       } as Parameters<typeof tasksApi.update>[1]);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['task', variables.taskId] });
-      queryClient.invalidateQueries({ queryKey: ['attempts', variables.attemptId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.taskAttempts.detail(variables.attemptId) });
 
       // Navigate to kanban view on success
       navigate(`/projects/${variables.projectId}/tasks`);

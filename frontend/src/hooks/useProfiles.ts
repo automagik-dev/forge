@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { profilesApi } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 export type UseProfilesReturn = {
   // data
   profilesContent: string;
-  parsedProfiles: any | null;
+  parsedProfiles: Record<string, unknown> | null;
   profilesPath: string;
 
   // status
@@ -24,7 +25,7 @@ export function useProfiles(): UseProfilesReturn {
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['profiles'],
+    queryKey: queryKeys.profiles.all,
     queryFn: () => profilesApi.load(),
     staleTime: 1000 * 60, // 1 minute cache
   });
@@ -33,7 +34,7 @@ export function useProfiles(): UseProfilesReturn {
     mutationFn: (content: string) => profilesApi.save(content),
     onSuccess: (_, content) => {
       // Optimistically update cache with new content
-      queryClient.setQueryData(['profiles'], (old: any) =>
+      queryClient.setQueryData(queryKeys.profiles.all, (old: { content?: string } | undefined) =>
         old ? { ...old, content } : old
       );
     },

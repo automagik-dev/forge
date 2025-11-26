@@ -90,5 +90,6 @@ export function useNamestexerSessionTracking() {
         });
       }
     };
-  }, []); // Empty deps - run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally run once on mount, posthog instance is stable
+  }, []);
 }

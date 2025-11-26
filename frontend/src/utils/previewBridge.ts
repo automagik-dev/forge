@@ -137,12 +137,3 @@ export class ClickToComponentListener {
     }
   }
 }
-
-// Convenience function for quick setup
-export function listenToClickToComponent(
-  handlers: EventHandlers
-): ClickToComponentListener {
-  const listener = new ClickToComponentListener(handlers);
-  listener.start();
-  return listener;
-}

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { attemptsApi, tasksApi } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 /**
  * Fetch parent task for a given task attempt.
@@ -14,7 +15,7 @@ import { attemptsApi, tasksApi } from '@/lib/api';
  */
 export function useParentTask(parentAttemptId?: string) {
   return useQuery({
-    queryKey: ['parent-task', parentAttemptId],
+    queryKey: queryKeys.taskRelationships.parent(parentAttemptId),
     queryFn: async () => {
       if (!parentAttemptId) return null;
 

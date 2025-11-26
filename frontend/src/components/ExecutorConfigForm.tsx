@@ -20,12 +20,15 @@ type ExecutorType =
   | 'OPENCODE'
   | 'QWEN_CODE';
 
+// Form data type for executor configurations - dynamic based on schema
+type ExecutorFormData = Record<string, unknown>;
+
 interface ExecutorConfigFormProps {
   executor: ExecutorType;
-  value: any;
-  onSubmit?: (formData: any) => void;
-  onChange?: (formData: any) => void;
-  onSave?: (formData: any) => Promise<void>;
+  value: ExecutorFormData;
+  onSubmit?: (formData: ExecutorFormData) => void;
+  onChange?: (formData: ExecutorFormData) => void;
+  onSave?: (formData: ExecutorFormData) => Promise<void>;
   disabled?: boolean;
   isSaving?: boolean;
   isDirty?: boolean;
@@ -57,14 +60,16 @@ export function ExecutorConfigForm({
     setValidationErrors([]);
   }, [value, executor]);
 
-  const handleChange = ({ formData: newFormData }: any) => {
+  const handleChange = ({ formData: newFormData }: { formData?: ExecutorFormData }) => {
+    if (newFormData === undefined) return;
     setFormData(newFormData);
     if (onChange) {
       onChange(newFormData);
     }
   };
 
-  const handleSubmit = async ({ formData: submitData }: any) => {
+  const handleSubmit = async ({ formData: submitData }: { formData?: ExecutorFormData }) => {
+    if (submitData === undefined) return;
     setValidationErrors([]);
     if (onSave) {
       await onSave(submitData);
@@ -91,13 +96,17 @@ export function ExecutorConfigForm({
     <div className="space-y-8">
       <Card>
         <CardContent className="p-6">
+          {/* RJSF beta has complex generic types; use any-typed Form to avoid deep type errors */}
           <Form
             schema={schema}
             formData={formData}
-            onChange={handleChange}
-            onSubmit={handleSubmit}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onChange={handleChange as any}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onSubmit={handleSubmit as any}
             onError={handleError}
-            validator={validator}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            validator={validator as any}
             disabled={disabled}
             liveValidate
             showErrorList={false}

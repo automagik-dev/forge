@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { attemptsApi } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 
 /**
  * Fetch children tasks (subtasks) for a given task attempt.
@@ -14,7 +15,7 @@ import { attemptsApi } from '@/lib/api';
  */
 export function useChildrenTasks(attemptId?: string) {
   return useQuery({
-    queryKey: ['children-tasks', attemptId],
+    queryKey: queryKeys.taskRelationships.children(attemptId),
     queryFn: async () => {
       if (!attemptId) return [];
 

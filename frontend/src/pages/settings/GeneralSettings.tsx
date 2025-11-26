@@ -46,6 +46,7 @@ import { TagManager } from '@/components/TagManager';
 import NiceModal from '@ebay/nice-modal-react';
 import { updateLanguageFromConfig } from '@/i18n/config';
 import { trackExecutorSelected } from '@/lib/track-analytics';
+import type { ExecutorType } from '@/types/analytics';
 
 export function GeneralSettings() {
   const { t } = useTranslation(['settings', 'common']);
@@ -343,7 +344,7 @@ export function GeneralSettings() {
 
                   // Track executor selection change
                   trackExecutorSelected({
-                    executor: value as any,
+                    executor: value as ExecutorType,
                     is_default: false,
                     context: 'settings_change',
                   });

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { attemptsApi } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   ChangeTargetBranchRequest,
   ChangeTargetBranchResponse,
@@ -27,17 +28,17 @@ export function useChangeTargetBranch(
     onSuccess: (data) => {
       if (attemptId) {
         queryClient.invalidateQueries({
-          queryKey: ['branchStatus', attemptId],
+          queryKey: queryKeys.branch.status(attemptId),
         });
         // Invalidate taskAttempt query to refresh attempt.target_branch
         queryClient.invalidateQueries({
-          queryKey: ['taskAttempt', attemptId],
+          queryKey: queryKeys.taskAttempts.detail(attemptId),
         });
       }
 
       if (projectId) {
         queryClient.invalidateQueries({
-          queryKey: ['projectBranches', projectId],
+          queryKey: queryKeys.branch.projectAll(projectId),
         });
       }
 
@@ -47,7 +48,7 @@ export function useChangeTargetBranch(
       console.error('Failed to change target branch:', err);
       if (attemptId) {
         queryClient.invalidateQueries({
-          queryKey: ['branchStatus', attemptId],
+          queryKey: queryKeys.branch.status(attemptId),
         });
       }
       onError?.(err);

@@ -126,7 +126,7 @@ export const useJsonPatchWsStream = <T>(
             dataRef.current = structuredClone(dataRef.current);
 
             // Apply patch (mutates the clone in place)
-            applyPatch(dataRef.current as any, filtered);
+            applyPatch(dataRef.current as object, filtered);
 
             // React re-render: dataRef.current is already a new object
             setData(dataRef.current);

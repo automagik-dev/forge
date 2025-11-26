@@ -22,7 +22,6 @@ import {
   GitBranch,
   Project,
   CreateProject,
-  RepositoryInfo,
   SearchResult,
   Task,
   TaskAttempt,
@@ -169,12 +168,6 @@ const makeRequest = async (
   throw lastError || new Error(`Request to ${url} failed after ${effectiveMaxRetries + 1} attempts`);
 };
 
-export interface FollowUpResponse {
-  message: string;
-  actual_attempt_id: string;
-  created_new_attempt: boolean;
-}
-
 export type Ok<T> = { success: true; data: T };
 export type Err<E> = { success: false; error: E | undefined; message?: string };
 
@@ -317,7 +310,7 @@ export const projectsApi = {
   },
 
   openEditor: async (id: string, editorType?: EditorType): Promise<void> => {
-    const requestBody: any = {};
+    const requestBody: { editor_type?: EditorType } = {};
     if (editorType) requestBody.editor_type = editorType;
 
     const response = await makeRequest(`/api/projects/${id}/open-editor`, {
@@ -763,14 +756,6 @@ export const githubAuthApi = {
   },
 };
 
-// GitHub APIs (only available in cloud mode)
-export const githubApi = {
-  listRepositories: async (page: number = 1): Promise<RepositoryInfo[]> => {
-    const response = await makeRequest(`/api/github/repositories?page=${page}`);
-    return handleApiResponse<RepositoryInfo[]>(response);
-  },
-};
-
 // Task Tags APIs (all tags are global)
 export const tagsApi = {
   list: async (params?: TagSearchParams): Promise<Tag[]> => {
@@ -864,9 +849,9 @@ export const profilesApi = {
 
 // Project-specific profiles API (Forge extension)
 export const projectProfilesApi = {
-  load: async (projectId: string): Promise<any> => {
+  load: async (projectId: string): Promise<Record<string, unknown>> => {
     const response = await makeRequest(`/api/forge/projects/${projectId}/profiles`);
-    return handleApiResponse<any>(response);
+    return handleApiResponse<Record<string, unknown>>(response);
   },
 };
 

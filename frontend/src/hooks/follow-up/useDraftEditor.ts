@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Draft, ImageResponse } from 'shared/types';
 import { imagesApi } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
 
 type PartialDraft = Pick<Draft, 'prompt' | 'image_ids'>;
 
@@ -38,7 +39,7 @@ export function useDraftEditor({ draft, taskId }: Args) {
   const serverIds = (draft?.image_ids ?? []).filter(Boolean);
   const idsKey = serverIds.join(',');
   const imagesQuery = useQuery({
-    queryKey: ['taskImagesForDraft', taskId, idsKey],
+    queryKey: queryKeys.drafts.imagesForDraft(taskId, idsKey),
     enabled: !!taskId,
     queryFn: async () => {
       // taskId is guaranteed to exist because of enabled guard above

@@ -39,7 +39,7 @@ import {
 } from '@/keyboard';
 
 import TaskKanbanBoard from '@/components/tasks/TaskKanbanBoard';
-import type { TaskWithAttemptStatus } from 'shared/types';
+import type { TaskWithAttemptStatus, TaskAttempt } from 'shared/types';
 import type { DragEndEvent } from '@/components/ui/shadcn-io/kanban';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -66,7 +66,7 @@ const TASK_STATUSES = [
 function DiffsPanelContainer({
   attempt,
 }: {
-  attempt: any;
+  attempt: TaskAttempt;
 }) {
   return (
     <DiffsPanel
@@ -161,45 +161,6 @@ export function ProjectTasks() {
     })[0].id;
   }, [attempts]);
 
-  useEffect(() => {
-    if (!projectId || !taskId) return;
-    if (!isLatest) return;
-    if (isAttemptsLoading) return;
-
-    if (!latestAttemptId) {
-      navigateWithSearch(paths.task(projectId, taskId), { replace: true });
-      return;
-    }
-
-    navigateWithSearch(paths.attempt(projectId, taskId, latestAttemptId), {
-      replace: true,
-    });
-  }, [
-    projectId,
-    taskId,
-    isLatest,
-    isAttemptsLoading,
-    latestAttemptId,
-    navigate,
-  ]);
-
-  useEffect(() => {
-    if (!projectId || !taskId || isLoading) return;
-    // Don't redirect if we have an attemptId - agent tasks (Master Genie) won't be in tasksById
-    // but we can still show them via their attempts
-    // Also don't redirect if in chat view - ChatPanel will create attempt on first message
-    if (selectedTask === null && !attemptId && !isInChatView) {
-      navigate(`/projects/${projectId}/tasks`, { replace: true });
-    }
-  }, [projectId, taskId, isLoading, selectedTask, attemptId, isInChatView, navigate]);
-
-  // Close task panel when user starts searching (to show search results in kanban)
-  useEffect(() => {
-    if (searchQuery.trim() && isPanelOpen && projectId) {
-      navigate(`/projects/${projectId}/tasks`, { replace: true });
-    }
-  }, [searchQuery, isPanelOpen, projectId, navigate]);
-
   const effectiveAttemptId = attemptId === 'latest' ? undefined : attemptId;
   const isTaskView = !!taskId && !effectiveAttemptId;
   const { data: attempt } = useTaskAttempt(effectiveAttemptId);
@@ -209,6 +170,14 @@ export function ProjectTasks() {
     rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat'
       ? rawMode
       : null;
+
+  const navigateWithSearch = useCallback(
+    (pathname: string, options?: { replace?: boolean }) => {
+      const search = searchParams.toString();
+      navigate({ pathname, search: search ? `?${search}` : '' }, options);
+    },
+    [navigate, searchParams]
+  );
 
   const setMode = useCallback(
     (newMode: LayoutMode, trigger: ViewModeChangeTrigger = 'ui_button') => {
@@ -233,13 +202,44 @@ export function ProjectTasks() {
     [mode, taskId, selectedTask, posthog, searchParams, setSearchParams]
   );
 
-  const navigateWithSearch = useCallback(
-    (pathname: string, options?: { replace?: boolean }) => {
-      const search = searchParams.toString();
-      navigate({ pathname, search: search ? `?${search}` : '' }, options);
-    },
-    [navigate, searchParams]
-  );
+  useEffect(() => {
+    if (!projectId || !taskId) return;
+    if (!isLatest) return;
+    if (isAttemptsLoading) return;
+
+    if (!latestAttemptId) {
+      navigateWithSearch(paths.task(projectId, taskId), { replace: true });
+      return;
+    }
+
+    navigateWithSearch(paths.attempt(projectId, taskId, latestAttemptId), {
+      replace: true,
+    });
+  }, [
+    projectId,
+    taskId,
+    isLatest,
+    isAttemptsLoading,
+    latestAttemptId,
+    navigateWithSearch,
+  ]);
+
+  useEffect(() => {
+    if (!projectId || !taskId || isLoading) return;
+    // Don't redirect if we have an attemptId - agent tasks (Master Genie) won't be in tasksById
+    // but we can still show them via their attempts
+    // Also don't redirect if in chat view - ChatPanel will create attempt on first message
+    if (selectedTask === null && !attemptId && !isInChatView) {
+      navigate(`/projects/${projectId}/tasks`, { replace: true });
+    }
+  }, [projectId, taskId, isLoading, selectedTask, attemptId, isInChatView, navigate]);
+
+  // Close task panel when user starts searching (to show search results in kanban)
+  useEffect(() => {
+    if (searchQuery.trim() && isPanelOpen && projectId) {
+      navigate(`/projects/${projectId}/tasks`, { replace: true });
+    }
+  }, [searchQuery, isPanelOpen, projectId, navigate]);
 
   const handleCreateNewTask = useCallback(() => {
     trackKeyboardShortcut({

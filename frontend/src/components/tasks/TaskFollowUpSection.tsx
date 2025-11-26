@@ -21,7 +21,8 @@ import {
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { imagesApi } from '@/lib/api.ts';
-import type { TaskWithAttemptStatus } from 'shared/types';
+import type { TaskWithAttemptStatus, ExecutorProfileId } from 'shared/types';
+import { BaseCodingAgent } from 'shared/types';
 import { useBranchStatus } from '@/hooks';
 import { useAttemptExecution } from '@/hooks/useAttemptExecution';
 import { useUserSystem } from '@/components/config-provider';
@@ -51,7 +52,6 @@ import { useDefaultBaseBranch } from '@/hooks/useDefaultBaseBranch';
 import { buildResolveConflictsInstructions } from '@/lib/conflicts';
 import { appendImageMarkdown } from '@/utils/markdownImages';
 import { useTranslation } from 'react-i18next';
-import type { ExecutorProfileId } from 'shared/types';
 
 interface TaskFollowUpSectionProps {
   task: TaskWithAttemptStatus | null;
@@ -84,7 +84,8 @@ export function TaskFollowUpSection({
   const { data: projectProfiles } = useProjectProfiles(task?.project_id ?? projectIdFromUrl);
 
   // Use project profiles if available (synchronized agents), fallback to global profiles
-  const profiles = projectProfiles?.executors || globalProfiles;
+  const profiles = (projectProfiles?.executors || globalProfiles || null) as
+    Record<string, import('shared/types').ExecutorConfig> | null;
 
   const { comments, generateReviewMarkdown, clearComments } = useReview();
   const {
@@ -206,7 +207,7 @@ export function TaskFollowUpSection({
       );
       return executorKey
         ? {
-            executor: executorKey as any,
+            executor: executorKey as BaseCodingAgent,
             variant: variantFromHistory,
           }
         : null;
@@ -229,7 +230,7 @@ export function TaskFollowUpSection({
       );
       if (executorKey) {
         setSelectedProfile({
-          executor: executorKey as any,
+          executor: executorKey as BaseCodingAgent,
           variant: variantFromHistory,
         });
       }
@@ -407,8 +408,7 @@ export function TaskFollowUpSection({
     return true;
   }, [
     selectedAttemptId,
-    task?.id,
-    task?.status,
+    task,
     isInChatView,
     isSendingFollowUp,
     branchStatus?.merges,

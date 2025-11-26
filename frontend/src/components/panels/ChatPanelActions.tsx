@@ -14,7 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useTaskAttempts } from '@/hooks/useTaskAttempts';
+import { useTaskAttemptsWithLiveStatus } from '@/hooks/useTaskAttempts';
 import type { TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -25,6 +25,7 @@ import {
   copyToClipboard,
   generateExportFilename,
 } from '@/utils/exportChat';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface ChatPanelActionsProps {
   attempt: TaskAttempt | undefined;
@@ -34,7 +35,7 @@ interface ChatPanelActionsProps {
 export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
   const navigate = useNavigate();
   const { projectId, taskId } = useParams<{ projectId: string; taskId: string }>();
-  const { data: attempts = [] } = useTaskAttempts(taskId);
+  const { data: attempts = [] } = useTaskAttemptsWithLiveStatus(taskId, task);
   const { t } = useTranslation('tasks');
   const queryClient = useQueryClient();
   const [isCreatingAttempt, setIsCreatingAttempt] = useState(false);
@@ -55,7 +56,7 @@ export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
       navigate(`/projects/${projectId}/tasks/${taskId}?view=chat`);
 
       // Invalidate attempts query to ensure fresh data
-      await queryClient.invalidateQueries({ queryKey: ['task-attempts', taskId] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.taskAttempts.byTask(taskId) });
     } catch (error) {
       console.error('Failed to navigate to new session:', error);
       // TODO: Show error toast

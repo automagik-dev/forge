@@ -4,6 +4,7 @@ import {
   ActionType,
   NormalizedEntry,
   TaskAttempt,
+  TaskWithAttemptStatus,
   ToolStatus,
   type NormalizedEntryType,
 } from 'shared/types.ts';
@@ -39,11 +40,11 @@ type Props = {
   diffDeletable?: boolean;
   executionProcessId?: string;
   taskAttempt?: TaskAttempt;
-  task?: any;
+  task?: TaskWithAttemptStatus;
 };
 
 type FileEditAction = Extract<ActionType, { action: 'file_edit' }>;
-type JsonValue = any;
+type JsonValue = unknown;
 
 const renderJson = (v: JsonValue) => (
   <pre className="whitespace-pre-wrap">{JSON.stringify(v, null, 2)}</pre>
@@ -420,7 +421,7 @@ const PlanPresentationCard: React.FC<{
 
 const ToolCallCard: React.FC<{
   entryType?: Extract<NormalizedEntryType, { type: 'tool_use' }>;
-  action?: any;
+  action?: ActionType | null;
   expansionKey: string;
   content?: string;
   entryContent?: string;
@@ -438,7 +439,7 @@ const ToolCallCard: React.FC<{
   forceExpanded = false,
 }) => {
   const { t } = useTranslation('common');
-  const at: any = entryType?.action_type || action;
+  const at = (entryType?.action_type || action) as ActionType | undefined;
   const [expanded, toggle] = useExpandable(
     `tool-entry:${expansionKey}`,
     defaultExpanded
@@ -448,7 +449,7 @@ const ToolCallCard: React.FC<{
   const label =
     at?.action === 'command_run'
       ? 'Ran'
-      : entryType?.tool_name || at?.tool_name || 'Tool';
+      : entryType?.tool_name || (at?.action === 'tool' ? at.tool_name : null) || 'Tool';
 
   const isCommand = at?.action === 'command_run';
 
@@ -462,15 +463,18 @@ const ToolCallCard: React.FC<{
   const output: string | null = isCommand ? (at?.result?.output ?? null) : null;
   let argsText: string | null = null;
   if (isCommand) {
+    // command_run action doesn't have arguments - use entry content as fallback
+    const fallback = (entryContent || content || '').trim();
+    argsText = fallback.trim();
+  } else if (at?.action === 'tool') {
+    // tool action has arguments
     const fromArgs =
-      typeof at?.arguments === 'string'
+      typeof at.arguments === 'string'
         ? at.arguments
-        : at?.arguments != null
+        : at.arguments != null
           ? JSON.stringify(at.arguments, null, 2)
           : '';
-
-    const fallback = (entryContent || content || '').trim();
-    argsText = (fromArgs || fallback).trim();
+    argsText = fromArgs.trim() || null;
   }
 
   const hasExpandableDetails = isCommand
@@ -594,7 +598,7 @@ const getToolStatusAppearance = (status: ToolStatus): ToolStatusAppearance => {
  * Main component  *
  *******************/
 
-export const DisplayConversationEntryMaxWidth = (props: Props) => {
+const DisplayConversationEntryMaxWidth = (props: Props) => {
   return (
     <div className="mx-auto w-full max-w-[50rem]">
       <DisplayConversationEntry {...props} />
@@ -622,13 +626,15 @@ function DisplayConversationEntry({
   const greyed = isProcessGreyed(executionProcessId);
 
   if (isProcessStart(entry)) {
-    const toolAction: any = entry.action ?? null;
+    const toolAction = (entry.action ?? null) as ActionType | null;
+    // ProcessStartPayload.action is ExecutorAction, not ActionType - use type assertion for message/summary access
+    const actionAny = toolAction as Record<string, unknown> | null;
     return (
       <div className={greyed ? 'opacity-50 pointer-events-none' : undefined}>
         <ToolCallCard
           action={toolAction}
           expansionKey={expansionKey}
-          content={toolAction?.message ?? toolAction?.summary ?? undefined}
+          content={(actionAny?.message ?? actionAny?.summary ?? undefined) as string | undefined}
         />
       </div>
     );

@@ -68,14 +68,6 @@ export const useKeyNavRight = createSemanticHook(Action.NAV_RIGHT);
 export const useKeyOpenDetails = createSemanticHook(Action.OPEN_DETAILS);
 
 /**
- * Show help action - typically '?' key
- *
- * @example
- * useKeyShowHelp(() => openHelpDialog(), { scope: Scope.GLOBAL });
- */
-export const useKeyShowHelp = createSemanticHook(Action.SHOW_HELP);
-
-/**
  * Delete task action - typically 'd' key
  *
  * @example

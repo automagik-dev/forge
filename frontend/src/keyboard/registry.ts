@@ -236,17 +236,3 @@ export function getKeysFor(action: Action, scope?: Scope): string[] {
 
   return bindings;
 }
-
-/**
- * Get binding info for a specific action and scope
- */
-export function getBindingFor(
-  action: Action,
-  scope?: Scope
-): KeyBinding | undefined {
-  return keyBindings.find(
-    (binding) =>
-      binding.action === action &&
-      (!scope || !binding.scopes || binding.scopes.includes(scope))
-  );
-}

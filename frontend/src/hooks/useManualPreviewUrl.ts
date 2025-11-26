@@ -2,11 +2,6 @@ import { useState, useCallback } from 'react';
 
 const STORAGE_KEY_PREFIX = 'forge:manualPreviewUrl:';
 
-export interface ManualPreviewUrl {
-  url: string;
-  isManual: boolean;
-}
-
 /**
  * Hook for managing manual preview URL override with localStorage persistence per project
  */
