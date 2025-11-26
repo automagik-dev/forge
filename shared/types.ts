@@ -86,7 +86,11 @@ export type ChangeTargetBranchRequest = { new_target_branch: string, };
 
 export type ChangeTargetBranchResponse = { new_target_branch: string, status: [number, number], };
 
-export type CreateAndStartTaskRequest = { task: CreateTask, executor_profile_id: ExecutorProfileId, base_branch: string, };
+export type CreateAndStartTaskRequest = { task: CreateTask, executor_profile_id: ExecutorProfileId, base_branch: string, 
+/**
+ * Whether to use a git worktree for isolation (default: true)
+ */
+use_worktree: boolean | null, };
 
 export type CreateGitHubPrRequest = { title: string, body: string | null, target_branch: string | null, };
 
@@ -204,7 +208,11 @@ export type CreateTaskAttemptBody = { task_id: string,
 /**
  * Executor profile specification
  */
-executor_profile_id: ExecutorProfileId, base_branch: string, };
+executor_profile_id: ExecutorProfileId, base_branch: string, 
+/**
+ * Whether to use a git worktree for isolation (default: true)
+ */
+use_worktree: boolean | null, };
 
 export type RunAgentSetupRequest = { executor_profile_id: ExecutorProfileId, };
 

@@ -60,6 +60,7 @@ const TASK_STATUSES = [
   'inprogress',
   'inreview',
   'done',
+  'cancelled',
   'archived',
 ] as const;
 

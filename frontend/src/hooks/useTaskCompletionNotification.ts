@@ -30,10 +30,8 @@ export function useTaskCompletionNotification(executionProcesses: ExecutionProce
 
       if (wasRunning && isCompleted && process.run_reason === 'codingagent') {
         // Task execution completed, play notification sound
-        playNotificationSound(
-          config.notifications.sound_file,
-          config.notifications.sound_volume ?? 0.3
-        );
+        // Use full volume - users can adjust system/browser volume
+        playNotificationSound(config.notifications.sound_file, 1.0);
       }
     });
 
