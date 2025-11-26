@@ -12,10 +12,11 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   NODE_VERSION: 22
+  CARGO_BUILD_JOBS: 6  # Limit parallelism for self-hosted runner
 
 jobs:
   test:
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -49,7 +50,6 @@ jobs:
           RUST_CACHE_DEBUG: true
         with:
           workspaces: "."
-          cache-provider: "buildjet"
           cache-on-failure: true
           shared-key: "shared"
           cache-all-crates: true
