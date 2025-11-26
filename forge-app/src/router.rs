@@ -17,7 +17,6 @@ use futures_util::{SinkExt, StreamExt, TryStreamExt};
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use ts_rs::TS;
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
@@ -49,16 +48,9 @@ use utils::text::{git_branch_id, short_uuid};
 #[folder = "../frontend/dist"]
 struct Frontend;
 
-/// Extended TaskWithAttemptStatus with attempt_count for real-time invalidation.
-/// This wraps the upstream TaskWithAttemptStatus and adds attempt_count field
-/// to enable the frontend to detect new attempts via the task stream.
-#[derive(Debug, Clone, Serialize, TS)]
-#[ts(export)]
-pub struct ForgeTaskWithAttemptStatus {
-    #[serde(flatten)]
-    pub base: TaskWithAttemptStatus,
-    pub attempt_count: i32,
-}
+/// Type alias for TaskWithAttemptStatus which now includes attempt_count from upstream.
+/// Kept for API compatibility during transition.
+pub type ForgeTaskWithAttemptStatus = TaskWithAttemptStatus;
 
 #[derive(Clone)]
 struct ForgeAppState {
@@ -568,14 +560,12 @@ async fn forge_create_task_and_start(
         "Started execution process {} with forge/ branch",
         execution_process.id
     );
-    Ok(Json(ApiResponse::success(ForgeTaskWithAttemptStatus {
-        base: TaskWithAttemptStatus {
-            task,
-            has_in_progress_attempt: true,
-            has_merged_attempt: false,
-            last_attempt_failed: false,
-            executor: task_attempt.executor,
-        },
+    Ok(Json(ApiResponse::success(TaskWithAttemptStatus {
+        task,
+        has_in_progress_attempt: true,
+        has_merged_attempt: false,
+        last_attempt_failed: false,
+        executor: task_attempt.executor,
         attempt_count: 1, // First attempt just created
     })))
 }
@@ -726,39 +716,19 @@ ORDER BY t.created_at DESC"#;
             .map(|v| v != 0)
             .unwrap_or(false);
         let executor: String = row.try_get("executor").unwrap_or_else(|_| String::new());
-        let attempt_count: i32 = row.try_get::<i64, _>("attempt_count").unwrap_or(0) as i32;
+        let attempt_count: i64 = row.try_get::<i64, _>("attempt_count").unwrap_or(0);
 
-        items.push(ForgeTaskWithAttemptStatus {
-            base: TaskWithAttemptStatus {
-                task,
-                has_in_progress_attempt,
-                has_merged_attempt: false,
-                last_attempt_failed,
-                executor,
-            },
+        items.push(TaskWithAttemptStatus {
+            task,
+            has_in_progress_attempt,
+            has_merged_attempt: false,
+            last_attempt_failed,
+            executor,
             attempt_count,
         });
     }
 
     Ok(Json(ApiResponse::success(items)))
-}
-
-/// Helper to add attempt_count to a task JSON value for WebSocket patches
-async fn add_attempt_count_to_task(
-    pool: &sqlx::Pool<sqlx::Sqlite>,
-    task_id: Uuid,
-    mut value: Value,
-) -> Value {
-    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM task_attempts WHERE task_id = ?")
-        .bind(task_id)
-        .fetch_one(pool)
-        .await
-        .unwrap_or(0);
-
-    if let Value::Object(ref mut map) = value {
-        map.insert("attempt_count".to_string(), json!(count));
-    }
-    value
 }
 
 /// Forge WebSocket stream handler with agent task filtering
@@ -910,22 +880,16 @@ async fn handle_forge_tasks_ws(
                                             };
 
                                             if !is_agent {
-                                                // Add attempt_count to the task value
-                                                let enriched_value = add_attempt_count_to_task(
-                                                    &pool,
-                                                    task_id,
-                                                    op.value.clone(),
-                                                )
-                                                .await;
-                                                let enriched_patch = json_patch::Patch(vec![
+                                                // Upstream patches now include attempt_count, pass through directly
+                                                let patch = json_patch::Patch(vec![
                                                     json_patch::PatchOperation::Add(
                                                         json_patch::AddOperation {
                                                             path: op.path.clone(),
-                                                            value: enriched_value,
+                                                            value: op.value.clone(),
                                                         },
                                                     ),
                                                 ]);
-                                                return Some(Ok(LogMsg::JsonPatch(enriched_patch)));
+                                                return Some(Ok(LogMsg::JsonPatch(patch)));
                                             }
                                             // Filter out agent tasks
                                             return None;
@@ -975,22 +939,16 @@ async fn handle_forge_tasks_ws(
                                             };
 
                                             if !is_agent {
-                                                // Add attempt_count to the task value
-                                                let enriched_value = add_attempt_count_to_task(
-                                                    &pool,
-                                                    task_id,
-                                                    op.value.clone(),
-                                                )
-                                                .await;
-                                                let enriched_patch = json_patch::Patch(vec![
+                                                // Upstream patches now include attempt_count, pass through directly
+                                                let patch = json_patch::Patch(vec![
                                                     json_patch::PatchOperation::Replace(
                                                         json_patch::ReplaceOperation {
                                                             path: op.path.clone(),
-                                                            value: enriched_value,
+                                                            value: op.value.clone(),
                                                         },
                                                     ),
                                                 ]);
-                                                return Some(Ok(LogMsg::JsonPatch(enriched_patch)));
+                                                return Some(Ok(LogMsg::JsonPatch(patch)));
                                             }
                                             // Filter out agent tasks
                                             return None;
@@ -1054,17 +1012,11 @@ async fn handle_forge_tasks_ws(
                                         };
 
                                         // Only include non-agent tasks in the filtered snapshot
+                                        // Upstream data now includes attempt_count, use directly
                                         if !is_agent {
-                                            // Add attempt_count to the task value
-                                            let enriched_value = add_attempt_count_to_task(
-                                                &pool,
-                                                task_id,
-                                                task_value.clone(),
-                                            )
-                                            .await;
                                             filtered_tasks.insert(
                                                 task_id_str.to_string(),
-                                                enriched_value,
+                                                task_value.clone(),
                                             );
                                         }
                                     }

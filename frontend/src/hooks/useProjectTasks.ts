@@ -1,14 +1,14 @@
 import { useCallback } from 'react';
 import { useJsonPatchWsStream } from './useJsonPatchWsStream';
-import type { ForgeTaskWithAttemptStatus } from 'shared/forge-types';
+import type { TaskWithAttemptStatus } from 'shared/types';
 
 type TasksState = {
-  tasks: Record<string, ForgeTaskWithAttemptStatus>;
+  tasks: Record<string, TaskWithAttemptStatus>;
 };
 
 interface UseProjectTasksResult {
-  tasks: ForgeTaskWithAttemptStatus[];
-  tasksById: Record<string, ForgeTaskWithAttemptStatus>;
+  tasks: TaskWithAttemptStatus[];
+  tasksById: Record<string, TaskWithAttemptStatus>;
   isLoading: boolean;
   isConnected: boolean;
   error: string | null;

@@ -3,7 +3,7 @@ import { useProject } from '@/contexts/project-context';
 import { useTaskAttemptsWithLiveStatus } from '@/hooks/useTaskAttempts';
 import { useNavigateWithSearch } from '@/hooks';
 import { paths } from '@/lib/paths';
-import type { ForgeTaskWithAttemptStatus } from 'shared/forge-types';
+import type { TaskWithAttemptStatus } from 'shared/types';
 import { NewCardContent } from '../ui/new-card';
 import { Button } from '../ui/button';
 import { Edit2, Network, GitFork, Play } from 'lucide-react';
@@ -17,7 +17,7 @@ import { useParentTask } from '@/hooks/useParentTask';
 import { useChildrenTasks } from '@/hooks/useChildrenTasks';
 
 interface TaskPanelProps {
-  task: ForgeTaskWithAttemptStatus | null;
+  task: TaskWithAttemptStatus | null;
 }
 
 const TaskPanel = ({ task }: TaskPanelProps) => {

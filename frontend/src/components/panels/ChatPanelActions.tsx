@@ -15,8 +15,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useTaskAttemptsWithLiveStatus } from '@/hooks/useTaskAttempts';
-import type { TaskAttempt } from 'shared/types';
-import type { ForgeTaskWithAttemptStatus } from 'shared/forge-types';
+import type { TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEntries } from '@/contexts/EntriesContext';
@@ -30,7 +29,7 @@ import { queryKeys } from '@/lib/queryKeys';
 
 interface ChatPanelActionsProps {
   attempt: TaskAttempt | undefined;
-  task: ForgeTaskWithAttemptStatus | null;
+  task: TaskWithAttemptStatus | null;
 }
 
 export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {

@@ -1,8 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { attemptsApi } from '@/lib/api';
-import type { TaskAttempt } from 'shared/types';
-import type { ForgeTaskWithAttemptStatus } from 'shared/forge-types';
+import type { TaskAttempt, TaskWithAttemptStatus } from 'shared/types';
 import { queryKeys } from '@/lib/queryKeys';
 
 type Options = {
@@ -42,7 +41,7 @@ export function useTaskAttempts(taskId?: string, opts?: Options) {
  */
 export function useTaskAttemptsWithLiveStatus(
   taskId: string | undefined,
-  task: ForgeTaskWithAttemptStatus | null | undefined,
+  task: TaskWithAttemptStatus | null | undefined,
   opts?: Options
 ) {
   const queryClient = useQueryClient();
@@ -57,7 +56,8 @@ export function useTaskAttemptsWithLiveStatus(
     if (!taskId || !task) return;
 
     const currentStatus = task.has_in_progress_attempt;
-    const currentCount = task.attempt_count;
+    // Convert bigint to number for comparison (safe for practical attempt counts)
+    const currentCount = Number(task.attempt_count);
 
     const statusChanged =
       prevStatusRef.current !== undefined &&

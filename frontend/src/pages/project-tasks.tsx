@@ -148,7 +148,7 @@ export function ProjectTasks() {
     taskId,
     {
       enabled: !!taskId && isLatest,
-      refetchInterval: isLatest ? 30_000 : false, // 30s fallback for external attempts
+      // WebSocket stream now includes attempt_count from upstream, no polling needed
     }
   );
 

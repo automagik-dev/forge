@@ -42,11 +42,11 @@ export type UpdateTag = { tag_name: string | null, content: string | null, };
 
 export type TagSearchParams = { search: string | null, };
 
-export type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "archived" | "agent";
+export type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelled" | "agent" | "archived";
 
 export type Task = { id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, dev_server_id: string | null, created_at: string, updated_at: string, };
 
-export type TaskWithAttemptStatus = { has_in_progress_attempt: boolean, has_merged_attempt: boolean, last_attempt_failed: boolean, executor: string, id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, dev_server_id: string | null, created_at: string, updated_at: string, };
+export type TaskWithAttemptStatus = { has_in_progress_attempt: boolean, has_merged_attempt: boolean, last_attempt_failed: boolean, executor: string, attempt_count: bigint, id: string, project_id: string, title: string, description: string | null, status: TaskStatus, parent_task_attempt: string | null, dev_server_id: string | null, created_at: string, updated_at: string, };
 
 export type TaskRelationships = { parent_task: Task | null, current_attempt: TaskAttempt, children: Array<Task>, };
 
@@ -96,7 +96,7 @@ export enum GitHubServiceError { TOKEN_INVALID = "TOKEN_INVALID", INSUFFICIENT_P
 
 export type Config = { config_version: string, theme: ThemeMode, executor_profile: ExecutorProfileId, disclaimer_acknowledged: boolean, onboarding_acknowledged: boolean, github_login_acknowledged: boolean, telemetry_acknowledged: boolean, notifications: NotificationConfig, editor: EditorConfig, github: GitHubConfig, analytics_enabled: boolean | null, contact_email_opt_in: boolean | null, contact_username_opt_in: boolean | null, workspace_dir: string | null, last_app_version: string | null, show_release_notes: boolean, language: UiLanguage, git_branch_prefix: string, showcases: ShowcaseState, };
 
-export type NotificationConfig = { sound_enabled: boolean, push_enabled: boolean, sound_file: SoundFile, sound_volume?: number, };
+export type NotificationConfig = { sound_enabled: boolean, push_enabled: boolean, sound_file: SoundFile, };
 
 export enum ThemeMode { LIGHT = "LIGHT", DARK = "DARK", SYSTEM = "SYSTEM" }
 
@@ -204,12 +204,7 @@ export type CreateTaskAttemptBody = { task_id: string,
 /**
  * Executor profile specification
  */
-executor_profile_id: ExecutorProfileId, base_branch: string, 
-/**
- * Whether to use worktree for this attempt (default: true)
- * Set to false for Genie Lamp context (main workspace execution)
- */
-use_worktree?: boolean, };
+executor_profile_id: ExecutorProfileId, base_branch: string, };
 
 export type RunAgentSetupRequest = { executor_profile_id: ExecutorProfileId, };
 
