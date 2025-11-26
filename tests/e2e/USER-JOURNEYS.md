@@ -132,6 +132,61 @@ Tests should follow **real user journeys** from start to finish, not isolated mi
 
 ---
 
+## Journey 5: Real-Time Performance (PR #246 Regression)
+
+**Purpose:** Validate performance fixes from PR #246 to prevent regressions.
+
+**Test File:** `tests/e2e/journey-pr246-performance.spec.ts`
+
+### What It Tests
+
+1. **WebSocket Memory Leak Prevention**
+   - Memory stabilizes after repeated attempt navigation
+   - WebSocket connections close when navigating away
+   - Rapid navigation stress test (no duplicate connections)
+
+2. **Event-Driven Cache Invalidation**
+   - Task list updates on WebSocket events (no polling needed)
+   - Task updates/deletes reflect immediately
+   - Multiple rapid operations maintain consistency
+
+3. **Smart Polling Intervals**
+   - Branch status polls at ~15s when tab is visible
+   - Polling continues after page interactions
+
+4. **Cache Consistency**
+   - Project switch maintains cache isolation
+   - No stale data after switching views
+
+### Key PR #246 Files Tested
+
+| Frontend File | Fix |
+|---------------|-----|
+| `useConversationHistory.ts` | WebSocket controller cleanup via `activeControllersRef` |
+| `useTaskAttempts.ts` | Removed polling, added event-driven invalidation |
+| `useBranchStatus.ts` | Smart polling (15s visible, 60s background) |
+| `ExecutionProcessesContext.tsx` | use-context-selector for re-render optimization |
+
+### Running These Tests
+
+```bash
+# Run PR #246 tests only
+pnpm test:playwright journey-pr246-performance
+
+# Run with --workers=1 for accurate timing measurements
+pnpm test:playwright journey-pr246-performance --workers=1
+```
+
+### Helpers Added
+
+- `setupWebSocketTracker(page)` - Track WS open/close events
+- `setupPollingTracker(page, urlPattern)` - Track polling intervals
+- `getMemoryUsage(page)` - Get JS heap size
+- `assertMemoryStabilized(samples)` - Check memory plateaus
+- `navigateToAttempt(page, projectId, taskId, attemptId)` - Direct attempt navigation
+
+---
+
 ## Testing Strategy
 
 ### What Makes a Good E2E Test?

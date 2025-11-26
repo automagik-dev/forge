@@ -148,6 +148,7 @@ export function ProjectTasks() {
     taskId,
     {
       enabled: !!taskId && isLatest,
+      // WebSocket stream now includes attempt_count from upstream, no polling needed
     }
   );
 

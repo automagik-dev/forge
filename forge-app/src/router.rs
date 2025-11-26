@@ -48,6 +48,10 @@ use utils::text::{git_branch_id, short_uuid};
 #[folder = "../frontend/dist"]
 struct Frontend;
 
+/// Type alias for TaskWithAttemptStatus which now includes attempt_count from upstream.
+/// Kept for API compatibility during transition.
+pub type ForgeTaskWithAttemptStatus = TaskWithAttemptStatus;
+
 #[derive(Clone)]
 struct ForgeAppState {
     services: ForgeServices,
@@ -389,7 +393,7 @@ async fn forge_create_task_and_start(
     State(deployment): State<DeploymentImpl>,
     State(forge_services): State<ForgeServices>,
     Json(payload): Json<CreateAndStartTaskRequest>,
-) -> Result<Json<ApiResponse<TaskWithAttemptStatus>>, ApiError> {
+) -> Result<Json<ApiResponse<ForgeTaskWithAttemptStatus>>, ApiError> {
     let task_id = Uuid::new_v4();
     let task = Task::create(&deployment.db().pool, &payload.task, task_id).await?;
 
@@ -562,6 +566,7 @@ async fn forge_create_task_and_start(
         has_merged_attempt: false,
         last_attempt_failed: false,
         executor: task_attempt.executor,
+        attempt_count: 1, // First attempt just created
     })))
 }
 
@@ -636,7 +641,7 @@ struct GetTasksParams {
 async fn forge_get_tasks(
     State(deployment): State<DeploymentImpl>,
     Query(params): Query<GetTasksParams>,
-) -> Result<Json<ApiResponse<Vec<TaskWithAttemptStatus>>>, ApiError> {
+) -> Result<Json<ApiResponse<Vec<ForgeTaskWithAttemptStatus>>>, ApiError> {
     let pool = &deployment.db().pool;
 
     // Exclude tasks that are registered as agent tasks in forge_agents table
@@ -678,7 +683,12 @@ async fn forge_get_tasks(
       WHERE ta.task_id = t.id
      ORDER BY ta.created_at DESC
       LIMIT 1
-    )                               AS executor
+    )                               AS executor,
+
+  ( SELECT COUNT(*)
+      FROM task_attempts ta
+      WHERE ta.task_id = t.id
+    )                               AS attempt_count
 
 FROM tasks t
 WHERE t.project_id = ?
@@ -690,7 +700,7 @@ ORDER BY t.created_at DESC"#;
         .fetch_all(pool)
         .await?;
 
-    let mut items: Vec<TaskWithAttemptStatus> = Vec::with_capacity(rows.len());
+    let mut items: Vec<ForgeTaskWithAttemptStatus> = Vec::with_capacity(rows.len());
     for row in rows {
         let task_id: Uuid = row.try_get("id").map_err(ApiError::Database)?;
         let task = db::models::task::Task::find_by_id(pool, task_id)
@@ -706,6 +716,7 @@ ORDER BY t.created_at DESC"#;
             .map(|v| v != 0)
             .unwrap_or(false);
         let executor: String = row.try_get("executor").unwrap_or_else(|_| String::new());
+        let attempt_count: i64 = row.try_get::<i64, _>("attempt_count").unwrap_or(0);
 
         items.push(TaskWithAttemptStatus {
             task,
@@ -713,6 +724,7 @@ ORDER BY t.created_at DESC"#;
             has_merged_attempt: false,
             last_attempt_failed,
             executor,
+            attempt_count,
         });
     }
 
@@ -868,6 +880,15 @@ async fn handle_forge_tasks_ws(
                                             };
 
                                             if !is_agent {
+                                                // Upstream patches now include attempt_count, pass through directly
+                                                let patch = json_patch::Patch(vec![
+                                                    json_patch::PatchOperation::Add(
+                                                        json_patch::AddOperation {
+                                                            path: op.path.clone(),
+                                                            value: op.value.clone(),
+                                                        },
+                                                    ),
+                                                ]);
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
                                             }
                                             // Filter out agent tasks
@@ -918,6 +939,15 @@ async fn handle_forge_tasks_ws(
                                             };
 
                                             if !is_agent {
+                                                // Upstream patches now include attempt_count, pass through directly
+                                                let patch = json_patch::Patch(vec![
+                                                    json_patch::PatchOperation::Replace(
+                                                        json_patch::ReplaceOperation {
+                                                            path: op.path.clone(),
+                                                            value: op.value.clone(),
+                                                        },
+                                                    ),
+                                                ]);
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
                                             }
                                             // Filter out agent tasks
@@ -982,6 +1012,7 @@ async fn handle_forge_tasks_ws(
                                         };
 
                                         // Only include non-agent tasks in the filtered snapshot
+                                        // Upstream data now includes attempt_count, use directly
                                         if !is_agent {
                                             filtered_tasks.insert(
                                                 task_id_str.to_string(),
