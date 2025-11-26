@@ -16,6 +16,9 @@ concurrency:
   group: build-all-platforms-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CARGO_BUILD_JOBS: 6  # Limit parallelism for self-hosted runner
+
 jobs:
   build:
     timeout-minutes: 60  # Increase timeout for slower macOS runners
@@ -23,17 +26,14 @@ jobs:
       fail-fast: false  # Don't cancel other platforms if one fails
       matrix:
         include:
-          - os: ubuntu-22.04  # Use 22.04 for GLIBC 2.35 compatibility (works on 22.04 AND 24.04)
+          - os: [self-hosted, Linux, X64]  # Self-hosted runner for Linux x64
             target: x86_64-unknown-linux-gnu
             platform: linux-x64
-          - os: ubuntu-22.04  # Use 22.04 for GLIBC 2.35 compatibility (works on 22.04 AND 24.04)
+          - os: [self-hosted, Linux, X64]  # Self-hosted runner for cross-compile
             target: aarch64-unknown-linux-gnu
             platform: linux-arm64
             use-zigbuild: true
-          - os: ubuntu-22.04  # Separate Android/Termux target (same binaries as linux-arm64)
-            target: aarch64-unknown-linux-gnu
-            platform: android-arm64
-            use-zigbuild: true
+          # Android builds moved to separate workflow (build-android-apk.yml)
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             platform: windows-x64
@@ -279,244 +279,11 @@ jobs:
           path: npx-cli/dist/${{ matrix.platform }}/
           overwrite: true
 
-  android:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Restore Android CLI binaries cache
-        id: cache-android-cli
-        uses: actions/cache/restore@v4
-        with:
-          path: npx-cli/dist/android-arm64
-          key: binaries-android-arm64-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json', 'scripts/build-android.sh') }}
-      
-      - name: Restore Android APK cache
-        id: cache-android-apk
-        uses: actions/cache/restore@v4
-        with:
-          path: npx-cli/dist/android-apk
-          key: binaries-android-apk-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'android/**', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
-      
-      - name: Check if builds can be skipped
-        id: check-skip
-        shell: bash
-        run: |
-          SKIP_CLI=false
-          SKIP_APK=false
-          
-          if [ "${{ steps.cache-android-cli.outputs.cache-hit }}" == "true" ]; then
-            if [ -f "npx-cli/dist/android-arm64/automagik-forge.zip" ]; then
-              SKIP_CLI=true
-              echo "✅ Cache hit! Skipping Android CLI build"
-            else
-              echo "⚠️  CLI cache hit but binaries missing, will rebuild"
-            fi
-          else
-            echo "🔨 No CLI cache hit, will build Android CLI"
-          fi
-          
-          if [ "${{ steps.cache-android-apk.outputs.cache-hit }}" == "true" ]; then
-            if compgen -G "npx-cli/dist/android-apk/*.apk" > /dev/null 2>&1; then
-              SKIP_APK=true
-              echo "✅ Cache hit! Skipping Android APK build"
-            else
-              echo "⚠️  APK cache hit but APK missing, will rebuild"
-            fi
-          else
-            echo "🔨 No APK cache hit, will build Android APK"
-          fi
-          
-          # Always export SKIP_CLI and SKIP_APK to GITHUB_ENV so later steps can check them
-          echo "SKIP_CLI=$SKIP_CLI" >> $GITHUB_ENV
-          echo "SKIP_APK=$SKIP_APK" >> $GITHUB_ENV
-          
-          if [ "$SKIP_CLI" == "true" ] && [ "$SKIP_APK" == "true" ]; then
-            echo "SKIP_BUILD=true" >> $GITHUB_ENV
-            echo "✅ Both Android builds cached, skipping all build steps"
-          else
-            echo "SKIP_BUILD=false" >> $GITHUB_ENV
-          fi
-
-      - name: Set up JDK 17
-        if: env.SKIP_BUILD != 'true'
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Android SDK
-        if: env.SKIP_BUILD != 'true'
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK components
-        if: env.SKIP_BUILD != 'true'
-        run: |
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-          sdkmanager "ndk;26.1.10909125"
-          echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/26.1.10909125" >> $GITHUB_ENV
-
-      - name: Install Rust
-        if: env.SKIP_BUILD != 'true'
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android
-
-      - name: Install Linux build tools
-        if: env.SKIP_BUILD != 'true'
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y perl pkg-config libssl-dev make
-
-      - name: Cache Rust dependencies
-        if: env.SKIP_BUILD != 'true'
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-android-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-android-
-            ${{ runner.os }}-cargo-
-
-      - name: Setup pnpm
-        if: env.SKIP_BUILD != 'true'
-        uses: pnpm/action-setup@v4
-        with:
-          run_install: false
-
-      - name: Setup Node.js
-        if: env.SKIP_BUILD != 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install workspace dependencies
-        if: env.SKIP_BUILD != 'true'
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Build frontend
-        if: env.SKIP_BUILD != 'true'
-        working-directory: frontend
-        run: pnpm run build
-
-      - name: Copy frontend dist for server crate embedding
-        if: env.SKIP_BUILD != 'true'
-        run: |
-          mkdir -p upstream/frontend
-          cp -r frontend/dist upstream/frontend/dist
-          echo "Copied frontend/dist to upstream/frontend/dist for RustEmbed"
-
-      - name: Configure Android NDK toolchain
-        if: env.SKIP_BUILD != 'true'
-        run: |
-          echo "[target.aarch64-linux-android]" > ~/.cargo/config.toml
-          echo "linker = \"$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang\"" >> ~/.cargo/config.toml
-          echo "ar = \"$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar\"" >> ~/.cargo/config.toml
-          echo "rustflags = [\"-C\", \"link-arg=-Wl,-z,max-page-size=16384\"]" >> ~/.cargo/config.toml
-
-      - name: Build Rust binaries for Android (CLI for Termux)
-        if: env.SKIP_CLI != 'true'
-        env:
-          OPENSSL_STATIC: 1
-          OPENSSL_VENDORED: 1
-          OPENSSL_NO_VENDOR: 0
-          LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
-          LIBSQLITE3_SYS_BUNDLED: 1
-          LIBSQLITE3_SYS_STATIC: 1
-          LIBZ_SYS_STATIC: 1
-          SQLX_OFFLINE: true
-          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
-          POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
-          CC: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang
-          AR: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
-          RANLIB: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib
-          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang
-          CARGO_TARGET_AARCH64_LINUX_ANDROID_AR: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
-        run: |
-          cargo build --release --target aarch64-linux-android
-
-      - name: Build Rust library for Android (JNI for APK)
-        if: env.SKIP_APK != 'true'
-        env:
-          OPENSSL_STATIC: 1
-          OPENSSL_VENDORED: 1
-          OPENSSL_NO_VENDOR: 0
-          LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
-          LIBSQLITE3_SYS_BUNDLED: 1
-          LIBSQLITE3_SYS_STATIC: 1
-          LIBZ_SYS_STATIC: 1
-          SQLX_OFFLINE: true
-          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
-          POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
-          CC: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang
-          AR: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
-          RANLIB: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib
-          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang
-          CARGO_TARGET_AARCH64_LINUX_ANDROID_AR: ${{ env.ANDROID_NDK_HOME }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
-        run: |
-          cargo build -p forge-app --release --target aarch64-linux-android --lib --features android
-
-      - name: Build Android APK
-        if: env.SKIP_APK != 'true'
-        working-directory: android
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug
-
-      - name: Package Termux CLI binaries
-        if: env.SKIP_CLI != 'true'
-        run: |
-          mkdir -p npx-cli/dist/android-arm64
-
-          cp target/aarch64-linux-android/release/forge-app automagik-forge
-          zip -q automagik-forge.zip automagik-forge
-          mv automagik-forge.zip npx-cli/dist/android-arm64/
-          rm automagik-forge
-
-      - name: Package APK
-        if: env.SKIP_APK != 'true'
-        run: |
-          mkdir -p npx-cli/dist/android-apk
-          cp android/app/build/outputs/apk/debug/*.apk npx-cli/dist/android-apk/
-      
-      - name: Save Android CLI binaries cache
-        if: env.SKIP_CLI != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: npx-cli/dist/android-arm64
-          key: binaries-android-arm64-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json', 'scripts/build-android.sh') }}
-      
-      - name: Save Android APK cache
-        if: env.SKIP_APK != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: npx-cli/dist/android-apk
-          key: binaries-android-apk-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'android/**', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
-
-      - name: Upload Termux CLI artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: binaries-android-termux
-          path: npx-cli/dist/android-arm64/
-          overwrite: true
-
-      - name: Upload APK artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: binaries-android-apk
-          path: npx-cli/dist/android-apk/
-          overwrite: true
+  # Android builds moved to separate workflow: build-android-apk.yml
+  # This allows Android to have its own release timeline
 
   publish:
-    needs: [build, android]
+    needs: [build]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.tag != '')
     environment: npm-publish
@@ -558,12 +325,6 @@ jobs:
           path: npx-cli/dist/linux-arm64
           key: binaries-linux-arm64-aarch64-unknown-linux-gnu-Linux-zig-0.13.0-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
       
-      - name: Restore android-arm64 cache
-        uses: actions/cache/restore@v4
-        with:
-          path: npx-cli/dist/android-arm64
-          key: binaries-android-arm64-Linux-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json', 'scripts/build-android.sh') }}
-      
       - name: Restore windows-x64 cache
         uses: actions/cache/restore@v4
         with:
@@ -575,12 +336,6 @@ jobs:
         with:
           path: npx-cli/dist/macos-arm64
           key: binaries-macos-arm64-aarch64-apple-darwin-macOS-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
-      
-      - name: Restore android-apk cache
-        uses: actions/cache/restore@v4
-        with:
-          path: npx-cli/dist/android-apk
-          key: binaries-android-apk-Linux-${{ hashFiles('pnpm-lock.yaml', 'android/**', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
       
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -612,18 +367,14 @@ jobs:
           MISSING_BINARIES=()
           
           # Check required platforms (those currently built in the workflow)
-          REQUIRED_PLATFORMS=("linux-x64" "linux-arm64" "android-arm64" "windows-x64" "macos-arm64")
-          
+          # Android builds moved to separate workflow (build-android-apk.yml)
+          REQUIRED_PLATFORMS=("linux-x64" "linux-arm64" "windows-x64" "macos-arm64")
+
           for platform in "${REQUIRED_PLATFORMS[@]}"; do
             if [ ! -f "npx-cli/dist/$platform/automagik-forge.zip" ]; then
               MISSING_BINARIES+=("$platform/automagik-forge.zip")
             fi
           done
-          
-          # Check Android APK (optional but log if missing)
-          if [ ! -f npx-cli/dist/android-apk/*.apk ]; then
-            echo "⚠️  Warning: Android APK not found (optional)"
-          fi
           
           if [ ${#MISSING_BINARIES[@]} -gt 0 ]; then
             echo "❌ ERROR: Missing required binaries:"
