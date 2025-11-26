@@ -14,7 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import type { TaskAttempt } from 'shared/types';
+import type { TaskAttempt, Diff } from 'shared/types';
 import { Virtuoso } from 'react-virtuoso';
 
 interface DiffsPanelProps {
@@ -121,7 +121,7 @@ export function DiffsPanel({ selectedAttempt }: DiffsPanelProps) {
 }
 
 interface DiffsPanelContentProps {
-  diffs: any[];
+  diffs: Diff[];
   fileCount: number;
   added: number;
   deleted: number;
@@ -131,7 +131,7 @@ interface DiffsPanelContentProps {
   toggle: (id: string) => void;
   selectedAttempt: TaskAttempt | null;
   loading: boolean;
-  t: (key: string, params?: any) => string;
+  t: (key: string, params?: Record<string, unknown>) => string;
 }
 
 function DiffsPanelContent({

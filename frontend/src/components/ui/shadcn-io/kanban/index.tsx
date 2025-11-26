@@ -69,7 +69,7 @@ export type KanbanCardProps = Pick<Feature, 'id' | 'name'> & {
   parent: string;
   children?: ReactNode;
   className?: string;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
   tabIndex?: number;
   forwardedRef?: Ref<HTMLDivElement>;
   onKeyDown?: (e: KeyboardEvent) => void;
@@ -109,9 +109,9 @@ export const KanbanCard = ({
   return (
     <Card
       className={cn(
-        'p-3 outline-none border-b flex-col space-y-2',
+        'p-3 outline-none border-b flex-col space-y-2 transition-all duration-200',
         isDragging && 'cursor-grabbing',
-        isOpen && 'ring-2 ring-secondary-foreground ring-inset',
+        isOpen && 'border-2 !border-primary bg-primary/10 shadow-xl scale-[1.02]',
         className
       )}
       {...listeners}
@@ -121,7 +121,7 @@ export const KanbanCard = ({
       onClick={onClick}
       onKeyDown={onKeyDown}
       style={{
-        zIndex: isDragging ? 1000 : 1,
+        zIndex: isDragging ? 1000 : isOpen ? 10 : 1,
         transform: transform
           ? `translateX(${transform.x}px) translateY(${transform.y}px)`
           : 'none',

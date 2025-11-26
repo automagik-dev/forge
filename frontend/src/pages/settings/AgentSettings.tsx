@@ -27,6 +27,13 @@ import { useProfiles } from '@/hooks/useProfiles';
 import { useUserSystem } from '@/components/config-provider';
 import { showModal } from '@/lib/modals';
 
+// Type for parsed profiles structure
+// Using a permissive type to handle the complex nested structure
+interface ParsedProfiles {
+  executors?: Record<string, Record<string, Record<string, unknown>>>;
+  [key: string]: unknown;
+}
+
 export function AgentSettings() {
   const { t } = useTranslation('settings');
   // Use profiles hook for server state
@@ -52,7 +59,7 @@ export function AgentSettings() {
     useState<string>('CLAUDE_CODE');
   const [selectedConfiguration, setSelectedConfiguration] =
     useState<string>('GENIE');
-  const [localParsedProfiles, setLocalParsedProfiles] = useState<any>(null);
+  const [localParsedProfiles, setLocalParsedProfiles] = useState<ParsedProfiles | null>(null);
   const [isDirty, setIsDirty] = useState(false);
 
   // Sync server state to local state when not dirty
@@ -61,7 +68,7 @@ export function AgentSettings() {
       setLocalProfilesContent(serverProfilesContent);
       // Parse JSON inside effect to avoid object dependency
       try {
-        const parsed = JSON.parse(serverProfilesContent);
+        const parsed = JSON.parse(serverProfilesContent) as ParsedProfiles;
         setLocalParsedProfiles(parsed);
       } catch (err) {
         console.error('Failed to parse profiles JSON:', err);
@@ -76,7 +83,7 @@ export function AgentSettings() {
   };
 
   // Mark profiles as dirty
-  const markDirty = (nextProfiles: unknown) => {
+  const markDirty = (nextProfiles: ParsedProfiles) => {
     setLocalParsedProfiles(nextProfiles);
     syncRawProfiles(nextProfiles);
     setIsDirty(true);
@@ -160,7 +167,7 @@ export function AgentSettings() {
 
   // Handle delete configuration
   const handleDeleteConfiguration = async (configToDelete: string) => {
-    if (!localParsedProfiles) {
+    if (!localParsedProfiles || !localParsedProfiles.executors) {
       return;
     }
 
@@ -242,7 +249,7 @@ export function AgentSettings() {
     // Validate JSON on change
     if (value.trim()) {
       try {
-        const parsed = JSON.parse(value);
+        const parsed = JSON.parse(value) as ParsedProfiles;
         setLocalParsedProfiles(parsed);
       } catch (err) {
         // Invalid JSON, keep local content but clear parsed
@@ -492,15 +499,15 @@ export function AgentSettings() {
                 </div>
               </div>
 
-              {localParsedProfiles.executors[selectedExecutorType]?.[
+              {localParsedProfiles.executors?.[selectedExecutorType]?.[
                 selectedConfiguration
-              ]?.[selectedExecutorType] && (
+              ]?.[selectedExecutorType] !== undefined && (
                 <ExecutorConfigForm
-                  executor={selectedExecutorType as any}
+                  executor={selectedExecutorType as Parameters<typeof ExecutorConfigForm>[0]['executor']}
                   value={
-                    localParsedProfiles.executors[selectedExecutorType][
+                    (localParsedProfiles.executors[selectedExecutorType][
                       selectedConfiguration
-                    ][selectedExecutorType] || {}
+                    ][selectedExecutorType] || {}) as Record<string, unknown>
                   }
                   onChange={(formData) =>
                     handleExecutorConfigChange(

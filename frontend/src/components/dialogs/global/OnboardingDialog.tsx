@@ -27,6 +27,7 @@ import { Sparkles, Code, ChevronDown, HandMetal } from 'lucide-react';
 import { BaseCodingAgent, EditorType } from 'shared/types';
 import type { ExecutorProfileId, EditorConfig } from 'shared/types';
 import { useUserSystem } from '@/components/config-provider';
+import { ProviderSelect } from '@/components/ui/provider-select';
 
 import { toPrettyCase } from '@/utils/string';
 import NiceModal, { useModal } from '@ebay/nice-modal-react';
@@ -89,26 +90,16 @@ const OnboardingDialog = NiceModal.create(() => {
           <div className="space-y-2">
             <Label htmlFor="profile">Default Provider</Label>
             <div className="flex gap-2">
-              <Select
+              <ProviderSelect
+                id="profile"
+                className="flex-1"
                 value={profile.executor}
                 onValueChange={(v) =>
                   setProfile({ executor: v as BaseCodingAgent, variant: null })
                 }
-              >
-                <SelectTrigger id="profile" className="flex-1">
-                  <SelectValue placeholder="Select your preferred AI provider" />
-                </SelectTrigger>
-                <SelectContent>
-                  {profiles &&
-                    (Object.keys(profiles) as BaseCodingAgent[]).map(
-                      (agent) => (
-                        <SelectItem key={agent} value={agent}>
-                          {agent}
-                        </SelectItem>
-                      )
-                    )}
-                </SelectContent>
-              </Select>
+                providers={profiles ? Object.keys(profiles) : []}
+                placeholder="Select your preferred AI provider"
+              />
 
               {/* Show variant selector if selected profile has variants */}
               {(() => {

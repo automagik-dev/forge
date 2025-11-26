@@ -1,4 +1,4 @@
-import { BottomSheet, useBottomSheet } from './BottomSheet';
+import { BottomSheet } from './BottomSheet';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, GitMerge } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -96,18 +96,4 @@ export function DiffActionSheet({
       </div>
     </BottomSheet>
   );
-}
-
-/**
- * Hook to manage diff action sheet state
- */
-export function useDiffActionSheet() {
-  const { isOpen, open, close, toggle } = useBottomSheet();
-
-  return {
-    isOpen,
-    open,
-    close,
-    toggle,
-  };
 }

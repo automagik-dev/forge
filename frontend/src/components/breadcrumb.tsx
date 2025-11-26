@@ -5,11 +5,13 @@ import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
 import { useTaskAttempt } from '@/hooks/useTaskAttempt';
 import { useBranchStatus } from '@/hooks/useBranchStatus';
+import { useProjectBranchStatus } from '@/hooks/useProjectBranchStatus';
 import { useChangeTargetBranch } from '@/hooks/useChangeTargetBranch';
 import { useRebase } from '@/hooks/useRebase';
 import { useDefaultBaseBranch } from '@/hooks/useDefaultBaseBranch';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
 import { useTranslation } from 'react-i18next';
 import {
   DropdownMenu,
@@ -56,6 +58,8 @@ export function Breadcrumb() {
 
   // Fetch branches for change target branch dialog
   const [branches, setBranches] = useState<GitBranchType[]>([]);
+  const [branchesLoading, setBranchesLoading] = useState(false);
+  const [branchesError, setBranchesError] = useState(false);
 
   // Change target branch mutation
   const changeTargetBranchMutation = useChangeTargetBranch(
@@ -72,10 +76,22 @@ export function Breadcrumb() {
   useEffect(() => {
     if (!projectId) return;
 
+    setBranchesLoading(true);
+    setBranchesError(false);
+
     projectsApi
       .getBranches(projectId)
-      .then(setBranches)
-      .catch(() => setBranches([]));
+      .then((branches) => {
+        setBranches(branches);
+        setBranchesError(false);
+      })
+      .catch(() => {
+        setBranches([]);
+        setBranchesError(true);
+      })
+      .finally(() => {
+        setBranchesLoading(false);
+      });
   }, [projectId]);
 
   // Use default base branch hook for board view
@@ -83,7 +99,11 @@ export function Breadcrumb() {
 
   // Determine the effective base branch for board view
   // Priority: 1) Valid saved preference, 2) Current branch from git
+  // Returns null while loading to prevent showing incorrect branch
   const effectiveBaseBranch = useMemo(() => {
+    // Don't calculate until branches are loaded
+    if (branchesLoading) return null;
+
     // Validate that saved defaultBranch still exists in available branches
     const isDefaultBranchValid = defaultBranch && branches.some((b) => b.name === defaultBranch);
 
@@ -91,8 +111,14 @@ export function Breadcrumb() {
 
     // Fallback to current branch if no valid preference
     const currentBranch = branches.find((b) => b.is_current);
-    return currentBranch?.name ?? 'main';
-  }, [defaultBranch, branches]);
+    return currentBranch?.name ?? null;
+  }, [defaultBranch, branches, branchesLoading]);
+
+  // Get project branch status for board view (when no attempt selected)
+  // Use effectiveBaseBranch to compare against user's chosen base branch
+  // Convert null to undefined for the hook
+  const { data: projectBranchStatus, refetch: refetchProjectBranchStatus } =
+    useProjectBranchStatus(projectId, effectiveBaseBranch ?? undefined);
 
   // Calculate conflicts for disabling change target branch button
   const hasConflictsCalculated = useMemo(
@@ -109,11 +135,11 @@ export function Breadcrumb() {
 
   // Get parent task if current task has one (via parent_task_attempt)
   const currentTask = taskId && tasksById[taskId] ? tasksById[taskId] : null;
-  const parentTaskAttemptId = currentTask?.parent_task_attempt;
+  const parentTaskAttemptId = currentTask?.parent_task_attempt ?? undefined;
 
   // Fetch parent task via parent_task_attempt -> task_id
   const { data: parentTask } = useQuery({
-    queryKey: ['parent-task-from-attempt', parentTaskAttemptId],
+    queryKey: queryKeys.taskRelationships.parentFromAttempt(parentTaskAttemptId),
     queryFn: async () => {
       if (!parentTaskAttemptId) return null;
 
@@ -226,12 +252,29 @@ export function Breadcrumb() {
       } else {
         // Board view or task view without attempt
         // Show default base branch in board view (when no task is selected)
-        if (!taskId) {
+        // Only render when branches are loaded and we have a valid branch
+        if (!taskId && effectiveBaseBranch) {
           crumbs.push({
             label: effectiveBaseBranch,
             path: location.pathname,
             type: 'board-base-branch',
             icon: <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
+          });
+        } else if (!taskId && branchesLoading) {
+          // Show loading placeholder for branch
+          crumbs.push({
+            label: '...',
+            path: location.pathname,
+            type: 'board-base-branch',
+            icon: <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0 animate-pulse" />,
+          });
+        } else if (!taskId && branchesError) {
+          // Show error state
+          crumbs.push({
+            label: 'Error loading branches',
+            path: location.pathname,
+            type: 'board-base-branch',
+            icon: <GitMerge className="h-3.5 w-3.5 text-destructive shrink-0" />,
           });
         }
 
@@ -345,8 +388,8 @@ export function Breadcrumb() {
             newBaseBranch: result.branchName,
             oldBaseBranch: result.upstreamBranch,
           });
-        } catch (err: any) {
-          console.error('Rebase failed:', err.message || t('git.errors.rebaseBranch'));
+        } catch (err) {
+          console.error('Rebase failed:', (err as Error).message || t('git.errors.rebaseBranch'));
         } finally {
           setRebasing(false);
         }
@@ -386,6 +429,24 @@ export function Breadcrumb() {
     }
   };
 
+  // Handler for pulling updates to main project repo (board view)
+  const handleProjectPullClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!projectId) return;
+
+    try {
+      // Fetch updates from remote (git fetch)
+      await projectsApi.pullProject(projectId);
+
+      // Refetch branch status to show updated commits_behind count
+      await refetchProjectBranchStatus();
+
+      console.log('Successfully fetched updates from remote');
+    } catch (err) {
+      console.error('Project pull failed:', (err as Error).message || 'Failed to pull project updates');
+    }
+  };
+
   return (
     <nav aria-label="Breadcrumb" className="px-3 py-2 text-sm flex items-center justify-between">
       <ol className="flex items-center gap-1">
@@ -403,17 +464,6 @@ export function Breadcrumb() {
         {/* Separator */}
         <li className="flex items-center">
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </li>
-
-        {/* Kanban icon to navigate back to project tasks */}
-        <li className="flex items-center gap-1">
-          <Link
-            to={`/projects/${projectId}/tasks`}
-            className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
-            aria-label="Go to project tasks"
-          >
-            <KanbanSquare className="h-4 w-4" />
-          </Link>
         </li>
 
         {breadcrumbs.map((crumb, index) => {
@@ -472,9 +522,10 @@ export function Breadcrumb() {
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       <Link
                         to={`/projects/${projectId}/tasks`}
-                        className="text-muted-foreground hover:text-foreground transition-colors px-1 -mx-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors px-1 -mx-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-ring"
                         aria-label="Go to board view"
                       >
+                        <KanbanSquare className="h-3.5 w-3.5" />
                         Board
                       </Link>
                     </>
@@ -582,6 +633,7 @@ export function Breadcrumb() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
+                    data-rebase-button
                     onClick={handleRebaseClick}
                     className="inline-flex items-center justify-center gap-0.5 h-6 px-2 rounded-md bg-amber-100/60 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-medium cursor-pointer hover:bg-amber-200/60 dark:hover:bg-amber-800/40 transition-colors"
                   >
@@ -592,6 +644,27 @@ export function Breadcrumb() {
                   {branchStatus.commits_behind ?? 0}{' '}
                   {t('git.status.commits', { count: branchStatus.commits_behind ?? 0 })}{' '}
                   {t('git.status.behind')} - Click to rebase
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {/* Show for board view (no attempt selected) */}
+          {projectBranchStatus && !attempt && projectId && (projectBranchStatus.commits_behind ?? 0) > 0 && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleProjectPullClick}
+                    className="inline-flex items-center justify-center gap-0.5 h-6 px-2 rounded-md bg-amber-100/60 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-medium cursor-pointer hover:bg-amber-200/60 dark:hover:bg-amber-800/40 transition-colors"
+                  >
+                    <span className="text-[10px]">↓{projectBranchStatus.commits_behind} Update</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  {projectBranchStatus.commits_behind ?? 0}{' '}
+                  {t('git.status.commits', { count: projectBranchStatus.commits_behind ?? 0 })}{' '}
+                  {t('git.status.behind')} - Click to update
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

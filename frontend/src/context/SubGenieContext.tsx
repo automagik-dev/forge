@@ -90,6 +90,7 @@ export const SubGenieProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
+/** @public - Hook for accessing SubGenie context */
 export const useSubGenie = () => {
   const context = useContext(SubGenieContext);
   if (!context) {

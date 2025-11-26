@@ -1,5 +1,10 @@
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { useMemo } from 'react';
+import {
+  createContext,
+  useContextSelector,
+} from 'use-context-selector';
 import { useExecutionProcesses } from '@/hooks/useExecutionProcesses';
+import { useTaskCompletionNotification } from '@/hooks/useTaskCompletionNotification';
 import type { ExecutionProcess } from 'shared/types';
 
 type ExecutionProcessesContextType = {
@@ -20,9 +25,10 @@ const ExecutionProcessesContext =
   createContext<ExecutionProcessesContextType | null>(null);
 
 export const ExecutionProcessesProvider: React.FC<{
-  attemptId: string;
+  attemptId?: string | null;
   children: React.ReactNode;
 }> = ({ attemptId, children }) => {
+  const sanitizedAttemptId = attemptId ?? '';
   const {
     executionProcesses,
     executionProcessesById,
@@ -30,7 +36,10 @@ export const ExecutionProcessesProvider: React.FC<{
     isLoading,
     isConnected,
     error,
-  } = useExecutionProcesses(attemptId, { showSoftDeleted: true });
+  } = useExecutionProcesses(sanitizedAttemptId, { showSoftDeleted: true });
+
+  // Monitor for task completion and play notification sound
+  useTaskCompletionNotification(executionProcesses);
 
   const visible = useMemo(
     () => executionProcesses.filter((p) => !p.dropped),
@@ -87,8 +96,12 @@ export const ExecutionProcessesProvider: React.FC<{
   );
 };
 
+/**
+ * Returns the full context value. Re-renders on any context change.
+ * Prefer useExecutionProcessSelector for granular subscriptions.
+ */
 export const useExecutionProcessesContext = () => {
-  const ctx = useContext(ExecutionProcessesContext);
+  const ctx = useContextSelector(ExecutionProcessesContext, (v) => v);
   if (!ctx) {
     throw new Error(
       'useExecutionProcessesContext must be used within ExecutionProcessesProvider'
@@ -96,3 +109,30 @@ export const useExecutionProcessesContext = () => {
   }
   return ctx;
 };
+
+/**
+ * Selector hook for granular subscriptions to ExecutionProcessesContext.
+ * Only re-renders when the selected value changes (using use-context-selector).
+ *
+ * @example
+ * // Only re-render when isAttemptRunningVisible changes
+ * const isRunning = useExecutionProcessSelector(s => s.isAttemptRunningVisible);
+ *
+ * // Select multiple values (component re-renders when any selected value changes)
+ * const { isLoading, error } = useExecutionProcessSelector(
+ *   s => ({ isLoading: s.isLoading, error: s.error })
+ * );
+ */
+export function useExecutionProcessSelector<T>(
+  selector: (state: ExecutionProcessesContextType) => T
+): T {
+  const selected = useContextSelector(ExecutionProcessesContext, (ctx) => {
+    if (!ctx) {
+      throw new Error(
+        'useExecutionProcessSelector must be used within ExecutionProcessesProvider'
+      );
+    }
+    return selector(ctx);
+  });
+  return selected;
+}

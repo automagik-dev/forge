@@ -392,7 +392,7 @@ git push origin main --force
 NAMASTEX_TAG="${LATEST_TAG%-*}-namastex"
 git tag -a $NAMASTEX_TAG -m "Namastex release based on $LATEST_TAG"
 git push origin $NAMASTEX_TAG
-gh release create $NAMASTEX_TAG --repo namastexlabs/vibe-kanban --title "$NAMASTEX_TAG" --notes "Based on $LATEST_TAG"
+gh release create $NAMASTEX_TAG --repo automagik.dev/vibe-kanban --title "$NAMASTEX_TAG" --notes "Based on $LATEST_TAG"
 
 # 3. Update gitmodule (in automagik-forge repo)
 cd upstream
@@ -434,6 +434,41 @@ git commit -m "chore: update upstream to $NAMASTEX_TAG and rebrand"
 - [ ] Team collaboration features
 - [ ] Community templates
 - [ ] Integration with CI/CD pipelines
+
+---
+
+## 🧪 E2E Testing with Playwright
+
+Forge uses **Playwright** for end-to-end testing with an LLM-friendly approach:
+
+### Running Tests
+
+```bash
+# Run all tests
+pnpm test:e2e
+
+# Run with UI mode (visual debugging)
+pnpm test:e2e:ui
+
+# Run in headed mode (see browser)
+pnpm test:e2e:headed
+
+# Debug mode (step through tests)
+pnpm test:e2e:debug
+```
+
+### Writing Tests
+
+Our E2E tests follow **user journey patterns** - complete flows from start to finish:
+- See `tests/e2e/USER-JOURNEYS.md` for documented user journeys
+- Use `tests/e2e/journey-create-task.spec.ts` as a template
+- Follow the framework guide in `tests/e2e/README.md`
+
+**Why Playwright?**
+- ✅ Real browser events (no synthetic event issues)
+- ✅ Auto-wait built-in (no manual timeouts)
+- ✅ Accessibility-first selectors (semantic, non-invasive)
+- ✅ Excellent debugging (screenshots, videos, time-travel traces)
 
 ---
 

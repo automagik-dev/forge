@@ -35,7 +35,7 @@ node --version  # Should show v20.x.x or v22.x.x
 
 #### 2. Clean Dependency Install 🟡 RECOMMENDED
 
-**Reason:** Dependency restructuring (Cypress 15.6.0, PostHog updates)
+**Reason:** Dependency restructuring (Playwright E2E framework, PostHog updates)
 
 **Command:**
 ```bash
@@ -218,7 +218,7 @@ PUBLIC_BASE_URL=https://api.example.com
 
 #### Problem: Node.js version mismatch
 ```
-Error: Cypress requires Node.js 22+
+Error: Project requires Node.js 22+
 ```
 
 **Solution:**
@@ -262,7 +262,7 @@ pnpm run check
 
 ---
 
-#### Problem: Cypress tests failing
+#### Problem: E2E tests failing
 
 **Solution:**
 ```bash
@@ -272,6 +272,9 @@ node --version
 # Clean install
 rm -rf node_modules pnpm-lock.yaml
 pnpm install
+
+# Install Playwright browsers
+pnpm exec playwright install
 
 # Run tests
 pnpm run test:e2e

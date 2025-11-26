@@ -4,6 +4,7 @@ import {
 } from '@rjsf/utils';
 import { Button } from '@/components/ui/button';
 import { Plus, X } from 'lucide-react';
+import type { RJSFArrayItemExtended } from '@/types/rjsf';
 
 export const ArrayFieldTemplate = (props: ArrayFieldTemplateProps) => {
   const { canAdd, items, onAddClick, disabled, readonly } = props;
@@ -51,22 +52,23 @@ interface ArrayItemProps {
 
 const ArrayItem = ({ element, disabled, readonly }: ArrayItemProps) => {
   const { children } = element;
-  const elementAny = element as any; // Type assertion needed for RJSF v6 beta properties
+  // Type assertion for RJSF v6 beta properties not in official types
+  const elementExtended = element as unknown as RJSFArrayItemExtended;
 
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1">{children}</div>
 
       {/* Remove button */}
-      {elementAny.buttonsProps?.hasRemove && (
+      {elementExtended.buttonsProps?.hasRemove && (
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          onClick={elementAny.buttonsProps.onDropIndexClick(
-            elementAny.buttonsProps.index
+          onClick={elementExtended.buttonsProps.onDropIndexClick(
+            elementExtended.buttonsProps.index
           )}
-          disabled={disabled || readonly || elementAny.buttonsProps.disabled}
+          disabled={disabled || readonly || elementExtended.buttonsProps.disabled}
           className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 shrink-0"
           title="Remove item"
         >

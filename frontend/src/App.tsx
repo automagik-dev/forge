@@ -26,6 +26,7 @@ import {
 } from '@/components/config-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { SearchProvider } from '@/contexts/search-context';
+import { MobileNavigationProvider } from '@/contexts/MobileNavigationContext';
 
 import { HotkeysProvider } from 'react-hotkeys-hook';
 
@@ -72,7 +73,7 @@ function AppContent() {
       posthog.opt_in_capturing();
 
       // Build properties object based on consent
-      const identifyProperties: Record<string, any> = {};
+      const identifyProperties: Record<string, unknown> = {};
 
       if (isNamestexer) {
         // Full tracking for namastexers (mandatory)
@@ -266,8 +267,9 @@ function AppContent() {
     <I18nextProvider i18n={i18n}>
       <ThemeProvider initialTheme={config?.theme || ThemeMode.SYSTEM}>
         <SearchProvider>
-          <div className="h-screen flex flex-col bg-background">
-            <SentryRoutes>
+          <MobileNavigationProvider>
+            <div className="h-screen flex flex-col bg-background">
+              <SentryRoutes>
               {/* VS Code full-page logs route (outside ResponsiveLayout for minimal UI) */}
               <Route
                 path="/projects/:projectId/tasks/:taskId/attempts/:attemptId/full"
@@ -317,6 +319,7 @@ function AppContent() {
               onClose={() => setIsGenieOpen(false)}
             />
           )}
+          </MobileNavigationProvider>
         </SearchProvider>
       </ThemeProvider>
     </I18nextProvider>
@@ -336,7 +339,8 @@ function App() {
       <UserSystemProvider>
         <ClickedElementsProvider>
           <ProjectProvider>
-            <HotkeysProvider initiallyActiveScopes={['*', 'global', 'kanban', 'dialog', 'projects', 'settings', 'edit-comment', 'approvals', 'follow-up', 'follow-up-ready']}>
+            {/* Keep 'global' active at all times so the hotkeys scope stack is never empty */}
+            <HotkeysProvider initiallyActiveScopes={['global', 'kanban', 'dialog', 'projects', 'settings', 'edit-comment', 'approvals', 'follow-up', 'follow-up-ready']}>
               <SubGenieProvider>
                 <NiceModal.Provider>
                   <AppContent />

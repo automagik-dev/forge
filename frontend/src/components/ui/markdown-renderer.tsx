@@ -1,5 +1,5 @@
 import Markdown from 'markdown-to-jsx';
-import { memo, useMemo, useState, useCallback } from 'react';
+import { memo, useMemo, useState, useCallback, isValidElement, type ReactElement } from 'react';
 import {
   Tooltip,
   TooltipContent,
@@ -9,6 +9,23 @@ import {
 import { Button } from '@/components/ui/button.tsx';
 import { Check, Clipboard } from 'lucide-react';
 import { writeClipboardViaBridge } from '@/vscode/bridge';
+import MermaidDiagram from '@/components/ui/mermaid-diagram.tsx';
+import type {
+  MarkdownCodeProps,
+  MarkdownPreProps,
+  MarkdownImageProps,
+  MarkdownTextProps,
+  MarkdownHeadingProps,
+  MarkdownListProps,
+  MarkdownListItemProps,
+  MarkdownTableProps,
+  MarkdownTableHeadProps,
+  MarkdownTableBodyProps,
+  MarkdownTableRowProps,
+  MarkdownTableCellProps,
+  MarkdownBlockquoteProps,
+  MarkdownHrProps,
+} from '@/types/markdown';
 
 const HIGHLIGHT_LINK =
   'rounded-sm bg-muted/50 px-1 py-0.5 underline-offset-2 transition-colors';
@@ -90,12 +107,7 @@ function ImageOverride({
   alt,
   title,
   ...props
-}: {
-  src?: string;
-  alt?: string;
-  title?: string;
-  [key: string]: any;
-}) {
+}: MarkdownImageProps) {
   let imageSrc = typeof src === 'string' ? src.trim() : '';
 
   // Convert .forge-images/ paths to /api/images/ paths
@@ -132,7 +144,7 @@ function ImageOverride({
   );
 }
 
-function InlineCodeOverride({ children, className, ...props }: any) {
+function InlineCodeOverride({ children, className, ...props }: MarkdownCodeProps) {
   // Only highlight inline code, not fenced code blocks
   const hasLanguage =
     typeof className === 'string' && /\blanguage-/.test(className);
@@ -154,6 +166,35 @@ function InlineCodeOverride({ children, className, ...props }: any) {
   );
 }
 
+function PreOverride({ children, ...props }: MarkdownPreProps) {
+  // Check if this is a mermaid code block
+  const childElement = isValidElement(children) ? (children as ReactElement<{ className?: string; children?: string }>) : null;
+  const childClassName = childElement?.props?.className || '';
+  const isMermaid =
+    typeof childClassName === 'string' &&
+    (childClassName.includes('lang-mermaid') ||
+      childClassName.includes('language-mermaid'));
+
+  if (isMermaid) {
+    // Extract the mermaid code from children
+    const code =
+      typeof childElement?.props?.children === 'string'
+        ? childElement.props.children
+        : '';
+    return <MermaidDiagram chart={code} />;
+  }
+
+  // Default pre rendering for code blocks
+  return (
+    <pre
+      {...props}
+      className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-sm bg-muted/50 rounded-sm p-2 my-2"
+    >
+      {children}
+    </pre>
+  );
+}
+
 interface MarkdownRendererProps {
   content: string;
   className?: string;
@@ -170,29 +211,30 @@ function MarkdownRenderer({
       a: { component: LinkOverride },
       img: { component: ImageOverride },
       code: { component: InlineCodeOverride },
+      pre: { component: PreOverride },
       strong: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: MarkdownTextProps) => (
           <span {...props} className="">
             {children}
           </span>
         ),
       },
       em: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: MarkdownTextProps) => (
           <em {...props} className="italic">
             {children}
           </em>
         ),
       },
       p: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: MarkdownTextProps) => (
           <p {...props} className="leading-tight my-2">
             {children}
           </p>
         ),
       },
       h1: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: MarkdownHeadingProps) => (
           <h1
             {...props}
             className="text-lg font-medium leading-tight mt-4 mb-2"
@@ -202,7 +244,7 @@ function MarkdownRenderer({
         ),
       },
       h2: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: MarkdownHeadingProps) => (
           <h2
             {...props}
             className="text-base font-medium leading-tight mt-4 mb-2"
@@ -212,14 +254,14 @@ function MarkdownRenderer({
         ),
       },
       h3: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: MarkdownHeadingProps) => (
           <h3 {...props} className="text-sm leading-tight mt-3 mb-2">
             {children}
           </h3>
         ),
       },
       ul: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: MarkdownListProps) => (
           <ul
             {...props}
             className="list-disc list-outside ps-6 my-3 space-y-1.5"
@@ -229,7 +271,7 @@ function MarkdownRenderer({
         ),
       },
       ol: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: MarkdownListProps) => (
           <ol
             {...props}
             className="list-decimal list-outside ps-6 my-3 space-y-1.5"
@@ -239,20 +281,73 @@ function MarkdownRenderer({
         ),
       },
       li: {
-        component: ({ children, ...props }: any) => (
+        component: ({ children, ...props }: MarkdownListItemProps) => (
           <li {...props} className="leading-tight">
             {children}
           </li>
         ),
       },
-      pre: {
-        component: ({ children, ...props }: any) => (
-          <pre
+      table: {
+        component: ({ children, ...props }: MarkdownTableProps) => (
+          <div className="overflow-x-auto my-4">
+            <table
+              {...props}
+              className="min-w-full border-collapse border border-border"
+            >
+              {children}
+            </table>
+          </div>
+        ),
+      },
+      thead: {
+        component: ({ children, ...props }: MarkdownTableHeadProps) => (
+          <thead {...props} className="bg-muted/50">
+            {children}
+          </thead>
+        ),
+      },
+      tbody: {
+        component: ({ children, ...props }: MarkdownTableBodyProps) => (
+          <tbody {...props}>{children}</tbody>
+        ),
+      },
+      tr: {
+        component: ({ children, ...props }: MarkdownTableRowProps) => (
+          <tr {...props} className="border-b border-border">
+            {children}
+          </tr>
+        ),
+      },
+      th: {
+        component: ({ children, ...props }: MarkdownTableCellProps) => (
+          <th
             {...props}
-            className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-sm bg-muted/50 rounded-sm p-2 my-2"
+            className="border border-border px-4 py-2 text-left font-medium"
           >
             {children}
-          </pre>
+          </th>
+        ),
+      },
+      td: {
+        component: ({ children, ...props }: MarkdownTableCellProps) => (
+          <td {...props} className="border border-border px-4 py-2">
+            {children}
+          </td>
+        ),
+      },
+      blockquote: {
+        component: ({ children, ...props }: MarkdownBlockquoteProps) => (
+          <blockquote
+            {...props}
+            className="border-l-4 border-primary/50 pl-4 py-2 my-4 italic bg-muted/20"
+          >
+            {children}
+          </blockquote>
+        ),
+      },
+      hr: {
+        component: ({ ...props }: MarkdownHrProps) => (
+          <hr {...props} className="my-6 border-t border-border" />
         ),
       },
     }),

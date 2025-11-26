@@ -10,8 +10,10 @@ genie:
 forge:
   CLAUDE_CODE:
     model: sonnet
+    dangerously_skip_permissions: true
   CODEX:
     model: gpt-5-codex
+    sandbox: danger-full-access
   OPENCODE:
     model: opencode/glm-4.6
 ---
@@ -62,7 +64,7 @@ npm install -g automagik-genie@{latest|next}
 
 **Command:**
 ```bash
-gh api repos/namastexlabs/automagik-genie/discussions \
+gh api repos/automagik.dev/automagik-genie/discussions \
   --method POST \
   -f category_id={ANNOUNCEMENTS_CATEGORY} \
   -f title="🧞 Genie v{VERSION} Released!" \

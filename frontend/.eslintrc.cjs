@@ -1,4 +1,6 @@
 const i18nCheck = process.env.LINT_I18N === 'true';
+// eslint-plugin-local-rules automatically loads from ./eslint-local-rules/
+// See eslint-local-rules/rules/no-hardcoded-query-keys.js
 
 module.exports = {
   root: true,
@@ -15,7 +17,7 @@ module.exports = {
   ],
   ignorePatterns: ['dist', '.eslintrc.cjs'],
   parser: '@typescript-eslint/parser',
-  plugins: ['react-refresh', '@typescript-eslint', 'unused-imports', 'i18next'],
+  plugins: ['react-refresh', '@typescript-eslint', 'unused-imports', 'i18next', 'local-rules'],
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
@@ -34,6 +36,21 @@ module.exports = {
     ],
     '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/switch-exhaustiveness-check': 'error',
+    // Prevent short polling intervals - prefer WebSocket or event-driven updates
+    // See docs/DATA_FETCHING.md for guidelines
+    'no-restricted-syntax': [
+      'warn',
+      {
+        selector:
+          'Property[key.name="refetchInterval"][value.type="Literal"][value.value<15000]',
+        message:
+          'Polling intervals under 15s are discouraged. Use WebSocket streams or event-driven invalidation instead. See docs/DATA_FETCHING.md',
+      },
+    ],
+    // Enforce centralized queryKeys - prevents cache invalidation mismatches
+    // See frontend/src/lib/queryKeys.ts
+    'local-rules/no-hardcoded-query-keys': 'error',
+
     // i18n rule - only active when LINT_I18N=true
     'i18next/no-literal-string': i18nCheck
       ? [

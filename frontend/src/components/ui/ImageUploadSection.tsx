@@ -87,6 +87,7 @@ export const ImageUploadSection = forwardRef<
       if (collapsible && images.length > 0 && !isExpanded) {
         setIsExpanded(true);
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally not including isExpanded to avoid loop
     }, [collapsible, images.length]);
 
     const handleFiles = useCallback(
@@ -149,10 +150,10 @@ export const ImageUploadSection = forwardRef<
             }
 
             setErrorMessage(null);
-          } catch (error: any) {
+          } catch (error) {
             console.error('Failed to upload image:', error);
             const message =
-              error.message || 'Failed to upload image. Please try again.';
+              (error as Error).message || 'Failed to upload image. Please try again.';
             setErrorMessage(message);
           } finally {
             setUploadingFiles((prev) => {

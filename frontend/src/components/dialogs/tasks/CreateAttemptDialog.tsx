@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import BranchSelector from '@/components/tasks/BranchSelector';
 import { ExecutorProfileSelector } from '@/components/settings';
 import { useAttemptCreation } from '@/hooks/useAttemptCreation';
@@ -45,7 +46,8 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
     // Use project profiles if available (synchronized agents), fallback to global profiles
     const projectExecutors = projectProfiles?.executors;
     const hasProjectExecutors = projectExecutors && Object.keys(projectExecutors).length > 0;
-    const profiles = hasProjectExecutors ? projectExecutors : globalProfiles;
+    const profiles = (hasProjectExecutors ? projectExecutors : (globalProfiles ?? null)) as
+      Record<string, import('shared/types').ExecutorConfig> | null;
     const hasProfiles = profiles && Object.keys(profiles).length > 0;
     const { defaultBranch } = useDefaultBaseBranch(projectId);
     const isProfilesLoading = isLoadingProjectProfiles && (!globalProfiles || Object.keys(globalProfiles).length === 0);
@@ -62,6 +64,7 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
     const [selectedProfile, setSelectedProfile] =
       useState<ExecutorProfileId | null>(null);
     const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
+    const [useWorktree, setUseWorktree] = useState(true);
     const [branches, setBranches] = useState<GitBranch[]>([]);
     const [isLoadingBranches, setIsLoadingBranches] = useState(false);
 
@@ -86,6 +89,7 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
       if (!modal.visible) {
         setSelectedProfile(null);
         setSelectedBranch(null);
+        setUseWorktree(true);
       }
     }, [modal.visible]);
 
@@ -135,6 +139,7 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
         await createAttempt({
           profile: selectedProfile,
           baseBranch: selectedBranch,
+          useWorktree,
         });
         modal.hide();
       } catch (err) {
@@ -194,6 +199,20 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
                     : t('createAttemptDialog.selectBranch')
                 }
               />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="use-worktree"
+                checked={useWorktree}
+                onCheckedChange={(checked) => setUseWorktree(checked === true)}
+              />
+              <Label
+                htmlFor="use-worktree"
+                className="text-sm font-normal cursor-pointer"
+              >
+                {t('createAttemptDialog.useWorktree')}
+              </Label>
             </div>
 
             {error && (

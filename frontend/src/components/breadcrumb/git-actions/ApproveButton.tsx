@@ -1,4 +1,5 @@
 import { Check, AlertTriangle, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import {
   Tooltip,
   TooltipContent,
@@ -24,9 +25,12 @@ export function ApproveButton({
 }: ApproveButtonProps) {
   const { t } = useTranslation('tasks');
   const { approve, isApproving } = useApproveTask();
+  const [, setShouldShake] = useState(false);
 
   const hasCodeChanges = (branchStatus?.commits_ahead ?? 0) > 0;
   const hasConflicts = (branchStatus?.conflicted_files?.length ?? 0) > 0;
+  const needsRebase = (branchStatus?.commits_behind ?? 0) > 0 || (branchStatus?.remote_commits_behind ?? 0) > 0;
+  const rebaseCommitCount = (branchStatus?.remote_commits_behind ?? branchStatus?.commits_behind ?? 0);
 
   // Only show Approve button when task is in review status
   // Don't show while agent is working (inprogress, agent) or when already done
@@ -36,6 +40,25 @@ export function ApproveButton({
   if (!canApprove) return null;
 
   const handleClick = () => {
+    // If rebase is needed, shake the Update Needed badge/Rebase button to draw attention
+    if (needsRebase) {
+      setShouldShake(true);
+      // Find and shake the rebase/update badge
+      const rebaseButton = document.querySelector('[data-rebase-button]') as HTMLElement;
+      if (rebaseButton) {
+        rebaseButton.classList.add('animate-shake');
+        setTimeout(() => {
+          rebaseButton.classList.remove('animate-shake');
+        }, 500);
+      }
+      return;
+    }
+
+    // Don't allow approval if has conflicts or is already approving
+    if (hasConflicts || isApproving) {
+      return;
+    }
+
     approve({
       taskId: task.id,
       attemptId: attempt.id,
@@ -47,14 +70,16 @@ export function ApproveButton({
     });
   };
 
-  // Determine button state
-  const isDisabled = hasConflicts || isApproving;
+  // Determine button state - also disable if needs rebase
+  const isDisabled = hasConflicts || isApproving || needsRebase;
 
   // Button label with commit count upfront
   const commitCount = branchStatus?.commits_ahead ?? 0;
   let label: string;
   if (isApproving) {
     label = hasCodeChanges ? t('git.states.mergingAndCompleting') : t('git.states.completing');
+  } else if (needsRebase) {
+    label = t('git.states.rebaseRequired');
   } else if (hasConflicts) {
     label = t('git.states.resolveConflicts');
   } else if (hasCodeChanges) {
@@ -66,7 +91,9 @@ export function ApproveButton({
 
   // Tooltip content
   let tooltipContent: string;
-  if (hasConflicts) {
+  if (needsRebase) {
+    tooltipContent = `Please rebase with ${attempt.target_branch} first (${rebaseCommitCount} new ${rebaseCommitCount === 1 ? 'commit' : 'commits'})`;
+  } else if (hasConflicts) {
     const fileCount = branchStatus?.conflicted_files?.length ?? 0;
     tooltipContent = t('git.tooltips.resolveConflicts', {
       count: fileCount,
@@ -82,7 +109,9 @@ export function ApproveButton({
   }
 
   // Determine color classes based on state
-  const colorClasses = hasConflicts
+  const colorClasses = needsRebase
+    ? 'bg-amber-100/70 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-200/70 dark:hover:bg-amber-800/40'
+    : hasConflicts
     ? 'bg-red-100/60 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-200/60 dark:hover:bg-red-800/40'
     : hasCodeChanges
     ? 'bg-emerald-100/70 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200/70 dark:hover:bg-emerald-800/40'
@@ -95,11 +124,11 @@ export function ApproveButton({
           <button
             disabled={isDisabled}
             onClick={handleClick}
-            className={`inline-flex items-center justify-center gap-0.5 h-6 px-2 rounded-md border text-xs font-medium cursor-pointer transition-colors ${colorClasses} ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`inline-flex items-center justify-center gap-0.5 h-6 px-2 rounded-md border text-xs font-medium transition-colors ${colorClasses} ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
           >
             {isApproving ? (
               <Loader2 className="h-3 w-3 animate-spin" />
-            ) : hasConflicts ? (
+            ) : needsRebase || hasConflicts ? (
               <AlertTriangle className="h-3 w-3" />
             ) : (
               <Check className="h-3 w-3" />

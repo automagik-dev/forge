@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "genie": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "automagik-genie@next",
+        "mcp"
+      ]
+    }
+  }
+}

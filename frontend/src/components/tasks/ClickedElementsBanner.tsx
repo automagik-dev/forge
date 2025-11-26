@@ -10,11 +10,6 @@ import { useState, useMemo } from 'react';
 import { Badge } from '../ui/badge';
 import { useClickedElements } from '@/contexts/ClickedElementsProvider';
 
-export type Props = Readonly<{
-  isEditable: boolean;
-  appendInstructions?: (text: string) => void;
-}>;
-
 const MAX_VISIBLE_ELEMENTS = 5;
 const MAX_BADGES = 6;
 
@@ -23,8 +18,8 @@ function buildChainInnerToOuterForBanner(entry: ClickedEntry) {
   const comps = entry.payload.components ?? [];
   const s = entry.payload.selected;
 
-  // Start with selected as innermost, cast to ComponentInfo for uniform handling
-  const innerToOuter = [s as any];
+  // Start with selected as innermost
+  const innerToOuter: typeof comps = [s];
 
   // Add components that aren't duplicates
   const selectedKey = `${s.name}|${s.pathToSource}|${s.source?.lineNumber}|${s.source?.columnNumber}`;

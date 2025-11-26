@@ -5,7 +5,7 @@ import type { ImageResponse, TaskWithAttemptStatus, ExecutorProfileId } from 'sh
 type Args = {
   attemptId?: string;
   task?: TaskWithAttemptStatus | null;
-  currentProfile?: Record<string, any> | null;
+  currentProfile?: Record<string, unknown> | null;
   defaultExecutor?: string; // User's configured default executor (e.g., "CLAUDE_CODE")
   defaultBranch?: string | null; // User's configured default base branch
   message: string;
@@ -106,16 +106,19 @@ export function useFollowUpSend({
         });
 
         // Create task + attempt with user's first message
+        // Note: use_worktree is not available in CreateAndStartTaskRequest
+        // For Genie context (main workspace execution), the backend handles this separately
         const result = await tasksApi.createAndStart({
           task: {
             project_id: projectId,
             title: `Chat: ${firstMessage.substring(0, 50)}${firstMessage.length > 50 ? '...' : ''}`,
             description: firstMessage, // User's message goes here!
+            parent_task_attempt: null,
+            image_ids: null,
           },
           executor_profile_id: executorProfileId as ExecutorProfileId,
           base_branch: defaultBranch || 'dev', // Use configured default, fallback to 'dev'
-          use_worktree: false, // CRITICAL: Genie uses current branch!
-        } as any);
+        });
 
         console.log('[Master Genie] Task created:', result.id);
 
@@ -181,7 +184,7 @@ export function useFollowUpSend({
         retry_process_id: null,
         force_when_dirty: null,
         perform_git_reset: null,
-      } as any);
+      });
       setMessage('');
       clearComments();
       clearClickedElements?.();
@@ -214,6 +217,7 @@ export function useFollowUpSend({
     setMessage,
     projectId,
     onNewTaskCreated,
+    defaultBranch,
   ]);
 
   return {

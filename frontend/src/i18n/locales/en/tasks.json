@@ -214,6 +214,7 @@
       "merge": "Merge",
       "rebasing": "Rebasing...",
       "rebase": "Rebase",
+      "rebaseRequired": "Rebase Required",
       "pushed": "Pushed!",
       "pushing": "Pushing...",
       "push": "Push",
@@ -286,6 +287,7 @@
     "baseBranch": "Base branch",
     "loadingBranches": "Loading branches...",
     "selectBranch": "Select branch",
+    "useWorktree": "Use isolated git worktree (recommended)",
     "error": "Failed to create attempt. Please try again.",
     "creating": "Creating...",
     "start": "Start"
@@ -314,6 +316,10 @@
     "history": "History"
   },
   "actionsMenu": {
+    "view": "View",
+    "viewDetails": "View details",
+    "viewDiff": "View diff",
+    "viewPreview": "View preview",
     "attempt": "Attempt",
     "openInIde": "Open attempt in IDE",
     "viewProcesses": "View processes",
@@ -321,7 +327,8 @@
     "createSubtask": "Create subtask",
     "gitActions": "Git actions",
     "task": "Task",
-    "duplicate": "Duplicate"
+    "duplicate": "Duplicate",
+    "archive": "Archive"
   },
   "showcases": {
     "taskPanel": {

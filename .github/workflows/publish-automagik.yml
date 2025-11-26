@@ -1,0 +1,168 @@
+name: Publish to npm (automagik)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag (e.g., v1.2.3)"
+        required: true
+      release_id:
+        description: "GitHub release ID"
+        required: true
+
+concurrency:
+  group: publish-automagik
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  NODE_VERSION: 22
+  PNPM_VERSION: 10.8.1
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag_name }}
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-node
+
+      - name: Configure npm authentication
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+
+      - name: Download and repackage as 'automagik'
+        uses: actions/github-script@v7
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const { execSync } = require('child_process');
+
+            const releaseId = process.env.RELEASE_ID;
+            console.log("releaseId:", releaseId);
+
+            if (!releaseId) {
+              core.setFailed('No release ID found.');
+              return;
+            }
+
+            const release = await github.rest.repos.getRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: releaseId
+            });
+
+            // Find the .tgz file
+            const tgzAsset = release.data.assets.find(asset => asset.name.endsWith('.tgz'));
+
+            if (!tgzAsset) {
+              core.setFailed('No .tgz file found in release assets');
+              return;
+            }
+
+            console.log(`Found package: ${tgzAsset.name}`);
+
+            // Download the asset
+            const response = await github.rest.repos.getReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              asset_id: tgzAsset.id,
+              headers: {
+                Accept: 'application/octet-stream'
+              }
+            });
+
+            // Save to npx-cli directory
+            const downloadPath = path.join('npx-cli', tgzAsset.name);
+            fs.writeFileSync(downloadPath, Buffer.from(response.data));
+            console.log(`Downloaded to ${downloadPath}`);
+
+            // Extract the package
+            const extractDir = path.join('npx-cli', 'extracted');
+            fs.mkdirSync(extractDir, { recursive: true });
+            execSync(`tar -xzf ${downloadPath} -C ${extractDir}`);
+            console.log('Extracted package');
+
+            // Modify package.json (it's in extracted/package/)
+            const packageJsonPath = path.join(extractDir, 'package', 'package.json');
+            const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
+            console.log(`Original package name: ${packageJson.name}`);
+            packageJson.name = 'automagik';
+            console.log(`Modified package name: ${packageJson.name}`);
+
+            fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
+            // Repack the tarball
+            const repackedName = `automagik-${packageJson.version}.tgz`;
+            const repackedPath = path.join('npx-cli', repackedName);
+            execSync(`tar -czf ${repackedPath} -C ${extractDir} package`);
+            console.log(`Repacked as ${repackedName}`);
+
+            // Cleanup
+            fs.rmSync(extractDir, { recursive: true, force: true });
+            fs.unlinkSync(downloadPath);
+
+            // Set output for next step
+            core.setOutput('package-file', repackedName);
+            core.setOutput('package-name', repackedName);
+
+      - name: Verify repacked package
+        id: verify
+        run: |
+          cd npx-cli
+
+          # List files to confirm repackaging
+          ls -la *.tgz
+
+          # Extract package name from the repacked file
+          PACKAGE_FILE=$(ls automagik-*.tgz | head -n1)
+          echo "package-file=$PACKAGE_FILE" >> $GITHUB_OUTPUT
+
+          echo "✅ Repacked package ready: $PACKAGE_FILE"
+
+      - name: Publish to npm as 'automagik'
+        run: |
+          cd npx-cli
+
+          # Publish the repacked package
+          PACKAGE_FILE="${{ steps.verify.outputs.package-file }}"
+
+          echo "Publishing $PACKAGE_FILE to npm as 'automagik'..."
+          npm publish "$PACKAGE_FILE"
+
+          echo "✅ Successfully published to npm as 'automagik'!"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Comment on release
+        uses: actions/github-script@v7
+        env:
+          RELEASE_ID: ${{ inputs.release_id }}
+        with:
+          script: |
+            const releaseId = process.env.RELEASE_ID;
+
+            // Fetch the release to get the current body
+            const release = await github.rest.repos.getRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: releaseId
+            });
+
+            const currentBody = release.data.body || '';
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: releaseId,
+              body: currentBody + '\n\n🧪 **A/B test: Also published as `automagik` (unscoped package)**'
+            });

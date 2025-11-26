@@ -17,6 +17,10 @@ use futures_util::{SinkExt, StreamExt, TryStreamExt};
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use std::collections::HashSet;
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::RwLock;
 use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
@@ -121,6 +125,14 @@ fn forge_api_routes() -> Router<ForgeAppState> {
         .route(
             "/api/forge/projects/{project_id}/profiles",
             get(get_project_profiles),
+        )
+        .route(
+            "/api/forge/projects/{project_id}/branch-status",
+            get(get_project_branch_status),
+        )
+        .route(
+            "/api/forge/projects/{project_id}/pull",
+            post(post_project_pull),
         )
         .route("/api/forge/omni/status", get(get_omni_status))
         .route("/api/forge/omni/instances", get(list_omni_instances))
@@ -733,13 +745,76 @@ async fn handle_forge_tasks_ws(
 ) -> anyhow::Result<()> {
     let pool = deployment.db().pool.clone();
 
+    // Batch query for all agent task IDs at initialization (fixes N+1 pattern)
+    let agent_task_ids: Arc<RwLock<HashSet<Uuid>>> = {
+        let agent_tasks: Vec<Uuid> = sqlx::query_scalar(
+            "SELECT task_id FROM forge_agents fa
+             INNER JOIN tasks t ON fa.task_id = t.id
+             WHERE t.project_id = ?",
+        )
+        .bind(project_id)
+        .fetch_all(&pool)
+        .await
+        .unwrap_or_else(|e| {
+            tracing::warn!(
+                "Failed to fetch initial agent task IDs for project {}: {}",
+                project_id,
+                e
+            );
+            Vec::new()
+        });
+
+        Arc::new(RwLock::new(agent_tasks.into_iter().collect()))
+    };
+
+    // Spawn background task to refresh agent task IDs periodically
+    // Store the handle so we can abort it when the WebSocket closes
+    let refresh_cache = agent_task_ids.clone();
+    let refresh_pool = pool.clone();
+    let refresh_project_id = project_id;
+    let refresh_task_handle = tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(5));
+        loop {
+            interval.tick().await;
+
+            match sqlx::query_scalar::<_, Uuid>(
+                "SELECT task_id FROM forge_agents fa
+                 INNER JOIN tasks t ON fa.task_id = t.id
+                 WHERE t.project_id = ?",
+            )
+            .bind(refresh_project_id)
+            .fetch_all(&refresh_pool)
+            .await
+            {
+                Ok(tasks) => {
+                    let mut cache = refresh_cache.write().await;
+                    cache.clear();
+                    cache.extend(tasks);
+                    tracing::trace!(
+                        "Refreshed agent task cache for project {}: {} tasks",
+                        refresh_project_id,
+                        cache.len()
+                    );
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        "Failed to refresh agent task cache for project {}: {}",
+                        refresh_project_id,
+                        e
+                    );
+                }
+            }
+        }
+    });
+
     // Get the raw stream from upstream (includes initial snapshot + live updates)
-    // Filter out agent tasks by checking forge_agents table (matches REST endpoint behavior)
+    // Filter out agent tasks using cache with DB fallback for unknown tasks
     let stream = deployment
         .events()
         .stream_tasks_raw(project_id)
         .await?
         .filter_map(move |msg_result| {
+            let agent_task_ids = agent_task_ids.clone();
             let pool = pool.clone();
             async move {
                 match msg_result {
@@ -755,17 +830,42 @@ async fn handle_forge_tasks_ws(
                                                 op.value.clone(),
                                             )
                                         {
-                                            // Check if this task is in forge_agents table (matches REST filtering)
-                                            let is_agent: bool = sqlx::query_scalar(
-                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
-                                            )
-                                            .bind(task_with_status.task.id)
-                                            .fetch_one(&pool)
-                                            .await
-                                            .unwrap_or_else(|e| {
-                                                tracing::warn!("Failed to check forge_agents for task {}: {}", task_with_status.task.id, e);
-                                                false
-                                            });
+                                            let task_id = task_with_status.task.id;
+
+                                            // First check cache (read lock, released before any await)
+                                            let in_cache = {
+                                                let cache = agent_task_ids.read().await;
+                                                cache.contains(&task_id)
+                                            };
+
+                                            let is_agent = if in_cache {
+                                                true
+                                            } else {
+                                                // Fallback: DB query for tasks not in cache
+                                                // This ensures newly created agent tasks are filtered immediately
+                                                let is_agent_db: bool = sqlx::query_scalar(
+                                                    "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)",
+                                                )
+                                                .bind(task_id)
+                                                .fetch_one(&pool)
+                                                .await
+                                                .unwrap_or_else(|e| {
+                                                    tracing::warn!(
+                                                        "Failed to check forge_agents for task {}: {}",
+                                                        task_id,
+                                                        e
+                                                    );
+                                                    false
+                                                });
+
+                                                // If it's an agent, update cache so subsequent patches don't hit DB
+                                                if is_agent_db {
+                                                    let mut cache = agent_task_ids.write().await;
+                                                    cache.insert(task_id);
+                                                }
+
+                                                is_agent_db
+                                            };
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -780,17 +880,42 @@ async fn handle_forge_tasks_ws(
                                                 op.value.clone(),
                                             )
                                         {
-                                            // Check if this task is in forge_agents table (matches REST filtering)
-                                            let is_agent: bool = sqlx::query_scalar(
-                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)"
-                                            )
-                                            .bind(task_with_status.task.id)
-                                            .fetch_one(&pool)
-                                            .await
-                                            .unwrap_or_else(|e| {
-                                                tracing::warn!("Failed to check forge_agents for task {}: {}", task_with_status.task.id, e);
-                                                false
-                                            });
+                                            let task_id = task_with_status.task.id;
+
+                                            // First check cache (read lock, released before any await)
+                                            let in_cache = {
+                                                let cache = agent_task_ids.read().await;
+                                                cache.contains(&task_id)
+                                            };
+
+                                            let is_agent = if in_cache {
+                                                true
+                                            } else {
+                                                // Fallback: DB query for tasks not in cache
+                                                // This ensures newly created agent tasks are filtered immediately
+                                                let is_agent_db: bool = sqlx::query_scalar(
+                                                    "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)",
+                                                )
+                                                .bind(task_id)
+                                                .fetch_one(&pool)
+                                                .await
+                                                .unwrap_or_else(|e| {
+                                                    tracing::warn!(
+                                                        "Failed to check forge_agents for task {}: {}",
+                                                        task_id,
+                                                        e
+                                                    );
+                                                    false
+                                                });
+
+                                                // If it's an agent, update cache so subsequent patches don't hit DB
+                                                if is_agent_db {
+                                                    let mut cache = agent_task_ids.write().await;
+                                                    cache.insert(task_id);
+                                                }
+
+                                                is_agent_db
+                                            };
 
                                             if !is_agent {
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
@@ -811,37 +936,7 @@ async fn handle_forge_tasks_ws(
                                 && let json_patch::PatchOperation::Replace(op) = patch_op
                                 && let Some(tasks_obj) = op.value.as_object()
                             {
-                                let task_ids: Vec<Uuid> = tasks_obj
-                                    .iter()
-                                    .filter_map(|(_, task_value)| {
-                                        serde_json::from_value::<TaskWithAttemptStatus>(task_value.clone())
-                                            .ok()
-                                            .map(|t| t.task.id)
-                                    })
-                                    .collect();
-
-                                let agent_task_ids: std::collections::HashSet<Uuid> = if !task_ids.is_empty() {
-                                    let placeholders = task_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
-                                    let query_str = format!("SELECT task_id FROM forge_agents WHERE task_id IN ({})", placeholders);
-
-                                    let mut query = sqlx::query_scalar(&query_str);
-                                    for task_id in &task_ids {
-                                        query = query.bind(task_id);
-                                    }
-
-                                    query.fetch_all(&pool)
-                                        .await
-                                        .unwrap_or_else(|e| {
-                                            tracing::warn!("Failed to fetch agent task IDs: {}", e);
-                                            Vec::new()
-                                        })
-                                        .into_iter()
-                                        .collect()
-                                } else {
-                                    std::collections::HashSet::new()
-                                };
-
-                                // Filter out agent tasks from the initial snapshot
+                                // Filter out agent tasks from the initial snapshot using hybrid approach
                                 let mut filtered_tasks = serde_json::Map::new();
                                 for (task_id_str, task_value) in tasks_obj {
                                     if let Ok(task_with_status) =
@@ -849,8 +944,45 @@ async fn handle_forge_tasks_ws(
                                             task_value.clone(),
                                         )
                                     {
-                                        // Check if this task is in the agent_task_ids set
-                                        if !agent_task_ids.contains(&task_with_status.task.id) {
+                                        let task_id = task_with_status.task.id;
+
+                                        // First check cache (read lock, released before any await)
+                                        let in_cache = {
+                                            let cache = agent_task_ids.read().await;
+                                            cache.contains(&task_id)
+                                        };
+
+                                        let is_agent = if in_cache {
+                                            true
+                                        } else {
+                                            // Fallback: DB query for tasks not in cache
+                                            // This ensures newly created agent tasks are filtered immediately
+                                            let is_agent_db: bool = sqlx::query_scalar(
+                                                "SELECT EXISTS(SELECT 1 FROM forge_agents WHERE task_id = ?)",
+                                            )
+                                            .bind(task_id)
+                                            .fetch_one(&pool)
+                                            .await
+                                            .unwrap_or_else(|e| {
+                                                tracing::warn!(
+                                                    "Failed to check forge_agents for task {}: {}",
+                                                    task_id,
+                                                    e
+                                                );
+                                                false
+                                            });
+
+                                            // If it's an agent, update cache so subsequent patches don't hit DB
+                                            if is_agent_db {
+                                                let mut cache = agent_task_ids.write().await;
+                                                cache.insert(task_id);
+                                            }
+
+                                            is_agent_db
+                                        };
+
+                                        // Only include non-agent tasks in the filtered snapshot
+                                        if !is_agent {
                                             filtered_tasks.insert(
                                                 task_id_str.to_string(),
                                                 task_value.clone(),
@@ -903,6 +1035,10 @@ async fn handle_forge_tasks_ws(
             }
         }
     }
+
+    // Cancel the background cache refresh task when WebSocket closes
+    refresh_task_handle.abort();
+
     Ok(())
 }
 
@@ -1015,6 +1151,161 @@ async fn forge_follow_up(
     .await
 }
 
+/// Forge override for get_task_attempt_branch_status
+/// Adds remote_commits_behind and remote_commits_ahead calculation
+///
+/// TODO: Remove this override when forge-core fix is merged
+/// Upstream: namastexlabs/forge-core (issues disabled - cannot report)
+/// Tracking issue: https://github.com/automagik-dev/forge/issues/232
+///
+/// This override wraps the upstream implementation and adds calculation for remote_commits_behind
+/// and remote_commits_ahead by comparing the local branch against its remote tracking branch
+/// (e.g., forge/task-xyz vs origin/forge/task-xyz). These values are needed for the
+/// UpdateNeededBadge and PushToPRButton components.
+async fn forge_get_task_attempt_branch_status(
+    axum::Extension(task_attempt): axum::Extension<TaskAttempt>,
+    State(deployment): State<DeploymentImpl>,
+) -> Result<Json<ApiResponse<Value>>, ApiError> {
+    use std::process::Command;
+
+    // Call upstream to get basic branch status - this returns all the standard fields
+    // We'll then augment it with remote tracking information
+    let upstream_result = task_attempts::get_task_attempt_branch_status(
+        axum::Extension(task_attempt.clone()),
+        State(deployment.clone()),
+    )
+    .await;
+
+    // If upstream fails, propagate the error
+    let Json(api_response) = upstream_result?;
+
+    // Serialize the ApiResponse to JSON so we can modify it
+    let branch_status_value = serde_json::to_value(&api_response).map_err(|e| {
+        ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
+            format!("Failed to serialize upstream response: {}", e),
+        ))
+    })?;
+
+    // Extract the actual data object (ApiResponse has a wrapper structure)
+    let mut branch_status = if let Some(data) = branch_status_value.get("data").cloned() {
+        data
+    } else if branch_status_value.is_object() {
+        // If it's already the data object, use it directly
+        branch_status_value.clone()
+    } else {
+        // Fallback: serialize the response to Value and return
+        let fallback_value = serde_json::to_value(&api_response).unwrap_or(json!({}));
+        return Ok(Json(ApiResponse::success(fallback_value)));
+    };
+
+    // Get worktree path from task attempt's container_ref
+    // container_ref is an Option, so we need to unwrap it or use a default
+    let container_ref_str = task_attempt.container_ref.as_ref().ok_or_else(|| {
+        ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
+            "Task attempt has no container_ref".to_string(),
+        ))
+    })?;
+    let worktree_path = std::path::PathBuf::from(container_ref_str);
+
+    // Get current branch in the worktree
+    let current_branch_output = Command::new("git")
+        .current_dir(&worktree_path)
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .output();
+
+    let current_branch = match current_branch_output {
+        Ok(output) if output.status.success() => {
+            String::from_utf8_lossy(&output.stdout).trim().to_string()
+        }
+        _ => {
+            tracing::warn!(
+                "Failed to get current branch for task attempt {}, cannot calculate remote commits",
+                task_attempt.id
+            );
+            // Return upstream response as-is if we can't get the current branch
+            // We already have branch_status as Value, so return that
+            return Ok(Json(ApiResponse::success(branch_status)));
+        }
+    };
+
+    // Get the configured upstream tracking branch (e.g., origin/forge/task-xyz, upstream/main, etc.)
+    let upstream_output = Command::new("git")
+        .current_dir(&worktree_path)
+        .args(["rev-parse", "--abbrev-ref", "@{u}"])
+        .output();
+
+    let remote_tracking_branch = match upstream_output {
+        Ok(output) if output.status.success() => {
+            String::from_utf8_lossy(&output.stdout).trim().to_string()
+        }
+        _ => {
+            // No upstream configured - branch might not be pushed yet
+            tracing::debug!(
+                "No upstream tracking branch for {} in task attempt {}, cannot calculate remote commits",
+                current_branch,
+                task_attempt.id
+            );
+            // Return upstream response as-is if no tracking branch exists
+            return Ok(Json(ApiResponse::success(branch_status)));
+        }
+    };
+
+    // Fetch from remote to ensure we have latest refs (don't fail if this fails)
+    // Extract remote name from tracking branch (e.g., "origin" from "origin/branch")
+    if let Some(remote_name) = remote_tracking_branch.split('/').next() {
+        let _ = Command::new("git")
+            .current_dir(&worktree_path)
+            .args(["fetch", remote_name, &current_branch])
+            .output();
+    }
+
+    let remote_commits_output = Command::new("git")
+        .current_dir(&worktree_path)
+        .args([
+            "rev-list",
+            "--left-right",
+            "--count",
+            &format!("{}...{}", remote_tracking_branch, current_branch),
+        ])
+        .output();
+
+    let (remote_commits_behind, remote_commits_ahead) = match remote_commits_output {
+        Ok(output) if output.status.success() => {
+            let output_str = String::from_utf8_lossy(&output.stdout);
+            let parts: Vec<&str> = output_str.split_whitespace().collect();
+            if parts.len() == 2 {
+                (parts[0].parse::<i32>().ok(), parts[1].parse::<i32>().ok())
+            } else {
+                (None, None)
+            }
+        }
+        _ => {
+            // Remote tracking branch might not exist yet (e.g., new local branch not pushed)
+            tracing::debug!(
+                "Remote tracking branch {} not found for task attempt {}, likely not pushed yet",
+                remote_tracking_branch,
+                task_attempt.id
+            );
+            (None, None)
+        }
+    };
+
+    // Add the calculated values to the branch status
+    if let Some(obj) = branch_status.as_object_mut() {
+        obj.insert(
+            "remote_commits_behind".to_string(),
+            json!(remote_commits_behind),
+        );
+        obj.insert(
+            "remote_commits_ahead".to_string(),
+            json!(remote_commits_ahead),
+        );
+    }
+
+    // Return the augmented response
+    Ok(Json(ApiResponse::success(branch_status)))
+}
+
 /// Build task_attempts router with forge override for create endpoint
 fn build_task_attempts_router_with_forge_override(
     deployment: &DeploymentImpl,
@@ -1041,7 +1332,7 @@ fn build_task_attempts_router_with_forge_override(
         .route("/start-dev-server", post(task_attempts::start_dev_server))
         .route(
             "/branch-status",
-            get(task_attempts::get_task_attempt_branch_status),
+            get(forge_get_task_attempt_branch_status), // Forge override to calculate remote_commits_behind/ahead
         )
         .route("/diff/ws", get(task_attempts::stream_task_attempt_diff_ws))
         .route("/merge", post(task_attempts::merge_task_attempt))
@@ -1412,6 +1703,304 @@ async fn get_project_profiles(
         })
 }
 
+#[derive(Deserialize)]
+struct BranchStatusQuery {
+    /// Optional base branch to compare against (defaults to "main")
+    base: Option<String>,
+}
+
+/// Get branch status for a project's main repository
+/// This checks the git status of the project's working directory (not worktree)
+/// Supports optional ?base=<branch> query parameter to specify target branch
+async fn get_project_branch_status(
+    Path(project_id): Path<Uuid>,
+    Query(query): Query<BranchStatusQuery>,
+    State(deployment): State<DeploymentImpl>,
+) -> Result<Json<ApiResponse<Value>>, StatusCode> {
+    use db::models::project::Project;
+    use std::process::Command;
+
+    // Get project to determine workspace root
+    let project = match Project::find_by_id(&deployment.db().pool, project_id).await {
+        Ok(Some(p)) => p,
+        Ok(None) => {
+            tracing::error!("Project {} not found", project_id);
+            return Err(StatusCode::NOT_FOUND);
+        }
+        Err(e) => {
+            tracing::error!("Database error finding project {}: {}", project_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    // Get current branch
+    let current_branch_output = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .output();
+
+    let current_branch = match current_branch_output {
+        Ok(output) if output.status.success() => {
+            String::from_utf8_lossy(&output.stdout).trim().to_string()
+        }
+        _ => {
+            tracing::warn!(
+                "Failed to get current branch for project {}, defaulting to 'main'",
+                project_id
+            );
+            "main".to_string()
+        }
+    };
+
+    // Get target branch from query parameter or default to "main"
+    let target_branch = query.base.as_deref().unwrap_or("main");
+
+    // Fetch from remote to ensure we have latest refs
+    let _ = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args(["fetch", "origin"])
+        .output();
+
+    // Compare against remote tracking branch (origin/target_branch)
+    let remote_branch = format!("origin/{}", target_branch);
+    let commits_behind_ahead_output = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args([
+            "rev-list",
+            "--left-right",
+            "--count",
+            &format!("{}...{}", remote_branch, current_branch),
+        ])
+        .output();
+
+    let (commits_behind, commits_ahead) = match commits_behind_ahead_output {
+        Ok(output) if output.status.success() => {
+            let output_str = String::from_utf8_lossy(&output.stdout);
+            let parts: Vec<&str> = output_str.split_whitespace().collect();
+            if parts.len() == 2 {
+                (parts[0].parse::<i32>().ok(), parts[1].parse::<i32>().ok())
+            } else {
+                (None, None)
+            }
+        }
+        _ => (None, None),
+    };
+
+    // Get the configured upstream tracking branch (e.g., origin/main, upstream/main, etc.)
+    // This tells us if we need to push (local ahead) or pull (remote ahead)
+    let upstream_output = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args(["rev-parse", "--abbrev-ref", "@{u}"])
+        .output();
+
+    let (remote_commits_behind, remote_commits_ahead) = match upstream_output {
+        Ok(output) if output.status.success() => {
+            let remote_tracking_branch = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+            // Compare local to its configured upstream
+            let remote_commits_output = Command::new("git")
+                .current_dir(&project.git_repo_path)
+                .args([
+                    "rev-list",
+                    "--left-right",
+                    "--count",
+                    &format!("{}...{}", remote_tracking_branch, current_branch),
+                ])
+                .output();
+
+            match remote_commits_output {
+                Ok(output) if output.status.success() => {
+                    let output_str = String::from_utf8_lossy(&output.stdout);
+                    let parts: Vec<&str> = output_str.split_whitespace().collect();
+                    if parts.len() == 2 {
+                        (parts[0].parse::<i32>().ok(), parts[1].parse::<i32>().ok())
+                    } else {
+                        (None, None)
+                    }
+                }
+                _ => (None, None),
+            }
+        }
+        _ => {
+            // No upstream tracking branch configured (e.g., new local branch not pushed)
+            tracing::debug!(
+                "No upstream tracking branch for {} in project {}",
+                current_branch,
+                project_id
+            );
+            (None, None)
+        }
+    };
+
+    // Check for uncommitted changes
+    let status_output = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args(["status", "--porcelain"])
+        .output();
+
+    let (has_uncommitted_changes, uncommitted_count, untracked_count) = match status_output {
+        Ok(output) if output.status.success() => {
+            let status_str = String::from_utf8_lossy(&output.stdout).to_string();
+            let status_lines: Vec<&str> = status_str.lines().collect();
+            let uncommitted = status_lines.iter().filter(|l| !l.starts_with("??")).count();
+            let untracked = status_lines.iter().filter(|l| l.starts_with("??")).count();
+            (
+                !status_lines.is_empty(),
+                Some(uncommitted as i32),
+                Some(untracked as i32),
+            )
+        }
+        _ => (false, None, None),
+    };
+
+    // Get HEAD commit OID
+    let head_oid_output = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args(["rev-parse", "HEAD"])
+        .output();
+
+    let head_oid = match head_oid_output {
+        Ok(output) if output.status.success() => {
+            Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+        }
+        _ => None,
+    };
+
+    // Build response matching BranchStatus structure
+    let response = json!({
+        "commits_behind": commits_behind,
+        "commits_ahead": commits_ahead,
+        "has_uncommitted_changes": has_uncommitted_changes,
+        "head_oid": head_oid,
+        "uncommitted_count": uncommitted_count,
+        "untracked_count": untracked_count,
+        "target_branch_name": target_branch,
+        "remote_commits_behind": remote_commits_behind,
+        "remote_commits_ahead": remote_commits_ahead,
+        "merges": [],
+        "is_rebase_in_progress": false,
+        "conflict_op": null,
+        "conflicted_files": []
+    });
+
+    Ok(Json(ApiResponse::success(response)))
+}
+
+/// Pull updates for a project's main repository
+/// This performs a git pull --rebase to update the working tree with remote changes
+async fn post_project_pull(
+    Path(project_id): Path<Uuid>,
+    State(deployment): State<DeploymentImpl>,
+) -> Result<Json<Value>, StatusCode> {
+    use db::models::project::Project;
+    use std::process::Command;
+
+    // Get project
+    let project = match Project::find_by_id(&deployment.db().pool, project_id).await {
+        Ok(Some(p)) => p,
+        Ok(None) => {
+            tracing::error!("Project {} not found", project_id);
+            return Err(StatusCode::NOT_FOUND);
+        }
+        Err(e) => {
+            tracing::error!("Database error finding project {}: {}", project_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    // Get current branch name
+    let branch_output = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args(["rev-parse", "--abbrev-ref", "HEAD"])
+        .output();
+
+    let current_branch = match branch_output {
+        Ok(output) if output.status.success() => {
+            String::from_utf8_lossy(&output.stdout).trim().to_string()
+        }
+        Ok(output) => {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            tracing::error!(
+                "Failed to get current branch for project {}: {}",
+                project_id,
+                stderr
+            );
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+        Err(e) => {
+            tracing::error!(
+                "Failed to execute git rev-parse for project {}: {}",
+                project_id,
+                e
+            );
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+
+    // Run git pull to actually update the working tree
+    tracing::info!(
+        "Pulling updates for project {} branch {} at {:?}",
+        project_id,
+        current_branch,
+        project.git_repo_path
+    );
+
+    let pull_output = Command::new("git")
+        .current_dir(&project.git_repo_path)
+        .args(["pull", "--rebase", "origin", &current_branch])
+        .output();
+
+    match pull_output {
+        Ok(output) if output.status.success() => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            tracing::info!(
+                "Successfully pulled updates for project {}: {}",
+                project_id,
+                stdout
+            );
+            Ok(Json(json!({
+                "success": true,
+                "message": format!("Successfully pulled updates from origin/{}", current_branch)
+            })))
+        }
+        Ok(output) => {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            let stdout = String::from_utf8_lossy(&output.stdout);
+
+            // Check if it's a merge conflict or dirty working tree
+            if stderr.contains("conflict") || stderr.contains("Cannot rebase") {
+                tracing::warn!(
+                    "Git pull conflict for project {}: {} {}",
+                    project_id,
+                    stdout,
+                    stderr
+                );
+                Ok(Json(json!({
+                    "success": false,
+                    "message": "Cannot pull: working tree has conflicts or uncommitted changes. Please resolve manually.",
+                    "details": stderr.to_string()
+                })))
+            } else {
+                tracing::error!(
+                    "Git pull failed for project {}: {} {}",
+                    project_id,
+                    stdout,
+                    stderr
+                );
+                Err(StatusCode::INTERNAL_SERVER_ERROR)
+            }
+        }
+        Err(e) => {
+            tracing::error!(
+                "Failed to execute git pull for project {}: {}",
+                project_id,
+                e
+            );
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
 async fn get_omni_status(State(services): State<ForgeServices>) -> Result<Json<Value>, StatusCode> {
     let omni = services.omni.read().await;
     let config = omni.config();
@@ -1560,7 +2149,7 @@ async fn get_github_releases() -> Result<Json<ApiResponse<Vec<GitHubRelease>>>, 
     let client = reqwest::Client::new();
 
     match client
-        .get("https://api.github.com/repos/namastexlabs/automagik-forge/releases")
+        .get("https://api.github.com/repos/automagik.dev/automagik-forge/releases")
         .header("User-Agent", "automagik-forge")
         .header("Accept", "application/vnd.github+json")
         .send()

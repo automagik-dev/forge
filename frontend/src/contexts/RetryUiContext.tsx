@@ -1,5 +1,9 @@
-import React, { createContext, useContext, useMemo } from 'react';
-import { useExecutionProcessesContext } from '@/contexts/ExecutionProcessesContext';
+import React, { useMemo } from 'react';
+import {
+  createContext,
+  useContextSelector,
+} from 'use-context-selector';
+import { useExecutionProcessSelector } from '@/contexts/ExecutionProcessesContext';
 import { useDraftStream } from '@/hooks/follow-up/useDraftStream';
 
 type RetryUiContextType = {
@@ -17,8 +21,9 @@ export function RetryUiProvider({
   attemptId?: string;
   children: React.ReactNode;
 }) {
-  const { executionProcessesAll: executionProcesses } =
-    useExecutionProcessesContext();
+  const executionProcesses = useExecutionProcessSelector(
+    (s) => s.executionProcessesAll
+  );
   const { retryDraft } = useDraftStream(attemptId);
 
   const processOrder = useMemo(() => {
@@ -53,7 +58,7 @@ export function RetryUiProvider({
 }
 
 export function useRetryUi() {
-  const ctx = useContext(RetryUiContext);
+  const ctx = useContextSelector(RetryUiContext, (v) => v);
   if (!ctx)
     return {
       activeRetryProcessId: null,

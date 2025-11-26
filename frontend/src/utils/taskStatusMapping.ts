@@ -11,16 +11,6 @@ export const COLUMN_DISPLAY_NAMES: Record<TaskStatus, string> = {
   agent: 'Agent', // Background agent execution tasks
 };
 
-// Map TaskStatus to genie IDs
-export const COLUMN_STATUS_TO_GENIE: Record<TaskStatus, 'wish' | 'forge' | 'review' | null> = {
-  todo: 'wish',
-  inprogress: 'forge',
-  inreview: 'review',
-  done: null,
-  archived: null,
-  agent: null, // Agent tasks don't map to main Kanban columns
-};
-
 // Map TaskStatus to icons
 export const COLUMN_ICONS: Record<TaskStatus, LucideIcon> = {
   todo: Sparkles,
@@ -29,9 +19,4 @@ export const COLUMN_ICONS: Record<TaskStatus, LucideIcon> = {
   done: CheckCircle2,
   archived: XCircle,
   agent: Sparkles, // Use Sparkles for agent tasks (magical execution)
-};
-
-// Check if a task should be filtered out (agent status)
-export const isAgentStatus = (status: string): boolean => {
-  return status === 'agent';
 };

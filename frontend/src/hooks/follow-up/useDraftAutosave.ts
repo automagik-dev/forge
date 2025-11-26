@@ -251,8 +251,6 @@ export function useDraftAutosave(
   });
 }
 
-export type RetrySaveStatus = SaveStatus;
-
 type RetryDraftResponse = DraftResponse;
 
 type RetryDraftData = Pick<

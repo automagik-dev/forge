@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '@/lib/api';
+import { queryKeys } from '@/lib/queryKeys';
 import type { CreateProject, UpdateProject, Project } from 'shared/types';
 
 interface UseProjectMutationsOptions {
@@ -13,11 +14,11 @@ export function useProjectMutations(options?: UseProjectMutationsOptions) {
   const queryClient = useQueryClient();
 
   const createProject = useMutation({
-    mutationKey: ['createProject'],
+    mutationKey: queryKeys.mutations.projects.create,
     mutationFn: (data: CreateProject) => projectsApi.create(data),
     onSuccess: (project: Project) => {
-      queryClient.setQueryData(['project', project.id], project);
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.setQueryData(queryKeys.projects.detail(project.id), project);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
       options?.onCreateSuccess?.(project);
     },
     onError: (err) => {
@@ -27,7 +28,7 @@ export function useProjectMutations(options?: UseProjectMutationsOptions) {
   });
 
   const updateProject = useMutation({
-    mutationKey: ['updateProject'],
+    mutationKey: queryKeys.mutations.projects.update,
     mutationFn: ({
       projectId,
       data,
@@ -37,10 +38,10 @@ export function useProjectMutations(options?: UseProjectMutationsOptions) {
     }) => projectsApi.update(projectId, data),
     onSuccess: (project: Project) => {
       // Update single project cache
-      queryClient.setQueryData(['project', project.id], project);
+      queryClient.setQueryData(queryKeys.projects.detail(project.id), project);
 
       // Update the project in the projects list cache immediately
-      queryClient.setQueryData<Project[]>(['projects'], (old) => {
+      queryClient.setQueryData<Project[]>(queryKeys.projects.all, (old) => {
         if (!old) return old;
         return old.map((p) => (p.id === project.id ? project : p));
       });

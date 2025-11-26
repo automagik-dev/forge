@@ -64,7 +64,7 @@ export interface DevServerPreviewInteractedEvent {
 // View Mode Events
 // ============================================================================
 
-export type ViewMode = 'chat' | 'preview' | 'diffs' | 'kanban' | 'list' | null;
+export type ViewMode = 'chat' | 'preview' | 'diffs' | 'kanban' | null;
 export type ViewModeChangeTrigger = 'url_param' | 'keyboard_shortcut' | 'ui_button';
 
 export interface ViewModeSwitchedEvent {
@@ -242,6 +242,7 @@ export interface GitHubAuthFlowEvent {
 // Union Type for All Events
 // ============================================================================
 
+/** @public - Union type for all analytics events */
 export type AnalyticsEvent =
   | { event: 'session_started'; properties: SessionStartedEvent }
   | { event: 'session_ended'; properties: SessionEndedEvent }

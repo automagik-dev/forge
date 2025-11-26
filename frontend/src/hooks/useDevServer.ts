@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { attemptsApi, executionProcessesApi } from '@/lib/api';
 import { useAttemptExecution } from '@/hooks/useAttemptExecution';
+import { queryKeys } from '@/lib/queryKeys';
 import type { ExecutionProcess } from 'shared/types';
 import { usePostHog } from 'posthog-js/react';
 import type { DevServerStartedEvent, DevServerStoppedEvent } from '@/types/analytics';
@@ -45,14 +46,14 @@ export function useDevServer(
 
   // Start mutation
   const startMutation = useMutation({
-    mutationKey: ['startDevServer', attemptId],
+    mutationKey: queryKeys.mutations.devServer.start(attemptId),
     mutationFn: async () => {
       if (!attemptId) return;
       await attemptsApi.startDevServer(attemptId);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: ['executionProcesses', attemptId],
+        queryKey: queryKeys.execution.processes(attemptId),
       });
 
       // Track dev_server_started event
@@ -88,7 +89,7 @@ export function useDevServer(
 
   // Stop mutation
   const stopMutation = useMutation({
-    mutationKey: ['stopDevServer', runningDevServer?.id],
+    mutationKey: queryKeys.mutations.devServer.stop(runningDevServer?.id),
     mutationFn: async () => {
       if (!runningDevServer) return;
       await executionProcessesApi.stopExecutionProcess(runningDevServer.id);
@@ -96,11 +97,11 @@ export function useDevServer(
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: ['executionProcesses', attemptId],
+          queryKey: queryKeys.execution.processes(attemptId),
         }),
         runningDevServer
           ? queryClient.invalidateQueries({
-              queryKey: ['processDetails', runningDevServer.id],
+              queryKey: queryKeys.execution.processDetails(runningDevServer.id),
             })
           : Promise.resolve(),
       ]);

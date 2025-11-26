@@ -16,6 +16,7 @@ import type {
   TaskCompletedEvent,
   FirstSuccessEvent,
   TokenUsageEvent,
+  ExecutorType,
 } from '@/types/analytics';
 
 // ========== NAMASTEX ANALYTICS ==========
@@ -41,7 +42,7 @@ export function getCurrentUserEmail(): string | undefined {
  * Enhanced capture function with namastexer detection
  * Automatically adds namastexer metadata for @namastex.ai accounts
  */
-function captureWithContext(eventName: string, properties: Record<string, any> = {}) {
+function captureWithContext<T extends object>(eventName: string, properties: T | Record<string, unknown> = {} as T) {
   const userEmail = getCurrentUserEmail();
   const isNamestexer = isNamestexEmployee(userEmail);
 
@@ -72,6 +73,7 @@ export function trackKeyboardShortcut(event: KeyboardShortcutUsedEvent) {
 
 /**
  * Track kanban task drag event
+ * @public - Analytics tracking API
  */
 export function trackKanbanTaskDragged(event: KanbanTaskDraggedEvent) {
   captureWithContext('kanban_task_dragged', event);
@@ -79,6 +81,7 @@ export function trackKanbanTaskDragged(event: KanbanTaskDraggedEvent) {
 
 /**
  * Track child task creation
+ * @public - Analytics tracking API
  */
 export function trackChildTaskCreated(event: ChildTaskCreatedEvent) {
   captureWithContext('child_task_created', event);
@@ -86,6 +89,7 @@ export function trackChildTaskCreated(event: ChildTaskCreatedEvent) {
 
 /**
  * Track parent task navigation
+ * @public - Analytics tracking API
  */
 export function trackParentTaskNavigated(event: ParentTaskNavigatedEvent) {
   captureWithContext('parent_task_navigated', event);
@@ -93,6 +97,7 @@ export function trackParentTaskNavigated(event: ParentTaskNavigatedEvent) {
 
 /**
  * Track task relationship viewer opened
+ * @public - Analytics tracking API
  */
 export function trackTaskRelationshipViewerOpened(
   event: TaskRelationshipViewerOpenedEvent
@@ -102,6 +107,7 @@ export function trackTaskRelationshipViewerOpened(
 
 /**
  * Track breadcrumb click
+ * @public - Analytics tracking API
  */
 export function trackBreadcrumbClicked(event: BreadcrumbClickedEvent) {
   captureWithContext('breadcrumb_clicked', event);
@@ -131,7 +137,7 @@ export function isFirstUse(featureName: string): boolean {
  */
 export function checkAndTrackFirstSuccess(
   taskId: string,
-  executor: string,
+  executor: ExecutorType,
   attemptCount: number
 ): boolean {
   const key = 'first_success_task_id';
@@ -160,7 +166,7 @@ export function checkAndTrackFirstSuccess(
     trackFirstSuccess({
       time_to_first_success_minutes: timeToFirstSuccessMinutes,
       attempts_before_success: attemptCount,
-      executor_used: executor as any,
+      executor_used: executor,
       days_since_signup: daysSinceSignup,
     });
 
@@ -200,6 +206,7 @@ export function trackFirstSuccess(event: FirstSuccessEvent) {
 
 /**
  * Track token usage for API calls
+ * @public - Analytics tracking API
  */
 export function trackTokenUsage(event: TokenUsageEvent) {
   captureWithContext('token_usage', event);
@@ -208,6 +215,7 @@ export function trackTokenUsage(event: TokenUsageEvent) {
 /**
  * Utility: Hash a task ID for privacy
  * Returns first 16 chars of SHA256 hash
+ * @public - Analytics utility
  */
 export function hashTaskId(taskId: string): string {
   if (!taskId) return 'unknown';

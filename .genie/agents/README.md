@@ -30,12 +30,20 @@ To specialize the executor or variant, add a `genie` section for orchestration s
 name: review
 description: Evidence-based QA
 genie:
-  executor: opencode          # Orchestration: which executor to invoke
-  variant: REVIEW_STRICT_EVIDENCE  # Orchestration: which profile variant
+  executor:
+    - CLAUDE_CODE
+    - CODEX
+    - OPENCODE
   background: true            # Orchestration: run in isolated worktree
 forge:
-  model: sonnet               # Executor config: passed to Forge as-is
-  dangerously_skip_permissions: false
+  CLAUDE_CODE:
+    model: sonnet
+    dangerously_skip_permissions: true
+  CODEX:
+    model: gpt-5-codex
+    sandbox: danger-full-access
+  OPENCODE:
+    model: opencode/glm-4.6
 ---
 ```
 
@@ -62,7 +70,7 @@ Genie passes `forge.*` fields directly to Forge without validation. Forge valida
 | `claude_code_router` | CLAUDE_CODE | Enable Claude Code routing behavior |
 | `additional_params` | OPENCODE, CODEX | Array of key-value parameters |
 
-See Forge executor schemas for complete field reference: `automagik-forge/shared/schemas/*.json`
+See Forge executor schemas for complete field reference: `@automagik/forge/shared/schemas/*.json`
 
 ### Precedence
 
@@ -77,7 +85,7 @@ The last value wins. CLI flags override agent frontmatter, which overrides works
 ### Discovering available Forge options
 
 1. **Inspect Forge executor schemas**
-   Check `automagik-forge/shared/schemas/*.json` for complete field definitions per executor. Each schema defines valid `forge.*` fields for that executor.
+   Check `@automagik/forge/shared/schemas/*.json` for complete field definitions per executor. Each schema defines valid `forge.*` fields for that executor.
 
 2. **Inspect Forge UI**
    The Automagik Forge UI exposes executor configurations under *Settings → Coding Agent Configurations*. Each field shown there can be set in agent `forge.*` frontmatter.
