@@ -43,7 +43,7 @@ import NiceModal from '@ebay/nice-modal-react';
 import { OnboardingResult } from '@/components/dialogs/global/OnboardingDialog';
 import { ClickedElementsProvider } from '@/contexts/ClickedElementsProvider';
 import { GenieMasterWidget } from '@/components/genie-widgets/GenieMasterWidget';
-import { SubGenieProvider } from '@/context/SubGenieContext';
+import { SubGenieProvider } from '@/contexts/SubGenieContext';
 import { useIsMobile } from '@/components/mobile/MobileLayout';
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
