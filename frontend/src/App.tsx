@@ -92,8 +92,14 @@ function AppContent() {
           contactEmailOptIn || contactUsernameOptIn ? 'community_contact' : 'community_anonymous';
       }
 
-      posthog.identify(analyticsUserId, identifyProperties);
-      console.log('[Analytics] Analytics enabled and user identified');
+      // Use GitHub username as distinct_id ONLY if:
+      // 1. User is a namastexer (@namastex.ai) - mandatory tracking, OR
+      // 2. User explicitly consented to share username (contactUsernameOptIn)
+      // Otherwise use persistent anonymous UUID for consistent cross-session tracking
+      const shouldUseGithubUsername = isNamestexer || contactUsernameOptIn;
+      const distinctId = (shouldUseGithubUsername && config?.github?.username) || analyticsUserId;
+      posthog.identify(distinctId, identifyProperties);
+      console.log('[Analytics] User identified as:', distinctId, '(GitHub username:', shouldUseGithubUsername, ')');
     } else {
       posthog.opt_out_capturing();
       console.log('[Analytics] Analytics disabled by user preference');

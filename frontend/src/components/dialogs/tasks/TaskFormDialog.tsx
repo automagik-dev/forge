@@ -402,6 +402,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
             },
             executor_profile_id: finalExecutorProfile,
             base_branch: selectedBranch,
+            use_worktree: null, // Default to worktree execution
           },
           {
             onSuccess: () => {

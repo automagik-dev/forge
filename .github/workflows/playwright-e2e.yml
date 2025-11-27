@@ -29,7 +29,8 @@ jobs:
         run: pnpm install
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        # Note: --with-deps removed for self-hosted runner (system deps pre-installed)
+        run: npx playwright install chromium
 
       - name: Build frontend
         run: cd frontend && pnpm build

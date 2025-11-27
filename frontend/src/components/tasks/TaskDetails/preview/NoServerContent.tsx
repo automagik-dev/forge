@@ -140,6 +140,7 @@ export function NoServerContent({
       },
       executor_profile_id: config.executor_profile,
       base_branch: 'main',
+      use_worktree: null,
     });
   };
 
