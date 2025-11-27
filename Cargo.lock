@@ -171,7 +171,7 @@ version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "76133c067c37ae7a3641c3ad1ec88f36aac06cea5f9b3b49b5c29f18214f9101"
 dependencies = [
- "agent-client-protocol-schema",
+ "agent-client-protocol-schema 0.4.11",
  "anyhow",
  "async-broadcast",
  "async-trait",
@@ -184,10 +184,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "agent-client-protocol"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "525705e39c11cd73f7bc784e3681a9386aa30c8d0630808d3dc2237eb4f9cb1b"
+dependencies = [
+ "agent-client-protocol-schema 0.6.3",
+ "anyhow",
+ "async-broadcast",
+ "async-trait",
+ "derive_more",
+ "futures",
+ "log",
+ "parking_lot",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "agent-client-protocol-schema"
 version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61be4454304d7df1a5b44c4ae55e707ffe72eac4dfb1ef8762510ce8d8f6d924"
+dependencies = [
+ "anyhow",
+ "derive_more",
+ "schemars 1.1.0",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "agent-client-protocol-schema"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16d08d095e8069115774caa50392e9c818e3fb1c482ef4f3153d26b4595482f2"
 dependencies = [
  "anyhow",
  "derive_more",
@@ -235,6 +266,56 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "819e7219dbd41043ac279b19830f2efc897156490d7fd6ea916720117ee66311"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "anstream"
+version = "0.6.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43d5b281e737544384e969a5ccad3f1cdd24b48086a0fc1b2a5262a26b8f4f4a"
+dependencies = [
+ "anstyle",
+ "anstyle-parse",
+ "anstyle-query",
+ "anstyle-wincon",
+ "colorchoice",
+ "is_terminal_polyfill",
+ "utf8parse",
+]
+
+[[package]]
+name = "anstyle"
+version = "1.0.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5192cca8006f1fd4f7237516f40fa183bb07f8fbdfedaa0036de5ea9b0b45e78"
+
+[[package]]
+name = "anstyle-parse"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e7644824f0aa2c7b9384579234ef10eb7efb6a0deb83f9630a49594dd9c15c2"
+dependencies = [
+ "utf8parse",
+]
+
+[[package]]
+name = "anstyle-query"
+version = "1.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40c48f72fd53cd289104fc64099abca73db4166ad86ea0b4341abe65af83dadc"
+dependencies = [
+ "windows-sys 0.60.2",
+]
+
+[[package]]
+name = "anstyle-wincon"
+version = "3.0.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "291e6a250ff86cd4a820112fb8898808a366d8f9f58ce16d1f538353ad55747d"
+dependencies = [
+ "anstyle",
+ "once_cell_polyfill",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -761,10 +842,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "46c5e41b57b8bba42a04676d81cb89e9ee8e859a1a66f80a5a72e1cb76b34d43"
 
 [[package]]
+name = "bytemuck"
+version = "1.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fbdf580320f38b612e485521afda1ee26d10cc9884efaaa750d383e13e3c5f4"
+
+[[package]]
 name = "byteorder"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
+
+[[package]]
+name = "byteorder-lite"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f1fe948ff07f4bd06c30984e69f5b4899c516a3ef74f34df92a2df2ab535495"
 
 [[package]]
 name = "bytes"
@@ -846,25 +939,51 @@ dependencies = [
 ]
 
 [[package]]
-name = "codex-app-server-protocol"
-version = "0.44.0"
-source = "git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31#2cd7eb3146c014861a61eab4b87f2ab29d2068ab"
+name = "clap"
+version = "4.5.53"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c9e340e012a1bf4935f5282ed1436d1489548e8f72308207ea5df0e23d2d03f8"
 dependencies = [
- "codex-protocol 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
- "paste",
- "serde",
- "serde_json",
- "strum_macros",
- "ts-rs 11.1.0",
- "uuid",
+ "clap_builder",
+ "clap_derive",
 ]
+
+[[package]]
+name = "clap_builder"
+version = "4.5.53"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d76b5d13eaa18c901fd2f7fca939fefe3a0727a953561fefdf3b2922b8569d00"
+dependencies = [
+ "anstream",
+ "anstyle",
+ "clap_lex",
+ "strsim",
+]
+
+[[package]]
+name = "clap_derive"
+version = "4.5.49"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a0b5487afeab2deb2ff4e03a807ad1a03ac532ff5a2cee5d86884440c7f7671"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.110",
+]
+
+[[package]]
+name = "clap_lex"
+version = "0.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1d728cc89cf3aee9ff92b05e62b19ee65a02b5702cff7d5a377e32c6ae29d8d"
 
 [[package]]
 name = "codex-app-server-protocol"
 version = "0.44.0"
 source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
 dependencies = [
- "codex-protocol 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
+ "codex-protocol 0.44.0",
  "paste",
  "serde",
  "serde_json",
@@ -874,14 +993,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "codex-app-server-protocol"
+version = "0.58.0"
+source = "git+https://github.com/namastexlabs/codex?branch=main#cc5dba25af328a48ecb000dd2b90442086f9049f"
+dependencies = [
+ "anyhow",
+ "clap",
+ "codex-protocol 0.58.0",
+ "mcp-types 0.58.0",
+ "paste",
+ "schemars 1.1.0",
+ "serde",
+ "serde_json",
+ "strum_macros",
+ "ts-rs 11.1.0",
+ "uuid",
+]
+
+[[package]]
+name = "codex-git"
+version = "0.58.0"
+source = "git+https://github.com/namastexlabs/codex?branch=main#cc5dba25af328a48ecb000dd2b90442086f9049f"
+dependencies = [
+ "once_cell",
+ "regex",
+ "schemars 1.1.0",
+ "serde",
+ "tempfile",
+ "thiserror 2.0.17",
+ "ts-rs 11.1.0",
+ "walkdir",
+]
+
+[[package]]
 name = "codex-protocol"
 version = "0.44.0"
-source = "git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31#2cd7eb3146c014861a61eab4b87f2ab29d2068ab"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
 dependencies = [
  "base64 0.22.1",
  "icu_decimal",
  "icu_locale_core",
- "mcp-types 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "mcp-types 0.44.0",
  "mime_guess",
  "serde",
  "serde_json",
@@ -896,14 +1048,18 @@ dependencies = [
 
 [[package]]
 name = "codex-protocol"
-version = "0.44.0"
-source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
+version = "0.58.0"
+source = "git+https://github.com/namastexlabs/codex?branch=main#cc5dba25af328a48ecb000dd2b90442086f9049f"
 dependencies = [
  "base64 0.22.1",
+ "codex-git",
+ "codex-utils-image",
  "icu_decimal",
  "icu_locale_core",
- "mcp-types 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
+ "icu_provider",
+ "mcp-types 0.58.0",
  "mime_guess",
+ "schemars 1.1.0",
  "serde",
  "serde_json",
  "serde_with",
@@ -914,6 +1070,34 @@ dependencies = [
  "ts-rs 11.1.0",
  "uuid",
 ]
+
+[[package]]
+name = "codex-utils-cache"
+version = "0.58.0"
+source = "git+https://github.com/namastexlabs/codex?branch=main#cc5dba25af328a48ecb000dd2b90442086f9049f"
+dependencies = [
+ "lru",
+ "sha1",
+ "tokio",
+]
+
+[[package]]
+name = "codex-utils-image"
+version = "0.58.0"
+source = "git+https://github.com/namastexlabs/codex?branch=main#cc5dba25af328a48ecb000dd2b90442086f9049f"
+dependencies = [
+ "base64 0.22.1",
+ "codex-utils-cache",
+ "image",
+ "thiserror 2.0.17",
+ "tokio",
+]
+
+[[package]]
+name = "colorchoice"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
 
 [[package]]
 name = "combine"
@@ -1010,6 +1194,15 @@ name = "crc-catalog"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19d374276b40fb8bbdee95aef7c7fa6b5316ec764510eb64b8dd0e2ed0d7e7f5"
+
+[[package]]
+name = "crc32fast"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9481c1c90cbf2ac953f07c8d4a58aa3945c425b7185c9154d67a65e4230da511"
+dependencies = [
+ "cfg-if",
+]
 
 [[package]]
 name = "crossbeam-channel"
@@ -1128,12 +1321,12 @@ checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 [[package]]
 name = "db"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31#2cd7eb3146c014861a61eab4b87f2ab29d2068ab"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0#8107661e643a54758adc9bcf2abfbbac7d3560c5"
 dependencies = [
  "anyhow",
  "async-trait",
  "chrono",
- "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "futures-util",
  "regex",
  "sentry-tracing",
@@ -1147,8 +1340,8 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
- "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "ts-rs 11.1.0",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "uuid",
 ]
 
@@ -1210,22 +1403,22 @@ dependencies = [
 [[package]]
 name = "deployment"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31#2cd7eb3146c014861a61eab4b87f2ab29d2068ab"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0#8107661e643a54758adc9bcf2abfbbac7d3560c5"
 dependencies = [
  "anyhow",
  "async-trait",
  "axum",
- "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
- "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
+ "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "futures",
  "git2",
  "serde_json",
- "services 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "services 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "sqlx",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
- "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
 ]
 
 [[package]]
@@ -1549,16 +1742,16 @@ dependencies = [
 [[package]]
 name = "executors"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31#2cd7eb3146c014861a61eab4b87f2ab29d2068ab"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0#8107661e643a54758adc9bcf2abfbbac7d3560c5"
 dependencies = [
- "agent-client-protocol",
+ "agent-client-protocol 0.7.0",
  "async-trait",
  "axum",
  "bon",
  "bytes",
  "chrono",
- "codex-app-server-protocol 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
- "codex-protocol 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "codex-app-server-protocol 0.58.0",
+ "codex-protocol 0.58.0",
  "command-group",
  "convert_case",
  "derivative",
@@ -1570,7 +1763,7 @@ dependencies = [
  "futures-io",
  "json-patch",
  "lazy_static",
- "mcp-types 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "mcp-types 0.58.0",
  "os_pipe",
  "regex",
  "rust-embed",
@@ -1591,8 +1784,8 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
- "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "ts-rs 11.1.0",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "uuid",
  "winsplit",
  "xdg",
@@ -1603,14 +1796,14 @@ name = "executors"
 version = "0.0.115"
 source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
 dependencies = [
- "agent-client-protocol",
+ "agent-client-protocol 0.4.7",
  "async-trait",
  "axum",
  "bon",
  "bytes",
  "chrono",
- "codex-app-server-protocol 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
- "codex-protocol 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
+ "codex-app-server-protocol 0.44.0",
+ "codex-protocol 0.44.0",
  "command-group",
  "convert_case",
  "derivative",
@@ -1622,7 +1815,7 @@ dependencies = [
  "futures-io",
  "json-patch",
  "lazy_static",
- "mcp-types 0.44.0 (git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c)",
+ "mcp-types 0.44.0",
  "os_pipe",
  "regex",
  "rust-embed",
@@ -1655,6 +1848,15 @@ name = "fastrand"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
+
+[[package]]
+name = "fdeflate"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e6853b52649d4ac5c0bd02320cddc5ba956bdb407c4b75a2c6b75bf51500f8c"
+dependencies = [
+ "simd-adler32",
+]
 
 [[package]]
 name = "file-id"
@@ -1713,6 +1915,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ce7134b9999ecaf8bcd65542e436736ef32ddca1b3e06094cb6ec5755203b80"
 
 [[package]]
+name = "flate2"
+version = "1.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfe33edd8e85a12a67454e37f8c75e730830d83e313556ab9ebf9ee7fbeb3bfb"
+dependencies = [
+ "crc32fast",
+ "miniz_oxide",
+]
+
+[[package]]
 name = "fluent-uri"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1769,9 +1981,9 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "convert_case",
- "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "deployment",
- "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "forge-config",
  "forge-omni",
  "futures-util",
@@ -1790,7 +2002,7 @@ dependencies = [
  "serde_yaml",
  "serial_test",
  "server",
- "services 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "services 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "sqlx",
  "tokio",
  "tower-http 0.5.2",
@@ -1799,7 +2011,7 @@ dependencies = [
  "ts-rs 11.0.1",
  "url",
  "urlencoding",
- "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "uuid",
 ]
 
@@ -2590,6 +2802,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "image"
+version = "0.25.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6506c6c10786659413faa717ceebcb8f70731c0a60cbae39795fdf114519c1a"
+dependencies = [
+ "bytemuck",
+ "byteorder-lite",
+ "moxcms",
+ "num-traits",
+ "png",
+ "zune-core",
+ "zune-jpeg",
+]
+
+[[package]]
 name = "impl-more"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2683,6 +2910,12 @@ dependencies = [
  "is-docker",
  "once_cell",
 ]
+
+[[package]]
+name = "is_terminal_polyfill"
+version = "1.70.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6cb138bb79a146c1bd460005623e142ef0181e3d0219cb493e02f7d08a35695"
 
 [[package]]
 name = "itertools"
@@ -2966,7 +3199,7 @@ checksum = "6373607a59f0be73a39b6fe456b8192fcc3585f602af20751600e974dd455e77"
 [[package]]
 name = "local-deployment"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31#2cd7eb3146c014861a61eab4b87f2ab29d2068ab"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0#8107661e643a54758adc9bcf2abfbbac7d3560c5"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -2975,9 +3208,9 @@ dependencies = [
  "bytes",
  "chrono",
  "command-group",
- "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "deployment",
- "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "futures",
  "ignore",
  "json-patch",
@@ -2991,15 +3224,15 @@ dependencies = [
  "rust-embed",
  "serde",
  "serde_json",
- "services 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "services 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "sqlx",
  "tokio",
  "tokio-stream",
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
- "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "ts-rs 11.1.0",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "uuid",
 ]
 
@@ -3025,6 +3258,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34080505efa8e45a4b816c349525ebe327ceaa8559756f0356cba97ef3bf7432"
 dependencies = [
  "value-bag",
+]
+
+[[package]]
+name = "lru"
+version = "0.12.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "234cf4f4a04dc1f57e24b96cc0cd600cf2af460d4161ac5ecdd0af8e1f3b2a38"
+dependencies = [
+ "hashbrown 0.15.5",
 ]
 
 [[package]]
@@ -3057,7 +3299,7 @@ checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
 [[package]]
 name = "mcp-types"
 version = "0.44.0"
-source = "git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31#2cd7eb3146c014861a61eab4b87f2ab29d2068ab"
+source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
 dependencies = [
  "serde",
  "serde_json",
@@ -3066,9 +3308,10 @@ dependencies = [
 
 [[package]]
 name = "mcp-types"
-version = "0.44.0"
-source = "git+https://github.com/namastexlabs/forge-core.git?rev=d249509cf075a5fe7fbfd97284f93d5f6a5a972c#d249509cf075a5fe7fbfd97284f93d5f6a5a972c"
+version = "0.58.0"
+source = "git+https://github.com/namastexlabs/codex?branch=main#cc5dba25af328a48ecb000dd2b90442086f9049f"
 dependencies = [
+ "schemars 1.1.0",
  "serde",
  "serde_json",
  "ts-rs 11.1.0",
@@ -3128,6 +3371,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fa76a2c86f704bdb222d66965fb3d63269ce38518b83cb0575fca855ebb6316"
 dependencies = [
  "adler2",
+ "simd-adler32",
 ]
 
 [[package]]
@@ -3173,6 +3417,16 @@ dependencies = [
  "smallvec",
  "tagptr",
  "uuid",
+]
+
+[[package]]
+name = "moxcms"
+version = "0.7.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fbdd3d7436f8b5e892b8b7ea114271ff0fa00bc5acae845d53b07d498616ef6"
+dependencies = [
+ "num-traits",
+ "pxfm",
 ]
 
 [[package]]
@@ -3627,6 +3881,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
+name = "once_cell_polyfill"
+version = "1.70.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
+
+[[package]]
 name = "open"
 version = "5.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3895,6 +4155,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
 
 [[package]]
+name = "png"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97baced388464909d42d89643fe4361939af9b7ce7a31ee32a168f832a70f2a0"
+dependencies = [
+ "bitflags 2.10.0",
+ "crc32fast",
+ "fdeflate",
+ "flate2",
+ "miniz_oxide",
+]
+
+[[package]]
 name = "polling"
 version = "3.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3972,6 +4245,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5ee95bc4ef87b8d5ba32e8b7714ccc834865276eab0aed5c9958d00ec45f49e8"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "pxfm"
+version = "0.1.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3cbdf373972bf78df4d3b518d07003938e2c7d1fb5891e55f9cb6df57009d84"
+dependencies = [
+ "num-traits",
 ]
 
 [[package]]
@@ -4202,9 +4484,9 @@ dependencies = [
 
 [[package]]
 name = "rmcp"
-version = "0.5.0"
+version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2faf35b7d3c4b7f8c21c45bb014011b32a0ce6444bf6094da04daab01a8c3c34"
+checksum = "e5947688160b56fb6c827e3c20a72c90392a1d7e9dec74749197aa1780ac42ca"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -4223,9 +4505,9 @@ dependencies = [
 
 [[package]]
 name = "rmcp-macros"
-version = "0.5.0"
+version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad9720d9d2a943779f1dc3d47fa9072c7eeffaff4e1a82f67eb9f7ea52696091"
+checksum = "01263441d3f8635c628e33856c468b96ebbce1af2d3699ea712ca71432d4ee7a"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -4822,19 +5104,19 @@ dependencies = [
 [[package]]
 name = "server"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31#2cd7eb3146c014861a61eab4b87f2ab29d2068ab"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0#8107661e643a54758adc9bcf2abfbbac7d3560c5"
 dependencies = [
  "anyhow",
  "async-trait",
  "axum",
  "chrono",
  "command-group",
- "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "deployment",
  "dirs 5.0.1",
  "dotenv",
  "dotenvy",
- "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "futures-util",
  "git2",
  "ignore",
@@ -4851,7 +5133,7 @@ dependencies = [
  "schemars 1.1.0",
  "serde",
  "serde_json",
- "services 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "services 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "sqlx",
  "strip-ansi-escapes",
  "thiserror 2.0.17",
@@ -4860,15 +5142,15 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
- "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "ts-rs 11.1.0",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "uuid",
 ]
 
 [[package]]
 name = "services"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31#2cd7eb3146c014861a61eab4b87f2ab29d2068ab"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0#8107661e643a54758adc9bcf2abfbbac7d3560c5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4878,11 +5160,11 @@ dependencies = [
  "chrono",
  "command-group",
  "dashmap",
- "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "db 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "directories",
  "dirs 5.0.1",
  "dunce",
- "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "executors 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "fst",
  "futures",
  "futures-util",
@@ -4917,8 +5199,8 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
- "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31)",
+ "ts-rs 11.1.0",
+ "utils 0.0.115 (git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0)",
  "uuid",
  "xdg",
 ]
@@ -5045,6 +5327,12 @@ dependencies = [
  "digest",
  "rand_core 0.6.4",
 ]
+
+[[package]]
+name = "simd-adler32"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d66dc143e6b11c1eddc06d5c423cfc97062865baf299914ab64caa38182078fe"
 
 [[package]]
 name = "similar"
@@ -5962,6 +6250,7 @@ version = "11.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4994acea2522cd2b3b85c1d9529a55991e3ad5e25cdcd3de9d505972c4379424"
 dependencies = [
+ "chrono",
  "serde_json",
  "thiserror 2.0.17",
  "ts-rs-macros 11.1.0",
@@ -6151,9 +6440,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
 
 [[package]]
+name = "utf8parse"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
+
+[[package]]
 name = "utils"
 version = "0.0.115"
-source = "git+https://github.com/namastexlabs/forge-core.git?rev=2cd7eb31#2cd7eb3146c014861a61eab4b87f2ab29d2068ab"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.0#8107661e643a54758adc9bcf2abfbbac7d3560c5"
 dependencies = [
  "async-stream",
  "axum",
@@ -6180,7 +6475,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
+ "ts-rs 11.1.0",
  "uuid",
  "which",
  "windows-sys 0.61.2",
@@ -7167,6 +7462,21 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.110",
+]
+
+[[package]]
+name = "zune-core"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "111f7d9820f05fd715df3144e254d6fc02ee4088b0644c0ffd0efc9e6d9d2773"
+
+[[package]]
+name = "zune-jpeg"
+version = "0.5.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc6fb7703e32e9a07fb3f757360338b3a567a5054f21b5f52a666752e333d58e"
+dependencies = [
+ "zune-core",
 ]
 
 [[package]]
