@@ -15,6 +15,17 @@ if (fs.existsSync(envPath)) {
   }
 }
 
+// Read version from package.json and set FORGE_VERSION env var
+// This enables zero-rebuild promotion: binary reads version at runtime
+const packageJsonPath = path.join(__dirname, "..", "package.json");
+try {
+  const pkg = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+  process.env.FORGE_VERSION = pkg.version;
+} catch (err) {
+  console.warn("⚠️ Could not read package version, using 'unknown'");
+  process.env.FORGE_VERSION = "unknown";
+}
+
 // Resolve effective arch for our published 64-bit binaries only.
 // Any ARM → arm64; anything else → x64. On macOS, handle Rosetta.
 function getEffectiveArch() {

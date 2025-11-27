@@ -1,12 +1,26 @@
 name: Build All Platforms
 
 on:
+  # Called by release.yml for unified release flow
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version to build (e.g., 0.7.5-rc.1)'
+        required: true
+        type: string
+      npm_tag:
+        description: 'npm tag to publish with (latest, next, nightly)'
+        required: false
+        type: string
+        default: 'latest'
+  # Manual trigger for testing/debugging
   workflow_dispatch:
     inputs:
       tag:
         description: 'Tag to build and publish (e.g., v0.3.8-20250903203030)'
         required: false
         type: string
+  # Direct tag push (escape hatch for manual releases)
   push:
     tags:
       - 'v*'
@@ -397,7 +411,17 @@ jobs:
       - name: Determine NPM tag
         id: npm-tag
         run: |
-          if [[ ${{ github.ref_name }} =~ -beta\. ]]; then
+          # Use input from workflow_call if available
+          if [[ -n "${{ inputs.npm_tag }}" ]]; then
+            echo "tag=${{ inputs.npm_tag }}" >> $GITHUB_OUTPUT
+            echo "Publishing with tag from workflow_call: ${{ inputs.npm_tag }}"
+          elif [[ "${{ github.ref_name }}" =~ -rc\. ]]; then
+            echo "tag=next" >> $GITHUB_OUTPUT
+            echo "Publishing as next (RC) version"
+          elif [[ "${{ github.ref_name }}" =~ -nightly\. ]]; then
+            echo "tag=nightly" >> $GITHUB_OUTPUT
+            echo "Publishing as nightly version"
+          elif [[ "${{ github.ref_name }}" =~ -beta\. ]]; then
             echo "tag=beta" >> $GITHUB_OUTPUT
             echo "Publishing as beta version"
           else

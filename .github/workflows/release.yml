@@ -1,0 +1,238 @@
+name: Unified Release
+
+on:
+  # Nightly builds at 4 AM UTC
+  schedule:
+    - cron: '0 4 * * *'
+
+  # Manual trigger for all release actions
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Release action to perform'
+        required: true
+        type: choice
+        options:
+          - nightly
+          - bump-rc
+          - promote
+      skip_build:
+        description: 'Skip build (for promote action)'
+        type: boolean
+        default: false
+
+# Prevent concurrent releases
+concurrency:
+  group: unified-release
+  cancel-in-progress: false
+
+jobs:
+  # Gate check: Skip automated commits to prevent infinite loops
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+      action: ${{ steps.detect.outputs.action }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 10
+
+      - name: Detect release action
+        id: detect
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            echo "action=nightly" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "action=${{ inputs.action }}" >> $GITHUB_OUTPUT
+          else
+            echo "action=none" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for automated commit (prevent infinite loop)
+        id: check
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          echo "Last commit: $COMMIT_MSG"
+
+          if echo "$COMMIT_MSG" | grep -Eq "^chore: (release|pre-release|bump|promote)"; then
+            echo "⏭️ Skipping automated commit to prevent loop"
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Not an automated commit, proceeding"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check for changes (nightly only)
+        if: steps.detect.outputs.action == 'nightly'
+        run: |
+          # Find last nightly tag
+          LAST_NIGHTLY=$(git tag -l 'v*-nightly.*' --sort=-v:refname | head -1 || echo "")
+
+          if [[ -z "$LAST_NIGHTLY" ]]; then
+            echo "No previous nightly tag found, will build"
+            exit 0
+          fi
+
+          COMMITS=$(git rev-list $LAST_NIGHTLY..HEAD --count 2>/dev/null || echo "0")
+          echo "Commits since $LAST_NIGHTLY: $COMMITS"
+
+          if [[ "$COMMITS" == "0" ]]; then
+            echo "⏭️ No changes since last nightly, skipping"
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Version bump
+  version:
+    needs: gate
+    if: needs.gate.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+      tag: ${{ steps.bump.outputs.tag }}
+      npm_tag: ${{ steps.bump.outputs.npm_tag }}
+      is_promote: ${{ steps.bump.outputs.is_promote }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run unified release script
+        id: bump
+        run: |
+          node scripts/unified-release.cjs --action ${{ needs.gate.outputs.action }}
+
+          # Set is_promote output
+          if [[ "${{ needs.gate.outputs.action }}" == "promote" ]]; then
+            echo "is_promote=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_promote=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Push changes and tag
+        if: needs.gate.outputs.action != 'promote' || inputs.skip_build != true
+        run: |
+          git push origin HEAD
+          git push origin --tags
+
+  # Build (skip for promote action)
+  build:
+    needs: version
+    if: needs.version.outputs.is_promote != 'true'
+    uses: ./.github/workflows/build-all-platforms.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+      npm_tag: ${{ needs.version.outputs.npm_tag }}
+    secrets: inherit
+
+  # Promote: Move npm dist-tags without rebuild
+  promote:
+    needs: version
+    if: needs.version.outputs.is_promote == 'true'
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@11.6.2
+
+      - name: Get RC version from package.json
+        id: rc
+        run: |
+          # Get the version that was just promoted (now in package.json)
+          STABLE_VERSION=$(node -e "console.log(require('./npx-cli/package.json').version)")
+
+          # Find the RC version that matches this stable
+          RC_VERSION=$(npm view @automagik/forge dist-tags.next 2>/dev/null || echo "")
+
+          if [[ -z "$RC_VERSION" ]]; then
+            echo "❌ No RC version found on @next tag"
+            exit 1
+          fi
+
+          # Verify RC matches expected stable
+          RC_BASE=$(echo $RC_VERSION | sed 's/-rc\.[0-9]*$//')
+          if [[ "$RC_BASE" != "$STABLE_VERSION" ]]; then
+            echo "❌ RC version $RC_VERSION doesn't match stable $STABLE_VERSION"
+            exit 1
+          fi
+
+          echo "rc_version=$RC_VERSION" >> $GITHUB_OUTPUT
+          echo "stable_version=$STABLE_VERSION" >> $GITHUB_OUTPUT
+          echo "✅ Promoting $RC_VERSION → $STABLE_VERSION"
+
+      - name: Promote @automagik/forge
+        run: |
+          echo "Moving @automagik/forge@${{ steps.rc.outputs.rc_version }} to @latest"
+          npm dist-tag add @automagik/forge@${{ steps.rc.outputs.rc_version }} latest
+
+      - name: Promote automagik
+        run: |
+          echo "Moving automagik@${{ steps.rc.outputs.rc_version }} to @latest"
+          npm dist-tag add automagik@${{ steps.rc.outputs.rc_version }} latest
+
+      - name: Verify promotion
+        run: |
+          echo "Verifying npm dist-tags..."
+          SCOPED_LATEST=$(npm view @automagik/forge dist-tags.latest)
+          SHORT_LATEST=$(npm view automagik dist-tags.latest)
+
+          echo "@automagik/forge@latest = $SCOPED_LATEST"
+          echo "automagik@latest = $SHORT_LATEST"
+
+          if [[ "$SCOPED_LATEST" == "${{ steps.rc.outputs.rc_version }}" ]]; then
+            echo "✅ @automagik/forge promotion successful"
+          else
+            echo "⚠️ @automagik/forge promotion may have failed"
+          fi
+
+  # Create GitHub release
+  github-release:
+    needs: [version, build]
+    if: always() && needs.version.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read release notes
+        id: notes
+        run: |
+          if [[ -f ".release-notes.md" ]]; then
+            cat .release-notes.md
+          else
+            echo "Release ${{ needs.version.outputs.version }}"
+          fi
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: ${{ needs.version.outputs.tag }}
+          body_path: .release-notes.md
+          prerelease: ${{ contains(needs.version.outputs.version, '-rc.') || contains(needs.version.outputs.version, '-nightly.') }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
