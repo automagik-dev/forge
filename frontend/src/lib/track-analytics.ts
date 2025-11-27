@@ -4,6 +4,7 @@
  */
 
 import posthog from 'posthog-js';
+import { analyticsLogger } from './logger';
 import type {
   KeyboardShortcutUsedEvent,
   KanbanTaskDraggedEvent,
@@ -61,7 +62,7 @@ function captureWithContext<T extends object>(
     posthog.capture(eventName, properties);
   }
 
-  console.log('[Analytics]', eventName, properties);
+  analyticsLogger.log(eventName, properties);
 }
 
 // ========== END NAMASTEX ANALYTICS ==========

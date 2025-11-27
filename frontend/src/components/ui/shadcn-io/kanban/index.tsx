@@ -1,6 +1,7 @@
 'use client';
 
 import { Card } from '@/components/ui/card';
+import { createLogger } from '@/lib/logger';
 import {
   Tooltip,
   TooltipContent,
@@ -26,6 +27,8 @@ import type { ClientRect } from '@dnd-kit/core';
 import type { Transform } from '@dnd-kit/utilities';
 import { Button } from '../../button';
 export type { DragEndEvent } from '@dnd-kit/core';
+
+const kanbanLogger = createLogger('Kanban');
 
 export type Status = {
   id: string;
@@ -207,7 +210,7 @@ function restrictToBoundingRectWithRightPadding(
   boundingRect: ClientRect,
   rightPadding: number
 ): Transform {
-  console.log(rect, boundingRect);
+  kanbanLogger.debug('restrictToBoundingRect', rect, boundingRect);
   const value = {
     ...transform,
   };

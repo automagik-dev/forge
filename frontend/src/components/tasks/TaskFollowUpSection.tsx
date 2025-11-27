@@ -21,8 +21,7 @@ import {
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { imagesApi } from '@/lib/api.ts';
-import type { TaskWithAttemptStatus, ExecutorProfileId } from 'shared/types';
-import { BaseCodingAgent } from 'shared/types';
+import type { TaskWithAttemptStatus } from 'shared/types';
 import { useBranchStatus } from '@/hooks';
 import { useAttemptExecution } from '@/hooks/useAttemptExecution';
 import { useUserSystem } from '@/components/config-provider';
@@ -35,7 +34,7 @@ import { useEntries } from '@/contexts/EntriesContext';
 import { useKeyCycleVariant, useKeySubmitFollowUp, Scope } from '@/keyboard';
 import { useHotkeysContext } from 'react-hotkeys-hook';
 //
-import { CompactExecutorSelector } from '@/components/settings/ExecutorProfileSelector';
+import ExecutorProfileSelector from '@/components/settings/ExecutorProfileSelector';
 import { FollowUpStatusRow } from '@/components/tasks/FollowUpStatusRow';
 import { useAttemptBranch } from '@/hooks/useAttemptBranch';
 import { FollowUpConflictSection } from '@/components/tasks/follow-up/FollowUpConflictSection';
@@ -48,10 +47,11 @@ import { useDraftAutosave } from '@/hooks/follow-up/useDraftAutosave';
 import { useDraftQueue } from '@/hooks/follow-up/useDraftQueue';
 import { useFollowUpSend } from '@/hooks/follow-up/useFollowUpSend';
 import { useDefaultVariant } from '@/hooks/follow-up/useDefaultVariant';
-import { useDefaultBaseBranch } from '@/hooks/useDefaultBaseBranch';
 import { buildResolveConflictsInstructions } from '@/lib/conflicts';
 import { appendImageMarkdown } from '@/utils/markdownImages';
 import { useTranslation } from 'react-i18next';
+import { genieLogger, debugLogger } from '@/lib/logger';
+import type { ExecutorProfileId } from 'shared/types';
 
 interface TaskFollowUpSectionProps {
   task: TaskWithAttemptStatus | null;
@@ -60,7 +60,6 @@ interface TaskFollowUpSectionProps {
   isInChatView?: boolean;
   taskIdFromUrl?: string;
   projectId?: string; // Project ID from URL (fallback when task is still loading)
-  onInputFocusChange?: (isFocused: boolean) => void; // Callback to notify parent about input focus
 }
 
 export function TaskFollowUpSection({
@@ -68,8 +67,8 @@ export function TaskFollowUpSection({
   selectedAttemptId,
   jumpToLogsTab,
   isInChatView = false,
+  taskIdFromUrl: _taskIdFromUrl,
   projectId: projectIdFromUrl,
-  onInputFocusChange,
 }: TaskFollowUpSectionProps) {
   const { t } = useTranslation('tasks');
   const navigate = useNavigate();
@@ -81,14 +80,10 @@ export function TaskFollowUpSection({
   const { branch: attemptBranch, refetch: refetchAttemptBranch } =
     useAttemptBranch(selectedAttemptId);
   const { profiles: globalProfiles, config } = useUserSystem();
-  const { data: projectProfiles } = useProjectProfiles(
-    task?.project_id ?? projectIdFromUrl
-  );
+  const { data: projectProfiles } = useProjectProfiles(task?.project_id ?? projectIdFromUrl);
 
   // Use project profiles if available (synchronized agents), fallback to global profiles
-  const profiles = (projectProfiles?.executors ||
-    globalProfiles ||
-    null) as Record<string, import('shared/types').ExecutorConfig> | null;
+  const profiles = projectProfiles?.executors || globalProfiles;
 
   const { comments, generateReviewMarkdown, clearComments } = useReview();
   const {
@@ -151,90 +146,36 @@ export function TaskFollowUpSection({
     void imageUploadRef.current?.addFiles(files);
   }, []);
 
-  // Track drag state for auto-opening tray
-  const [isDraggingOverChat, setIsDraggingOverChat] = useState(false);
-
-  // Container-level drag handlers for auto-opening upload tray
-  const handleContainerDragEnter = useCallback((e: React.DragEvent) => {
-    // Check if dragged items contain files
-    if (e.dataTransfer.types.includes('Files')) {
-      e.preventDefault();
-      setIsDraggingOverChat(true);
-      setShowImageUpload(true); // Auto-open tray
-    }
-  }, []);
-
-  const handleContainerDragLeave = useCallback((e: React.DragEvent) => {
-    // Only reset if leaving the container entirely
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX;
-    const y = e.clientY;
-
-    if (
-      x <= rect.left ||
-      x >= rect.right ||
-      y <= rect.top ||
-      y >= rect.bottom
-    ) {
-      setIsDraggingOverChat(false);
-    }
-  }, []);
-
-  const handleContainerDragOver = useCallback((e: React.DragEvent) => {
-    // Prevent default to allow drop
-    if (e.dataTransfer.types.includes('Files')) {
-      e.preventDefault();
-    }
-  }, []);
-
-  const handleContainerDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDraggingOverChat(false);
-    // Let ImageUploadSection handle the actual drop
-  }, []);
-
   // Track whether the follow-up textarea is focused
   const [isTextareaFocused, setIsTextareaFocused] = useState(false);
 
-  // Notify parent when focus changes (for hiding bottom nav on mobile)
-  const handleFocusChange = useCallback(
-    (isFocused: boolean) => {
-      setIsTextareaFocused(isFocused);
-      onInputFocusChange?.(isFocused);
-    },
-    [onInputFocusChange]
-  );
-
   // Get profile from execution history (if exists)
-  const {
-    selectedVariant: variantFromHistory,
-    currentProfile: profileFromHistory,
-  } = useDefaultVariant({ processes, profiles: profiles ?? null });
+  const { selectedVariant: variantFromHistory, currentProfile: profileFromHistory } =
+    useDefaultVariant({ processes, profiles: profiles ?? null });
 
   // Initialize selected profile with history or default
-  const [selectedProfile, setSelectedProfile] =
-    useState<ExecutorProfileId | null>(() => {
-      if (profileFromHistory) {
-        // Extract executor from profileFromHistory (it's ExecutorConfig)
-        const executorKey = Object.keys(profiles || {}).find(
-          (key) => profiles?.[key] === profileFromHistory
-        );
-        return executorKey
-          ? {
-              executor: executorKey as BaseCodingAgent,
-              variant: variantFromHistory,
-            }
-          : null;
-      }
-      // Fallback to user's configured default executor
-      if (config?.executor_profile) {
-        return {
-          executor: config.executor_profile.executor,
-          variant: null,
-        };
-      }
-      return null;
-    });
+  const [selectedProfile, setSelectedProfile] = useState<ExecutorProfileId | null>(() => {
+    if (profileFromHistory) {
+      // Extract executor from profileFromHistory (it's ExecutorConfig)
+      const executorKey = Object.keys(profiles || {}).find(
+        (key) => profiles?.[key] === profileFromHistory
+      );
+      return executorKey
+        ? {
+            executor: executorKey as any,
+            variant: variantFromHistory,
+          }
+        : null;
+    }
+    // Fallback to user's configured default executor
+    if (config?.executor_profile) {
+      return {
+        executor: config.executor_profile.executor,
+        variant: null,
+      };
+    }
+    return null;
+  });
 
   // Update selectedProfile when history changes (e.g., after first execution)
   useEffect(() => {
@@ -244,7 +185,7 @@ export function TaskFollowUpSection({
       );
       if (executorKey) {
         setSelectedProfile({
-          executor: executorKey as BaseCodingAgent,
+          executor: executorKey as any,
           variant: variantFromHistory,
         });
       }
@@ -328,17 +269,12 @@ export function TaskFollowUpSection({
   // Use projectId from URL as fallback when task is still loading
   const effectiveProjectId = task?.project_id ?? projectIdFromUrl;
 
-  // Get user's configured default base branch (for create-and-start)
-  const { defaultBranch } = useDefaultBaseBranch(effectiveProjectId);
-
   // Handle navigation when new task/attempt is created (Master Genie first message)
   const handleNewTaskCreated = useCallback(
     (taskId: string, attemptId: string) => {
-      console.log('[Master Genie] Navigating to new task:', taskId, attemptId);
+      genieLogger.log('Navigating to new task:', taskId, attemptId);
       // Navigate to the new task/attempt with chat view
-      navigate(
-        `/projects/${effectiveProjectId}/tasks/${taskId}/attempts/${attemptId}?view=chat`
-      );
+      navigate(`/projects/${effectiveProjectId}/tasks/${taskId}/attempts/${attemptId}?view=chat`);
     },
     [navigate, effectiveProjectId]
   );
@@ -350,10 +286,10 @@ export function TaskFollowUpSection({
     useFollowUpSend({
       attemptId: selectedAttemptId,
       task,
-      currentProfile:
-        selectedProfile && profiles ? profiles[selectedProfile.executor] : null,
+      currentProfile: selectedProfile && profiles
+        ? profiles[selectedProfile.executor]
+        : null,
       defaultExecutor: selectedProfile?.executor,
-      defaultBranch,
       message: followUpMessage,
       conflictMarkdown: conflictResolutionInstructions,
       reviewMarkdown,
@@ -379,7 +315,7 @@ export function TaskFollowUpSection({
     const isAgentTaskWithoutAttempt =
       isInChatView || (task && task.status === 'agent' && !selectedAttemptId);
 
-    console.log('[DEBUG canTypeFollowUp]', {
+    debugLogger.debug('canTypeFollowUp', {
       selectedAttemptId,
       taskId: task?.id,
       taskStatus: task?.status,
@@ -391,14 +327,12 @@ export function TaskFollowUpSection({
     });
 
     if (!selectedAttemptId && !isAgentTaskWithoutAttempt) {
-      console.log(
-        '[DEBUG canTypeFollowUp] Blocked: no selectedAttemptId and not agent task'
-      );
+      debugLogger.debug('canTypeFollowUp Blocked: no selectedAttemptId and not agent task');
       return false;
     }
 
     if (isSendingFollowUp) {
-      console.log('[DEBUG canTypeFollowUp] Blocked: isSendingFollowUp');
+      debugLogger.debug('canTypeFollowUp Blocked: isSendingFollowUp');
       return false;
     }
 
@@ -408,24 +342,25 @@ export function TaskFollowUpSection({
         (m) => m.type === 'pr' && m.pr_info.status === 'merged'
       );
       if (mergedPR) {
-        console.log('[DEBUG canTypeFollowUp] Blocked: PR merged');
+        debugLogger.debug('canTypeFollowUp Blocked: PR merged');
         return false;
       }
     }
 
     if (isRetryActive) {
-      console.log('[DEBUG canTypeFollowUp] Blocked: retry active');
+      debugLogger.debug('canTypeFollowUp Blocked: retry active');
       return false;
     }
     if (hasPendingApproval) {
-      console.log('[DEBUG canTypeFollowUp] Blocked: pending approval');
+      debugLogger.debug('canTypeFollowUp Blocked: pending approval');
       return false;
     }
-    console.log('[DEBUG canTypeFollowUp] ALLOWED');
+    debugLogger.debug('canTypeFollowUp ALLOWED');
     return true;
   }, [
     selectedAttemptId,
-    task,
+    task?.id,
+    task?.status,
     isInChatView,
     isSendingFollowUp,
     branchStatus?.merges,
@@ -544,20 +479,11 @@ export function TaskFollowUpSection({
   ]);
 
   // When a process completes (e.g., agent resolved conflicts), refresh branch status promptly
-  // Also auto-send queued messages
   const prevRunningRef = useRef<boolean>(isAttemptRunning);
   useEffect(() => {
     if (prevRunningRef.current && !isAttemptRunning && selectedAttemptId) {
       refetchBranchStatus();
       refetchAttemptBranch();
-
-      // Auto-send queued messages when execution completes
-      if (draft?.queued && !draft?.sending) {
-        console.log(
-          '[Auto-send] Execution completed with queued message - sending now'
-        );
-        onSendFollowUp();
-      }
     }
     prevRunningRef.current = isAttemptRunning;
   }, [
@@ -565,9 +491,6 @@ export function TaskFollowUpSection({
     selectedAttemptId,
     refetchBranchStatus,
     refetchAttemptBranch,
-    draft?.queued,
-    draft?.sending,
-    onSendFollowUp,
   ]);
 
   // When server indicates sending started, clear draft and images; hide upload panel
@@ -607,295 +530,285 @@ export function TaskFollowUpSection({
   return (
     <div
       className={cn(
-        'border-t bg-background p-4',
+        'p-4 focus-within:ring ring-inset',
         isRetryActive && 'opacity-50'
       )}
-      onDragEnter={handleContainerDragEnter}
-      onDragOver={handleContainerDragOver}
-      onDragLeave={handleContainerDragLeave}
-      onDrop={handleContainerDrop}
     >
-      <div className="space-y-3">
-        {followUpError && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{followUpError}</AlertDescription>
-          </Alert>
-        )}
         <div className="space-y-2">
-          <div
-            className={cn(
-              'mb-2',
-              !showImageUpload && images.length === 0 && 'hidden'
-            )}
-          >
-            <ImageUploadSection
-              ref={imageUploadRef}
-              images={images}
-              onImagesChange={setImages}
-              onUpload={(file) =>
-                task?.id
-                  ? imagesApi.uploadForTask(task.id, file)
-                  : Promise.reject('No task ID')
-              }
-              onDelete={imagesApi.delete}
-              onImageUploaded={(image) => {
-                handleImageUploaded(image);
-                setFollowUpMessage((prev) => appendImageMarkdown(prev, image));
-                // Auto-hide tray after successful upload (unless actively dragging)
-                if (!isDraggingOverChat) {
-                  setShowImageUpload(false);
-                }
-              }}
-              disabled={!isEditable}
-              collapsible={false}
-              defaultExpanded={true}
-            />
-          </div>
-
-          {/* Review comments preview */}
-          {reviewMarkdown && (
-            <div className="mb-4">
-              <div className="text-sm whitespace-pre-wrap break-words max-h-[40vh] overflow-y-auto rounded-md border bg-muted p-3">
-                {reviewMarkdown}
-              </div>
-            </div>
+          {followUpError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{followUpError}</AlertDescription>
+            </Alert>
           )}
-
-          {/* Conflict notice and actions (optional UI) */}
-          {branchStatus && (
-            <FollowUpConflictSection
-              selectedAttemptId={selectedAttemptId}
-              attemptBranch={attemptBranch}
-              branchStatus={branchStatus}
-              isEditable={isEditable}
-              onResolve={onSendFollowUp}
-              enableResolve={canSendFollowUp && !isAttemptRunning && isEditable}
-              enableAbort={canSendFollowUp && !isAttemptRunning}
-              conflictResolutionInstructions={conflictResolutionInstructions}
-            />
-          )}
-
-          {/* Clicked elements notice and actions */}
-          <ClickedElementsBanner />
-
-          <div className="flex flex-col gap-2">
-            <FollowUpEditorCard
-              placeholder={
-                isQueued
-                  ? 'Type your follow-up… It will auto-send when ready.'
-                  : reviewMarkdown || conflictResolutionInstructions
-                    ? '(Optional) Add additional instructions... Type @ to insert tags or search files.'
-                    : 'Continue working on this task attempt... Type @ to insert tags or search files.'
-              }
-              value={followUpMessage}
-              onChange={(value) => {
-                setFollowUpMessage(value);
-                if (followUpError) setFollowUpError(null);
-                // Auto-hide upload tray when user starts typing (unless actively dragging)
-                if (value && showImageUpload && !isDraggingOverChat) {
-                  setShowImageUpload(false);
-                }
-              }}
-              disabled={!isEditable}
-              showLoadingOverlay={isUnqueuing || !isDraftLoaded}
-              onPasteFiles={handlePasteImages}
-              onFocusChange={handleFocusChange}
-            />
-            <FollowUpStatusRow
-              status={{
-                save: { state: saveStatus, isSaving },
-                draft: {
-                  isLoaded: isDraftLoaded,
-                  isSending: !!draft?.sending,
-                },
-                queue: { isUnqueuing: isUnqueuing, isQueued: displayQueued },
-              }}
-            />
-            <div className="flex flex-row gap-3 items-center">
-              <div className="flex gap-2 items-center">
-                {/* Image button */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowImageUpload(!showImageUpload)}
-                  disabled={!isEditable}
-                >
-                  <ImageIcon
-                    className={cn(
-                      'h-4 w-4',
-                      (images.length > 0 || showImageUpload) && 'text-primary'
-                    )}
-                  />
-                </Button>
-
-                {/* Compact icon-only executor selector */}
-                <CompactExecutorSelector
-                  profiles={profiles}
-                  selectedProfile={selectedProfile}
-                  onProfileSelect={setSelectedProfile}
-                  disabled={!isEditable}
-                />
-              </div>
-              <div className="flex-1" />
-
-              {isAttemptRunning ? (
-                <Button
-                  onClick={stopExecution}
-                  disabled={isStopping}
-                  size="sm"
-                  variant="destructive"
-                >
-                  {isStopping ? (
-                    <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                  ) : (
-                    <>
-                      <StopCircle className="h-4 w-4 mr-2" />
-                      {t('followUp.stop')}
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  {comments.length > 0 && (
-                    <Button
-                      onClick={clearComments}
-                      size="sm"
-                      variant="destructive"
-                      disabled={!isEditable}
-                    >
-                      {t('followUp.clearReviewComments')}
-                    </Button>
-                  )}
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          onClick={onSendFollowUp}
-                          disabled={
-                            !canSendFollowUp ||
-                            isDraftLocked ||
-                            !isDraftLoaded ||
-                            isSendingFollowUp ||
-                            isRetryActive
-                          }
-                          size="sm"
-                          className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                        >
-                          {isSendingFollowUp ? (
-                            <>
-                              <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                              {t('followUp.sending', 'Sending...')}
-                            </>
-                          ) : (
-                            <>
-                              <Send className="h-4 w-4 mr-2 fill-primary-foreground" />
-                              {conflictResolutionInstructions
-                                ? t('followUp.resolveConflicts')
-                                : t('followUp.send')}
-                            </>
-                          )}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-xs">
-                          {conflictResolutionInstructions
-                            ? t('followUp.resolveConflicts')
-                            : t('followUp.send')}{' '}
-                          ({navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}
-                          +Enter)
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  {isQueued && (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="min-w-[180px] transition-all"
-                      onClick={async () => {
-                        setIsUnqueuing(true);
-                        try {
-                          const ok = await onUnqueue();
-                          if (ok) setQueuedOptimistic(false);
-                        } finally {
-                          setIsUnqueuing(false);
-                        }
-                      }}
-                      disabled={isUnqueuing}
-                    >
-                      {isUnqueuing ? (
-                        <>
-                          <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                          {t('followUp.unqueuing')}
-                        </>
-                      ) : (
-                        t('followUp.edit')
-                      )}
-                    </Button>
-                  )}
-                </div>
+          <div className="space-y-2">
+            <div
+              className={cn(
+                'mb-2',
+                !showImageUpload && images.length === 0 && 'hidden'
               )}
-              {isAttemptRunning && (
-                <div className="flex items-center gap-2">
+            >
+              <ImageUploadSection
+                ref={imageUploadRef}
+                images={images}
+                onImagesChange={setImages}
+                onUpload={(file) => task?.id ? imagesApi.uploadForTask(task.id, file) : Promise.reject('No task ID')}
+                onDelete={imagesApi.delete}
+                onImageUploaded={(image) => {
+                  handleImageUploaded(image);
+                  setFollowUpMessage((prev) =>
+                    appendImageMarkdown(prev, image)
+                  );
+                }}
+                disabled={!isEditable}
+                collapsible={false}
+                defaultExpanded={true}
+              />
+            </div>
+
+            {/* Review comments preview */}
+            {reviewMarkdown && (
+              <div className="mb-4">
+                <div className="text-sm whitespace-pre-wrap break-words max-h-[40vh] overflow-y-auto rounded-md border bg-muted p-3">
+                  {reviewMarkdown}
+                </div>
+              </div>
+            )}
+
+            {/* Conflict notice and actions (optional UI) */}
+            {branchStatus && (
+              <FollowUpConflictSection
+                selectedAttemptId={selectedAttemptId}
+                attemptBranch={attemptBranch}
+                branchStatus={branchStatus}
+                isEditable={isEditable}
+                onResolve={onSendFollowUp}
+                enableResolve={
+                  canSendFollowUp && !isAttemptRunning && isEditable
+                }
+                enableAbort={canSendFollowUp && !isAttemptRunning}
+                conflictResolutionInstructions={conflictResolutionInstructions}
+              />
+            )}
+
+            {/* Clicked elements notice and actions */}
+            <ClickedElementsBanner />
+
+            <div className="flex flex-col gap-2">
+              <FollowUpEditorCard
+                placeholder={
+                  isQueued
+                    ? 'Type your follow-up… It will auto-send when ready.'
+                    : reviewMarkdown || conflictResolutionInstructions
+                      ? '(Optional) Add additional instructions... Type @ to insert tags or search files.'
+                      : 'Continue working on this task attempt... Type @ to insert tags or search files.'
+                }
+                value={followUpMessage}
+                onChange={(value) => {
+                  setFollowUpMessage(value);
+                  if (followUpError) setFollowUpError(null);
+                }}
+                disabled={!isEditable}
+                showLoadingOverlay={isUnqueuing || !isDraftLoaded}
+                onPasteFiles={handlePasteImages}
+                onFocusChange={setIsTextareaFocused}
+              />
+              <FollowUpStatusRow
+                status={{
+                  save: { state: saveStatus, isSaving },
+                  draft: {
+                    isLoaded: isDraftLoaded,
+                    isSending: !!draft?.sending,
+                  },
+                  queue: { isUnqueuing: isUnqueuing, isQueued: displayQueued },
+                }}
+              />
+              <div className="flex flex-row gap-2 items-center">
+                <div className="flex-1 flex gap-2">
+                  {/* Image button */}
                   <Button
-                    onClick={async () => {
-                      if (displayQueued) {
-                        setIsUnqueuing(true);
-                        try {
-                          const ok = await onUnqueue();
-                          if (ok) setQueuedOptimistic(false);
-                        } finally {
-                          setIsUnqueuing(false);
-                        }
-                      } else {
-                        setIsQueuing(true);
-                        try {
-                          const ok = await onQueue();
-                          if (ok) setQueuedOptimistic(true);
-                        } finally {
-                          setIsQueuing(false);
-                        }
-                      }
-                    }}
-                    disabled={
-                      displayQueued
-                        ? isUnqueuing
-                        : !canSendFollowUp ||
-                          !isDraftLoaded ||
-                          isQueuing ||
-                          isUnqueuing ||
-                          !!draft?.sending ||
-                          isRetryActive
-                    }
+                    variant="secondary"
                     size="sm"
-                    variant="default"
-                    className="md:min-w-[180px] transition-all"
+                    onClick={() => setShowImageUpload(!showImageUpload)}
+                    disabled={!isEditable}
                   >
-                    {displayQueued ? (
-                      isUnqueuing ? (
-                        <>
-                          <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                          {t('followUp.unqueuing')}
-                        </>
-                      ) : (
-                        t('followUp.edit')
-                      )
-                    ) : isQueuing ? (
-                      <>
-                        <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                        {t('followUp.queuing')}
-                      </>
+                    <ImageIcon
+                      className={cn(
+                        'h-4 w-4',
+                        (images.length > 0 || showImageUpload) && 'text-primary'
+                      )}
+                    />
+                  </Button>
+
+                  <ExecutorProfileSelector
+                    profiles={profiles}
+                    selectedProfile={selectedProfile}
+                    onProfileSelect={setSelectedProfile}
+                    disabled={!isEditable}
+                    showLabel={false}
+                    showVariantSelector={true}
+                  />
+                </div>
+
+                {isAttemptRunning ? (
+                  <Button
+                    onClick={stopExecution}
+                    disabled={isStopping}
+                    size="sm"
+                    variant="destructive"
+                  >
+                    {isStopping ? (
+                      <Loader2 className="animate-spin h-4 w-4 mr-2" />
                     ) : (
-                      t('followUp.queueForNextTurn')
+                      <>
+                        <StopCircle className="h-4 w-4 mr-2" />
+                        {t('followUp.stop')}
+                      </>
                     )}
                   </Button>
-                </div>
-              )}
+                ) : (
+                  <div className="flex items-center gap-2">
+                    {comments.length > 0 && (
+                      <Button
+                        onClick={clearComments}
+                        size="sm"
+                        variant="destructive"
+                        disabled={!isEditable}
+                      >
+                        {t('followUp.clearReviewComments')}
+                      </Button>
+                    )}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={onSendFollowUp}
+                            disabled={
+                              !canSendFollowUp ||
+                              isDraftLocked ||
+                              !isDraftLoaded ||
+                              isSendingFollowUp ||
+                              isRetryActive
+                            }
+                            size="sm"
+                            className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                          >
+                            {isSendingFollowUp ? (
+                              <>
+                                <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                                {t('followUp.sending', 'Sending...')}
+                              </>
+                            ) : (
+                              <>
+                                <Send className="h-4 w-4 mr-2 fill-primary-foreground" />
+                                {conflictResolutionInstructions
+                                  ? t('followUp.resolveConflicts')
+                                  : t('followUp.send')}
+                                <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-primary-foreground/20 rounded font-mono">
+                                  {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}⏎
+                                </kbd>
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">
+                            {conflictResolutionInstructions
+                              ? t('followUp.resolveConflicts')
+                              : t('followUp.send')}{' '}
+                            ({navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Enter)
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    {isQueued && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="min-w-[180px] transition-all"
+                        onClick={async () => {
+                          setIsUnqueuing(true);
+                          try {
+                            const ok = await onUnqueue();
+                            if (ok) setQueuedOptimistic(false);
+                          } finally {
+                            setIsUnqueuing(false);
+                          }
+                        }}
+                        disabled={isUnqueuing}
+                      >
+                        {isUnqueuing ? (
+                          <>
+                            <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                            {t('followUp.unqueuing')}
+                          </>
+                        ) : (
+                          t('followUp.edit')
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {isAttemptRunning && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={async () => {
+                        if (displayQueued) {
+                          setIsUnqueuing(true);
+                          try {
+                            const ok = await onUnqueue();
+                            if (ok) setQueuedOptimistic(false);
+                          } finally {
+                            setIsUnqueuing(false);
+                          }
+                        } else {
+                          setIsQueuing(true);
+                          try {
+                            const ok = await onQueue();
+                            if (ok) setQueuedOptimistic(true);
+                          } finally {
+                            setIsQueuing(false);
+                          }
+                        }
+                      }}
+                      disabled={
+                        displayQueued
+                          ? isUnqueuing
+                          : !canSendFollowUp ||
+                            !isDraftLoaded ||
+                            isQueuing ||
+                            isUnqueuing ||
+                            !!draft?.sending ||
+                            isRetryActive
+                      }
+                      size="sm"
+                      variant="default"
+                      className="md:min-w-[180px] transition-all"
+                    >
+                      {displayQueued ? (
+                        isUnqueuing ? (
+                          <>
+                            <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                            {t('followUp.unqueuing')}
+                          </>
+                        ) : (
+                          t('followUp.edit')
+                        )
+                      ) : isQueuing ? (
+                        <>
+                          <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                          {t('followUp.queuing')}
+                        </>
+                      ) : (
+                        t('followUp.queueForNextTurn')
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
   );
 }

@@ -1,3 +1,7 @@
+import { createLogger } from '@/lib/logger';
+
+const clickToComponentLogger = createLogger('ClickToComponentListener');
+
 export interface ComponentSource {
   fileName: string;
   lineNumber: number;
@@ -80,16 +84,11 @@ export class ClickToComponentListener {
         return;
       }
 
-      console.log(
-        '[ClickToComponentListener] Received message from iframe:',
-        data
-      );
+      clickToComponentLogger.log('Received message from iframe:', data);
 
       switch (data.type) {
         case 'ready':
-          console.log(
-            '[ClickToComponentListener] Received ready message, sending enable-button'
-          );
+          clickToComponentLogger.log('Received ready message, sending enable-button');
           if (event.source) {
             const enableMsg: ClickToComponentEnableMessage = {
               source: 'click-to-component',
@@ -97,9 +96,7 @@ export class ClickToComponentListener {
               type: 'enable-button',
             };
             (event.source as Window).postMessage(enableMsg, '*');
-            console.log(
-              '[ClickToComponentListener] enable-button message sent to iframe'
-            );
+            clickToComponentLogger.log('enable-button message sent to iframe');
           }
           this.handlers.onReady?.();
           break;
@@ -143,4 +140,13 @@ export class ClickToComponentListener {
       iframe.contentWindow.postMessage(message, '*');
     }
   }
+}
+
+// Convenience function for quick setup
+export function listenToClickToComponent(
+  handlers: EventHandlers
+): ClickToComponentListener {
+  const listener = new ClickToComponentListener(handlers);
+  listener.start();
+  return listener;
 }

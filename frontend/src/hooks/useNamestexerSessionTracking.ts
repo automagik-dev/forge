@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { v4 as uuidv4 } from 'uuid';
 import { isNamestexEmployee } from '@/lib/track-analytics';
+import { analyticsLogger } from '@/lib/logger';
 
 /**
  * Namastexer session tracking hook
@@ -35,7 +36,7 @@ export function useNamestexerSessionTracking() {
       timestamp: sessionStartRef.current,
     });
 
-    console.log('[Analytics] namastexer_session_started', {
+    analyticsLogger.log('namastexer_session_started', {
       session_id: sessionIdRef.current,
     });
 
@@ -86,7 +87,7 @@ export function useNamestexerSessionTracking() {
           tracking_tier: 'namastexer',
           duration_seconds: (Date.now() - sessionStartRef.current) / 1000,
         });
-        console.log('[Analytics] namastexer_session_ended', {
+        analyticsLogger.log('namastexer_session_ended', {
           session_id: sessionIdRef.current,
           duration_seconds: (Date.now() - sessionStartRef.current) / 1000,
         });

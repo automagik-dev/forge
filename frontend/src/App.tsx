@@ -6,14 +6,11 @@ import { Projects } from '@/pages/projects';
 import { ProjectTasks } from '@/pages/project-tasks';
 import { FullAttemptLogsPage } from '@/pages/full-attempt-logs';
 import ReleaseNotesPage from '@/pages/release-notes';
-import { ResponsiveLayout } from '@/components/layout/ResponsiveLayout';
+import { NormalLayout } from '@/components/layout/NormalLayout';
 import { Footer } from '@/components/layout/Footer';
 import { usePostHog } from 'posthog-js/react';
-import type {
-  SessionStartedEvent,
-  SessionEndedEvent,
-  HeartbeatEvent,
-} from '@/types/analytics';
+import type { SessionStartedEvent, SessionEndedEvent, HeartbeatEvent } from '@/types/analytics';
+import { analyticsLogger } from '@/lib/logger';
 import { usePageTracking } from '@/hooks/usePageTracking';
 import { useNamestexerSessionTracking } from '@/hooks/useNamestexerSessionTracking';
 
@@ -30,7 +27,6 @@ import {
 } from '@/components/config-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { SearchProvider } from '@/contexts/search-context';
-import { MobileNavigationProvider } from '@/contexts/MobileNavigationContext';
 
 import { HotkeysProvider } from 'react-hotkeys-hook';
 
@@ -44,20 +40,16 @@ import { OnboardingResult } from '@/components/dialogs/global/OnboardingDialog';
 import { ClickedElementsProvider } from '@/contexts/ClickedElementsProvider';
 import { GenieMasterWidget } from '@/components/genie-widgets/GenieMasterWidget';
 import { SubGenieProvider } from '@/context/SubGenieContext';
-import { useIsMobile } from '@/components/mobile/MobileLayout';
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 function AppContent() {
   const [isGenieOpen, setIsGenieOpen] = useState(false);
-  const isMobile = useIsMobile();
   const { config, analyticsUserId, updateAndSaveConfig, loading } =
     useUserSystem();
   const posthog = usePostHog();
   const sessionStartTimeRef = useRef<number>(Date.now());
-  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
-    null
-  );
+  const heartbeatIntervalRef = useRef<number | null>(null);
   const eventCountRef = useRef<number>(0);
 
   // Track page navigation
@@ -71,8 +63,7 @@ function AppContent() {
     if (!posthog || !analyticsUserId) return;
 
     const userOptedIn = config?.analytics_enabled !== false;
-    const isNamestexer =
-      config?.github?.primary_email?.endsWith('@namastex.ai');
+    const isNamestexer = config?.github?.primary_email?.endsWith('@namastex.ai');
     const contactEmailOptIn = config?.contact_email_opt_in === true;
     const contactUsernameOptIn = config?.contact_username_opt_in === true;
 
@@ -80,7 +71,7 @@ function AppContent() {
       posthog.opt_in_capturing();
 
       // Build properties object based on consent
-      const identifyProperties: Record<string, unknown> = {};
+      const identifyProperties: Record<string, any> = {};
 
       if (isNamestexer) {
         // Full tracking for namastexers (mandatory)
@@ -96,60 +87,30 @@ function AppContent() {
           identifyProperties.contact_username = config.github.username;
         }
         identifyProperties.tracking_tier =
-          contactEmailOptIn || contactUsernameOptIn
-            ? 'community_contact'
-            : 'community_anonymous';
+          contactEmailOptIn || contactUsernameOptIn ? 'community_contact' : 'community_anonymous';
       }
 
-      // Use GitHub username as distinct_id ONLY if:
-      // 1. User is a namastexer (@namastex.ai) - mandatory tracking, OR
-      // 2. User explicitly consented to share username (contactUsernameOptIn)
-      // Otherwise use persistent anonymous UUID for consistent cross-session tracking
-      const shouldUseGithubUsername = isNamestexer || contactUsernameOptIn;
-      const distinctId =
-        (shouldUseGithubUsername && config?.github?.username) ||
-        analyticsUserId;
-      posthog.identify(distinctId, identifyProperties);
-      console.log(
-        '[Analytics] User identified as:',
-        distinctId,
-        '(GitHub username:',
-        shouldUseGithubUsername,
-        ')'
-      );
+      posthog.identify(analyticsUserId, identifyProperties);
+      analyticsLogger.log('Analytics enabled and user identified');
     } else {
       posthog.opt_out_capturing();
-      console.log('[Analytics] Analytics disabled by user preference');
+      analyticsLogger.log('Analytics disabled by user preference');
     }
-  }, [
-    config?.analytics_enabled,
-    config?.contact_email_opt_in,
-    config?.contact_username_opt_in,
-    config?.github?.primary_email,
-    config?.github?.username,
-    analyticsUserId,
-    posthog,
-  ]);
+  }, [config?.analytics_enabled, config?.contact_email_opt_in, config?.contact_username_opt_in, config?.github?.primary_email, config?.github?.username, analyticsUserId, posthog]);
 
   // Session tracking: session_started, session_ended, and heartbeat
   useEffect(() => {
-    if (!posthog || !analyticsUserId || config?.analytics_enabled === false)
-      return;
+    if (!posthog || !analyticsUserId || config?.analytics_enabled === false) return;
 
     // Capture session_started event
     const lastSessionTime = localStorage.getItem('last_session_time');
-    const totalSessions = parseInt(
-      localStorage.getItem('total_sessions') || '0',
-      10
-    );
+    const totalSessions = parseInt(localStorage.getItem('total_sessions') || '0', 10);
     const now = Date.now();
 
     let daysSinceLastSession: number | null = null;
     if (lastSessionTime) {
       const lastTime = parseInt(lastSessionTime, 10);
-      daysSinceLastSession = Math.floor(
-        (now - lastTime) / (1000 * 60 * 60 * 24)
-      );
+      daysSinceLastSession = Math.floor((now - lastTime) / (1000 * 60 * 60 * 24));
     }
 
     const sessionStartedEvent: SessionStartedEvent = {
@@ -159,7 +120,7 @@ function AppContent() {
     };
 
     posthog.capture('session_started', sessionStartedEvent);
-    console.log('[Analytics] session_started', sessionStartedEvent);
+    analyticsLogger.log('session_started', sessionStartedEvent);
 
     // Update localStorage
     localStorage.setItem('last_session_time', now.toString());
@@ -180,34 +141,26 @@ function AppContent() {
         clearInterval(heartbeatIntervalRef.current);
       }
 
-      const sessionDuration = Math.floor(
-        (Date.now() - sessionStartTimeRef.current) / 1000
-      );
+      const sessionDuration = Math.floor((Date.now() - sessionStartTimeRef.current) / 1000);
       const sessionEndedEvent: SessionEndedEvent = {
         session_duration_seconds: sessionDuration,
         events_captured_count: eventCountRef.current,
       };
 
       posthog.capture('session_ended', sessionEndedEvent);
-      console.log('[Analytics] session_ended', sessionEndedEvent);
+      analyticsLogger.log('session_ended', sessionEndedEvent);
     };
   }, [posthog, analyticsUserId, config?.analytics_enabled]);
-
-  // Track if onboarding has been initiated in this session to prevent re-triggering
-  const onboardingInitiatedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
 
-    // DEV FLAG: Force show onboarding dialogs for testing
-    // Set VITE_FORCE_ONBOARDING=true in your environment to test onboarding flow
-    const forceOnboarding = import.meta.env.VITE_FORCE_ONBOARDING === 'true';
-
     const handleOnboardingComplete = async (
       onboardingConfig: OnboardingResult
     ) => {
-      // Don't check cancelled here - we must save once the user completes the flow
-      await updateAndSaveConfig({
+      if (cancelled) return;
+
+      updateAndSaveConfig({
         onboarding_acknowledged: true,
         executor_profile: onboardingConfig.profile,
         editor: onboardingConfig.editor,
@@ -215,12 +168,12 @@ function AppContent() {
     };
 
     const handleDisclaimerAccept = async () => {
-      // Don't check cancelled here - we must save once the user clicks the button
+      if (cancelled) return;
       await updateAndSaveConfig({ disclaimer_acknowledged: true });
     };
 
     const handleGitHubLoginComplete = async () => {
-      // Don't check cancelled here - we must save once the user completes the flow
+      if (cancelled) return;
       await updateAndSaveConfig({ github_login_acknowledged: true });
     };
 
@@ -229,7 +182,7 @@ function AppContent() {
       contact_email_opt_in: boolean;
       contact_username_opt_in: boolean;
     }) => {
-      // Don't check cancelled here - we must save once the user completes the flow
+      if (cancelled) return;
       await updateAndSaveConfig({
         telemetry_acknowledged: true,
         analytics_enabled: privacySettings.analytics_enabled,
@@ -239,55 +192,55 @@ function AppContent() {
     };
 
     const handleReleaseNotesClose = async () => {
-      // Don't check cancelled here - we must save once the user closes the dialog
+      if (cancelled) return;
       await updateAndSaveConfig({ show_release_notes: false });
     };
 
     const checkOnboardingSteps = async () => {
       if (!config || cancelled) return;
 
-      // Prevent re-running onboarding if already initiated in this session
-      if (onboardingInitiatedRef.current) return;
-      onboardingInitiatedRef.current = true;
-
-      if (!config.disclaimer_acknowledged || forceOnboarding) {
+      if (!config.disclaimer_acknowledged) {
         await NiceModal.show('disclaimer');
         await handleDisclaimerAccept();
+        await NiceModal.hide('disclaimer');
       }
 
-      if (!config.onboarding_acknowledged || forceOnboarding) {
+      if (!config.onboarding_acknowledged) {
         const onboardingResult: OnboardingResult =
           await NiceModal.show('onboarding');
         await handleOnboardingComplete(onboardingResult);
+        await NiceModal.hide('onboarding');
       }
 
-      if (!config.github_login_acknowledged || forceOnboarding) {
+      if (!config.github_login_acknowledged) {
         await NiceModal.show('github-login');
         await handleGitHubLoginComplete();
+        await NiceModal.hide('github-login');
       }
 
-      if (!config.telemetry_acknowledged || forceOnboarding) {
+      if (!config.telemetry_acknowledged) {
         const privacySettings: {
           analytics_enabled: boolean;
           contact_email_opt_in: boolean;
           contact_username_opt_in: boolean;
         } = await NiceModal.show('privacy-opt-in');
         await handleTelemetryOptIn(privacySettings);
+        await NiceModal.hide('privacy-opt-in');
       }
 
       if (config.show_release_notes) {
         await NiceModal.show('release-notes');
         await handleReleaseNotesClose();
+        await NiceModal.hide('release-notes');
       }
     };
 
-    // Run onboarding flow
-    // Note: We use an async IIFE pattern here to properly handle the async operation
-    // while still allowing the effect cleanup to set the cancelled flag
-    (async () => {
+    const runOnboarding = async () => {
       if (!config || cancelled) return;
       await checkOnboardingSteps();
-    })();
+    };
+
+    runOnboarding();
 
     return () => {
       cancelled = true;
@@ -306,56 +259,54 @@ function AppContent() {
     <I18nextProvider i18n={i18n}>
       <ThemeProvider initialTheme={config?.theme || ThemeMode.SYSTEM}>
         <SearchProvider>
-          <MobileNavigationProvider>
-            <div className="h-screen flex flex-col bg-background">
-              <SentryRoutes>
-                {/* VS Code full-page logs route (outside ResponsiveLayout for minimal UI) */}
-                <Route
-                  path="/projects/:projectId/tasks/:taskId/attempts/:attemptId/full"
-                  element={<FullAttemptLogsPage />}
-                />
-
-                <Route element={<ResponsiveLayout />}>
-                  <Route path="/" element={<Projects />} />
-                  <Route path="/projects" element={<Projects />} />
-                  <Route path="/projects/:projectId" element={<Projects />} />
-                  <Route
-                    path="/projects/:projectId/tasks"
-                    element={<ProjectTasks />}
-                  />
-                  <Route path="/settings/*" element={<SettingsLayout />}>
-                    <Route index element={<Navigate to="general" replace />} />
-                    <Route path="general" element={<GeneralSettings />} />
-                    <Route path="projects" element={<ProjectSettings />} />
-                    <Route path="agents" element={<AgentSettings />} />
-                    <Route path="mcp" element={<McpSettings />} />
-                  </Route>
-                  <Route
-                    path="/mcp-servers"
-                    element={<Navigate to="/settings/mcp" replace />}
-                  />
-                  <Route path="/release-notes" element={<ReleaseNotesPage />} />
-                  <Route
-                    path="/projects/:projectId/tasks/:taskId"
-                    element={<ProjectTasks />}
-                  />
-                  <Route
-                    path="/projects/:projectId/tasks/:taskId/attempts/:attemptId"
-                    element={<ProjectTasks />}
-                  />
-                </Route>
-              </SentryRoutes>
-              <Footer />
-            </div>
-            {/* Hide GenieMasterWidget in mobile view - use bottom nav Genie button instead */}
-            {!isMobile && (
-              <GenieMasterWidget
-                isOpen={isGenieOpen}
-                onToggle={() => setIsGenieOpen(!isGenieOpen)}
-                onClose={() => setIsGenieOpen(false)}
+          <div className="h-screen flex flex-col bg-background">
+            <SentryRoutes>
+              {/* VS Code full-page logs route (outside NormalLayout for minimal UI) */}
+              <Route
+                path="/projects/:projectId/tasks/:taskId/attempts/:attemptId/full"
+                element={<FullAttemptLogsPage />}
               />
-            )}
-          </MobileNavigationProvider>
+
+              <Route element={<NormalLayout />}>
+                <Route path="/" element={<Projects />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/projects/:projectId" element={<Projects />} />
+                <Route
+                  path="/projects/:projectId/tasks"
+                  element={<ProjectTasks />}
+                />
+                <Route path="/settings/*" element={<SettingsLayout />}>
+                  <Route index element={<Navigate to="general" replace />} />
+                  <Route path="general" element={<GeneralSettings />} />
+                  <Route path="projects" element={<ProjectSettings />} />
+                  <Route path="agents" element={<AgentSettings />} />
+                  <Route path="mcp" element={<McpSettings />} />
+                </Route>
+                <Route
+                  path="/mcp-servers"
+                  element={<Navigate to="/settings/mcp" replace />}
+                />
+                <Route
+                  path="/release-notes"
+                  element={<ReleaseNotesPage />}
+                />
+                <Route
+                  path="/projects/:projectId/tasks/:taskId"
+                  element={<ProjectTasks />}
+                />
+                <Route
+                  path="/projects/:projectId/tasks/:taskId/attempts/:attemptId"
+                  element={<ProjectTasks />}
+                />
+              </Route>
+            </SentryRoutes>
+            <Footer />
+          </div>
+          <GenieMasterWidget
+            isOpen={isGenieOpen}
+            onToggle={() => setIsGenieOpen(!isGenieOpen)}
+            onClose={() => setIsGenieOpen(false)}
+          />
         </SearchProvider>
       </ThemeProvider>
     </I18nextProvider>
@@ -375,20 +326,7 @@ function App() {
       <UserSystemProvider>
         <ClickedElementsProvider>
           <ProjectProvider>
-            {/* Keep 'global' active at all times so the hotkeys scope stack is never empty */}
-            <HotkeysProvider
-              initiallyActiveScopes={[
-                'global',
-                'kanban',
-                'dialog',
-                'projects',
-                'settings',
-                'edit-comment',
-                'approvals',
-                'follow-up',
-                'follow-up-ready',
-              ]}
-            >
+            <HotkeysProvider initiallyActiveScopes={['*', 'global', 'kanban', 'dialog', 'projects', 'settings', 'edit-comment', 'approvals', 'follow-up', 'follow-up-ready']}>
               <SubGenieProvider>
                 <NiceModal.Provider>
                   <AppContent />
