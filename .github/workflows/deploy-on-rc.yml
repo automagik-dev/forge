@@ -1,0 +1,22 @@
+name: Deploy on RC Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  trigger-jenkins:
+    if: contains(github.event.release.tag_name, 'rc')
+    runs-on: self-hosted
+    steps:
+      - name: Trigger Jenkins Deploy
+        run: |
+          echo "🚀 Triggering Jenkins deployment for: ${{ github.event.release.tag_name }}"
+          curl -sf -X POST "http://10.114.1.103:8080/generic-webhook-trigger/invoke?token=forge-deploy" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "action": "published",
+              "release": {"tag_name": "${{ github.event.release.tag_name }}"},
+              "repository": {"name": "automagik-forge"}
+            }'
+          echo "✅ Jenkins triggered successfully"
