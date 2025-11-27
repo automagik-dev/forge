@@ -12,7 +12,7 @@ jobs:
       - name: Trigger Jenkins Deploy
         run: |
           echo "🚀 Triggering Jenkins deployment for: ${{ github.event.release.tag_name }}"
-          curl -sf -X POST "http://10.114.1.103:8080/generic-webhook-trigger/invoke?token=forge-deploy" \
+          curl -sf -X POST "http://10.114.1.103:8080/generic-webhook-trigger/invoke?token=genieos-forge" \
             -H "Content-Type: application/json" \
             -d '{
               "action": "published",
