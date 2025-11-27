@@ -29,7 +29,45 @@ Do:
    - Type-check, lint/format if configured.
    - Ensure it compiles and renders without SSR/hydration errors.
 
+5) (Optional) Visual Agent Integration for iframe-based preview panels:
+   If this app hosts forge-inspector in an iframe (e.g., a preview panel), add parent-side
+   integration to receive visual agent observations, reports, and confirmation requests:
+
+   a) Import the utilities:
+      import { VisualAgentOverlay, useVisualAgentListener, createVisualAgentListener } from 'forge-inspector';
+
+   b) Choose an integration approach:
+
+      - Drop-in component (easiest):
+        Render <VisualAgentOverlay onReport={handleReport} /> alongside your iframe.
+        It handles recording indicator, observations panel, and confirmation dialogs.
+
+      - React hook (custom UI):
+        const { isRecording, observations, report, pendingConfirm, confirmResponse } = useVisualAgentListener({
+          onQAReport: (payload) => console.log('QA Report:', payload),
+        });
+        Build your own UI using the state and confirmResponse callback.
+
+      - Vanilla JS (non-React):
+        const listener = createVisualAgentListener({
+          onRecordingStarted: () => showRecordingIndicator(),
+          onRecordingObservation: (obs) => addToObservationsList(obs),
+          onQAReport: (report) => displayReport(report),
+          onConfirmStep: (payload, respond) => {
+            showConfirmDialog(payload.question, (confirmed) => respond(confirmed));
+          }
+        });
+        listener.start();
+
+   c) Message types from visual agent:
+      - recording-started: Visual agent began recording
+      - recording-observation: An observation was made (with timestamp)
+      - qa-report: Final QA report with all observations and summary
+      - recording-error: An error occurred during recording
+      - confirm-step: Agent requests user confirmation before proceeding
+
 Acceptance:
 - forge-inspector is installed in the correct package.
 - The component is rendered once at the app root without SSR/hydration errors.
-- Build/type-check passes.`;
+- Build/type-check passes.
+- (If applicable) Parent app can receive visual agent messages from iframe.`;
