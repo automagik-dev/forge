@@ -1,8 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-  createContext,
-  useContextSelector,
-} from 'use-context-selector';
+import { createContext, useContextSelector } from 'use-context-selector';
 import { useExecutionProcessSelector } from '@/contexts/ExecutionProcessesContext';
 import { useDraftStream } from '@/hooks/follow-up/useDraftStream';
 

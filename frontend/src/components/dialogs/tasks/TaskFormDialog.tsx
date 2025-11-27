@@ -70,15 +70,20 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     const { createTask, createAndStart, updateTask } =
       useTaskMutations(projectId);
     const { profiles: globalProfiles, config } = useUserSystem();
-    const { data: projectProfiles, isLoading: isLoadingProjectProfiles } = useProjectProfiles(projectId);
+    const { data: projectProfiles, isLoading: isLoadingProjectProfiles } =
+      useProjectProfiles(projectId);
 
     // Use project profiles if available (synchronized agents), fallback to global profiles
     const projectExecutors = projectProfiles?.executors;
-    const hasProjectExecutors = projectExecutors && Object.keys(projectExecutors).length > 0;
-    const profiles = (hasProjectExecutors ? projectExecutors : (globalProfiles ?? null)) as
-      Record<string, import('shared/types').ExecutorConfig> | null;
+    const hasProjectExecutors =
+      projectExecutors && Object.keys(projectExecutors).length > 0;
+    const profiles = (
+      hasProjectExecutors ? projectExecutors : (globalProfiles ?? null)
+    ) as Record<string, import('shared/types').ExecutorConfig> | null;
     const hasProfiles = profiles && Object.keys(profiles).length > 0;
-    const isProfilesLoading = isLoadingProjectProfiles && (!globalProfiles || Object.keys(globalProfiles).length === 0);
+    const isProfilesLoading =
+      isLoadingProjectProfiles &&
+      (!globalProfiles || Object.keys(globalProfiles).length === 0);
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -97,7 +102,9 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
     const imageUploadRef = useRef<ImageUploadSectionHandle>(null);
     const [isTextareaFocused, setIsTextareaFocused] = useState(false);
     const [parentTask, setParentTask] = useState<Task | null>(null);
-    const [parentAttempt, setParentAttempt] = useState<TaskAttempt | null>(null);
+    const [parentAttempt, setParentAttempt] = useState<TaskAttempt | null>(
+      null
+    );
 
     const isEditMode = Boolean(task);
     const isSubtaskMode = Boolean(parentTaskAttemptId);
@@ -236,7 +243,8 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
         branches.length > 0 &&
         parentAttempt
       ) {
-        const parentBranch = parentAttempt.branch || parentAttempt.target_branch;
+        const parentBranch =
+          parentAttempt.branch || parentAttempt.target_branch;
         if (parentBranch && branches.some((b) => b.name === parentBranch)) {
           setSelectedBranch(parentBranch);
         }
@@ -501,7 +509,11 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
           <DialogContent className="sm:max-w-[550px]">
             <DialogHeader>
               <DialogTitle>
-                {isEditMode ? 'Edit Task' : isSubtaskMode ? 'Create Subtask' : 'Create New Task'}
+                {isEditMode
+                  ? 'Edit Task'
+                  : isSubtaskMode
+                    ? 'Create Subtask'
+                    : 'Create New Task'}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
@@ -513,11 +525,17 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                       <p className="text-xs text-muted-foreground mb-1">
                         Creating subtask for:
                       </p>
-                      <p className="text-sm font-medium truncate" title={parentTask.title}>
+                      <p
+                        className="text-sm font-medium truncate"
+                        title={parentTask.title}
+                      >
                         {parentTask.title}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Branch: <span className="font-mono">{parentAttempt.branch || parentAttempt.target_branch}</span>
+                        Branch:{' '}
+                        <span className="font-mono">
+                          {parentAttempt.branch || parentAttempt.target_branch}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -621,7 +639,10 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                   ) : (
                     <div className="text-sm text-muted-foreground">
                       {t('taskFormDialog.noProfiles')}{' '}
-                      <Link to="/settings/general" className="underline">{t('taskFormDialog.settingsLink')}</Link>.
+                      <Link to="/settings/general" className="underline">
+                        {t('taskFormDialog.settingsLink')}
+                      </Link>
+                      .
                     </div>
                   )}
 

@@ -38,7 +38,9 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
   } = useTaskAttemptsWithLiveStatus(task?.id, task);
 
   // Use React Query hooks for parent and children tasks (real-time-data-standard.md)
-  const { data: parentTask = null } = useParentTask(task?.parent_task_attempt || undefined);
+  const { data: parentTask = null } = useParentTask(
+    task?.parent_task_attempt || undefined
+  );
   const { data: childrenTasks = [] } = useChildrenTasks(attempts[0]?.id);
 
   // Initialize edit state when task changes
@@ -249,7 +251,9 @@ const TaskPanel = ({ task }: TaskPanelProps) => {
                     <th colSpan={2}>
                       <div className="w-full flex text-left">
                         <span className="flex-1">
-                          {parentTask ? 'Related Tasks' : `Subtasks (${childrenTasks.length})`}
+                          {parentTask
+                            ? 'Related Tasks'
+                            : `Subtasks (${childrenTasks.length})`}
                         </span>
                       </div>
                     </th>

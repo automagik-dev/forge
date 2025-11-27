@@ -117,19 +117,33 @@ if (posthogKey && posthogHost) {
       // Mask sensitive data in network requests
       maskCapturedNetworkRequestFn: (request) => {
         // Redact sensitive fields in request/response bodies
-        const sensitiveFields = ['email', 'password', 'token', 'apiKey', 'api_key', 'secret', 'authorization'];
+        const sensitiveFields = [
+          'email',
+          'password',
+          'token',
+          'apiKey',
+          'api_key',
+          'secret',
+          'authorization',
+        ];
 
         if (request.requestBody) {
-          sensitiveFields.forEach(field => {
+          sensitiveFields.forEach((field) => {
             const regex = new RegExp(`"${field}"\\s*:\\s*"[^"]*"`, 'gi');
-            request.requestBody = request.requestBody?.replace(regex, `"${field}": "[REDACTED]"`);
+            request.requestBody = request.requestBody?.replace(
+              regex,
+              `"${field}": "[REDACTED]"`
+            );
           });
         }
 
         if (request.responseBody) {
-          sensitiveFields.forEach(field => {
+          sensitiveFields.forEach((field) => {
             const regex = new RegExp(`"${field}"\\s*:\\s*"[^"]*"`, 'gi');
-            request.responseBody = request.responseBody?.replace(regex, `"${field}": "[REDACTED]"`);
+            request.responseBody = request.responseBody?.replace(
+              regex,
+              `"${field}": "[REDACTED]"`
+            );
           });
         }
 
@@ -152,7 +166,7 @@ if (posthogKey && posthogHost) {
 
       // Remove direct PII fields
       const piiFields = ['email', 'username', 'ip', 'name', '$ip'];
-      piiFields.forEach(field => {
+      piiFields.forEach((field) => {
         delete sanitized[field];
         // Also remove nested fields like $set.email
         if (sanitized.$set) {
@@ -196,7 +210,10 @@ if ('serviceWorker' in navigator && import.meta.env.MODE === 'production') {
     navigator.serviceWorker
       .register('/service-worker.js')
       .then((registration) => {
-        console.log('[PWA] Service Worker registered successfully:', registration);
+        console.log(
+          '[PWA] Service Worker registered successfully:',
+          registration
+        );
 
         // Listen for updates to the service worker
         registration.addEventListener('updatefound', () => {
@@ -204,12 +221,17 @@ if ('serviceWorker' in navigator && import.meta.env.MODE === 'production') {
           if (!newWorker) return;
 
           newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            if (
+              newWorker.state === 'installed' &&
+              navigator.serviceWorker.controller
+            ) {
               // New service worker is ready and there's an old one
               console.log('[PWA] New service worker update available');
               // Notify user about update (optional - can show a toast/banner)
               window.dispatchEvent(
-                new CustomEvent('sw-update-available', { detail: { registration } })
+                new CustomEvent('sw-update-available', {
+                  detail: { registration },
+                })
               );
             }
           });

@@ -1,6 +1,9 @@
 import type { ExecutorProfileId } from 'shared/types';
 import { cn } from '@/lib/utils';
-import { ProviderIcon, getProviderName } from '@/components/providers/ProviderIcon';
+import {
+  ProviderIcon,
+  getProviderName,
+} from '@/components/providers/ProviderIcon';
 
 interface ProfileVariantBadgeProps {
   profileVariant: ExecutorProfileId | null;
@@ -27,7 +30,10 @@ export function ProfileVariantBadge({
       )}
     >
       {showIcon && (
-        <ProviderIcon executor={profileVariant.executor} className="h-3.5 w-3.5" />
+        <ProviderIcon
+          executor={profileVariant.executor}
+          className="h-3.5 w-3.5"
+        />
       )}
       <span>{label}</span>
       {profileVariant.variant && (

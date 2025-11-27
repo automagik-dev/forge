@@ -10,7 +10,9 @@ import type { TaskAttempt } from 'shared/types';
  */
 function useDocumentVisible(): boolean {
   const [visible, setVisible] = useState(() =>
-    typeof document !== 'undefined' ? document.visibilityState === 'visible' : true
+    typeof document !== 'undefined'
+      ? document.visibilityState === 'visible'
+      : true
   );
 
   useEffect(() => {
@@ -22,7 +24,10 @@ function useDocumentVisible(): boolean {
   return visible;
 }
 
-export function useBranchStatus(attemptId?: string, attempt?: TaskAttempt | null) {
+export function useBranchStatus(
+  attemptId?: string,
+  attempt?: TaskAttempt | null
+) {
   // Only fetch branch status if attempt has a container_ref
   // (Master Genie and other no-worktree attempts won't have containers initially)
   const hasContainer = attempt?.container_ref != null;

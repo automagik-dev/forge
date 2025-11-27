@@ -34,8 +34,10 @@ export function useProfiles(): UseProfilesReturn {
     mutationFn: (content: string) => profilesApi.save(content),
     onSuccess: (_, content) => {
       // Optimistically update cache with new content
-      queryClient.setQueryData(queryKeys.profiles.all, (old: { content?: string } | undefined) =>
-        old ? { ...old, content } : old
+      queryClient.setQueryData(
+        queryKeys.profiles.all,
+        (old: { content?: string } | undefined) =>
+          old ? { ...old, content } : old
       );
     },
   });

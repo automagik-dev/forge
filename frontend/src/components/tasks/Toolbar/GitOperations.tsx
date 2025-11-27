@@ -55,13 +55,10 @@ function GitOperations({
 
   // Git operation hooks
   const rebaseMutation = useRebase(selectedAttempt.id, projectId);
-  const mergeMutation = useMerge(
-    selectedAttempt.id,
-    () => {
-      // Navigate to kanban view on successful merge
-      navigate(`/projects/${projectId}/tasks`);
-    }
-  );
+  const mergeMutation = useMerge(selectedAttempt.id, () => {
+    // Navigate to kanban view on successful merge
+    navigate(`/projects/${projectId}/tasks`);
+  });
   const pushMutation = usePush(selectedAttempt.id);
 
   // Git status calculations
@@ -76,7 +73,7 @@ function GitOperations({
   const [rebasing, setRebasing] = useState(false);
   const [mergeSuccess, setMergeSuccess] = useState(false);
   const [pushSuccess, setPushSuccess] = useState(false);
-  
+
   const [showDetailedTooltips, setShowDetailedTooltips] = useState<{
     merge: boolean;
     pr: boolean;
@@ -89,17 +86,20 @@ function GitOperations({
 
   const conflictsLikely = useMemo(() => {
     if (!branchStatus) return false;
-    
+
     const hasConflictedFiles = (branchStatus.conflicted_files?.length ?? 0) > 0;
-    const hasBothModifications = 
-      (branchStatus.commits_ahead ?? 0) > 0 && 
+    const hasBothModifications =
+      (branchStatus.commits_ahead ?? 0) > 0 &&
       (branchStatus.commits_behind ?? 0) > 0;
-    
+
     return hasConflictedFiles || hasBothModifications;
   }, [branchStatus]);
 
   const conflictedFilesList = useMemo(() => {
-    if (!branchStatus?.conflicted_files || branchStatus.conflicted_files.length === 0) {
+    if (
+      !branchStatus?.conflicted_files ||
+      branchStatus.conflicted_files.length === 0
+    ) {
       return [];
     }
     return branchStatus.conflicted_files;
@@ -168,11 +168,23 @@ function GitOperations({
     if (merging) return 'Merge in progress';
     if (hasConflictsCalculated) return 'Merge conflicts present';
     if (isAttemptRunning) return 'Attempt is still running';
-    if ((branchStatus?.commits_ahead ?? 0) === 0 && !pushSuccess && !mergeSuccess) {
+    if (
+      (branchStatus?.commits_ahead ?? 0) === 0 &&
+      !pushSuccess &&
+      !mergeSuccess
+    ) {
       return 'No commits ahead of base branch';
     }
     return null;
-  }, [mergeInfo.hasOpenPR, merging, hasConflictsCalculated, isAttemptRunning, branchStatus?.commits_ahead, pushSuccess, mergeSuccess]);
+  }, [
+    mergeInfo.hasOpenPR,
+    merging,
+    hasConflictsCalculated,
+    isAttemptRunning,
+    branchStatus?.commits_ahead,
+    pushSuccess,
+    mergeSuccess,
+  ]);
 
   const getPRDisabledReason = useMemo(() => {
     if (pushing) return 'Push in progress';
@@ -190,7 +202,16 @@ function GitOperations({
       return 'No commits to create PR';
     }
     return null;
-  }, [pushing, isAttemptRunning, hasConflictsCalculated, mergeInfo.hasOpenPR, branchStatus?.remote_commits_ahead, branchStatus?.commits_ahead, pushSuccess, mergeSuccess]);
+  }, [
+    pushing,
+    isAttemptRunning,
+    hasConflictsCalculated,
+    mergeInfo.hasOpenPR,
+    branchStatus?.remote_commits_ahead,
+    branchStatus?.commits_ahead,
+    pushSuccess,
+    mergeSuccess,
+  ]);
 
   const getRebaseDisabledReason = useMemo(() => {
     if (rebasing) return 'Rebase in progress';
@@ -200,7 +221,12 @@ function GitOperations({
       return 'Branch is already up-to-date with base branch';
     }
     return null;
-  }, [rebasing, isAttemptRunning, hasConflictsCalculated, branchStatus?.commits_behind]);
+  }, [
+    rebasing,
+    isAttemptRunning,
+    hasConflictsCalculated,
+    branchStatus?.commits_behind,
+  ]);
 
   const handleMergeClick = async () => {
     // Directly perform merge without checking branch status
@@ -356,7 +382,10 @@ function GitOperations({
                   className="h-3 w-3 opacity-50 hover:opacity-100 transition-opacity"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setShowDetailedTooltips((prev) => ({ ...prev, merge: !prev.merge }));
+                    setShowDetailedTooltips((prev) => ({
+                      ...prev,
+                      merge: !prev.merge,
+                    }));
                   }}
                 />
               )}
@@ -384,7 +413,7 @@ function GitOperations({
     const simpleTooltip = isCreatingPR
       ? t('git.tooltips.createPr.simple')
       : t('git.tooltips.push.simple');
-    
+
     const detailedTooltip = isCreatingPR ? (
       <div className="space-y-1.5">
         <p className="font-medium">{t('git.tooltips.createPr.title')}</p>
@@ -447,7 +476,10 @@ function GitOperations({
                   className="h-3 w-3 opacity-50 hover:opacity-100 transition-opacity"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setShowDetailedTooltips((prev) => ({ ...prev, pr: !prev.pr }));
+                    setShowDetailedTooltips((prev) => ({
+                      ...prev,
+                      pr: !prev.pr,
+                    }));
                   }}
                 />
               )}
@@ -514,7 +546,10 @@ function GitOperations({
                   className="h-3 w-3 opacity-50 hover:opacity-100 transition-opacity"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setShowDetailedTooltips((prev) => ({ ...prev, rebase: !prev.rebase }));
+                    setShowDetailedTooltips((prev) => ({
+                      ...prev,
+                      rebase: !prev.rebase,
+                    }));
                   }}
                 />
               )}

@@ -21,7 +21,11 @@ export function useAttemptCreation({
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: ({ profile, baseBranch, useWorktree = true }: CreateAttemptArgs) =>
+    mutationFn: ({
+      profile,
+      baseBranch,
+      useWorktree = true,
+    }: CreateAttemptArgs) =>
       attemptsApi.create({
         task_id: taskId,
         executor_profile_id: profile,

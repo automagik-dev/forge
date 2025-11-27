@@ -30,7 +30,12 @@ export interface HeartbeatEvent {
 // Navigation Events
 // ============================================================================
 
-export type NavigationMethod = 'sidebar' | 'breadcrumb' | 'direct_url' | 'back_button' | 'link';
+export type NavigationMethod =
+  | 'sidebar'
+  | 'breadcrumb'
+  | 'direct_url'
+  | 'back_button'
+  | 'link';
 
 export interface PageVisitedEvent {
   page: 'projects' | 'tasks' | 'settings' | 'logs' | 'home';
@@ -65,7 +70,10 @@ export interface DevServerPreviewInteractedEvent {
 // ============================================================================
 
 export type ViewMode = 'chat' | 'preview' | 'diffs' | 'kanban' | null;
-export type ViewModeChangeTrigger = 'url_param' | 'keyboard_shortcut' | 'ui_button';
+export type ViewModeChangeTrigger =
+  | 'url_param'
+  | 'keyboard_shortcut'
+  | 'ui_button';
 
 export interface ViewModeSwitchedEvent {
   from_mode: ViewMode;
@@ -84,7 +92,11 @@ export interface ViewModeSessionEvent {
 // Task & Parent/Child Events
 // ============================================================================
 
-export type TaskCreationEntryPoint = 'task_form_dialog' | 'relationship_viewer' | 'breadcrumb' | 'badges';
+export type TaskCreationEntryPoint =
+  | 'task_form_dialog'
+  | 'relationship_viewer'
+  | 'breadcrumb'
+  | 'badges';
 
 export interface ChildTaskCreatedEvent {
   parent_task_id: string; // Anonymous UUID
@@ -96,7 +108,10 @@ export interface ChildTaskCreatedEvent {
 export interface ParentTaskNavigatedEvent {
   from_task_id: string; // Anonymous UUID
   to_task_id: string; // Anonymous UUID
-  navigation_entry_point: 'breadcrumb' | 'relationship_viewer' | 'relationship_badges';
+  navigation_entry_point:
+    | 'breadcrumb'
+    | 'relationship_viewer'
+    | 'relationship_badges';
   task_depth: number;
 }
 
@@ -110,7 +125,12 @@ export interface TaskRelationshipViewerOpenedEvent {
 // Kanban Events
 // ============================================================================
 
-export type TaskStatus = 'todo' | 'inprogress' | 'inreview' | 'done' | 'cancelled';
+export type TaskStatus =
+  | 'todo'
+  | 'inprogress'
+  | 'inreview'
+  | 'done'
+  | 'cancelled';
 
 export interface KanbanTaskDraggedEvent {
   from_status: TaskStatus;
@@ -139,7 +159,12 @@ export type KeyboardShortcut =
   | 'toggle_sidebar'
   | 'search';
 
-export type KeyboardContext = 'task_list' | 'task_detail' | 'kanban' | 'preview' | 'settings';
+export type KeyboardContext =
+  | 'task_list'
+  | 'task_detail'
+  | 'kanban'
+  | 'preview'
+  | 'settings';
 
 export interface KeyboardShortcutUsedEvent {
   shortcut: KeyboardShortcut;
@@ -223,7 +248,11 @@ export interface TokenUsageEvent {
 // GitHub Integration Events
 // ============================================================================
 
-export type GitHubFeature = 'pr_created' | 'branch_switched' | 'rebase' | 'pr_opened_in_github';
+export type GitHubFeature =
+  | 'pr_created'
+  | 'branch_switched'
+  | 'rebase'
+  | 'pr_opened_in_github';
 export type GitHubAuthMethod = 'oauth' | 'pat';
 
 export interface GitHubFeatureUsedEvent {
@@ -250,12 +279,18 @@ export type AnalyticsEvent =
   | { event: 'page_visited'; properties: PageVisitedEvent }
   | { event: 'dev_server_started'; properties: DevServerStartedEvent }
   | { event: 'dev_server_stopped'; properties: DevServerStoppedEvent }
-  | { event: 'dev_server_preview_interacted'; properties: DevServerPreviewInteractedEvent }
+  | {
+      event: 'dev_server_preview_interacted';
+      properties: DevServerPreviewInteractedEvent;
+    }
   | { event: 'view_mode_switched'; properties: ViewModeSwitchedEvent }
   | { event: 'view_mode_session'; properties: ViewModeSessionEvent }
   | { event: 'child_task_created'; properties: ChildTaskCreatedEvent }
   | { event: 'parent_task_navigated'; properties: ParentTaskNavigatedEvent }
-  | { event: 'task_relationship_viewer_opened'; properties: TaskRelationshipViewerOpenedEvent }
+  | {
+      event: 'task_relationship_viewer_opened';
+      properties: TaskRelationshipViewerOpenedEvent;
+    }
   | { event: 'kanban_task_dragged'; properties: KanbanTaskDraggedEvent }
   | { event: 'kanban_mode_entered'; properties: KanbanModeEnteredEvent }
   | { event: 'keyboard_shortcut_used'; properties: KeyboardShortcutUsedEvent }

@@ -71,7 +71,9 @@ function formatAbsoluteDate(date: Date): string {
  * @param tasks - Array of tasks with attempt status
  * @returns Most recent activity date, or null if no tasks
  */
-export function getLastActivityDate(tasks: TaskWithAttemptStatus[]): Date | null {
+export function getLastActivityDate(
+  tasks: TaskWithAttemptStatus[]
+): Date | null {
   if (!tasks || tasks.length === 0) {
     return null;
   }

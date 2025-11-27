@@ -5,7 +5,10 @@ import { useAttemptExecution } from '@/hooks/useAttemptExecution';
 import { queryKeys } from '@/lib/queryKeys';
 import type { ExecutionProcess } from 'shared/types';
 import { usePostHog } from 'posthog-js/react';
-import type { DevServerStartedEvent, DevServerStoppedEvent } from '@/types/analytics';
+import type {
+  DevServerStartedEvent,
+  DevServerStoppedEvent,
+} from '@/types/analytics';
 
 interface UseDevServerOptions {
   onStartSuccess?: () => void;
@@ -61,7 +64,9 @@ export function useDevServer(
         const usageCount = devServerUsageCountRef.current;
         // Check if there are any failed processes in this attempt (indicates previous failure)
         const hasFailedBefore = attemptData.processes.some(
-          (p) => p.status === 'failed' || (p.exit_code !== null && p.exit_code !== BigInt(0))
+          (p) =>
+            p.status === 'failed' ||
+            (p.exit_code !== null && p.exit_code !== BigInt(0))
         );
 
         const devServerStartedEvent: DevServerStartedEvent = {
@@ -75,7 +80,10 @@ export function useDevServer(
 
         // Update usage count
         devServerUsageCountRef.current = usageCount + 1;
-        localStorage.setItem('dev_server_usage_count', (usageCount + 1).toString());
+        localStorage.setItem(
+          'dev_server_usage_count',
+          (usageCount + 1).toString()
+        );
         devServerStartTimeRef.current = Date.now();
       }
 
@@ -108,7 +116,9 @@ export function useDevServer(
 
       // Track dev_server_stopped event
       if (attemptId && devServerStartTimeRef.current) {
-        const duration = Math.floor((Date.now() - devServerStartTimeRef.current) / 1000);
+        const duration = Math.floor(
+          (Date.now() - devServerStartTimeRef.current) / 1000
+        );
         const devServerStoppedEvent: DevServerStoppedEvent = {
           attempt_id: attemptId,
           duration_seconds: duration,

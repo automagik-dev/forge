@@ -47,7 +47,10 @@ export function FollowUpEditorCard({
         onKeyDown={onKeyDown}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        className={cn('flex-1 min-h-[40px] max-h-[40vh] resize-none', textareaClassName)}
+        className={cn(
+          'flex-1 min-h-[40px] max-h-[40vh] resize-none',
+          textareaClassName
+        )}
         disabled={disabled}
         projectId={projectId}
         rows={1}

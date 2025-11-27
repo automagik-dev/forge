@@ -80,11 +80,16 @@ export class ClickToComponentListener {
         return;
       }
 
-      console.log('[ClickToComponentListener] Received message from iframe:', data);
+      console.log(
+        '[ClickToComponentListener] Received message from iframe:',
+        data
+      );
 
       switch (data.type) {
         case 'ready':
-          console.log('[ClickToComponentListener] Received ready message, sending enable-button');
+          console.log(
+            '[ClickToComponentListener] Received ready message, sending enable-button'
+          );
           if (event.source) {
             const enableMsg: ClickToComponentEnableMessage = {
               source: 'click-to-component',
@@ -92,7 +97,9 @@ export class ClickToComponentListener {
               type: 'enable-button',
             };
             (event.source as Window).postMessage(enableMsg, '*');
-            console.log('[ClickToComponentListener] enable-button message sent to iframe');
+            console.log(
+              '[ClickToComponentListener] enable-button message sent to iframe'
+            );
           }
           this.handlers.onReady?.();
           break;

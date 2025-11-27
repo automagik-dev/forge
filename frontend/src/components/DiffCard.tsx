@@ -22,7 +22,11 @@ import {
 import '@/styles/diff-style-overrides.css';
 import { attemptsApi } from '@/lib/api';
 import type { TaskAttempt } from 'shared/types';
-import { useReview, type ReviewDraft, type ReviewComment } from '@/contexts/ReviewProvider';
+import {
+  useReview,
+  type ReviewDraft,
+  type ReviewComment,
+} from '@/contexts/ReviewProvider';
 import { CommentWidgetLine } from '@/components/diff/CommentWidgetLine';
 import { ReviewCommentRenderer } from '@/components/diff/ReviewCommentRenderer';
 import {
@@ -180,7 +184,11 @@ export default function DiffCard({
     setDraft(widgetKey, draft);
   };
 
-  const renderWidgetLine = (props: { side: SplitSide; lineNumber: number; onClose: () => void }) => {
+  const renderWidgetLine = (props: {
+    side: SplitSide;
+    lineNumber: number;
+    onClose: () => void;
+  }) => {
     const widgetKey = `${filePath}-${props.side}-${props.lineNumber}`;
     const draft = drafts[widgetKey];
     if (!draft) return null;

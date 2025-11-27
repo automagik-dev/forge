@@ -60,9 +60,7 @@ export function SettingsLayout() {
       <div className="container mx-auto px-4 py-8">
         {/* Header with title and close button */}
         <div className="flex items-center justify-between sticky top-0 bg-background z-10 py-4 -mx-4 px-4">
-          <H1 className="text-2xl">
-            {t('settings.layout.nav.title')}
-          </H1>
+          <H1 className="text-2xl">{t('settings.layout.nav.title')}</H1>
           <Button
             variant="ghost"
             onClick={handleBack}
@@ -71,7 +69,9 @@ export function SettingsLayout() {
             {isMobile ? (
               <>
                 <ArrowLeft className="h-4 w-4" />
-                <span className="text-xs font-medium">{t('common:mobile.navigation.back')}</span>
+                <span className="text-xs font-medium">
+                  {t('common:mobile.navigation.back')}
+                </span>
               </>
             ) : (
               <>

@@ -20,7 +20,13 @@ export const usePinnedTodos = (
 
     for (const entry of entries) {
       if (entry.type === 'NORMALIZED_ENTRY' && entry.content) {
-        const normalizedEntry = entry.content as { entry_type?: { type?: string; action_type?: { action?: string; todos?: TodoItem[] } }; timestamp?: string };
+        const normalizedEntry = entry.content as {
+          entry_type?: {
+            type?: string;
+            action_type?: { action?: string; todos?: TodoItem[] };
+          };
+          timestamp?: string;
+        };
 
         if (
           normalizedEntry.entry_type?.type === 'tool_use' &&

@@ -38,19 +38,27 @@ export type MarkdownTextProps = MarkdownOverrideProps<HTMLElement>;
 export type MarkdownHeadingProps = MarkdownOverrideProps<HTMLHeadingElement>;
 
 // List props (ul, ol)
-export type MarkdownListProps = MarkdownOverrideProps<HTMLUListElement | HTMLOListElement>;
+export type MarkdownListProps = MarkdownOverrideProps<
+  HTMLUListElement | HTMLOListElement
+>;
 
 // List item props
 export type MarkdownListItemProps = MarkdownOverrideProps<HTMLLIElement>;
 
 // Table props
 export type MarkdownTableProps = MarkdownOverrideProps<HTMLTableElement>;
-export type MarkdownTableHeadProps = MarkdownOverrideProps<HTMLTableSectionElement>;
-export type MarkdownTableBodyProps = MarkdownOverrideProps<HTMLTableSectionElement>;
+export type MarkdownTableHeadProps =
+  MarkdownOverrideProps<HTMLTableSectionElement>;
+export type MarkdownTableBodyProps =
+  MarkdownOverrideProps<HTMLTableSectionElement>;
 export type MarkdownTableRowProps = MarkdownOverrideProps<HTMLTableRowElement>;
-export type MarkdownTableCellProps = MarkdownOverrideProps<HTMLTableCellElement>;
+export type MarkdownTableCellProps =
+  MarkdownOverrideProps<HTMLTableCellElement>;
 
 // Block elements
 export type MarkdownBlockquoteProps = MarkdownOverrideProps<HTMLQuoteElement>;
 export type MarkdownDivProps = MarkdownOverrideProps<HTMLDivElement>;
-export type MarkdownHrProps = Omit<MarkdownOverrideProps<HTMLHRElement>, 'children'>;
+export type MarkdownHrProps = Omit<
+  MarkdownOverrideProps<HTMLHRElement>,
+  'children'
+>;

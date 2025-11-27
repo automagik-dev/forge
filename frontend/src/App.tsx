@@ -9,7 +9,11 @@ import ReleaseNotesPage from '@/pages/release-notes';
 import { ResponsiveLayout } from '@/components/layout/ResponsiveLayout';
 import { Footer } from '@/components/layout/Footer';
 import { usePostHog } from 'posthog-js/react';
-import type { SessionStartedEvent, SessionEndedEvent, HeartbeatEvent } from '@/types/analytics';
+import type {
+  SessionStartedEvent,
+  SessionEndedEvent,
+  HeartbeatEvent,
+} from '@/types/analytics';
 import { usePageTracking } from '@/hooks/usePageTracking';
 import { useNamestexerSessionTracking } from '@/hooks/useNamestexerSessionTracking';
 
@@ -51,7 +55,9 @@ function AppContent() {
     useUserSystem();
   const posthog = usePostHog();
   const sessionStartTimeRef = useRef<number>(Date.now());
-  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
   const eventCountRef = useRef<number>(0);
 
   // Track page navigation
@@ -65,7 +71,8 @@ function AppContent() {
     if (!posthog || !analyticsUserId) return;
 
     const userOptedIn = config?.analytics_enabled !== false;
-    const isNamestexer = config?.github?.primary_email?.endsWith('@namastex.ai');
+    const isNamestexer =
+      config?.github?.primary_email?.endsWith('@namastex.ai');
     const contactEmailOptIn = config?.contact_email_opt_in === true;
     const contactUsernameOptIn = config?.contact_username_opt_in === true;
 
@@ -89,7 +96,9 @@ function AppContent() {
           identifyProperties.contact_username = config.github.username;
         }
         identifyProperties.tracking_tier =
-          contactEmailOptIn || contactUsernameOptIn ? 'community_contact' : 'community_anonymous';
+          contactEmailOptIn || contactUsernameOptIn
+            ? 'community_contact'
+            : 'community_anonymous';
       }
 
       // Use GitHub username as distinct_id ONLY if:
@@ -97,28 +106,50 @@ function AppContent() {
       // 2. User explicitly consented to share username (contactUsernameOptIn)
       // Otherwise use persistent anonymous UUID for consistent cross-session tracking
       const shouldUseGithubUsername = isNamestexer || contactUsernameOptIn;
-      const distinctId = (shouldUseGithubUsername && config?.github?.username) || analyticsUserId;
+      const distinctId =
+        (shouldUseGithubUsername && config?.github?.username) ||
+        analyticsUserId;
       posthog.identify(distinctId, identifyProperties);
-      console.log('[Analytics] User identified as:', distinctId, '(GitHub username:', shouldUseGithubUsername, ')');
+      console.log(
+        '[Analytics] User identified as:',
+        distinctId,
+        '(GitHub username:',
+        shouldUseGithubUsername,
+        ')'
+      );
     } else {
       posthog.opt_out_capturing();
       console.log('[Analytics] Analytics disabled by user preference');
     }
-  }, [config?.analytics_enabled, config?.contact_email_opt_in, config?.contact_username_opt_in, config?.github?.primary_email, config?.github?.username, analyticsUserId, posthog]);
+  }, [
+    config?.analytics_enabled,
+    config?.contact_email_opt_in,
+    config?.contact_username_opt_in,
+    config?.github?.primary_email,
+    config?.github?.username,
+    analyticsUserId,
+    posthog,
+  ]);
 
   // Session tracking: session_started, session_ended, and heartbeat
   useEffect(() => {
-    if (!posthog || !analyticsUserId || config?.analytics_enabled === false) return;
+    if (!posthog || !analyticsUserId || config?.analytics_enabled === false)
+      return;
 
     // Capture session_started event
     const lastSessionTime = localStorage.getItem('last_session_time');
-    const totalSessions = parseInt(localStorage.getItem('total_sessions') || '0', 10);
+    const totalSessions = parseInt(
+      localStorage.getItem('total_sessions') || '0',
+      10
+    );
     const now = Date.now();
 
     let daysSinceLastSession: number | null = null;
     if (lastSessionTime) {
       const lastTime = parseInt(lastSessionTime, 10);
-      daysSinceLastSession = Math.floor((now - lastTime) / (1000 * 60 * 60 * 24));
+      daysSinceLastSession = Math.floor(
+        (now - lastTime) / (1000 * 60 * 60 * 24)
+      );
     }
 
     const sessionStartedEvent: SessionStartedEvent = {
@@ -149,7 +180,9 @@ function AppContent() {
         clearInterval(heartbeatIntervalRef.current);
       }
 
-      const sessionDuration = Math.floor((Date.now() - sessionStartTimeRef.current) / 1000);
+      const sessionDuration = Math.floor(
+        (Date.now() - sessionStartTimeRef.current) / 1000
+      );
       const sessionEndedEvent: SessionEndedEvent = {
         session_duration_seconds: sessionDuration,
         events_captured_count: eventCountRef.current,
@@ -276,55 +309,52 @@ function AppContent() {
           <MobileNavigationProvider>
             <div className="h-screen flex flex-col bg-background">
               <SentryRoutes>
-              {/* VS Code full-page logs route (outside ResponsiveLayout for minimal UI) */}
-              <Route
-                path="/projects/:projectId/tasks/:taskId/attempts/:attemptId/full"
-                element={<FullAttemptLogsPage />}
-              />
+                {/* VS Code full-page logs route (outside ResponsiveLayout for minimal UI) */}
+                <Route
+                  path="/projects/:projectId/tasks/:taskId/attempts/:attemptId/full"
+                  element={<FullAttemptLogsPage />}
+                />
 
-              <Route element={<ResponsiveLayout />}>
-                <Route path="/" element={<Projects />} />
-                <Route path="/projects" element={<Projects />} />
-                <Route path="/projects/:projectId" element={<Projects />} />
-                <Route
-                  path="/projects/:projectId/tasks"
-                  element={<ProjectTasks />}
-                />
-                <Route path="/settings/*" element={<SettingsLayout />}>
-                  <Route index element={<Navigate to="general" replace />} />
-                  <Route path="general" element={<GeneralSettings />} />
-                  <Route path="projects" element={<ProjectSettings />} />
-                  <Route path="agents" element={<AgentSettings />} />
-                  <Route path="mcp" element={<McpSettings />} />
+                <Route element={<ResponsiveLayout />}>
+                  <Route path="/" element={<Projects />} />
+                  <Route path="/projects" element={<Projects />} />
+                  <Route path="/projects/:projectId" element={<Projects />} />
+                  <Route
+                    path="/projects/:projectId/tasks"
+                    element={<ProjectTasks />}
+                  />
+                  <Route path="/settings/*" element={<SettingsLayout />}>
+                    <Route index element={<Navigate to="general" replace />} />
+                    <Route path="general" element={<GeneralSettings />} />
+                    <Route path="projects" element={<ProjectSettings />} />
+                    <Route path="agents" element={<AgentSettings />} />
+                    <Route path="mcp" element={<McpSettings />} />
+                  </Route>
+                  <Route
+                    path="/mcp-servers"
+                    element={<Navigate to="/settings/mcp" replace />}
+                  />
+                  <Route path="/release-notes" element={<ReleaseNotesPage />} />
+                  <Route
+                    path="/projects/:projectId/tasks/:taskId"
+                    element={<ProjectTasks />}
+                  />
+                  <Route
+                    path="/projects/:projectId/tasks/:taskId/attempts/:attemptId"
+                    element={<ProjectTasks />}
+                  />
                 </Route>
-                <Route
-                  path="/mcp-servers"
-                  element={<Navigate to="/settings/mcp" replace />}
-                />
-                <Route
-                  path="/release-notes"
-                  element={<ReleaseNotesPage />}
-                />
-                <Route
-                  path="/projects/:projectId/tasks/:taskId"
-                  element={<ProjectTasks />}
-                />
-                <Route
-                  path="/projects/:projectId/tasks/:taskId/attempts/:attemptId"
-                  element={<ProjectTasks />}
-                />
-              </Route>
-            </SentryRoutes>
-            <Footer />
-          </div>
-          {/* Hide GenieMasterWidget in mobile view - use bottom nav Genie button instead */}
-          {!isMobile && (
-            <GenieMasterWidget
-              isOpen={isGenieOpen}
-              onToggle={() => setIsGenieOpen(!isGenieOpen)}
-              onClose={() => setIsGenieOpen(false)}
-            />
-          )}
+              </SentryRoutes>
+              <Footer />
+            </div>
+            {/* Hide GenieMasterWidget in mobile view - use bottom nav Genie button instead */}
+            {!isMobile && (
+              <GenieMasterWidget
+                isOpen={isGenieOpen}
+                onToggle={() => setIsGenieOpen(!isGenieOpen)}
+                onClose={() => setIsGenieOpen(false)}
+              />
+            )}
           </MobileNavigationProvider>
         </SearchProvider>
       </ThemeProvider>
@@ -346,7 +376,19 @@ function App() {
         <ClickedElementsProvider>
           <ProjectProvider>
             {/* Keep 'global' active at all times so the hotkeys scope stack is never empty */}
-            <HotkeysProvider initiallyActiveScopes={['global', 'kanban', 'dialog', 'projects', 'settings', 'edit-comment', 'approvals', 'follow-up', 'follow-up-ready']}>
+            <HotkeysProvider
+              initiallyActiveScopes={[
+                'global',
+                'kanban',
+                'dialog',
+                'projects',
+                'settings',
+                'edit-comment',
+                'approvals',
+                'follow-up',
+                'follow-up-ready',
+              ]}
+            >
               <SubGenieProvider>
                 <NiceModal.Provider>
                   <AppContent />

@@ -30,8 +30,8 @@ export const mobileTheme = {
     bottomNav: 'var(--mobile-bottom-nav-height)', // defined in index.css
     inputBar: 'var(--mobile-input-bar-height)',
     fab: 'var(--touch-target-comfortable)',
-    drawer: 'auto',      // Drawer height (auto-calculated)
-    sheet: 'auto',       // Bottom sheet height (snap-based)
+    drawer: 'auto', // Drawer height (auto-calculated)
+    sheet: 'auto', // Bottom sheet height (snap-based)
   },
 
   /**
@@ -50,14 +50,14 @@ export const mobileTheme = {
    * CSS Variables: --z-mobile-* (defined in index.css)
    */
   zIndex: {
-    content: 1,         // var(--z-mobile-content)
-    header: 10,         // var(--z-mobile-header)
-    inputBar: 15,       // var(--z-mobile-input-bar) - NEW
-    bottomNav: 20,      // var(--z-mobile-bottom-nav)
-    fab: 30,            // var(--z-mobile-fab)
-    sheet: 40,          // var(--z-mobile-sheet)
-    modal: 50,          // var(--z-mobile-modal)
-    toast: 60,          // var(--z-mobile-toast)
+    content: 1, // var(--z-mobile-content)
+    header: 10, // var(--z-mobile-header)
+    inputBar: 15, // var(--z-mobile-input-bar) - NEW
+    bottomNav: 20, // var(--z-mobile-bottom-nav)
+    fab: 30, // var(--z-mobile-fab)
+    sheet: 40, // var(--z-mobile-sheet)
+    modal: 50, // var(--z-mobile-modal)
+    toast: 60, // var(--z-mobile-toast)
   },
 
   /**
@@ -65,9 +65,9 @@ export const mobileTheme = {
    * Values in pixels
    */
   breakpoints: {
-    mobile: 768,        // max-width for mobile (< 768px)
-    tablet: 768,        // min-width for tablet (>= 768px)
-    desktop: 1024,      // min-width for desktop (>= 1024px)
+    mobile: 768, // max-width for mobile (< 768px)
+    tablet: 768, // min-width for tablet (>= 768px)
+    desktop: 1024, // min-width for desktop (>= 1024px)
   },
 
   /**
@@ -75,9 +75,9 @@ export const mobileTheme = {
    * Values in milliseconds
    */
   animation: {
-    fast: 150,          // Quick transitions (150ms)
-    normal: 250,        // Standard transitions (250ms)
-    slow: 350,          // Slow transitions (350ms)
+    fast: 150, // Quick transitions (150ms)
+    normal: 250, // Standard transitions (250ms)
+    slow: 350, // Slow transitions (350ms)
   },
 
   /**
@@ -138,7 +138,9 @@ export function isMobileViewport(): boolean {
  * @param key - Spacing key
  * @returns Spacing value with 'px' unit (or 'auto')
  */
-export function getMobileSpacing(key: keyof typeof mobileTheme.spacing): string {
+export function getMobileSpacing(
+  key: keyof typeof mobileTheme.spacing
+): string {
   const value = mobileTheme.spacing[key];
   return typeof value === 'number' ? `${value}px` : value;
 }

@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { stripAnsi } from 'fancy-ansi';
 
 export type DevserverBuildState =
-  | 'building'      // Actively compiling/building
-  | 'error'         // Build errors detected
-  | 'idle'          // No recent activity, might be stuck
-  | 'unknown';      // Not enough information yet
+  | 'building' // Actively compiling/building
+  | 'error' // Build errors detected
+  | 'idle' // No recent activity, might be stuck
+  | 'unknown'; // Not enough information yet
 
 const buildIndicators = [
   /compiling/i,
@@ -80,17 +80,17 @@ export const useDevserverBuildState = (
       const cleaned = stripAnsi(log.content).toLowerCase();
 
       // Check for build activity
-      if (buildIndicators.some(pattern => pattern.test(cleaned))) {
+      if (buildIndicators.some((pattern) => pattern.test(cleaned))) {
         hasRecentBuildActivity = true;
       }
 
       // Check for errors
-      if (errorIndicators.some(pattern => pattern.test(cleaned))) {
+      if (errorIndicators.some((pattern) => pattern.test(cleaned))) {
         hasErrors = true;
       }
 
       // Check for success
-      if (successIndicators.some(pattern => pattern.test(cleaned))) {
+      if (successIndicators.some((pattern) => pattern.test(cleaned))) {
         hasSuccess = true;
       }
     });

@@ -20,12 +20,12 @@ export default function ReleaseNotesPage() {
   useEffect(() => {
     // Fetch from static releases.json to avoid GitHub API rate limits
     fetch('/releases.json')
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         setReleases(data);
         setLoading(false);
       })
-      .catch(err => {
+      .catch((err) => {
         setError(err.message);
         setLoading(false);
       });
@@ -36,7 +36,9 @@ export default function ReleaseNotesPage() {
       <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading release notes...</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            Loading release notes...
+          </p>
         </div>
       </div>
     );
@@ -56,16 +58,14 @@ export default function ReleaseNotesPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <H1 className="text-gray-900 dark:text-white mb-2">
-            Release Notes
-          </H1>
+          <H1 className="text-gray-900 dark:text-white mb-2">Release Notes</H1>
           <p className="text-gray-600 dark:text-gray-400">
             Latest updates and improvements to Automagik Forge
           </p>
         </div>
 
         <div className="space-y-6">
-          {releases.map(release => (
+          {releases.map((release) => (
             <div
               key={release.id}
               className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700"
@@ -89,7 +89,9 @@ export default function ReleaseNotesPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      <span>{new Date(release.published_at).toLocaleDateString()}</span>
+                      <span>
+                        {new Date(release.published_at).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -112,10 +114,13 @@ export default function ReleaseNotesPage() {
                       .replace(/#{1,6}\s+(.+)/g, '<strong>$1</strong>')
                       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                       .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                      .replace(/`(.+?)`/g, '<code class="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-sm">$1</code>')
+                      .replace(
+                        /`(.+?)`/g,
+                        '<code class="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-sm">$1</code>'
+                      )
                       .replace(/\n\n/g, '</p><p class="mt-2">')
                       .replace(/^/, '<p>')
-                      .replace(/$/, '</p>')
+                      .replace(/$/, '</p>'),
                   }}
                 />
               </div>

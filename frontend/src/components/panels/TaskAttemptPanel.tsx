@@ -55,26 +55,38 @@ const TaskAttemptPanel = ({
               <div className="flex-1 flex items-center justify-center p-6">
                 <div className="max-w-2xl w-full space-y-6">
                   <div className="space-y-3 text-center">
-                    <h3 className="text-2xl font-semibold">🧞 Hey there, I'm Genie</h3>
-                    <p className="text-lg font-medium">Your personal AI companion. Lives on your machine. Evolves with you.</p>
+                    <h3 className="text-2xl font-semibold">
+                      🧞 Hey there, I'm Genie
+                    </h3>
+                    <p className="text-lg font-medium">
+                      Your personal AI companion. Lives on your machine. Evolves
+                      with you.
+                    </p>
                   </div>
 
                   <p className="text-sm text-muted-foreground text-center px-4">
-                    I'm experimental technology—still learning, still growing. Your feedback directly shapes how I improve.
+                    I'm experimental technology—still learning, still growing.
+                    Your feedback directly shapes how I improve.
                   </p>
 
                   <div className="grid gap-6 md:grid-cols-2 pt-2">
                     <div className="space-y-3">
-                      <h4 className="font-semibold text-base">Understanding your world</h4>
+                      <h4 className="font-semibold text-base">
+                        Understanding your world
+                      </h4>
                       <ul className="text-sm text-muted-foreground space-y-2">
                         <li>• Show you around your project</li>
-                        <li>• Explain how I work (agents, spells, workflows)</li>
+                        <li>
+                          • Explain how I work (agents, spells, workflows)
+                        </li>
                         <li>• Answer questions about what's where and why</li>
                       </ul>
                     </div>
 
                     <div className="space-y-3">
-                      <h4 className="font-semibold text-base">Getting things done</h4>
+                      <h4 className="font-semibold text-base">
+                        Getting things done
+                      </h4>
                       <ul className="text-sm text-muted-foreground space-y-2">
                         <li>• Help you explore problems and plan solutions</li>
                         <li>• Route work to specialized agents</li>
@@ -86,14 +98,21 @@ const TaskAttemptPanel = ({
                   <div className="space-y-3 text-center pt-6 border-t">
                     <p className="text-sm font-medium">🪄 How I work</p>
                     <p className="text-sm text-muted-foreground px-4">
-                      I'm <strong>market-agnostic</strong> (work with any AI), <strong>orchestrate in natural language</strong> (you stay in control),
-                      and <strong>built from markdown</strong> (fully transparent, no black boxes).
+                      I'm <strong>market-agnostic</strong> (work with any AI),{' '}
+                      <strong>orchestrate in natural language</strong> (you stay
+                      in control), and <strong>built from markdown</strong>{' '}
+                      (fully transparent, no black boxes).
                     </p>
                   </div>
 
                   <div className="text-center pt-6 space-y-3 border-t">
-                    <p className="text-sm text-muted-foreground px-4">⚠️ Experimental tech with some rough edges. But I'll be honest about what's working and what's not.</p>
-                    <p className="text-base font-medium">Ready when you are. Your first message will wake me up. 🪔</p>
+                    <p className="text-sm text-muted-foreground px-4">
+                      ⚠️ Experimental tech with some rough edges. But I'll be
+                      honest about what's working and what's not.
+                    </p>
+                    <p className="text-base font-medium">
+                      Ready when you are. Your first message will wake me up. 🪔
+                    </p>
                   </div>
                 </div>
               </div>
@@ -117,7 +136,9 @@ const TaskAttemptPanel = ({
 
   // Should not reach here without attempt, but guard anyway
   if (!attempt) {
-    return <div className="p-6 text-muted-foreground">No attempt data available</div>;
+    return (
+      <div className="p-6 text-muted-foreground">No attempt data available</div>
+    );
   }
 
   return (
@@ -125,7 +146,11 @@ const TaskAttemptPanel = ({
       <RetryUiProvider attemptId={attemptId}>
         {children({
           logs: (
-            <VirtualizedList key={key} attempt={attempt} task={task ?? undefined} />
+            <VirtualizedList
+              key={key}
+              attempt={attempt}
+              task={task ?? undefined}
+            />
           ),
           followUp: (
             <TaskFollowUpSection

@@ -64,8 +64,8 @@ i18n
   .init({
     resources,
     fallbackLng: {
-      'pt': ['pt-BR', 'en'],
-      'default': ['en']
+      pt: ['pt-BR', 'en'],
+      default: ['en'],
     },
     defaultNS: 'common',
     debug: import.meta.env.DEV,
@@ -108,13 +108,21 @@ export const updateLanguageFromConfig = (configLanguage: string) => {
   } else {
     // Use explicit language selection with proper mapping
     const langCode = uiLanguageToI18nCode(configLanguage);
-    console.log('[i18n] Mapped UI language', configLanguage, 'to i18n code:', langCode);
+    console.log(
+      '[i18n] Mapped UI language',
+      configLanguage,
+      'to i18n code:',
+      langCode
+    );
 
     if (langCode) {
       console.log('[i18n] Changing language to:', langCode);
       i18n.changeLanguage(langCode);
       console.log('[i18n] Current language after change:', i18n.language);
-      console.log('[i18n] Has pt-BR settings bundle:', i18n.hasResourceBundle('pt-BR', 'settings'));
+      console.log(
+        '[i18n] Has pt-BR settings bundle:',
+        i18n.hasResourceBundle('pt-BR', 'settings')
+      );
     } else {
       console.warn(
         `Unknown UI language: ${configLanguage}, falling back to 'en'`

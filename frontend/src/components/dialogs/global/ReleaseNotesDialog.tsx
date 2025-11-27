@@ -46,7 +46,9 @@ export const ReleaseNotesDialog = NiceModal.create(() => {
         setError('No stable release found');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load release notes');
+      setError(
+        err instanceof Error ? err.message : 'Failed to load release notes'
+      );
     } finally {
       setLoading(false);
     }
@@ -65,10 +67,16 @@ export const ReleaseNotesDialog = NiceModal.create(() => {
   const formatReleaseBody = (body: string) => {
     // Simple markdown-to-HTML conversion for release notes
     return body
-      .replace(/#{1,6}\s+(.+)/g, '<strong class="text-lg block mt-4 mb-2">$1</strong>')
+      .replace(
+        /#{1,6}\s+(.+)/g,
+        '<strong class="text-lg block mt-4 mb-2">$1</strong>'
+      )
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/`(.+?)`/g, '<code class="px-1.5 py-0.5 bg-muted rounded text-sm font-mono">$1</code>')
+      .replace(
+        /`(.+?)`/g,
+        '<code class="px-1.5 py-0.5 bg-muted rounded text-sm font-mono">$1</code>'
+      )
       .replace(/^- (.+)$/gm, '<li class="ml-4">$1</li>')
       .replace(/\n\n/g, '</p><p class="mt-2">');
   };
@@ -99,11 +107,13 @@ export const ReleaseNotesDialog = NiceModal.create(() => {
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
                 <p className="text-sm leading-relaxed">
-                  <strong className="text-purple-600 dark:text-purple-400">Hey there, magical developer! ✨</strong>
+                  <strong className="text-purple-600 dark:text-purple-400">
+                    Hey there, magical developer! ✨
+                  </strong>
                   <br />
-                  Your friendly neighborhood Genie here with some exciting updates!
-                  I've been working hard to make your coding experience even more automagik.
-                  Check out what's new in this release:
+                  Your friendly neighborhood Genie here with some exciting
+                  updates! I've been working hard to make your coding experience
+                  even more automagik. Check out what's new in this release:
                 </p>
               </div>
 
@@ -111,17 +121,20 @@ export const ReleaseNotesDialog = NiceModal.create(() => {
                 <div
                   className="text-sm leading-relaxed"
                   dangerouslySetInnerHTML={{
-                    __html: formatReleaseBody(release.body || 'No release notes available.')
+                    __html: formatReleaseBody(
+                      release.body || 'No release notes available.'
+                    ),
                   }}
                 />
               </div>
 
               <div className="bg-muted/50 rounded-lg p-4 text-xs text-muted-foreground">
                 <p>
-                  Released on {new Date(release.published_at).toLocaleDateString('en-US', {
+                  Released on{' '}
+                  {new Date(release.published_at).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
-                    day: 'numeric'
+                    day: 'numeric',
                   })}
                 </p>
               </div>
@@ -130,17 +143,11 @@ export const ReleaseNotesDialog = NiceModal.create(() => {
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={handleViewAllReleases}
-          >
+          <Button variant="outline" onClick={handleViewAllReleases}>
             View All Releases
           </Button>
           {release && (
-            <Button
-              variant="outline"
-              onClick={handleViewOnGitHub}
-            >
+            <Button variant="outline" onClick={handleViewOnGitHub}>
               <ExternalLink className="h-4 w-4 mr-2" />
               View on GitHub
             </Button>

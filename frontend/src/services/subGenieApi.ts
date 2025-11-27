@@ -91,7 +91,9 @@ export class SubGenieApiService {
     });
 
     if (!attemptResponse.ok) {
-      throw new Error(`Failed to start task attempt: ${attemptResponse.status}`);
+      throw new Error(
+        `Failed to start task attempt: ${attemptResponse.status}`
+      );
     }
 
     const { data: attempt } = await attemptResponse.json();
@@ -129,7 +131,9 @@ export class SubGenieApiService {
     // Fetch the task for each agent
     const tasks: Task[] = [];
     for (const agent of agents) {
-      const taskResponse = await fetch(`${this.baseUrl}/tasks/${agent.task_id}`);
+      const taskResponse = await fetch(
+        `${this.baseUrl}/tasks/${agent.task_id}`
+      );
       if (taskResponse.ok) {
         const { data: task } = await taskResponse.json();
         tasks.push(task);
@@ -169,13 +173,16 @@ export class SubGenieApiService {
     attemptId: string,
     message: string
   ): Promise<{ success: boolean; attempt_id: string }> {
-    const response = await fetch(`${this.baseUrl}/task-attempts/${attemptId}/follow-up`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt: message,
-      }),
-    });
+    const response = await fetch(
+      `${this.baseUrl}/task-attempts/${attemptId}/follow-up`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: message,
+        }),
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`Failed to send follow-up: ${response.status}`);
@@ -192,10 +199,13 @@ export class SubGenieApiService {
    * @returns API response
    */
   async stopTaskAttempt(attemptId: string): Promise<{ stopped: boolean }> {
-    const response = await fetch(`${this.baseUrl}/task-attempts/${attemptId}/stop`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const response = await fetch(
+      `${this.baseUrl}/task-attempts/${attemptId}/stop`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`Failed to stop task attempt: ${response.status}`);
@@ -272,13 +282,17 @@ export class SubGenieApiService {
 
     if (!agentResponse.ok) {
       const errorText = await agentResponse.text();
-      throw new Error(`Failed to fetch agents: ${agentResponse.status} - ${errorText.substring(0, 200)}`);
+      throw new Error(
+        `Failed to fetch agents: ${agentResponse.status} - ${errorText.substring(0, 200)}`
+      );
     }
 
     const contentType = agentResponse.headers.get('content-type');
     if (!contentType?.includes('application/json')) {
       const responseText = await agentResponse.text();
-      throw new Error(`Expected JSON response from /forge/agents, got: ${contentType}. Response: ${responseText.substring(0, 200)}`);
+      throw new Error(
+        `Expected JSON response from /forge/agents, got: ${contentType}. Response: ${responseText.substring(0, 200)}`
+      );
     }
 
     const { data: agents } = await agentResponse.json();
@@ -297,7 +311,9 @@ export class SubGenieApiService {
       });
 
       if (!createResponse.ok) {
-        throw new Error(`Failed to create Master Genie agent: ${createResponse.status}`);
+        throw new Error(
+          `Failed to create Master Genie agent: ${createResponse.status}`
+        );
       }
 
       const { data } = await createResponse.json();
@@ -307,7 +323,9 @@ export class SubGenieApiService {
     // Fetch the task
     const taskResponse = await fetch(`${this.baseUrl}/tasks/${agent.task_id}`);
     if (!taskResponse.ok) {
-      throw new Error(`Failed to fetch Master Genie task: ${taskResponse.status}`);
+      throw new Error(
+        `Failed to fetch Master Genie task: ${taskResponse.status}`
+      );
     }
     const { data: task } = await taskResponse.json();
 
@@ -317,7 +335,9 @@ export class SubGenieApiService {
     );
 
     if (!attemptsResponse.ok) {
-      throw new Error(`Failed to fetch task attempts: ${attemptsResponse.status}`);
+      throw new Error(
+        `Failed to fetch task attempts: ${attemptsResponse.status}`
+      );
     }
 
     const { data: attempts } = await attemptsResponse.json();
@@ -358,7 +378,9 @@ export class SubGenieApiService {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to create Master Genie attempt: ${response.status}`);
+      throw new Error(
+        `Failed to create Master Genie attempt: ${response.status}`
+      );
     }
 
     const { data } = await response.json();
