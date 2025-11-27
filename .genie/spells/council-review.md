@@ -180,13 +180,9 @@ The council advises [recommendation]. Proceed?
 
 Since voting is advisory (non-blocking), thresholds are informational:
 
-| Active Voters | Strong Consensus | Weak Consensus | Split |
-|---------------|------------------|----------------|-------|
-| 3 | 3/3 agree | 2/3 agree | No majority |
-| 4 | 4/4 or 3/4 agree | 2/4 agree | Even split |
-| 5 | 5/5 or 4/5 agree | 3/5 agree | No majority |
-| 6-7 | 6/7 or 5/6 agree | 4/7 agree | < 50% majority |
-| 8-10 | 8/10+ agree | 6/10 agree | < 50% majority |
+- **Strong Consensus:** >75% of voting members agree.
+- **Consensus:** >50% of voting members agree.
+- **No Consensus:** ≤50% of voting members agree (includes even splits).
 
 **User always decides** - council provides informed perspective, not binding judgment.
 
