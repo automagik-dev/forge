@@ -1,4 +1,4 @@
-.PHONY: help dev prod backend frontend ensure-frontend-stub build-frontend build test clean publish beta version npm check-cargo check-android-deps publish-automagik publish-automagik-quick service install update install-deps install-complete install-complete-no-pm2 setup-pm2 start-local stop-local restart-local service-status logs logs-follow health
+.PHONY: help dev prod backend frontend ensure-frontend-stub build-frontend build test clean publish beta version npm check-cargo check-android-deps publish-automagik publish-automagik-quick service install update uninstall install-deps install-complete install-complete-no-pm2 setup-pm2 start-local stop-local restart-local service-status logs logs-follow health
 
 # Ensure bash is used for echo -e support
 SHELL := /bin/bash
@@ -92,6 +92,7 @@ help: ## 🔨 Show this help message
 	@echo -e "  $(FONT_PURPLE)install$(FONT_RESET)         Full interactive installation (6 phases)"
 	@echo -e "  $(FONT_PURPLE)install-deps$(FONT_RESET)    Install dependencies only (no PM2/systemd)"
 	@echo -e "  $(FONT_PURPLE)update$(FONT_RESET)          Update installation (git pull + deps + restart + health)"
+	@echo -e "  $(FONT_PURPLE)uninstall$(FONT_RESET)       Remove PM2/systemd services and clean builds"
 	@echo ""
 	@echo -e "$(FONT_CYAN)🛠️  Development:$(FONT_RESET)"
 	@echo -e "  $(FONT_PURPLE)dev$(FONT_RESET)             Start dev environment (hot reload)"
@@ -331,6 +332,95 @@ update: ## 🔄 Update installation (git pull + deps + restart + health check)
 	@echo -e "  $(FONT_PURPLE)make logs$(FONT_RESET)              # View recent logs"
 	@echo -e "  $(FONT_PURPLE)make service-status$(FONT_RESET)   # Check service status"
 	@echo -e "  $(FONT_PURPLE)make health$(FONT_RESET)           # Run health check again"
+	@echo ""
+
+# ===========================================
+# 🗑️  Uninstall
+# ===========================================
+
+.PHONY: uninstall
+uninstall: ## 🗑️  Uninstall Forge (remove PM2/systemd services, clean builds)
+	$(call print_status,Starting Automagik Forge uninstall...)
+	@echo ""
+
+	# Phase 1: PM2 Service Removal
+	$(call print_status,Phase 1/4: Checking PM2 service...)
+	@if command -v pm2 >/dev/null 2>&1 && pm2 show Forge >/dev/null 2>&1; then \
+		echo -e "$(FONT_PURPLE)$(HAMMER) Removing PM2 service...$(FONT_RESET)"; \
+		pm2 stop Forge >/dev/null 2>&1 || true; \
+		pm2 delete Forge >/dev/null 2>&1 || true; \
+		pm2 save --force >/dev/null 2>&1 || true; \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) PM2 service removed$(FONT_RESET)"; \
+	else \
+		echo -e "$(FONT_CYAN)$(INFO) No PM2 service found - skipping$(FONT_RESET)"; \
+	fi
+	@echo ""
+
+	# Phase 2: Systemd Service Removal
+	$(call print_status,Phase 2/4: Checking systemd service...)
+	@if systemctl list-unit-files 2>/dev/null | grep -q automagik-forge; then \
+		echo -e "$(FONT_PURPLE)$(HAMMER) Removing systemd service...$(FONT_RESET)"; \
+		sudo systemctl stop automagik-forge 2>/dev/null || true; \
+		sudo systemctl disable automagik-forge 2>/dev/null || true; \
+		sudo rm -f /etc/systemd/system/automagik-forge.service; \
+		sudo systemctl daemon-reload 2>/dev/null || true; \
+		sudo systemctl reset-failed 2>/dev/null || true; \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) Systemd service removed$(FONT_RESET)"; \
+	else \
+		echo -e "$(FONT_CYAN)$(INFO) No systemd service found - skipping$(FONT_RESET)"; \
+	fi
+	@echo ""
+
+	# Phase 3: Dedicated Service Account Cleanup (Interactive)
+	$(call print_status,Phase 3/4: Checking for dedicated service account...)
+	@if id "forge" >/dev/null 2>&1; then \
+		echo -e "$(FONT_YELLOW)$(WARNING) Dedicated 'forge' service account found$(FONT_RESET)"; \
+		echo -e "$(FONT_CYAN)The following will be removed:$(FONT_RESET)"; \
+		echo -e "  - System user: forge"; \
+		[ -d "/opt/automagik-forge" ] && echo -e "  - Directory: /opt/automagik-forge"; \
+		[ -d "/var/lib/automagik-forge" ] && echo -e "  - Directory: /var/lib/automagik-forge"; \
+		[ -d "/var/log/automagik-forge" ] && echo -e "  - Directory: /var/log/automagik-forge"; \
+		echo ""; \
+		read -p "Remove dedicated 'forge' user and directories? [y/N] " -n 1 -r REPLY; echo; \
+		if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+			echo -e "$(FONT_PURPLE)$(HAMMER) Removing dedicated service account...$(FONT_RESET)"; \
+			[ -d "/opt/automagik-forge" ] && sudo rm -rf /opt/automagik-forge; \
+			[ -d "/var/lib/automagik-forge" ] && sudo rm -rf /var/lib/automagik-forge; \
+			[ -d "/var/log/automagik-forge" ] && sudo rm -rf /var/log/automagik-forge; \
+			sudo userdel forge 2>/dev/null || true; \
+			echo -e "$(FONT_GREEN)$(CHECKMARK) Service account removed$(FONT_RESET)"; \
+		else \
+			echo -e "$(FONT_YELLOW)Skipped - service account kept$(FONT_RESET)"; \
+		fi; \
+	else \
+		echo -e "$(FONT_CYAN)$(INFO) No dedicated service account found - skipping$(FONT_RESET)"; \
+	fi
+	@echo ""
+
+	# Phase 4: Build Artifacts Cleanup
+	$(call print_status,Phase 4/4: Cleaning build artifacts...)
+	@$(MAKE) clean >/dev/null 2>&1 || true
+	$(call print_success,Build artifacts cleaned!)
+	@echo ""
+
+	# Completion Summary
+	@echo ""
+	@echo -e "$(FONT_GREEN)========================================$(FONT_RESET)"
+	@echo -e "$(FONT_GREEN)$(SPARKLES) Uninstall Complete!$(FONT_RESET)"
+	@echo -e "$(FONT_GREEN)========================================$(FONT_RESET)"
+	@echo ""
+	@echo -e "$(FONT_GREEN)✓ What was removed:$(FONT_RESET)"
+	@echo -e "  • PM2 service (if installed)"
+	@echo -e "  • Systemd service (if installed)"
+	@echo -e "  • Build artifacts"
+	@echo ""
+	@echo -e "$(FONT_CYAN)ℹ️  What was kept:$(FONT_RESET)"
+	@echo -e "  • .env file (configuration)"
+	@echo -e "  • Source code"
+	@echo -e "  • Node dependencies (node_modules)"
+	@echo -e "  • Global tools (PM2, pnpm, cargo)"
+	@echo ""
+	@echo -e "$(FONT_PURPLE)$(ROCKET) To reinstall:$(FONT_RESET) make install"
 	@echo ""
 
 # ===========================================
