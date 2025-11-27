@@ -358,6 +358,12 @@ async fn forge_create_task_attempt(
         );
 
         executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+
+        // Register project in profile cache for subsequent API lookups
+        forge_services
+            .profile_cache
+            .register_project(project.id, project.git_repo_path.clone())
+            .await;
     } else {
         tracing::warn!(
             "⚠️  Failed to load .genie profiles for workspace: {}, using defaults",
@@ -557,6 +563,12 @@ async fn forge_create_task_and_start(
         );
 
         executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+
+        // Register project in profile cache for subsequent API lookups
+        forge_services
+            .profile_cache
+            .register_project(project.id, project.git_repo_path.clone())
+            .await;
     } else {
         tracing::warn!(
             "⚠️  Failed to load .genie profiles for workspace: {}, using defaults",
@@ -1188,6 +1200,12 @@ async fn forge_follow_up(
         );
 
         executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+
+        // Register project in profile cache for subsequent API lookups
+        forge_services
+            .profile_cache
+            .register_project(project.id, project.git_repo_path.clone())
+            .await;
     } else {
         tracing::warn!(
             "⚠️  Failed to load .genie profiles for workspace: {} (follow-up), using defaults",
