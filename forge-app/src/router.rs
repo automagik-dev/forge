@@ -181,7 +181,7 @@ async fn forge_create_task(
     Json(payload): Json<ForgeCreateTask>,
 ) -> Result<Json<ApiResponse<Task>>, ApiError> {
     let task_id = Uuid::new_v4();
-    let task = Task::create(
+    let mut task = Task::create(
         &deployment.db().pool,
         &db::models::task::CreateTask {
             project_id: payload.project_id,
@@ -203,6 +203,9 @@ async fn forge_create_task(
         .bind(task_id)
         .execute(&deployment.db().pool)
         .await?;
+
+        // Re-fetch task to get updated github_issue_id (avoids returning stale data)
+        task = Task::get_one(&deployment.db().pool, task_id).await?;
     }
 
     if let Some(image_ids) = &payload.image_ids {
