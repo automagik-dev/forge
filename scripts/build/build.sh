@@ -167,9 +167,11 @@ if [ "$NEEDS_BACKEND_BUILD" = "true" ]; then
   export SQLX_OFFLINE=true
 
   cargo build --release --bin forge-app
+  cargo build --release --bin mcp_task_server
+  cargo build --release --bin forge-cleanup
 else
   # Verify binaries actually exist before skipping
-  if [ ! -f "target/release/forge-app${BIN_EXT}" ]; then
+  if [ ! -f "target/release/forge-app${BIN_EXT}" ] || [ ! -f "target/release/mcp_task_server${BIN_EXT}" ] || [ ! -f "target/release/forge-cleanup${BIN_EXT}" ]; then
     echo "⚠️  Backend binaries missing despite no detected changes - rebuilding"
 
     # Use SQLx offline mode for compilation
@@ -177,6 +179,8 @@ else
     export SQLX_OFFLINE=true
 
     cargo build --release --bin forge-app
+    cargo build --release --bin mcp_task_server
+    cargo build --release --bin forge-cleanup
   else
     echo "⏭️  Skipping backend build (no changes)"
     echo "   Using existing binaries from target/release/"
@@ -214,12 +218,19 @@ zip_one "automagik-forge-mcp${BIN_EXT}" "automagik-forge-mcp.zip"
 rm -f "automagik-forge-mcp${BIN_EXT}"
 mv "automagik-forge-mcp.zip" "npx-cli/dist/$PLATFORM_DIR/automagik-forge-mcp.zip"
 
+# Copy and zip the cleanup binary
+cp "target/release/forge-cleanup${BIN_EXT}" "forge-cleanup${BIN_EXT}"
+zip_one "forge-cleanup${BIN_EXT}" "forge-cleanup.zip"
+rm -f "forge-cleanup${BIN_EXT}"
+mv "forge-cleanup.zip" "npx-cli/dist/$PLATFORM_DIR/forge-cleanup.zip"
+
 # On Android/Termux, also copy to android-arm64 directory (for npm package)
 if [ "$IS_ANDROID" = true ] && [ "$PLATFORM_DIR" = "linux-arm64" ]; then
   echo "📱 Creating android-arm64 package for Termux..."
   mkdir -p "npx-cli/dist/android-arm64"
   cp "npx-cli/dist/linux-arm64/automagik-forge.zip" "npx-cli/dist/android-arm64/automagik-forge.zip"
   cp "npx-cli/dist/linux-arm64/automagik-forge-mcp.zip" "npx-cli/dist/android-arm64/automagik-forge-mcp.zip"
+  cp "npx-cli/dist/linux-arm64/forge-cleanup.zip" "npx-cli/dist/android-arm64/forge-cleanup.zip"
   echo "✅ Created android-arm64 package"
 fi
 
@@ -235,6 +246,7 @@ echo "✅ Binary zips staged for NPX CLI"
 echo "📁 Files created:"
 echo "   - npx-cli/dist/$PLATFORM_DIR/automagik-forge.zip"
 echo "   - npx-cli/dist/$PLATFORM_DIR/automagik-forge-mcp.zip"
+echo "   - npx-cli/dist/$PLATFORM_DIR/forge-cleanup.zip"
 echo "📋 Other platform placeholders created under npx-cli/dist/"
 
 echo "ℹ️ To create the npm package tarball, run:"
