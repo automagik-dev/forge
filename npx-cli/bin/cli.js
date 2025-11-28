@@ -97,7 +97,8 @@ function getBinaryName(base) {
 const platformDir = getPlatformDir();
 const extractDir = path.join(__dirname, "..", "dist", platformDir);
 const isMcpMode = process.argv.includes("--mcp");
-const isCleanupMode = process.argv[2] === "cleanup";
+// Search for "cleanup" subcommand in args (more robust than hardcoding index)
+const isCleanupMode = process.argv.slice(2).some(arg => arg === "cleanup");
 
 // ensure output dir
 fs.mkdirSync(extractDir, { recursive: true });
@@ -145,7 +146,8 @@ function extractAndRun(baseName, launch) {
 
 if (isCleanupMode) {
   // Cleanup mode - run forge-cleanup binary with remaining args
-  const cleanupArgs = process.argv.slice(3); // Skip node, script, and "cleanup"
+  // Filter out "cleanup" command and pass remaining args to the binary
+  const cleanupArgs = process.argv.slice(2).filter(arg => arg !== "cleanup");
   extractAndRun("forge-cleanup", (bin) => {
     const proc = spawn(bin, cleanupArgs, { stdio: "inherit" });
     proc.on("exit", (c) => process.exit(c || 0));
