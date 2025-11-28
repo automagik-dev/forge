@@ -344,6 +344,12 @@ paths:
                 base_branch:
                   type: string
                   example: main
+                github_issue_id:
+                  type: integer
+                  format: int64
+                  nullable: true
+                  description: GitHub issue ID linking this task to its originating issue (enforces "No Wish Without Issue" rule)
+                  example: 123
               required: [task, executor_profile_id, base_branch]
       responses:
         '200':
@@ -899,6 +905,11 @@ components:
           type: string
           format: uuid
           nullable: true
+        github_issue_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: GitHub issue ID linking this task to its originating issue (enforces "No Wish Without Issue" rule)
         created_at:
           type: string
           format: date-time
@@ -926,6 +937,12 @@ components:
             type: string
             format: uuid
           nullable: true
+        github_issue_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: GitHub issue ID linking this task to its originating issue (enforces "No Wish Without Issue" rule)
+          example: 123
       required: [project_id, title]
 
     UpdateTask:

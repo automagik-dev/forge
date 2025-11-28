@@ -41,6 +41,7 @@ impl ForgeServices {
         // Note: All migrations (including forge-specific) are now in upstream/crates/db/migrations
         let deployment = DeploymentImpl::new().await?;
         ensure_legacy_base_branch_column(&deployment.db().pool).await?;
+        ensure_github_issue_id_column(&deployment.db().pool).await?;
 
         deployment.update_sentry_scope().await?;
         deployment.cleanup_orphan_executions().await?;
@@ -301,6 +302,34 @@ async fn ensure_legacy_base_branch_column(pool: &SqlitePool) -> Result<()> {
     )
     .execute(pool)
     .await?;
+
+    Ok(())
+}
+
+/// Add github_issue_id column to tasks table for "No Wish Without Issue" rule enforcement
+/// Links tasks to their originating GitHub issues for traceability
+async fn ensure_github_issue_id_column(pool: &SqlitePool) -> Result<()> {
+    let has_github_issue_id = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(1) FROM pragma_table_info('tasks') WHERE name = 'github_issue_id'",
+    )
+    .fetch_one(pool)
+    .await?
+        > 0;
+
+    tracing::debug!(
+        has_github_issue_id,
+        "schema check for tasks.github_issue_id"
+    );
+
+    if !has_github_issue_id {
+        sqlx::query("ALTER TABLE tasks ADD COLUMN github_issue_id INTEGER")
+            .execute(pool)
+            .await?;
+
+        tracing::info!(
+            "Added tasks.github_issue_id column for GitHub issue tracking (No Wish Without Issue rule)"
+        );
+    }
 
     Ok(())
 }
