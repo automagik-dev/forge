@@ -37,7 +37,7 @@ use server::routes::{
     self as upstream, approvals, auth, config as upstream_config, containers, drafts, events,
     execution_processes, filesystem, images, projects, tags, task_attempts, tasks,
 };
-use server::{DeploymentImpl, error::ApiError, routes::tasks::CreateAndStartTaskRequest};
+use server::{DeploymentImpl, error::ApiError};
 use services::services::container::ContainerService;
 use sqlx::{self, Error as SqlxError, Row};
 use utils::log_msg::LogMsg;
@@ -161,7 +161,7 @@ fn forge_api_routes() -> Router<ForgeAppState> {
     // Branch-templates extension removed - using simple forge/ prefix
 }
 
-/// Forge-specific CreateTask that includes is_agent field
+/// Forge-specific CreateTask that includes is_agent field and github_issue_id
 #[derive(Debug, Serialize, Deserialize)]
 struct ForgeCreateTask {
     pub project_id: Uuid,
@@ -170,16 +170,18 @@ struct ForgeCreateTask {
     pub parent_task_attempt: Option<Uuid>,
     pub image_ids: Option<Vec<Uuid>>,
     pub is_agent: Option<bool>, // Forge extension: mark as agent-managed task
+    pub github_issue_id: Option<i64>, // GitHub issue ID for "No Wish Without Issue" rule
 }
 
 /// Forge override: create task (standard behavior, no special status handling)
 /// The is_agent field is kept for future use but not currently used in task creation
+/// Supports github_issue_id for "No Wish Without Issue" rule enforcement
 async fn forge_create_task(
     State(deployment): State<DeploymentImpl>,
     Json(payload): Json<ForgeCreateTask>,
 ) -> Result<Json<ApiResponse<Task>>, ApiError> {
     let task_id = Uuid::new_v4();
-    let task = Task::create(
+    let mut task = Task::create(
         &deployment.db().pool,
         &db::models::task::CreateTask {
             project_id: payload.project_id,
@@ -191,6 +193,20 @@ async fn forge_create_task(
         task_id,
     )
     .await?;
+
+    // Set github_issue_id if provided (Forge extension for issue tracking)
+    if let Some(github_issue_id) = payload.github_issue_id {
+        sqlx::query(
+            "UPDATE tasks SET github_issue_id = ?, updated_at = datetime('now') WHERE id = ?",
+        )
+        .bind(github_issue_id)
+        .bind(task_id)
+        .execute(&deployment.db().pool)
+        .await?;
+
+        // Re-fetch task to get updated github_issue_id (avoids returning stale data)
+        task = Task::get_one(&deployment.db().pool, task_id).await?;
+    }
 
     if let Some(image_ids) = &payload.image_ids {
         TaskImage::associate_many(&deployment.db().pool, task.id, image_ids).await?;
@@ -204,6 +220,7 @@ async fn forge_create_task(
                 "project_id": task.project_id,
                 "has_description": task.description.is_some(),
                 "has_images": payload.image_ids.is_some(),
+                "github_issue_id": payload.github_issue_id,
             }),
         )
         .await;
@@ -390,14 +407,38 @@ async fn forge_create_task_attempt(
     Ok(Json(ApiResponse::success(task_attempt)))
 }
 
+/// Forge-specific CreateAndStartTaskRequest that includes github_issue_id
+#[derive(Debug, Serialize, Deserialize)]
+struct ForgeCreateAndStartTaskRequest {
+    pub task: db::models::task::CreateTask,
+    pub executor_profile_id: ExecutorProfileId,
+    pub base_branch: String,
+    pub github_issue_id: Option<i64>, // GitHub issue ID for "No Wish Without Issue" rule
+}
+
 /// Forge override: create task and start with forge/ branch prefix (vk -> forge only)
+/// Supports github_issue_id for "No Wish Without Issue" rule enforcement
 async fn forge_create_task_and_start(
     State(deployment): State<DeploymentImpl>,
     State(forge_services): State<ForgeServices>,
-    Json(payload): Json<CreateAndStartTaskRequest>,
-) -> Result<Json<ApiResponse<ForgeTaskWithAttemptStatus>>, ApiError> {
+    Json(payload): Json<ForgeCreateAndStartTaskRequest>,
+) -> Result<Json<ApiResponse<TaskWithAttemptStatus>>, ApiError> {
     let task_id = Uuid::new_v4();
-    let task = Task::create(&deployment.db().pool, &payload.task, task_id).await?;
+    let mut task = Task::create(&deployment.db().pool, &payload.task, task_id).await?;
+
+    // Set github_issue_id if provided (Forge extension for issue tracking)
+    if let Some(github_issue_id) = payload.github_issue_id {
+        sqlx::query(
+            "UPDATE tasks SET github_issue_id = ?, updated_at = datetime('now') WHERE id = ?",
+        )
+        .bind(github_issue_id)
+        .bind(task_id)
+        .execute(&deployment.db().pool)
+        .await?;
+
+        // Re-fetch task to get updated github_issue_id (avoids returning stale data)
+        task = Task::get_one(&deployment.db().pool, task_id).await?;
+    }
 
     if let Some(image_ids) = &payload.task.image_ids {
         TaskImage::associate_many(&deployment.db().pool, task.id, image_ids).await?;
@@ -438,6 +479,7 @@ async fn forge_create_task_and_start(
                 "project_id": task.project_id,
                 "has_description": task.description.is_some(),
                 "has_images": payload.task.image_ids.is_some(),
+                "github_issue_id": payload.github_issue_id,
             }),
         )
         .await;
