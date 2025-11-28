@@ -108,7 +108,9 @@ pub async fn forge_create_task(
         .await?;
 
         // Re-fetch task to get updated github_issue_id (avoids returning stale data)
-        task = Task::get_one(&deployment.db().pool, task_id).await?;
+        task = Task::find_by_id(&deployment.db().pool, task_id)
+            .await?
+            .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
     }
 
     if let Some(image_ids) = &payload.image_ids {
@@ -211,6 +213,7 @@ ORDER BY t.created_at DESC"#;
             has_merged_attempt: false,
             last_attempt_failed,
             executor,
+            attempt_count: 0, // TODO: Query actual attempt count if needed
         });
     }
 
@@ -384,7 +387,9 @@ pub async fn forge_create_task_and_start(
         .await?;
 
         // Re-fetch task to get updated github_issue_id (avoids returning stale data)
-        task = Task::get_one(&deployment.db().pool, task_id).await?;
+        task = Task::find_by_id(&deployment.db().pool, task_id)
+            .await?
+            .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
     }
 
     if let Some(image_ids) = &payload.task.image_ids {
@@ -524,6 +529,7 @@ pub async fn forge_create_task_and_start(
         has_merged_attempt: false,
         last_attempt_failed: false,
         executor: task_attempt.executor,
+        attempt_count: 1, // Just created first attempt
     })))
 }
 
