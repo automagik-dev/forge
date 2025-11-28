@@ -2,6 +2,7 @@
 //!
 //! Provides reusable modules for forge binaries.
 
+pub mod routes;
 pub mod router;
 pub mod services;
 pub mod version;
