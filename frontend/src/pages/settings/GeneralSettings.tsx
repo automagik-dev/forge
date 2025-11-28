@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { cloneDeep, merge, isEqual } from 'lodash';
+import { isEqual, deepMerge } from '@/lib/utils';
 import {
   Card,
   CardContent,
@@ -65,7 +65,7 @@ export function GeneralSettings() {
   } = useUserSystem();
 
   // Draft state management
-  const [draft, setDraft] = useState(() => (config ? cloneDeep(config) : null));
+  const [draft, setDraft] = useState(() => (config ? structuredClone(config) : null));
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,7 +103,7 @@ export function GeneralSettings() {
   useEffect(() => {
     if (!config) return;
     if (!dirty) {
-      setDraft(cloneDeep(config));
+      setDraft(structuredClone(config));
     }
   }, [config, dirty]);
 
@@ -118,7 +118,7 @@ export function GeneralSettings() {
     (patch: Partial<typeof config>) => {
       setDraft((prev: typeof config) => {
         if (!prev) return prev;
-        const next = merge({}, prev, patch);
+        const next = deepMerge(prev, patch);
         // Mark dirty if changed
         if (!isEqual(next, config)) {
           setDirty(true);
@@ -176,7 +176,7 @@ export function GeneralSettings() {
 
   const handleDiscard = () => {
     if (!config) return;
-    setDraft(cloneDeep(config));
+    setDraft(structuredClone(config));
     setDirty(false);
   };
 

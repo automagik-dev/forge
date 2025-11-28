@@ -610,7 +610,10 @@ export const useConversationHistory = ({
       lastActiveProcessId.current !== activeProcess.id
     ) {
       lastActiveProcessId.current = activeProcess.id;
-      loadRunningAndEmitWithBackoff(activeProcess);
+      // Handle async operation with proper error handling to prevent unhandled rejections
+      loadRunningAndEmitWithBackoff(activeProcess).catch((err) => {
+        console.warn('Failed to load running execution process after retries:', err);
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Functions use refs and are intentionally stable; adding them causes infinite loops
   }, [attempt.id, idStatusKey]);

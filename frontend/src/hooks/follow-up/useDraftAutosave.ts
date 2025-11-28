@@ -87,6 +87,16 @@ function useDraftAutosaveCore<TServer, TCurrent, TPayload>({
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const lastSentRef = useRef<string>('');
   const saveTimeoutRef = useRef<number | undefined>(undefined);
+  // Track mounted state to prevent setState on unmounted component
+  const isMountedRef = useRef(true);
+
+  // Track mounted state
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!attemptId) return;
@@ -125,6 +135,7 @@ function useDraftAutosaveCore<TServer, TCurrent, TPayload>({
       lastSentRef.current = payloadKey;
 
       try {
+        if (!isMountedRef.current) return;
         setIsSaving(true);
         setSaveStatus(navigator.onLine ? 'saving' : 'offline');
         if (import.meta.env.DEV)
@@ -133,6 +144,7 @@ function useDraftAutosaveCore<TServer, TCurrent, TPayload>({
             payload,
           });
         await saveDraft(attemptId, payload);
+        if (!isMountedRef.current) return;
         setSaveStatus('saved');
         if (import.meta.env.DEV)
           console.debug(`[autosave:${debugLabel}] saved`, { attemptId });
@@ -148,9 +160,12 @@ function useDraftAutosaveCore<TServer, TCurrent, TPayload>({
             /* empty */
           }
         }
+        if (!isMountedRef.current) return;
         setSaveStatus(navigator.onLine ? 'idle' : 'offline');
       } finally {
-        setIsSaving(false);
+        if (isMountedRef.current) {
+          setIsSaving(false);
+        }
       }
     };
 
