@@ -1765,17 +1765,16 @@ async fn get_project_profiles(
     State(services): State<ForgeServices>,
 ) -> Result<Json<ApiResponse<executors::profile::ExecutorConfigs>>, StatusCode> {
     // Fetch project from database to ensure it exists and get workspace path
-    let project = match Project::find_by_id(&services.pool, project_id).await {
-        Ok(Some(p)) => p,
-        Ok(None) => {
-            tracing::error!("Project {} not found", project_id);
-            return Err(StatusCode::NOT_FOUND);
-        }
-        Err(e) => {
+    let project = Project::find_by_id(&services.pool, project_id)
+        .await
+        .map_err(|e| {
             tracing::error!("Database error fetching project {}: {}", project_id, e);
-            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-        }
-    };
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .ok_or_else(|| {
+            tracing::error!("Project {} not found", project_id);
+            StatusCode::NOT_FOUND
+        })?;
 
     // Ensure project is registered in profile cache (fixes race condition on fresh installs)
     services
