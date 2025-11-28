@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -77,12 +78,16 @@ function FeatureRow({
 export function BetaFeaturesSettings() {
   const { t } = useTranslation(['settings', 'common']);
   const { features, loading, error, toggleFeature } = useBetaFeatures();
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const handleToggle = async (featureId: string) => {
+    setTogglingId(featureId);
     try {
       await toggleFeature(featureId);
     } catch (err) {
       console.error('Failed to toggle feature:', err);
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -148,7 +153,7 @@ export function BetaFeaturesSettings() {
                   key={feature.id}
                   feature={feature}
                   onToggle={handleToggle}
-                  isToggling={false}
+                  isToggling={togglingId === feature.id}
                 />
               ))}
             </div>

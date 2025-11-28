@@ -76,11 +76,10 @@ impl ForgeServices {
 
         // Initialize beta features service
         // Look for beta-features.toml in forge-main directory (relative to cwd)
-        let beta_features_path = std::env::current_dir()
-            .unwrap_or_default()
+        let beta_features_path = std::env::current_dir()?
             .join("forge-main")
             .join("beta-features.toml");
-        let beta_features = Arc::new(BetaFeaturesService::new(pool.clone(), beta_features_path));
+        let beta_features = Arc::new(BetaFeaturesService::new(pool.clone(), beta_features_path)?);
         beta_features.ensure_table().await?;
 
         tracing::info!(

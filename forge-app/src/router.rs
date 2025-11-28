@@ -1794,7 +1794,11 @@ async fn toggle_beta_feature(
         .map(|feature| Json(ApiResponse::success(feature)))
         .map_err(|e| {
             tracing::error!("Failed to toggle beta feature '{}': {}", feature_id, e);
-            StatusCode::BAD_REQUEST
+            if e.to_string().contains("not found") {
+                StatusCode::NOT_FOUND
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         })
 }
 
