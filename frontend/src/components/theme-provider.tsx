@@ -31,6 +31,9 @@ export function ThemeProvider({
   }, [initialTheme]);
 
   useEffect(() => {
+    // SSR safety check
+    if (typeof window === 'undefined') return;
+
     const root = window.document.documentElement;
 
     root.classList.remove('light', 'dark');
