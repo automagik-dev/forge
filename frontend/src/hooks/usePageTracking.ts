@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { usePostHog } from 'posthog-js/react';
 import type { PageVisitedEvent, NavigationMethod } from '@/types/analytics';
 import { isNamestexEmployee } from '@/lib/track-analytics';
+import { analyticsLogger } from '@/lib/logger';
 
 /**
  * Custom hook to track page navigation for analytics
@@ -76,7 +77,7 @@ export function usePageTracking() {
       posthog.capture('page_visited', pageVisitedEvent);
     }
 
-    console.log('[Analytics] page_visited', pageVisitedEvent);
+    analyticsLogger.log('page_visited', pageVisitedEvent);
     // ========== END ==========
 
     // Update refs for next navigation

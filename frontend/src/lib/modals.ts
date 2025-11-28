@@ -1,4 +1,5 @@
 import NiceModal from '@ebay/nice-modal-react';
+import { createLogger } from './logger';
 import type {
   FolderPickerDialogProps,
   TagEditDialogProps,
@@ -6,6 +7,8 @@ import type {
   ProjectFormDialogProps,
   ProjectFormDialogResult,
 } from '@/components/dialogs';
+
+const modalsLogger = createLogger('Modals');
 
 /**
  * Typed wrapper around NiceModal.show with better TypeScript support
@@ -79,7 +82,7 @@ export function removeModal(modal: string): void {
  */
 export function hideAllModals(): void {
   // NiceModal doesn't have a direct hideAll, so we'll implement as needed
-  console.log('Hide all modals - implement as needed');
+  modalsLogger.log('Hide all modals - implement as needed');
 }
 
 /**

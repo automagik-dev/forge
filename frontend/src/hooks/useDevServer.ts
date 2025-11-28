@@ -2,13 +2,10 @@ import { useMemo, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { attemptsApi, executionProcessesApi } from '@/lib/api';
 import { useAttemptExecution } from '@/hooks/useAttemptExecution';
-import { queryKeys } from '@/lib/queryKeys';
 import type { ExecutionProcess } from 'shared/types';
 import { usePostHog } from 'posthog-js/react';
-import type {
-  DevServerStartedEvent,
-  DevServerStoppedEvent,
-} from '@/types/analytics';
+import type { DevServerStartedEvent, DevServerStoppedEvent } from '@/types/analytics';
+import { analyticsLogger } from '@/lib/logger';
 
 interface UseDevServerOptions {
   onStartSuccess?: () => void;
@@ -49,14 +46,14 @@ export function useDevServer(
 
   // Start mutation
   const startMutation = useMutation({
-    mutationKey: queryKeys.mutations.devServer.start(attemptId),
+    mutationKey: ['startDevServer', attemptId],
     mutationFn: async () => {
       if (!attemptId) return;
       await attemptsApi.startDevServer(attemptId);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.execution.processes(attemptId),
+        queryKey: ['executionProcesses', attemptId],
       });
 
       // Track dev_server_started event
@@ -64,9 +61,7 @@ export function useDevServer(
         const usageCount = devServerUsageCountRef.current;
         // Check if there are any failed processes in this attempt (indicates previous failure)
         const hasFailedBefore = attemptData.processes.some(
-          (p) =>
-            p.status === 'failed' ||
-            (p.exit_code !== null && p.exit_code !== BigInt(0))
+          (p) => p.status === 'failed' || (p.exit_code !== null && p.exit_code !== BigInt(0))
         );
 
         const devServerStartedEvent: DevServerStartedEvent = {
@@ -76,28 +71,25 @@ export function useDevServer(
         };
 
         posthog.capture('dev_server_started', devServerStartedEvent);
-        console.log('[Analytics] dev_server_started', devServerStartedEvent);
+        analyticsLogger.log('dev_server_started', devServerStartedEvent);
 
         // Update usage count
         devServerUsageCountRef.current = usageCount + 1;
-        localStorage.setItem(
-          'dev_server_usage_count',
-          (usageCount + 1).toString()
-        );
+        localStorage.setItem('dev_server_usage_count', (usageCount + 1).toString());
         devServerStartTimeRef.current = Date.now();
       }
 
       options?.onStartSuccess?.();
     },
     onError: (err) => {
-      console.error('Failed to start dev server:', err);
+      analyticsLogger.error('Failed to start dev server:', err);
       options?.onStartError?.(err);
     },
   });
 
   // Stop mutation
   const stopMutation = useMutation({
-    mutationKey: queryKeys.mutations.devServer.stop(runningDevServer?.id),
+    mutationKey: ['stopDevServer', runningDevServer?.id],
     mutationFn: async () => {
       if (!runningDevServer) return;
       await executionProcessesApi.stopExecutionProcess(runningDevServer.id);
@@ -105,20 +97,18 @@ export function useDevServer(
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: queryKeys.execution.processes(attemptId),
+          queryKey: ['executionProcesses', attemptId],
         }),
         runningDevServer
           ? queryClient.invalidateQueries({
-              queryKey: queryKeys.execution.processDetails(runningDevServer.id),
+              queryKey: ['processDetails', runningDevServer.id],
             })
           : Promise.resolve(),
       ]);
 
       // Track dev_server_stopped event
       if (attemptId && devServerStartTimeRef.current) {
-        const duration = Math.floor(
-          (Date.now() - devServerStartTimeRef.current) / 1000
-        );
+        const duration = Math.floor((Date.now() - devServerStartTimeRef.current) / 1000);
         const devServerStoppedEvent: DevServerStoppedEvent = {
           attempt_id: attemptId,
           duration_seconds: duration,
@@ -126,14 +116,14 @@ export function useDevServer(
         };
 
         posthog.capture('dev_server_stopped', devServerStoppedEvent);
-        console.log('[Analytics] dev_server_stopped', devServerStoppedEvent);
+        analyticsLogger.log('dev_server_stopped', devServerStoppedEvent);
         devServerStartTimeRef.current = null;
       }
 
       options?.onStopSuccess?.();
     },
     onError: (err) => {
-      console.error('Failed to stop dev server:', err);
+      analyticsLogger.error('Failed to stop dev server:', err);
       options?.onStopError?.(err);
     },
   });

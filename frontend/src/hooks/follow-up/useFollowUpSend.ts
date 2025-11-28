@@ -1,17 +1,13 @@
 import { useCallback, useState } from 'react';
 import { attemptsApi, tasksApi } from '@/lib/api';
-import type {
-  ImageResponse,
-  TaskWithAttemptStatus,
-  ExecutorProfileId,
-} from 'shared/types';
+import { genieLogger } from '@/lib/logger';
+import type { ImageResponse, TaskWithAttemptStatus, ExecutorProfileId } from 'shared/types';
 
 type Args = {
   attemptId?: string;
   task?: TaskWithAttemptStatus | null;
-  currentProfile?: Record<string, unknown> | null;
+  currentProfile?: Record<string, any> | null;
   defaultExecutor?: string; // User's configured default executor (e.g., "CLAUDE_CODE")
-  defaultBranch?: string | null; // User's configured default base branch
   message: string;
   conflictMarkdown: string | null;
   reviewMarkdown: string;
@@ -33,7 +29,6 @@ export function useFollowUpSend({
   task,
   currentProfile,
   defaultExecutor,
-  defaultBranch,
   message,
   conflictMarkdown,
   reviewMarkdown,
@@ -53,7 +48,7 @@ export function useFollowUpSend({
   const [followUpError, setFollowUpError] = useState<string | null>(null);
 
   const onSendFollowUp = useCallback(async () => {
-    console.log('[Master Genie] onSendFollowUp called with:', {
+    genieLogger.log('onSendFollowUp called with:', {
       attemptId,
       task_id: task?.id,
       task_status: task?.status,
@@ -68,7 +63,7 @@ export function useFollowUpSend({
     const isFirstGenieMessage =
       !attemptId && projectId && (!task || task.status === 'agent');
 
-    console.log('[Master Genie] isFirstGenieMessage:', isFirstGenieMessage);
+    genieLogger.log('isFirstGenieMessage:', isFirstGenieMessage);
 
     let actualAttemptId = attemptId;
 
@@ -104,27 +99,24 @@ export function useFollowUpSend({
         setIsSendingFollowUp(true);
         setFollowUpError(null);
 
-        console.log('[Master Genie] Creating new task with create-and-start', {
+        genieLogger.log('Creating new task with create-and-start', {
           project_id: projectId,
           executor_profile_id: executorProfileId,
         });
 
         // Create task + attempt with user's first message
-        // use_worktree: false for Genie chat (runs on base branch, hidden from kanban)
         const result = await tasksApi.createAndStart({
           task: {
             project_id: projectId,
             title: `Chat: ${firstMessage.substring(0, 50)}${firstMessage.length > 50 ? '...' : ''}`,
             description: firstMessage, // User's message goes here!
-            parent_task_attempt: null,
-            image_ids: null,
           },
           executor_profile_id: executorProfileId as ExecutorProfileId,
-          base_branch: defaultBranch || 'dev', // Use configured default, fallback to 'dev'
-          use_worktree: false, // Genie chat runs without worktree isolation, hides from kanban
-        });
+          base_branch: 'dev', // TODO: Get from project config
+          use_worktree: false, // CRITICAL: Genie uses current branch!
+        } as any);
 
-        console.log('[Master Genie] Task created:', result.id);
+        genieLogger.log('Task created:', result.id);
 
         // Get the attempt ID from the result
         // The API returns TaskWithAttemptStatus which has has_in_progress_attempt
@@ -132,7 +124,7 @@ export function useFollowUpSend({
         const attempts = await attemptsApi.getAll(result.id);
         if (attempts.length > 0) {
           actualAttemptId = attempts[0].id;
-          console.log('[Master Genie] Attempt ID:', actualAttemptId);
+          genieLogger.log('Attempt ID:', actualAttemptId);
 
           // Notify parent component for navigation
           if (onNewTaskCreated) {
@@ -188,7 +180,7 @@ export function useFollowUpSend({
         retry_process_id: null,
         force_when_dirty: null,
         perform_git_reset: null,
-      });
+      } as any);
       setMessage('');
       clearComments();
       clearClickedElements?.();
@@ -221,7 +213,6 @@ export function useFollowUpSend({
     setMessage,
     projectId,
     onNewTaskCreated,
-    defaultBranch,
   ]);
 
   return {
