@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { KanbanCard } from '@/components/ui/shadcn-io/kanban';
 import {
   CheckCircle,
@@ -59,7 +59,7 @@ function formatRelativeTime(dateString: string): string {
   return date.toLocaleDateString();
 }
 
-export function TaskCard({
+export const TaskCard = memo(function TaskCard({
   task,
   index,
   status,
@@ -286,4 +286,4 @@ export function TaskCard({
       </KanbanCard>
     </div>
   );
-}
+});

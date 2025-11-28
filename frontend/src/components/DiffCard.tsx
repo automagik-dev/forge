@@ -1,7 +1,7 @@
 import { Diff } from 'shared/types';
 import { DiffModeEnum, DiffView, SplitSide } from '@git-diff-view/react';
 import { generateDiffFile, type DiffFile } from '@git-diff-view/file';
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { useUserSystem } from '@/components/config-provider';
 import { getHighLightLanguageFromPath } from '@/utils/extToLanguage';
 import { getActualTheme } from '@/utils/theme';
@@ -73,7 +73,7 @@ function readPlainLine(
   }
 }
 
-export default function DiffCard({
+const DiffCard = memo(function DiffCard({
   diff,
   expanded,
   onToggle,
@@ -330,4 +330,6 @@ export default function DiffCard({
       )}
     </div>
   );
-}
+});
+
+export default DiffCard;
