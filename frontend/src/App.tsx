@@ -1,29 +1,37 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n';
 import { Projects } from '@/pages/projects';
 import { ProjectTasks } from '@/pages/project-tasks';
-import { FullAttemptLogsPage } from '@/pages/full-attempt-logs';
-import ReleaseNotesPage from '@/pages/release-notes';
 import { ResponsiveLayout } from '@/components/layout/ResponsiveLayout';
 import { Footer } from '@/components/layout/Footer';
 import { usePostHog } from 'posthog-js/react';
-import type {
-  SessionStartedEvent,
-  SessionEndedEvent,
-  HeartbeatEvent,
-} from '@/types/analytics';
+import type { SessionStartedEvent, SessionEndedEvent, HeartbeatEvent } from '@/types/analytics';
 import { usePageTracking } from '@/hooks/usePageTracking';
 import { useNamestexerSessionTracking } from '@/hooks/useNamestexerSessionTracking';
 
-import {
-  AgentSettings,
-  GeneralSettings,
-  McpSettings,
-  ProjectSettings,
-  SettingsLayout,
-} from '@/pages/settings/';
+// Lazy-loaded pages for route-based code splitting
+const FullAttemptLogsPage = lazy(() =>
+  import('@/pages/full-attempt-logs').then(module => ({ default: module.FullAttemptLogsPage }))
+);
+const ReleaseNotesPage = lazy(() => import('@/pages/release-notes'));
+const SettingsLayout = lazy(() =>
+  import('@/pages/settings/SettingsLayout').then(module => ({ default: module.SettingsLayout }))
+);
+const GeneralSettings = lazy(() =>
+  import('@/pages/settings/GeneralSettings').then(module => ({ default: module.GeneralSettings }))
+);
+const ProjectSettings = lazy(() =>
+  import('@/pages/settings/ProjectSettings').then(module => ({ default: module.ProjectSettings }))
+);
+const AgentSettings = lazy(() =>
+  import('@/pages/settings/AgentSettings').then(module => ({ default: module.AgentSettings }))
+);
+const McpSettings = lazy(() =>
+  import('@/pages/settings/McpSettings').then(module => ({ default: module.McpSettings }))
+);
+
 import {
   UserSystemProvider,
   useUserSystem,
@@ -43,10 +51,19 @@ import NiceModal from '@ebay/nice-modal-react';
 import { OnboardingResult } from '@/components/dialogs/global/OnboardingDialog';
 import { ClickedElementsProvider } from '@/contexts/ClickedElementsProvider';
 import { GenieMasterWidget } from '@/components/genie-widgets/GenieMasterWidget';
-import { SubGenieProvider } from '@/context/SubGenieContext';
+import { SubGenieProvider } from '@/contexts/SubGenieContext';
 import { useIsMobile } from '@/components/mobile/MobileLayout';
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
+
+// Loading fallback for lazy-loaded routes
+function RouteLoadingFallback() {
+  return (
+    <div className="flex-1 flex items-center justify-center">
+      <Loader message="Loading..." size={32} />
+    </div>
+  );
+}
 
 function AppContent() {
   const [isGenieOpen, setIsGenieOpen] = useState(false);
@@ -55,9 +72,7 @@ function AppContent() {
     useUserSystem();
   const posthog = usePostHog();
   const sessionStartTimeRef = useRef<number>(Date.now());
-  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
-    null
-  );
+  const heartbeatIntervalRef = useRef<number | null>(null);
   const eventCountRef = useRef<number>(0);
 
   // Track page navigation
@@ -71,8 +86,7 @@ function AppContent() {
     if (!posthog || !analyticsUserId) return;
 
     const userOptedIn = config?.analytics_enabled !== false;
-    const isNamestexer =
-      config?.github?.primary_email?.endsWith('@namastex.ai');
+    const isNamestexer = config?.github?.primary_email?.endsWith('@namastex.ai');
     const contactEmailOptIn = config?.contact_email_opt_in === true;
     const contactUsernameOptIn = config?.contact_username_opt_in === true;
 
@@ -121,35 +135,21 @@ function AppContent() {
       posthog.opt_out_capturing();
       console.log('[Analytics] Analytics disabled by user preference');
     }
-  }, [
-    config?.analytics_enabled,
-    config?.contact_email_opt_in,
-    config?.contact_username_opt_in,
-    config?.github?.primary_email,
-    config?.github?.username,
-    analyticsUserId,
-    posthog,
-  ]);
+  }, [config?.analytics_enabled, config?.contact_email_opt_in, config?.contact_username_opt_in, config?.github?.primary_email, config?.github?.username, analyticsUserId, posthog]);
 
   // Session tracking: session_started, session_ended, and heartbeat
   useEffect(() => {
-    if (!posthog || !analyticsUserId || config?.analytics_enabled === false)
-      return;
+    if (!posthog || !analyticsUserId || config?.analytics_enabled === false) return;
 
     // Capture session_started event
     const lastSessionTime = localStorage.getItem('last_session_time');
-    const totalSessions = parseInt(
-      localStorage.getItem('total_sessions') || '0',
-      10
-    );
+    const totalSessions = parseInt(localStorage.getItem('total_sessions') || '0', 10);
     const now = Date.now();
 
     let daysSinceLastSession: number | null = null;
     if (lastSessionTime) {
       const lastTime = parseInt(lastSessionTime, 10);
-      daysSinceLastSession = Math.floor(
-        (now - lastTime) / (1000 * 60 * 60 * 24)
-      );
+      daysSinceLastSession = Math.floor((now - lastTime) / (1000 * 60 * 60 * 24));
     }
 
     const sessionStartedEvent: SessionStartedEvent = {
@@ -180,9 +180,7 @@ function AppContent() {
         clearInterval(heartbeatIntervalRef.current);
       }
 
-      const sessionDuration = Math.floor(
-        (Date.now() - sessionStartTimeRef.current) / 1000
-      );
+      const sessionDuration = Math.floor((Date.now() - sessionStartTimeRef.current) / 1000);
       const sessionEndedEvent: SessionEndedEvent = {
         session_duration_seconds: sessionDuration,
         events_captured_count: eventCountRef.current,
@@ -312,51 +310,97 @@ function AppContent() {
                 {/* VS Code full-page logs route (outside ResponsiveLayout for minimal UI) */}
                 <Route
                   path="/projects/:projectId/tasks/:taskId/attempts/:attemptId/full"
-                  element={<FullAttemptLogsPage />}
+                  element={
+                    <Suspense fallback={<RouteLoadingFallback />}>
+                      <FullAttemptLogsPage />
+                    </Suspense>
+                  }
                 />
 
                 <Route element={<ResponsiveLayout />}>
-                  <Route path="/" element={<Projects />} />
-                  <Route path="/projects" element={<Projects />} />
-                  <Route path="/projects/:projectId" element={<Projects />} />
+                <Route path="/" element={<Projects />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/projects/:projectId" element={<Projects />} />
+                <Route
+                  path="/projects/:projectId/tasks"
+                  element={<ProjectTasks />}
+                />
+                <Route
+                  path="/settings/*"
+                  element={
+                    <Suspense fallback={<RouteLoadingFallback />}>
+                      <SettingsLayout />
+                    </Suspense>
+                  }
+                >
+                  <Route index element={<Navigate to="general" replace />} />
                   <Route
-                    path="/projects/:projectId/tasks"
-                    element={<ProjectTasks />}
+                    path="general"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <GeneralSettings />
+                      </Suspense>
+                    }
                   />
-                  <Route path="/settings/*" element={<SettingsLayout />}>
-                    <Route index element={<Navigate to="general" replace />} />
-                    <Route path="general" element={<GeneralSettings />} />
-                    <Route path="projects" element={<ProjectSettings />} />
-                    <Route path="agents" element={<AgentSettings />} />
-                    <Route path="mcp" element={<McpSettings />} />
-                  </Route>
                   <Route
-                    path="/mcp-servers"
-                    element={<Navigate to="/settings/mcp" replace />}
-                  />
-                  <Route path="/release-notes" element={<ReleaseNotesPage />} />
-                  <Route
-                    path="/projects/:projectId/tasks/:taskId"
-                    element={<ProjectTasks />}
+                    path="projects"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <ProjectSettings />
+                      </Suspense>
+                    }
                   />
                   <Route
-                    path="/projects/:projectId/tasks/:taskId/attempts/:attemptId"
-                    element={<ProjectTasks />}
+                    path="agents"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <AgentSettings />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="mcp"
+                    element={
+                      <Suspense fallback={<RouteLoadingFallback />}>
+                        <McpSettings />
+                      </Suspense>
+                    }
                   />
                 </Route>
-              </SentryRoutes>
-              <Footer />
-            </div>
-            {/* Hide GenieMasterWidget in mobile view - use bottom nav Genie button instead */}
-            {!isMobile && (
-              <GenieMasterWidget
-                isOpen={isGenieOpen}
-                onToggle={() => setIsGenieOpen(!isGenieOpen)}
-                onClose={() => setIsGenieOpen(false)}
-              />
-            )}
-          </MobileNavigationProvider>
-        </SearchProvider>
+                <Route
+                  path="/mcp-servers"
+                  element={<Navigate to="/settings/mcp" replace />}
+                />
+                <Route
+                  path="/release-notes"
+                  element={
+                    <Suspense fallback={<RouteLoadingFallback />}>
+                      <ReleaseNotesPage />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="/projects/:projectId/tasks/:taskId"
+                  element={<ProjectTasks />}
+                />
+                <Route
+                  path="/projects/:projectId/tasks/:taskId/attempts/:attemptId"
+                  element={<ProjectTasks />}
+                />
+              </Route>
+            </SentryRoutes>
+            <Footer />
+          </div>
+          {/* Hide GenieMasterWidget in mobile view - use bottom nav Genie button instead */}
+          {!isMobile && (
+            <GenieMasterWidget
+              isOpen={isGenieOpen}
+              onToggle={() => setIsGenieOpen(!isGenieOpen)}
+              onClose={() => setIsGenieOpen(false)}
+            />
+          )}
+        </MobileNavigationProvider>
+      </SearchProvider>
       </ThemeProvider>
     </I18nextProvider>
   );
