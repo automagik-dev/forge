@@ -44,6 +44,10 @@ function storeTheme(theme: ThemeMode): void {
 
 function getResolvedTheme(theme: ThemeMode): 'light' | 'dark' {
   if (theme === ThemeMode.SYSTEM) {
+    // SSR-safe: Check if window exists before accessing matchMedia
+    if (typeof window === 'undefined') {
+      return 'light'; // Default to light during SSR
+    }
     return window.matchMedia('(prefers-color-scheme: dark)').matches
       ? 'dark'
       : 'light';
