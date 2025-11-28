@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import MarkdownRenderer from '@/components/ui/markdown-renderer.tsx';
 import {
@@ -608,7 +609,7 @@ const DisplayConversationEntryMaxWidth = (props: Props) => {
   );
 };
 
-function DisplayConversationEntry({
+const DisplayConversationEntry = memo(function DisplayConversationEntry({
   entry,
   expansionKey,
   executionProcessId,
@@ -828,6 +829,6 @@ function DisplayConversationEntry({
       </div>
     </div>
   );
-}
+});
 
 export default DisplayConversationEntryMaxWidth;
