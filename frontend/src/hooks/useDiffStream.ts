@@ -53,7 +53,7 @@ export const useDiffStream = (
   const diffs = useMemo(() => {
     return Object.values(data?.entries ?? {})
       .filter((entry): entry is PatchType & { type: 'DIFF'; content: Diff } =>
-        entry?.type === 'DIFF' && entry.content != null
+        entry.type === 'DIFF' && entry.content != null
       )
       .map((entry) => entry.content);
   }, [data?.entries]);
