@@ -12,6 +12,10 @@ path = "src/main.rs"
 name = "generate-forge-types"
 path = "src/bin/generate_forge_types.rs"
 
+[[bin]]
+name = "forge-cleanup"
+path = "src/bin/cleanup.rs"
+
 [lib]
 name = "forge_app"
 crate-type = ["cdylib", "rlib"]

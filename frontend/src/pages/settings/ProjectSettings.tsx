@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { isEqual } from 'lodash';
+import { isEqual } from '@/utils/object';
 import {
   Card,
   CardContent,
