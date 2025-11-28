@@ -954,3 +954,21 @@ export const approvalsApi = {
     return handleApiResponse<ApprovalStatus>(res);
   },
 };
+
+// Beta Features API
+import type { BetaFeature } from 'shared/forge-types';
+
+export const betaFeaturesApi = {
+  list: async (): Promise<BetaFeature[]> => {
+    const response = await makeRequest('/api/forge/beta-features');
+    return handleApiResponse<BetaFeature[]>(response);
+  },
+
+  toggle: async (featureId: string): Promise<BetaFeature> => {
+    const response = await makeRequest(
+      `/api/forge/beta-features/${featureId}/toggle`,
+      { method: 'POST' }
+    );
+    return handleApiResponse<BetaFeature>(response);
+  },
+};
