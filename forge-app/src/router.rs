@@ -32,7 +32,7 @@ use db::models::{
 };
 use deployment::Deployment;
 use executors::profile::ExecutorProfileId;
-use forge_config::ForgeProjectSettings;
+use forge_config::{BetaFeature, ForgeProjectSettings};
 use server::routes::{
     self as upstream, approvals, auth, config as upstream_config, containers, drafts, events,
     execution_processes, filesystem, images, projects, tags, task_attempts, tasks,
@@ -158,7 +158,12 @@ fn forge_api_routes() -> Router<ForgeAppState> {
             "/api/forge/agents",
             get(get_forge_agents).post(create_forge_agent),
         )
-    // Branch-templates extension removed - using simple forge/ prefix
+        // Beta features API
+        .route("/api/forge/beta-features", get(list_beta_features))
+        .route(
+            "/api/forge/beta-features/{feature_id}/toggle",
+            post(toggle_beta_feature),
+        )
 }
 
 /// Forge-specific CreateTask that includes is_agent field
@@ -1756,6 +1761,41 @@ async fn update_project_settings(
         })?;
 
     Ok(Json(ApiResponse::success(settings)))
+}
+
+// ============================================================================
+// Beta Features API
+// ============================================================================
+
+/// List all beta features with their enabled states
+async fn list_beta_features(
+    State(services): State<ForgeServices>,
+) -> Result<Json<ApiResponse<Vec<BetaFeature>>>, StatusCode> {
+    services
+        .beta_features
+        .list()
+        .await
+        .map(|features| Json(ApiResponse::success(features)))
+        .map_err(|e| {
+            tracing::error!("Failed to list beta features: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })
+}
+
+/// Toggle a beta feature's enabled state
+async fn toggle_beta_feature(
+    Path(feature_id): Path<String>,
+    State(services): State<ForgeServices>,
+) -> Result<Json<ApiResponse<BetaFeature>>, StatusCode> {
+    services
+        .beta_features
+        .toggle(&feature_id)
+        .await
+        .map(|feature| Json(ApiResponse::success(feature)))
+        .map_err(|e| {
+            tracing::error!("Failed to toggle beta feature '{}': {}", feature_id, e);
+            StatusCode::BAD_REQUEST
+        })
 }
 
 /// Get executor profiles for a specific project
