@@ -22,9 +22,6 @@ export default tseslint.config(
   // TypeScript configuration with type checking
   ...tseslint.configs.recommended,
 
-  // Prettier compatibility (must be after other configs)
-  prettier,
-
   // Main configuration for TypeScript files
   {
     files: ['**/*.{ts,tsx}'],
@@ -115,5 +112,8 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/switch-exhaustiveness-check': 'off',
     },
-  }
+  },
+
+  // Prettier compatibility (MUST be last to properly disable conflicting rules)
+  prettier
 );
