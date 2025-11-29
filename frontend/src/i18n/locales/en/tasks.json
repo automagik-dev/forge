@@ -330,6 +330,11 @@
     "duplicate": "Duplicate",
     "archive": "Archive"
   },
+  "archive": {
+    "title": "Archived",
+    "showArchived": "Show archived tasks",
+    "hideArchived": "Hide archived tasks"
+  },
   "showcases": {
     "taskPanel": {
       "companion": {

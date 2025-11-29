@@ -10,8 +10,17 @@
         "agents": "Agents",
         "agentsDesc": "Coding agent configurations",
         "mcp": "MCP Servers",
-        "mcpDesc": "Model Context Protocol servers"
+        "mcpDesc": "Model Context Protocol servers",
+        "beta": "Beta Features",
+        "betaDesc": "Experimental features and early access"
       }
+    },
+    "betaFeatures": {
+      "title": "Beta Features",
+      "description": "Enable experimental features to try new functionality before general release.",
+      "warning": "Beta features are experimental and may be unstable. Use at your own risk.",
+      "noFeatures": "No beta features available at this time.",
+      "error": "Failed to load beta features"
     },
     "general": {
       "loading": "Loading settings...",

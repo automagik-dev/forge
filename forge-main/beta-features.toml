@@ -1,0 +1,13 @@
+# Beta Features Registry
+# Add new features here. Users toggle them in Settings > Beta Features.
+#
+# Usage:
+# 1. Add a new [features.your_feature_id] section below
+# 2. Use in Rust: services.beta_features.is_enabled("your_feature_id").await?
+# 3. Use in React: <BetaFeatureGate feature="your_feature_id">...</BetaFeatureGate>
+# 4. Users enable/disable features in Settings > Beta Features
+
+[features.task_archiving]
+name = "Task Archiving"
+description = "Hide archived tasks from the main board. Toggle visibility with the Archived button to show the column and drag tasks to unarchive."
+maturity = "experimental"

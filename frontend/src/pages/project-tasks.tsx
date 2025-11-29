@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertTriangle, Plus } from 'lucide-react';
+import { useBetaFeatures } from '@/contexts/beta-features-context';
 import { Loader } from '@/components/ui/loader';
 import { tasksApi } from '@/lib/api';
 import { openTaskForm } from '@/lib/openTaskForm';
@@ -59,7 +60,7 @@ import { ChatPanelActions } from '@/components/panels/ChatPanelActions';
 
 type Task = TaskWithAttemptStatus;
 
-const TASK_STATUSES = [
+const ALL_TASK_STATUSES = [
   'todo',
   'inprogress',
   'inreview',
@@ -89,6 +90,21 @@ export function ProjectTasks() {
   const isMobilePortrait =
     (isMobile && !isLandscape) || (isSmallScreen && !isLandscape);
   const posthog = usePostHog();
+
+  // Beta feature: task archiving - hide archived column from kanban unless showing archived
+  const { isEnabled } = useBetaFeatures();
+  const taskArchivingEnabled = isEnabled('task_archiving');
+
+  // Check if showing archived column
+  const showArchived = searchParams.get('filter') === 'archived';
+
+  // Filter out archived status when beta feature is enabled (unless showing archived)
+  const TASK_STATUSES = useMemo(() => {
+    if (taskArchivingEnabled && !showArchived) {
+      return ALL_TASK_STATUSES.filter((s) => s !== 'archived');
+    }
+    return ALL_TASK_STATUSES;
+  }, [taskArchivingEnabled, showArchived]);
 
   const {
     projectId,
@@ -311,12 +327,13 @@ export function ProjectTasks() {
       const normalizedStatus = task.status.toLowerCase();
       if (groups[normalizedStatus]) {
         groups[normalizedStatus].push(task);
-      } else {
+      } else if (normalizedStatus !== 'archived' || !taskArchivingEnabled) {
+        // Only add to 'todo' fallback if it's not an archived task being hidden
         groups['todo'].push(task);
       }
     });
     return groups;
-  }, [filteredTasks]);
+  }, [filteredTasks, TASK_STATUSES, taskArchivingEnabled]);
 
   useKeyNavUp(
     () => {
@@ -477,7 +494,7 @@ export function ProjectTasks() {
         }
       }
     }
-  }, [selectedTask, groupedFilteredTasks, handleViewTaskDetails]);
+  }, [selectedTask, groupedFilteredTasks, handleViewTaskDetails, TASK_STATUSES]);
 
   const selectPreviousTask = useCallback(() => {
     if (selectedTask) {
@@ -497,7 +514,7 @@ export function ProjectTasks() {
         }
       }
     }
-  }, [selectedTask, groupedFilteredTasks, handleViewTaskDetails]);
+  }, [selectedTask, groupedFilteredTasks, handleViewTaskDetails, TASK_STATUSES]);
 
   const selectNextColumn = useCallback(() => {
     if (selectedTask) {
@@ -520,7 +537,7 @@ export function ProjectTasks() {
         }
       }
     }
-  }, [selectedTask, groupedFilteredTasks, handleViewTaskDetails]);
+  }, [selectedTask, groupedFilteredTasks, handleViewTaskDetails, TASK_STATUSES]);
 
   const selectPreviousColumn = useCallback(() => {
     if (selectedTask) {
@@ -543,7 +560,7 @@ export function ProjectTasks() {
         }
       }
     }
-  }, [selectedTask, groupedFilteredTasks, handleViewTaskDetails]);
+  }, [selectedTask, groupedFilteredTasks, handleViewTaskDetails, TASK_STATUSES]);
 
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
@@ -608,40 +625,39 @@ export function ProjectTasks() {
     return <Loader message={t('loading')} size={32} className="py-8" />;
   }
 
-  const kanbanContent =
-    tasks.length === 0 ? (
-      <div className="max-w-7xl mx-auto mt-8">
-        <Card>
-          <CardContent className="text-center py-8">
-            <p className="text-muted-foreground">{t('empty.noTasks')}</p>
-            <Button className="mt-4" onClick={handleCreateNewTask}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t('empty.createFirst')}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    ) : filteredTasks.length === 0 ? (
-      <div className="max-w-7xl mx-auto mt-8">
-        <Card>
-          <CardContent className="text-center py-8">
-            <p className="text-muted-foreground">
-              {t('empty.noSearchResults')}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    ) : (
-      <div className="w-full h-full overflow-x-auto overflow-y-auto overscroll-x-contain touch-pan-y">
-        <TaskKanbanBoard
-          groupedTasks={groupedFilteredTasks}
-          onDragEnd={handleDragEnd}
-          onViewTaskDetails={handleViewTaskDetails}
-          selectedTask={selectedTask || undefined}
-          onCreateTask={handleCreateNewTask}
-        />
-      </div>
-    );
+  const kanbanContent = tasks.length === 0 ? (
+    <div className="max-w-7xl mx-auto mt-8">
+      <Card>
+        <CardContent className="text-center py-8">
+          <p className="text-muted-foreground">{t('empty.noTasks')}</p>
+          <Button className="mt-4" onClick={handleCreateNewTask}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('empty.createFirst')}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  ) : filteredTasks.length === 0 ? (
+    <div className="max-w-7xl mx-auto mt-8">
+      <Card>
+        <CardContent className="text-center py-8">
+          <p className="text-muted-foreground">
+            {t('empty.noSearchResults')}
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  ) : (
+    <div className="w-full h-full overflow-x-auto overflow-y-auto overscroll-x-contain touch-pan-y">
+      <TaskKanbanBoard
+        groupedTasks={groupedFilteredTasks}
+        onDragEnd={handleDragEnd}
+        onViewTaskDetails={handleViewTaskDetails}
+        selectedTask={selectedTask || undefined}
+        onCreateTask={handleCreateNewTask}
+      />
+    </div>
+  );
 
   // Breadcrumb is always shown in the main navbar - no need to duplicate it here
   const rightHeader = null;

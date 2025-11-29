@@ -18,3 +18,7 @@ export type OmniInstance = { instance_name: string, channel_type: string, displa
 export type SendTextRequest = { phone_number: string | null, user_id: string | null, text: string, };
 
 export type SendTextResponse = { success: boolean, message_id: string | null, status: string, error: string | null, };
+
+export type BetaFeature = { id: string, name: string, description: string, maturity: FeatureMaturity, enabled: boolean, };
+
+export type FeatureMaturity = "experimental" | "beta" | "stable";

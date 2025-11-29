@@ -1,7 +1,7 @@
 use std::{env, fs, path::Path};
 
 use anyhow::{Context, Result, bail};
-use forge_config::{ForgeProjectSettings, ProjectConfig};
+use forge_config::{BetaFeature, FeatureMaturity, ForgeProjectSettings, ProjectConfig};
 use forge_omni::{OmniConfig, OmniInstance, RecipientType, SendTextRequest, SendTextResponse};
 use ts_rs::TS;
 
@@ -18,6 +18,9 @@ fn main() -> Result<()> {
         OmniInstance::decl(),
         SendTextRequest::decl(),
         SendTextResponse::decl(),
+        // Beta features types
+        BetaFeature::decl(),
+        FeatureMaturity::decl(),
     ];
 
     let body = declarations
