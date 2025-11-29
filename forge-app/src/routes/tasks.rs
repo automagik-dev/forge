@@ -364,6 +364,12 @@ pub struct ForgeCreateAndStartTaskRequest {
     pub executor_profile_id: executors::profile::ExecutorProfileId,
     pub base_branch: String,
     pub github_issue_id: Option<i64>, // GitHub issue ID for "No Wish Without Issue" rule
+    #[serde(default = "default_use_worktree")]
+    pub use_worktree: bool,
+}
+
+fn default_use_worktree() -> bool {
+    true
 }
 
 /// Forge override: create task and start with forge/ branch prefix (vk -> forge only)
@@ -411,9 +417,13 @@ pub async fn forge_create_task_and_start(
 
     let task_attempt_id = Uuid::new_v4();
 
-    let task_title_id = git_branch_id(&task.title);
-    let short_id = short_uuid(&task_attempt_id);
-    let branch_name = format!("forge/{}-{}", short_id, task_title_id);
+    let branch_name = if payload.use_worktree {
+        let task_title_id = git_branch_id(&task.title);
+        let short_id = short_uuid(&task_attempt_id);
+        format!("forge/{}-{}", short_id, task_title_id)
+    } else {
+        payload.base_branch.clone()
+    };
 
     let mut task_attempt = TaskAttempt::create(
         &deployment.db().pool,
@@ -431,7 +441,7 @@ pub async fn forge_create_task_and_start(
         "INSERT INTO forge_task_attempt_config (task_attempt_id, use_worktree) VALUES (?, ?)"
     )
     .bind(task_attempt_id)
-    .bind(true)
+    .bind(payload.use_worktree)
     .execute(&deployment.db().pool)
     .await?;
 

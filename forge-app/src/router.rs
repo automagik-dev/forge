@@ -22,7 +22,7 @@ use server::{
     DeploymentImpl,
     routes::{
         self as upstream, approvals, auth, containers, drafts, events,
-        execution_processes, filesystem, images, projects as upstream_projects,
+        execution_processes, filesystem, images, projects as upstream_projects, tags,
     },
 };
 
@@ -124,6 +124,7 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
         execution_processes::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()),
     );
     router = router.merge(auth::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
+    router = router.merge(tags::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
     router = router.merge(filesystem::router().with_state::<ForgeAppState>(dep_clone.clone()));
     router =
         router.merge(events::router(deployment).with_state::<ForgeAppState>(dep_clone.clone()));
