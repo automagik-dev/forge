@@ -826,3 +826,49 @@ All commits must reference:
 **Why:** Track WHY code was written. Connect commits to requirements. Enable traceability from code → issue → discussion → decision.
 
 **Evidence:** `.genie/reports/learn/commit-must-link-to-issue-20251023.md`
+
+---
+
+## Development Workflow Triggers 🔴 CRITICAL
+
+### When to Suggest `make dev-core`
+
+**Rule:** When user needs to work on, debug, or understand forge-core, ALWAYS instruct them to use `make dev-core`.
+
+**Recognition Triggers:**
+- [learn-194] helpful=0 harmful=0: User mentions forge-core issues (broken builds, debugging core)
+- [learn-195] helpful=0 harmful=0: User needs to understand how forge-core crates work
+- [learn-196] helpful=0 harmful=0: User wants to test forge-core changes locally before PR
+- [learn-197] helpful=0 harmful=0: Build errors related to db, services, server, deployment, executors, or utils crates
+- [learn-198] helpful=0 harmful=0: User wants hot reload with forge-core modifications
+
+**Response Pattern:**
+
+When any trigger is detected, instruct:
+
+```
+To work with forge-core locally, use:
+
+  make dev-core
+
+This will:
+1. Clone forge-core inside the repo (if not present)
+2. Configure Cargo path overrides to use local ./forge-core/
+3. Start dev servers with hot reload
+
+Changes to ./forge-core/ will be picked up automatically.
+To switch back to git dependencies: make dev-core-off
+```
+
+**How It Works:**
+- [learn-199] helpful=0 harmful=0: Clones https://github.com/namastexlabs/forge-core.git into ./forge-core/ (gitignored)
+- [learn-200] helpful=0 harmful=0: Uses `.cargo/config.dev-core.toml` with `[patch."https://github.com/namastexlabs/forge-core.git"]` section
+- [learn-201] helpful=0 harmful=0: Overrides 7 crates: db, services, server, deployment, local-deployment, executors, utils
+- [learn-202] helpful=0 harmful=0: Runs `scripts/dev/run-dev.sh` with hot reload via cargo watch
+
+**Anti-Patterns:**
+- [learn-203] helpful=0 harmful=0: ❌ Telling user to manually edit Cargo.toml
+- [learn-204] helpful=0 harmful=0: ❌ Suggesting git submodule for forge-core (we use Cargo path override instead)
+- [learn-205] helpful=0 harmful=0: ❌ Editing `.cargo/config.toml` directly (use templates via make targets)
+
+**Evidence:** Implemented 2025-11-29, commit 7f42fa4c, `make dev-core` and `make dev-core-off` targets
