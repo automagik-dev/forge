@@ -120,7 +120,13 @@ forge.db.before-*
 logs/
 
 # Upstream submodule removed - ignore leftover directory
-upstream/ 
+upstream/
+
+# Local forge-core for development (make dev-core)
+forge-core/
+
+# Cargo config is generated dynamically (use config.base.toml or config.dev-core.toml)
+.cargo/config.toml 
 
 # Vite generated files
 *.timestamp-*.mjs

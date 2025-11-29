@@ -1,4 +1,4 @@
-.PHONY: help dev prod backend frontend ensure-frontend-stub build-frontend build test clean publish beta version npm check-cargo check-android-deps publish-automagik publish-automagik-quick service install update uninstall install-deps install-complete install-complete-no-pm2 setup-pm2 start-local stop-local restart-local service-status logs logs-follow health
+.PHONY: help dev dev-core dev-core-off ensure-cargo-config prod backend frontend ensure-frontend-stub build-frontend build test clean publish beta version npm check-cargo check-android-deps publish-automagik publish-automagik-quick service install update uninstall install-deps install-complete install-complete-no-pm2 setup-pm2 start-local stop-local restart-local service-status logs logs-follow health
 
 # Ensure bash is used for echo -e support
 SHELL := /bin/bash
@@ -96,6 +96,8 @@ help: ## 🔨 Show this help message
 	@echo ""
 	@echo -e "$(FONT_CYAN)🛠️  Development:$(FONT_RESET)"
 	@echo -e "  $(FONT_PURPLE)dev$(FONT_RESET)             Start dev environment (hot reload)"
+	@echo -e "  $(FONT_PURPLE)dev-core$(FONT_RESET)        Dev with local forge-core (for debugging)"
+	@echo -e "  $(FONT_PURPLE)dev-core-off$(FONT_RESET)    Switch back to git dependencies"
 	@echo -e "  $(FONT_PURPLE)prod$(FONT_RESET)            Build and test production package"
 	@echo -e "  $(FONT_PURPLE)forge$(FONT_RESET)           Alias for 'make prod'"
 	@echo -e "  $(FONT_PURPLE)backend$(FONT_RESET)         Backend only (use BP=port to override)"
@@ -627,9 +629,45 @@ check-android-deps:
 		fi; \
 	fi
   
+# Ensure cargo config exists (uses base config by default)
+ensure-cargo-config:
+	@if [ ! -f ".cargo/config.toml" ]; then \
+		cp .cargo/config.base.toml .cargo/config.toml; \
+	fi
+
 # Development mode - hot reload (backend first, then frontend)
-dev: check-android-deps check-cargo
+dev: check-android-deps check-cargo ensure-cargo-config
 	@bash scripts/dev/run-dev.sh
+
+# Development with local forge-core (for debugging/development)
+# Clone forge-core inside repo at same level as forge-app
+dev-core: check-android-deps check-cargo
+	@echo ""
+	@echo -e "$(FONT_PURPLE)🔧 Setting up local forge-core development...$(FONT_RESET)"
+	@if [ ! -d "forge-core" ]; then \
+		echo -e "$(FONT_CYAN)📦 Cloning forge-core...$(FONT_RESET)"; \
+		git clone https://github.com/namastexlabs/forge-core.git forge-core; \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core cloned$(FONT_RESET)"; \
+	else \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core already exists$(FONT_RESET)"; \
+	fi
+	@echo -e "$(FONT_CYAN)⚙️  Enabling Cargo path override...$(FONT_RESET)"
+	@cp .cargo/config.dev-core.toml .cargo/config.toml
+	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using local forge-core at ./forge-core$(FONT_RESET)"
+	@echo ""
+	@echo -e "$(FONT_YELLOW)$(INFO) Hot reload will pick up changes from ./forge-core$(FONT_RESET)"
+	@echo -e "$(FONT_YELLOW)$(INFO) Run 'make dev-core-off' to switch back to git dependencies$(FONT_RESET)"
+	@echo ""
+	@bash scripts/dev/run-dev.sh
+
+# Disable local forge-core (back to git dependencies)
+dev-core-off:
+	@if [ -f ".cargo/config.toml" ]; then \
+		cp .cargo/config.base.toml .cargo/config.toml; \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) Disabled local forge-core - using git dependencies$(FONT_RESET)"; \
+	else \
+		echo -e "$(FONT_CYAN)$(INFO) Already using git dependencies$(FONT_RESET)"; \
+	fi
 
 # Production mode - test what will be published
 prod: check-android-deps check-cargo
