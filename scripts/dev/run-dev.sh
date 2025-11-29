@@ -183,12 +183,12 @@ fi
 # Note: We don't use --env-file flag because it doesn't reliably pass vars to child processes
 # Instead, we rely on the shell environment (already loaded via source .env above)
 # FORGE_WATCH_PATHS: Additional paths to watch (used by dev-core mode for forge-core)
-EXTRA_WATCH=""
-if [ -n "${FORGE_WATCH_PATHS:-}" ]; then
-    EXTRA_WATCH="-w ${FORGE_WATCH_PATHS}"
+watch_args=("-w" "forge-app/src" "-w" "forge-extensions")
+if [[ -n "${FORGE_WATCH_PATHS:-}" ]]; then
+    watch_args+=("-w" "${FORGE_WATCH_PATHS}")
     echo "📦 Also watching: ${FORGE_WATCH_PATHS}"
 fi
-cargo watch -w forge-app/src -w forge-extensions $EXTRA_WATCH -x 'run --bin forge-app' &
+cargo watch "${watch_args[@]}" -x 'run --bin forge-app' &
 BACKEND_PID=$!
 
 # Function to cleanup on exit

@@ -664,20 +664,13 @@ dev-core: check-android-deps check-cargo
 	fi
 	@echo -e "$(FONT_CYAN)📍 forge-core @ $$(cd forge-core && git log -1 --format='%h %s')$(FONT_RESET)"
 	@echo -e "$(FONT_CYAN)⚙️  Switching to path dependencies...$(FONT_RESET)"
-	@# Backup original Cargo.toml files if not already backed up
-	@if [ ! -f "Cargo.git.toml" ]; then \
-		cp Cargo.toml Cargo.git.toml; \
-	fi
-	@if [ ! -f "forge-app/Cargo.git.toml" ]; then \
-		cp forge-app/Cargo.toml forge-app/Cargo.git.toml; \
-	fi
-	@if [ ! -f "forge-extensions/config/Cargo.git.toml" ]; then \
-		cp forge-extensions/config/Cargo.toml forge-extensions/config/Cargo.git.toml; \
-	fi
-	@# Switch all to dev-core versions
-	@cp Cargo.dev-core.toml Cargo.toml
-	@cp forge-app/Cargo.dev-core.toml forge-app/Cargo.toml
-	@cp forge-extensions/config/Cargo.dev-core.toml forge-extensions/config/Cargo.toml
+	@# Backup and switch to dev-core versions
+	@for f in Cargo.toml forge-app/Cargo.toml forge-extensions/config/Cargo.toml; do \
+		if [ ! -f "$${f%.toml}.git.toml" ]; then \
+			cp "$$f" "$${f%.toml}.git.toml"; \
+		fi; \
+		cp "$${f%.toml}.dev-core.toml" "$$f"; \
+	done
 	@# Clean and regenerate Cargo.lock for path deps
 	@rm -f Cargo.lock
 	@cargo fetch 2>/dev/null || true
@@ -701,18 +694,11 @@ dev-core: check-android-deps check-cargo
 dev-core-off:
 	@echo -e "$(FONT_CYAN)🔄 Switching back to git dependencies...$(FONT_RESET)"
 	@# Restore all original Cargo.toml files from backup
-	@if [ -f "Cargo.git.toml" ]; then \
-		cp Cargo.git.toml Cargo.toml; \
-		rm -f Cargo.git.toml; \
-	fi
-	@if [ -f "forge-app/Cargo.git.toml" ]; then \
-		cp forge-app/Cargo.git.toml forge-app/Cargo.toml; \
-		rm -f forge-app/Cargo.git.toml; \
-	fi
-	@if [ -f "forge-extensions/config/Cargo.git.toml" ]; then \
-		cp forge-extensions/config/Cargo.git.toml forge-extensions/config/Cargo.toml; \
-		rm -f forge-extensions/config/Cargo.git.toml; \
-	fi
+	@for f in Cargo.toml forge-app/Cargo.toml forge-extensions/config/Cargo.toml; do \
+		if [ -f "$${f%.toml}.git.toml" ]; then \
+			mv "$${f%.toml}.git.toml" "$$f"; \
+		fi; \
+	done
 	@rm -f .dev-core-active
 	@rm -f Cargo.lock
 	@echo -e "$(FONT_CYAN)📦 Regenerating Cargo.lock...$(FONT_RESET)"
