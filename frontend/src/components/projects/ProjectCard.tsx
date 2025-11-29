@@ -22,7 +22,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Project, TaskWithAttemptStatus } from 'shared/types';
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useOpenProjectInEditor } from '@/hooks/useOpenProjectInEditor';
 import { useNavigateWithSearch } from '@/hooks';
@@ -38,7 +38,7 @@ type Props = {
   onEdit: (project: Project) => void;
 };
 
-function ProjectCard({
+const ProjectCard = memo(function ProjectCard({
   project,
   isFocused,
   fetchProjects,
@@ -223,6 +223,6 @@ function ProjectCard({
       </CardHeader>
     </Card>
   );
-}
+});
 
 export default ProjectCard;
