@@ -182,7 +182,13 @@ fi
 # Start backend with cargo watch
 # Note: We don't use --env-file flag because it doesn't reliably pass vars to child processes
 # Instead, we rely on the shell environment (already loaded via source .env above)
-cargo watch -w forge-app/src -w forge-extensions -x 'run --bin forge-app' &
+# FORGE_WATCH_PATHS: Additional paths to watch (used by dev-core mode for forge-core)
+EXTRA_WATCH=""
+if [ -n "${FORGE_WATCH_PATHS:-}" ]; then
+    EXTRA_WATCH="-w ${FORGE_WATCH_PATHS}"
+    echo "📦 Also watching: ${FORGE_WATCH_PATHS}"
+fi
+cargo watch -w forge-app/src -w forge-extensions $EXTRA_WATCH -x 'run --bin forge-app' &
 BACKEND_PID=$!
 
 # Function to cleanup on exit

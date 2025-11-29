@@ -663,8 +663,24 @@ dev-core: check-android-deps check-cargo
 		fi; \
 	fi
 	@echo -e "$(FONT_CYAN)📍 forge-core @ $$(cd forge-core && git log -1 --format='%h %s')$(FONT_RESET)"
-	@echo -e "$(FONT_CYAN)⚙️  Enabling Cargo path override...$(FONT_RESET)"
-	@cp .cargo/config.dev-core.toml .cargo/config.toml
+	@echo -e "$(FONT_CYAN)⚙️  Switching to path dependencies...$(FONT_RESET)"
+	@# Backup original Cargo.toml files if not already backed up
+	@if [ ! -f "Cargo.git.toml" ]; then \
+		cp Cargo.toml Cargo.git.toml; \
+	fi
+	@if [ ! -f "forge-app/Cargo.git.toml" ]; then \
+		cp forge-app/Cargo.toml forge-app/Cargo.git.toml; \
+	fi
+	@if [ ! -f "forge-extensions/config/Cargo.git.toml" ]; then \
+		cp forge-extensions/config/Cargo.toml forge-extensions/config/Cargo.git.toml; \
+	fi
+	@# Switch all to dev-core versions
+	@cp Cargo.dev-core.toml Cargo.toml
+	@cp forge-app/Cargo.dev-core.toml forge-app/Cargo.toml
+	@cp forge-extensions/config/Cargo.dev-core.toml forge-extensions/config/Cargo.toml
+	@# Clean and regenerate Cargo.lock for path deps
+	@rm -f Cargo.lock
+	@cargo fetch 2>/dev/null || true
 	@echo "$$(date -Iseconds)" > .dev-core-active
 	@echo "branch=$(BRANCH)" >> .dev-core-active
 	@mkdir -p .git/hooks scripts/hooks
@@ -679,12 +695,24 @@ dev-core: check-android-deps check-cargo
 	@echo -e "$(FONT_YELLOW)$(INFO) Run 'make dev-core-off' to switch back to git dependencies$(FONT_RESET)"
 	@echo -e "$(FONT_YELLOW)$(INFO) Pre-push hook will BLOCK if dev-core is still enabled$(FONT_RESET)"
 	@echo ""
-	@bash scripts/dev/run-dev.sh
+	@FORGE_WATCH_PATHS="forge-core/crates" bash scripts/dev/run-dev.sh
 
 # Disable local forge-core (back to git dependencies) with true reset
 dev-core-off:
 	@echo -e "$(FONT_CYAN)🔄 Switching back to git dependencies...$(FONT_RESET)"
-	@cp .cargo/config.base.toml .cargo/config.toml
+	@# Restore all original Cargo.toml files from backup
+	@if [ -f "Cargo.git.toml" ]; then \
+		cp Cargo.git.toml Cargo.toml; \
+		rm -f Cargo.git.toml; \
+	fi
+	@if [ -f "forge-app/Cargo.git.toml" ]; then \
+		cp forge-app/Cargo.git.toml forge-app/Cargo.toml; \
+		rm -f forge-app/Cargo.git.toml; \
+	fi
+	@if [ -f "forge-extensions/config/Cargo.git.toml" ]; then \
+		cp forge-extensions/config/Cargo.git.toml forge-extensions/config/Cargo.toml; \
+		rm -f forge-extensions/config/Cargo.git.toml; \
+	fi
 	@rm -f .dev-core-active
 	@rm -f Cargo.lock
 	@echo -e "$(FONT_CYAN)📦 Regenerating Cargo.lock...$(FONT_RESET)"

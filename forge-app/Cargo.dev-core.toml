@@ -1,0 +1,88 @@
+# DEV-CORE MODE: forge-app as standalone crate (not part of parent workspace)
+# This empty [workspace] makes Cargo treat this as its own workspace root,
+# which allows forge-core path deps to resolve their workspace correctly
+
+[workspace]
+
+[package]
+name = "forge-app"
+version = "0.8.4"
+edition = "2024"
+default-run = "forge-app"
+
+[[bin]]
+name = "forge-app"
+path = "src/main.rs"
+
+[[bin]]
+name = "generate-forge-types"
+path = "src/bin/generate_forge_types.rs"
+
+[lib]
+name = "forge_app"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Framework dependencies (INLINED - no workspace refs for dev-core isolation)
+axum = { version = "0.8.4", features = ["macros", "multipart", "ws"] }
+tokio = { version = "1.0", features = ["full"] }
+tower-http = { version = "0.5", features = ["cors"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+rust-embed = { version = "8.0", features = ["debug-embed"] }
+mime_guess = "2.0"
+ts-rs = { git = "https://github.com/xazukx/ts-rs.git", branch = "use-ts-enum", features = ["uuid-impl", "chrono-impl", "no-serde-warnings", "serde-json-impl"] }
+reqwest = { version = "0.12", features = ["json", "multipart"] }
+urlencoding = "2.1"
+base64 = "0.22"
+futures-util = "0.3"
+json-patch = "2.0"
+url = "2.5"
+thiserror = "2.0.12"
+
+# OpenAPI dependencies (manual YAML spec)
+serde_yaml = "0.9"
+
+# .genie profile discovery
+regex = "1.10"
+convert_case = "0.6"
+notify = "6.1"
+
+# Database dependencies
+sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "migrate", "uuid", "chrono"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Upstream crate dependencies (LOCAL - dev-core mode)
+# Path deps work because forge-app is now standalone (no workspace refs)
+# and forge-core crates resolve their workspace from forge-core/Cargo.toml
+db = { path = "../forge-core/crates/db" }
+services = { path = "../forge-core/crates/services" }
+server = { path = "../forge-core/crates/server" }
+deployment = { path = "../forge-core/crates/deployment" }
+local-deployment = { path = "../forge-core/crates/local-deployment" }
+executors = { path = "../forge-core/crates/executors" }
+utils = { path = "../forge-core/crates/utils" }
+
+# Forge extensions (INLINED - no workspace refs)
+forge-omni = { path = "../forge-extensions/omni" }
+forge-config = { path = "../forge-extensions/config" }
+
+# Android JNI
+jni = { version = "0.21", optional = true }
+android_logger = { version = "0.14", optional = true }
+log = "0.4"
+
+[features]
+android = ["jni", "android_logger"]
+
+[dev-dependencies]
+httpmock = "0.7"
+serial_test = "3.0"
+
+# Android-specific dependencies - force vendored OpenSSL for cross-compilation
+[target.'cfg(target_os = "android")'.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
