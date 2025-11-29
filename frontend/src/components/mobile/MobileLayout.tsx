@@ -9,7 +9,14 @@ import { MobileMoreMenu } from './MobileMoreMenu';
 import { usePlatform } from '@/lib/platform';
 import { useProject } from '@/contexts/project-context';
 import { useMobileNavigation } from '@/contexts/MobileNavigationContext';
-import { Kanban, GitCompareArrows, FileText, Settings, Heart, ListTodo } from 'lucide-react';
+import {
+  Kanban,
+  GitCompareArrows,
+  FileText,
+  Settings,
+  Heart,
+  ListTodo,
+} from 'lucide-react';
 import { Lamp } from '@/components/icons/Lamp';
 import { DiffActionSheet } from './DiffActionSheet';
 import { useMobileTaskActions } from '@/hooks/useMobileTaskActions';
@@ -30,7 +37,7 @@ export function MobileLayout({
   hideBottomNav: hideBottomNavProp = false,
   showHeader = true,
   className,
-  contentClassName
+  contentClassName,
 }: MobileLayoutProps) {
   const { t } = useTranslation('common');
   const { isNative } = usePlatform();
@@ -140,13 +147,15 @@ export function MobileLayout({
       },
     ];
   }, [projectId, taskId, t]);
-  
+
   return (
-    <div className={cn(
-      'h-screen flex flex-col bg-[#1A1625]',
-      isNative && 'pt-safe',
-      className
-    )}>
+    <div
+      className={cn(
+        'h-screen flex flex-col bg-[#1A1625]',
+        isNative && 'pt-safe',
+        className
+      )}
+    >
       {/* Mobile Header */}
       {showHeader && (
         <MobileHeader
@@ -157,15 +166,13 @@ export function MobileLayout({
 
       {/* Main content */}
       <main
-        className={cn(
-          'flex-1 overflow-auto mobile-scroll',
-          contentClassName
-        )}
+        className={cn('flex-1 overflow-auto mobile-scroll', contentClassName)}
         style={{
           paddingTop: showHeader ? '32px' : undefined, // Header height
-          paddingBottom: showBottomNav && !hideBottomNav
-            ? `calc(${getMobileSpacing('bottomNav')} + env(safe-area-inset-bottom, 0px))`
-            : undefined
+          paddingBottom:
+            showBottomNav && !hideBottomNav
+              ? `calc(${getMobileSpacing('bottomNav')} + env(safe-area-inset-bottom, 0px))`
+              : undefined,
         }}
       >
         {children}

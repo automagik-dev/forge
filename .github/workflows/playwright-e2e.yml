@@ -22,6 +22,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libclang-dev llvm-dev
+
       - name: Setup Node
         uses: ./.github/actions/setup-node
 
@@ -29,7 +34,8 @@ jobs:
         run: pnpm install
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        # Note: --with-deps removed for self-hosted runner (system deps pre-installed)
+        run: npx playwright install chromium
 
       - name: Build frontend
         run: cd frontend && pnpm build

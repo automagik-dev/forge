@@ -48,6 +48,10 @@ use utils::text::{git_branch_id, short_uuid};
 #[folder = "../frontend/dist"]
 struct Frontend;
 
+/// Type alias for TaskWithAttemptStatus which now includes attempt_count from upstream.
+/// Kept for API compatibility during transition.
+pub type ForgeTaskWithAttemptStatus = TaskWithAttemptStatus;
+
 #[derive(Clone)]
 struct ForgeAppState {
     services: ForgeServices,
@@ -213,12 +217,7 @@ struct ForgeCreateTaskAttemptBody {
     pub task_id: Uuid,
     pub executor_profile_id: ExecutorProfileId,
     pub base_branch: String,
-    #[serde(default = "default_use_worktree")]
-    pub use_worktree: bool,
-}
-
-fn default_use_worktree() -> bool {
-    true
+    pub use_worktree: Option<bool>,
 }
 
 impl ForgeCreateTaskAttemptBody {
@@ -239,10 +238,11 @@ async fn forge_create_task_attempt(
         .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
 
     let attempt_id = Uuid::new_v4();
+    let use_worktree = payload.use_worktree.unwrap_or(true);
 
     // If use_worktree is false, use the current branch (base_branch) directly
     // Otherwise, generate a new branch name for the worktree with "forge" prefix
-    let git_branch_name = if payload.use_worktree {
+    let git_branch_name = if use_worktree {
         let task_title_id = git_branch_id(&task.title);
         let short_id = short_uuid(&attempt_id);
         format!("forge/{}-{}", short_id, task_title_id)
@@ -267,7 +267,7 @@ async fn forge_create_task_attempt(
         "INSERT INTO forge_task_attempt_config (task_attempt_id, use_worktree) VALUES (?, ?)",
     )
     .bind(attempt_id)
-    .bind(payload.use_worktree)
+    .bind(use_worktree)
     .execute(&deployment.db().pool)
     .await?;
 
@@ -358,6 +358,12 @@ async fn forge_create_task_attempt(
         );
 
         executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+
+        // Register project in profile cache for subsequent API lookups
+        forge_services
+            .profile_cache
+            .register_project(project.id, project.git_repo_path.clone())
+            .await;
     } else {
         tracing::warn!(
             "⚠️  Failed to load .genie profiles for workspace: {}, using defaults",
@@ -389,12 +395,39 @@ async fn forge_create_task_and_start(
     State(deployment): State<DeploymentImpl>,
     State(forge_services): State<ForgeServices>,
     Json(payload): Json<CreateAndStartTaskRequest>,
-) -> Result<Json<ApiResponse<TaskWithAttemptStatus>>, ApiError> {
+) -> Result<Json<ApiResponse<ForgeTaskWithAttemptStatus>>, ApiError> {
     let task_id = Uuid::new_v4();
     let task = Task::create(&deployment.db().pool, &payload.task, task_id).await?;
 
     if let Some(image_ids) = &payload.task.image_ids {
         TaskImage::associate_many(&deployment.db().pool, task.id, image_ids).await?;
+    }
+
+    // If this is a non-worktree task (Genie chat), register in forge_agents to hide from kanban
+    let use_worktree = payload.use_worktree.unwrap_or(true);
+    if !use_worktree {
+        // Use transaction for atomicity (both succeed or both fail)
+        let mut tx = deployment.db().pool.begin().await?;
+
+        sqlx::query(
+            r#"INSERT INTO forge_agents (id, project_id, agent_type, task_id, created_at, updated_at)
+               VALUES (?, ?, 'genie_chat', ?, datetime('now'), datetime('now'))"#,
+        )
+        .bind(Uuid::new_v4())
+        .bind(task.project_id)
+        .bind(task.id)
+        .execute(&mut *tx)
+        .await?;
+
+        // Also set task status to 'agent' so it's filtered from kanban board
+        sqlx::query(
+            "UPDATE tasks SET status = 'agent', updated_at = datetime('now') WHERE id = ?",
+        )
+        .bind(task.id)
+        .execute(&mut *tx)
+        .await?;
+
+        tx.commit().await?;
     }
 
     deployment
@@ -411,10 +444,16 @@ async fn forge_create_task_and_start(
 
     let task_attempt_id = Uuid::new_v4();
 
-    // Use same logic as upstream but replace "vk" with "forge" prefix
-    let task_title_id = git_branch_id(&task.title);
-    let short_id = short_uuid(&task_attempt_id);
-    let branch_name = format!("forge/{}-{}", short_id, task_title_id);
+    // Branch naming respects use_worktree: if false, run on base branch directly (no worktree isolation)
+    let branch_name = if use_worktree {
+        // Use same logic as upstream but replace "vk" with "forge" prefix
+        let task_title_id = git_branch_id(&task.title);
+        let short_id = short_uuid(&task_attempt_id);
+        format!("forge/{}-{}", short_id, task_title_id)
+    } else {
+        // Non-worktree mode: run directly on base branch (e.g., Genie chat)
+        payload.base_branch.clone()
+    };
 
     let mut task_attempt = TaskAttempt::create(
         &deployment.db().pool,
@@ -428,12 +467,12 @@ async fn forge_create_task_and_start(
     )
     .await?;
 
-    // Insert use_worktree flag into forge_task_attempt_config (defaults to true for regular tasks)
+    // Insert use_worktree flag into forge_task_attempt_config
     sqlx::query(
         "INSERT INTO forge_task_attempt_config (task_attempt_id, use_worktree) VALUES (?, ?)",
     )
     .bind(task_attempt_id)
-    .bind(true) // Regular tasks always use worktree
+    .bind(use_worktree)
     .execute(&deployment.db().pool)
     .await?;
 
@@ -524,6 +563,12 @@ async fn forge_create_task_and_start(
         );
 
         executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+
+        // Register project in profile cache for subsequent API lookups
+        forge_services
+            .profile_cache
+            .register_project(project.id, project.git_repo_path.clone())
+            .await;
     } else {
         tracing::warn!(
             "⚠️  Failed to load .genie profiles for workspace: {}, using defaults",
@@ -562,6 +607,7 @@ async fn forge_create_task_and_start(
         has_merged_attempt: false,
         last_attempt_failed: false,
         executor: task_attempt.executor,
+        attempt_count: 1, // First attempt just created
     })))
 }
 
@@ -636,7 +682,7 @@ struct GetTasksParams {
 async fn forge_get_tasks(
     State(deployment): State<DeploymentImpl>,
     Query(params): Query<GetTasksParams>,
-) -> Result<Json<ApiResponse<Vec<TaskWithAttemptStatus>>>, ApiError> {
+) -> Result<Json<ApiResponse<Vec<ForgeTaskWithAttemptStatus>>>, ApiError> {
     let pool = &deployment.db().pool;
 
     // Exclude tasks that are registered as agent tasks in forge_agents table
@@ -678,7 +724,12 @@ async fn forge_get_tasks(
       WHERE ta.task_id = t.id
      ORDER BY ta.created_at DESC
       LIMIT 1
-    )                               AS executor
+    )                               AS executor,
+
+  ( SELECT COUNT(*)
+      FROM task_attempts ta
+      WHERE ta.task_id = t.id
+    )                               AS attempt_count
 
 FROM tasks t
 WHERE t.project_id = ?
@@ -690,7 +741,7 @@ ORDER BY t.created_at DESC"#;
         .fetch_all(pool)
         .await?;
 
-    let mut items: Vec<TaskWithAttemptStatus> = Vec::with_capacity(rows.len());
+    let mut items: Vec<ForgeTaskWithAttemptStatus> = Vec::with_capacity(rows.len());
     for row in rows {
         let task_id: Uuid = row.try_get("id").map_err(ApiError::Database)?;
         let task = db::models::task::Task::find_by_id(pool, task_id)
@@ -706,6 +757,7 @@ ORDER BY t.created_at DESC"#;
             .map(|v| v != 0)
             .unwrap_or(false);
         let executor: String = row.try_get("executor").unwrap_or_else(|_| String::new());
+        let attempt_count: i64 = row.try_get::<i64, _>("attempt_count").unwrap_or(0);
 
         items.push(TaskWithAttemptStatus {
             task,
@@ -713,6 +765,7 @@ ORDER BY t.created_at DESC"#;
             has_merged_attempt: false,
             last_attempt_failed,
             executor,
+            attempt_count,
         });
     }
 
@@ -868,6 +921,15 @@ async fn handle_forge_tasks_ws(
                                             };
 
                                             if !is_agent {
+                                                // Upstream patches now include attempt_count, pass through directly
+                                                let patch = json_patch::Patch(vec![
+                                                    json_patch::PatchOperation::Add(
+                                                        json_patch::AddOperation {
+                                                            path: op.path.clone(),
+                                                            value: op.value.clone(),
+                                                        },
+                                                    ),
+                                                ]);
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
                                             }
                                             // Filter out agent tasks
@@ -918,6 +980,15 @@ async fn handle_forge_tasks_ws(
                                             };
 
                                             if !is_agent {
+                                                // Upstream patches now include attempt_count, pass through directly
+                                                let patch = json_patch::Patch(vec![
+                                                    json_patch::PatchOperation::Replace(
+                                                        json_patch::ReplaceOperation {
+                                                            path: op.path.clone(),
+                                                            value: op.value.clone(),
+                                                        },
+                                                    ),
+                                                ]);
                                                 return Some(Ok(LogMsg::JsonPatch(patch)));
                                             }
                                             // Filter out agent tasks
@@ -982,6 +1053,7 @@ async fn handle_forge_tasks_ws(
                                         };
 
                                         // Only include non-agent tasks in the filtered snapshot
+                                        // Upstream data now includes attempt_count, use directly
                                         if !is_agent {
                                             filtered_tasks.insert(
                                                 task_id_str.to_string(),
@@ -1128,6 +1200,12 @@ async fn forge_follow_up(
         );
 
         executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+
+        // Register project in profile cache for subsequent API lookups
+        forge_services
+            .profile_cache
+            .register_project(project.id, project.git_repo_path.clone())
+            .await;
     } else {
         tracing::warn!(
             "⚠️  Failed to load .genie profiles for workspace: {} (follow-up), using defaults",
@@ -1444,7 +1522,7 @@ async fn health_check() -> Json<Value> {
     Json(json!({
         "status": "ok",
         "service": "forge-app",
-        "version": env!("CARGO_PKG_VERSION"),
+        "version": crate::version::get_version(),
         "message": "Forge application ready - backend extensions extracted successfully"
     }))
 }
@@ -1506,7 +1584,7 @@ async fn serve_swagger_ui() -> Html<String> {
 /// Simple route listing - practical solution instead of broken OpenAPI
 async fn list_routes() -> Json<Value> {
     Json(json!({
-        "version": env!("CARGO_PKG_VERSION"),
+        "version": crate::version::get_version(),
         "routes": {
             "core": [
                 "GET /health",
@@ -2007,7 +2085,7 @@ async fn get_omni_status(State(services): State<ForgeServices>) -> Result<Json<V
 
     Ok(Json(json!({
         "enabled": config.enabled,
-        "version": env!("CARGO_PKG_VERSION"),
+        "version": crate::version::get_version(),
         "config": if config.enabled {
             serde_json::to_value(config).ok()
         } else {

@@ -90,7 +90,9 @@ export function DevServerLogsView({
                     size="sm"
                     onClick={handleCopyLogs}
                     disabled={!logs || logs.length === 0}
-                    aria-label={copied ? t('preview.logs.copied') : t('preview.logs.copy')}
+                    aria-label={
+                      copied ? t('preview.logs.copied') : t('preview.logs.copy')
+                    }
                     className="hover:bg-muted transition-colors"
                   >
                     {copied ? (

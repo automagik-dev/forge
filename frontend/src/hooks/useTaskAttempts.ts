@@ -6,6 +6,7 @@ import { queryKeys } from '@/lib/queryKeys';
 
 type Options = {
   enabled?: boolean;
+  refetchInterval?: number | false;
 };
 
 /**
@@ -26,14 +27,15 @@ export function useTaskAttempts(taskId?: string, opts?: Options) {
     queryFn: () => attemptsApi.getAll(taskId!),
     enabled,
     staleTime: 60_000, // Fresh for 1 minute - data is immutable
-    // NO refetchInterval - attempts don't change after creation
+    refetchInterval: opts?.refetchInterval, // Optional polling fallback
   });
 }
 
 /**
  * Hook that combines useTaskAttempts with task stream status monitoring.
- * Automatically invalidates attempts cache when task status changes
- * (e.g., has_in_progress_attempt transitions).
+ * Automatically invalidates attempts cache when:
+ * - has_in_progress_attempt status changes (attempt starts/completes)
+ * - attempt_count changes (new attempt created, including external ones)
  *
  * Use this when displaying attempts alongside live task status.
  */
@@ -44,25 +46,38 @@ export function useTaskAttemptsWithLiveStatus(
 ) {
   const queryClient = useQueryClient();
   const prevStatusRef = useRef<boolean | undefined>();
+  const prevAttemptCountRef = useRef<number | undefined>();
 
   const attemptsQuery = useTaskAttempts(taskId, opts);
 
-  // Invalidate attempts cache when task status changes
-  // We intentionally only depend on has_in_progress_attempt, not the full task object
+  // Invalidate attempts cache when task status OR attempt count changes
+  // We intentionally only depend on specific properties, not the full task object
   useEffect(() => {
     if (!taskId || !task) return;
 
     const currentStatus = task.has_in_progress_attempt;
-    if (
+    // Convert bigint to number for comparison (safe for practical attempt counts)
+    const currentCount = Number(task.attempt_count);
+
+    const statusChanged =
       prevStatusRef.current !== undefined &&
-      prevStatusRef.current !== currentStatus
-    ) {
-      // Status changed - refresh attempts list
-      queryClient.invalidateQueries({ queryKey: queryKeys.taskAttempts.byTask(taskId) });
+      prevStatusRef.current !== currentStatus;
+
+    const countChanged =
+      prevAttemptCountRef.current !== undefined &&
+      prevAttemptCountRef.current !== currentCount;
+
+    if (statusChanged || countChanged) {
+      // Status or count changed - refresh attempts list
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.taskAttempts.byTask(taskId),
+      });
     }
+
     prevStatusRef.current = currentStatus;
+    prevAttemptCountRef.current = currentCount;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [task?.has_in_progress_attempt, taskId, queryClient]);
+  }, [task?.has_in_progress_attempt, task?.attempt_count, taskId, queryClient]);
 
   return attemptsQuery;
 }

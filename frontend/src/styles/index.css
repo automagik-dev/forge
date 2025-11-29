@@ -9,36 +9,36 @@
   /* Light defaults */
   :root {
     color-scheme: light;
-    
+
     /* Font families */
     --font-primary: 'Alegreya Sans', system-ui, -apple-system, sans-serif;
     --font-secondary: 'Manrope', system-ui, -apple-system, sans-serif;
     --font-mono: 'Chivo Mono', 'Courier New', monospace;
-    
+
     /* Brand colors */
-    --color-brand-magenta: #E91EFF;
-    --color-brand-cyan: #00D9FF;
-    
+    --color-brand-magenta: #e91eff;
+    --color-brand-cyan: #00d9ff;
+
     /* Mobile-specific variables */
     --sat: env(safe-area-inset-top);
     --sab: env(safe-area-inset-bottom);
     --sal: env(safe-area-inset-left);
     --sar: env(safe-area-inset-right);
-    
+
     --mobile-header-height: 56px;
     --mobile-bottom-nav-height: 64px;
     --mobile-input-bar-height: 56px;
-    
+
     --touch-target-min: 44px;
     --touch-target-comfortable: 48px;
-    
+
     --mobile-text-xs: 12px;
     --mobile-text-sm: 14px;
     --mobile-text-base: 16px;
     --mobile-text-lg: 18px;
     --mobile-text-xl: 20px;
     --mobile-text-2xl: 24px;
-    
+
     --z-mobile-content: 1;
     --z-mobile-header: 10;
     --z-mobile-input-bar: 15;
@@ -238,14 +238,14 @@
   .logo {
     @apply fill-foreground;
   }
-  
+
   /* Prevent text size adjustment on orientation change */
   html {
     -webkit-text-size-adjust: 100%;
     -moz-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
-  
+
   /* Mobile viewport height fix */
   @supports (height: 100dvh) {
     .h-screen-mobile {
@@ -338,39 +338,39 @@
   .pt-safe {
     padding-top: env(safe-area-inset-top);
   }
-  
+
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  
+
   .pl-safe {
     padding-left: env(safe-area-inset-left);
   }
-  
+
   .pr-safe {
     padding-right: env(safe-area-inset-right);
   }
-  
+
   /* Touch target utilities */
   .touch-target {
     min-width: var(--touch-target-min);
     min-height: var(--touch-target-min);
   }
-  
+
   .touch-target-comfortable {
     min-width: var(--touch-target-comfortable);
     min-height: var(--touch-target-comfortable);
   }
-  
+
   /* Mobile-specific utilities */
   .mobile-header {
     height: var(--mobile-header-height);
   }
-  
+
   .mobile-bottom-nav {
     height: var(--mobile-bottom-nav-height);
   }
-  
+
   /* Disable text selection on mobile UI elements */
   .no-select-mobile {
     -webkit-user-select: none;
@@ -378,13 +378,13 @@
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
-  
+
   /* Touch-friendly scrolling */
   .mobile-scroll {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
   }
-  
+
   /* Glassmorphism utilities - Theme-aware (NN/g best practices) */
   /* Light mode: purple-tinted glass with visible blur for aesthetic */
   .glass-light {
@@ -450,70 +450,72 @@
       inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
       0 0 0 1px rgba(255, 255, 255, 0.05);
   }
-  
+
   /* Magical gradient backgrounds */
   .magical-gradient {
-    background: linear-gradient(135deg, 
-      rgba(233, 30, 255, 0.2) 0%, 
+    background: linear-gradient(
+      135deg,
+      rgba(233, 30, 255, 0.2) 0%,
       rgba(0, 217, 255, 0.2) 100%
     );
   }
-  
+
   .magical-gradient-subtle {
-    background: linear-gradient(135deg,
+    background: linear-gradient(
+      135deg,
       rgba(255, 255, 255, 0.1) 0%,
       rgba(255, 255, 255, 0.05) 100%
     );
   }
-  
+
   /* Magical glow effects */
   .glow-magenta {
     box-shadow: 0 0 15px 2px rgba(233, 30, 255, 0.3);
   }
-  
+
   .glow-cyan {
     box-shadow: 0 0 15px 2px rgba(0, 217, 255, 0.3);
   }
-  
+
   .glow-both {
-    box-shadow: 
+    box-shadow:
       0 0 15px 2px rgba(233, 30, 255, 0.2),
       0 0 20px 3px rgba(0, 217, 255, 0.2);
   }
-  
+
   /* Hover effects */
   .hover-lift {
     transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   .hover-lift:hover {
     transform: translateY(-2px);
   }
-  
+
   .hover-scale {
     transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   .hover-scale:hover {
     transform: scale(1.02);
   }
-  
+
   .hover-glow-magenta {
     transition: box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   .hover-glow-magenta:hover {
     box-shadow: 0 0 20px rgba(233, 30, 255, 0.4);
   }
-  
+
   .hover-glow-cyan {
     transition: box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   .hover-glow-cyan:hover {
     box-shadow: 0 0 20px rgba(0, 217, 255, 0.4);
   }
-  
+
   /* Respect reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
     .hover-lift,
@@ -523,10 +525,11 @@
       transition: none;
     }
   }
-  
+
   /* Pulse ring animation for running tasks */
   @keyframes pulse-ring {
-    0%, 100% {
+    0%,
+    100% {
       box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
     }
     50% {
@@ -540,13 +543,21 @@
 
   /* Shake animation for drawing attention to rebase button */
   @keyframes shake {
-    0%, 100% {
+    0%,
+    100% {
       transform: translateX(0);
     }
-    10%, 30%, 50%, 70%, 90% {
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
       transform: translateX(-4px);
     }
-    20%, 40%, 60%, 80% {
+    20%,
+    40%,
+    60%,
+    80% {
       transform: translateX(4px);
     }
   }

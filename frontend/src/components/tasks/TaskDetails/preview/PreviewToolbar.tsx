@@ -1,4 +1,13 @@
-import { ExternalLink, RefreshCw, Copy, Loader2, Pause, Edit3, X, Check } from 'lucide-react';
+import {
+  ExternalLink,
+  RefreshCw,
+  Copy,
+  Loader2,
+  Pause,
+  Edit3,
+  X,
+  Check,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -50,7 +59,7 @@ export function PreviewToolbar({
       setEditError(result.error || 'Invalid URL');
       return;
     }
-    
+
     if (onSetManualUrl && result.url) {
       onSetManualUrl(result.url);
     }
@@ -222,9 +231,7 @@ export function PreviewToolbar({
                         <Edit3 className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      Edit URL
-                    </TooltipContent>
+                    <TooltipContent side="bottom">Edit URL</TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
                 {isManualUrl && (

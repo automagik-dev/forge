@@ -33,16 +33,18 @@ export function BottomSheet({
   dismissible = true,
   showHandle = true,
   className,
-  contentClassName
+  contentClassName,
 }: BottomSheetProps) {
   const [currentSnap, setCurrentSnap] = useState(initialSnap);
   const sheetRef = useRef<HTMLDivElement>(null);
-  
-  const snapOffsets = snapPoints.map(point => window.innerHeight * (1 - point / 100));
-  
+
+  const snapOffsets = snapPoints.map(
+    (point) => window.innerHeight * (1 - point / 100)
+  );
+
   const [{ y }, api] = useSpring(() => ({
     y: open ? snapOffsets[currentSnap] : window.innerHeight,
-    config: { tension: 300, friction: 30 }
+    config: { tension: 300, friction: 30 },
   }));
 
   useEffect(() => {
@@ -53,7 +55,7 @@ export function BottomSheet({
       api.start({ y: window.innerHeight });
       document.body.style.overflow = '';
     }
-    
+
     return () => {
       document.body.style.overflow = '';
     };
@@ -61,18 +63,26 @@ export function BottomSheet({
 
   useEffect(() => {
     const handleResize = () => {
-      const newSnapOffsets = snapPoints.map(point => window.innerHeight * (1 - point / 100));
+      const newSnapOffsets = snapPoints.map(
+        (point) => window.innerHeight * (1 - point / 100)
+      );
       if (open) {
         api.start({ y: newSnapOffsets[currentSnap] });
       }
     };
-    
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [open, currentSnap, snapPoints, api]);
 
   const bind = useDrag(
-    ({ last, velocity: [, vy], direction: [, dy], movement: [, my], cancel }) => {
+    ({
+      last,
+      velocity: [, vy],
+      direction: [, dy],
+      movement: [, my],
+      cancel,
+    }) => {
       if (!dismissible && dy > 0) {
         cancel();
         return;
@@ -80,8 +90,11 @@ export function BottomSheet({
 
       if (last) {
         const currentOffset = snapOffsets[currentSnap];
-        const newY = Math.max(0, Math.min(window.innerHeight, currentOffset + my));
-        
+        const newY = Math.max(
+          0,
+          Math.min(window.innerHeight, currentOffset + my)
+        );
+
         if (vy > 0.5 || (dy > 0 && newY > currentOffset + 50)) {
           if (currentSnap < snapPoints.length - 1) {
             setCurrentSnap(currentSnap + 1);
@@ -112,7 +125,7 @@ export function BottomSheet({
       from: () => [0, y.get()],
       filterTaps: true,
       bounds: { top: 0, bottom: window.innerHeight },
-      rubberband: true
+      rubberband: true,
     }
   );
 
@@ -130,13 +143,13 @@ export function BottomSheet({
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={handleBackdropClick}
       />
-      
+
       <animated.div
         ref={sheetRef}
         {...bind()}
         style={{
-          transform: y.to(v => `translateY(${v}px)`),
-          touchAction: 'none'
+          transform: y.to((v) => `translateY(${v}px)`),
+          touchAction: 'none',
         }}
         className={cn(
           'absolute bottom-0 left-0 right-0',
@@ -153,14 +166,12 @@ export function BottomSheet({
             <div className="w-8 h-1 bg-muted-foreground/40 rounded-full" />
           </div>
         )}
-        
+
         {(title || description) && (
           <div className="px-4 py-3 border-b border-white/10">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                {title && (
-                  <H2 className="text-lg">{title}</H2>
-                )}
+                {title && <H2 className="text-lg">{title}</H2>}
                 {description && (
                   <p className="text-sm text-muted-foreground mt-1">
                     {description}
@@ -179,12 +190,14 @@ export function BottomSheet({
             </div>
           </div>
         )}
-        
-        <div className={cn(
-          'flex-1 overflow-y-auto mobile-scroll',
-          'pb-safe',
-          contentClassName
-        )}>
+
+        <div
+          className={cn(
+            'flex-1 overflow-y-auto mobile-scroll',
+            'pb-safe',
+            contentClassName
+          )}
+        >
           {children}
         </div>
       </animated.div>

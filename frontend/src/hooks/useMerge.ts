@@ -16,7 +16,9 @@ export function useMerge(
     },
     onSuccess: () => {
       // Refresh attempt-specific branch information
-      queryClient.invalidateQueries({ queryKey: queryKeys.branch.status(attemptId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.branch.status(attemptId),
+      });
 
       // If a merge can change the list of branches shown elsewhere
       // Note: Uses partial match to invalidate all projectBranches queries regardless of projectId

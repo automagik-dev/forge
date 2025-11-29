@@ -6,12 +6,7 @@ import { cn } from '@/lib/utils';
 // Faster tooltip delay (200ms instead of default 700ms)
 const TooltipProvider: React.FC<
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Provider>
-> = (props) => (
-  <TooltipPrimitive.Provider
-    delayDuration={200}
-    {...props}
-  />
-);
+> = (props) => <TooltipPrimitive.Provider delayDuration={200} {...props} />;
 TooltipProvider.displayName = 'TooltipProvider';
 
 const Tooltip = TooltipPrimitive.Root;

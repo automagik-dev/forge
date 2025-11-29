@@ -60,7 +60,10 @@ const ProfileRow = memo(function ProfileRow({
       className={classes.trim()}
     >
       <div className="flex items-center gap-2">
-        <ProviderIcon executor={executorKey as BaseCodingAgent} className="h-4 w-4" />
+        <ProviderIcon
+          executor={executorKey as BaseCodingAgent}
+          className="h-4 w-4"
+        />
         <span>{executorKey}</span>
       </div>
     </DropdownMenuItem>
@@ -108,8 +111,12 @@ function ExecutorProfileSelector({
 }: Props) {
   const [profileSearchTerm, setProfileSearchTerm] = useState('');
   const [variantSearchTerm, setVariantSearchTerm] = useState('');
-  const [profileHighlightedIndex, setProfileHighlightedIndex] = useState<number | null>(null);
-  const [variantHighlightedIndex, setVariantHighlightedIndex] = useState<number | null>(null);
+  const [profileHighlightedIndex, setProfileHighlightedIndex] = useState<
+    number | null
+  >(null);
+  const [variantHighlightedIndex, setVariantHighlightedIndex] = useState<
+    number | null
+  >(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [variantOpen, setVariantOpen] = useState(false);
   const profileSearchInputRef = useRef<HTMLInputElement>(null);
@@ -117,31 +124,36 @@ function ExecutorProfileSelector({
   const profileVirtuosoRef = useRef<VirtuosoHandle>(null);
   const variantVirtuosoRef = useRef<VirtuosoHandle>(null);
 
-  const handleExecutorChange = useCallback((executor: string) => {
-    onProfileSelect({
-      executor: executor as BaseCodingAgent,
-      variant: null,
-    });
-    setProfileSearchTerm('');
-    setProfileHighlightedIndex(null);
-    setProfileOpen(false);
-  }, [onProfileSelect]);
-
-  const handleVariantChange = useCallback((variant: string) => {
-    if (selectedProfile) {
+  const handleExecutorChange = useCallback(
+    (executor: string) => {
       onProfileSelect({
-        ...selectedProfile,
-        variant: variant === 'GENIE' ? null : variant,
+        executor: executor as BaseCodingAgent,
+        variant: null,
       });
-    }
-    setVariantSearchTerm('');
-    setVariantHighlightedIndex(null);
-    setVariantOpen(false);
-  }, [selectedProfile, onProfileSelect]);
+      setProfileSearchTerm('');
+      setProfileHighlightedIndex(null);
+      setProfileOpen(false);
+    },
+    [onProfileSelect]
+  );
 
-  const currentProfile = selectedProfile && profiles
-    ? profiles[selectedProfile.executor]
-    : null;
+  const handleVariantChange = useCallback(
+    (variant: string) => {
+      if (selectedProfile) {
+        onProfileSelect({
+          ...selectedProfile,
+          variant: variant === 'GENIE' ? null : variant,
+        });
+      }
+      setVariantSearchTerm('');
+      setVariantHighlightedIndex(null);
+      setVariantOpen(false);
+    },
+    [selectedProfile, onProfileSelect]
+  );
+
+  const currentProfile =
+    selectedProfile && profiles ? profiles[selectedProfile.executor] : null;
   const hasVariants = currentProfile && Object.keys(currentProfile).length > 0;
 
   // Filtered and sorted profiles
@@ -159,7 +171,9 @@ function ExecutorProfileSelector({
   // Filtered and sorted variants
   const filteredVariants = useMemo(() => {
     if (!currentProfile) return [];
-    let variantKeys = Object.keys(currentProfile).sort((a, b) => a.localeCompare(b));
+    let variantKeys = Object.keys(currentProfile).sort((a, b) =>
+      a.localeCompare(b)
+    );
 
     if (variantSearchTerm.trim()) {
       const q = variantSearchTerm.toLowerCase();
@@ -174,7 +188,8 @@ function ExecutorProfileSelector({
       if (filteredProfiles.length === 0) return;
 
       const start = profileHighlightedIndex ?? -1;
-      const next = (start + delta + filteredProfiles.length) % filteredProfiles.length;
+      const next =
+        (start + delta + filteredProfiles.length) % filteredProfiles.length;
       setProfileHighlightedIndex(next);
       profileVirtuosoRef.current?.scrollIntoView({
         index: next,
@@ -197,7 +212,8 @@ function ExecutorProfileSelector({
       if (filteredVariants.length === 0) return;
 
       const start = variantHighlightedIndex ?? -1;
-      const next = (start + delta + filteredVariants.length) % filteredVariants.length;
+      const next =
+        (start + delta + filteredVariants.length) % filteredVariants.length;
       setVariantHighlightedIndex(next);
       variantVirtuosoRef.current?.scrollIntoView({
         index: next,
@@ -272,7 +288,10 @@ function ExecutorProfileSelector({
             >
               <div className="flex items-center gap-1.5">
                 {selectedProfile?.executor ? (
-                  <ProviderIcon executor={selectedProfile.executor} className="h-3 w-3" />
+                  <ProviderIcon
+                    executor={selectedProfile.executor}
+                    className="h-3 w-3"
+                  />
                 ) : (
                   <Settings2 className="h-3 w-3" />
                 )}
@@ -525,28 +544,33 @@ export function CompactExecutorSelector({
   const [profileOpen, setProfileOpen] = useState(false);
   const [variantOpen, setVariantOpen] = useState(false);
 
-  const currentProfile = selectedProfile && profiles
-    ? profiles[selectedProfile.executor]
-    : null;
+  const currentProfile =
+    selectedProfile && profiles ? profiles[selectedProfile.executor] : null;
   const hasVariants = currentProfile && Object.keys(currentProfile).length > 0;
 
-  const handleExecutorChange = useCallback((executor: string) => {
-    onProfileSelect({
-      executor: executor as BaseCodingAgent,
-      variant: null,
-    });
-    setProfileOpen(false);
-  }, [onProfileSelect]);
-
-  const handleVariantChange = useCallback((variant: string) => {
-    if (selectedProfile) {
+  const handleExecutorChange = useCallback(
+    (executor: string) => {
       onProfileSelect({
-        ...selectedProfile,
-        variant: variant === 'GENIE' ? null : variant,
+        executor: executor as BaseCodingAgent,
+        variant: null,
       });
-    }
-    setVariantOpen(false);
-  }, [selectedProfile, onProfileSelect]);
+      setProfileOpen(false);
+    },
+    [onProfileSelect]
+  );
+
+  const handleVariantChange = useCallback(
+    (variant: string) => {
+      if (selectedProfile) {
+        onProfileSelect({
+          ...selectedProfile,
+          variant: variant === 'GENIE' ? null : variant,
+        });
+      }
+      setVariantOpen(false);
+    },
+    [selectedProfile, onProfileSelect]
+  );
 
   const profileKeys = useMemo(() => {
     if (!profiles) return [];
@@ -577,7 +601,10 @@ export function CompactExecutorSelector({
                   disabled={disabled || isLoading}
                 >
                   {selectedProfile?.executor ? (
-                    <ProviderIcon executor={selectedProfile.executor} className="h-4 w-4" />
+                    <ProviderIcon
+                      executor={selectedProfile.executor}
+                      className="h-4 w-4"
+                    />
                   ) : (
                     <Settings2 className="h-4 w-4" />
                   )}
@@ -601,7 +628,10 @@ export function CompactExecutorSelector({
                     }
                   >
                     <div className="flex items-center gap-2">
-                      <ProviderIcon executor={executorKey as BaseCodingAgent} className="h-4 w-4" />
+                      <ProviderIcon
+                        executor={executorKey as BaseCodingAgent}
+                        className="h-4 w-4"
+                      />
                       <span>{executorKey}</span>
                     </div>
                   </DropdownMenuItem>

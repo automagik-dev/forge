@@ -140,6 +140,7 @@ export function NoServerContent({
       },
       executor_profile_id: config.executor_profile,
       base_branch: 'main',
+      use_worktree: null,
     });
   };
 
@@ -149,7 +150,7 @@ export function NoServerContent({
       setManualUrlError(result.error || 'Invalid URL');
       return;
     }
-    
+
     if (onSetManualUrl && result.url) {
       onSetManualUrl(result.url);
       setManualUrlInput('');
@@ -292,7 +293,8 @@ export function NoServerContent({
                   Manual Preview URL
                 </h4>
                 <p className="text-xs text-muted-foreground mb-3">
-                  If auto-detection fails, you can manually set the preview URL. Enter a full URL or just the port number.
+                  If auto-detection fails, you can manually set the preview URL.
+                  Enter a full URL or just the port number.
                 </p>
                 <div className="flex gap-2">
                   <Input
@@ -315,7 +317,9 @@ export function NoServerContent({
                   </Button>
                 </div>
                 {manualUrlError && (
-                  <p className="text-xs text-destructive mt-2">{manualUrlError}</p>
+                  <p className="text-xs text-destructive mt-2">
+                    {manualUrlError}
+                  </p>
                 )}
               </div>
             </div>
@@ -324,9 +328,18 @@ export function NoServerContent({
           <div className="space-y-4 pt-6 border-t border-border">
             <Alert>
               <AlertDescription className="text-sm">
-                <strong>Note:</strong> Each worktree needs its own dependencies installed.
-                If you see errors like "command not found" or npm/pnpm errors, run the install command in the worktree directory.
-                This project uses <code className="px-1 py-0.5 bg-muted rounded text-xs">pnpm</code>, so use <code className="px-1 py-0.5 bg-muted rounded text-xs">pnpm install</code> in the worktree.
+                <strong>Note:</strong> Each worktree needs its own dependencies
+                installed. If you see errors like "command not found" or
+                npm/pnpm errors, run the install command in the worktree
+                directory. This project uses{' '}
+                <code className="px-1 py-0.5 bg-muted rounded text-xs">
+                  pnpm
+                </code>
+                , so use{' '}
+                <code className="px-1 py-0.5 bg-muted rounded text-xs">
+                  pnpm install
+                </code>{' '}
+                in the worktree.
               </AlertDescription>
             </Alert>
           </div>

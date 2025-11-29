@@ -79,10 +79,7 @@ function ProjectCard({
   }, [project.id]);
 
   const handleDelete = async (id: string, name: string) => {
-    if (
-      !confirm(t('card.deleteConfirm', { name }))
-    )
-      return;
+    if (!confirm(t('card.deleteConfirm', { name }))) return;
 
     try {
       await projectsApi.delete(id);
@@ -105,7 +102,9 @@ function ProjectCard({
   const taskStats = {
     total: tasks.length,
     done: tasks.filter((t) => t.status === 'done').length,
-    inProgress: tasks.filter((t) => t.status === 'inprogress' || t.has_in_progress_attempt).length,
+    inProgress: tasks.filter(
+      (t) => t.status === 'inprogress' || t.has_in_progress_attempt
+    ).length,
     hasActivity: tasks.some((t) => t.has_in_progress_attempt),
     hasMerged: tasks.some((t) => t.has_merged_attempt),
     hasFailed: tasks.some((t) => t.last_attempt_failed),
@@ -129,7 +128,9 @@ function ProjectCard({
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-lg font-medium">{project.name}</CardTitle>
+            <CardTitle className="text-lg font-medium">
+              {project.name}
+            </CardTitle>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {/* Active badge when tasks are running */}
@@ -191,19 +192,25 @@ function ProjectCard({
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-0.5">
               {/* Last Activity - Show if tasks exist */}
-              {!tasksLoading && taskStats.total > 0 && (() => {
-                const lastActivity = getLastActivityDate(tasks);
-                return lastActivity ? (
-                  <span className="flex items-center text-muted-foreground">
-                    <Calendar className="mr-1.5 h-3 w-3" />
-                    {t('card.lastActive', { time: formatRelativeTime(lastActivity) })}
-                  </span>
-                ) : null;
-              })()}
+              {!tasksLoading &&
+                taskStats.total > 0 &&
+                (() => {
+                  const lastActivity = getLastActivityDate(tasks);
+                  return lastActivity ? (
+                    <span className="flex items-center text-muted-foreground">
+                      <Calendar className="mr-1.5 h-3 w-3" />
+                      {t('card.lastActive', {
+                        time: formatRelativeTime(lastActivity),
+                      })}
+                    </span>
+                  ) : null;
+                })()}
               {/* Created Date */}
               <span className="flex items-center text-muted-foreground">
                 <Calendar className="mr-1.5 h-3 w-3" />
-                {t('card.createdAgo', { time: formatRelativeTime(project.created_at) })}
+                {t('card.createdAgo', {
+                  time: formatRelativeTime(project.created_at),
+                })}
               </span>
             </div>
             {!tasksLoading && taskStats.total > 0 && (

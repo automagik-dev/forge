@@ -170,7 +170,12 @@ export function Navbar() {
                 >
                   <FolderOpen className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" asChild aria-label="Settings">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  asChild
+                  aria-label="Settings"
+                >
                   <Link
                     to={
                       projectId
@@ -227,7 +232,11 @@ export function Navbar() {
                   const Icon = item.icon;
                   return (
                     <DropdownMenuItem key={item.href} asChild>
-                      <a href={item.href} target="_blank" rel="noopener noreferrer">
+                      <a
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         <Icon className="mr-2 h-4 w-4" />
                         {item.label}
                       </a>

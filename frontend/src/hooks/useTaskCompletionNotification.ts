@@ -6,7 +6,9 @@ import { useUserSystem } from '@/components/config-provider';
  * Hook to play notification sound when a task execution process completes
  * Monitors execution processes and plays the configured sound when status changes to completed/failed/killed
  */
-export function useTaskCompletionNotification(executionProcesses: ExecutionProcess[]) {
+export function useTaskCompletionNotification(
+  executionProcesses: ExecutionProcess[]
+) {
   const { config } = useUserSystem();
   const previousProcessesRef = useRef<Map<string, string>>(new Map());
 
@@ -26,14 +28,15 @@ export function useTaskCompletionNotification(executionProcesses: ExecutionProce
 
       // Check if process just completed (status changed from running to completed/failed/killed)
       const wasRunning = prevStatus === 'running';
-      const isCompleted = currentStatus === 'completed' || currentStatus === 'failed' || currentStatus === 'killed';
+      const isCompleted =
+        currentStatus === 'completed' ||
+        currentStatus === 'failed' ||
+        currentStatus === 'killed';
 
       if (wasRunning && isCompleted && process.run_reason === 'codingagent') {
         // Task execution completed, play notification sound
-        playNotificationSound(
-          config.notifications.sound_file,
-          config.notifications.sound_volume ?? 0.3
-        );
+        // Use full volume - users can adjust system/browser volume
+        playNotificationSound(config.notifications.sound_file, 1.0);
       }
     });
 

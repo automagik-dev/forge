@@ -11,7 +11,10 @@ import {
 } from 'shared/types';
 import { useExecutionProcessesContext } from '@/contexts/ExecutionProcessesContext';
 import { useEffect, useMemo, useRef } from 'react';
-import { streamJsonPatchEntries, StreamController } from '@/utils/streamJsonPatchEntries';
+import {
+  streamJsonPatchEntries,
+  StreamController,
+} from '@/utils/streamJsonPatchEntries';
 
 export type PatchTypeWithKey = PatchType & {
   patchKey: string;
@@ -86,15 +89,19 @@ export const useConversationHistory = ({
   attempt,
   onEntriesUpdated,
 }: UseConversationHistoryParams): UseConversationHistoryResult => {
-  const { executionProcessesVisible: executionProcessesRaw, isLoading: executionProcessesLoading } =
-    useExecutionProcessesContext();
+  const {
+    executionProcessesVisible: executionProcessesRaw,
+    isLoading: executionProcessesLoading,
+  } = useExecutionProcessesContext();
   const executionProcesses = useRef<ExecutionProcess[]>(executionProcessesRaw);
   const displayedExecutionProcesses = useRef<ExecutionProcessStateStore>({});
   const loadedInitialEntries = useRef(false);
   const lastActiveProcessId = useRef<string | null>(null);
   const onEntriesUpdatedRef = useRef<OnEntriesUpdated | null>(null);
   // Track active WebSocket controllers to prevent memory leaks on cleanup
-  const activeControllersRef = useRef<Set<StreamController<PatchType>>>(new Set());
+  const activeControllersRef = useRef<Set<StreamController<PatchType>>>(
+    new Set()
+  );
 
   const mergeIntoDisplayed = (
     mutator: (state: ExecutionProcessStateStore) => void
@@ -552,7 +559,10 @@ export const useConversationHistory = ({
       if (loadedInitialEntries.current) return;
 
       // If no execution processes AND execution processes finished loading, emit empty with loading=false to hide spinner
-      if (!executionProcessesLoading && executionProcesses?.current.length === 0) {
+      if (
+        !executionProcessesLoading &&
+        executionProcesses?.current.length === 0
+      ) {
         emitEntries(displayedExecutionProcesses.current, 'initial', false);
         loadedInitialEntries.current = true;
         return;

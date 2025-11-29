@@ -30,7 +30,11 @@ function TaskKanbanBoard({
   selectedTask,
   onCreateTask,
 }: TaskKanbanBoardProps) {
-  console.log('[TaskKanbanBoard] selectedTask:', selectedTask?.id, selectedTask?.title);
+  console.log(
+    '[TaskKanbanBoard] selectedTask:',
+    selectedTask?.id,
+    selectedTask?.title
+  );
 
   return (
     <KanbanProvider onDragEnd={onDragEnd}>
@@ -46,7 +50,11 @@ function TaskKanbanBoard({
             {statusTasks.map((task, index) => {
               const isOpen = selectedTask?.id === task.id;
               if (isOpen) {
-                console.log('[TaskKanbanBoard] Highlighting task:', task.id, task.title);
+                console.log(
+                  '[TaskKanbanBoard] Highlighting task:',
+                  task.id,
+                  task.title
+                );
               }
               return (
                 <TaskCard

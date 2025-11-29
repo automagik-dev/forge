@@ -1,4 +1,12 @@
-import { Sparkles, Hammer, Target, CheckCircle2, XCircle, type LucideIcon } from 'lucide-react';
+import {
+  Sparkles,
+  Hammer,
+  Target,
+  CheckCircle2,
+  XCircle,
+  Ban,
+  type LucideIcon,
+} from 'lucide-react';
 import { TaskStatus } from 'shared/types';
 
 // Map TaskStatus to display names
@@ -7,6 +15,7 @@ export const COLUMN_DISPLAY_NAMES: Record<TaskStatus, string> = {
   inprogress: 'Forge',
   inreview: 'Review',
   done: 'Done',
+  cancelled: 'Cancelled',
   archived: 'Archived',
   agent: 'Agent', // Background agent execution tasks
 };
@@ -17,6 +26,7 @@ export const COLUMN_ICONS: Record<TaskStatus, LucideIcon> = {
   inprogress: Hammer,
   inreview: Target,
   done: CheckCircle2,
+  cancelled: Ban,
   archived: XCircle,
   agent: Sparkles, // Use Sparkles for agent tasks (magical execution)
 };

@@ -41,16 +41,21 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
     const { projectId } = useProject();
     const { t } = useTranslation('tasks');
     const { profiles: globalProfiles, config } = useUserSystem();
-    const { data: projectProfiles, isLoading: isLoadingProjectProfiles } = useProjectProfiles(projectId);
+    const { data: projectProfiles, isLoading: isLoadingProjectProfiles } =
+      useProjectProfiles(projectId);
 
     // Use project profiles if available (synchronized agents), fallback to global profiles
     const projectExecutors = projectProfiles?.executors;
-    const hasProjectExecutors = projectExecutors && Object.keys(projectExecutors).length > 0;
-    const profiles = (hasProjectExecutors ? projectExecutors : (globalProfiles ?? null)) as
-      Record<string, import('shared/types').ExecutorConfig> | null;
+    const hasProjectExecutors =
+      projectExecutors && Object.keys(projectExecutors).length > 0;
+    const profiles = (
+      hasProjectExecutors ? projectExecutors : (globalProfiles ?? null)
+    ) as Record<string, import('shared/types').ExecutorConfig> | null;
     const hasProfiles = profiles && Object.keys(profiles).length > 0;
     const { defaultBranch } = useDefaultBaseBranch(projectId);
-    const isProfilesLoading = isLoadingProjectProfiles && (!globalProfiles || Object.keys(globalProfiles).length === 0);
+    const isProfilesLoading =
+      isLoadingProjectProfiles &&
+      (!globalProfiles || Object.keys(globalProfiles).length === 0);
 
     const { createAttempt, isCreating, error } = useAttemptCreation({
       taskId,
@@ -113,7 +118,8 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
         if (prev) return prev;
 
         // Validate that saved defaultBranch still exists in available branches
-        const isDefaultBranchValid = defaultBranch && branches.some((b) => b.name === defaultBranch);
+        const isDefaultBranchValid =
+          defaultBranch && branches.some((b) => b.name === defaultBranch);
 
         // Priority: 1) Latest attempt's target branch, 2) Valid user's default branch, 3) Current branch
         return (
@@ -180,7 +186,10 @@ export const CreateAttemptDialog = NiceModal.create<CreateAttemptDialogProps>(
             ) : (
               <div className="text-sm text-muted-foreground">
                 {t('taskFormDialog.noProfiles')}{' '}
-                <a href="/settings/general" className="underline">{t('taskFormDialog.settingsLink')}</a>.
+                <a href="/settings/general" className="underline">
+                  {t('taskFormDialog.settingsLink')}
+                </a>
+                .
               </div>
             )}
 

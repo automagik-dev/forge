@@ -60,7 +60,11 @@ export function ExecutorConfigForm({
     setValidationErrors([]);
   }, [value, executor]);
 
-  const handleChange = ({ formData: newFormData }: { formData?: ExecutorFormData }) => {
+  const handleChange = ({
+    formData: newFormData,
+  }: {
+    formData?: ExecutorFormData;
+  }) => {
     if (newFormData === undefined) return;
     setFormData(newFormData);
     if (onChange) {
@@ -68,7 +72,11 @@ export function ExecutorConfigForm({
     }
   };
 
-  const handleSubmit = async ({ formData: submitData }: { formData?: ExecutorFormData }) => {
+  const handleSubmit = async ({
+    formData: submitData,
+  }: {
+    formData?: ExecutorFormData;
+  }) => {
     if (submitData === undefined) return;
     setValidationErrors([]);
     if (onSave) {

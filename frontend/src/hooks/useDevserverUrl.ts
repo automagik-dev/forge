@@ -19,15 +19,15 @@ export const detectDevserverUrl = (line: string): DevserverUrlInfo | null => {
   if (fullUrlMatch) {
     try {
       const parsed = new URL(fullUrlMatch[1]);
-      
+
       if (parsed.protocol === 'ws:' || parsed.protocol === 'wss:') {
         return null;
       }
-      
+
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
         return null;
       }
-      
+
       if (
         parsed.hostname === '0.0.0.0' ||
         parsed.hostname === '::' ||

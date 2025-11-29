@@ -16,7 +16,9 @@ export function usePush(
     },
     onSuccess: () => {
       // A push only affects remote status; invalidate the same branchStatus
-      queryClient.invalidateQueries({ queryKey: queryKeys.branch.status(attemptId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.branch.status(attemptId),
+      });
       onSuccess?.();
     },
     onError: (err) => {

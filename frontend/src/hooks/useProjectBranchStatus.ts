@@ -2,7 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { projectsApi } from '@/lib/api';
 import { queryKeys } from '@/lib/queryKeys';
 
-export function useProjectBranchStatus(projectId?: string, baseBranch?: string) {
+export function useProjectBranchStatus(
+  projectId?: string,
+  baseBranch?: string
+) {
   return useQuery({
     queryKey: queryKeys.branch.projectStatus(projectId, baseBranch),
     queryFn: () => projectsApi.getBranchStatus(projectId!, baseBranch),

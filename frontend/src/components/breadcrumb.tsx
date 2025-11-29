@@ -1,5 +1,20 @@
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronRight, ChevronDown, GitBranch, GitMerge, ArrowRight, GitCompare, FolderOpen, KanbanSquare } from 'lucide-react';
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
+import {
+  ChevronRight,
+  ChevronDown,
+  GitBranch,
+  GitMerge,
+  ArrowRight,
+  GitCompare,
+  FolderOpen,
+  KanbanSquare,
+} from 'lucide-react';
 import { useProject } from '@/contexts/project-context';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectTasks } from '@/hooks/useProjectTasks';
@@ -40,7 +55,10 @@ export function Breadcrumb() {
   const navigate = useNavigate();
   const { projectId, project } = useProject();
   const { data: projects } = useProjects();
-  const { taskId, attemptId } = useParams<{ taskId?: string; attemptId?: string }>();
+  const { taskId, attemptId } = useParams<{
+    taskId?: string;
+    attemptId?: string;
+  }>();
   const { tasksById } = useProjectTasks(projectId || '');
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation('tasks');
@@ -105,7 +123,8 @@ export function Breadcrumb() {
     if (branchesLoading) return null;
 
     // Validate that saved defaultBranch still exists in available branches
-    const isDefaultBranchValid = defaultBranch && branches.some((b) => b.name === defaultBranch);
+    const isDefaultBranchValid =
+      defaultBranch && branches.some((b) => b.name === defaultBranch);
 
     if (isDefaultBranchValid) return defaultBranch;
 
@@ -139,12 +158,15 @@ export function Breadcrumb() {
 
   // Fetch parent task via parent_task_attempt -> task_id
   const { data: parentTask } = useQuery({
-    queryKey: queryKeys.taskRelationships.parentFromAttempt(parentTaskAttemptId),
+    queryKey:
+      queryKeys.taskRelationships.parentFromAttempt(parentTaskAttemptId),
     queryFn: async () => {
       if (!parentTaskAttemptId) return null;
 
       // First fetch the parent attempt
-      const attemptResponse = await fetch(`/api/task-attempts/${parentTaskAttemptId}`);
+      const attemptResponse = await fetch(
+        `/api/task-attempts/${parentTaskAttemptId}`
+      );
       if (!attemptResponse.ok) return null;
 
       const attemptWrapper = await attemptResponse.json();
@@ -168,7 +190,10 @@ export function Breadcrumb() {
   // Get mode from URL params
   const rawMode = searchParams.get('view') as LayoutMode;
   const mode: LayoutMode =
-    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat'
+    rawMode === 'preview' ||
+    rawMode === 'diffs' ||
+    rawMode === 'kanban' ||
+    rawMode === 'chat'
       ? rawMode
       : null;
 
@@ -205,7 +230,13 @@ export function Breadcrumb() {
     const crumbs: Array<{
       label: string;
       path: string;
-      type?: 'project' | 'task' | 'parent-task' | 'git-branch' | 'base-branch' | 'board-base-branch';
+      type?:
+        | 'project'
+        | 'task'
+        | 'parent-task'
+        | 'git-branch'
+        | 'base-branch'
+        | 'board-base-branch';
       icon?: React.ReactNode;
       onClick?: () => void;
     }> = [];
@@ -227,7 +258,9 @@ export function Breadcrumb() {
             label: targetBranch,
             path: location.pathname,
             type: 'base-branch',
-            icon: <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
+            icon: (
+              <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            ),
           });
         }
 
@@ -237,7 +270,9 @@ export function Breadcrumb() {
             label: attempt.branch,
             path: location.pathname,
             type: 'git-branch',
-            icon: <GitBranch className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
+            icon: (
+              <GitBranch className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            ),
           });
         }
 
@@ -258,7 +293,9 @@ export function Breadcrumb() {
             label: effectiveBaseBranch,
             path: location.pathname,
             type: 'board-base-branch',
-            icon: <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />,
+            icon: (
+              <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            ),
           });
         } else if (!taskId && branchesLoading) {
           // Show loading placeholder for branch
@@ -266,7 +303,9 @@ export function Breadcrumb() {
             label: '...',
             path: location.pathname,
             type: 'board-base-branch',
-            icon: <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0 animate-pulse" />,
+            icon: (
+              <GitMerge className="h-3.5 w-3.5 text-muted-foreground shrink-0 animate-pulse" />
+            ),
           });
         } else if (!taskId && branchesError) {
           // Show error state
@@ -274,7 +313,9 @@ export function Breadcrumb() {
             label: 'Error loading branches',
             path: location.pathname,
             type: 'board-base-branch',
-            icon: <GitMerge className="h-3.5 w-3.5 text-destructive shrink-0" />,
+            icon: (
+              <GitMerge className="h-3.5 w-3.5 text-destructive shrink-0" />
+            ),
           });
         }
 
@@ -315,11 +356,9 @@ export function Breadcrumb() {
 
   // Target branch change handlers
   const handleChangeTargetBranchClick = async (newBranch: string) => {
-    await changeTargetBranchMutation
-      .mutateAsync(newBranch)
-      .catch((error) => {
-        console.error(error.message || t('git.errors.changeTargetBranch'));
-      });
+    await changeTargetBranchMutation.mutateAsync(newBranch).catch((error) => {
+      console.error(error.message || t('git.errors.changeTargetBranch'));
+    });
   };
 
   const handleChangeTargetBranchDialogOpen = async () => {
@@ -380,7 +419,11 @@ export function Breadcrumb() {
         initialUpstreamBranch: attempt.target_branch,
       });
 
-      if (result.action === 'confirmed' && result.branchName && result.upstreamBranch) {
+      if (
+        result.action === 'confirmed' &&
+        result.branchName &&
+        result.upstreamBranch
+      ) {
         // Execute the rebase
         setRebasing(true);
         try {
@@ -389,7 +432,10 @@ export function Breadcrumb() {
             oldBaseBranch: result.upstreamBranch,
           });
         } catch (err) {
-          console.error('Rebase failed:', (err as Error).message || t('git.errors.rebaseBranch'));
+          console.error(
+            'Rebase failed:',
+            (err as Error).message || t('git.errors.rebaseBranch')
+          );
         } finally {
           setRebasing(false);
         }
@@ -443,12 +489,18 @@ export function Breadcrumb() {
 
       console.log('Successfully fetched updates from remote');
     } catch (err) {
-      console.error('Project pull failed:', (err as Error).message || 'Failed to pull project updates');
+      console.error(
+        'Project pull failed:',
+        (err as Error).message || 'Failed to pull project updates'
+      );
     }
   };
 
   return (
-    <nav aria-label="Breadcrumb" className="px-3 py-2 text-sm flex items-center justify-between">
+    <nav
+      aria-label="Breadcrumb"
+      className="px-3 py-2 text-sm flex items-center justify-between"
+    >
       <ol className="flex items-center gap-1">
         {/* Folder icon to navigate to projects home */}
         <li className="flex items-center gap-1">
@@ -476,15 +528,17 @@ export function Breadcrumb() {
           const isFirstItem = index === 0;
 
           return (
-            <li key={`${crumb.type}-${crumb.path}-${index}`} className={`flex items-center gap-1 ${isParentTask ? 'hidden lg:flex' : ''}`}>
+            <li
+              key={`${crumb.type}-${crumb.path}-${index}`}
+              className={`flex items-center gap-1 ${isParentTask ? 'hidden lg:flex' : ''}`}
+            >
               {/* Separator - skip for first item (project) */}
-              {!isFirstItem && (
-                !isGitBranch ? (
+              {!isFirstItem &&
+                (!isGitBranch ? (
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 ) : (
                   <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                )
-              )}
+                ))}
 
               {/* Content */}
               {isCurrentProject ? (
@@ -492,12 +546,19 @@ export function Breadcrumb() {
                   {/* Project dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-ring rounded-sm px-1 -mx-1">
-                      <span className={isLastCrumb ? 'text-foreground font-medium' : ''}>
+                      <span
+                        className={
+                          isLastCrumb ? 'text-foreground font-medium' : ''
+                        }
+                      >
                         {crumb.label}
                       </span>
                       <ChevronDown className="h-3 w-3 opacity-50" />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-56 bg-popover">
+                    <DropdownMenuContent
+                      align="start"
+                      className="w-56 bg-popover"
+                    >
                       {projects && projects.length > 0 ? (
                         projects.map((proj) => (
                           <DropdownMenuItem
@@ -555,7 +616,9 @@ export function Breadcrumb() {
                             variant="ghost"
                             size="xs"
                             onClick={handleChangeTargetBranchDialogOpen}
-                            disabled={isAttemptRunning || hasConflictsCalculated}
+                            disabled={
+                              isAttemptRunning || hasConflictsCalculated
+                            }
                             className="inline-flex h-5 w-5 p-0 hover:bg-muted"
                             aria-label={t('branches.changeTarget.dialog.title')}
                           >
@@ -591,7 +654,9 @@ export function Breadcrumb() {
                   )}
                 </div>
               ) : isLastCrumb ? (
-                <span className="text-foreground font-medium truncate max-w-[150px] md:max-w-[250px] lg:max-w-none">{crumb.label}</span>
+                <span className="text-foreground font-medium truncate max-w-[150px] md:max-w-[250px] lg:max-w-none">
+                  {crumb.label}
+                </span>
               ) : crumb.type === 'task' ? (
                 <div className="flex items-center gap-1.5">
                   <Link
@@ -621,54 +686,66 @@ export function Breadcrumb() {
             </li>
           );
         })}
-
       </ol>
 
       {/* Right side: Git status badges */}
       {currentTask && (
         <div className="flex items-center gap-2">
           {/* Compact git status badge - only show behind (rebase needed) */}
-          {branchStatus && attempt && (branchStatus.commits_behind ?? 0) > 0 && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    data-rebase-button
-                    onClick={handleRebaseClick}
-                    className="inline-flex items-center justify-center gap-0.5 h-6 px-2 rounded-md bg-amber-100/60 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-medium cursor-pointer hover:bg-amber-200/60 dark:hover:bg-amber-800/40 transition-colors"
-                  >
-                    <span className="text-[10px]">↓{branchStatus.commits_behind} Rebase</span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
-                  {branchStatus.commits_behind ?? 0}{' '}
-                  {t('git.status.commits', { count: branchStatus.commits_behind ?? 0 })}{' '}
-                  {t('git.status.behind')} - Click to rebase
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
+          {branchStatus &&
+            attempt &&
+            (branchStatus.commits_behind ?? 0) > 0 && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      data-rebase-button
+                      onClick={handleRebaseClick}
+                      className="inline-flex items-center justify-center gap-0.5 h-6 px-2 rounded-md bg-amber-100/60 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-medium cursor-pointer hover:bg-amber-200/60 dark:hover:bg-amber-800/40 transition-colors"
+                    >
+                      <span className="text-[10px]">
+                        ↓{branchStatus.commits_behind} Rebase
+                      </span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    {branchStatus.commits_behind ?? 0}{' '}
+                    {t('git.status.commits', {
+                      count: branchStatus.commits_behind ?? 0,
+                    })}{' '}
+                    {t('git.status.behind')} - Click to rebase
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
 
           {/* Show for board view (no attempt selected) */}
-          {projectBranchStatus && !attempt && projectId && (projectBranchStatus.commits_behind ?? 0) > 0 && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={handleProjectPullClick}
-                    className="inline-flex items-center justify-center gap-0.5 h-6 px-2 rounded-md bg-amber-100/60 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-medium cursor-pointer hover:bg-amber-200/60 dark:hover:bg-amber-800/40 transition-colors"
-                  >
-                    <span className="text-[10px]">↓{projectBranchStatus.commits_behind} Update</span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
-                  {projectBranchStatus.commits_behind ?? 0}{' '}
-                  {t('git.status.commits', { count: projectBranchStatus.commits_behind ?? 0 })}{' '}
-                  {t('git.status.behind')} - Click to update
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
+          {projectBranchStatus &&
+            !attempt &&
+            projectId &&
+            (projectBranchStatus.commits_behind ?? 0) > 0 && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={handleProjectPullClick}
+                      className="inline-flex items-center justify-center gap-0.5 h-6 px-2 rounded-md bg-amber-100/60 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-medium cursor-pointer hover:bg-amber-200/60 dark:hover:bg-amber-800/40 transition-colors"
+                    >
+                      <span className="text-[10px]">
+                        ↓{projectBranchStatus.commits_behind} Update
+                      </span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    {projectBranchStatus.commits_behind ?? 0}{' '}
+                    {t('git.status.commits', {
+                      count: projectBranchStatus.commits_behind ?? 0,
+                    })}{' '}
+                    {t('git.status.behind')} - Click to update
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
 
           {/* Git Actions: Approve, Create PR, Push to PR, etc. */}
           {branchStatus && attempt && projectId && (
@@ -684,7 +761,9 @@ export function Breadcrumb() {
           {isTaskView ? (
             <TaskPanelHeaderActions
               task={currentTask}
-              onClose={() => navigate(`/projects/${projectId}/tasks`, { replace: true })}
+              onClose={() =>
+                navigate(`/projects/${projectId}/tasks`, { replace: true })
+              }
             />
           ) : (
             <AttemptHeaderActions
@@ -693,7 +772,9 @@ export function Breadcrumb() {
               task={currentTask}
               attempt={attempt ?? null}
               onNavigateToTask={handleNavigateToTask}
-              onClose={() => navigate(`/projects/${projectId}/tasks`, { replace: true })}
+              onClose={() =>
+                navigate(`/projects/${projectId}/tasks`, { replace: true })
+              }
             />
           )}
         </div>

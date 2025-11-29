@@ -4,7 +4,12 @@ import { CreatePRButton } from './CreatePRButton';
 import { PushToPRButton } from './PushToPRButton';
 import { ViewPRButton } from './ViewPRButton';
 import { UpdateNeededBadge } from './UpdateNeededBadge';
-import type { TaskWithAttemptStatus, TaskAttempt, BranchStatus, Merge } from 'shared/types';
+import type {
+  TaskWithAttemptStatus,
+  TaskAttempt,
+  BranchStatus,
+  Merge,
+} from 'shared/types';
 
 // Type guard to narrow Merge union to PR merge type
 type PrMergeType = Extract<Merge, { type: 'pr' }>;

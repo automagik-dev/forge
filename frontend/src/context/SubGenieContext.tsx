@@ -24,12 +24,16 @@ interface SubGenieContextType {
   ) => void;
 }
 
-const SubGenieContext = createContext<SubGenieContextType | undefined>(undefined);
+const SubGenieContext = createContext<SubGenieContextType | undefined>(
+  undefined
+);
 
 export const SubGenieProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [widgets, setWidgets] = useState<Record<'wish' | 'forge' | 'review', WidgetState>>({
+  const [widgets, setWidgets] = useState<
+    Record<'wish' | 'forge' | 'review', WidgetState>
+  >({
     wish: { isOpen: false, chatHistory: [], skillsEnabled: {} },
     forge: { isOpen: false, chatHistory: [], skillsEnabled: {} },
     review: { isOpen: false, chatHistory: [], skillsEnabled: {} },
@@ -66,7 +70,11 @@ export const SubGenieProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   const toggleSkill = useCallback(
-    (genieId: 'wish' | 'forge' | 'review', skillId: string, enabled: boolean) => {
+    (
+      genieId: 'wish' | 'forge' | 'review',
+      skillId: string,
+      enabled: boolean
+    ) => {
       setWidgets((prev) => ({
         ...prev,
         [genieId]: {

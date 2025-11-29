@@ -1,5 +1,10 @@
 import type { PatchTypeWithKey } from '@/hooks/useConversationHistory';
-import type { TaskAttempt, TaskWithAttemptStatus, ActionType, ToolStatus } from 'shared/types';
+import type {
+  TaskAttempt,
+  TaskWithAttemptStatus,
+  ActionType,
+  ToolStatus,
+} from 'shared/types';
 
 interface ExportMetadata {
   task?: TaskWithAttemptStatus | null;
@@ -19,7 +24,10 @@ function formatTimestamp(timestamp: string | null): string {
 /**
  * Formats the frontmatter metadata for the export
  */
-function generateFrontmatter(metadata: ExportMetadata, messageCount: number): string {
+function generateFrontmatter(
+  metadata: ExportMetadata,
+  messageCount: number
+): string {
   const now = new Date().toISOString();
   const { task, attempt, projectId } = metadata;
 
@@ -50,7 +58,10 @@ function formatUserMessage(content: string, timestamp: string | null): string {
 /**
  * Formats an assistant message entry
  */
-function formatAssistantMessage(content: string, timestamp: string | null): string {
+function formatAssistantMessage(
+  content: string,
+  timestamp: string | null
+): string {
   const ts = formatTimestamp(timestamp);
   return `## [ASSISTANT]${ts ? ` ${ts}` : ''}\n\n${content}\n\n`;
 }
@@ -145,7 +156,10 @@ function formatToolUse(
 /**
  * Formats a system message
  */
-function formatSystemMessage(content: string, timestamp: string | null): string {
+function formatSystemMessage(
+  content: string,
+  timestamp: string | null
+): string {
   const ts = formatTimestamp(timestamp);
   return `### [SYSTEM]${ts ? ` ${ts}` : ''}\n\n${content}\n\n`;
 }
@@ -159,7 +173,8 @@ function formatErrorMessage(
   timestamp: string | null
 ): string {
   const ts = formatTimestamp(timestamp);
-  const typeStr = errorType.type === 'setup_required' ? 'Setup Required' : 'Error';
+  const typeStr =
+    errorType.type === 'setup_required' ? 'Setup Required' : 'Error';
   return `### [ERROR - ${typeStr}]${ts ? ` ${ts}` : ''}\n\n${content}\n\n`;
 }
 
@@ -200,7 +215,11 @@ export function exportChatToMarkdown(
         break;
 
       case 'error_message':
-        markdown += formatErrorMessage(content, entry_type.error_type, timestamp);
+        markdown += formatErrorMessage(
+          content,
+          entry_type.error_type,
+          timestamp
+        );
         break;
 
       case 'user_feedback':
@@ -251,7 +270,8 @@ export async function copyToClipboard(content: string): Promise<boolean> {
 export function generateExportFilename(metadata: ExportMetadata): string {
   const { task, attempt } = metadata;
   const timestamp = new Date().toISOString().split('T')[0];
-  const taskName = task?.title?.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'chat';
+  const taskName =
+    task?.title?.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'chat';
   const attemptShort = attempt?.id.slice(0, 8) || 'unknown';
   return `${taskName}-${attemptShort}-${timestamp}.md`;
 }

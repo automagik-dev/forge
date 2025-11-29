@@ -12,7 +12,9 @@ export function useNamestexerSessionTracking() {
   const posthog = usePostHog();
   const sessionIdRef = useRef<string | null>(null);
   const sessionStartRef = useRef<number | null>(null);
-  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
 
   useEffect(() => {
     const userEmail = posthog.get_property('email') as string | undefined;
@@ -90,6 +92,6 @@ export function useNamestexerSessionTracking() {
         });
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally run once on mount, posthog instance is stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally run once on mount, posthog instance is stable
   }, []);
 }

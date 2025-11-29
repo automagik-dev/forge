@@ -22,32 +22,32 @@ export interface BottomNavigationProps {
   onTabChange?: (tabId: string) => void;
 }
 
-export function BottomNavigation({ 
-  tabs, 
+export function BottomNavigation({
+  tabs,
   className,
-  onTabChange 
+  onTabChange,
 }: BottomNavigationProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const handleTabClick = async (tab: BottomNavTab) => {
     if (tab.disabled) return;
-    
+
     if (Platform.isNative()) {
       await Haptics.impact({ style: ImpactStyle.Light });
     }
-    
+
     if (tab.path) {
       const [tabPathname, tabQuery] = tab.path.split('?');
       const params = new URLSearchParams(location.search);
       const expectedView = new URLSearchParams(tabQuery || '').get('view');
-      
+
       if (expectedView === null) {
         params.delete('view');
       } else {
         params.set('view', expectedView);
       }
-      
+
       const search = params.toString();
       navigate({
         pathname: tabPathname,
@@ -56,10 +56,10 @@ export function BottomNavigation({
     } else if (tab.onClick) {
       tab.onClick();
     }
-    
+
     onTabChange?.(tab.id);
   };
-  
+
   const isTabActive = (tab: BottomNavTab): boolean => {
     // Handle tabs with onClick (like Tasks drawer) - check by tab ID
     if (!tab.path && tab.onClick) {
@@ -88,7 +88,7 @@ export function BottomNavigation({
 
     return currentView === expectedView;
   };
-  
+
   return (
     <nav
       className={cn(
@@ -104,7 +104,7 @@ export function BottomNavigation({
       >
         {tabs.map((tab) => {
           const isActive = isTabActive(tab);
-          
+
           return (
             <button
               key={tab.id}
@@ -128,38 +128,43 @@ export function BottomNavigation({
               {isActive && (
                 <div className="absolute inset-0 magical-gradient opacity-20 rounded-lg mx-2" />
               )}
-              
+
               <div className="relative z-10">
-                <div className={cn(
-                  'w-6 h-6 flex items-center justify-center',
-                  'transition-transform duration-200',
-                  isActive && 'scale-110'
-                )}>
+                <div
+                  className={cn(
+                    'w-6 h-6 flex items-center justify-center',
+                    'transition-transform duration-200',
+                    isActive && 'scale-110'
+                  )}
+                >
                   {isActive && tab.activeIcon ? tab.activeIcon : tab.icon}
                 </div>
-                
+
                 {tab.badge !== undefined && (
-                  <div className={cn(
-                    'absolute -top-1 -right-1',
-                    'min-w-[16px] h-4 px-1',
-                    'flex items-center justify-center',
-                    'bg-destructive text-destructive-foreground',
-                    'text-[10px] font-semibold',
-                    'rounded-full'
-                  )}>
-                    {typeof tab.badge === 'number' && tab.badge > 99 
-                      ? '99+' 
-                      : tab.badge
-                    }
+                  <div
+                    className={cn(
+                      'absolute -top-1 -right-1',
+                      'min-w-[16px] h-4 px-1',
+                      'flex items-center justify-center',
+                      'bg-destructive text-destructive-foreground',
+                      'text-[10px] font-semibold',
+                      'rounded-full'
+                    )}
+                  >
+                    {typeof tab.badge === 'number' && tab.badge > 99
+                      ? '99+'
+                      : tab.badge}
                   </div>
                 )}
               </div>
-              
-              <span className={cn(
-                'text-xs font-medium mt-1 relative z-10',
-                'transition-all duration-200',
-                isActive && 'font-semibold'
-              )}>
+
+              <span
+                className={cn(
+                  'text-xs font-medium mt-1 relative z-10',
+                  'transition-all duration-200',
+                  isActive && 'font-semibold'
+                )}
+              >
                 {tab.label}
               </span>
             </button>
@@ -176,18 +181,18 @@ export function BottomNavigation({
  */
 export function useBottomNavigation() {
   const location = useLocation();
-  
+
   const getCurrentTab = (): string => {
     const path = location.pathname;
-    
+
     if (path.includes('/tasks')) return 'tasks';
     if (path.includes('/chat')) return 'chat';
     if (path.includes('/settings') || path.includes('/profile')) return 'me';
-    
+
     return 'tasks';
   };
-  
+
   return {
-    currentTab: getCurrentTab()
+    currentTab: getCurrentTab(),
   };
 }

@@ -45,15 +45,20 @@ export function PreviewPanel() {
 
   const logStream = useLogStream(latestDevServerProcess?.id ?? '');
   const autoDetectedUrl = useDevserverUrlFromLogs(logStream.logs);
-  const buildState = useDevserverBuildState(logStream.logs, Boolean(autoDetectedUrl));
-  
+  const buildState = useDevserverBuildState(
+    logStream.logs,
+    Boolean(autoDetectedUrl)
+  );
+
   const { manualUrl, setManualUrl, isManual } = useManualPreviewUrl(projectId!);
 
   const lastKnownUrl = useMemo(() => {
     if (manualUrl) {
       return {
         url: manualUrl,
-        scheme: manualUrl.startsWith('https') ? 'https' as const : 'http' as const
+        scheme: manualUrl.startsWith('https')
+          ? ('https' as const)
+          : ('http' as const),
       };
     }
     return autoDetectedUrl;
@@ -116,11 +121,21 @@ export function PreviewPanel() {
       setShowLogs(true);
     } else if (runningDevServer && !isReady && latestDevServerProcess) {
       // Only show logs if actively building or in error state
-      if (buildState === 'building' || buildState === 'error' || buildState === 'idle') {
+      if (
+        buildState === 'building' ||
+        buildState === 'error' ||
+        buildState === 'idle'
+      ) {
         setShowLogs(true);
       }
     }
-  }, [buildState, isReady, latestDevServerProcess, runningDevServer, devServerFailed]);
+  }, [
+    buildState,
+    isReady,
+    latestDevServerProcess,
+    runningDevServer,
+    devServerFailed,
+  ]);
 
   const isPreviewReady =
     previewState.status === 'ready' &&
@@ -237,7 +252,8 @@ export function PreviewPanel() {
                   <p className="font-bold text-lg">Dev Server Startup Failed</p>
                 </div>
                 <p className="text-sm">
-                  The dev server failed to start. Check the logs below for details.
+                  The dev server failed to start. Check the logs below for
+                  details.
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -276,45 +292,50 @@ export function PreviewPanel() {
         )}
 
         {/* Idle/Error state - show troubleshooting message */}
-        {!devServerFailed && (buildState === 'idle' || buildState === 'error') && runningDevServer && !isReady && (
-          <Alert variant="destructive" className="space-y-2">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 space-y-2">
-                <p className="font-bold">{t('preview.troubleAlert.title')}</p>
-                <p className="text-sm">{t('preview.troubleAlert.description')}</p>
-                <ol className="list-decimal list-inside space-y-2 text-sm">
-                  <li>{t('preview.troubleAlert.item1')}</li>
-                  <li>
-                    {t('preview.troubleAlert.item2')}{' '}
-                    <code className="text-xs">http://localhost:3000</code>{' '}
-                    {t('preview.troubleAlert.item2Suffix')}
-                  </li>
-                  <li>
-                    {t('preview.troubleAlert.item3')}{' '}
-                    <a
-                      href="https://github.com/namastexlabs/forge-inspector"
-                      target="_blank"
-                      className="underline font-bold"
-                    >
-                      {t('preview.troubleAlert.item3Link')}
-                    </a>
-                  </li>
-                </ol>
-                <Button
-                  variant="destructive"
-                  onClick={handleStopAndEdit}
-                  disabled={isStoppingDevServer}
-                  size="sm"
-                >
-                  {isStoppingDevServer && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  {t('preview.noServer.stopAndEditButton')}
-                </Button>
+        {!devServerFailed &&
+          (buildState === 'idle' || buildState === 'error') &&
+          runningDevServer &&
+          !isReady && (
+            <Alert variant="destructive" className="space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 space-y-2">
+                  <p className="font-bold">{t('preview.troubleAlert.title')}</p>
+                  <p className="text-sm">
+                    {t('preview.troubleAlert.description')}
+                  </p>
+                  <ol className="list-decimal list-inside space-y-2 text-sm">
+                    <li>{t('preview.troubleAlert.item1')}</li>
+                    <li>
+                      {t('preview.troubleAlert.item2')}{' '}
+                      <code className="text-xs">http://localhost:3000</code>{' '}
+                      {t('preview.troubleAlert.item2Suffix')}
+                    </li>
+                    <li>
+                      {t('preview.troubleAlert.item3')}{' '}
+                      <a
+                        href="https://github.com/namastexlabs/forge-inspector"
+                        target="_blank"
+                        className="underline font-bold"
+                      >
+                        {t('preview.troubleAlert.item3Link')}
+                      </a>
+                    </li>
+                  </ol>
+                  <Button
+                    variant="destructive"
+                    onClick={handleStopAndEdit}
+                    disabled={isStoppingDevServer}
+                    size="sm"
+                  >
+                    {isStoppingDevServer && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    {t('preview.noServer.stopAndEditButton')}
+                  </Button>
+                </div>
               </div>
-            </div>
-          </Alert>
-        )}
+            </Alert>
+          )}
         <DevServerLogsView
           latestDevServerProcess={latestDevServerProcess}
           showLogs={showLogs}

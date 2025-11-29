@@ -41,7 +41,7 @@ export const Platform = {
    */
   isPluginAvailable(pluginName: string): boolean {
     return Capacitor.isPluginAvailable(pluginName);
-  }
+  },
 };
 
 /**
@@ -53,6 +53,6 @@ export function usePlatform() {
     isAndroid: Platform.isAndroid(),
     isIOS: Platform.isIOS(),
     isWeb: Platform.isWeb(),
-    platform: Platform.getPlatform()
+    platform: Platform.getPlatform(),
   };
 }

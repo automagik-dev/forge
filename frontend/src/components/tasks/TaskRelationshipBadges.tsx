@@ -72,7 +72,9 @@ export function TaskRelationshipBadges({
                     aria-label={`${childCount} child ${childCount === 1 ? 'task' : 'tasks'}`}
                   >
                     <GitFork className="w-3.5 h-3.5" />
-                    <span className="text-[10px] font-medium">{childCount}</span>
+                    <span className="text-[10px] font-medium">
+                      {childCount}
+                    </span>
                   </button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>

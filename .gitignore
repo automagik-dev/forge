@@ -116,6 +116,9 @@ forge.db
 forge.db.backup-*
 forge.db.before-*
 
+# PM2 logs directory
+logs/
+
 # Upstream submodule removed - ignore leftover directory
 upstream/ 
 
