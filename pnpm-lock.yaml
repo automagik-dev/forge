@@ -172,8 +172,8 @@ importers:
         specifier: ^0.1.3
         version: 0.1.3
       forge-inspector:
-        specifier: ^0.0.7
-        version: 0.0.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        specifier: ^0.1.0
+        version: 0.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       i18next:
         specifier: ^25.5.2
         version: 25.6.1(typescript@5.9.3)
@@ -1363,8 +1363,8 @@ packages:
   '@hapi/topo@5.1.0':
     resolution: {integrity: sha512-foQZKJig7Ob0BMAYBfcJk8d77QtOe7Wo4ox7ff1lQYoNNAb6jwcY1ncdoy2e9wQZzvNy7ODZCYJkK8kzmcAnAg==}
 
-  '@huggingface/jinja@0.5.2':
-    resolution: {integrity: sha512-3KxqfOSYtHDsq6HglCH4BDHGXXHMS7ZHUHpxVGswa4l8ycCCExDR2E4nDlTo9LCa6bxp03ywf/mAIVEsO1Ov1w==}
+  '@huggingface/jinja@0.5.3':
+    resolution: {integrity: sha512-asqfZ4GQS0hD876Uw4qiUb7Tr/V5Q+JZuo2L+BtdrD4U40QU58nIRq3ZSgAzJgT874VLjhGVacaYfrdpXtEvtA==}
     engines: {node: '>=18'}
 
   '@huggingface/transformers@3.8.0':
@@ -4044,8 +4044,8 @@ packages:
     resolution: {integrity: sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==}
     engines: {node: '>=14'}
 
-  forge-inspector@0.0.7:
-    resolution: {integrity: sha512-Q5QVcrLa17G76ubyMuiJUezq8d+OmvkgyJyI/bXGpweGzU1Hc+ZudVwimPBnfctp3oZ6qa9itqq596WqnaGy9g==}
+  forge-inspector@0.1.0:
+    resolution: {integrity: sha512-bY8XKGX6/YeHdAitKRoo7LueGVrKnSKL+8SvRvkALvmVQDE1wSAskKa3O5QhPT3r1JxoelvxWtavShJ6wzZGww==}
     peerDependencies:
       react: '>=16.8.0'
 
@@ -7575,11 +7575,11 @@ snapshots:
     dependencies:
       '@hapi/hoek': 9.3.0
 
-  '@huggingface/jinja@0.5.2': {}
+  '@huggingface/jinja@0.5.3': {}
 
   '@huggingface/transformers@3.8.0':
     dependencies:
-      '@huggingface/jinja': 0.5.2
+      '@huggingface/jinja': 0.5.3
       onnxruntime-node: 1.21.0
       onnxruntime-web: 1.22.0-dev.20250409-89f8206ba4
       sharp: 0.34.5
@@ -10552,7 +10552,7 @@ snapshots:
       cross-spawn: 7.0.6
       signal-exit: 4.1.0
 
-  forge-inspector@0.0.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  forge-inspector@0.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@floating-ui/react': 0.26.28(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@huggingface/transformers': 3.8.0
