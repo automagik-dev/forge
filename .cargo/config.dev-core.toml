@@ -35,3 +35,14 @@ deployment = { path = "forge-core/crates/deployment" }
 local-deployment = { path = "forge-core/crates/local-deployment" }
 executors = { path = "forge-core/crates/executors" }
 utils = { path = "forge-core/crates/utils" }
+
+# =============================================================================
+# Codex Vendored Dependencies (Required for dev-core)
+# =============================================================================
+# When forge-core crates are patched locally, Cargo resolves workspace deps
+# from the parent workspace. These patches ensure codex deps resolve correctly.
+
+[patch.crates-io]
+codex-protocol = { path = "forge-core/vendor/codex/codex-rs/protocol" }
+codex-app-server-protocol = { path = "forge-core/vendor/codex/codex-rs/app-server-protocol" }
+mcp-types = { path = "forge-core/vendor/codex/codex-rs/mcp-types" }

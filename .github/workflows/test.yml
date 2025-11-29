@@ -2,7 +2,7 @@ name: Test
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
   workflow_dispatch:
 
 concurrency:
@@ -15,7 +15,47 @@ env:
   CARGO_BUILD_JOBS: 6  # Limit parallelism for self-hosted runner
 
 jobs:
+  # Safety check: Block PRs with dev-core mode enabled
+  check-dev-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for dev-core mode
+        run: |
+          FAILED=false
+
+          # Check for marker file
+          if [ -f ".dev-core-active" ]; then
+            echo "::error::Dev-core mode marker found (.dev-core-active)"
+            FAILED=true
+          fi
+
+          # Check for patch sections in cargo config
+          if [ -f ".cargo/config.toml" ]; then
+            if grep -q '\[patch\.' .cargo/config.toml; then
+              echo "::error::Patch sections found in .cargo/config.toml"
+              FAILED=true
+            fi
+          fi
+
+          # Check for local path dependencies
+          if grep -q 'path = "forge-core' Cargo.toml 2>/dev/null; then
+            echo "::error::Local path dependencies found in Cargo.toml"
+            FAILED=true
+          fi
+
+          if [ "$FAILED" = "true" ]; then
+            echo ""
+            echo "Dev-core mode is still enabled!"
+            echo "Run 'make dev-core-off' before creating a PR."
+            exit 1
+          fi
+
+          echo "✅ No dev-core mode detected"
+
   test:
+    needs: check-dev-core
     runs-on: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4

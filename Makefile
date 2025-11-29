@@ -639,35 +639,145 @@ ensure-cargo-config:
 dev: check-android-deps check-cargo ensure-cargo-config
 	@bash scripts/dev/run-dev.sh
 
-# Development with local forge-core (for debugging/development)
-# Clone forge-core inside repo at same level as forge-app
+# =============================================================================
+# Cross-Repo Development (automagik-forge + forge-core)
+# =============================================================================
+
+BRANCH ?= dev
+
+# Development with local forge-core (enhanced with branch selection + safety hooks)
 dev-core: check-android-deps check-cargo
 	@echo ""
 	@echo -e "$(FONT_PURPLE)🔧 Setting up local forge-core development...$(FONT_RESET)"
 	@if [ ! -d "forge-core" ]; then \
-		echo -e "$(FONT_CYAN)📦 Cloning forge-core...$(FONT_RESET)"; \
-		git clone https://github.com/namastexlabs/forge-core.git forge-core; \
+		echo -e "$(FONT_CYAN)📦 Cloning forge-core (branch: $(BRANCH))...$(FONT_RESET)"; \
+		git clone -b $(BRANCH) https://github.com/namastexlabs/forge-core.git forge-core; \
 		echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core cloned$(FONT_RESET)"; \
 	else \
-		echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core already exists$(FONT_RESET)"; \
+		CURRENT=$$(cd forge-core && git branch --show-current); \
+		if [ "$$CURRENT" != "$(BRANCH)" ]; then \
+			echo -e "$(FONT_YELLOW)⚠️  Switching forge-core: $$CURRENT → $(BRANCH)$(FONT_RESET)"; \
+			(cd forge-core && git fetch origin && git checkout $(BRANCH) 2>/dev/null || git checkout -b $(BRANCH) origin/$(BRANCH)); \
+		else \
+			echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core already on $(BRANCH)$(FONT_RESET)"; \
+		fi; \
 	fi
+	@echo -e "$(FONT_CYAN)📍 forge-core @ $$(cd forge-core && git log -1 --format='%h %s')$(FONT_RESET)"
 	@echo -e "$(FONT_CYAN)⚙️  Enabling Cargo path override...$(FONT_RESET)"
 	@cp .cargo/config.dev-core.toml .cargo/config.toml
+	@echo "$$(date -Iseconds)" > .dev-core-active
+	@echo "branch=$(BRANCH)" >> .dev-core-active
+	@mkdir -p .git/hooks scripts/hooks
+	@if [ -f scripts/hooks/pre-push ]; then \
+		cp scripts/hooks/pre-push .git/hooks/pre-push; \
+		chmod +x .git/hooks/pre-push; \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) Safety hooks installed$(FONT_RESET)"; \
+	fi
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using local forge-core at ./forge-core$(FONT_RESET)"
 	@echo ""
 	@echo -e "$(FONT_YELLOW)$(INFO) Hot reload will pick up changes from ./forge-core$(FONT_RESET)"
 	@echo -e "$(FONT_YELLOW)$(INFO) Run 'make dev-core-off' to switch back to git dependencies$(FONT_RESET)"
+	@echo -e "$(FONT_YELLOW)$(INFO) Pre-push hook will BLOCK if dev-core is still enabled$(FONT_RESET)"
 	@echo ""
 	@bash scripts/dev/run-dev.sh
 
-# Disable local forge-core (back to git dependencies)
+# Disable local forge-core (back to git dependencies) with true reset
 dev-core-off:
-	@if [ -f ".cargo/config.toml" ]; then \
-		cp .cargo/config.base.toml .cargo/config.toml; \
-		echo -e "$(FONT_GREEN)$(CHECKMARK) Disabled local forge-core - using git dependencies$(FONT_RESET)"; \
+	@echo -e "$(FONT_CYAN)🔄 Switching back to git dependencies...$(FONT_RESET)"
+	@cp .cargo/config.base.toml .cargo/config.toml
+	@rm -f .dev-core-active
+	@rm -f Cargo.lock
+	@echo -e "$(FONT_CYAN)📦 Regenerating Cargo.lock...$(FONT_RESET)"
+	@cargo fetch 2>/dev/null || cargo generate-lockfile
+	@echo -e "$(FONT_GREEN)$(CHECKMARK) Restored git dependencies (Cargo.lock regenerated)$(FONT_RESET)"
+
+# Show dev-core status
+dev-core-status:
+	@echo ""
+	@if [ -f ".dev-core-active" ]; then \
+		echo -e "Mode:   $(FONT_GREEN)LOCAL$(FONT_RESET) (./forge-core)"; \
+		if [ -d "forge-core" ]; then \
+			echo -e "Branch: $$(cd forge-core && git branch --show-current)"; \
+			echo -e "Commit: $$(cd forge-core && git log -1 --format='%h %s')"; \
+		fi; \
 	else \
-		echo -e "$(FONT_CYAN)$(INFO) Already using git dependencies$(FONT_RESET)"; \
+		echo -e "Mode:   $(FONT_CYAN)GIT$(FONT_RESET) (tag in Cargo.toml)"; \
 	fi
+	@echo ""
+
+# Show full cross-repo status
+status:
+	@echo ""
+	@if [ -f ".dev-core-active" ]; then \
+		echo -e "🔧 Dev-core: $(FONT_GREEN)ACTIVE$(FONT_RESET)"; \
+	else \
+		echo -e "✅ Dev-core: $(FONT_CYAN)OFF$(FONT_RESET)"; \
+	fi
+	@echo -e "📦 automagik-forge: $$(git branch --show-current)"
+	@if [ -d "forge-core" ]; then \
+		echo -e "📦 forge-core: $$(cd forge-core && git branch --show-current)"; \
+	fi
+	@echo ""
+
+# Commit to both repos with same message
+commit-both:
+	@read -p "Commit message: " MSG; \
+	if [ -n "$$(git status --porcelain)" ]; then \
+		git add -A && git commit -m "$$MSG"; \
+	else \
+		echo "automagik-forge: nothing to commit"; \
+	fi; \
+	if [ -d "forge-core" ] && [ -n "$$(cd forge-core && git status --porcelain)" ]; then \
+		cd forge-core && git add -A && git commit -m "$$MSG"; \
+	else \
+		echo "forge-core: nothing to commit"; \
+	fi
+
+# Push both repos
+push-both:
+	@if [ -f ".dev-core-active" ]; then \
+		echo -e "$(FONT_RED)🛑 Dev-core mode is ACTIVE! Run: make dev-core-off$(FONT_RESET)"; \
+		exit 1; \
+	fi
+	@BRANCH=$$(git branch --show-current); \
+	git push -u origin $$BRANCH; \
+	if [ -d "forge-core" ]; then \
+		cd forge-core && git push -u origin $$BRANCH; \
+	fi
+
+# Create linked PRs for both repos
+pr:
+	@if [ -f ".dev-core-active" ]; then \
+		echo -e "$(FONT_RED)🛑 Dev-core mode is ACTIVE! Run: make dev-core-off$(FONT_RESET)"; \
+		exit 1; \
+	fi
+	@BRANCH=$$(git branch --show-current); \
+	if [ -d "forge-core" ]; then \
+		echo -e "$(FONT_CYAN)Creating forge-core PR...$(FONT_RESET)"; \
+		cd forge-core && gh pr create --base dev --fill 2>/dev/null || echo "forge-core PR already exists or nothing to create"; \
+	fi; \
+	echo -e "$(FONT_CYAN)Creating automagik-forge PR...$(FONT_RESET)"; \
+	gh pr create --base dev --fill 2>/dev/null || echo "automagik-forge PR already exists or nothing to create"
+
+# Quick help for cross-repo commands
+dev-help:
+	@echo ""
+	@echo -e "$(FONT_BOLD)$(FONT_PURPLE)🔗 Cross-Repo Development Commands$(FONT_RESET)"
+	@echo ""
+	@echo -e "$(FONT_CYAN)Starting:$(FONT_RESET)"
+	@echo "  make dev-core              Start with 'dev' branch (default)"
+	@echo "  make dev-core BRANCH=x     Start with specific branch"
+	@echo ""
+	@echo -e "$(FONT_CYAN)During development:$(FONT_RESET)"
+	@echo "  make status                Check current mode and branches"
+	@echo "  make dev-core-status       Detailed dev-core status"
+	@echo "  make commit-both           Commit to both repos"
+	@echo ""
+	@echo -e "$(FONT_CYAN)Before PRs:$(FONT_RESET)"
+	@echo "  make dev-core-off          Switch back to git deps"
+	@echo "  make push-both             Push branches"
+	@echo "  make pr                    Create linked PRs"
+	@echo ""
 
 # Production mode - test what will be published
 prod: check-android-deps check-cargo

@@ -1,0 +1,87 @@
+name: Check Release Intent
+
+# Detects if a merged PR should trigger an RC release
+# Triggers Jenkins cross-repo release pipeline when:
+# - PR has label: 'release' or 'rc'
+# - PR title contains: '[release]' or starts with 'release:'
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [dev]
+
+jobs:
+  check:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.check.outputs.release }}
+    steps:
+      - name: Check for release intent
+        id: check
+        run: |
+          LABELS='${{ toJSON(github.event.pull_request.labels.*.name) }}'
+          TITLE='${{ github.event.pull_request.title }}'
+
+          echo "PR Title: $TITLE"
+          echo "PR Labels: $LABELS"
+
+          SHOULD_RELEASE=false
+
+          # Check for release/rc labels
+          if echo "$LABELS" | grep -qiE '"release"|"rc"'; then
+            echo "Found release label"
+            SHOULD_RELEASE=true
+          fi
+
+          # Check for [release] in title or release: prefix
+          if echo "$TITLE" | grep -qiE '\[release\]|^release:'; then
+            echo "Found release indicator in title"
+            SHOULD_RELEASE=true
+          fi
+
+          # Check for breaking change (feat!:)
+          if echo "$TITLE" | grep -qE '^feat!:'; then
+            echo "Found breaking change indicator"
+            SHOULD_RELEASE=true
+          fi
+
+          echo "release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
+
+          if [ "$SHOULD_RELEASE" = "true" ]; then
+            echo "✅ Release intent detected - will trigger RC release"
+          else
+            echo "ℹ️ No release intent - skipping RC release"
+          fi
+
+      - name: Trigger Jenkins RC Release
+        if: steps.check.outputs.release == 'true'
+        run: |
+          echo "Triggering Jenkins cross-repo release..."
+          curl -X POST "http://10.114.1.103:8080/generic-webhook-trigger/invoke?token=cross-repo-release" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "repo": "${{ github.repository }}",
+              "pr": ${{ github.event.pull_request.number }},
+              "branch": "dev",
+              "type": "rc",
+              "title": "${{ github.event.pull_request.title }}",
+              "sha": "${{ github.event.pull_request.merge_commit_sha }}"
+            }' || echo "Warning: Jenkins trigger failed (may not be reachable)"
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.check.outputs.release }}" = "true" ]; then
+            echo "### 🚀 RC Release Triggered" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Jenkins has been notified to start the cross-repo RC release pipeline." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**PR:** #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Title:** ${{ github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ℹ️ No Release Triggered" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "This PR was merged without release intent." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "To trigger an RC release, add the \`release\` or \`rc\` label, or include \`[release]\` in the PR title." >> $GITHUB_STEP_SUMMARY
+          fi

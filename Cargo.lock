@@ -1828,7 +1828,7 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "forge-app"
-version = "0.7.5"
+version = "0.8.4"
 dependencies = [
  "android_logger",
  "anyhow",
@@ -1873,7 +1873,7 @@ dependencies = [
 
 [[package]]
 name = "forge-config"
-version = "0.7.5"
+version = "0.8.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1890,7 +1890,7 @@ dependencies = [
 
 [[package]]
 name = "forge-omni"
-version = "0.7.5"
+version = "0.8.4"
 dependencies = [
  "anyhow",
  "reqwest",

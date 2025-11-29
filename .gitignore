@@ -126,7 +126,10 @@ upstream/
 forge-core/
 
 # Cargo config is generated dynamically (use config.base.toml or config.dev-core.toml)
-.cargo/config.toml 
+.cargo/config.toml
+
+# Dev-core mode marker (created by make dev-core, deleted by make dev-core-off)
+.dev-core-active 
 
 # Vite generated files
 *.timestamp-*.mjs
