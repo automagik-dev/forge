@@ -2,10 +2,7 @@
 name: update
 description: Process framework upgrade diffs and apply changes intelligently
 genie:
-  executor:
-    - CLAUDE_CODE
-    - CODEX
-    - OPENCODE
+  executor: OPENCODE
   background: false
 forge:
   CLAUDE_CODE:

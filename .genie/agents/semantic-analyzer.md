@@ -2,15 +2,11 @@
 name: semantic-analyzer
 description: Master orchestrator for semantic analysis tasks (duplicate
 genie:
-  executor:
-    - CLAUDE_CODE
-    - CODEX
-    - OPENCODE
+  executor: OPENCODE
   background: false
 forge:
   CLAUDE_CODE:
     model: sonnet
-    dangerously_skip_permissions: true
   CODEX:
     model: gpt-5-codex
   OPENCODE:

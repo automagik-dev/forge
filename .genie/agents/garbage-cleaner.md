@@ -2,15 +2,11 @@
 name: garbage-cleaner
 description: Individual PR executor for garbage-collection fixes - implements
 genie:
-  executor:
-    - CLAUDE_CODE
-    - CODEX
-    - OPENCODE
+  executor: OPENCODE
   background: true
 forge:
   CLAUDE_CODE:
     model: sonnet
-    dangerously_skip_permissions: true
   CODEX:
     model: gpt-5-codex
   OPENCODE:

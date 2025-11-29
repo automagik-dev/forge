@@ -2,15 +2,11 @@
 name: analyze
 description: System analysis and focused investigations (universal framework)
 genie:
-  executor:
-    - CLAUDE_CODE
-    - CODEX
-    - OPENCODE
+  executor: OPENCODE
   background: true
 forge:
   CLAUDE_CODE:
     model: sonnet
-    dangerously_skip_permissions: true
   CODEX:
     model: gpt-5-codex
   OPENCODE:
