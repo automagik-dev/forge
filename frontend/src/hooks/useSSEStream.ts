@@ -154,12 +154,14 @@ export function useSSEStream<T = unknown>(
   const [error, setError] = useState<string | null>(null);
   const [lastEventId, setLastEventId] = useState<string | null>(null);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [reconnectTrigger, setReconnectTrigger] = useState(0);
 
   // Refs for managing connection lifecycle
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
   const intentionalCloseRef = useRef(false);
   const mountedRef = useRef(true);
+  const reconnectAttemptsRef = useRef(0);
 
   // Store callbacks in refs to avoid effect dependencies
   const onMessageRef = useRef(onMessage);
@@ -172,6 +174,11 @@ export function useSSEStream<T = unknown>(
     onErrorRef.current = onError;
   }, [onMessage, onStateChange, onError]);
 
+  // Reset lastEventId when endpoint changes (Issue #3)
+  useEffect(() => {
+    setLastEventId(null);
+  }, [endpoint]);
+
   // Update connection state and notify callback
   const updateConnectionState = useCallback((newState: SSEConnectionState) => {
     if (!mountedRef.current) return;
@@ -180,9 +187,11 @@ export function useSSEStream<T = unknown>(
   }, []);
 
   // Schedule a reconnection attempt
-  const scheduleReconnect = useCallback((currentAttempt: number) => {
+  const scheduleReconnect = useCallback(() => {
     if (!mountedRef.current) return;
     if (reconnectTimerRef.current) return; // Already scheduled
+
+    const currentAttempt = reconnectAttemptsRef.current;
     if (currentAttempt >= maxReconnectAttempts) {
       setError(`Max reconnection attempts (${maxReconnectAttempts}) reached`);
       updateConnectionState('disconnected');
@@ -201,7 +210,9 @@ export function useSSEStream<T = unknown>(
     reconnectTimerRef.current = window.setTimeout(() => {
       reconnectTimerRef.current = null;
       if (mountedRef.current) {
-        setReconnectAttempts((prev) => prev + 1);
+        reconnectAttemptsRef.current += 1;
+        setReconnectAttempts(reconnectAttemptsRef.current);
+        setReconnectTrigger(prev => prev + 1); // Trigger reconnection
       }
     }, delay);
   }, [maxReconnectAttempts, initialBackoffMs, maxBackoffMs, backoffMultiplier, updateConnectionState]);
@@ -229,10 +240,11 @@ export function useSSEStream<T = unknown>(
   const reconnect = useCallback(() => {
     intentionalCloseRef.current = false;
     cleanup();
+    reconnectAttemptsRef.current = 0;
     setReconnectAttempts(0);
     setError(null);
-    // Trigger reconnection by incrementing attempts (will be reset to 0)
-    setReconnectAttempts((prev) => prev + 1);
+    // Trigger reconnection
+    setReconnectTrigger(prev => prev + 1);
   }, [cleanup]);
 
   // Main effect for managing SSE connection
@@ -243,6 +255,7 @@ export function useSSEStream<T = unknown>(
       cleanup();
       updateConnectionState('disconnected');
       setError(null);
+      reconnectAttemptsRef.current = 0;
       setReconnectAttempts(0);
       return;
     }
@@ -263,7 +276,7 @@ export function useSSEStream<T = unknown>(
       url.searchParams.set('lastEventId', lastEventId);
     }
 
-    updateConnectionState(reconnectAttempts > 0 ? 'reconnecting' : 'connecting');
+    updateConnectionState(reconnectAttemptsRef.current > 0 ? 'reconnecting' : 'connecting');
 
     // Create EventSource
     // Note: Native EventSource doesn't support custom headers
@@ -290,6 +303,8 @@ export function useSSEStream<T = unknown>(
       if (!mountedRef.current) return;
       console.log('[SSE] Connected');
       setError(null);
+      // Reset reconnect counter using ref to avoid triggering effect rerun (Issue #2)
+      reconnectAttemptsRef.current = 0;
       setReconnectAttempts(0);
       updateConnectionState('connected');
     };
@@ -345,7 +360,7 @@ export function useSSEStream<T = unknown>(
       onErrorRef.current?.(new Error(errorMsg));
 
       // Schedule reconnection with exponential backoff
-      scheduleReconnect(reconnectAttempts);
+      scheduleReconnect();
     };
 
     return () => {
@@ -355,8 +370,9 @@ export function useSSEStream<T = unknown>(
   }, [
     endpoint,
     enabled,
-    reconnectAttempts,
-    lastEventId,
+    reconnectTrigger, // Triggers reconnection without causing issues
+    // Note: lastEventId removed from deps to avoid reconnect loop (Issue #1)
+    // Note: reconnectAttempts removed from deps to avoid closing connection on success (Issue #2)
     withCredentials,
     cleanup,
     updateConnectionState,
