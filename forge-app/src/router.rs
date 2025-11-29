@@ -1069,9 +1069,14 @@ async fn handle_forge_tasks_ws(
                                     "path": "/tasks",
                                     "value": filtered_tasks
                                 }]);
-                                return Some(Ok(LogMsg::JsonPatch(
-                                    serde_json::from_value(filtered_patch).unwrap(),
-                                )));
+                                match serde_json::from_value(filtered_patch) {
+                                    Ok(patch) => return Some(Ok(LogMsg::JsonPatch(patch))),
+                                    Err(e) => {
+                                        tracing::error!("Failed to deserialize filtered JSON patch: {}. Skipping patch to prevent data leak.", e);
+                                        // Skip this patch entirely rather than falling back to unfiltered data
+                                        return None;
+                                    }
+                                }
                             }
                         }
                         // Pass through non-task patches
@@ -1501,10 +1506,11 @@ async fn serve_static_file<T: RustEmbed>(path: &str) -> Response {
             let mime = mime_guess::from_path(path).first_or_octet_stream();
 
             let mut response = Response::new(content.data.into());
-            response.headers_mut().insert(
-                header::CONTENT_TYPE,
-                HeaderValue::from_str(mime.as_ref()).unwrap(),
-            );
+            let content_type = HeaderValue::from_str(mime.as_ref()).unwrap_or_else(|e| {
+                tracing::warn!("Invalid MIME type for path '{}': {}, falling back to application/octet-stream", path, e);
+                HeaderValue::from_static("application/octet-stream")
+            });
+            response.headers_mut().insert(header::CONTENT_TYPE, content_type);
             response
         }
         None => {
