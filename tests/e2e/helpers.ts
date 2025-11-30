@@ -27,6 +27,31 @@ export async function getFirstProject(page: Page): Promise<string> {
 }
 
 /**
+ * Ensure a project exists, creating one if necessary.
+ * This is needed in CI environments where the database starts fresh.
+ *
+ * @returns The project ID
+ */
+export async function ensureProjectExists(page: Page): Promise<string> {
+  // First, try to get an existing project
+  let projectId = await getFirstProject(page);
+
+  // If no project exists, create one
+  if (!projectId) {
+    const response = await page.request.post('/api/projects', {
+      data: {
+        name: 'E2E Test Project',
+        path: '/tmp/e2e-test-project',
+      },
+    });
+    const data = await response.json();
+    projectId = data.data?.id;
+  }
+
+  return projectId;
+}
+
+/**
  * Create a test task via API
  */
 export async function createTestTask(

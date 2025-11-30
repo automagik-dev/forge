@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { getFirstProject, createTestTask, skipOnboarding, closeReleaseNotes } from './helpers';
+import { ensureProjectExists, createTestTask, skipOnboarding, closeReleaseNotes } from './helpers';
 
 /**
  * WebSocket Task Filtering Tests
@@ -16,7 +16,7 @@ test.describe('WebSocket Task Filtering', () => {
     // GIVEN: Get a project ID first (without navigation)
     await page.goto('/');
     await skipOnboarding(page);
-    const projectId = await getFirstProject(page);
+    const projectId = await ensureProjectExists(page);
 
     // Setup WebSocket message capture BEFORE navigating to tasks view
     const wsMessages: any[] = [];
@@ -79,7 +79,7 @@ test.describe('WebSocket Task Filtering', () => {
     // GIVEN: Get a project ID and create tasks first
     await page.goto('/');
     await skipOnboarding(page);
-    const projectId = await getFirstProject(page);
+    const projectId = await ensureProjectExists(page);
 
     // Create a regular task
     await createTestTask(page, projectId, {
@@ -141,7 +141,7 @@ test.describe('WebSocket Task Filtering', () => {
     // GIVEN: Get a project ID first (without navigation)
     await page.goto('/');
     await skipOnboarding(page);
-    const projectId = await getFirstProject(page);
+    const projectId = await ensureProjectExists(page);
 
     // Setup WebSocket message capture BEFORE navigating to tasks view
     const wsMessages: any[] = [];
@@ -209,7 +209,7 @@ test.describe('WebSocket Task Filtering', () => {
     // GIVEN: Get a project ID first (without navigation)
     await page.goto('/');
     await skipOnboarding(page);
-    const projectId = await getFirstProject(page);
+    const projectId = await ensureProjectExists(page);
 
     // Setup WebSocket message capture BEFORE navigating to tasks view
     const wsMessages: any[] = [];
