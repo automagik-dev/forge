@@ -30,18 +30,21 @@ export default defineConfig({
     // Base URL for tests
     baseURL: 'http://localhost:3000',
 
-    // Screenshots on failure for debugging
+    // Screenshots - capture on failure for debugging
     screenshot: 'only-on-failure',
 
-    // Videos on failure
-    video: 'retain-on-failure',
+    // Videos - always record, retain on failure (helps debug CI issues)
+    video: 'on',
 
-    // Trace on first retry
+    // Trace - capture on first retry for detailed debugging
     trace: 'on-first-retry',
 
     // Accessibility snapshots (instead of relying on selectors)
     // This is KEY for LLM testing - we can see the page structure
   },
+
+  // Output directories for artifacts
+  outputDir: 'test-results',
 
   // Browser projects
   projects: [

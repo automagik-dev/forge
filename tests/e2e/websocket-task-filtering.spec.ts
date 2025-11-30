@@ -32,14 +32,17 @@ test.describe('WebSocket Task Filtering', () => {
       description: 'This is a normal user task'
     });
 
-    // WHEN: Create an agent task via API
-    await page.request.post('/api/forge/tasks/create-and-start', {
+    // WHEN: Create an agent task via API (use_worktree: false registers it as agent)
+    await page.request.post('/api/tasks/create-and-start', {
       data: {
-        project_id: projectId,
-        title: 'Agent Task',
-        description: 'This task should be filtered out',
-        executor: 'CODEX',
-        base_branch: 'dev'
+        task: {
+          project_id: projectId,
+          title: 'Agent Task',
+          description: 'This task should be filtered out',
+        },
+        executor_profile_id: { executor: 'CODEX' },
+        base_branch: 'dev',
+        use_worktree: false
       }
     });
 
@@ -69,14 +72,17 @@ test.describe('WebSocket Task Filtering', () => {
       description: 'Should appear in initial snapshot'
     });
 
-    // Create an agent task
-    await page.request.post('/api/forge/tasks/create-and-start', {
+    // Create an agent task (use_worktree: false registers it as agent)
+    await page.request.post('/api/tasks/create-and-start', {
       data: {
-        project_id: projectId,
-        title: 'Agent Task in Snapshot',
-        description: 'Should NOT appear in initial snapshot',
-        executor: 'CODEX',
-        base_branch: 'dev'
+        task: {
+          project_id: projectId,
+          title: 'Agent Task in Snapshot',
+          description: 'Should NOT appear in initial snapshot',
+        },
+        executor_profile_id: { executor: 'CODEX' },
+        base_branch: 'dev',
+        use_worktree: false
       }
     });
 
@@ -136,14 +142,17 @@ test.describe('WebSocket Task Filtering', () => {
     await page.waitForTimeout(500);
     wsMessages.length = 0;
 
-    // WHEN: Create and immediately update an agent task
-    const createResponse = await page.request.post('/api/forge/tasks/create-and-start', {
+    // WHEN: Create and immediately update an agent task (use_worktree: false registers it as agent)
+    const createResponse = await page.request.post('/api/tasks/create-and-start', {
       data: {
-        project_id: projectId,
-        title: 'Agent Task to Update',
-        description: 'Initial description',
-        executor: 'CODEX',
-        base_branch: 'dev'
+        task: {
+          project_id: projectId,
+          title: 'Agent Task to Update',
+          description: 'Initial description',
+        },
+        executor_profile_id: { executor: 'CODEX' },
+        base_branch: 'dev',
+        use_worktree: false
       }
     });
 
@@ -194,14 +203,17 @@ test.describe('WebSocket Task Filtering', () => {
     await page.waitForTimeout(1000);
     wsMessages.length = 0;
 
-    // WHEN: Create an agent task
-    await page.request.post('/api/forge/tasks/create-and-start', {
+    // WHEN: Create an agent task (use_worktree: false registers it as agent)
+    await page.request.post('/api/tasks/create-and-start', {
       data: {
-        project_id: projectId,
-        title: 'New Agent Task After Connect',
-        description: 'Should be cached and filtered',
-        executor: 'CODEX',
-        base_branch: 'dev'
+        task: {
+          project_id: projectId,
+          title: 'New Agent Task After Connect',
+          description: 'Should be cached and filtered',
+        },
+        executor_profile_id: { executor: 'CODEX' },
+        base_branch: 'dev',
+        use_worktree: false
       }
     });
 
