@@ -1,19 +1,24 @@
 import { test, expect } from '@playwright/test';
-import { setupTasksView, getFirstProject, createTestTask } from './helpers';
+import { getFirstProject, createTestTask, skipOnboarding, closeReleaseNotes } from './helpers';
 
 /**
  * WebSocket Task Filtering Tests
  *
  * Validates that agent tasks are properly filtered from WebSocket streams
  * Tests the N+1 query fix (Bug #1) - verifies caching behavior is correct
+ *
+ * CRITICAL: WebSocket capture MUST be set up BEFORE navigation to capture messages.
+ * The `page.on('websocket', ...)` listener only captures NEW connections.
  */
 
 test.describe('WebSocket Task Filtering', () => {
   test('agent tasks should not appear in WebSocket stream', async ({ page }) => {
-    // GIVEN: User is on the tasks view with a project loaded
-    const projectId = await setupTasksView(page);
+    // GIVEN: Get a project ID first (without navigation)
+    await page.goto('/');
+    await skipOnboarding(page);
+    const projectId = await getFirstProject(page);
 
-    // Setup WebSocket message capture
+    // Setup WebSocket message capture BEFORE navigating to tasks view
     const wsMessages: any[] = [];
     page.on('websocket', ws => {
       ws.on('framereceived', event => {
@@ -25,6 +30,14 @@ test.describe('WebSocket Task Filtering', () => {
         }
       });
     });
+
+    // Navigate to tasks view (WebSocket will be captured)
+    await page.goto(`/projects/${projectId}/tasks`);
+    await page.waitForLoadState('networkidle');
+    await closeReleaseNotes(page);
+
+    // Wait for initial snapshot
+    await page.waitForTimeout(1000);
 
     // WHEN: Create a regular task (non-agent task)
     await createTestTask(page, projectId, {
@@ -63,7 +76,9 @@ test.describe('WebSocket Task Filtering', () => {
   });
 
   test('initial snapshot should exclude agent tasks', async ({ page }) => {
-    // GIVEN: A project with both regular and agent tasks exists
+    // GIVEN: Get a project ID and create tasks first
+    await page.goto('/');
+    await skipOnboarding(page);
     const projectId = await getFirstProject(page);
 
     // Create a regular task
@@ -86,7 +101,7 @@ test.describe('WebSocket Task Filtering', () => {
       }
     });
 
-    // Setup WebSocket message capture BEFORE navigating to page
+    // Setup WebSocket message capture BEFORE navigating to tasks view
     const wsMessages: any[] = [];
     page.on('websocket', ws => {
       ws.on('framereceived', event => {
@@ -102,6 +117,7 @@ test.describe('WebSocket Task Filtering', () => {
     // WHEN: Navigate to tasks view (triggers WebSocket connection + initial snapshot)
     await page.goto(`/projects/${projectId}/tasks`);
     await page.waitForLoadState('networkidle');
+    await closeReleaseNotes(page);
     await page.waitForTimeout(1000);
 
     // THEN: Find the initial snapshot message (replace operation on /tasks)
@@ -122,10 +138,12 @@ test.describe('WebSocket Task Filtering', () => {
   });
 
   test('task updates should be filtered in real-time', async ({ page }) => {
-    // GIVEN: User is on the tasks view
-    const projectId = await setupTasksView(page);
+    // GIVEN: Get a project ID first (without navigation)
+    await page.goto('/');
+    await skipOnboarding(page);
+    const projectId = await getFirstProject(page);
 
-    // Setup WebSocket message capture
+    // Setup WebSocket message capture BEFORE navigating to tasks view
     const wsMessages: any[] = [];
     page.on('websocket', ws => {
       ws.on('framereceived', event => {
@@ -138,8 +156,13 @@ test.describe('WebSocket Task Filtering', () => {
       });
     });
 
-    // Clear initial messages
-    await page.waitForTimeout(500);
+    // Navigate to tasks view (WebSocket will be captured)
+    await page.goto(`/projects/${projectId}/tasks`);
+    await page.waitForLoadState('networkidle');
+    await closeReleaseNotes(page);
+
+    // Wait for initial snapshot, then clear messages
+    await page.waitForTimeout(1000);
     wsMessages.length = 0;
 
     // WHEN: Create and immediately update an agent task (use_worktree: false registers it as agent)
@@ -183,10 +206,12 @@ test.describe('WebSocket Task Filtering', () => {
   });
 
   test('cache refresh should pick up new agent tasks', async ({ page }) => {
-    // GIVEN: User is on the tasks view with WebSocket connected
-    const projectId = await setupTasksView(page);
+    // GIVEN: Get a project ID first (without navigation)
+    await page.goto('/');
+    await skipOnboarding(page);
+    const projectId = await getFirstProject(page);
 
-    // Setup WebSocket message capture
+    // Setup WebSocket message capture BEFORE navigating to tasks view
     const wsMessages: any[] = [];
     page.on('websocket', ws => {
       ws.on('framereceived', event => {
@@ -199,7 +224,12 @@ test.describe('WebSocket Task Filtering', () => {
       });
     });
 
-    // Wait for initial snapshot
+    // Navigate to tasks view (WebSocket will be captured)
+    await page.goto(`/projects/${projectId}/tasks`);
+    await page.waitForLoadState('networkidle');
+    await closeReleaseNotes(page);
+
+    // Wait for initial snapshot, then clear messages
     await page.waitForTimeout(1000);
     wsMessages.length = 0;
 
