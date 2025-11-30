@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { FileSearchTextarea } from '@/components/ui/file-search-textarea';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -101,6 +102,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       useState<ExecutorProfileId | null>(null);
     const imageUploadRef = useRef<ImageUploadSectionHandle>(null);
     const [isTextareaFocused, setIsTextareaFocused] = useState(false);
+    const [useWorktree, setUseWorktree] = useState(true);
     const [parentTask, setParentTask] = useState<Task | null>(null);
     const [parentAttempt, setParentAttempt] = useState<TaskAttempt | null>(
       null
@@ -410,7 +412,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
             },
             executor_profile_id: finalExecutorProfile,
             base_branch: selectedBranch,
-            use_worktree: null, // Default to worktree execution
+            use_worktree: useWorktree,
           },
           {
             onSuccess: () => {
@@ -670,6 +672,22 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                       </div>
                     </div>
                   )}
+
+                  {/* Worktree Checkbox */}
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="use-worktree"
+                      checked={useWorktree}
+                      onCheckedChange={(checked) => setUseWorktree(checked === true)}
+                      disabled={isSubmitting || isSubmittingAndStart}
+                    />
+                    <Label
+                      htmlFor="use-worktree"
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      {t('createAttemptDialog.useWorktree')}
+                    </Label>
+                  </div>
                 </div>
               )}
 
