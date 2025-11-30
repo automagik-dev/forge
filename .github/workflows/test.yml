@@ -31,9 +31,10 @@ jobs:
             FAILED=true
           fi
 
-          # Check for patch sections in cargo config
+          # Check for UNCOMMENTED patch sections in cargo config
+          # (commented patches are expected in the template)
           if [ -f ".cargo/config.toml" ]; then
-            if grep -q '\[patch\.' .cargo/config.toml; then
+            if grep -v '^[[:space:]]*#' .cargo/config.toml | grep -q '\[patch\.'; then
               echo "::error::Patch sections found in .cargo/config.toml"
               FAILED=true
             fi
