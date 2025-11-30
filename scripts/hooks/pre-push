@@ -1,6 +1,6 @@
 #!/bin/bash
 # Pre-push hook for automagik-forge
-# BLOCKS push if dev-core mode is active
+# BLOCKS push if dev-core mode is active (Cargo [patch] uncommented)
 # Installed by: make dev-core
 # To bypass: git push --no-verify (not recommended)
 
@@ -14,14 +14,10 @@ NC='\033[0m'
 
 DEV_CORE_ACTIVE=false
 
-# Check marker file (primary source of truth)
-if [ -f ".dev-core-active" ]; then
-    DEV_CORE_ACTIVE=true
-fi
-
-# Also check .cargo/config.toml for patches (belt and suspenders)
+# Check .cargo/config.toml for ACTIVE (uncommented) [patch] section
+# Pattern: line starts with [patch. (not # [patch.)
 if [ -f ".cargo/config.toml" ]; then
-    if grep -q '\[patch\.' .cargo/config.toml 2>/dev/null; then
+    if grep -q '^\[patch\.' .cargo/config.toml 2>/dev/null; then
         DEV_CORE_ACTIVE=true
     fi
 fi
@@ -40,9 +36,8 @@ if [ "$DEV_CORE_ACTIVE" = "true" ]; then
     echo -e "  2. ${GREEN}make build${NC}          # Verify it compiles"
     echo -e "  3. ${GREEN}git push${NC}            # Try again"
     echo ""
-    echo -e "${YELLOW}Files that indicate dev-core mode:${NC}"
-    [ -f ".dev-core-active" ] && echo "  - .dev-core-active (marker file)"
-    [ -f ".cargo/config.toml" ] && grep -q '\[patch\.' .cargo/config.toml 2>/dev/null && echo "  - .cargo/config.toml (patches enabled)"
+    echo -e "${YELLOW}Detection:${NC}"
+    echo "  .cargo/config.toml has active [patch] section"
     echo ""
     echo -e "${YELLOW}If you really need to push with dev-core on:${NC}"
     echo -e "  git push --no-verify (not recommended)"
