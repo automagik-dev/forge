@@ -41,7 +41,8 @@ export async function ensureProjectExists(page: Page): Promise<string> {
     const response = await page.request.post('/api/projects', {
       data: {
         name: 'E2E Test Project',
-        path: '/tmp/e2e-test-project',
+        git_repo_path: '/tmp/e2e-test-project',
+        use_existing_repo: false,
       },
     });
     const data = await response.json();
