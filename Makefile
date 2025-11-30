@@ -649,15 +649,33 @@ BRANCH ?= dev
 dev-core: check-android-deps check-cargo
 	@echo ""
 	@echo -e "$(FONT_PURPLE)🔧 Setting up local forge-core development...$(FONT_RESET)"
+	@# Pre-flight: Verify all .dev-core.toml files exist
+	@for f in Cargo.toml forge-app/Cargo.toml forge-extensions/config/Cargo.toml; do \
+		if [ ! -f "$${f%.toml}.dev-core.toml" ]; then \
+			echo -e "$(FONT_RED)❌ FATAL: Missing $${f%.toml}.dev-core.toml$(FONT_RESET)"; \
+			exit 1; \
+		fi; \
+	done
 	@if [ ! -d "forge-core" ]; then \
 		echo -e "$(FONT_CYAN)📦 Cloning forge-core (branch: $(BRANCH))...$(FONT_RESET)"; \
-		git clone -b $(BRANCH) https://github.com/namastexlabs/forge-core.git forge-core; \
+		if ! git clone -b $(BRANCH) https://github.com/namastexlabs/forge-core.git forge-core; then \
+			echo -e "$(FONT_RED)❌ FATAL: git clone failed$(FONT_RESET)"; \
+			echo -e "$(FONT_YELLOW)Check network connectivity and branch name$(FONT_RESET)"; \
+			exit 1; \
+		fi; \
 		echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core cloned$(FONT_RESET)"; \
 	else \
+		echo -e "$(FONT_CYAN)📥 Fetching latest tags...$(FONT_RESET)"; \
+		(cd forge-core && git fetch --tags origin 2>/dev/null) || true; \
 		CURRENT=$$(cd forge-core && git branch --show-current); \
 		if [ "$$CURRENT" != "$(BRANCH)" ]; then \
 			echo -e "$(FONT_YELLOW)⚠️  Switching forge-core: $$CURRENT → $(BRANCH)$(FONT_RESET)"; \
-			(cd forge-core && git fetch origin && git checkout $(BRANCH) 2>/dev/null || git checkout -b $(BRANCH) origin/$(BRANCH)); \
+			if ! (cd forge-core && git fetch origin && git checkout $(BRANCH) || git checkout -b $(BRANCH) origin/$(BRANCH)); then \
+				echo -e "$(FONT_RED)❌ FATAL: Could not checkout branch '$(BRANCH)'$(FONT_RESET)"; \
+				echo -e "$(FONT_YELLOW)Available branches:$(FONT_RESET)"; \
+				cd forge-core && git branch -r | head -10; \
+				exit 1; \
+			fi; \
 		else \
 			echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core already on $(BRANCH)$(FONT_RESET)"; \
 		fi; \
@@ -681,6 +699,18 @@ dev-core: check-android-deps check-cargo
 		cp scripts/hooks/pre-push .git/hooks/pre-push; \
 		chmod +x .git/hooks/pre-push; \
 		echo -e "$(FONT_GREEN)$(CHECKMARK) Safety hooks installed$(FONT_RESET)"; \
+	else \
+		echo -e "$(FONT_YELLOW)⚠️  WARNING: Pre-push hook not found at scripts/hooks/pre-push$(FONT_RESET)"; \
+		echo -e "$(FONT_YELLOW)   You can push with dev-core enabled (not recommended)$(FONT_RESET)"; \
+	fi
+	@# Check for version mismatch between local forge-core and expected tag
+	@if [ -d "forge-core" ]; then \
+		LOCAL_TAG=$$(cd forge-core && git describe --tags --abbrev=0 2>/dev/null || echo "unknown"); \
+		EXPECTED_TAG=$$(grep -oP 'tag\s*=\s*"\K[^"]+' forge-app/Cargo.toml | head -1); \
+		if [ "$$LOCAL_TAG" != "$$EXPECTED_TAG" ] && [ "$$EXPECTED_TAG" != "" ]; then \
+			echo -e "$(FONT_YELLOW)⚠️  Version mismatch: local forge-core ($$LOCAL_TAG) vs expected ($$EXPECTED_TAG)$(FONT_RESET)"; \
+			echo -e "$(FONT_YELLOW)   Run: cd forge-core && git checkout $$EXPECTED_TAG$(FONT_RESET)"; \
+		fi; \
 	fi
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using local forge-core at ./forge-core$(FONT_RESET)"
 	@echo ""
@@ -718,6 +748,14 @@ dev-core-status:
 		echo -e "Mode:   $(FONT_CYAN)GIT$(FONT_RESET) (tag in Cargo.toml)"; \
 	fi
 	@echo ""
+
+# Dev-core health check (diagnostics)
+dev-core-check: ## Health check for dev-core workspace
+	@./scripts/dev-core-helper.sh check
+
+# Version consistency check
+check-versions: ## Validate version consistency across all files
+	@./scripts/dev-core-helper.sh versions
 
 # Show full cross-repo status
 status:
