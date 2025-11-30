@@ -2,6 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { SUPPORTED_I18N_CODES, uiLanguageToI18nCode } from './languages';
+import { i18nLogger } from '@/lib/logger';
 
 // Import translation files
 import enCommon from './locales/en/common.json';
@@ -64,8 +65,8 @@ i18n
   .init({
     resources,
     fallbackLng: {
-      pt: ['pt-BR', 'en'],
-      default: ['en'],
+      'pt': ['pt-BR', 'en'],
+      'default': ['en']
     },
     defaultNS: 'common',
     debug: import.meta.env.DEV,
@@ -89,42 +90,34 @@ i18n
 
 // Debug logging in development
 if (import.meta.env.DEV) {
-  console.log('i18n initialized:', i18n.isInitialized);
-  console.log('i18n language:', i18n.language);
-  console.log('i18n namespaces:', i18n.options.ns);
-  console.log('Common bundle loaded:', i18n.hasResourceBundle('en', 'common'));
+  i18nLogger.debug('i18n initialized:', i18n.isInitialized);
+  i18nLogger.debug('i18n language:', i18n.language);
+  i18nLogger.debug('i18n namespaces:', i18n.options.ns);
+  i18nLogger.debug('Common bundle loaded:', i18n.hasResourceBundle('en', 'common'));
 }
 
 // Function to update language from config
 export const updateLanguageFromConfig = (configLanguage: string) => {
-  console.log('[i18n] updateLanguageFromConfig called with:', configLanguage);
+  i18nLogger.log('updateLanguageFromConfig called with:', configLanguage);
 
   if (configLanguage === 'BROWSER') {
     // Use browser detection
     const detected = i18n.services.languageDetector?.detect();
     const detectedLang = Array.isArray(detected) ? detected[0] : detected;
-    console.log('[i18n] Using browser detection, detected:', detectedLang);
+    i18nLogger.log('Using browser detection, detected:', detectedLang);
     i18n.changeLanguage(detectedLang || 'en');
   } else {
     // Use explicit language selection with proper mapping
     const langCode = uiLanguageToI18nCode(configLanguage);
-    console.log(
-      '[i18n] Mapped UI language',
-      configLanguage,
-      'to i18n code:',
-      langCode
-    );
+    i18nLogger.log('Mapped UI language', configLanguage, 'to i18n code:', langCode);
 
     if (langCode) {
-      console.log('[i18n] Changing language to:', langCode);
+      i18nLogger.log('Changing language to:', langCode);
       i18n.changeLanguage(langCode);
-      console.log('[i18n] Current language after change:', i18n.language);
-      console.log(
-        '[i18n] Has pt-BR settings bundle:',
-        i18n.hasResourceBundle('pt-BR', 'settings')
-      );
+      i18nLogger.log('Current language after change:', i18n.language);
+      i18nLogger.log('Has pt-BR settings bundle:', i18n.hasResourceBundle('pt-BR', 'settings'));
     } else {
-      console.warn(
+      i18nLogger.warn(
         `Unknown UI language: ${configLanguage}, falling back to 'en'`
       );
       i18n.changeLanguage('en');
