@@ -142,21 +142,34 @@ rm -rf frontend/dist
 echo "✅ Frontend cache cleared"
 echo ""
 
-echo "🔨 Building frontend (required for Rust compilation)..."
-echo "   This is needed because the backend embeds frontend/dist at compile time."
-(
-    cd frontend
-    pnpm run build
-)
-echo "✅ Frontend built successfully"
+# Build frontend (required for Rust compilation - backend embeds frontend/dist at compile time)
+# SKIP_FRONTEND_BUILD: Set to "true" to skip if frontend/dist already exists (used in CI)
+if [ "${SKIP_FRONTEND_BUILD:-}" = "true" ] && [ -d "frontend/dist" ]; then
+    echo "✅ Using cached frontend build (SKIP_FRONTEND_BUILD=true)"
+else
+    echo "🔨 Building frontend (required for Rust compilation)..."
+    echo "   This is needed because the backend embeds frontend/dist at compile time."
+    (
+        cd frontend
+        pnpm run build
+    )
+    echo "✅ Frontend built successfully"
+fi
 echo ""
 
-# Always clean Rust build cache to ensure fresh compilation
-# Incremental compilation was causing too many issues with stale binaries
-echo "🧹 Cleaning Rust build cache..."
+# Cargo build cache handling
+# FORCE_CLEAN: Set to "true" to force cargo clean (for debugging stale binary issues)
+# Default: Preserve incremental compilation for faster subsequent builds
 . "$HOME/.cargo/env"
-cargo clean
-echo "✅ Build cache cleared - forcing fresh compilation"
+if [ "${FORCE_CLEAN:-}" = "true" ]; then
+    echo "🧹 Cleaning Rust build cache (FORCE_CLEAN=true)..."
+    cargo clean
+    echo "✅ Build cache cleared - forcing fresh compilation"
+elif [ ! -d "target/debug" ]; then
+    echo "🧹 First build: no existing cache"
+else
+    echo "♻️  Reusing Rust build cache for incremental compilation"
+fi
 echo ""
 
 # Start backend in background

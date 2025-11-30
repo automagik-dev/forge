@@ -420,12 +420,10 @@ async fn forge_create_task_and_start(
         .await?;
 
         // Also set task status to 'agent' so it's filtered from kanban board
-        sqlx::query(
-            "UPDATE tasks SET status = 'agent', updated_at = datetime('now') WHERE id = ?",
-        )
-        .bind(task.id)
-        .execute(&mut *tx)
-        .await?;
+        sqlx::query("UPDATE tasks SET status = 'agent', updated_at = datetime('now') WHERE id = ?")
+            .bind(task.id)
+            .execute(&mut *tx)
+            .await?;
 
         tx.commit().await?;
     }

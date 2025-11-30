@@ -62,6 +62,6 @@ export default defineConfig({
     command: 'make dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120000, // 2 minutes for build
+    timeout: 600000, // 10 minutes for build (Rust compilation can be slow on CI)
   },
 });

@@ -15,9 +15,7 @@ static VERSION: OnceLock<String> = OnceLock::new();
 ///
 /// The version is cached after first read using `OnceLock` for efficiency.
 pub fn get_version() -> &'static str {
-    VERSION.get_or_init(|| {
-        std::env::var("FORGE_VERSION").unwrap_or_else(|_| "unknown".to_string())
-    })
+    VERSION.get_or_init(|| std::env::var("FORGE_VERSION").unwrap_or_else(|_| "unknown".to_string()))
 }
 
 #[cfg(test)]
