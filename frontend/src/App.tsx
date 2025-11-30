@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n';
@@ -42,15 +42,10 @@ import { Loader } from '@/components/ui/loader';
 import NiceModal from '@ebay/nice-modal-react';
 import { OnboardingResult } from '@/components/dialogs/global/OnboardingDialog';
 import { ClickedElementsProvider } from '@/contexts/ClickedElementsProvider';
-import { GenieMasterWidget } from '@/components/genie-widgets/GenieMasterWidget';
-import { SubGenieProvider } from '@/context/SubGenieContext';
-import { useIsMobile } from '@/components/mobile/MobileLayout';
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 function AppContent() {
-  const [isGenieOpen, setIsGenieOpen] = useState(false);
-  const isMobile = useIsMobile();
   const { config, analyticsUserId, updateAndSaveConfig, loading } =
     useUserSystem();
   const posthog = usePostHog();
@@ -347,14 +342,6 @@ function AppContent() {
               </SentryRoutes>
               <Footer />
             </div>
-            {/* Hide GenieMasterWidget in mobile view - use bottom nav Genie button instead */}
-            {!isMobile && (
-              <GenieMasterWidget
-                isOpen={isGenieOpen}
-                onToggle={() => setIsGenieOpen(!isGenieOpen)}
-                onClose={() => setIsGenieOpen(false)}
-              />
-            )}
           </MobileNavigationProvider>
         </SearchProvider>
       </ThemeProvider>
@@ -362,8 +349,6 @@ function AppContent() {
   );
 }
 
-// FORGE CUSTOMIZATION: Root provider stack with SubGenie context for Genie Widgets.
-// SubGenieProvider wraps NiceModal so Genie chat widgets can show modals.
 function App() {
   return (
     <BrowserRouter
@@ -389,11 +374,9 @@ function App() {
                 'follow-up-ready',
               ]}
             >
-              <SubGenieProvider>
-                <NiceModal.Provider>
-                  <AppContent />
-                </NiceModal.Provider>
-              </SubGenieProvider>
+              <NiceModal.Provider>
+                <AppContent />
+              </NiceModal.Provider>
             </HotkeysProvider>
           </ProjectProvider>
         </ClickedElementsProvider>

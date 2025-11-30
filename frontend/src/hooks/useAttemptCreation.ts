@@ -30,7 +30,7 @@ export function useAttemptCreation({
         task_id: taskId,
         executor_profile_id: profile,
         base_branch: baseBranch,
-        use_worktree: useWorktree, // Use isolated worktree by default (Genie Lamp uses false for main workspace)
+        use_worktree: useWorktree,
       }),
     onSuccess: (newAttempt: TaskAttempt) => {
       queryClient.setQueryData(
