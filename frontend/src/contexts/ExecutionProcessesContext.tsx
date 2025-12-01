@@ -1,8 +1,5 @@
 import React, { useMemo } from 'react';
-import {
-  createContext,
-  useContextSelector,
-} from 'use-context-selector';
+import { createContext, useContextSelector } from 'use-context-selector';
 import { useExecutionProcesses } from '@/hooks/useExecutionProcesses';
 import { useTaskCompletionNotification } from '@/hooks/useTaskCompletionNotification';
 import type { ExecutionProcess } from 'shared/types';

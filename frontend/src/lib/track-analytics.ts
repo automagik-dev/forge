@@ -42,7 +42,10 @@ export function getCurrentUserEmail(): string | undefined {
  * Enhanced capture function with namastexer detection
  * Automatically adds namastexer metadata for @namastex.ai accounts
  */
-function captureWithContext<T extends object>(eventName: string, properties: T | Record<string, unknown> = {} as T) {
+function captureWithContext<T extends object>(
+  eventName: string,
+  properties: T | Record<string, unknown> = {} as T
+) {
   const userEmail = getCurrentUserEmail();
   const isNamestexer = isNamestexEmployee(userEmail);
 

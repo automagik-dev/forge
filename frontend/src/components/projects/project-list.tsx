@@ -16,7 +16,13 @@ import {
 import { Project } from 'shared/types';
 import { showProjectForm } from '@/lib/modals';
 import { projectsApi, tasksApi } from '@/lib/api';
-import { AlertCircle, Loader2, Plus, ArrowDownWideNarrow, ArrowUpNarrowWide } from 'lucide-react';
+import {
+  AlertCircle,
+  Loader2,
+  Plus,
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
+} from 'lucide-react';
 import ProjectCard from '@/components/projects/ProjectCard.tsx';
 import { useKeyCreate, Scope } from '@/keyboard';
 
@@ -30,7 +36,9 @@ export function ProjectList() {
   const navigate = useNavigate();
   const { t } = useTranslation('projects');
   const [projects, setProjects] = useState<Project[]>([]);
-  const [projectActivity, setProjectActivity] = useState<Map<string, Date>>(new Map());
+  const [projectActivity, setProjectActivity] = useState<Map<string, Date>>(
+    new Map()
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [focusedProjectId, setFocusedProjectId] = useState<string | null>(null);
@@ -119,7 +127,10 @@ export function ProjectList() {
         });
         break;
       case 'created':
-        sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        sorted.sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
         break;
       case 'name':
         sorted.sort((a, b) => a.name.localeCompare(b.name));
@@ -175,7 +186,11 @@ export function ProjectList() {
             variant="outline"
             size="icon"
             onClick={toggleSortDirection}
-            title={sortDirection === 'desc' ? t('sort.descending') : t('sort.ascending')}
+            title={
+              sortDirection === 'desc'
+                ? t('sort.descending')
+                : t('sort.ascending')
+            }
           >
             {sortDirection === 'desc' ? (
               <ArrowDownWideNarrow className="h-4 w-4" />

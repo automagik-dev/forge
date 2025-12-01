@@ -29,7 +29,7 @@ export interface MobileHeaderProps {
 export function MobileHeader({
   onSearchClick,
   onMoreClick,
-  className
+  className,
 }: MobileHeaderProps) {
   const { project } = useProject();
   const navigate = useNavigate();

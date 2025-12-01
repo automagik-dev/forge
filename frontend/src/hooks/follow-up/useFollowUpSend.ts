@@ -1,6 +1,10 @@
 import { useCallback, useState } from 'react';
 import { attemptsApi, tasksApi } from '@/lib/api';
-import type { ImageResponse, TaskWithAttemptStatus, ExecutorProfileId } from 'shared/types';
+import type {
+  ImageResponse,
+  TaskWithAttemptStatus,
+  ExecutorProfileId,
+} from 'shared/types';
 
 type Args = {
   attemptId?: string;

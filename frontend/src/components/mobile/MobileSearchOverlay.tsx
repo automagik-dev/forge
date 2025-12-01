@@ -30,7 +30,7 @@ export interface MobileSearchOverlayProps {
  */
 export function MobileSearchOverlay({
   open,
-  onClose
+  onClose,
 }: MobileSearchOverlayProps) {
   const { project } = useProject();
   const { query, setQuery, active, clear } = useSearch();

@@ -6,7 +6,11 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import NiceModal from '@ebay/nice-modal-react';
-import type { TaskWithAttemptStatus, TaskAttempt, BranchStatus } from 'shared/types';
+import type {
+  TaskWithAttemptStatus,
+  TaskAttempt,
+  BranchStatus,
+} from 'shared/types';
 import { useTranslation } from 'react-i18next';
 
 interface CreatePRButtonProps {
@@ -45,7 +49,8 @@ export function CreatePRButton({
     ? t('git.tooltips.createPr.conflictWarning')
     : t('git.tooltips.createPr.simple');
 
-  const colorClasses = 'bg-blue-100/70 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-200/70 dark:hover:bg-blue-800/40';
+  const colorClasses =
+    'bg-blue-100/70 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-200/70 dark:hover:bg-blue-800/40';
 
   return (
     <TooltipProvider>

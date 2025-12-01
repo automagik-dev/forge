@@ -235,7 +235,7 @@ export function TasksLayout({
 
   if (isMobile) {
     let columns: [string, string, string];
-    
+
     if (mode === null || mode === 'kanban') {
       columns = ['1fr', '0fr', '0fr'];
     } else if (mode === 'chat') {
@@ -246,7 +246,7 @@ export function TasksLayout({
       // Default to Kanban for unknown modes
       columns = ['1fr', '0fr', '0fr'];
     }
-    
+
     const gridTemplateColumns = `minmax(0, ${columns[0]}) minmax(0, ${columns[1]}) minmax(0, ${columns[2]})`;
     const isKanbanVisible = columns[0] !== '0fr';
     const isAttemptVisible = columns[1] !== '0fr';
@@ -257,7 +257,8 @@ export function TasksLayout({
         className="h-full min-h-0 grid"
         style={{
           gridTemplateColumns,
-          transition: 'grid-template-columns 150ms cubic-bezier(0.25, 0.1, 0.25, 1)',
+          transition:
+            'grid-template-columns 150ms cubic-bezier(0.25, 0.1, 0.25, 1)',
         }}
       >
         <div

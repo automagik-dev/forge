@@ -11,7 +11,14 @@ import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { useUserSystem } from '@/components/config-provider';
-import { Check, Clipboard, Github, Key, ArrowLeft, ExternalLink } from 'lucide-react';
+import {
+  Check,
+  Clipboard,
+  Github,
+  Key,
+  ArrowLeft,
+  ExternalLink,
+} from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import { githubAuthApi } from '@/lib/api';
 import { DeviceFlowStartResponse, DevicePollStatus } from 'shared/types';
@@ -23,7 +30,13 @@ type AuthMethod = 'selection' | 'oauth' | 'pat';
 
 const GitHubLoginDialog = NiceModal.create(() => {
   const modal = useModal();
-  const { config, loading, githubTokenInvalid, reloadSystem, updateAndSaveConfig } = useUserSystem();
+  const {
+    config,
+    loading,
+    githubTokenInvalid,
+    reloadSystem,
+    updateAndSaveConfig,
+  } = useUserSystem();
   const [authMethod, setAuthMethod] = useState<AuthMethod>('selection');
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -332,11 +345,17 @@ const GitHubLoginDialog = NiceModal.create(() => {
                 <ul className="space-y-1 text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <Check className="h-3 w-3 text-green-500" />
-                    <code className="text-xs bg-muted px-1 py-0.5 rounded">repo</code> - Full repository access
+                    <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                      repo
+                    </code>{' '}
+                    - Full repository access
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="h-3 w-3 text-green-500" />
-                    <code className="text-xs bg-muted px-1 py-0.5 rounded">workflow</code> - Update GitHub Actions
+                    <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                      workflow
+                    </code>{' '}
+                    - Update GitHub Actions
                   </li>
                 </ul>
               </div>
@@ -351,7 +370,8 @@ const GitHubLoginDialog = NiceModal.create(() => {
                   autoFocus
                 />
                 <p className="text-xs text-muted-foreground mt-2">
-                  💡 Tip: Save your token securely - you won't be able to see it again on GitHub
+                  💡 Tip: Save your token securely - you won't be able to see it
+                  again on GitHub
                 </p>
               </div>
             </div>
@@ -420,7 +440,9 @@ const GitHubLoginDialog = NiceModal.create(() => {
             </Card>
 
             <div className="space-y-3">
-              <p className="text-sm font-medium">Choose your authentication method:</p>
+              <p className="text-sm font-medium">
+                Choose your authentication method:
+              </p>
 
               {/* OAuth Card */}
               <Card
@@ -431,9 +453,13 @@ const GitHubLoginDialog = NiceModal.create(() => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Github className="h-5 w-5" />
-                      <CardTitle className="text-base">OAuth Device Flow</CardTitle>
+                      <CardTitle className="text-base">
+                        OAuth Device Flow
+                      </CardTitle>
                     </div>
-                    <Badge variant="secondary" className="text-xs">Recommended</Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      Recommended
+                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -473,7 +499,9 @@ const GitHubLoginDialog = NiceModal.create(() => {
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
                     <Key className="h-5 w-5" />
-                    <CardTitle className="text-base">Personal Access Token</CardTitle>
+                    <CardTitle className="text-base">
+                      Personal Access Token
+                    </CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">

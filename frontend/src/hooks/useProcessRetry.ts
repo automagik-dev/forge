@@ -64,7 +64,9 @@ export function useProcessRetry(attempt: TaskAttempt | undefined) {
       try {
         const details =
           await executionProcessesApi.getDetails(executionProcessId);
-        const typ = details?.executor_action?.typ as { type?: string; executor_profile_id?: { variant?: string } } | undefined;
+        const typ = details?.executor_action?.typ as
+          | { type?: string; executor_profile_id?: { variant?: string } }
+          | undefined;
         if (
           typ &&
           (typ.type === 'CodingAgentInitialRequest' ||

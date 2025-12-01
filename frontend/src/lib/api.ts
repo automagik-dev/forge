@@ -108,7 +108,9 @@ const makeRequest = async (
 
       // Compose timeout signal with caller's signal (if provided)
       if (callerSignal) {
-        callerSignal.addEventListener('abort', () => controller.abort(), { once: true });
+        callerSignal.addEventListener('abort', () => controller.abort(), {
+          once: true,
+        });
       }
 
       try {
@@ -146,7 +148,10 @@ const makeRequest = async (
           );
           continue;
         }
-      } else if (lastError.name === 'TypeError' && lastError.message === 'Failed to fetch') {
+      } else if (
+        lastError.name === 'TypeError' &&
+        lastError.message === 'Failed to fetch'
+      ) {
         if (attempt < effectiveMaxRetries) {
           const backoffMs = 1000 * Math.pow(2, attempt);
           await new Promise((resolve) => setTimeout(resolve, backoffMs));
@@ -165,7 +170,12 @@ const makeRequest = async (
     }
   }
 
-  throw lastError || new Error(`Request to ${url} failed after ${effectiveMaxRetries + 1} attempts`);
+  throw (
+    lastError ||
+    new Error(
+      `Request to ${url} failed after ${effectiveMaxRetries + 1} attempts`
+    )
+  );
 };
 
 export type Ok<T> = { success: true; data: T };
@@ -341,9 +351,16 @@ export const projectsApi = {
     return handleApiResponse<SearchResult[]>(response);
   },
 
-  getBranchStatus: async (id: string, baseBranch?: string): Promise<BranchStatus> => {
-    const queryParam = baseBranch ? `?base=${encodeURIComponent(baseBranch)}` : '';
-    const response = await makeRequest(`/api/forge/projects/${id}/branch-status${queryParam}`);
+  getBranchStatus: async (
+    id: string,
+    baseBranch?: string
+  ): Promise<BranchStatus> => {
+    const queryParam = baseBranch
+      ? `?base=${encodeURIComponent(baseBranch)}`
+      : '';
+    const response = await makeRequest(
+      `/api/forge/projects/${id}/branch-status${queryParam}`
+    );
     return handleApiResponse<BranchStatus>(response);
   },
 
@@ -850,7 +867,9 @@ export const profilesApi = {
 // Project-specific profiles API (Forge extension)
 export const projectProfilesApi = {
   load: async (projectId: string): Promise<Record<string, unknown>> => {
-    const response = await makeRequest(`/api/forge/projects/${projectId}/profiles`);
+    const response = await makeRequest(
+      `/api/forge/projects/${projectId}/profiles`
+    );
     return handleApiResponse<Record<string, unknown>>(response);
   },
 };

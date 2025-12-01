@@ -768,102 +768,6 @@ Key principles:
 
 ---
 
-## Helper Script Creation Pattern 🔴 CRITICAL
-
-**Purpose:** Create reusable CLI tools for external integrations, validation, and automation tasks
-
-### When to Create a Helper Script
-
-**Triggers:**
-- [learn-194] helpful=0 harmful=0: User requests external integrations requiring code implementation
-- [learn-195] helpful=0 harmful=0: Validation tasks that will be reused (frontmatter, permissions, secrets)
-- [learn-196] helpful=0 harmful=0: Automation that benefits from CLI access
-- [learn-197] helpful=0 harmful=0: Tasks requiring dependencies not in main codebase
-
-### Helper Script Creation Protocol
-
-**1. Write the Helper Script:**
-- [learn-198] helpful=0 harmful=0: Location: `.genie/scripts/helpers/<name>.js`
-- [learn-199] helpful=0 harmful=0: Make executable: `chmod +x .genie/scripts/helpers/<name>.js`
-- [learn-200] helpful=0 harmful=0: Include shebang: `#!/usr/bin/env node`
-- [learn-201] helpful=0 harmful=0: Write standalone (can run independently via `node <path>`)
-- [learn-202] helpful=0 harmful=0: Add clear usage/help output
-
-**2. Register in Helper Index:**
-- [learn-203] helpful=0 harmful=0: Edit `.genie/scripts/helpers/index.js`
-- [learn-204] helpful=0 harmful=0: Add entry to `HELPERS` object with:
-  - `script`: filename
-  - `description`: one-line purpose
-  - `usage`: array of usage patterns
-  - `examples`: array of example commands
-
-**3. Handle Dependencies:**
-- [learn-205] helpful=0 harmful=0: Create `.genie/scripts/helpers/package.json` if needed
-- [learn-206] helpful=0 harmful=0: Add to `.gitignore`:
-  ```
-  .genie/scripts/helpers/package.json
-  .genie/scripts/helpers/package-lock.json
-  .genie/scripts/helpers/node_modules/
-  ```
-- [learn-207] helpful=0 harmful=0: Install with `cd .genie/scripts/helpers && npm install`
-
-**4. Test with CLI:**
-- [learn-208] helpful=0 harmful=0: Test using `genie helper <name>` (NOT full path)
-- [learn-209] helpful=0 harmful=0: Verify all flags/options work
-- [learn-210] helpful=0 harmful=0: Confirm output is clear and actionable
-
-**5. Document Usage:**
-- [learn-211] helpful=0 harmful=0: Usage should be self-documenting via `--help`
-- [learn-212] helpful=0 harmful=0: Clear error messages when misused
-- [learn-213] helpful=0 harmful=0: Exit codes: 0 = success, 1 = errors found/failure
-
-### Anti-Patterns
-
-- [learn-214] helpful=0 harmful=0: ❌ Using full path `node .genie/scripts/helpers/script.js` instead of `genie helper script`
-- [learn-215] helpful=0 harmful=0: ❌ Forgetting to register in index.js (script works but not discoverable)
-- [learn-216] helpful=0 harmful=0: ❌ Creating script without testing CLI access first
-- [learn-217] helpful=0 harmful=0: ❌ Committing node_modules or package files (add to gitignore)
-- [learn-218] helpful=0 harmful=0: ❌ Writing helper without clear --help output
-
-### Example: check-permissions Helper
-
-**Evidence:** 2025-11-21 session - Created helper to validate and fix agent frontmatter permissions
-
-**Implementation:**
-```bash
-# 1. Created script
-.genie/scripts/helpers/check-permissions.js
-
-# 2. Registered in index.js
-{
-  'check-permissions': {
-    script: 'check-permissions.js',
-    description: 'Validate dangerously_skip_permissions settings...',
-    usage: ['genie helper check-permissions', '...--fix'],
-    examples: ['$ genie helper check-permissions']
-  }
-}
-
-# 3. Added dependencies to gitignore
-.genie/scripts/helpers/package.json  # (gitignored)
-.genie/scripts/helpers/node_modules/ # (gitignored)
-
-# 4. Tested with CLI
-$ genie helper check-permissions
-$ genie helper check-permissions --fix
-
-# 5. Result: Fixed 10 agent files, reusable tool created
-```
-
-**Benefits:**
-- [learn-219] helpful=0 harmful=0: Reusable across sessions
-- [learn-220] helpful=0 harmful=0: Discoverable via `genie helper list`
-- [learn-221] helpful=0 harmful=0: Consistent CLI interface
-- [learn-222] helpful=0 harmful=0: Can be run manually or in CI/CD
-- [learn-223] helpful=0 harmful=0: Self-contained with own dependencies
-
----
-
 ## Commit Message Requirements 🔴 CRITICAL
 
 **Every commit must link to a work item for traceability.**
@@ -922,3 +826,49 @@ All commits must reference:
 **Why:** Track WHY code was written. Connect commits to requirements. Enable traceability from code → issue → discussion → decision.
 
 **Evidence:** `.genie/reports/learn/commit-must-link-to-issue-20251023.md`
+
+---
+
+## Development Workflow Triggers 🔴 CRITICAL
+
+### When to Suggest `make dev-core`
+
+**Rule:** When user needs to work on, debug, or understand forge-core, ALWAYS instruct them to use `make dev-core`.
+
+**Recognition Triggers:**
+- [learn-194] helpful=0 harmful=0: User mentions forge-core issues (broken builds, debugging core)
+- [learn-195] helpful=0 harmful=0: User needs to understand how forge-core crates work
+- [learn-196] helpful=0 harmful=0: User wants to test forge-core changes locally before PR
+- [learn-197] helpful=0 harmful=0: Build errors related to db, services, server, deployment, executors, or utils crates
+- [learn-198] helpful=0 harmful=0: User wants hot reload with forge-core modifications
+
+**Response Pattern:**
+
+When any trigger is detected, instruct:
+
+```
+To work with forge-core locally, use:
+
+  make dev-core
+
+This will:
+1. Clone forge-core inside the repo (if not present)
+2. Configure Cargo path overrides to use local ./forge-core/
+3. Start dev servers with hot reload
+
+Changes to ./forge-core/ will be picked up automatically.
+To switch back to git dependencies: make dev-core-off
+```
+
+**How It Works:**
+- [learn-199] helpful=0 harmful=0: Clones https://github.com/namastexlabs/forge-core.git into ./forge-core/ (gitignored)
+- [learn-200] helpful=0 harmful=0: Uses `.cargo/config.dev-core.toml` with `[patch."https://github.com/namastexlabs/forge-core.git"]` section
+- [learn-201] helpful=0 harmful=0: Overrides 7 crates: db, services, server, deployment, local-deployment, executors, utils
+- [learn-202] helpful=0 harmful=0: Runs `scripts/dev/run-dev.sh` with hot reload via cargo watch
+
+**Anti-Patterns:**
+- [learn-203] helpful=0 harmful=0: ❌ Telling user to manually edit Cargo.toml
+- [learn-204] helpful=0 harmful=0: ❌ Suggesting git submodule for forge-core (we use Cargo path override instead)
+- [learn-205] helpful=0 harmful=0: ❌ Editing `.cargo/config.toml` directly (use templates via make targets)
+
+**Evidence:** Implemented 2025-11-29, commit 7f42fa4c, `make dev-core` and `make dev-core-off` targets

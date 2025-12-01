@@ -43,8 +43,12 @@ export function useApproveTask() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(variables.taskId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.taskAttempts.detail(variables.attemptId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.tasks.detail(variables.taskId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.taskAttempts.detail(variables.attemptId),
+      });
 
       // Navigate to kanban view on success
       navigate(`/projects/${variables.projectId}/tasks`);

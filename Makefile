@@ -1,35 +1,550 @@
-.PHONY: help dev prod backend frontend ensure-frontend-stub build-frontend build test clean publish beta version npm check-cargo check-android-deps publish-automagik publish-automagik-quick service
+.PHONY: help dev dev-core dev-core-off ensure-cargo-config prod backend frontend ensure-frontend-stub build-frontend build test clean publish beta version npm check-cargo check-android-deps publish-automagik publish-automagik-quick service install update uninstall install-deps install-complete install-complete-no-pm2 setup-pm2 start-local stop-local restart-local service-status logs logs-follow health
 
-# Default target
-help:
-	@echo "🔧 Automagik Forge - Development Commands"
+# Ensure bash is used for echo -e support
+SHELL := /bin/bash
+
+# ===========================================
+# 🎨 Colors & Symbols
+# ===========================================
+FONT_RED := $(shell tput setaf 1)
+FONT_GREEN := $(shell tput setaf 2)
+FONT_YELLOW := $(shell tput setaf 3)
+FONT_BLUE := $(shell tput setaf 4)
+FONT_PURPLE := $(shell tput setaf 5)
+FONT_CYAN := $(shell tput setaf 6)
+FONT_GRAY := $(shell tput setaf 7)
+FONT_BOLD := $(shell tput bold)
+FONT_RESET := $(shell tput sgr0)
+CHECKMARK := ✅
+WARNING := ⚠️
+ERROR := ❌
+ROCKET := 🚀
+HAMMER := 🔨
+INFO := ℹ️
+SPARKLES := ✨
+
+# ===========================================
+# 🛠️ Utility Functions
+# ===========================================
+define print_status
+	@echo -e "$(FONT_PURPLE)$(HAMMER) $(1)$(FONT_RESET)"
+endef
+
+define print_success
+	@echo -e "$(FONT_GREEN)$(CHECKMARK) $(1)$(FONT_RESET)"
+endef
+
+define print_warning
+	@echo -e "$(FONT_YELLOW)$(WARNING) $(1)$(FONT_RESET)"
+endef
+
+define print_error
+	@echo -e "$(FONT_RED)$(ERROR) $(1)$(FONT_RESET)"
+endef
+
+define print_info
+	@echo -e "$(FONT_CYAN)$(INFO) $(1)$(FONT_RESET)"
+endef
+
+define check_pm2
+	@if ! command -v pm2 >/dev/null 2>&1; then \
+		echo -e "$(FONT_RED)$(ERROR) PM2 not found$(FONT_RESET)"; \
+		echo -e "$(FONT_YELLOW)💡 Install with: npm install -g pm2$(FONT_RESET)"; \
+		exit 1; \
+	fi
+endef
+
+define check_systemd
+	@if [[ "$$(uname -s)" != "Linux" ]]; then \
+		echo -e "$(FONT_CYAN)$(INFO) systemd only available on Linux$(FONT_RESET)"; \
+		exit 1; \
+	fi; \
+	if ! command -v systemctl >/dev/null 2>&1; then \
+		echo -e "$(FONT_YELLOW)$(WARNING) systemd not found$(FONT_RESET)"; \
+		exit 1; \
+	fi
+endef
+
+define ensure_env_file
+	@if [ ! -f ".env" ]; then \
+		if [ -f ".env.example" ]; then \
+			echo -e "$(FONT_YELLOW)$(WARNING) .env not found - creating from .env.example$(FONT_RESET)"; \
+			cp .env.example .env; \
+			echo -e "$(FONT_CYAN)$(INFO) .env created - please configure before starting$(FONT_RESET)"; \
+		else \
+			echo -e "$(FONT_YELLOW)$(WARNING) .env not found and no .env.example$(FONT_RESET)"; \
+		fi; \
+	fi
+endef
+
+# ===========================================
+# 📋 Help System
+# ===========================================
+.PHONY: help
+help: ## 🔨 Show this help message
 	@echo ""
-	@echo "Quick Start:"
-	@echo "  make dev       - Start dev environment (backend + frontend together)"
-	@echo "  make prod      - Build and run production package (QA testing)"
-	@echo "  make forge     - Alias for 'make prod'"
+	@echo -e "$(FONT_BOLD)$(FONT_PURPLE)🔨 Automagik Forge$(FONT_RESET) - $(FONT_GRAY)The Vibe Coding++ Platform$(FONT_RESET)"
 	@echo ""
-	@echo "Isolated Development (run separately in different terminals):"
-	@echo "  make backend              - Backend only (stub dist, no frontend build)"
-	@echo "  make backend BP=XXXX      - Backend with custom port"
-	@echo "  make frontend             - Frontend only (dev server with hot reload)"
-	@echo "  make frontend FP=XXXX     - Frontend with custom port"
+	@echo -e "$(FONT_YELLOW)🏢 Building the future of autonomous software development$(FONT_RESET)"
+	@echo -e "$(FONT_CYAN)📦 GitHub:$(FONT_RESET) https://github.com/namastexlabs/automagik-forge"
 	@echo ""
-	@echo "Other Targets:"
-	@echo "  make build                - Build production package (no launch)"
-	@echo "  make test                 - Run full test suite"
-	@echo "  make clean                - Clean build artifacts"
+	@echo -e "$(FONT_CYAN)$(ROCKET) Installation & Setup:$(FONT_RESET)"
+	@echo -e "  $(FONT_PURPLE)install$(FONT_RESET)         Full interactive installation (6 phases)"
+	@echo -e "  $(FONT_PURPLE)install-deps$(FONT_RESET)    Install dependencies only (no PM2/systemd)"
+	@echo -e "  $(FONT_PURPLE)update$(FONT_RESET)          Update installation (git pull + deps + restart + health)"
+	@echo -e "  $(FONT_PURPLE)uninstall$(FONT_RESET)       Remove PM2/systemd services and clean builds"
 	@echo ""
-	@echo "🐧 Linux Service Deployment (Ubuntu/Debian only):"
-	@echo "  make service              - Transform 'make prod' into systemd service"
+	@echo -e "$(FONT_CYAN)🛠️  Development:$(FONT_RESET)"
+	@echo -e "  $(FONT_PURPLE)dev$(FONT_RESET)             Start dev environment (hot reload)"
+	@echo -e "  $(FONT_PURPLE)dev-core$(FONT_RESET)        Dev with local forge-core (for debugging)"
+	@echo -e "  $(FONT_PURPLE)dev-core-off$(FONT_RESET)    Switch back to git dependencies"
+	@echo -e "  $(FONT_PURPLE)prod$(FONT_RESET)            Build and test production package"
+	@echo -e "  $(FONT_PURPLE)forge$(FONT_RESET)           Alias for 'make prod'"
+	@echo -e "  $(FONT_PURPLE)backend$(FONT_RESET)         Backend only (use BP=port to override)"
+	@echo -e "  $(FONT_PURPLE)frontend$(FONT_RESET)        Frontend only (use FP=port to override)"
+	@echo -e "  $(FONT_PURPLE)build$(FONT_RESET)           Build production package (no launch)"
+	@echo -e "  $(FONT_PURPLE)test$(FONT_RESET)            Run full test suite"
+	@echo -e "  $(FONT_PURPLE)clean$(FONT_RESET)           Clean build artifacts"
 	@echo ""
-	@echo "🚀 Release Workflows:"
-	@echo "  make publish           - Complete release pipeline (main branch → npm as @automagik/forge)"
-	@echo "  make npm [RUN_ID=xxx]  - Manual npm publish from artifacts (when automated publish fails)"
-	@echo "  make publish-automagik - A/B test from dev: full release → npm as unscoped 'automagik'"
-	@echo "  make beta              - Auto-incremented beta release"
-	@echo "  make version           - Show current version info"
+	@echo -e "$(FONT_CYAN)📦 Service Management:$(FONT_RESET)"
+	@echo -e "  $(FONT_PURPLE)start-local$(FONT_RESET)     Start with PM2"
+	@echo -e "  $(FONT_PURPLE)stop-local$(FONT_RESET)      Stop PM2 service"
+	@echo -e "  $(FONT_PURPLE)restart-local$(FONT_RESET)   Restart PM2 service"
+	@echo -e "  $(FONT_PURPLE)service-status$(FONT_RESET)  Check PM2 status"
+	@echo -e "  $(FONT_PURPLE)logs$(FONT_RESET)            Show recent logs (N=30)"
+	@echo -e "  $(FONT_PURPLE)logs-follow$(FONT_RESET)     Follow logs in real-time"
+	@echo -e "  $(FONT_PURPLE)health$(FONT_RESET)          Check service health"
 	@echo ""
+	@echo -e "$(FONT_CYAN)🐧 System Service (Ubuntu/Debian):$(FONT_RESET)"
+	@echo -e "  $(FONT_PURPLE)service$(FONT_RESET)         Install systemd service (interactive)"
+	@echo ""
+	@echo -e "$(FONT_CYAN)🚀 Release & Publish:$(FONT_RESET)"
+	@echo -e "  $(FONT_PURPLE)publish$(FONT_RESET)         Complete release pipeline"
+	@echo -e "  $(FONT_PURPLE)beta$(FONT_RESET)            Beta release"
+	@echo -e "  $(FONT_PURPLE)version$(FONT_RESET)         Show version info"
+	@echo ""
+	@echo -e "$(FONT_GRAY)Examples:$(FONT_RESET)"
+	@echo -e "  $(FONT_GRAY)make install$(FONT_RESET)              # Full installation"
+	@echo -e "  $(FONT_GRAY)make dev$(FONT_RESET)                  # Start development"
+	@echo -e "  $(FONT_GRAY)make update$(FONT_RESET)               # Update to latest"
+	@echo -e "  $(FONT_GRAY)make logs N=50$(FONT_RESET)            # Show 50 log lines"
+	@echo ""
+
+# ===========================================
+# 📦 Installation & Setup
+# ===========================================
+
+.PHONY: install install-deps install-complete install-complete-no-pm2
+install: ## $(ROCKET) Full interactive installation (6 phases)
+	$(call print_status,Starting Automagik Forge installation...)
+	@echo ""
+
+	# Phase 1: Prerequisites Check
+	$(call print_status,Phase 1/6: Checking prerequisites...)
+	@$(MAKE) check-android-deps
+	@$(MAKE) check-cargo
+	@$(call ensure_env_file)
+	$(call print_success,Prerequisites verified!)
+	@echo ""
+
+	# Phase 2: Node.js Dependencies
+	$(call print_status,Phase 2/6: Installing Node.js dependencies...)
+	@if ! command -v pnpm >/dev/null 2>&1; then \
+		echo -e "$(FONT_RED)$(ERROR) pnpm not found$(FONT_RESET)"; \
+		echo -e "$(FONT_YELLOW)💡 Install with: npm install -g pnpm$(FONT_RESET)"; \
+		exit 1; \
+	fi
+	@pnpm install
+	@cd frontend && pnpm install
+	$(call print_success,Node.js dependencies installed!)
+	@echo ""
+
+	# Phase 3: Build Application
+	$(call print_status,Phase 3/6: Building application...)
+	@bash scripts/build/build.sh
+	$(call print_success,Application built successfully!)
+	@echo ""
+
+	# Phase 4: PM2 Setup (Interactive)
+	$(call print_status,Phase 4/6: PM2 Process Manager)
+	@if command -v pm2 >/dev/null 2>&1; then \
+		PM2_VERSION=$$(pm2 --version 2>/dev/null || echo "unknown"); \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) PM2 $$PM2_VERSION already installed$(FONT_RESET)"; \
+	else \
+		echo -e "$(FONT_YELLOW)$(WARNING) PM2 not installed$(FONT_RESET)"; \
+		echo -e "$(FONT_CYAN)PM2 is a process manager for production deployments.$(FONT_RESET)"; \
+		echo -e "$(FONT_CYAN)Features: auto-restart, log management, monitoring$(FONT_RESET)"; \
+		read -p "Install PM2 globally? [y/N] " -n 1 -r REPLY; echo; \
+		if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+			echo -e "$(FONT_PURPLE)$(HAMMER) Installing PM2...$(FONT_RESET)"; \
+			npm install -g pm2 || { \
+				echo -e "$(FONT_RED)$(ERROR) PM2 installation failed$(FONT_RESET)"; \
+				echo -e "$(FONT_YELLOW)💡 Try: sudo npm install -g pm2$(FONT_RESET)"; \
+				exit 1; \
+			}; \
+			PM2_VERSION=$$(pm2 --version); \
+			echo -e "$(FONT_GREEN)$(CHECKMARK) PM2 $$PM2_VERSION installed!$(FONT_RESET)"; \
+		else \
+			echo -e "$(FONT_YELLOW)Skipped.$(FONT_RESET)"; \
+		fi; \
+	fi
+	@echo ""
+
+	# Phase 5: PM2 Configuration
+	@if command -v pm2 >/dev/null 2>&1; then \
+		echo -e "$(FONT_PURPLE)$(HAMMER) Phase 5/6: Configuring PM2...$(FONT_RESET)"; \
+		pm2 install pm2-logrotate >/dev/null 2>&1 || true; \
+		pm2 set pm2-logrotate:max_size 100M >/dev/null 2>&1 || true; \
+		pm2 set pm2-logrotate:retain 7 >/dev/null 2>&1 || true; \
+		pm2 start ecosystem.config.cjs >/dev/null 2>&1 || pm2 restart Forge >/dev/null 2>&1 || true; \
+		pm2 save --force >/dev/null 2>&1 || true; \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) PM2 configured and service started!$(FONT_RESET)"; \
+		pm2 status; \
+		echo ""; \
+		echo -e "$(FONT_PURPLE)$(HAMMER) Phase 6/6: System Service Setup$(FONT_RESET)"; \
+		if [[ "$$(uname -s)" == "Linux" ]] && command -v systemctl >/dev/null 2>&1; then \
+			read -p "Install as system service (auto-start on boot)? [y/N] " -n 1 -r REPLY; echo; \
+			if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+				echo -e "$(FONT_PURPLE)$(HAMMER) Installing systemd service...$(FONT_RESET)"; \
+				bash scripts/service/install-service.sh || echo -e "$(FONT_YELLOW)$(WARNING) systemd setup incomplete$(FONT_RESET)"; \
+			else \
+				echo -e "$(FONT_YELLOW)Skipped.$(FONT_RESET)"; \
+			fi; \
+		else \
+			echo -e "$(FONT_CYAN)$(INFO) System service setup not available (Linux + systemd required)$(FONT_RESET)"; \
+		fi; \
+		echo ""; \
+		$(MAKE) install-complete; \
+	else \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) Phase 5/6: Skipped (no PM2)$(FONT_RESET)"; \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) Phase 6/6: Skipped (no PM2)$(FONT_RESET)"; \
+		echo ""; \
+		$(MAKE) install-complete-no-pm2; \
+	fi
+
+install-complete:
+	@echo ""
+	@echo -e "$(FONT_GREEN)========================================$(FONT_RESET)"
+	@echo -e "$(FONT_GREEN)$(SPARKLES) Installation Complete! 🎉$(FONT_RESET)"
+	@echo -e "$(FONT_GREEN)========================================$(FONT_RESET)"
+	@echo ""
+	@echo -e "$(FONT_GREEN)$(ROCKET) Automagik Forge is now running!$(FONT_RESET)"
+	@echo ""
+	@echo -e "$(FONT_CYAN)📊 Useful commands:$(FONT_RESET)"
+	@echo -e "  $(FONT_PURPLE)make service-status$(FONT_RESET)   # Check PM2 status"
+	@echo -e "  $(FONT_PURPLE)make logs$(FONT_RESET)             # View recent logs"
+	@echo -e "  $(FONT_PURPLE)make logs-follow$(FONT_RESET)      # Follow logs in real-time"
+	@echo -e "  $(FONT_PURPLE)make restart-local$(FONT_RESET)    # Restart service"
+	@echo -e "  $(FONT_PURPLE)make health$(FONT_RESET)           # Run health checks"
+	@echo -e "  $(FONT_PURPLE)make update$(FONT_RESET)           # Update to latest version"
+	@echo ""
+	@echo -e "$(FONT_CYAN)🌐 Access Forge:$(FONT_RESET)"
+	@echo -e "  $(FONT_PURPLE)Check PM2 logs for port information$(FONT_RESET)"
+	@echo ""
+	@echo -e "$(FONT_GREEN)Happy forging! $(HAMMER)$(FONT_RESET)"
+	@echo ""
+
+install-complete-no-pm2:
+	@echo ""
+	@echo -e "$(FONT_GREEN)========================================$(FONT_RESET)"
+	@echo -e "$(FONT_GREEN)$(SPARKLES) Installation Complete!$(FONT_RESET)"
+	@echo -e "$(FONT_GREEN)========================================$(FONT_RESET)"
+	@echo ""
+	@echo -e "$(FONT_CYAN)$(INFO) Dependencies installed (PM2 not installed)$(FONT_RESET)"
+	@echo ""
+	@echo -e "$(FONT_CYAN)$(ROCKET) To run Automagik Forge:$(FONT_RESET)"
+	@echo -e "  $(FONT_PURPLE)make prod$(FONT_RESET)             # Run production build"
+	@echo -e "  $(FONT_PURPLE)make dev$(FONT_RESET)              # Run development mode"
+	@echo ""
+	@echo -e "$(FONT_CYAN)💡 To install PM2 later:$(FONT_RESET)"
+	@echo -e "  $(FONT_PURPLE)npm install -g pm2$(FONT_RESET)"
+	@echo -e "  $(FONT_PURPLE)make start-local$(FONT_RESET)     # Start with PM2"
+	@echo ""
+
+install-deps: ## 📦 Install dependencies only (skip PM2/systemd)
+	$(call print_status,Installing dependencies...)
+	@$(MAKE) check-android-deps
+	@$(MAKE) check-cargo
+	@if ! command -v pnpm >/dev/null 2>&1; then \
+		echo -e "$(FONT_RED)$(ERROR) pnpm not found$(FONT_RESET)"; \
+		echo -e "$(FONT_YELLOW)💡 Install with: npm install -g pnpm$(FONT_RESET)"; \
+		exit 1; \
+	fi
+	@pnpm install
+	@cd frontend && pnpm install
+	@bash scripts/build/build.sh
+	$(call print_success,Dependencies installed!)
+
+# ===========================================
+# 🔄 Update & Maintenance
+# ===========================================
+
+.PHONY: update
+update: ## 🔄 Update installation (git pull + deps + restart + health check)
+	$(call print_status,Updating Automagik Forge...)
+	@echo ""
+
+	# Step 1: Git pull
+	$(call print_status,Step 1/4: Pulling latest changes from git...)
+	@git pull || { \
+		echo -e "$(FONT_RED)$(ERROR) Git pull failed$(FONT_RESET)"; \
+		echo -e "$(FONT_YELLOW)💡 Check for uncommitted changes: git status$(FONT_RESET)"; \
+		exit 1; \
+	}
+	$(call print_success,Latest changes pulled!)
+	@echo ""
+
+	# Step 2: Update dependencies and rebuild
+	$(call print_status,Step 2/4: Updating dependencies and rebuilding...)
+	@pnpm install
+	@cd frontend && pnpm install
+	@bash scripts/build/build.sh
+	$(call print_success,Dependencies updated and application rebuilt!)
+	@echo ""
+
+	# Step 3: Restart service
+	$(call print_status,Step 3/4: Restarting service...)
+	@if command -v pm2 >/dev/null 2>&1 && pm2 show Forge >/dev/null 2>&1; then \
+		$(MAKE) restart-local; \
+		echo -e "$(FONT_CYAN)⏳ Waiting for service to restart...$(FONT_RESET)"; \
+		sleep 3; \
+	elif systemctl is-active automagik-forge >/dev/null 2>&1; then \
+		echo -e "$(FONT_PURPLE)Restarting systemd service...$(FONT_RESET)"; \
+		sudo systemctl restart automagik-forge; \
+		sleep 3; \
+	else \
+		echo -e "$(FONT_YELLOW)$(WARNING) No running service detected - skipping restart$(FONT_RESET)"; \
+	fi
+	@echo ""
+
+	# Step 4: Health check
+	$(call print_status,Step 4/4: Running health checks...)
+	@sleep 2
+	@$(MAKE) health || { \
+		echo -e "$(FONT_YELLOW)$(WARNING) Health check failed - service may need more time to start$(FONT_RESET)"; \
+	}
+
+	# Success summary
+	@echo ""
+	@echo -e "$(FONT_GREEN)========================================$(FONT_RESET)"
+	@echo -e "$(FONT_GREEN)$(SPARKLES) Update Completed Successfully!$(FONT_RESET)"
+	@echo -e "$(FONT_GREEN)========================================$(FONT_RESET)"
+	@echo ""
+	@echo -e "$(FONT_CYAN)💡 Useful commands:$(FONT_RESET)"
+	@echo -e "  $(FONT_PURPLE)make logs$(FONT_RESET)              # View recent logs"
+	@echo -e "  $(FONT_PURPLE)make service-status$(FONT_RESET)   # Check service status"
+	@echo -e "  $(FONT_PURPLE)make health$(FONT_RESET)           # Run health check again"
+	@echo ""
+
+# ===========================================
+# 🗑️  Uninstall
+# ===========================================
+
+.PHONY: uninstall
+uninstall: ## 🗑️  Uninstall Forge (remove PM2/systemd services, clean builds)
+	$(call print_status,Starting Automagik Forge uninstall...)
+	@echo ""
+
+	# Phase 1: PM2 Service Removal
+	$(call print_status,Phase 1/4: Checking PM2 service...)
+	@if command -v pm2 >/dev/null 2>&1 && pm2 show Forge >/dev/null 2>&1; then \
+		echo -e "$(FONT_PURPLE)$(HAMMER) Removing PM2 service...$(FONT_RESET)"; \
+		pm2 stop Forge >/dev/null 2>&1 || true; \
+		pm2 delete Forge >/dev/null 2>&1 || true; \
+		pm2 save --force >/dev/null 2>&1 || true; \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) PM2 service removed$(FONT_RESET)"; \
+	else \
+		echo -e "$(FONT_CYAN)$(INFO) No PM2 service found - skipping$(FONT_RESET)"; \
+	fi
+	@echo ""
+
+	# Phase 2: Systemd Service Removal
+	$(call print_status,Phase 2/4: Checking systemd service...)
+	@if systemctl list-unit-files 2>/dev/null | grep -q automagik-forge; then \
+		echo -e "$(FONT_PURPLE)$(HAMMER) Removing systemd service...$(FONT_RESET)"; \
+		sudo systemctl stop automagik-forge 2>/dev/null || true; \
+		sudo systemctl disable automagik-forge 2>/dev/null || true; \
+		sudo rm -f /etc/systemd/system/automagik-forge.service; \
+		sudo systemctl daemon-reload 2>/dev/null || true; \
+		sudo systemctl reset-failed 2>/dev/null || true; \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) Systemd service removed$(FONT_RESET)"; \
+	else \
+		echo -e "$(FONT_CYAN)$(INFO) No systemd service found - skipping$(FONT_RESET)"; \
+	fi
+	@echo ""
+
+	# Phase 3: Dedicated Service Account Cleanup (Interactive)
+	$(call print_status,Phase 3/4: Checking for dedicated service account...)
+	@if id "forge" >/dev/null 2>&1; then \
+		echo -e "$(FONT_YELLOW)$(WARNING) Dedicated 'forge' service account found$(FONT_RESET)"; \
+		echo -e "$(FONT_CYAN)The following will be removed:$(FONT_RESET)"; \
+		echo -e "  - System user: forge"; \
+		[ -d "/opt/automagik-forge" ] && echo -e "  - Directory: /opt/automagik-forge"; \
+		[ -d "/var/lib/automagik-forge" ] && echo -e "  - Directory: /var/lib/automagik-forge"; \
+		[ -d "/var/log/automagik-forge" ] && echo -e "  - Directory: /var/log/automagik-forge"; \
+		echo ""; \
+		read -p "Remove dedicated 'forge' user and directories? [y/N] " -n 1 -r REPLY; echo; \
+		if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+			echo -e "$(FONT_PURPLE)$(HAMMER) Removing dedicated service account...$(FONT_RESET)"; \
+			[ -d "/opt/automagik-forge" ] && sudo rm -rf /opt/automagik-forge; \
+			[ -d "/var/lib/automagik-forge" ] && sudo rm -rf /var/lib/automagik-forge; \
+			[ -d "/var/log/automagik-forge" ] && sudo rm -rf /var/log/automagik-forge; \
+			sudo userdel forge 2>/dev/null || true; \
+			echo -e "$(FONT_GREEN)$(CHECKMARK) Service account removed$(FONT_RESET)"; \
+		else \
+			echo -e "$(FONT_YELLOW)Skipped - service account kept$(FONT_RESET)"; \
+		fi; \
+	else \
+		echo -e "$(FONT_CYAN)$(INFO) No dedicated service account found - skipping$(FONT_RESET)"; \
+	fi
+	@echo ""
+
+	# Phase 4: Build Artifacts Cleanup
+	$(call print_status,Phase 4/4: Cleaning build artifacts...)
+	@$(MAKE) clean >/dev/null 2>&1 || true
+	$(call print_success,Build artifacts cleaned!)
+	@echo ""
+
+	# Completion Summary
+	@echo ""
+	@echo -e "$(FONT_GREEN)========================================$(FONT_RESET)"
+	@echo -e "$(FONT_GREEN)$(SPARKLES) Uninstall Complete!$(FONT_RESET)"
+	@echo -e "$(FONT_GREEN)========================================$(FONT_RESET)"
+	@echo ""
+	@echo -e "$(FONT_GREEN)✓ What was removed:$(FONT_RESET)"
+	@echo -e "  • PM2 service (if installed)"
+	@echo -e "  • Systemd service (if installed)"
+	@echo -e "  • Build artifacts"
+	@echo ""
+	@echo -e "$(FONT_CYAN)ℹ️  What was kept:$(FONT_RESET)"
+	@echo -e "  • .env file (configuration)"
+	@echo -e "  • Source code"
+	@echo -e "  • Node dependencies (node_modules)"
+	@echo -e "  • Global tools (PM2, pnpm, cargo)"
+	@echo ""
+	@echo -e "$(FONT_PURPLE)$(ROCKET) To reinstall:$(FONT_RESET) make install"
+	@echo ""
+
+# ===========================================
+# 🩺 Health Checks
+# ===========================================
+
+.PHONY: health
+health: ## 🩺 Check service health
+	$(call print_status,Checking Automagik Forge health...)
+	@FAILED=0; \
+	\
+	if command -v pm2 >/dev/null 2>&1 && pm2 show Forge >/dev/null 2>&1; then \
+		echo -e "$(FONT_CYAN)Service Status (PM2):$(FONT_RESET)"; \
+		pm2 describe Forge | grep -E "status|uptime|restarts" || true; \
+		echo ""; \
+	fi; \
+	\
+	if systemctl is-active automagik-forge >/dev/null 2>&1; then \
+		echo -e "$(FONT_CYAN)Service Status (systemd):$(FONT_RESET)"; \
+		systemctl status automagik-forge --no-pager -l | head -15; \
+		echo ""; \
+	fi; \
+	\
+	echo -e "$(FONT_CYAN)Testing health endpoints...$(FONT_RESET)"; \
+	BACKEND_PORT=$$(ps aux | grep 'forge-app' | grep -oP 'PORT=\K[0-9]+' | head -1 || echo "8887"); \
+	echo -e "  Detected backend port: $$BACKEND_PORT"; \
+	\
+	if curl -s --max-time 5 http://127.0.0.1:$$BACKEND_PORT/health > /dev/null 2>&1; then \
+		echo -e "  $(FONT_GREEN)$(CHECKMARK) Backend health check passed$(FONT_RESET)"; \
+	else \
+		echo -e "  $(FONT_RED)$(ERROR) Backend health check failed$(FONT_RESET)"; \
+		FAILED=1; \
+	fi; \
+	\
+	if [ -f "forge-app/forge.db" ]; then \
+		if sqlite3 forge-app/forge.db "SELECT 1;" >/dev/null 2>&1; then \
+			echo -e "  $(FONT_GREEN)$(CHECKMARK) Database connectivity OK$(FONT_RESET)"; \
+		else \
+			echo -e "  $(FONT_YELLOW)$(WARNING) Database exists but may be locked$(FONT_RESET)"; \
+		fi; \
+	else \
+		echo -e "  $(FONT_YELLOW)$(WARNING) Database not found (first run?)$(FONT_RESET)"; \
+	fi; \
+	\
+	exit $$FAILED
+
+# ===========================================
+# 📦 PM2 Service Management
+# ===========================================
+
+.PHONY: setup-pm2 start-local stop-local restart-local service-status logs logs-follow
+
+setup-pm2: ## 📦 Setup PM2 ecosystem and log rotation
+	$(call print_status,Setting up PM2 ecosystem...)
+	@$(call check_pm2)
+	@echo -e "$(FONT_CYAN)$(INFO) Installing PM2 log rotation...$(FONT_RESET)"
+	@if ! pm2 list | grep -q pm2-logrotate; then \
+		pm2 install pm2-logrotate; \
+	else \
+		echo -e "$(FONT_GREEN)✓ PM2 logrotate already installed$(FONT_RESET)"; \
+	fi
+	@pm2 set pm2-logrotate:max_size 100M
+	@pm2 set pm2-logrotate:retain 7
+	@pm2 set pm2-logrotate:compress true
+	@echo -e "$(FONT_CYAN)$(INFO) Configuring PM2 startup...$(FONT_RESET)"
+	@pm2 startup | grep "sudo" || echo -e "$(FONT_YELLOW)Run the command above to enable auto-start$(FONT_RESET)"
+	$(call print_success,PM2 ecosystem configured!)
+
+start-local: ## $(ROCKET) Start Forge with PM2
+	$(call print_status,Starting Automagik Forge with PM2...)
+	@$(call check_pm2)
+	@$(call ensure_env_file)
+	@pm2 start ecosystem.config.cjs
+	@pm2 save --force
+	$(call print_success,Forge started with PM2!)
+	@echo ""
+	@pm2 status
+
+stop-local: ## 🛑 Stop PM2 service
+	$(call print_status,Stopping Automagik Forge...)
+	@$(call check_pm2)
+	@pm2 stop Forge 2>/dev/null || true
+	$(call print_success,Forge stopped!)
+
+restart-local: ## 🔄 Restart PM2 service
+	$(call print_status,Restarting Automagik Forge...)
+	@$(call check_pm2)
+	@pm2 restart Forge 2>/dev/null || pm2 start ecosystem.config.cjs
+	@pm2 save --force
+	$(call print_success,Forge restarted!)
+
+service-status: ## 📊 Check PM2 service status
+	$(call print_status,PM2 Service Status)
+	@$(call check_pm2)
+	@pm2 show Forge 2>/dev/null || echo -e "$(FONT_YELLOW)Service not found or not running$(FONT_RESET)"
+
+logs: ## 📄 Show recent service logs (N=lines, default 30)
+	$(eval N := $(or $(N),30))
+	$(call print_status,Recent logs ($(N) lines))
+	@if command -v pm2 >/dev/null 2>&1 && pm2 show Forge >/dev/null 2>&1; then \
+		pm2 logs Forge --lines $(N) --nostream 2>/dev/null; \
+	elif [ -f "logs/forge-combined.log" ]; then \
+		echo -e "$(FONT_CYAN)Showing direct log file:$(FONT_RESET)"; \
+		tail -n $(N) logs/forge-combined.log; \
+	else \
+		echo -e "$(FONT_YELLOW)$(WARNING) No logs found$(FONT_RESET)"; \
+	fi
+
+logs-follow: ## 📄 Follow logs in real-time
+	$(call print_status,Following logs (Ctrl+C to stop))
+	@echo ""
+	@if command -v pm2 >/dev/null 2>&1 && pm2 show Forge >/dev/null 2>&1; then \
+		pm2 logs Forge 2>/dev/null; \
+	elif [ -f "logs/forge-combined.log" ]; then \
+		tail -f logs/forge-combined.log; \
+	else \
+		echo -e "$(FONT_YELLOW)$(WARNING) No logs found$(FONT_RESET)"; \
+	fi
+
+# ===========================================
+# 🛠️ Development & Building
+# ===========================================
 
 # Check and install cargo if needed (OS agnostic)
 check-cargo:
@@ -114,9 +629,155 @@ check-android-deps:
 		fi; \
 	fi
   
+# Ensure cargo config exists (uses base config by default)
+ensure-cargo-config:
+	@if [ ! -f ".cargo/config.toml" ]; then \
+		cp .cargo/config.base.toml .cargo/config.toml; \
+	fi
+
 # Development mode - hot reload (backend first, then frontend)
-dev: check-android-deps check-cargo
+dev: check-android-deps check-cargo ensure-cargo-config
 	@bash scripts/dev/run-dev.sh
+
+# =============================================================================
+# Cross-Repo Development (automagik-forge + forge-core)
+# =============================================================================
+
+BRANCH ?= dev
+
+# Development with local forge-core (enhanced with branch selection + safety hooks)
+dev-core: check-android-deps check-cargo
+	@echo ""
+	@echo -e "$(FONT_PURPLE)🔧 Setting up local forge-core development...$(FONT_RESET)"
+	@if [ ! -d "forge-core" ]; then \
+		echo -e "$(FONT_CYAN)📦 Cloning forge-core (branch: $(BRANCH))...$(FONT_RESET)"; \
+		git clone -b $(BRANCH) https://github.com/namastexlabs/forge-core.git forge-core; \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core cloned$(FONT_RESET)"; \
+	else \
+		CURRENT=$$(cd forge-core && git branch --show-current); \
+		if [ "$$CURRENT" != "$(BRANCH)" ]; then \
+			echo -e "$(FONT_YELLOW)⚠️  Switching forge-core: $$CURRENT → $(BRANCH)$(FONT_RESET)"; \
+			(cd forge-core && git fetch origin && git checkout $(BRANCH) 2>/dev/null || git checkout -b $(BRANCH) origin/$(BRANCH)); \
+		else \
+			echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core already on $(BRANCH)$(FONT_RESET)"; \
+		fi; \
+	fi
+	@echo -e "$(FONT_CYAN)📍 forge-core @ $$(cd forge-core && git log -1 --format='%h %s')$(FONT_RESET)"
+	@echo -e "$(FONT_CYAN)⚙️  Enabling Cargo path override...$(FONT_RESET)"
+	@cp .cargo/config.dev-core.toml .cargo/config.toml
+	@echo "$$(date -Iseconds)" > .dev-core-active
+	@echo "branch=$(BRANCH)" >> .dev-core-active
+	@mkdir -p .git/hooks scripts/hooks
+	@if [ -f scripts/hooks/pre-push ]; then \
+		cp scripts/hooks/pre-push .git/hooks/pre-push; \
+		chmod +x .git/hooks/pre-push; \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) Safety hooks installed$(FONT_RESET)"; \
+	fi
+	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using local forge-core at ./forge-core$(FONT_RESET)"
+	@echo ""
+	@echo -e "$(FONT_YELLOW)$(INFO) Hot reload will pick up changes from ./forge-core$(FONT_RESET)"
+	@echo -e "$(FONT_YELLOW)$(INFO) Run 'make dev-core-off' to switch back to git dependencies$(FONT_RESET)"
+	@echo -e "$(FONT_YELLOW)$(INFO) Pre-push hook will BLOCK if dev-core is still enabled$(FONT_RESET)"
+	@echo ""
+	@bash scripts/dev/run-dev.sh
+
+# Disable local forge-core (back to git dependencies) with true reset
+dev-core-off:
+	@echo -e "$(FONT_CYAN)🔄 Switching back to git dependencies...$(FONT_RESET)"
+	@cp .cargo/config.base.toml .cargo/config.toml
+	@rm -f .dev-core-active
+	@rm -f Cargo.lock
+	@echo -e "$(FONT_CYAN)📦 Regenerating Cargo.lock...$(FONT_RESET)"
+	@cargo fetch 2>/dev/null || cargo generate-lockfile
+	@echo -e "$(FONT_GREEN)$(CHECKMARK) Restored git dependencies (Cargo.lock regenerated)$(FONT_RESET)"
+
+# Show dev-core status
+dev-core-status:
+	@echo ""
+	@if [ -f ".dev-core-active" ]; then \
+		echo -e "Mode:   $(FONT_GREEN)LOCAL$(FONT_RESET) (./forge-core)"; \
+		if [ -d "forge-core" ]; then \
+			echo -e "Branch: $$(cd forge-core && git branch --show-current)"; \
+			echo -e "Commit: $$(cd forge-core && git log -1 --format='%h %s')"; \
+		fi; \
+	else \
+		echo -e "Mode:   $(FONT_CYAN)GIT$(FONT_RESET) (tag in Cargo.toml)"; \
+	fi
+	@echo ""
+
+# Show full cross-repo status
+status:
+	@echo ""
+	@if [ -f ".dev-core-active" ]; then \
+		echo -e "🔧 Dev-core: $(FONT_GREEN)ACTIVE$(FONT_RESET)"; \
+	else \
+		echo -e "✅ Dev-core: $(FONT_CYAN)OFF$(FONT_RESET)"; \
+	fi
+	@echo -e "📦 automagik-forge: $$(git branch --show-current)"
+	@if [ -d "forge-core" ]; then \
+		echo -e "📦 forge-core: $$(cd forge-core && git branch --show-current)"; \
+	fi
+	@echo ""
+
+# Commit to both repos with same message
+commit-both:
+	@read -p "Commit message: " MSG; \
+	if [ -n "$$(git status --porcelain)" ]; then \
+		git add -A && git commit -m "$$MSG"; \
+	else \
+		echo "automagik-forge: nothing to commit"; \
+	fi; \
+	if [ -d "forge-core" ] && [ -n "$$(cd forge-core && git status --porcelain)" ]; then \
+		cd forge-core && git add -A && git commit -m "$$MSG"; \
+	else \
+		echo "forge-core: nothing to commit"; \
+	fi
+
+# Push both repos
+push-both:
+	@if [ -f ".dev-core-active" ]; then \
+		echo -e "$(FONT_RED)🛑 Dev-core mode is ACTIVE! Run: make dev-core-off$(FONT_RESET)"; \
+		exit 1; \
+	fi
+	@BRANCH=$$(git branch --show-current); \
+	git push -u origin $$BRANCH; \
+	if [ -d "forge-core" ]; then \
+		cd forge-core && git push -u origin $$BRANCH; \
+	fi
+
+# Create linked PRs for both repos
+pr:
+	@if [ -f ".dev-core-active" ]; then \
+		echo -e "$(FONT_RED)🛑 Dev-core mode is ACTIVE! Run: make dev-core-off$(FONT_RESET)"; \
+		exit 1; \
+	fi
+	@BRANCH=$$(git branch --show-current); \
+	if [ -d "forge-core" ]; then \
+		echo -e "$(FONT_CYAN)Creating forge-core PR...$(FONT_RESET)"; \
+		cd forge-core && gh pr create --base dev --fill 2>/dev/null || echo "forge-core PR already exists or nothing to create"; \
+	fi; \
+	echo -e "$(FONT_CYAN)Creating automagik-forge PR...$(FONT_RESET)"; \
+	gh pr create --base dev --fill 2>/dev/null || echo "automagik-forge PR already exists or nothing to create"
+
+# Quick help for cross-repo commands
+dev-help:
+	@echo ""
+	@echo -e "$(FONT_BOLD)$(FONT_PURPLE)🔗 Cross-Repo Development Commands$(FONT_RESET)"
+	@echo ""
+	@echo -e "$(FONT_CYAN)Starting:$(FONT_RESET)"
+	@echo "  make dev-core              Start with 'dev' branch (default)"
+	@echo "  make dev-core BRANCH=x     Start with specific branch"
+	@echo ""
+	@echo -e "$(FONT_CYAN)During development:$(FONT_RESET)"
+	@echo "  make status                Check current mode and branches"
+	@echo "  make dev-core-status       Detailed dev-core status"
+	@echo "  make commit-both           Commit to both repos"
+	@echo ""
+	@echo -e "$(FONT_CYAN)Before PRs:$(FONT_RESET)"
+	@echo "  make dev-core-off          Switch back to git deps"
+	@echo "  make push-both             Push branches"
+	@echo "  make pr                    Create linked PRs"
+	@echo ""
 
 # Production mode - test what will be published
 prod: check-android-deps check-cargo

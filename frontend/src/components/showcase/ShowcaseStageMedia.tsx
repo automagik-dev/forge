@@ -32,7 +32,9 @@ export function ShowcaseStageMedia({ media }: ShowcaseStageMediaProps) {
 
   // Helper function to convert YouTube URLs to embed format
   const getYouTubeEmbedUrl = (url: string): string => {
-    const videoId = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]+)/)?.[1];
+    const videoId = url.match(
+      /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]+)/
+    )?.[1];
     return videoId
       ? `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&rel=0&modestbranding=1&controls=0&showinfo=0&fs=0&disablekb=1&iv_load_policy=3`
       : url;

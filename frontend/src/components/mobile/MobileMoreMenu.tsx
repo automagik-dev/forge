@@ -8,7 +8,7 @@ import {
   FolderOpen,
   Plus,
   Sun,
-  Moon
+  Moon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BottomSheet } from './BottomSheet';
@@ -52,10 +52,7 @@ interface MenuItem {
  * - Clear visual hierarchy
  * - External links open in new tab
  */
-export function MobileMoreMenu({
-  open,
-  onClose
-}: MobileMoreMenuProps) {
+export function MobileMoreMenu({ open, onClose }: MobileMoreMenuProps) {
   const navigate = useNavigate();
   const { projectId, project } = useProject();
   const handleOpenInEditor = useOpenProjectInEditor(project || null);
@@ -94,9 +91,7 @@ export function MobileMoreMenu({
 
   const handleSettings = () => {
     navigate(
-      projectId
-        ? `/settings/projects?projectId=${projectId}`
-        : '/settings'
+      projectId ? `/settings/projects?projectId=${projectId}` : '/settings'
     );
   };
 
@@ -111,28 +106,30 @@ export function MobileMoreMenu({
       label: actualTheme === 'light' ? 'Dark Mode' : 'Light Mode',
       icon: actualTheme === 'light' ? Moon : Sun,
       onClick: handleThemeToggle,
-      type: 'theme-toggle'
+      type: 'theme-toggle',
     },
     // Project actions (only show when inside a project)
-    ...(projectId ? [
-      {
-        id: 'open-ide',
-        label: 'Open in IDE',
-        icon: FolderOpen,
-        onClick: handleOpenInIDE
-      },
-      {
-        id: 'new-task',
-        label: 'New Task',
-        icon: Plus,
-        onClick: handleCreateTask
-      }
-    ] : []),
+    ...(projectId
+      ? [
+          {
+            id: 'open-ide',
+            label: 'Open in IDE',
+            icon: FolderOpen,
+            onClick: handleOpenInIDE,
+          },
+          {
+            id: 'new-task',
+            label: 'New Task',
+            icon: Plus,
+            onClick: handleCreateTask,
+          },
+        ]
+      : []),
     {
       id: 'settings',
       label: 'Settings',
       icon: Settings,
-      onClick: handleSettings
+      onClick: handleSettings,
     },
     // Separator (visual only)
     {
@@ -140,7 +137,7 @@ export function MobileMoreMenu({
       label: '',
       icon: () => null,
       onClick: () => {},
-      type: 'separator'
+      type: 'separator',
     },
     // External links
     {
@@ -148,22 +145,25 @@ export function MobileMoreMenu({
       label: 'Documentation',
       icon: BookOpen,
       onClick: () => handleExternalLink('https://forge.automag.ik/'),
-      external: true
+      external: true,
     },
     {
       id: 'support',
       label: 'Support',
       icon: MessageCircleQuestion,
-      onClick: () => handleExternalLink('https://github.com/namastexlabs/automagik-forge/issues'),
-      external: true
+      onClick: () =>
+        handleExternalLink(
+          'https://github.com/namastexlabs/automagik-forge/issues'
+        ),
+      external: true,
     },
     {
       id: 'discord',
       label: 'Discord',
       icon: MessageCircle,
       onClick: () => handleExternalLink('https://discord.gg/CEbzP5Hteh'),
-      external: true
-    }
+      external: true,
+    },
   ];
 
   return (
@@ -177,12 +177,7 @@ export function MobileMoreMenu({
       <div className="flex flex-col gap-1 px-4 py-2">
         {menuItems.map((item) => {
           if (item.type === 'separator') {
-            return (
-              <div
-                key={item.id}
-                className="h-px bg-border my-2"
-              />
-            );
+            return <div key={item.id} className="h-px bg-border my-2" />;
           }
 
           const Icon = item.icon;
@@ -207,13 +202,13 @@ export function MobileMoreMenu({
                 isThemeToggle && actualTheme === 'light' && 'text-orange-500'
               )}
             >
-              <Icon className={cn(
-                'h-5 w-5 shrink-0',
-                isThemeToggle && actualTheme === 'light' && 'text-orange-500'
-              )} />
-              <span className="flex-1 font-medium text-sm">
-                {item.label}
-              </span>
+              <Icon
+                className={cn(
+                  'h-5 w-5 shrink-0',
+                  isThemeToggle && actualTheme === 'light' && 'text-orange-500'
+                )}
+              />
+              <span className="flex-1 font-medium text-sm">{item.label}</span>
               {item.external && (
                 <span className="text-xs text-muted-foreground">↗</span>
               )}

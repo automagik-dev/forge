@@ -36,9 +36,15 @@ export function usePageTracking() {
     if (isFirstLoadRef.current) {
       navigationMethod = 'direct_url';
       isFirstLoadRef.current = false;
-    } else if (location.state && typeof location.state === 'object' && 'navigationMethod' in location.state) {
+    } else if (
+      location.state &&
+      typeof location.state === 'object' &&
+      'navigationMethod' in location.state
+    ) {
       // Allow routes to specify navigation method via state
-      navigationMethod = (location.state as { navigationMethod?: NavigationMethod }).navigationMethod || 'link';
+      navigationMethod =
+        (location.state as { navigationMethod?: NavigationMethod })
+          .navigationMethod || 'link';
     } else {
       // Default to 'link' for subsequent navigations
       navigationMethod = 'link';

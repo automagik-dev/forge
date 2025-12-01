@@ -64,7 +64,9 @@ export function DiffActionSheet({
           title={syncDisabledReason || undefined}
         >
           <RefreshCw className={cn('w-5 h-5', isSyncing && 'animate-spin')} />
-          {isSyncing ? t('mobile.diffActions.syncing') : t('mobile.diffActions.sync')}
+          {isSyncing
+            ? t('mobile.diffActions.syncing')
+            : t('mobile.diffActions.sync')}
         </Button>
 
         {syncDisabledReason && !canSync && (
@@ -85,7 +87,9 @@ export function DiffActionSheet({
           title={approveDisabledReason || undefined}
         >
           <GitMerge className="w-5 h-5" />
-          {isApproving ? t('mobile.diffActions.approving') : t('mobile.diffActions.approve')}
+          {isApproving
+            ? t('mobile.diffActions.approving')
+            : t('mobile.diffActions.approve')}
         </Button>
 
         {approveDisabledReason && !canApprove && (

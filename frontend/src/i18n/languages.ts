@@ -14,7 +14,14 @@ export const UI_TO_I18N = {
   PT_BR: 'pt-BR',
 } as const;
 
-const SUPPORTED_UI_LANGUAGES = ['BROWSER', 'EN', 'JA', 'ES', 'KO', 'PT_BR'] as const;
+const SUPPORTED_UI_LANGUAGES = [
+  'BROWSER',
+  'EN',
+  'JA',
+  'ES',
+  'KO',
+  'PT_BR',
+] as const;
 // Include both 'pt-BR' and 'pt' so i18next can use 'pt' as fallback
 export const SUPPORTED_I18N_CODES = [...Object.values(UI_TO_I18N), 'pt'];
 

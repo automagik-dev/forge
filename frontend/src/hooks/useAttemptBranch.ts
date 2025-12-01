@@ -4,7 +4,9 @@ import { queryKeys } from '@/lib/queryKeys';
 
 export function useAttemptBranch(attemptId?: string) {
   const getStatus = (err: unknown) => {
-    const e = err as { status?: number; response?: { status?: number } } | undefined;
+    const e = err as
+      | { status?: number; response?: { status?: number } }
+      | undefined;
     return e?.status ?? e?.response?.status ?? null;
   };
 
@@ -17,7 +19,9 @@ export function useAttemptBranch(attemptId?: string) {
       } catch (error) {
         const status = getStatus(error);
         if (status === 404) {
-          console.debug(`[useAttemptBranch] Attempt ${attemptId} not found (404)`);
+          console.debug(
+            `[useAttemptBranch] Attempt ${attemptId} not found (404)`
+          );
           return null;
         }
         throw error;

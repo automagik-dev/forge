@@ -28,7 +28,8 @@ export const queryKeys = {
   taskAttempts: {
     all: ['taskAttempts'] as const,
     byTask: (taskId: string | undefined) => ['taskAttempts', taskId] as const,
-    detail: (attemptId: string | undefined) => ['taskAttempt', attemptId] as const,
+    detail: (attemptId: string | undefined) =>
+      ['taskAttempt', attemptId] as const,
   },
 
   // Task Relationships
@@ -38,17 +39,22 @@ export const queryKeys = {
       ['taskRelationships', attemptId] as const,
     children: (attemptId: string | undefined) =>
       ['childrenTasks', attemptId] as const,
-    parent: (attemptId: string | undefined) => ['parentTask', attemptId] as const,
+    parent: (attemptId: string | undefined) =>
+      ['parentTask', attemptId] as const,
     parentFromAttempt: (attemptId: string | undefined) =>
       ['parentTaskFromAttempt', attemptId] as const,
   },
 
   // Branch/VCS
   branch: {
-    status: (attemptId: string | undefined) => ['branchStatus', attemptId] as const,
-    attempt: (attemptId: string | undefined) => ['attemptBranch', attemptId] as const,
-    projectStatus: (projectId: string | undefined, baseBranch: string | undefined) =>
-      ['projectBranchStatus', projectId, baseBranch] as const,
+    status: (attemptId: string | undefined) =>
+      ['branchStatus', attemptId] as const,
+    attempt: (attemptId: string | undefined) =>
+      ['attemptBranch', attemptId] as const,
+    projectStatus: (
+      projectId: string | undefined,
+      baseBranch: string | undefined
+    ) => ['projectBranchStatus', projectId, baseBranch] as const,
     projectAll: (projectId: string | undefined) =>
       ['projectBranches', projectId] as const,
     // For prefix matching all project branches (used in invalidateQueries)

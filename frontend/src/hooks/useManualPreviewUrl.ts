@@ -7,7 +7,7 @@ const STORAGE_KEY_PREFIX = 'forge:manualPreviewUrl:';
  */
 export function useManualPreviewUrl(projectId: string) {
   const storageKey = `${STORAGE_KEY_PREFIX}${projectId}`;
-  
+
   const [manualUrl, setManualUrl] = useState<string | null>(() => {
     try {
       return localStorage.getItem(storageKey);
@@ -16,18 +16,21 @@ export function useManualPreviewUrl(projectId: string) {
     }
   });
 
-  const setManualPreviewUrl = useCallback((url: string | null) => {
-    try {
-      if (url) {
-        localStorage.setItem(storageKey, url);
-      } else {
-        localStorage.removeItem(storageKey);
+  const setManualPreviewUrl = useCallback(
+    (url: string | null) => {
+      try {
+        if (url) {
+          localStorage.setItem(storageKey, url);
+        } else {
+          localStorage.removeItem(storageKey);
+        }
+        setManualUrl(url);
+      } catch (error) {
+        console.error('Failed to persist manual preview URL:', error);
       }
-      setManualUrl(url);
-    } catch (error) {
-      console.error('Failed to persist manual preview URL:', error);
-    }
-  }, [storageKey]);
+    },
+    [storageKey]
+  );
 
   const clearManualUrl = useCallback(() => {
     setManualPreviewUrl(null);
@@ -47,9 +50,13 @@ export function useManualPreviewUrl(projectId: string) {
  * - Full URLs: http://localhost:3000, https://example.com
  * - Port-only: 3000 (converted to http://localhost:3000)
  */
-export function validateAndNormalizeUrl(input: string): { valid: boolean; url?: string; error?: string } {
+export function validateAndNormalizeUrl(input: string): {
+  valid: boolean;
+  url?: string;
+  error?: string;
+} {
   const trimmed = input.trim();
-  
+
   if (!trimmed) {
     return { valid: false, error: 'URL cannot be empty' };
   }
@@ -64,13 +71,16 @@ export function validateAndNormalizeUrl(input: string): { valid: boolean; url?: 
 
   try {
     const parsed = new URL(trimmed);
-    
+
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
       return { valid: false, error: 'URL must use http:// or https://' };
     }
-    
+
     return { valid: true, url: parsed.toString() };
   } catch {
-    return { valid: false, error: 'Invalid URL format. Use http://localhost:3000 or just 3000' };
+    return {
+      valid: false,
+      error: 'Invalid URL format. Use http://localhost:3000 or just 3000',
+    };
   }
 }

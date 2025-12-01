@@ -358,6 +358,12 @@ async fn forge_create_task_attempt(
         );
 
         executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+
+        // Register project in profile cache for subsequent API lookups
+        forge_services
+            .profile_cache
+            .register_project(project.id, project.git_repo_path.clone())
+            .await;
     } else {
         tracing::warn!(
             "⚠️  Failed to load .genie profiles for workspace: {}, using defaults",
@@ -557,6 +563,12 @@ async fn forge_create_task_and_start(
         );
 
         executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+
+        // Register project in profile cache for subsequent API lookups
+        forge_services
+            .profile_cache
+            .register_project(project.id, project.git_repo_path.clone())
+            .await;
     } else {
         tracing::warn!(
             "⚠️  Failed to load .genie profiles for workspace: {}, using defaults",
@@ -1188,6 +1200,12 @@ async fn forge_follow_up(
         );
 
         executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+
+        // Register project in profile cache for subsequent API lookups
+        forge_services
+            .profile_cache
+            .register_project(project.id, project.git_repo_path.clone())
+            .await;
     } else {
         tracing::warn!(
             "⚠️  Failed to load .genie profiles for workspace: {} (follow-up), using defaults",
@@ -1504,7 +1522,7 @@ async fn health_check() -> Json<Value> {
     Json(json!({
         "status": "ok",
         "service": "forge-app",
-        "version": env!("CARGO_PKG_VERSION"),
+        "version": crate::version::get_version(),
         "message": "Forge application ready - backend extensions extracted successfully"
     }))
 }
@@ -1566,7 +1584,7 @@ async fn serve_swagger_ui() -> Html<String> {
 /// Simple route listing - practical solution instead of broken OpenAPI
 async fn list_routes() -> Json<Value> {
     Json(json!({
-        "version": env!("CARGO_PKG_VERSION"),
+        "version": crate::version::get_version(),
         "routes": {
             "core": [
                 "GET /health",
@@ -2067,7 +2085,7 @@ async fn get_omni_status(State(services): State<ForgeServices>) -> Result<Json<V
 
     Ok(Json(json!({
         "enabled": config.enabled,
-        "version": env!("CARGO_PKG_VERSION"),
+        "version": crate::version::get_version(),
         "config": if config.enabled {
             serde_json::to_value(config).ok()
         } else {

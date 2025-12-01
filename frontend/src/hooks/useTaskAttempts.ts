@@ -69,7 +69,9 @@ export function useTaskAttemptsWithLiveStatus(
 
     if (statusChanged || countChanged) {
       // Status or count changed - refresh attempts list
-      queryClient.invalidateQueries({ queryKey: queryKeys.taskAttempts.byTask(taskId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.taskAttempts.byTask(taskId),
+      });
     }
 
     prevStatusRef.current = currentStatus;

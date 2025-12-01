@@ -185,7 +185,10 @@ export const useJsonPatchWsStream = <T>(
               console.debug('WebSocket close during cleanup failed:', e);
             }
           };
-        } else if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CLOSING) {
+        } else if (
+          ws.readyState === WebSocket.OPEN ||
+          ws.readyState === WebSocket.CLOSING
+        ) {
           try {
             ws.close(1000, 'cleanup');
           } catch (e) {
@@ -202,12 +205,7 @@ export const useJsonPatchWsStream = <T>(
       dataRef.current = undefined;
       setData(undefined);
     };
-  }, [
-    endpoint,
-    enabled,
-    initialData,
-    retryNonce,
-  ]);
+  }, [endpoint, enabled, initialData, retryNonce]);
 
   return { data, isConnected, error };
 };

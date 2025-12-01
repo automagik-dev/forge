@@ -53,12 +53,15 @@ export const GenieMasterWidget: React.FC<GenieMasterWidgetProps> = () => {
 
     try {
       // Step 1: Ensure Master Genie task exists
-      const { task, attempt: existingAttempt } = await subGenieApi.ensureMasterGenie(projectId);
+      const { task, attempt: existingAttempt } =
+        await subGenieApi.ensureMasterGenie(projectId);
 
       // Step 2: Navigate to chat view
       // If existing attempt, navigate to it; otherwise navigate to task and let ChatPanel create attempt on first message
       if (existingAttempt) {
-        navigate(`/projects/${projectId}/tasks/${task.id}/attempts/${existingAttempt.id}?view=chat`);
+        navigate(
+          `/projects/${projectId}/tasks/${task.id}/attempts/${existingAttempt.id}?view=chat`
+        );
       } else {
         navigate(`/projects/${projectId}/tasks/${task.id}?view=chat`);
       }

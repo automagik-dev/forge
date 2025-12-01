@@ -200,25 +200,19 @@ export function ProjectDetail({ projectId, onBack }: ProjectDetailProps) {
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <H4 className="text-sm text-muted-foreground">
-                Project ID
-              </H4>
+              <H4 className="text-sm text-muted-foreground">Project ID</H4>
               <code className="mt-1 block text-xs bg-muted p-2 rounded font-mono">
                 {project.id}
               </code>
             </div>
             <div>
-              <H4 className="text-sm text-muted-foreground">
-                Created At
-              </H4>
+              <H4 className="text-sm text-muted-foreground">Created At</H4>
               <p className="mt-1 text-sm">
                 {new Date(project.created_at).toLocaleString()}
               </p>
             </div>
             <div>
-              <H4 className="text-sm text-muted-foreground">
-                Last Modified
-              </H4>
+              <H4 className="text-sm text-muted-foreground">Last Modified</H4>
               <p className="mt-1 text-sm">
                 {new Date(project.updated_at).toLocaleString()}
               </p>

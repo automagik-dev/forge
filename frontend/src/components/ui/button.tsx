@@ -13,9 +13,9 @@ const buttonVariants = cva(
           'glass-light text-foreground hover:glass-medium hover-lift border border-white/15',
         destructive:
           'border border-destructive text-destructive hover:bg-destructive/10 hover-lift',
-        outline:
-          'border border-white/15 hover:glass-light hover-lift',
-        secondary: 'glass-light text-secondary-foreground hover:glass-medium hover-lift',
+        outline: 'border border-white/15 hover:glass-light hover-lift',
+        secondary:
+          'glass-light text-secondary-foreground hover:glass-medium hover-lift',
         ghost: 'hover:text-foreground hover:bg-white/5',
         link: 'hover:underline text-brand-cyan',
         icon: 'bg-transparent rounded text-muted-foreground hover:text-foreground hover:bg-white/5',

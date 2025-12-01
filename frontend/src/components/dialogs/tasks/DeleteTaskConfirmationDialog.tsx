@@ -93,7 +93,9 @@ const DeleteTaskConfirmationDialog =
               variant="destructive"
               onClick={handleConfirmDelete}
               disabled={isDeleting || hasRunningAttempt}
-              className={hasRunningAttempt ? 'opacity-50 cursor-not-allowed' : ''}
+              className={
+                hasRunningAttempt ? 'opacity-50 cursor-not-allowed' : ''
+              }
             >
               {isDeleting ? 'Deleting...' : 'Delete Task'}
             </Button>

@@ -4,6 +4,7 @@
 
 pub mod router;
 pub mod services;
+pub mod version;
 
 #[cfg(all(target_os = "android", feature = "android"))]
 pub mod android;

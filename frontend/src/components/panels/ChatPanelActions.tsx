@@ -34,7 +34,10 @@ interface ChatPanelActionsProps {
 
 export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
   const navigate = useNavigate();
-  const { projectId, taskId } = useParams<{ projectId: string; taskId: string }>();
+  const { projectId, taskId } = useParams<{
+    projectId: string;
+    taskId: string;
+  }>();
   const { data: attempts = [] } = useTaskAttemptsWithLiveStatus(taskId, task);
   const { t } = useTranslation('tasks');
   const queryClient = useQueryClient();
@@ -56,7 +59,9 @@ export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
       navigate(`/projects/${projectId}/tasks/${taskId}?view=chat`);
 
       // Invalidate attempts query to ensure fresh data
-      await queryClient.invalidateQueries({ queryKey: queryKeys.taskAttempts.byTask(taskId) });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.taskAttempts.byTask(taskId),
+      });
     } catch (error) {
       console.error('Failed to navigate to new session:', error);
       // TODO: Show error toast
@@ -116,9 +121,7 @@ export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
-              <TooltipContent side="bottom">
-                Export Chat
-              </TooltipContent>
+              <TooltipContent side="bottom">Export Chat</TooltipContent>
             </Tooltip>
           </TooltipProvider>
           <DropdownMenuContent align="end" className="w-48 bg-popover">
@@ -149,7 +152,10 @@ export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <DropdownMenuContent align="end" className="w-64 max-h-96 overflow-y-auto bg-popover">
+          <DropdownMenuContent
+            align="end"
+            className="w-64 max-h-96 overflow-y-auto bg-popover"
+          >
             {attempts.map((att, index) => {
               const isCurrentAttempt = att.id === attempt?.id;
               const attemptNumber = attempts.length - index;
@@ -158,20 +164,30 @@ export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
               return (
                 <DropdownMenuItem
                   key={att.id}
-                  onClick={() => navigate(`/projects/${projectId}/tasks/${taskId}/attempts/${att.id}?view=chat`)}
+                  onClick={() =>
+                    navigate(
+                      `/projects/${projectId}/tasks/${taskId}/attempts/${att.id}?view=chat`
+                    )
+                  }
                   className={isCurrentAttempt ? 'bg-accent' : ''}
                 >
                   <div className="flex flex-col gap-0.5 w-full">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">Session #{attemptNumber}</span>
+                      <span className="font-medium">
+                        Session #{attemptNumber}
+                      </span>
                       {isCurrentAttempt && (
-                        <span className="text-xs text-muted-foreground">(current)</span>
+                        <span className="text-xs text-muted-foreground">
+                          (current)
+                        </span>
                       )}
                     </div>
                     <span className="text-xs text-muted-foreground truncate">
                       {att.branch || 'No branch'}
                     </span>
-                    <span className="text-xs text-muted-foreground">{attemptDate}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {attemptDate}
+                    </span>
                   </div>
                 </DropdownMenuItem>
               );
@@ -201,10 +217,7 @@ export function ChatPanelActions({ attempt, task }: ChatPanelActionsProps) {
           >
             {isCreatingAttempt ? 'Creating...' : 'New Session'}
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={handleCreateNewSubtask}
-            disabled
-          >
+          <DropdownMenuItem onClick={handleCreateNewSubtask} disabled>
             New Subtask (Coming Soon)
           </DropdownMenuItem>
         </DropdownMenuContent>

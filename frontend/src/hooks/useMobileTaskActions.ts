@@ -35,7 +35,8 @@ export function useMobileTaskActions() {
     if (routeAttemptId && routeAttemptId !== 'latest') return routeAttemptId;
     if (!attempts?.length) return undefined;
     return [...attempts].sort((a, b) => {
-      const diff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      const diff =
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       if (diff !== 0) return diff;
       return a.id.localeCompare(b.id);
     })[0].id;
@@ -48,10 +49,8 @@ export function useMobileTaskActions() {
   }, [latestAttemptId, attempts]);
 
   // Branch status for the attempt
-  const { data: branchStatus, isLoading: isBranchStatusLoading } = useBranchStatus(
-    latestAttemptId,
-    currentAttempt
-  );
+  const { data: branchStatus, isLoading: isBranchStatusLoading } =
+    useBranchStatus(latestAttemptId, currentAttempt);
 
   // Approve task hook
   const { approve, isApproving, error: approveError } = useApproveTask();
@@ -64,8 +63,14 @@ export function useMobileTaskActions() {
   const branchReady = !!branchStatus && !isBranchStatusLoading;
   const hasCodeChanges = (branchStatus?.commits_ahead ?? 0) > 0;
   const hasConflicts = (branchStatus?.conflicted_files?.length ?? 0) > 0;
-  const canApprove = selectedTask?.status === 'inreview' && (!branchRequired || (branchReady && !hasConflicts));
-  const canSync = !!latestAttemptId && !!currentAttempt?.container_ref && branchReady && !hasConflicts;
+  const canApprove =
+    selectedTask?.status === 'inreview' &&
+    (!branchRequired || (branchReady && !hasConflicts));
+  const canSync =
+    !!latestAttemptId &&
+    !!currentAttempt?.container_ref &&
+    branchReady &&
+    !hasConflicts;
   const isSyncing = rebaseMutation.isPending;
 
   // Action handlers

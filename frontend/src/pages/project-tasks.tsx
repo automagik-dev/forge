@@ -11,7 +11,11 @@ import { FeatureShowcaseModal } from '@/components/showcase/FeatureShowcaseModal
 import { showcases } from '@/config/showcases';
 import { useShowcaseTrigger } from '@/hooks/useShowcaseTrigger';
 import { usePostHog } from 'posthog-js/react';
-import type { ViewModeSwitchedEvent, ViewModeChangeTrigger, KeyboardContext } from '@/types/analytics';
+import type {
+  ViewModeSwitchedEvent,
+  ViewModeChangeTrigger,
+  KeyboardContext,
+} from '@/types/analytics';
 import { trackKeyboardShortcut, isFirstUse } from '@/lib/track-analytics';
 
 import { useSearch } from '@/contexts/search-context';
@@ -64,16 +68,8 @@ const TASK_STATUSES = [
   'archived',
 ] as const;
 
-function DiffsPanelContainer({
-  attempt,
-}: {
-  attempt: TaskAttempt;
-}) {
-  return (
-    <DiffsPanel
-      selectedAttempt={attempt}
-    />
-  );
+function DiffsPanelContainer({ attempt }: { attempt: TaskAttempt }) {
+  return <DiffsPanel selectedAttempt={attempt} />;
 }
 
 export function ProjectTasks() {
@@ -90,7 +86,8 @@ export function ProjectTasks() {
   const isMobile = !isXL;
   const isLandscape = useMediaQuery('(orientation: landscape)');
   const isSmallScreen = useMediaQuery('(max-width: 767px)'); // Same as useIsMobile()
-  const isMobilePortrait = (isMobile && !isLandscape) || (isSmallScreen && !isLandscape);
+  const isMobilePortrait =
+    (isMobile && !isLandscape) || (isSmallScreen && !isLandscape);
   const posthog = usePostHog();
 
   const {
@@ -98,7 +95,6 @@ export function ProjectTasks() {
     isLoading: projectLoading,
     error: projectError,
   } = useProject();
-
 
   useEffect(() => {
     enableScope(Scope.KANBAN);
@@ -129,15 +125,20 @@ export function ProjectTasks() {
 
   // Panel is open if we have a regular task OR an agent task (Master Genie) with attemptId OR in chat view
   const isInChatView = searchParams.get('view') === 'chat';
-  const isPanelOpen = Boolean(taskId && (selectedTask || attemptId || isInChatView));
+  const isPanelOpen = Boolean(
+    taskId && (selectedTask || attemptId || isInChatView)
+  );
 
   // Track input focus to hide bottom navigation on mobile
   const { setHideBottomNav } = useMobileNavigation();
 
   // Update context when input focus changes
-  const handleInputFocusChange = useCallback((isFocused: boolean) => {
-    setHideBottomNav(isFocused);
-  }, [setHideBottomNav]);
+  const handleInputFocusChange = useCallback(
+    (isFocused: boolean) => {
+      setHideBottomNav(isFocused);
+    },
+    [setHideBottomNav]
+  );
 
   const { isOpen: showTaskPanelShowcase, close: closeTaskPanelShowcase } =
     useShowcaseTrigger(showcases.taskPanel, {
@@ -169,7 +170,10 @@ export function ProjectTasks() {
 
   const rawMode = searchParams.get('view') as LayoutMode;
   const mode: LayoutMode =
-    rawMode === 'preview' || rawMode === 'diffs' || rawMode === 'kanban' || rawMode === 'chat'
+    rawMode === 'preview' ||
+    rawMode === 'diffs' ||
+    rawMode === 'kanban' ||
+    rawMode === 'chat'
       ? rawMode
       : null;
 
@@ -234,7 +238,15 @@ export function ProjectTasks() {
     if (selectedTask === null && !attemptId && !isInChatView) {
       navigate(`/projects/${projectId}/tasks`, { replace: true });
     }
-  }, [projectId, taskId, isLoading, selectedTask, attemptId, isInChatView, navigate]);
+  }, [
+    projectId,
+    taskId,
+    isLoading,
+    selectedTask,
+    attemptId,
+    isInChatView,
+    navigate,
+  ]);
 
   // Close task panel when user starts searching (to show search results in kanban)
   useEffect(() => {
@@ -378,7 +390,7 @@ export function ProjectTasks() {
       if (isPanelOpen) {
         trackKeyboardShortcut({
           shortcut: 'cycle_view',
-          context: mode as KeyboardContext || 'task_list',
+          context: (mode as KeyboardContext) || 'task_list',
           is_first_use: isFirstUse('shortcut_cycle_view'),
         });
         cycleViewForward();
@@ -400,7 +412,7 @@ export function ProjectTasks() {
       if (isPanelOpen) {
         trackKeyboardShortcut({
           shortcut: 'cycle_view',
-          context: mode as KeyboardContext || 'task_list',
+          context: (mode as KeyboardContext) || 'task_list',
           is_first_use: isFirstUse('shortcut_cycle_view_backward'),
         });
         cycleViewBackward();
@@ -554,7 +566,10 @@ export function ProjectTasks() {
         tasks_in_source_column: fromColumn.length,
         tasks_in_target_column: toColumn.length,
       });
-      console.log('[Analytics] kanban_task_dragged', { from_status: fromStatus, to_status: newStatus });
+      console.log('[Analytics] kanban_task_dragged', {
+        from_status: fromStatus,
+        to_status: newStatus,
+      });
 
       try {
         await tasksApi.update(draggedTaskId, {
@@ -633,50 +648,49 @@ export function ProjectTasks() {
 
   // Allow rendering attempt content for agent tasks (Master Genie) where selectedTask is null
   // but we have an attempt to show, OR when in chat view (ChatPanel creates attempt on first message)
-  const attemptContent = selectedTask || (attempt && attemptId) || isInChatView ? (
-    <NewCard className="h-full min-h-0 flex flex-col bg-diagonal-lines bg-muted border-0 relative">
-      {isTaskView && selectedTask ? (
-        <TaskPanel task={selectedTask} />
-      ) : (
-        <TaskAttemptPanel
-          key={attempt?.id}
-          attempt={attempt}
-          task={selectedTask}
-          tasksById={tasksById}
-          onNavigateToTask={handleNavigateToTask}
-          isInChatView={isInChatView}
-          taskIdFromUrl={taskId}
-          projectId={projectId}
-          onInputFocusChange={handleInputFocusChange}
-        >
-          {({ logs, followUp }) => (
-            <>
-              <ChatPanelActions attempt={attempt} task={selectedTask} />
-              <div className="flex-1 min-h-0 flex flex-col">{logs}</div>
+  const attemptContent =
+    selectedTask || (attempt && attemptId) || isInChatView ? (
+      <NewCard className="h-full min-h-0 flex flex-col bg-diagonal-lines bg-muted border-0 relative">
+        {isTaskView && selectedTask ? (
+          <TaskPanel task={selectedTask} />
+        ) : (
+          <TaskAttemptPanel
+            key={attempt?.id}
+            attempt={attempt}
+            task={selectedTask}
+            tasksById={tasksById}
+            onNavigateToTask={handleNavigateToTask}
+            isInChatView={isInChatView}
+            taskIdFromUrl={taskId}
+            projectId={projectId}
+            onInputFocusChange={handleInputFocusChange}
+          >
+            {({ logs, followUp }) => (
+              <>
+                <ChatPanelActions attempt={attempt} task={selectedTask} />
+                <div className="flex-1 min-h-0 flex flex-col">{logs}</div>
 
-              <div className="shrink-0 border-t">
-                <div className="mx-auto w-full max-w-[50rem]">
-                  <TodoPanel />
+                <div className="shrink-0 border-t">
+                  <div className="mx-auto w-full max-w-[50rem]">
+                    <TodoPanel />
+                  </div>
                 </div>
-              </div>
 
-              <div className="shrink-0 border-t">
-                <div className="mx-auto w-full max-w-[50rem]">{followUp}</div>
-              </div>
-            </>
-          )}
-        </TaskAttemptPanel>
-      )}
-    </NewCard>
-  ) : null;
+                <div className="shrink-0 border-t">
+                  <div className="mx-auto w-full max-w-[50rem]">{followUp}</div>
+                </div>
+              </>
+            )}
+          </TaskAttemptPanel>
+        )}
+      </NewCard>
+    ) : null;
 
   const auxContent = (
     <div className="relative h-full w-full">
       {mode === 'preview' && attempt && selectedTask && <PreviewPanel />}
       {mode === 'diffs' && attempt && selectedTask && (
-        <DiffsPanelContainer
-          attempt={attempt}
-        />
+        <DiffsPanelContainer attempt={attempt} />
       )}
     </div>
   );
@@ -703,7 +717,10 @@ export function ProjectTasks() {
     // ClickedElementsProvider accepts null attempt (used for preview click tracking)
     <ClickedElementsProvider attempt={null}>
       <ReviewProvider key={taskId || 'chat'}>
-        <ExecutionProcessesProvider key={taskId || 'chat'} attemptId={taskId || 'master-genie'}>
+        <ExecutionProcessesProvider
+          key={taskId || 'chat'}
+          attemptId={taskId || 'master-genie'}
+        >
           <TasksLayout
             kanban={kanbanContent}
             attempt={attemptContent}

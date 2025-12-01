@@ -449,7 +449,9 @@ const ToolCallCard: React.FC<{
   const label =
     at?.action === 'command_run'
       ? 'Ran'
-      : entryType?.tool_name || (at?.action === 'tool' ? at.tool_name : null) || 'Tool';
+      : entryType?.tool_name ||
+        (at?.action === 'tool' ? at.tool_name : null) ||
+        'Tool';
 
   const isCommand = at?.action === 'command_run';
 
@@ -634,7 +636,11 @@ function DisplayConversationEntry({
         <ToolCallCard
           action={toolAction}
           expansionKey={expansionKey}
-          content={(actionAny?.message ?? actionAny?.summary ?? undefined) as string | undefined}
+          content={
+            (actionAny?.message ?? actionAny?.summary ?? undefined) as
+              | string
+              | undefined
+          }
         />
       </div>
     );

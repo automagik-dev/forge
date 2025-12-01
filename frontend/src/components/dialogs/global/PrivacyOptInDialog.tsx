@@ -73,7 +73,9 @@ const PrivacyOptInDialog = NiceModal.create(() => {
               <div className="flex items-start gap-2">
                 <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium">Features you actually want</p>
+                  <p className="text-sm font-medium">
+                    Features you actually want
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     We prioritize based on what you use most
                   </p>
@@ -122,8 +124,8 @@ const PrivacyOptInDialog = NiceModal.create(() => {
               🔒 Your privacy protected
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              No task content, code, project names, or personal messages.
-              Just anonymous patterns to improve the app.
+              No task content, code, project names, or personal messages. Just
+              anonymous patterns to improve the app.
             </p>
           </div>
 
@@ -153,7 +155,10 @@ const PrivacyOptInDialog = NiceModal.create(() => {
                   onChange={(e) => setContactEmailOptIn(e.target.checked)}
                   className="mt-0.5"
                 />
-                <label htmlFor="contact-email" className="text-xs cursor-pointer">
+                <label
+                  htmlFor="contact-email"
+                  className="text-xs cursor-pointer"
+                >
                   <span className="font-medium">Share email for updates</span>
                   <p className="text-muted-foreground mt-0.5">
                     Critical updates only. No spam, no marketing.
@@ -169,7 +174,10 @@ const PrivacyOptInDialog = NiceModal.create(() => {
                   onChange={(e) => setContactUsernameOptIn(e.target.checked)}
                   className="mt-0.5"
                 />
-                <label htmlFor="contact-username" className="text-xs cursor-pointer">
+                <label
+                  htmlFor="contact-username"
+                  className="text-xs cursor-pointer"
+                >
                   <span className="font-medium">Share GitHub username</span>
                   <p className="text-muted-foreground mt-0.5">
                     Let us credit you in release notes and contributors list.
@@ -181,9 +189,7 @@ const PrivacyOptInDialog = NiceModal.create(() => {
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg">
             <Settings className="h-3 w-3 flex-shrink-0" />
-            <span>
-              You can change these preferences anytime in Settings.
-            </span>
+            <span>You can change these preferences anytime in Settings.</span>
           </div>
         </div>
 

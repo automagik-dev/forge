@@ -16,14 +16,16 @@ interface LatestRelease {
 export function Footer() {
   const { t } = useTranslation('common');
   const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [latestRelease, setLatestRelease] = useState<LatestRelease | null>(null);
+  const [latestRelease, setLatestRelease] = useState<LatestRelease | null>(
+    null
+  );
   const [updateAvailable, setUpdateAvailable] = useState(false);
 
   useEffect(() => {
     // Fetch health status once on mount
     fetch('/health')
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         const currentVersion = data.version || '0.0.0';
         setHealth({
           status: data.status === 'ok' ? 'healthy' : 'unhealthy',
@@ -32,8 +34,8 @@ export function Footer() {
 
         // Fetch latest version from NPM registry (once per page load)
         fetch('https://registry.npmjs.org/automagik-forge/latest')
-          .then(res => res.json())
-          .then(npmData => {
+          .then((res) => res.json())
+          .then((npmData) => {
             if (npmData.version) {
               setLatestRelease({
                 tag_name: `v${npmData.version}`,
@@ -45,11 +47,19 @@ export function Footer() {
               const latest = npmData.version;
 
               // Split versions and compare numerically
-              const currentParts = current.split(/[.-]/).map((p: string) => parseInt(p) || 0);
-              const latestParts = latest.split(/[.-]/).map((p: string) => parseInt(p) || 0);
+              const currentParts = current
+                .split(/[.-]/)
+                .map((p: string) => parseInt(p) || 0);
+              const latestParts = latest
+                .split(/[.-]/)
+                .map((p: string) => parseInt(p) || 0);
 
               // Compare major.minor.patch
-              for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
+              for (
+                let i = 0;
+                i < Math.max(currentParts.length, latestParts.length);
+                i++
+              ) {
                 const curr = currentParts[i] || 0;
                 const lat = latestParts[i] || 0;
                 if (lat > curr) {
@@ -143,8 +153,13 @@ export function Footer() {
 
           {/* Health Status */}
           {health && (
-            <div className="flex items-center gap-1.5" title={`Status: ${health.status}`}>
-              <div className={`w-2 h-2 rounded-full ${getHealthColor()} animate-pulse`} />
+            <div
+              className="flex items-center gap-1.5"
+              title={`Status: ${health.status}`}
+            >
+              <div
+                className={`w-2 h-2 rounded-full ${getHealthColor()} animate-pulse`}
+              />
               <Activity className="w-3 h-3" />
               <span className="capitalize">{health.status}</span>
             </div>

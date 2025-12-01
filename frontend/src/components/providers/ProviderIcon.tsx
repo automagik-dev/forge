@@ -1,6 +1,11 @@
 import { Terminal, Bot } from 'lucide-react';
 import { BaseCodingAgent } from 'shared/types';
-import { siClaude, siGooglegemini, siGithubcopilot, siOpenai } from 'simple-icons';
+import {
+  siClaude,
+  siGooglegemini,
+  siGithubcopilot,
+  siOpenai,
+} from 'simple-icons';
 import { useTheme } from '@/components/theme-provider';
 import { ThemeMode } from 'shared/types';
 

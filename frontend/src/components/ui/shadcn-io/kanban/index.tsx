@@ -111,7 +111,8 @@ export const KanbanCard = ({
       className={cn(
         'p-3 outline-none border-b flex-col space-y-2 transition-all duration-200',
         isDragging && 'cursor-grabbing',
-        isOpen && 'border-2 !border-primary bg-primary/10 shadow-xl scale-[1.02]',
+        isOpen &&
+          'border-2 !border-primary bg-primary/10 shadow-xl scale-[1.02]',
         className
       )}
       {...listeners}
@@ -138,7 +139,9 @@ export type KanbanCardsProps = {
 };
 
 export const KanbanCards = ({ children, className }: KanbanCardsProps) => (
-  <div className={cn('flex flex-1 flex-col px-2 gap-2', className)}>{children}</div>
+  <div className={cn('flex flex-1 flex-col px-2 gap-2', className)}>
+    {children}
+  </div>
 );
 
 export type KanbanHeaderProps =

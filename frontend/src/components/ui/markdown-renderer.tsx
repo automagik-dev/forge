@@ -1,5 +1,12 @@
 import Markdown from 'markdown-to-jsx';
-import { memo, useMemo, useState, useCallback, isValidElement, type ReactElement } from 'react';
+import {
+  memo,
+  useMemo,
+  useState,
+  useCallback,
+  isValidElement,
+  type ReactElement,
+} from 'react';
 import {
   Tooltip,
   TooltipContent,
@@ -102,12 +109,7 @@ function LinkOverride({
   );
 }
 
-function ImageOverride({
-  src,
-  alt,
-  title,
-  ...props
-}: MarkdownImageProps) {
+function ImageOverride({ src, alt, title, ...props }: MarkdownImageProps) {
   let imageSrc = typeof src === 'string' ? src.trim() : '';
 
   // Convert .forge-images/ paths to /api/images/ paths
@@ -144,7 +146,11 @@ function ImageOverride({
   );
 }
 
-function InlineCodeOverride({ children, className, ...props }: MarkdownCodeProps) {
+function InlineCodeOverride({
+  children,
+  className,
+  ...props
+}: MarkdownCodeProps) {
   // Only highlight inline code, not fenced code blocks
   const hasLanguage =
     typeof className === 'string' && /\blanguage-/.test(className);
@@ -168,7 +174,9 @@ function InlineCodeOverride({ children, className, ...props }: MarkdownCodeProps
 
 function PreOverride({ children, ...props }: MarkdownPreProps) {
   // Check if this is a mermaid code block
-  const childElement = isValidElement(children) ? (children as ReactElement<{ className?: string; children?: string }>) : null;
+  const childElement = isValidElement(children)
+    ? (children as ReactElement<{ className?: string; children?: string }>)
+    : null;
   const childClassName = childElement?.props?.className || '';
   const isMermaid =
     typeof childClassName === 'string' &&

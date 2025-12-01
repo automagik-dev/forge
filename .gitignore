@@ -116,8 +116,20 @@ forge.db
 forge.db.backup-*
 forge.db.before-*
 
+# PM2 logs directory
+logs/
+
 # Upstream submodule removed - ignore leftover directory
-upstream/ 
+upstream/
+
+# Local forge-core for development (make dev-core)
+forge-core/
+
+# Cargo config is generated dynamically (use config.base.toml or config.dev-core.toml)
+.cargo/config.toml
+
+# Dev-core mode marker (created by make dev-core, deleted by make dev-core-off)
+.dev-core-active 
 
 # Vite generated files
 *.timestamp-*.mjs

@@ -1,4 +1,12 @@
-import { Sparkles, Hammer, Target, CheckCircle2, XCircle, Archive, type LucideIcon } from 'lucide-react';
+import {
+  Sparkles,
+  Hammer,
+  Target,
+  CheckCircle2,
+  XCircle,
+  Archive,
+  type LucideIcon,
+} from 'lucide-react';
 import { TaskStatus } from 'shared/types';
 
 // Map TaskStatus to display names

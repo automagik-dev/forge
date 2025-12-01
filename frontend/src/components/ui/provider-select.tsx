@@ -40,7 +40,10 @@ export function ProviderSelect({
         {providers.map((provider) => (
           <SelectItem key={provider} value={provider}>
             <div className="flex items-center gap-2">
-              <ProviderIcon executor={provider as BaseCodingAgent} className="h-4 w-4" />
+              <ProviderIcon
+                executor={provider as BaseCodingAgent}
+                className="h-4 w-4"
+              />
               <span>{provider}</span>
             </div>
           </SelectItem>

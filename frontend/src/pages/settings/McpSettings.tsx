@@ -92,7 +92,10 @@ export function McpSettings() {
         setMcpServers(configJson);
         setMcpConfigPath(result.config_path);
       } catch (err) {
-        if ((err as Error)?.message && (err as Error).message.includes('does not support MCP')) {
+        if (
+          (err as Error)?.message &&
+          (err as Error).message.includes('does not support MCP')
+        ) {
           setMcpError((err as Error).message);
         } else {
           console.error('Error loading MCP servers:', err);
@@ -164,7 +167,11 @@ export function McpSettings() {
             {
               executor: selectedProfileKey as BaseCodingAgent,
             },
-            { servers: mcpServersConfig as { [key: string]: JsonValue | undefined } }
+            {
+              servers: mcpServersConfig as {
+                [key: string]: JsonValue | undefined;
+              },
+            }
           );
 
           // Show success feedback
@@ -210,7 +217,10 @@ export function McpSettings() {
     }
   };
 
-  const preconfigured = (mcpConfig?.preconfigured ?? {}) as Record<string, unknown>;
+  const preconfigured = (mcpConfig?.preconfigured ?? {}) as Record<
+    string,
+    unknown
+  >;
   const meta = (preconfigured.meta ?? {}) as Record<
     string,
     { name?: string; description?: string; url?: string; icon?: string }

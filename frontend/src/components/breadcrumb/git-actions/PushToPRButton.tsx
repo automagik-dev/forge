@@ -58,8 +58,8 @@ export function PushToPRButton({ attempt, branchStatus }: PushToPRButtonProps) {
   const tooltipContent = pushSuccess
     ? t('git.tooltips.push.success')
     : pushing
-    ? t('git.tooltips.push.inProgress')
-    : t('git.tooltips.push.simple');
+      ? t('git.tooltips.push.inProgress')
+      : t('git.tooltips.push.simple');
 
   const colorClasses = pushSuccess
     ? 'bg-emerald-100/70 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'

@@ -50,7 +50,9 @@ function MermaidDiagram({ chart, className = '' }: MermaidDiagramProps) {
         setError(null);
       } catch (err) {
         console.error('Mermaid rendering error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to render diagram');
+        setError(
+          err instanceof Error ? err.message : 'Failed to render diagram'
+        );
       }
     };
 
@@ -69,7 +71,9 @@ function MermaidDiagram({ chart, className = '' }: MermaidDiagramProps) {
 
   if (error) {
     return (
-      <div className={`p-4 bg-destructive/10 border border-destructive/20 rounded-md ${className}`}>
+      <div
+        className={`p-4 bg-destructive/10 border border-destructive/20 rounded-md ${className}`}
+      >
         <p className="text-sm text-destructive font-medium">Mermaid Error:</p>
         <pre className="text-xs mt-2 text-destructive/80 overflow-x-auto">
           {error}

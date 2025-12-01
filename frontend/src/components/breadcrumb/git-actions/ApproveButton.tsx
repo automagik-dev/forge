@@ -7,7 +7,11 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useApproveTask } from '@/hooks/useApproveTask';
-import type { TaskWithAttemptStatus, TaskAttempt, BranchStatus } from 'shared/types';
+import type {
+  TaskWithAttemptStatus,
+  TaskAttempt,
+  BranchStatus,
+} from 'shared/types';
 import { useTranslation } from 'react-i18next';
 
 interface ApproveButtonProps {
@@ -29,8 +33,11 @@ export function ApproveButton({
 
   const hasCodeChanges = (branchStatus?.commits_ahead ?? 0) > 0;
   const hasConflicts = (branchStatus?.conflicted_files?.length ?? 0) > 0;
-  const needsRebase = (branchStatus?.commits_behind ?? 0) > 0 || (branchStatus?.remote_commits_behind ?? 0) > 0;
-  const rebaseCommitCount = (branchStatus?.remote_commits_behind ?? branchStatus?.commits_behind ?? 0);
+  const needsRebase =
+    (branchStatus?.commits_behind ?? 0) > 0 ||
+    (branchStatus?.remote_commits_behind ?? 0) > 0;
+  const rebaseCommitCount =
+    branchStatus?.remote_commits_behind ?? branchStatus?.commits_behind ?? 0;
 
   // Only show Approve button when task is in review status
   // Don't show while agent is working (inprogress, agent) or when already done
@@ -44,7 +51,9 @@ export function ApproveButton({
     if (needsRebase) {
       setShouldShake(true);
       // Find and shake the rebase/update badge
-      const rebaseButton = document.querySelector('[data-rebase-button]') as HTMLElement;
+      const rebaseButton = document.querySelector(
+        '[data-rebase-button]'
+      ) as HTMLElement;
       if (rebaseButton) {
         rebaseButton.classList.add('animate-shake');
         setTimeout(() => {
@@ -77,7 +86,9 @@ export function ApproveButton({
   const commitCount = branchStatus?.commits_ahead ?? 0;
   let label: string;
   if (isApproving) {
-    label = hasCodeChanges ? t('git.states.mergingAndCompleting') : t('git.states.completing');
+    label = hasCodeChanges
+      ? t('git.states.mergingAndCompleting')
+      : t('git.states.completing');
   } else if (needsRebase) {
     label = t('git.states.rebaseRequired');
   } else if (hasConflicts) {
@@ -112,10 +123,10 @@ export function ApproveButton({
   const colorClasses = needsRebase
     ? 'bg-amber-100/70 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-200/70 dark:hover:bg-amber-800/40'
     : hasConflicts
-    ? 'bg-red-100/60 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-200/60 dark:hover:bg-red-800/40'
-    : hasCodeChanges
-    ? 'bg-emerald-100/70 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200/70 dark:hover:bg-emerald-800/40'
-    : 'bg-blue-100/70 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-200/70 dark:hover:bg-blue-800/40';
+      ? 'bg-red-100/60 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-200/60 dark:hover:bg-red-800/40'
+      : hasCodeChanges
+        ? 'bg-emerald-100/70 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200/70 dark:hover:bg-emerald-800/40'
+        : 'bg-blue-100/70 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-200/70 dark:hover:bg-blue-800/40';
 
   return (
     <TooltipProvider>

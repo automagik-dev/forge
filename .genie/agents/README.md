@@ -30,20 +30,12 @@ To specialize the executor or variant, add a `genie` section for orchestration s
 name: review
 description: Evidence-based QA
 genie:
-  executor:
-    - CLAUDE_CODE
-    - CODEX
-    - OPENCODE
+  executor: opencode          # Orchestration: which executor to invoke
+  variant: REVIEW_STRICT_EVIDENCE  # Orchestration: which profile variant
   background: true            # Orchestration: run in isolated worktree
 forge:
-  CLAUDE_CODE:
-    model: sonnet
-    dangerously_skip_permissions: true
-  CODEX:
-    model: gpt-5-codex
-    sandbox: danger-full-access
-  OPENCODE:
-    model: opencode/glm-4.6
+  model: sonnet               # Executor config: passed to Forge as-is
+  dangerously_skip_permissions: false
 ---
 ```
 

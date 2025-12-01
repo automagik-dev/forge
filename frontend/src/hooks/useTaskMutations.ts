@@ -3,7 +3,11 @@ import { useNavigateWithSearch } from '@/hooks';
 import { tasksApi, attemptsApi } from '@/lib/api';
 import { paths } from '@/lib/paths';
 import { queryKeys } from '@/lib/queryKeys';
-import { trackTaskCreated, trackTaskCompleted, checkAndTrackFirstSuccess } from '@/lib/track-analytics';
+import {
+  trackTaskCreated,
+  trackTaskCompleted,
+  checkAndTrackFirstSuccess,
+} from '@/lib/track-analytics';
 import type {
   CreateTask,
   CreateAndStartTaskRequest,
@@ -17,11 +21,17 @@ export function useTaskMutations(projectId?: string) {
   const navigate = useNavigateWithSearch();
 
   const invalidateQueries = (taskId?: string) => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byProject(projectId) });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.tasks.byProject(projectId),
+    });
     if (taskId) {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.tasks.detail(taskId),
+      });
       // Also invalidate attempts for event-driven cache sync
-      queryClient.invalidateQueries({ queryKey: queryKeys.taskAttempts.byTask(taskId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.taskAttempts.byTask(taskId),
+      });
     }
   };
 
@@ -31,7 +41,10 @@ export function useTaskMutations(projectId?: string) {
       // Track task creation with analytics
       // Note: executor info is not in CreateTask, will be tracked from config
       trackTaskCreated({
-        executor: ((createdTask as Task & { executor_profile?: { executor?: string } }).executor_profile?.executor || 'unknown') as import('@/types/analytics').ExecutorType,
+        executor: ((
+          createdTask as Task & { executor_profile?: { executor?: string } }
+        ).executor_profile?.executor ||
+          'unknown') as import('@/types/analytics').ExecutorType,
         has_description: !!variables.description,
         prompt_length: variables.description?.length || 0,
         is_subtask: !!variables.parent_task_attempt,
@@ -50,7 +63,10 @@ export function useTaskMutations(projectId?: string) {
   const createAndStart = useMutation({
     mutationFn: (data: CreateAndStartTaskRequest) =>
       tasksApi.createAndStart(data),
-    onSuccess: (createdTask: TaskWithAttemptStatus, variables: CreateAndStartTaskRequest) => {
+    onSuccess: (
+      createdTask: TaskWithAttemptStatus,
+      variables: CreateAndStartTaskRequest
+    ) => {
       // Track task creation with analytics
       trackTaskCreated({
         executor: variables.executor_profile_id.executor || 'unknown',
@@ -72,19 +88,27 @@ export function useTaskMutations(projectId?: string) {
   const updateTask = useMutation({
     mutationFn: ({ taskId, data }: { taskId: string; data: UpdateTask }) =>
       tasksApi.update(taskId, data),
-    onSuccess: async (updatedTask: Task, variables: { taskId: string; data: UpdateTask }) => {
+    onSuccess: async (
+      updatedTask: Task,
+      variables: { taskId: string; data: UpdateTask }
+    ) => {
       // Track task completion if status changed to 'done'
       if (variables.data.status === 'done' && updatedTask.status === 'done') {
         const durationSeconds = updatedTask.created_at
-          ? Math.floor((Date.now() - new Date(updatedTask.created_at).getTime()) / 1000)
+          ? Math.floor(
+              (Date.now() - new Date(updatedTask.created_at).getTime()) / 1000
+            )
           : 0;
 
         // Fetch attempts to get executor and attempt count (backend data)
         try {
           const attempts = await attemptsApi.getAll(updatedTask.id);
           const latestAttempt = attempts[0]; // Sorted newest first
-          const executorStr = (latestAttempt as { executor?: string } | undefined)?.executor || 'unknown';
-          const executor = executorStr as import('@/types/analytics').ExecutorType;
+          const executorStr =
+            (latestAttempt as { executor?: string } | undefined)?.executor ||
+            'unknown';
+          const executor =
+            executorStr as import('@/types/analytics').ExecutorType;
           const attemptCount = attempts.length;
 
           trackTaskCompleted({
@@ -122,7 +146,10 @@ export function useTaskMutations(projectId?: string) {
     onSuccess: (_: unknown, taskId: string) => {
       invalidateQueries(taskId);
       // Remove single-task cache entry to avoid stale data flashes
-      queryClient.removeQueries({ queryKey: queryKeys.tasks.detail(taskId), exact: true });
+      queryClient.removeQueries({
+        queryKey: queryKeys.tasks.detail(taskId),
+        exact: true,
+      });
     },
     onError: (err) => {
       console.error('Failed to delete task:', err);
