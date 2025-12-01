@@ -49,6 +49,7 @@ import type { LayoutMode } from '@/components/layout/TasksLayout';
 import type { Task, GitBranch as GitBranchType } from 'shared/types';
 import { projectsApi } from '@/lib/api';
 import { GitActionsGroup } from '@/components/breadcrumb/git-actions';
+import { ArchiveButton } from '@/components/tasks/ArchiveButton';
 
 export function Breadcrumb() {
   const location = useLocation();
@@ -688,8 +689,8 @@ export function Breadcrumb() {
         })}
       </ol>
 
-      {/* Right side: Git status badges */}
-      {currentTask && (
+      {/* Right side: Archive button (board view) or Git status badges (task view) */}
+      {currentTask ? (
         <div className="flex items-center gap-2">
           {/* Compact git status badge - only show behind (rebase needed) */}
           {branchStatus &&
@@ -778,6 +779,8 @@ export function Breadcrumb() {
             />
           )}
         </div>
+      ) : (
+        <ArchiveButton />
       )}
     </nav>
   );
