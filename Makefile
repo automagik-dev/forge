@@ -673,6 +673,20 @@ dev-core: check-android-deps check-cargo ## Start dev with local forge-core
 		fi; \
 		echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core ready$(FONT_RESET)"; \
 	fi
+	@# Enforce branch matching
+	@CURRENT_BRANCH=$$(git branch --show-current); \
+	FORGE_CORE_BRANCH=$$(cd forge-core && git branch --show-current); \
+	if [ "$$CURRENT_BRANCH" != "$$FORGE_CORE_BRANCH" ] && [ "$$FORGE_CORE_BRANCH" != "$(BRANCH)" ]; then \
+		echo ""; \
+		echo -e "$(FONT_RED)❌ Branch mismatch detected:$(FONT_RESET)"; \
+		echo -e "  automagik-forge: $$CURRENT_BRANCH"; \
+		echo -e "  forge-core:      $$FORGE_CORE_BRANCH"; \
+		echo ""; \
+		echo -e "$(FONT_YELLOW)💡 To fix: Use matching branches or specify BRANCH=$$CURRENT_BRANCH$(FONT_RESET)"; \
+		echo -e "$(FONT_YELLOW)   Example: make dev-core BRANCH=$$CURRENT_BRANCH$(FONT_RESET)"; \
+		echo ""; \
+		exit 1; \
+	fi
 	@echo -e "$(FONT_CYAN)📍 forge-core @ $$(cd forge-core && git describe --tags --always 2>/dev/null || git rev-parse --short HEAD)$(FONT_RESET)"
 	@# Enable [patch] section in .cargo/config.toml
 	@echo -e "$(FONT_CYAN)⚙️  Enabling Cargo [patch] overrides...$(FONT_RESET)"
@@ -743,17 +757,51 @@ dev-core-check: ## Health check for dev-core workspace
 check-versions: ## Validate version consistency across all files
 	@./scripts/dev-core-helper.sh versions
 
-# Show full cross-repo status
-status:
+# Show comprehensive cross-repo status
+status: ## Show comprehensive cross-repo status
 	@echo ""
+	@echo -e "$(FONT_BOLD)$(FONT_PURPLE)🔍 Cross-Repo Status$(FONT_RESET)"
+	@echo ""
+	@# Dev-core mode
 	@if grep -q '^\[patch\.' .cargo/config.toml 2>/dev/null; then \
-		echo -e "🔧 Dev-core: $(FONT_GREEN)ACTIVE$(FONT_RESET) (Cargo [patch])"; \
+		echo -e "Dev-core:       $(FONT_GREEN)ACTIVE$(FONT_RESET) (Cargo [patch])"; \
 	else \
-		echo -e "✅ Dev-core: $(FONT_CYAN)OFF$(FONT_RESET) (git deps)"; \
+		echo -e "Dev-core:       $(FONT_CYAN)OFF$(FONT_RESET) (git deps)"; \
 	fi
-	@echo -e "📦 automagik-forge: $$(git branch --show-current)"
-	@if [ -d "forge-core" ]; then \
-		echo -e "📦 forge-core: $$(cd forge-core && git branch --show-current)"; \
+	@# Branches
+	@echo -e "forge branch:   $$(git branch --show-current)"; \
+	if [ -d "forge-core" ]; then \
+		echo -e "core branch:    $$(cd forge-core && git branch --show-current)"; \
+	else \
+		echo -e "core branch:    $(FONT_YELLOW)not cloned$(FONT_RESET)"; \
+	fi
+	@# Versions
+	@EXPECTED_TAG=$$(grep -oP 'tag\s*=\s*"\K[^"]+' forge-app/Cargo.toml 2>/dev/null | head -1); \
+	echo -e "Cargo.toml tag: $$EXPECTED_TAG"; \
+	if [ -d "forge-core" ]; then \
+		LOCAL_TAG=$$(cd forge-core && git describe --tags --abbrev=0 2>/dev/null || echo "unknown"); \
+		echo -e "Local core tag: $$LOCAL_TAG"; \
+	fi
+	@# Uncommitted changes
+	@echo ""; \
+	if [ -n "$$(git status --porcelain)" ]; then \
+		echo -e "forge changes:  $(FONT_YELLOW)$$(git status --porcelain | wc -l) files$(FONT_RESET)"; \
+	else \
+		echo -e "forge changes:  $(FONT_GREEN)clean$(FONT_RESET)"; \
+	fi; \
+	if [ -d "forge-core" ] && [ -n "$$(cd forge-core && git status --porcelain)" ]; then \
+		echo -e "core changes:   $(FONT_YELLOW)$$(cd forge-core && git status --porcelain | wc -l) files$(FONT_RESET)"; \
+	elif [ -d "forge-core" ]; then \
+		echo -e "core changes:   $(FONT_GREEN)clean$(FONT_RESET)"; \
+	fi
+	@# Ready to push?
+	@echo ""; \
+	if grep -q '^\[patch\.' .cargo/config.toml 2>/dev/null; then \
+		echo -e "Ready to push:  $(FONT_RED)NO$(FONT_RESET) (run make dev-core-off first)"; \
+	elif [ -n "$$(git status --porcelain)" ] || ([ -d "forge-core" ] && [ -n "$$(cd forge-core && git status --porcelain)" ]); then \
+		echo -e "Ready to push:  $(FONT_YELLOW)MAYBE$(FONT_RESET) (uncommitted changes)"; \
+	else \
+		echo -e "Ready to push:  $(FONT_GREEN)YES$(FONT_RESET)"; \
 	fi
 	@echo ""
 

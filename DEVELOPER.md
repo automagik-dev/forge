@@ -8,6 +8,7 @@ Welcome to the Automagik Forge development guide. This document provides compreh
 - [Development Setup](#development-setup)
 - [Architecture Overview](#architecture-overview)
 - [Development Workflow](#development-workflow)
+- [Cross-Repo Development (forge-core)](#cross-repo-development-forge-core)
 - [Testing](#testing)
 - [Building](#building)
 - [Database Operations](#database-operations)
@@ -320,6 +321,28 @@ rm -rf ~/Library/Application\ Support/automagik-forge/  # macOS
 # Restart dev server to recreate and reseed
 pnpm run dev
 ```
+
+---
+
+## Cross-Repo Development (forge-core)
+
+When you need to modify `forge-core` (the library that automagik-forge depends on), use the dev-core workflow.
+
+**Quick commands:**
+```bash
+make dev-core BRANCH=feat/my-feature  # Enable local forge-core development
+make dev-core-off                     # Disable, restore git deps
+make status                           # Show current mode & branch status
+```
+
+**📖 Complete guide:** See [docs/DUAL_REPO_WORKFLOW.md](docs/DUAL_REPO_WORKFLOW.md)
+
+This guide covers:
+- Step-by-step workflow for forge-core changes
+- Automated tag creation and cross-repo sync
+- Branch matching enforcement
+- Troubleshooting common issues
+- PR creation sequence and version management
 
 ---
 
