@@ -78,6 +78,60 @@ rollback_swap() {
 }
 
 # =============================================================================
+# workspace-compat - Check workspace compatibility for dev-core mode
+# =============================================================================
+
+check_workspace_compatibility() {
+    log_header "Workspace Compatibility Check"
+    local ISSUES=0
+
+    # 1. Check [workspace.package] exists (required for forge-core's version.workspace = true)
+    if ! grep -q '^\[workspace\.package\]' Cargo.toml; then
+        log_error "Missing [workspace.package] in Cargo.toml"
+        echo "    forge-core crates use 'version.workspace = true'"
+        echo "    Add this to Cargo.toml:"
+        echo ""
+        echo "    [workspace.package]"
+        echo "    version = \"0.8.4\""
+        echo "    edition = \"2021\""
+        ((ISSUES++))
+    else
+        log_success "[workspace.package] present"
+    fi
+
+    # 2. Check required workspace dependencies exist (forge-core crates use { workspace = true })
+    local REQUIRED_DEPS=("rmcp")
+    for dep in "${REQUIRED_DEPS[@]}"; do
+        if ! grep -qE "^${dep}\s*=" Cargo.toml; then
+            log_error "Missing workspace dependency: $dep"
+            echo "    forge-core crates use '$dep = { workspace = true }'"
+            echo "    Add to [workspace.dependencies]: $dep = { version = \"0.8.5\" }"
+            ((ISSUES++))
+        else
+            log_success "workspace.dependencies.$dep present"
+        fi
+    done
+
+    if [ $ISSUES -gt 0 ]; then
+        echo ""
+        log_error "Workspace not compatible with dev-core mode"
+        echo ""
+        echo "Why: When Cargo [patch] redirects forge-core to local paths, those crates"
+        echo "     become part of automagik-forge's workspace and need these sections."
+        echo ""
+        echo "Fix: Add missing sections to Cargo.toml before running make dev-core"
+        return 1
+    fi
+
+    log_success "Workspace compatible with dev-core mode"
+    return 0
+}
+
+cmd_workspace_compat() {
+    check_workspace_compatibility
+}
+
+# =============================================================================
 # setup - Enable local forge-core development (transactional)
 # =============================================================================
 
@@ -85,6 +139,11 @@ cmd_setup() {
     local BRANCH="${1:-dev}"
 
     log_header "Dev-Core Setup (branch: $BRANCH)"
+
+    # Workspace compatibility check (MUST pass before proceeding)
+    if ! check_workspace_compatibility; then
+        exit 1
+    fi
 
     # Pre-flight checks
     log_header "Pre-flight Checks"
@@ -479,14 +538,18 @@ case "${1:-help}" in
     versions)
         cmd_versions
         ;;
+    workspace-compat)
+        cmd_workspace_compat
+        ;;
     help|--help|-h)
         echo "Usage: $0 <command> [args]"
         echo ""
         echo "Commands:"
-        echo "  setup [branch]   Enable local forge-core development (default: dev)"
-        echo "  teardown         Restore git dependencies"
-        echo "  check            Health check / diagnostics"
-        echo "  versions         Check version consistency"
+        echo "  setup [branch]     Enable local forge-core development (default: dev)"
+        echo "  teardown           Restore git dependencies"
+        echo "  check              Health check / diagnostics"
+        echo "  versions           Check version consistency"
+        echo "  workspace-compat   Check workspace compatibility for dev-core mode"
         echo ""
         exit 0
         ;;

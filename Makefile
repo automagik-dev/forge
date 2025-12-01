@@ -643,7 +643,7 @@ dev: check-android-deps check-cargo ensure-cargo-config
 # Cross-Repo Development (automagik-forge + forge-core)
 # =============================================================================
 
-BRANCH ?= dev
+BRANCH ?= $(shell git branch --show-current)
 
 # Development with local forge-core (enhanced with branch selection + safety hooks)
 # ============================================================================
@@ -654,39 +654,51 @@ BRANCH ?= dev
 dev-core: check-android-deps check-cargo ## Start dev with local forge-core
 	@echo ""
 	@echo -e "$(FONT_PURPLE)🔧 Starting local forge-core development...$(FONT_RESET)"
-	@# Clone or update forge-core
-	@if [ ! -d "forge-core" ]; then \
-		echo -e "$(FONT_CYAN)📦 Cloning forge-core (branch: $(BRANCH))...$(FONT_RESET)"; \
-		if ! git clone -b $(BRANCH) https://github.com/namastexlabs/forge-core.git forge-core; then \
-			echo -e "$(FONT_RED)❌ FATAL: git clone failed$(FONT_RESET)"; \
-			echo -e "$(FONT_YELLOW)Check network connectivity and branch name$(FONT_RESET)"; \
-			exit 1; \
-		fi; \
-		echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core cloned$(FONT_RESET)"; \
-	else \
-		echo -e "$(FONT_CYAN)📥 Updating forge-core...$(FONT_RESET)"; \
-		(cd forge-core && git fetch --tags origin 2>/dev/null) || true; \
-		CURRENT=$$(cd forge-core && git branch --show-current); \
-		if [ "$$CURRENT" != "$(BRANCH)" ]; then \
-			echo -e "$(FONT_YELLOW)⚠️  Switching forge-core: $$CURRENT → $(BRANCH)$(FONT_RESET)"; \
-			(cd forge-core && git checkout $(BRANCH) 2>/dev/null || git checkout -b $(BRANCH) origin/$(BRANCH)) || true; \
-		fi; \
-		echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core ready$(FONT_RESET)"; \
-	fi
-	@# Enforce branch matching
-	@CURRENT_BRANCH=$$(git branch --show-current); \
-	FORGE_CORE_BRANCH=$$(cd forge-core && git branch --show-current); \
-	if [ "$$CURRENT_BRANCH" != "$$FORGE_CORE_BRANCH" ] && [ "$$FORGE_CORE_BRANCH" != "$(BRANCH)" ]; then \
+	@# Pre-flight: Check workspace compatibility (prevents cryptic cargo errors)
+	@if ! grep -q '^\[workspace\.package\]' Cargo.toml; then \
 		echo ""; \
-		echo -e "$(FONT_RED)❌ Branch mismatch detected:$(FONT_RESET)"; \
-		echo -e "  automagik-forge: $$CURRENT_BRANCH"; \
-		echo -e "  forge-core:      $$FORGE_CORE_BRANCH"; \
+		echo -e "$(FONT_RED)❌ Missing [workspace.package] in Cargo.toml$(FONT_RESET)"; \
+		echo "    forge-core crates use 'version.workspace = true'"; \
+		echo "    Add this to Cargo.toml:"; \
 		echo ""; \
-		echo -e "$(FONT_YELLOW)💡 To fix: Use matching branches or specify BRANCH=$$CURRENT_BRANCH$(FONT_RESET)"; \
-		echo -e "$(FONT_YELLOW)   Example: make dev-core BRANCH=$$CURRENT_BRANCH$(FONT_RESET)"; \
+		echo "    [workspace.package]"; \
+		echo "    version = \"0.8.4\""; \
+		echo "    edition = \"2021\""; \
 		echo ""; \
 		exit 1; \
 	fi
+	@if ! grep -qE '^rmcp\s*=' Cargo.toml; then \
+		echo ""; \
+		echo -e "$(FONT_RED)❌ Missing 'rmcp' in [workspace.dependencies]$(FONT_RESET)"; \
+		echo "    forge-core/server crate needs: rmcp = { workspace = true }"; \
+		echo "    Add to [workspace.dependencies]:"; \
+		echo ""; \
+		echo "    rmcp = { version = \"0.8.5\" }"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@# Clone or update forge-core with smart branch sync
+	@CURRENT_BRANCH=$$(git branch --show-current); \
+	if [ ! -d "forge-core" ]; then \
+		echo -e "$(FONT_CYAN)📦 Cloning forge-core...$(FONT_RESET)"; \
+		if ! git clone https://github.com/namastexlabs/forge-core.git forge-core; then \
+			echo -e "$(FONT_RED)❌ FATAL: git clone failed$(FONT_RESET)"; \
+			echo -e "$(FONT_YELLOW)Check network connectivity$(FONT_RESET)"; \
+			exit 1; \
+		fi; \
+	fi; \
+	echo -e "$(FONT_CYAN)📥 Syncing forge-core to branch: $$CURRENT_BRANCH$(FONT_RESET)"; \
+	cd forge-core && git fetch --all --tags 2>/dev/null; \
+	if git show-ref --verify --quiet refs/remotes/origin/$$CURRENT_BRANCH; then \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) Branch '$$CURRENT_BRANCH' exists in forge-core$(FONT_RESET)"; \
+		git checkout $$CURRENT_BRANCH 2>/dev/null || git checkout -b $$CURRENT_BRANCH origin/$$CURRENT_BRANCH; \
+		git pull origin $$CURRENT_BRANCH 2>/dev/null || true; \
+	else \
+		echo -e "$(FONT_YELLOW)⚠️  Branch '$$CURRENT_BRANCH' not in forge-core - creating from dev$(FONT_RESET)"; \
+		git checkout dev 2>/dev/null && git pull origin dev 2>/dev/null || true; \
+		git checkout -b $$CURRENT_BRANCH 2>/dev/null || git checkout $$CURRENT_BRANCH; \
+	fi; \
+	echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core synced to branch: $$CURRENT_BRANCH$(FONT_RESET)"
 	@echo -e "$(FONT_CYAN)📍 forge-core @ $$(cd forge-core && git describe --tags --always 2>/dev/null || git rev-parse --short HEAD)$(FONT_RESET)"
 	@# Enable [patch] section in .cargo/config.toml
 	@echo -e "$(FONT_CYAN)⚙️  Enabling Cargo [patch] overrides...$(FONT_RESET)"
