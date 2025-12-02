@@ -86,3 +86,16 @@ jobs:
           echo "- **New Version**: v${{ steps.bump.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: ${{ github.base_ref }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered by PR**: #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Trigger forge-core pre-release
+        if: steps.bump.outputs.new_version != ''
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          repository: namastexlabs/forge-core
+          event-type: trigger-pre-release
+          client-payload: |
+            {
+              "forge_version": "${{ steps.bump.outputs.new_version }}",
+              "triggered_by": "forge auto-version-bump"
+            }
