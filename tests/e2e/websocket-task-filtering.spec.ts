@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { ensureProjectExists, createTestTask, skipOnboarding, closeReleaseNotes } from './helpers';
+import {
+  createIsolatedProject,
+  createTestTask,
+  skipOnboarding,
+  closeReleaseNotes,
+} from './helpers';
 
 /**
  * WebSocket Task Filtering Tests
@@ -9,6 +14,10 @@ import { ensureProjectExists, createTestTask, skipOnboarding, closeReleaseNotes 
  *
  * CRITICAL: WebSocket capture MUST be set up BEFORE navigation to capture messages.
  * The `page.on('websocket', ...)` listener only captures NEW connections.
+ *
+ * NOTE: These tests use createIsolatedProject() instead of ensureProjectExists()
+ * because agent tasks create forge_agents records with UNIQUE(project_id, agent_type).
+ * Using isolated projects prevents database constraint violations between test runs.
  */
 
 test.describe('WebSocket Task Filtering', () => {
@@ -16,7 +25,7 @@ test.describe('WebSocket Task Filtering', () => {
     // GIVEN: Get a project ID first (without navigation)
     await page.goto('/');
     await skipOnboarding(page);
-    const projectId = await ensureProjectExists(page);
+    const projectId = await createIsolatedProject(page);
 
     // Setup WebSocket message capture BEFORE navigating to tasks view
     const wsMessages: any[] = [];
@@ -79,7 +88,7 @@ test.describe('WebSocket Task Filtering', () => {
     // GIVEN: Get a project ID and create tasks first
     await page.goto('/');
     await skipOnboarding(page);
-    const projectId = await ensureProjectExists(page);
+    const projectId = await createIsolatedProject(page);
 
     // Create a regular task
     await createTestTask(page, projectId, {
@@ -142,7 +151,7 @@ test.describe('WebSocket Task Filtering', () => {
     // GIVEN: Get a project ID first (without navigation)
     await page.goto('/');
     await skipOnboarding(page);
-    const projectId = await ensureProjectExists(page);
+    const projectId = await createIsolatedProject(page);
 
     // Setup WebSocket message capture BEFORE navigating to tasks view
     const wsMessages: any[] = [];
@@ -217,7 +226,7 @@ test.describe('WebSocket Task Filtering', () => {
     // GIVEN: Get a project ID first (without navigation)
     await page.goto('/');
     await skipOnboarding(page);
-    const projectId = await ensureProjectExists(page);
+    const projectId = await createIsolatedProject(page);
 
     // Setup WebSocket message capture BEFORE navigating to tasks view
     const wsMessages: any[] = [];

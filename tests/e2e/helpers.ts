@@ -408,3 +408,28 @@ export async function getProjectTasks(page: Page, projectId: string): Promise<an
   const data = await response.json();
   return data.data || [];
 }
+
+/**
+ * Create an isolated project for test isolation.
+ * Each test gets its own unique project to avoid database constraint conflicts.
+ *
+ * Use this instead of ensureProjectExists() for tests that create forge_agents
+ * records (e.g., agent tasks with use_worktree: false).
+ *
+ * @returns The unique project ID
+ */
+export async function createIsolatedProject(page: Page): Promise<string> {
+  const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  const projectName = `E2E Test ${uniqueId}`;
+
+  const response = await page.request.post('/api/projects', {
+    data: {
+      name: projectName,
+      git_repo_path: `/tmp/e2e-test-${uniqueId}`,
+      use_existing_repo: false,
+    },
+  });
+
+  const data = await response.json();
+  return data.data?.id;
+}
