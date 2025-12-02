@@ -678,7 +678,9 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
                     <Checkbox
                       id="use-worktree"
                       checked={useWorktree}
-                      onCheckedChange={(checked) => setUseWorktree(checked === true)}
+                      onCheckedChange={(checked) =>
+                        setUseWorktree(checked === true)
+                      }
                       disabled={isSubmitting || isSubmittingAndStart}
                     />
                     <Label
