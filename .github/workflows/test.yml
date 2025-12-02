@@ -17,6 +17,7 @@ env:
 jobs:
   test:
     runs-on: [self-hosted, Linux, X64]
+    needs: check-dev-core
     steps:
       - uses: actions/checkout@v4
 

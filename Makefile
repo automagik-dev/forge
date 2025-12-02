@@ -4,6 +4,14 @@
 SHELL := /bin/bash
 
 # ===========================================
+# 📋 Service Configuration
+# ===========================================
+SERVICE_NAME := 8887: Forge
+SERVICE_PORT := 8887
+HEALTH_ENDPOINT := http://localhost:$(SERVICE_PORT)/health
+PM2_CONFIG := ecosystem.config.cjs
+
+# ===========================================
 # 🎨 Colors & Symbols
 # ===========================================
 FONT_RED := $(shell tput setaf 1)
@@ -196,7 +204,7 @@ install: ## $(ROCKET) Full interactive installation (6 phases)
 		pm2 install pm2-logrotate >/dev/null 2>&1 || true; \
 		pm2 set pm2-logrotate:max_size 100M >/dev/null 2>&1 || true; \
 		pm2 set pm2-logrotate:retain 7 >/dev/null 2>&1 || true; \
-		pm2 start ecosystem.config.cjs >/dev/null 2>&1 || pm2 restart Forge >/dev/null 2>&1 || true; \
+		pm2 start $(PM2_CONFIG) >/dev/null 2>&1 || pm2 restart "$(SERVICE_NAME)" >/dev/null 2>&1 || true; \
 		pm2 save --force >/dev/null 2>&1 || true; \
 		echo -e "$(FONT_GREEN)$(CHECKMARK) PM2 configured and service started!$(FONT_RESET)"; \
 		pm2 status; \
@@ -280,12 +288,29 @@ install-deps: ## 📦 Install dependencies only (skip PM2/systemd)
 # ===========================================
 
 .PHONY: update
-update: ## 🔄 Update installation (git pull + deps + restart + health check)
+update: ## 🔄 Update installation (smart detection + deps + restart + health check)
 	$(call print_status,Updating Automagik Forge...)
 	@echo ""
 
-	# Step 1: Git pull
-	$(call print_status,Step 1/4: Pulling latest changes from git...)
+	# Step 1: Smart update detection
+	$(call print_status,Step 1/5: Checking for updates...)
+	@git fetch origin
+	@LOCAL_COMMIT=$$(git rev-parse HEAD); \
+	REMOTE_COMMIT=$$(git rev-parse @{u} 2>/dev/null || git rev-parse origin/$$(git rev-parse --abbrev-ref HEAD)); \
+	if [ "$$LOCAL_COMMIT" = "$$REMOTE_COMMIT" ]; then \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) Already up-to-date!$(FONT_RESET)"; \
+		echo ""; \
+		echo -e "$(FONT_CYAN)Running health check...$(FONT_RESET)"; \
+		$(MAKE) health || true; \
+		echo ""; \
+		echo -e "$(FONT_GREEN)$(SPARKLES) No update needed - service is current$(FONT_RESET)"; \
+		exit 0; \
+	fi; \
+	echo -e "$(FONT_CYAN)$(INFO) Updates available: $$LOCAL_COMMIT → $$REMOTE_COMMIT$(FONT_RESET)"
+	@echo ""
+
+	# Step 2: Git pull
+	$(call print_status,Step 2/5: Pulling latest changes...)
 	@git pull || { \
 		echo -e "$(FONT_RED)$(ERROR) Git pull failed$(FONT_RESET)"; \
 		echo -e "$(FONT_YELLOW)💡 Check for uncommitted changes: git status$(FONT_RESET)"; \
@@ -294,17 +319,17 @@ update: ## 🔄 Update installation (git pull + deps + restart + health check)
 	$(call print_success,Latest changes pulled!)
 	@echo ""
 
-	# Step 2: Update dependencies and rebuild
-	$(call print_status,Step 2/4: Updating dependencies and rebuilding...)
+	# Step 3: Update dependencies and rebuild
+	$(call print_status,Step 3/5: Updating dependencies and rebuilding...)
 	@pnpm install
 	@cd frontend && pnpm install
 	@bash scripts/build/build.sh
 	$(call print_success,Dependencies updated and application rebuilt!)
 	@echo ""
 
-	# Step 3: Restart service
-	$(call print_status,Step 3/4: Restarting service...)
-	@if command -v pm2 >/dev/null 2>&1 && pm2 show Forge >/dev/null 2>&1; then \
+	# Step 4: Restart service
+	$(call print_status,Step 4/5: Restarting service...)
+	@if command -v pm2 >/dev/null 2>&1 && pm2 show "$(SERVICE_NAME)" >/dev/null 2>&1; then \
 		$(MAKE) restart-local; \
 		echo -e "$(FONT_CYAN)⏳ Waiting for service to restart...$(FONT_RESET)"; \
 		sleep 3; \
@@ -317,12 +342,22 @@ update: ## 🔄 Update installation (git pull + deps + restart + health check)
 	fi
 	@echo ""
 
-	# Step 4: Health check
-	$(call print_status,Step 4/4: Running health checks...)
-	@sleep 2
-	@$(MAKE) health || { \
-		echo -e "$(FONT_YELLOW)$(WARNING) Health check failed - service may need more time to start$(FONT_RESET)"; \
-	}
+	# Step 5: Health check with retry
+	$(call print_status,Step 5/5: Running health checks...)
+	@HEALTH_OK=0; \
+	for i in 1 2 3 4 5; do \
+		sleep 3; \
+		if curl -sf --max-time 5 $(HEALTH_ENDPOINT) > /dev/null 2>&1; then \
+			HEALTH_OK=1; \
+			break; \
+		fi; \
+		echo -e "$(FONT_YELLOW)  Attempt $$i/5 - waiting for service...$(FONT_RESET)"; \
+	done; \
+	if [ $$HEALTH_OK -eq 1 ]; then \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) Health check passed!$(FONT_RESET)"; \
+	else \
+		echo -e "$(FONT_YELLOW)$(WARNING) Health check failed - service may need more time$(FONT_RESET)"; \
+	fi
 
 	# Success summary
 	@echo ""
@@ -342,15 +377,24 @@ update: ## 🔄 Update installation (git pull + deps + restart + health check)
 
 .PHONY: uninstall
 uninstall: ## 🗑️  Uninstall Forge (remove PM2/systemd services, clean builds)
+	@# Support non-interactive mode: UNINSTALL_CONFIRM=yes make uninstall
+	@if [ "$(UNINSTALL_CONFIRM)" != "yes" ]; then \
+		echo -e "$(FONT_YELLOW)$(WARNING) This will remove Forge services$(FONT_RESET)"; \
+		read -p "Proceed with uninstall? [y/N] " -n 1 -r REPLY; echo; \
+		if [[ ! $$REPLY =~ ^[Yy]$$ ]]; then \
+			echo -e "$(FONT_CYAN)Uninstall cancelled$(FONT_RESET)"; \
+			exit 0; \
+		fi; \
+	fi
 	$(call print_status,Starting Automagik Forge uninstall...)
 	@echo ""
 
 	# Phase 1: PM2 Service Removal
 	$(call print_status,Phase 1/4: Checking PM2 service...)
-	@if command -v pm2 >/dev/null 2>&1 && pm2 show Forge >/dev/null 2>&1; then \
+	@if command -v pm2 >/dev/null 2>&1 && pm2 show "$(SERVICE_NAME)" >/dev/null 2>&1; then \
 		echo -e "$(FONT_PURPLE)$(HAMMER) Removing PM2 service...$(FONT_RESET)"; \
-		pm2 stop Forge >/dev/null 2>&1 || true; \
-		pm2 delete Forge >/dev/null 2>&1 || true; \
+		pm2 stop "$(SERVICE_NAME)" >/dev/null 2>&1 || true; \
+		pm2 delete "$(SERVICE_NAME)" >/dev/null 2>&1 || true; \
 		pm2 save --force >/dev/null 2>&1 || true; \
 		echo -e "$(FONT_GREEN)$(CHECKMARK) PM2 service removed$(FONT_RESET)"; \
 	else \
@@ -373,18 +417,10 @@ uninstall: ## 🗑️  Uninstall Forge (remove PM2/systemd services, clean build
 	fi
 	@echo ""
 
-	# Phase 3: Dedicated Service Account Cleanup (Interactive)
+	# Phase 3: Dedicated Service Account Cleanup
 	$(call print_status,Phase 3/4: Checking for dedicated service account...)
 	@if id "forge" >/dev/null 2>&1; then \
-		echo -e "$(FONT_YELLOW)$(WARNING) Dedicated 'forge' service account found$(FONT_RESET)"; \
-		echo -e "$(FONT_CYAN)The following will be removed:$(FONT_RESET)"; \
-		echo -e "  - System user: forge"; \
-		[ -d "/opt/automagik-forge" ] && echo -e "  - Directory: /opt/automagik-forge"; \
-		[ -d "/var/lib/automagik-forge" ] && echo -e "  - Directory: /var/lib/automagik-forge"; \
-		[ -d "/var/log/automagik-forge" ] && echo -e "  - Directory: /var/log/automagik-forge"; \
-		echo ""; \
-		read -p "Remove dedicated 'forge' user and directories? [y/N] " -n 1 -r REPLY; echo; \
-		if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		if [ "$(UNINSTALL_CONFIRM)" = "yes" ]; then \
 			echo -e "$(FONT_PURPLE)$(HAMMER) Removing dedicated service account...$(FONT_RESET)"; \
 			[ -d "/opt/automagik-forge" ] && sudo rm -rf /opt/automagik-forge; \
 			[ -d "/var/lib/automagik-forge" ] && sudo rm -rf /var/lib/automagik-forge; \
@@ -392,7 +428,24 @@ uninstall: ## 🗑️  Uninstall Forge (remove PM2/systemd services, clean build
 			sudo userdel forge 2>/dev/null || true; \
 			echo -e "$(FONT_GREEN)$(CHECKMARK) Service account removed$(FONT_RESET)"; \
 		else \
-			echo -e "$(FONT_YELLOW)Skipped - service account kept$(FONT_RESET)"; \
+			echo -e "$(FONT_YELLOW)$(WARNING) Dedicated 'forge' service account found$(FONT_RESET)"; \
+			echo -e "$(FONT_CYAN)The following will be removed:$(FONT_RESET)"; \
+			echo -e "  - System user: forge"; \
+			[ -d "/opt/automagik-forge" ] && echo -e "  - Directory: /opt/automagik-forge"; \
+			[ -d "/var/lib/automagik-forge" ] && echo -e "  - Directory: /var/lib/automagik-forge"; \
+			[ -d "/var/log/automagik-forge" ] && echo -e "  - Directory: /var/log/automagik-forge"; \
+			echo ""; \
+			read -p "Remove dedicated 'forge' user and directories? [y/N] " -n 1 -r REPLY; echo; \
+			if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+				echo -e "$(FONT_PURPLE)$(HAMMER) Removing dedicated service account...$(FONT_RESET)"; \
+				[ -d "/opt/automagik-forge" ] && sudo rm -rf /opt/automagik-forge; \
+				[ -d "/var/lib/automagik-forge" ] && sudo rm -rf /var/lib/automagik-forge; \
+				[ -d "/var/log/automagik-forge" ] && sudo rm -rf /var/log/automagik-forge; \
+				sudo userdel forge 2>/dev/null || true; \
+				echo -e "$(FONT_GREEN)$(CHECKMARK) Service account removed$(FONT_RESET)"; \
+			else \
+				echo -e "$(FONT_YELLOW)Skipped - service account kept$(FONT_RESET)"; \
+			fi; \
 		fi; \
 	else \
 		echo -e "$(FONT_CYAN)$(INFO) No dedicated service account found - skipping$(FONT_RESET)"; \
@@ -434,9 +487,9 @@ health: ## 🩺 Check service health
 	$(call print_status,Checking Automagik Forge health...)
 	@FAILED=0; \
 	\
-	if command -v pm2 >/dev/null 2>&1 && pm2 show Forge >/dev/null 2>&1; then \
+	if command -v pm2 >/dev/null 2>&1 && pm2 show "$(SERVICE_NAME)" >/dev/null 2>&1; then \
 		echo -e "$(FONT_CYAN)Service Status (PM2):$(FONT_RESET)"; \
-		pm2 describe Forge | grep -E "status|uptime|restarts" || true; \
+		pm2 describe "$(SERVICE_NAME)" | grep -E "status|uptime|restarts" || true; \
 		echo ""; \
 	fi; \
 	\
@@ -446,14 +499,13 @@ health: ## 🩺 Check service health
 		echo ""; \
 	fi; \
 	\
-	echo -e "$(FONT_CYAN)Testing health endpoints...$(FONT_RESET)"; \
-	BACKEND_PORT=$$(ps aux | grep 'forge-app' | grep -oP 'PORT=\K[0-9]+' | head -1 || echo "8887"); \
-	echo -e "  Detected backend port: $$BACKEND_PORT"; \
+	echo -e "$(FONT_CYAN)Testing health endpoint...$(FONT_RESET)"; \
+	echo -e "  Endpoint: $(HEALTH_ENDPOINT)"; \
 	\
-	if curl -s --max-time 5 http://127.0.0.1:$$BACKEND_PORT/health > /dev/null 2>&1; then \
-		echo -e "  $(FONT_GREEN)$(CHECKMARK) Backend health check passed$(FONT_RESET)"; \
+	if curl -sf --max-time 5 $(HEALTH_ENDPOINT) > /dev/null 2>&1; then \
+		echo -e "  $(FONT_GREEN)$(CHECKMARK) Health check passed$(FONT_RESET)"; \
 	else \
-		echo -e "  $(FONT_RED)$(ERROR) Backend health check failed$(FONT_RESET)"; \
+		echo -e "  $(FONT_RED)$(ERROR) Health check failed$(FONT_RESET)"; \
 		FAILED=1; \
 	fi; \
 	\
@@ -495,7 +547,7 @@ start-local: ## $(ROCKET) Start Forge with PM2
 	$(call print_status,Starting Automagik Forge with PM2...)
 	@$(call check_pm2)
 	@$(call ensure_env_file)
-	@pm2 start ecosystem.config.cjs
+	@pm2 start $(PM2_CONFIG)
 	@pm2 save --force
 	$(call print_success,Forge started with PM2!)
 	@echo ""
@@ -504,26 +556,26 @@ start-local: ## $(ROCKET) Start Forge with PM2
 stop-local: ## 🛑 Stop PM2 service
 	$(call print_status,Stopping Automagik Forge...)
 	@$(call check_pm2)
-	@pm2 stop Forge 2>/dev/null || true
+	@pm2 stop "$(SERVICE_NAME)" 2>/dev/null || true
 	$(call print_success,Forge stopped!)
 
 restart-local: ## 🔄 Restart PM2 service
 	$(call print_status,Restarting Automagik Forge...)
 	@$(call check_pm2)
-	@pm2 restart Forge 2>/dev/null || pm2 start ecosystem.config.cjs
+	@pm2 restart "$(SERVICE_NAME)" 2>/dev/null || pm2 start $(PM2_CONFIG)
 	@pm2 save --force
 	$(call print_success,Forge restarted!)
 
 service-status: ## 📊 Check PM2 service status
 	$(call print_status,PM2 Service Status)
 	@$(call check_pm2)
-	@pm2 show Forge 2>/dev/null || echo -e "$(FONT_YELLOW)Service not found or not running$(FONT_RESET)"
+	@pm2 show "$(SERVICE_NAME)" 2>/dev/null || echo -e "$(FONT_YELLOW)Service not found or not running$(FONT_RESET)"
 
 logs: ## 📄 Show recent service logs (N=lines, default 30)
 	$(eval N := $(or $(N),30))
 	$(call print_status,Recent logs ($(N) lines))
-	@if command -v pm2 >/dev/null 2>&1 && pm2 show Forge >/dev/null 2>&1; then \
-		pm2 logs Forge --lines $(N) --nostream 2>/dev/null; \
+	@if command -v pm2 >/dev/null 2>&1 && pm2 show "$(SERVICE_NAME)" >/dev/null 2>&1; then \
+		pm2 logs "$(SERVICE_NAME)" --lines $(N) --nostream 2>/dev/null; \
 	elif [ -f "logs/forge-combined.log" ]; then \
 		echo -e "$(FONT_CYAN)Showing direct log file:$(FONT_RESET)"; \
 		tail -n $(N) logs/forge-combined.log; \
@@ -534,8 +586,8 @@ logs: ## 📄 Show recent service logs (N=lines, default 30)
 logs-follow: ## 📄 Follow logs in real-time
 	$(call print_status,Following logs (Ctrl+C to stop))
 	@echo ""
-	@if command -v pm2 >/dev/null 2>&1 && pm2 show Forge >/dev/null 2>&1; then \
-		pm2 logs Forge 2>/dev/null; \
+	@if command -v pm2 >/dev/null 2>&1 && pm2 show "$(SERVICE_NAME)" >/dev/null 2>&1; then \
+		pm2 logs "$(SERVICE_NAME)" 2>/dev/null; \
 	elif [ -f "logs/forge-combined.log" ]; then \
 		tail -f logs/forge-combined.log; \
 	else \

@@ -4,7 +4,7 @@ import {
   Target,
   CheckCircle2,
   XCircle,
-  Ban,
+  Archive,
   type LucideIcon,
 } from 'lucide-react';
 import { TaskStatus } from 'shared/types';
@@ -26,7 +26,7 @@ export const COLUMN_ICONS: Record<TaskStatus, LucideIcon> = {
   inprogress: Hammer,
   inreview: Target,
   done: CheckCircle2,
-  cancelled: Ban,
-  archived: XCircle,
+  cancelled: XCircle,
+  archived: Archive,
   agent: Sparkles, // Use Sparkles for agent tasks (magical execution)
 };
