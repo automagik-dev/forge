@@ -122,6 +122,13 @@ export async function closeReleaseNotes(page: Page) {
 
 /**
  * Standard test setup - navigates to tasks view with a fresh test task
+ *
+ * This follows the working pattern from websocket-task-filtering tests:
+ * 1. Navigate to root and skip ALL onboarding dialogs
+ * 2. Create project and task via API
+ * 3. Navigate to tasks view
+ * 4. Skip onboarding AGAIN (dialogs can reappear after navigation)
+ * 5. Close release notes specifically
  */
 export async function setupTasksView(page: Page) {
   await page.goto('/');
@@ -131,22 +138,22 @@ export async function setupTasksView(page: Page) {
   const projectId = await ensureProjectExists(page);
   await createTestTask(page, projectId);
 
-  // Navigate to tasks view - use direct goto like the working websocket tests
+  // Navigate to tasks view
   await page.goto(`/projects/${projectId}/tasks`);
   await page.waitForLoadState('networkidle');
 
-  // Dismiss only the release notes modal after navigation (not full onboarding flow)
-  // This matches the pattern from working websocket tests
+  // CRITICAL: Skip onboarding AGAIN after navigation
+  // Dialogs like PrivacyOptInDialog can appear on any page navigation
+  await skipOnboarding(page);
+
+  // Also close release notes specifically (redundant but defensive)
   await closeReleaseNotes(page);
 
   // Final check: ensure no modal overlay is blocking
   await ensureNoModalOverlay(page);
 
-  // Verify we're on the tasks page (not redirected back to projects)
-  await page.waitForURL(`**/projects/${projectId}/tasks**`, { timeout: 5000 }).catch(() => {
-    // If URL check fails, navigate again
-    console.log('URL mismatch, re-navigating to tasks view');
-  });
+  // Wait for page to stabilize
+  await page.waitForTimeout(500);
 
   return projectId;
 }

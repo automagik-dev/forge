@@ -43,10 +43,13 @@ test.describe('WebSocket Task Filtering', () => {
     // Navigate to tasks view (WebSocket will be captured)
     await page.goto(`/projects/${projectId}/tasks`);
     await page.waitForLoadState('networkidle');
+
+    // Skip any dialogs that appear after navigation (PrivacyOptInDialog, ReleaseNotes, etc.)
+    await skipOnboarding(page);
     await closeReleaseNotes(page);
 
-    // Wait for initial snapshot
-    await page.waitForTimeout(1000);
+    // Wait for initial snapshot and page to stabilize
+    await page.waitForTimeout(2000);
 
     // WHEN: Create a regular task (non-agent task)
     await createTestTask(page, projectId, {
@@ -129,8 +132,11 @@ test.describe('WebSocket Task Filtering', () => {
     // WHEN: Navigate to tasks view (triggers WebSocket connection + initial snapshot)
     await page.goto(`/projects/${projectId}/tasks`);
     await page.waitForLoadState('networkidle');
+
+    // Skip any dialogs that appear after navigation
+    await skipOnboarding(page);
     await closeReleaseNotes(page);
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
 
     // THEN: Find the initial snapshot message (replace operation on /tasks)
     // Note: Messages can be in wrapped format { JsonPatch: [...] } or direct array [...]
@@ -172,10 +178,13 @@ test.describe('WebSocket Task Filtering', () => {
     // Navigate to tasks view (WebSocket will be captured)
     await page.goto(`/projects/${projectId}/tasks`);
     await page.waitForLoadState('networkidle');
+
+    // Skip any dialogs that appear after navigation
+    await skipOnboarding(page);
     await closeReleaseNotes(page);
 
     // Wait for initial snapshot, then clear messages
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
     wsMessages.length = 0;
 
     // WHEN: Create and immediately update an agent task (use_worktree: false registers it as agent)
@@ -247,10 +256,13 @@ test.describe('WebSocket Task Filtering', () => {
     // Navigate to tasks view (WebSocket will be captured)
     await page.goto(`/projects/${projectId}/tasks`);
     await page.waitForLoadState('networkidle');
+
+    // Skip any dialogs that appear after navigation
+    await skipOnboarding(page);
     await closeReleaseNotes(page);
 
     // Wait for initial snapshot, then clear messages
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
     wsMessages.length = 0;
 
     // WHEN: Create an agent task (use_worktree: false registers it as agent)
