@@ -28,7 +28,7 @@ if (!fs.existsSync(logsDir)) {
 module.exports = {
   apps: [
     {
-      name: '8887-forge',
+      name: '8887: Forge',
       cwd: PROJECT_ROOT,
       script: 'make',
       args: 'prod',
