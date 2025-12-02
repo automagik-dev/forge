@@ -160,11 +160,21 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Install Linux build tools for vendored OpenSSL
-        if: runner.os == 'Linux' && env.SKIP_BUILD != 'true'
+        if: runner.os == 'Linux' && !contains(runner.labels, 'self-hosted') && env.SKIP_BUILD != 'true'
         shell: bash
         run: |
           sudo apt-get update -y
           sudo apt-get install -y perl pkg-config libssl-dev make
+
+      - name: Verify build tools (self-hosted runners)
+        if: runner.os == 'Linux' && contains(runner.labels, 'self-hosted') && env.SKIP_BUILD != 'true'
+        shell: bash
+        run: |
+          echo "Verifying build tools on self-hosted runner..."
+          command -v perl || (echo "ERROR: perl not installed" && exit 1)
+          command -v pkg-config || (echo "ERROR: pkg-config not installed" && exit 1)
+          command -v make || (echo "ERROR: make not installed" && exit 1)
+          echo "✅ All build tools present"
 
       - name: Install Windows build tools for vendored OpenSSL
         if: runner.os == 'Windows' && env.SKIP_BUILD != 'true'
