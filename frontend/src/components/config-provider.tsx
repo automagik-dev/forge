@@ -157,7 +157,10 @@ export function UserSystemProvider({ children }: UserSystemProviderProps) {
       const currentConfig = configRef.current;
       if (!currentConfig) return false;
 
-      setLoading(true);
+      // NOTE: Do NOT set loading=true here. The loading state is used by AppContent
+      // to conditionally render routes. Setting loading=true during config save
+      // would unmount all routes, breaking navigation and causing React Router
+      // to lose the current location.
       const newConfig: Config = { ...currentConfig, ...updates };
       try {
         const saved = await configApi.saveConfig(newConfig);
@@ -166,8 +169,6 @@ export function UserSystemProvider({ children }: UserSystemProviderProps) {
       } catch (err) {
         console.error('Error saving config:', err);
         return false;
-      } finally {
-        setLoading(false);
       }
     },
     [] // No dependencies - uses ref for config access
