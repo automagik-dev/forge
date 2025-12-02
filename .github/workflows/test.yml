@@ -56,7 +56,7 @@ jobs:
 
   test:
     needs: check-dev-core
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: [self-hosted, fast-build]
     steps:
       - uses: actions/checkout@v4
 
