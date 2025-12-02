@@ -16,7 +16,7 @@ export default defineConfig({
   // Test execution
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 1 : undefined,
 
   // Reporter - verbose for LLM debugging
@@ -33,8 +33,8 @@ export default defineConfig({
     // Screenshots - capture on failure for debugging
     screenshot: 'only-on-failure',
 
-    // Videos - always record, retain on failure (helps debug CI issues)
-    video: 'on',
+    // Videos - only retain on failure to reduce I/O overhead
+    video: 'retain-on-failure',
 
     // Trace - capture on first retry for detailed debugging
     trace: 'on-first-retry',
