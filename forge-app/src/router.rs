@@ -27,6 +27,7 @@ use uuid::Uuid;
 use crate::services::ForgeServices;
 use db::models::{
     image::TaskImage,
+    project::Project,
     task::{Task, TaskWithAttemptStatus},
     task_attempt::{CreateTaskAttempt, TaskAttempt},
 };
@@ -1763,6 +1764,25 @@ async fn get_project_profiles(
     Path(project_id): Path<Uuid>,
     State(services): State<ForgeServices>,
 ) -> Result<Json<ApiResponse<executors::profile::ExecutorConfigs>>, StatusCode> {
+    // Fetch project from database to ensure it exists and get workspace path
+    let project = Project::find_by_id(&services.pool, project_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching project {}: {}", project_id, e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .ok_or_else(|| {
+            tracing::error!("Project {} not found", project_id);
+            StatusCode::NOT_FOUND
+        })?;
+
+    // Ensure project is registered in profile cache (fixes race condition on fresh installs)
+    services
+        .profile_cache
+        .register_project(project.id, project.git_repo_path.clone())
+        .await;
+
+    // Now safe to lookup profiles
     services
         .profile_cache
         .get_profiles_for_project(project_id)
@@ -1777,7 +1797,7 @@ async fn get_project_profiles(
         })
         .map_err(|e| {
             tracing::error!("Failed to load profiles for project {}: {}", project_id, e);
-            StatusCode::NOT_FOUND
+            StatusCode::INTERNAL_SERVER_ERROR
         })
 }
 
