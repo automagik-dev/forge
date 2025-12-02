@@ -35,6 +35,7 @@ const config: KnipConfig = {
     'tailwindcss-animate', // Tailwind animation plugin
     '@sentry/vite-plugin', // Vite plugin (used in vite.config.ts)
     'eslint-plugin-prettier', // ESLint plugins
+    '@virtuoso.dev/message-list', // Used in VirtualizedList.tsx (knip false positive)
   ],
 
   // Export handling - allow re-exports in same file

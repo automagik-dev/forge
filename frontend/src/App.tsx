@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n';
@@ -42,15 +42,10 @@ import { Loader } from '@/components/ui/loader';
 import NiceModal from '@ebay/nice-modal-react';
 import { OnboardingResult } from '@/components/dialogs/global/OnboardingDialog';
 import { ClickedElementsProvider } from '@/contexts/ClickedElementsProvider';
-import { GenieMasterWidget } from '@/components/genie-widgets/GenieMasterWidget';
-import { SubGenieProvider } from '@/context/SubGenieContext';
-import { useIsMobile } from '@/components/mobile/MobileLayout';
 
 const SentryRoutes = Sentry.withSentryReactRouterV6Routing(Routes);
 
 function AppContent() {
-  const [isGenieOpen, setIsGenieOpen] = useState(false);
-  const isMobile = useIsMobile();
   const { config, analyticsUserId, updateAndSaveConfig, loading } =
     useUserSystem();
   const posthog = usePostHog();
@@ -194,7 +189,9 @@ function AppContent() {
   }, [posthog, analyticsUserId, config?.analytics_enabled]);
 
   // Track if onboarding has been initiated in this session to prevent re-triggering
+  // Uses both ref (component-level) and sessionStorage (browser session-level) for robustness
   const onboardingInitiatedRef = useRef(false);
+  const ONBOARDING_SESSION_KEY = 'forge_onboarding_completed';
 
   useEffect(() => {
     let cancelled = false;
@@ -247,7 +244,15 @@ function AppContent() {
       if (!config || cancelled) return;
 
       // Prevent re-running onboarding if already initiated in this session
+      // Check both ref (survives re-renders) and sessionStorage (survives remounts)
       if (onboardingInitiatedRef.current) return;
+      if (
+        !forceOnboarding &&
+        sessionStorage.getItem(ONBOARDING_SESSION_KEY) === 'true'
+      ) {
+        onboardingInitiatedRef.current = true;
+        return;
+      }
       onboardingInitiatedRef.current = true;
 
       if (!config.disclaimer_acknowledged || forceOnboarding) {
@@ -279,6 +284,10 @@ function AppContent() {
         await NiceModal.show('release-notes');
         await handleReleaseNotesClose();
       }
+
+      // Mark onboarding as completed for this browser session
+      // This persists even if component remounts (e.g., StrictMode, navigation)
+      sessionStorage.setItem(ONBOARDING_SESSION_KEY, 'true');
     };
 
     // Run onboarding flow
@@ -292,7 +301,16 @@ function AppContent() {
     return () => {
       cancelled = true;
     };
-  }, [config, updateAndSaveConfig]);
+    // Use granular dependencies to prevent re-runs when unrelated config fields change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    config?.disclaimer_acknowledged,
+    config?.onboarding_acknowledged,
+    config?.github_login_acknowledged,
+    config?.telemetry_acknowledged,
+    config?.show_release_notes,
+    updateAndSaveConfig,
+  ]);
 
   if (loading) {
     return (
@@ -347,14 +365,6 @@ function AppContent() {
               </SentryRoutes>
               <Footer />
             </div>
-            {/* Hide GenieMasterWidget in mobile view - use bottom nav Genie button instead */}
-            {!isMobile && (
-              <GenieMasterWidget
-                isOpen={isGenieOpen}
-                onToggle={() => setIsGenieOpen(!isGenieOpen)}
-                onClose={() => setIsGenieOpen(false)}
-              />
-            )}
           </MobileNavigationProvider>
         </SearchProvider>
       </ThemeProvider>
@@ -362,8 +372,6 @@ function AppContent() {
   );
 }
 
-// FORGE CUSTOMIZATION: Root provider stack with SubGenie context for Genie Widgets.
-// SubGenieProvider wraps NiceModal so Genie chat widgets can show modals.
 function App() {
   return (
     <BrowserRouter
@@ -389,11 +397,9 @@ function App() {
                 'follow-up-ready',
               ]}
             >
-              <SubGenieProvider>
-                <NiceModal.Provider>
-                  <AppContent />
-                </NiceModal.Provider>
-              </SubGenieProvider>
+              <NiceModal.Provider>
+                <AppContent />
+              </NiceModal.Provider>
             </HotkeysProvider>
           </ProjectProvider>
         </ClickedElementsProvider>

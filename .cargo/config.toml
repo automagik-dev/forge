@@ -1,0 +1,44 @@
+# Set macOS deployment target to avoid linker warnings
+# Use Rust project defaults: 10.12 for x86_64, 11.0 for aarch64
+[target.x86_64-apple-darwin.env]
+MACOSX_DEPLOYMENT_TARGET = "10.12"
+
+[target.aarch64-apple-darwin.env]
+MACOSX_DEPLOYMENT_TARGET = "11.0"
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=/DEBUG:FASTLINK"]
+
+[target.aarch64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=/DEBUG:FASTLINK"]
+
+# Android ARM64 - Fix TLS alignment for Bionic (requires 64-byte alignment)
+# See: https://github.com/rust-lang/rust/issues/109717
+[target.aarch64-linux-android]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
+
+# ============================================================================
+# DEV-CORE PATCHES - DO NOT EDIT MANUALLY
+# This section is managed by `make dev-core` and `make dev-core-off`
+# When present, Cargo uses local forge-core paths instead of git dependencies
+# ============================================================================
+# [patch."https://github.com/namastexlabs/forge-core.git"]
+# db = { path = "forge-core/crates/db" }
+# services = { path = "forge-core/crates/services" }
+# server = { path = "forge-core/crates/server" }
+# deployment = { path = "forge-core/crates/deployment" }
+# local-deployment = { path = "forge-core/crates/local-deployment" }
+# executors = { path = "forge-core/crates/executors" }
+# utils = { path = "forge-core/crates/utils" }
+# ============================================================================
+
+# ============================================================================
+# CODEX PATCHES - namastexlabs/codex fork integration
+# Redirects codex dependencies from crates.io to the GitHub fork
+# This allows staying up-to-date without vendoring code locally
+# ============================================================================
+# [patch.crates-io]
+mcp-types = { git = "https://github.com/namastexlabs/codex.git", branch = "main" }
+codex-protocol = { git = "https://github.com/namastexlabs/codex.git", branch = "main" }
+codex-app-server-protocol = { git = "https://github.com/namastexlabs/codex.git", branch = "main" }
+# ============================================================================

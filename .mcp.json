@@ -7,6 +7,9 @@
         "automagik-genie@next",
         "mcp"
       ]
+    },
+    "forge": {
+      "command": "/home/namastex/workspace/automagik-forge/forge-core/target/debug/mcp_task_server"
     }
   }
 }

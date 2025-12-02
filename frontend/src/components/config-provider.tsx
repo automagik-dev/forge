@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -146,25 +147,31 @@ export function UserSystemProvider({ children }: UserSystemProviderProps) {
     }
   }, [config]);
 
+  // Use a ref to access current config without adding it as a dependency
+  // This stabilizes the callback identity and prevents unnecessary effect re-runs
+  const configRef = useRef<Config | null>(config);
+  configRef.current = config;
+
   const updateAndSaveConfig = useCallback(
     async (updates: Partial<Config>): Promise<boolean> => {
-      setLoading(true);
-      const newConfig: Config | null = config
-        ? { ...config, ...updates }
-        : null;
+      const currentConfig = configRef.current;
+      if (!currentConfig) return false;
+
+      // NOTE: Do NOT set loading=true here. The loading state is used by AppContent
+      // to conditionally render routes. Setting loading=true during config save
+      // would unmount all routes, breaking navigation and causing React Router
+      // to lose the current location.
+      const newConfig: Config = { ...currentConfig, ...updates };
       try {
-        if (!newConfig) return false;
         const saved = await configApi.saveConfig(newConfig);
         setConfig(saved);
         return true;
       } catch (err) {
         console.error('Error saving config:', err);
         return false;
-      } finally {
-        setLoading(false);
       }
     },
-    [config]
+    [] // No dependencies - uses ref for config access
   );
 
   const reloadSystem = useCallback(async () => {

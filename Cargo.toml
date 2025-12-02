@@ -8,6 +8,10 @@ members = [
     "forge-app",
 ]
 
+[workspace.package]
+version = "0.8.4"
+edition = "2021"
+
 [workspace.dependencies]
 tokio = { version = "1.0", features = ["full"] }
 axum = { version = "0.8.4", features = ["macros", "multipart", "ws"] }
@@ -21,6 +25,14 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 openssl-sys = { version = "0.9", features = ["vendored"] }
 ts-rs = { git = "https://github.com/xazukx/ts-rs.git", branch = "use-ts-enum", features = ["uuid-impl", "chrono-impl", "no-serde-warnings", "serde-json-impl"] }
 schemars = { version = "1.0.4", features = ["derive", "chrono04", "uuid1", "preserve_order"] }
+
+# forge-core workspace dependencies (required for dev-core mode)
+rmcp = { version = "0.8.5" }
+
+# Codex dependencies from namastexlabs fork (patched via .cargo/config.toml)
+codex-protocol = "0.63.0"
+codex-app-server-protocol = "0.63.0"
+mcp-types = "0.63.0"
 
 [profile.release]
 debug = true

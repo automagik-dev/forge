@@ -17,7 +17,6 @@ import {
   Heart,
   ListTodo,
 } from 'lucide-react';
-import { Lamp } from '@/components/icons/Lamp';
 import { DiffActionSheet } from './DiffActionSheet';
 import { useMobileTaskActions } from '@/hooks/useMobileTaskActions';
 import { mobileTheme, getMobileSpacing } from '@/styles/mobile-theme';
@@ -107,7 +106,7 @@ export function MobileLayout({
       return baseTabs;
     }
 
-    // When inside a project (not in a specific task), show: Tasks/Genie/Config
+    // When inside a project (not in a specific task), show: Tasks/Config
     if (projectId) {
       return [
         {
@@ -115,12 +114,6 @@ export function MobileLayout({
           label: t('mobile.navigation.tasks'),
           icon: <ListTodo size={20} />,
           path: basePath,
-        },
-        {
-          id: 'genie',
-          label: t('mobile.navigation.genie'),
-          icon: <Lamp size={26} />, // 30% bigger (20 * 1.3 = 26)
-          path: `${basePath}?view=chat`,
         },
         {
           id: 'config',

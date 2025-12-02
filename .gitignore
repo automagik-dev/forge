@@ -125,8 +125,10 @@ upstream/
 # Local forge-core for development (make dev-core)
 forge-core/
 
-# Cargo config is generated dynamically (use config.base.toml or config.dev-core.toml)
-.cargo/config.toml
+# Dev-core mode backups (created during swap, deleted on restore)
+Cargo.git.toml
+forge-app/Cargo.git.toml
+forge-extensions/config/Cargo.git.toml
 
 # Dev-core mode marker (created by make dev-core, deleted by make dev-core-off)
 .dev-core-active 

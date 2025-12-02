@@ -9,11 +9,34 @@ import { Page } from '@playwright/test';
 
 /**
  * Skip onboarding flow if present
+ * The app shows multiple onboarding dialogs in sequence:
+ * 1. DisclaimerDialog - "I Understand, Continue"
+ * 2. OnboardingDialog - "Get Started"
+ * 3. GitHubLoginDialog - "Skip" or "Continue"
+ * 4. PrivacyOptInDialog - various buttons
+ * 5. ReleaseNotesDialog - "Let's Create!"
  */
 export async function skipOnboarding(page: Page) {
-  const skipButton = page.getByRole('button', { name: /skip|continue|get started/i });
-  if (await skipButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await skipButton.click();
+  // Try to dismiss up to 6 dialogs (all possible onboarding steps)
+  for (let i = 0; i < 6; i++) {
+    // Look for any common dialog dismiss buttons
+    // Patterns cover all onboarding dialogs:
+    // - DisclaimerDialog: "I Understand, Continue"
+    // - OnboardingDialog: "Get Started"
+    // - GitHubLoginDialog: "Skip" or "Continue"
+    // - PrivacyOptInDialog: "No thanks" or "Yes, help improve..."
+    // - ReleaseNotesDialog: "Let's Create!"
+    const dismissButton = page.getByRole('button', {
+      name: /i understand|continue|skip|get started|let's create|confirm|ok|done|close|no thanks|yes,? help/i
+    }).first();
+
+    if (await dismissButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await dismissButton.click();
+      await page.waitForTimeout(300); // Wait for dialog animation
+    } else {
+      // No more dialogs, we're done
+      break;
+    }
   }
 }
 
@@ -24,6 +47,32 @@ export async function getFirstProject(page: Page): Promise<string> {
   const response = await page.request.get('/api/projects');
   const data = await response.json();
   return data.data[0]?.id;
+}
+
+/**
+ * Ensure a project exists, creating one if necessary.
+ * This is needed in CI environments where the database starts fresh.
+ *
+ * @returns The project ID
+ */
+export async function ensureProjectExists(page: Page): Promise<string> {
+  // First, try to get an existing project
+  let projectId = await getFirstProject(page);
+
+  // If no project exists, create one
+  if (!projectId) {
+    const response = await page.request.post('/api/projects', {
+      data: {
+        name: 'E2E Test Project',
+        git_repo_path: '/tmp/e2e-test-project',
+        use_existing_repo: false,
+      },
+    });
+    const data = await response.json();
+    projectId = data.data?.id;
+  }
+
+  return projectId;
 }
 
 /**
@@ -55,28 +104,113 @@ export async function goToProjectTasks(page: Page, projectId: string) {
 }
 
 /**
- * Close release notes banner if present
+ * Close release notes modal if present
+ *
+ * IMPORTANT: Do NOT use Escape key as fallback here!
+ * The project-tasks.tsx page has a useKeyExit hook that listens for Escape
+ * and navigates back to /projects. Using Escape when no modal is open
+ * would cause unintended navigation.
  */
 export async function closeReleaseNotes(page: Page) {
-  const closeButton = page.getByText(/let's create|close/i);
+  // Try clicking the "Let's Create!" button (role-based selector is more reliable)
+  const closeButton = page.getByRole('button', { name: /let's create/i });
   if (await closeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
     await closeButton.click();
+    await page.waitForTimeout(300); // Wait for animation
+    return;
   }
+
+  // No button visible = no modal to close. Do nothing.
+  // The ReleaseNotesDialog fix (adding modal.hide()) ensures the button works now.
 }
 
 /**
  * Standard test setup - navigates to tasks view with a fresh test task
+ *
+ * This follows the working pattern from websocket-task-filtering tests:
+ * 1. Navigate to root and skip ALL onboarding dialogs
+ * 2. Create project and task via API
+ * 3. Navigate to tasks view
+ * 4. Skip onboarding AGAIN (dialogs can reappear after navigation)
+ * 5. Close release notes specifically
  */
 export async function setupTasksView(page: Page) {
   await page.goto('/');
   await skipOnboarding(page);
 
-  const projectId = await getFirstProject(page);
+  // Use ensureProjectExists to create a project if needed (CI starts with empty DB)
+  const projectId = await ensureProjectExists(page);
   await createTestTask(page, projectId);
-  await goToProjectTasks(page, projectId);
+
+  // Navigate to tasks view
+  await page.goto(`/projects/${projectId}/tasks`);
+  await page.waitForLoadState('networkidle');
+
+  // CRITICAL: Skip onboarding AGAIN after navigation
+  // Dialogs like PrivacyOptInDialog can appear on any page navigation
+  await skipOnboarding(page);
+
+  // Also close release notes specifically (redundant but defensive)
   await closeReleaseNotes(page);
 
+  // Final check: ensure no modal overlay is blocking
+  await ensureNoModalOverlay(page);
+
+  // Wait for page to stabilize
+  await page.waitForTimeout(500);
+
   return projectId;
+}
+
+/**
+ * Ensure no modal overlay is blocking the page
+ * This is a defensive helper to catch any remaining modals
+ *
+ * The z-[9999] overlay comes from the Dialog component and blocks all interactions.
+ * We try clicking buttons to dismiss modals.
+ *
+ * IMPORTANT: Do NOT use Escape key here!
+ * The project-tasks.tsx page has a useKeyExit hook that listens for Escape
+ * and navigates back to /projects. Using Escape when no modal is open
+ * would cause unintended navigation.
+ */
+export async function ensureNoModalOverlay(page: Page) {
+  // Wait a bit for any pending animations
+  await page.waitForTimeout(500);
+
+  // Check for the high z-index dialog overlay
+  const highZOverlay = page.locator('div.fixed.inset-0.z-\\[9999\\]');
+  const regularOverlay = page.locator('div.fixed.inset-0.bg-black\\/50');
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const hasHighZ = await highZOverlay.isVisible({ timeout: 300 }).catch(() => false);
+    const hasRegular = await regularOverlay.isVisible({ timeout: 300 }).catch(() => false);
+
+    if (!hasHighZ && !hasRegular) {
+      return; // No overlay, we're done
+    }
+
+    // Try to find and click any dismiss button
+    // Patterns cover all onboarding dialogs:
+    // - DisclaimerDialog: "I Understand, Continue"
+    // - OnboardingDialog: "Get Started"
+    // - GitHubLoginDialog: "Skip" or "Continue"
+    // - PrivacyOptInDialog: "No thanks" or "Yes, help improve..."
+    // - ReleaseNotesDialog: "Let's Create!"
+    const dismissButton = page.getByRole('button', {
+      name: /i understand|continue|skip|get started|let's create|confirm|ok|done|close|finish|next|no thanks|yes,? help/i
+    }).first();
+
+    if (await dismissButton.isVisible({ timeout: 300 }).catch(() => false)) {
+      await dismissButton.click();
+      await page.waitForTimeout(400);
+      continue;
+    }
+
+    // No button found but overlay still visible - wait and retry
+    // Do NOT press Escape as it triggers useKeyExit navigation
+    await page.waitForTimeout(400);
+  }
 }
 
 /**
@@ -381,4 +515,29 @@ export async function getProjectTasks(page: Page, projectId: string): Promise<an
   const response = await page.request.get(`/api/tasks?project_id=${projectId}`);
   const data = await response.json();
   return data.data || [];
+}
+
+/**
+ * Create an isolated project for test isolation.
+ * Each test gets its own unique project to avoid database constraint conflicts.
+ *
+ * Use this instead of ensureProjectExists() for tests that create forge_agents
+ * records (e.g., agent tasks with use_worktree: false).
+ *
+ * @returns The unique project ID
+ */
+export async function createIsolatedProject(page: Page): Promise<string> {
+  const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  const projectName = `E2E Test ${uniqueId}`;
+
+  const response = await page.request.post('/api/projects', {
+    data: {
+      name: projectName,
+      git_repo_path: `/tmp/e2e-test-${uniqueId}`,
+      use_existing_repo: false,
+    },
+  });
+
+  const data = await response.json();
+  return data.data?.id;
 }

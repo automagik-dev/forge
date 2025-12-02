@@ -695,79 +695,177 @@ dev: check-android-deps check-cargo ensure-cargo-config
 # Cross-Repo Development (automagik-forge + forge-core)
 # =============================================================================
 
-BRANCH ?= dev
+BRANCH ?= $(shell git branch --show-current)
 
 # Development with local forge-core (enhanced with branch selection + safety hooks)
-dev-core: check-android-deps check-cargo
+# ============================================================================
+# DEV-CORE: Local forge-core development
+# Uses Cargo [patch] in .cargo/config.toml - no file swapping needed
+# ============================================================================
+
+dev-core: check-android-deps check-cargo ## Start dev with local forge-core
 	@echo ""
-	@echo -e "$(FONT_PURPLE)🔧 Setting up local forge-core development...$(FONT_RESET)"
-	@if [ ! -d "forge-core" ]; then \
-		echo -e "$(FONT_CYAN)📦 Cloning forge-core (branch: $(BRANCH))...$(FONT_RESET)"; \
-		git clone -b $(BRANCH) https://github.com/namastexlabs/forge-core.git forge-core; \
-		echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core cloned$(FONT_RESET)"; \
-	else \
-		CURRENT=$$(cd forge-core && git branch --show-current); \
-		if [ "$$CURRENT" != "$(BRANCH)" ]; then \
-			echo -e "$(FONT_YELLOW)⚠️  Switching forge-core: $$CURRENT → $(BRANCH)$(FONT_RESET)"; \
-			(cd forge-core && git fetch origin && git checkout $(BRANCH) 2>/dev/null || git checkout -b $(BRANCH) origin/$(BRANCH)); \
-		else \
-			echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core already on $(BRANCH)$(FONT_RESET)"; \
-		fi; \
+	@echo -e "$(FONT_PURPLE)🔧 Starting local forge-core development...$(FONT_RESET)"
+	@# Pre-flight: Check workspace compatibility (prevents cryptic cargo errors)
+	@if ! grep -q '^\[workspace\.package\]' Cargo.toml; then \
+		echo ""; \
+		echo -e "$(FONT_RED)❌ Missing [workspace.package] in Cargo.toml$(FONT_RESET)"; \
+		echo "    forge-core crates use 'version.workspace = true'"; \
+		echo "    Add this to Cargo.toml:"; \
+		echo ""; \
+		echo "    [workspace.package]"; \
+		echo "    version = \"0.8.4\""; \
+		echo "    edition = \"2021\""; \
+		echo ""; \
+		exit 1; \
 	fi
-	@echo -e "$(FONT_CYAN)📍 forge-core @ $$(cd forge-core && git log -1 --format='%h %s')$(FONT_RESET)"
-	@echo -e "$(FONT_CYAN)⚙️  Enabling Cargo path override...$(FONT_RESET)"
-	@cp .cargo/config.dev-core.toml .cargo/config.toml
-	@echo "$$(date -Iseconds)" > .dev-core-active
-	@echo "branch=$(BRANCH)" >> .dev-core-active
+	@if ! grep -qE '^rmcp\s*=' Cargo.toml; then \
+		echo ""; \
+		echo -e "$(FONT_RED)❌ Missing 'rmcp' in [workspace.dependencies]$(FONT_RESET)"; \
+		echo "    forge-core/server crate needs: rmcp = { workspace = true }"; \
+		echo "    Add to [workspace.dependencies]:"; \
+		echo ""; \
+		echo "    rmcp = { version = \"0.8.5\" }"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@# Clone or update forge-core with smart branch sync
+	@CURRENT_BRANCH=$$(git branch --show-current); \
+	if [ ! -d "forge-core" ]; then \
+		echo -e "$(FONT_CYAN)📦 Cloning forge-core...$(FONT_RESET)"; \
+		if ! git clone https://github.com/namastexlabs/forge-core.git forge-core; then \
+			echo -e "$(FONT_RED)❌ FATAL: git clone failed$(FONT_RESET)"; \
+			echo -e "$(FONT_YELLOW)Check network connectivity$(FONT_RESET)"; \
+			exit 1; \
+		fi; \
+	fi; \
+	echo -e "$(FONT_CYAN)📥 Syncing forge-core to branch: $$CURRENT_BRANCH$(FONT_RESET)"; \
+	cd forge-core && git fetch --all --tags 2>/dev/null; \
+	if git show-ref --verify --quiet refs/remotes/origin/$$CURRENT_BRANCH; then \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) Branch '$$CURRENT_BRANCH' exists in forge-core$(FONT_RESET)"; \
+		git checkout $$CURRENT_BRANCH 2>/dev/null || git checkout -b $$CURRENT_BRANCH origin/$$CURRENT_BRANCH; \
+		git pull origin $$CURRENT_BRANCH 2>/dev/null || true; \
+	else \
+		echo -e "$(FONT_YELLOW)⚠️  Branch '$$CURRENT_BRANCH' not in forge-core - creating from dev$(FONT_RESET)"; \
+		git checkout dev 2>/dev/null && git pull origin dev 2>/dev/null || true; \
+		git checkout -b $$CURRENT_BRANCH 2>/dev/null || git checkout $$CURRENT_BRANCH; \
+	fi; \
+	echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core synced to branch: $$CURRENT_BRANCH$(FONT_RESET)"
+	@echo -e "$(FONT_CYAN)📍 forge-core @ $$(cd forge-core && git describe --tags --always 2>/dev/null || git rev-parse --short HEAD)$(FONT_RESET)"
+	@# Enable [patch] section in .cargo/config.toml
+	@echo -e "$(FONT_CYAN)⚙️  Enabling Cargo [patch] overrides...$(FONT_RESET)"
+	@sed -i 's/^# \[patch\./[patch./g' .cargo/config.toml
+	@sed -i 's/^# db = /db = /g' .cargo/config.toml
+	@sed -i 's/^# services = /services = /g' .cargo/config.toml
+	@sed -i 's/^# server = /server = /g' .cargo/config.toml
+	@sed -i 's/^# deployment = /deployment = /g' .cargo/config.toml
+	@sed -i 's/^# local-deployment = /local-deployment = /g' .cargo/config.toml
+	@sed -i 's/^# executors = /executors = /g' .cargo/config.toml
+	@sed -i 's/^# utils = /utils = /g' .cargo/config.toml
+	@# Regenerate Cargo.lock for path deps
+	@rm -f Cargo.lock
+	@cargo fetch 2>/dev/null || true
+	@# Install pre-push safety hook
 	@mkdir -p .git/hooks scripts/hooks
 	@if [ -f scripts/hooks/pre-push ]; then \
 		cp scripts/hooks/pre-push .git/hooks/pre-push; \
 		chmod +x .git/hooks/pre-push; \
-		echo -e "$(FONT_GREEN)$(CHECKMARK) Safety hooks installed$(FONT_RESET)"; \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) Safety hook installed$(FONT_RESET)"; \
 	fi
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using local forge-core at ./forge-core$(FONT_RESET)"
 	@echo ""
-	@echo -e "$(FONT_YELLOW)$(INFO) Hot reload will pick up changes from ./forge-core$(FONT_RESET)"
-	@echo -e "$(FONT_YELLOW)$(INFO) Run 'make dev-core-off' to switch back to git dependencies$(FONT_RESET)"
-	@echo -e "$(FONT_YELLOW)$(INFO) Pre-push hook will BLOCK if dev-core is still enabled$(FONT_RESET)"
+	@echo -e "$(FONT_YELLOW)ℹ  Cargo [patch] auto-detects ./forge-core$(FONT_RESET)"
+	@echo -e "$(FONT_YELLOW)ℹ  Run 'make dev-core-off' to disable$(FONT_RESET)"
 	@echo ""
-	@bash scripts/dev/run-dev.sh
+	@FORGE_WATCH_PATHS="forge-core/crates" bash scripts/dev/run-dev.sh
 
-# Disable local forge-core (back to git dependencies) with true reset
-dev-core-off:
-	@echo -e "$(FONT_CYAN)🔄 Switching back to git dependencies...$(FONT_RESET)"
-	@cp .cargo/config.base.toml .cargo/config.toml
-	@rm -f .dev-core-active
+dev-core-off: ## Disable local forge-core (use git deps)
+	@echo -e "$(FONT_CYAN)🔄 Disabling Cargo [patch] overrides...$(FONT_RESET)"
+	@# Comment out [patch] section in .cargo/config.toml
+	@sed -i 's/^\[patch\./# [patch./g' .cargo/config.toml
+	@sed -i 's/^db = /# db = /g' .cargo/config.toml
+	@sed -i 's/^services = /# services = /g' .cargo/config.toml
+	@sed -i 's/^server = /# server = /g' .cargo/config.toml
+	@sed -i 's/^deployment = /# deployment = /g' .cargo/config.toml
+	@sed -i 's/^local-deployment = /# local-deployment = /g' .cargo/config.toml
+	@sed -i 's/^executors = /# executors = /g' .cargo/config.toml
+	@sed -i 's/^utils = /# utils = /g' .cargo/config.toml
 	@rm -f Cargo.lock
-	@echo -e "$(FONT_CYAN)📦 Regenerating Cargo.lock...$(FONT_RESET)"
-	@cargo fetch 2>/dev/null || cargo generate-lockfile
-	@echo -e "$(FONT_GREEN)$(CHECKMARK) Restored git dependencies (Cargo.lock regenerated)$(FONT_RESET)"
+	@cargo fetch 2>/dev/null || true
+	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using git dependencies$(FONT_RESET)"
 
-# Show dev-core status
-dev-core-status:
+dev-core-status: ## Show dev-core mode status
 	@echo ""
-	@if [ -f ".dev-core-active" ]; then \
-		echo -e "Mode:   $(FONT_GREEN)LOCAL$(FONT_RESET) (./forge-core)"; \
+	@if grep -q '^\[patch\.' .cargo/config.toml 2>/dev/null; then \
+		echo -e "Mode:   $(FONT_GREEN)LOCAL$(FONT_RESET) (Cargo [patch] active)"; \
 		if [ -d "forge-core" ]; then \
-			echo -e "Branch: $$(cd forge-core && git branch --show-current)"; \
-			echo -e "Commit: $$(cd forge-core && git log -1 --format='%h %s')"; \
+			echo -e "Branch: $$(cd forge-core && git branch --show-current 2>/dev/null || echo 'detached')"; \
+			echo -e "Commit: $$(cd forge-core && git log -1 --format='%h %s' 2>/dev/null || echo 'unknown')"; \
+		else \
+			echo -e "$(FONT_RED)⚠️  WARNING: forge-core/ directory missing!$(FONT_RESET)"; \
 		fi; \
 	else \
-		echo -e "Mode:   $(FONT_CYAN)GIT$(FONT_RESET) (tag in Cargo.toml)"; \
+		echo -e "Mode:   $(FONT_CYAN)GIT$(FONT_RESET) (using tag from Cargo.toml)"; \
+		EXPECTED_TAG=$$(grep -oP 'tag\s*=\s*"\K[^"]+' forge-app/Cargo.toml 2>/dev/null | head -1); \
+		if [ -n "$$EXPECTED_TAG" ]; then \
+			echo -e "Tag:    $$EXPECTED_TAG"; \
+		fi; \
 	fi
 	@echo ""
 
-# Show full cross-repo status
-status:
+# Dev-core health check (diagnostics)
+dev-core-check: ## Health check for dev-core workspace
+	@./scripts/dev-core-helper.sh check
+
+# Version consistency check
+check-versions: ## Validate version consistency across all files
+	@./scripts/dev-core-helper.sh versions
+
+# Show comprehensive cross-repo status
+status: ## Show comprehensive cross-repo status
 	@echo ""
-	@if [ -f ".dev-core-active" ]; then \
-		echo -e "🔧 Dev-core: $(FONT_GREEN)ACTIVE$(FONT_RESET)"; \
+	@echo -e "$(FONT_BOLD)$(FONT_PURPLE)🔍 Cross-Repo Status$(FONT_RESET)"
+	@echo ""
+	@# Dev-core mode
+	@if grep -q '^\[patch\.' .cargo/config.toml 2>/dev/null; then \
+		echo -e "Dev-core:       $(FONT_GREEN)ACTIVE$(FONT_RESET) (Cargo [patch])"; \
 	else \
-		echo -e "✅ Dev-core: $(FONT_CYAN)OFF$(FONT_RESET)"; \
+		echo -e "Dev-core:       $(FONT_CYAN)OFF$(FONT_RESET) (git deps)"; \
 	fi
-	@echo -e "📦 automagik-forge: $$(git branch --show-current)"
-	@if [ -d "forge-core" ]; then \
-		echo -e "📦 forge-core: $$(cd forge-core && git branch --show-current)"; \
+	@# Branches
+	@echo -e "forge branch:   $$(git branch --show-current)"; \
+	if [ -d "forge-core" ]; then \
+		echo -e "core branch:    $$(cd forge-core && git branch --show-current)"; \
+	else \
+		echo -e "core branch:    $(FONT_YELLOW)not cloned$(FONT_RESET)"; \
+	fi
+	@# Versions
+	@EXPECTED_TAG=$$(grep -oP 'tag\s*=\s*"\K[^"]+' forge-app/Cargo.toml 2>/dev/null | head -1); \
+	echo -e "Cargo.toml tag: $$EXPECTED_TAG"; \
+	if [ -d "forge-core" ]; then \
+		LOCAL_TAG=$$(cd forge-core && git describe --tags --abbrev=0 2>/dev/null || echo "unknown"); \
+		echo -e "Local core tag: $$LOCAL_TAG"; \
+	fi
+	@# Uncommitted changes
+	@echo ""; \
+	if [ -n "$$(git status --porcelain)" ]; then \
+		echo -e "forge changes:  $(FONT_YELLOW)$$(git status --porcelain | wc -l) files$(FONT_RESET)"; \
+	else \
+		echo -e "forge changes:  $(FONT_GREEN)clean$(FONT_RESET)"; \
+	fi; \
+	if [ -d "forge-core" ] && [ -n "$$(cd forge-core && git status --porcelain)" ]; then \
+		echo -e "core changes:   $(FONT_YELLOW)$$(cd forge-core && git status --porcelain | wc -l) files$(FONT_RESET)"; \
+	elif [ -d "forge-core" ]; then \
+		echo -e "core changes:   $(FONT_GREEN)clean$(FONT_RESET)"; \
+	fi
+	@# Ready to push?
+	@echo ""; \
+	if grep -q '^\[patch\.' .cargo/config.toml 2>/dev/null; then \
+		echo -e "Ready to push:  $(FONT_RED)NO$(FONT_RESET) (run make dev-core-off first)"; \
+	elif [ -n "$$(git status --porcelain)" ] || ([ -d "forge-core" ] && [ -n "$$(cd forge-core && git status --porcelain)" ]); then \
+		echo -e "Ready to push:  $(FONT_YELLOW)MAYBE$(FONT_RESET) (uncommitted changes)"; \
+	else \
+		echo -e "Ready to push:  $(FONT_GREEN)YES$(FONT_RESET)"; \
 	fi
 	@echo ""
 

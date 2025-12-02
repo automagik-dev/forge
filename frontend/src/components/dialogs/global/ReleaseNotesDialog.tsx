@@ -84,7 +84,12 @@ export const ReleaseNotesDialog = NiceModal.create(() => {
   return (
     <Dialog
       open={modal.visible}
-      onOpenChange={(open) => !open && modal.resolve()}
+      onOpenChange={(open) => {
+        if (!open) {
+          modal.resolve();
+          modal.hide();
+        }
+      }}
     >
       <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
         <DialogHeader>
@@ -153,7 +158,10 @@ export const ReleaseNotesDialog = NiceModal.create(() => {
             </Button>
           )}
           <Button
-            onClick={() => modal.resolve()}
+            onClick={() => {
+              modal.resolve();
+              modal.hide();
+            }}
             className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
           >
             Let's Create! ✨

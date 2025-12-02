@@ -1,0 +1,142 @@
+name: Sync forge-core Tag
+
+# Automatically updates forge-core tag references when forge-core releases a new version
+# Triggered by repository_dispatch from forge-core release workflow
+
+on:
+  repository_dispatch:
+    types: [forge-core-tag-created]
+
+  # Allow manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'forge-core tag to sync (e.g., v0.8.5-rc.1)'
+        required: true
+        type: string
+
+jobs:
+  sync-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="${{ github.event.client_payload.tag }}"
+          fi
+
+          # Validate tag format
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "❌ Invalid tag format: $TAG"
+            echo "Expected format: vX.Y.Z or vX.Y.Z-rc.N"
+            exit 1
+          fi
+
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "✅ Syncing forge-core tag: ${TAG}"
+
+      - name: Update forge-core tag references
+        run: |
+          NEW_TAG="${{ steps.tag.outputs.tag }}"
+
+          echo "📝 Updating Cargo.toml files..."
+
+          # Update forge-app/Cargo.toml
+          if [ -f forge-app/Cargo.toml ]; then
+            sed -i "s/tag = \"v[0-9.rc-]*\"/tag = \"$NEW_TAG\"/g" forge-app/Cargo.toml
+            echo "✅ Updated forge-app/Cargo.toml"
+          fi
+
+          # Update forge-extensions/config/Cargo.toml
+          if [ -f forge-extensions/config/Cargo.toml ]; then
+            sed -i "s/tag = \"v[0-9.rc-]*\"/tag = \"$NEW_TAG\"/g" forge-extensions/config/Cargo.toml
+            echo "✅ Updated forge-extensions/config/Cargo.toml"
+          fi
+
+          echo ""
+          echo "📋 Changes made:"
+          git diff --stat
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create branch for Cargo.toml update
+        run: |
+          NEW_TAG="${{ steps.tag.outputs.tag }}"
+          BRANCH_NAME="chore/update-forge-core-${NEW_TAG}"
+
+          # Check if there are changes
+          if git diff --quiet; then
+            echo "⚠️ No changes detected - forge-core tag may already be up to date"
+            exit 0
+          fi
+
+          git checkout -b "${BRANCH_NAME}"
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Update Cargo.lock
+        run: |
+          # Install Rust toolchain
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          source $HOME/.cargo/env
+
+          # Update forge-core dependencies in Cargo.lock
+          cargo update -p forge-core-codex -p forge-core-utils -p forge-core-ffi || echo "⚠️  Some forge-core packages may not exist in this workspace"
+
+      - name: Commit changes
+        id: commit
+        run: |
+          NEW_TAG="${{ steps.tag.outputs.tag }}"
+
+          git add forge-app/Cargo.toml forge-extensions/config/Cargo.toml Cargo.lock
+          git commit -m "chore: update forge-core to ${NEW_TAG}"
+          git push origin HEAD
+
+          echo "✅ Pushed forge-core update to branch"
+
+      - name: Create PR with labels
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          NEW_TAG="${{ steps.tag.outputs.tag }}"
+
+          gh pr create \
+            --title "chore: update forge-core to ${NEW_TAG}" \
+            --body "Auto-update forge-core dependency after successful pre-release.
+
+          **Forge-core version**: ${NEW_TAG}
+          **Triggered by**: forge-core pre-release workflow
+
+          This PR will be auto-merged after checks pass." \
+            --base dev \
+            --head chore/update-forge-core-${NEW_TAG} \
+            --label "rc" \
+            --label "dependencies"
+
+          echo "✅ Created PR with 'rc' and 'dependencies' labels"
+
+      - name: Create summary
+        run: |
+          echo "## 🔄 forge-core Sync PR Created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **New Tag**: ${{ steps.tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: chore/update-forge-core-${{ steps.tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Base**: dev" >> $GITHUB_STEP_SUMMARY
+          echo "- **Labels**: rc, dependencies" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Files Updated" >> $GITHUB_STEP_SUMMARY
+          echo "- forge-app/Cargo.toml" >> $GITHUB_STEP_SUMMARY
+          echo "- forge-extensions/config/Cargo.toml" >> $GITHUB_STEP_SUMMARY
+          echo "- Cargo.lock (forge-core packages)" >> $GITHUB_STEP_SUMMARY

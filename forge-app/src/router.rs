@@ -147,14 +147,6 @@ fn forge_api_routes() -> Router<ForgeAppState> {
         )
         .route("/api/forge/releases", get(get_github_releases))
         .route(
-            "/api/forge/master-genie/{attempt_id}/neurons",
-            get(get_master_genie_neurons),
-        )
-        .route(
-            "/api/forge/neurons/{neuron_attempt_id}/subtasks",
-            get(get_neuron_subtasks),
-        )
-        .route(
             "/api/forge/agents",
             get(get_forge_agents).post(create_forge_agent),
         )
@@ -420,12 +412,10 @@ async fn forge_create_task_and_start(
         .await?;
 
         // Also set task status to 'agent' so it's filtered from kanban board
-        sqlx::query(
-            "UPDATE tasks SET status = 'agent', updated_at = datetime('now') WHERE id = ?",
-        )
-        .bind(task.id)
-        .execute(&mut *tx)
-        .await?;
+        sqlx::query("UPDATE tasks SET status = 'agent', updated_at = datetime('now') WHERE id = ?")
+            .bind(task.id)
+            .execute(&mut *tx)
+            .await?;
 
         tx.commit().await?;
     }
@@ -1651,9 +1641,7 @@ async fn list_routes() -> Json<Value> {
                 "GET /api/forge/omni/instances",
                 "POST /api/forge/omni/validate",
                 "GET /api/forge/omni/notifications",
-                "GET /api/forge/releases",
-                "GET /api/forge/master-genie/{attempt_id}/neurons",
-                "GET /api/forge/neurons/{neuron_attempt_id}/subtasks"
+                "GET /api/forge/releases"
             ],
             "filesystem": [
                 "GET /api/filesystem/tree",
@@ -2252,80 +2240,6 @@ async fn get_github_releases() -> Result<Json<ApiResponse<Vec<GitHubRelease>>>, 
             Err(StatusCode::BAD_GATEWAY)
         }
     }
-}
-
-/// Neuron type definitions
-#[derive(Debug, Serialize)]
-struct Neuron {
-    #[serde(rename = "type")]
-    neuron_type: String, // "wish", "forge", or "review"
-    task: Task,
-    attempt: TaskAttempt,
-}
-
-/// Get neurons for a Master Genie task attempt
-/// Returns Wish, Forge, and Review neurons (tasks with parent_task_attempt = master_attempt_id)
-async fn get_master_genie_neurons(
-    State(deployment): State<DeploymentImpl>,
-    Path(attempt_id): Path<Uuid>,
-) -> Result<Json<ApiResponse<Vec<Neuron>>>, ApiError> {
-    let pool = &deployment.db().pool;
-
-    // Find all tasks where parent_task_attempt = master_attempt_id AND status = 'agent'
-    let neuron_tasks: Vec<Task> = sqlx::query_as::<_, Task>(
-        r#"SELECT * FROM tasks
-           WHERE parent_task_attempt = ? AND status = 'agent'
-           ORDER BY created_at ASC"#,
-    )
-    .bind(attempt_id)
-    .fetch_all(pool)
-    .await?;
-
-    let mut neurons = Vec::new();
-
-    // For each neuron task, find its latest attempt and determine type from executor variant
-    for task in neuron_tasks {
-        // Get latest attempt for this neuron task (fetch_all returns newest first)
-        if let Ok(attempts) = TaskAttempt::fetch_all(pool, Some(task.id)).await
-            && let Some(attempt) = attempts.into_iter().next()
-        {
-            // Parse executor to get variant (e.g., "CLAUDE_CODE:WISH" → "WISH")
-            let neuron_type = if let Some((_base, variant)) = attempt.executor.split_once(':') {
-                variant.to_string() // Keep uppercase to match profile variants
-            } else {
-                "unknown".to_string()
-            };
-
-            neurons.push(Neuron {
-                neuron_type,
-                task,
-                attempt,
-            });
-        }
-    }
-
-    Ok(Json(ApiResponse::success(neurons)))
-}
-
-/// Get subtasks for a neuron
-/// Returns tasks where parent_task_attempt = neuron_attempt_id AND status = 'agent'
-async fn get_neuron_subtasks(
-    State(deployment): State<DeploymentImpl>,
-    Path(neuron_attempt_id): Path<Uuid>,
-) -> Result<Json<ApiResponse<Vec<Task>>>, ApiError> {
-    let pool = &deployment.db().pool;
-
-    // Find all tasks where parent_task_attempt = neuron_attempt_id AND status = 'agent'
-    let subtasks: Vec<Task> = sqlx::query_as::<_, Task>(
-        r#"SELECT * FROM tasks
-           WHERE parent_task_attempt = ? AND status = 'agent'
-           ORDER BY created_at DESC"#,
-    )
-    .bind(neuron_attempt_id)
-    .fetch_all(pool)
-    .await?;
-
-    Ok(Json(ApiResponse::success(subtasks)))
 }
 
 /// Forge Agent model
