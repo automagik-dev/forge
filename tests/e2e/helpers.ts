@@ -20,8 +20,14 @@ export async function skipOnboarding(page: Page) {
   // Try to dismiss up to 6 dialogs (all possible onboarding steps)
   for (let i = 0; i < 6; i++) {
     // Look for any common dialog dismiss buttons
+    // Patterns cover all onboarding dialogs:
+    // - DisclaimerDialog: "I Understand, Continue"
+    // - OnboardingDialog: "Get Started"
+    // - GitHubLoginDialog: "Skip" or "Continue"
+    // - PrivacyOptInDialog: "No thanks" or "Yes, help improve..."
+    // - ReleaseNotesDialog: "Let's Create!"
     const dismissButton = page.getByRole('button', {
-      name: /i understand|continue|skip|get started|let's create|confirm|ok|done|close/i
+      name: /i understand|continue|skip|get started|let's create|confirm|ok|done|close|no thanks|yes,? help/i
     }).first();
 
     if (await dismissButton.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -159,8 +165,14 @@ export async function ensureNoModalOverlay(page: Page) {
     }
 
     // Try to find and click any dismiss button first
+    // Patterns cover all onboarding dialogs:
+    // - DisclaimerDialog: "I Understand, Continue"
+    // - OnboardingDialog: "Get Started"
+    // - GitHubLoginDialog: "Skip" or "Continue"
+    // - PrivacyOptInDialog: "No thanks" or "Yes, help improve..."
+    // - ReleaseNotesDialog: "Let's Create!"
     const dismissButton = page.getByRole('button', {
-      name: /i understand|continue|skip|get started|let's create|confirm|ok|done|close|finish|next/i
+      name: /i understand|continue|skip|get started|let's create|confirm|ok|done|close|finish|next|no thanks|yes,? help/i
     }).first();
 
     if (await dismissButton.isVisible({ timeout: 300 }).catch(() => false)) {
