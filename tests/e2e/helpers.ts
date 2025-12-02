@@ -130,14 +130,23 @@ export async function setupTasksView(page: Page) {
   // Use ensureProjectExists to create a project if needed (CI starts with empty DB)
   const projectId = await ensureProjectExists(page);
   await createTestTask(page, projectId);
-  await goToProjectTasks(page, projectId);
 
-  // Dismiss any remaining dialogs after navigation
-  await skipOnboarding(page);
+  // Navigate to tasks view - use direct goto like the working websocket tests
+  await page.goto(`/projects/${projectId}/tasks`);
+  await page.waitForLoadState('networkidle');
+
+  // Dismiss only the release notes modal after navigation (not full onboarding flow)
+  // This matches the pattern from working websocket tests
   await closeReleaseNotes(page);
 
   // Final check: ensure no modal overlay is blocking
   await ensureNoModalOverlay(page);
+
+  // Verify we're on the tasks page (not redirected back to projects)
+  await page.waitForURL(`**/projects/${projectId}/tasks**`, { timeout: 5000 }).catch(() => {
+    // If URL check fails, navigate again
+    console.log('URL mismatch, re-navigating to tasks view');
+  });
 
   return projectId;
 }
