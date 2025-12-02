@@ -54,6 +54,9 @@ test.describe('WebSocket Task Filtering', () => {
       description: 'This is a normal user task'
     });
 
+    // Wait for WebSocket message to be delivered for regular task
+    await page.waitForTimeout(1000);
+
     // WHEN: Create an agent task via API (use_worktree: false registers it as agent)
     await page.request.post('/api/tasks/create-and-start', {
       data: {

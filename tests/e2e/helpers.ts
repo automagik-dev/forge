@@ -81,13 +81,20 @@ export async function goToProjectTasks(page: Page, projectId: string) {
 }
 
 /**
- * Close release notes banner if present
+ * Close release notes modal if present
  */
 export async function closeReleaseNotes(page: Page) {
-  const closeButton = page.getByText(/let's create|close/i);
+  // Try clicking the "Let's Create!" button (role-based selector is more reliable)
+  const closeButton = page.getByRole('button', { name: /let's create/i });
   if (await closeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
     await closeButton.click();
+    await page.waitForTimeout(300); // Wait for animation
+    return;
   }
+
+  // Fallback: Press Escape to dismiss any modal
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
 }
 
 /**
