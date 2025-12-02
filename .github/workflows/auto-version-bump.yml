@@ -51,7 +51,7 @@ jobs:
           node-version: '20'
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Install cargo-edit
         run: cargo install cargo-edit --features vendored-openssl
