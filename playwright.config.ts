@@ -8,7 +8,16 @@ import { defineConfig, devices } from '@playwright/test';
  * - Accessibility-first selectors (role, label, text)
  * - Clear error messages for LLM debugging
  * - Auto-wait for elements (no manual waits needed)
+ *
+ * Port Configuration:
+ * - USE_RELEASE_BINARY=true (CI): Backend serves embedded frontend on port 8887
+ * - make dev (local): Vite dev server on port 3000, backend on dynamic port
  */
+
+// In CI with release binary, the app serves on 8887
+// In local dev, Vite frontend is on 3000
+const basePort = process.env.USE_RELEASE_BINARY ? 8887 : 3000;
+const baseURL = `http://localhost:${basePort}`;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -28,7 +37,7 @@ export default defineConfig({
   // Global settings
   use: {
     // Base URL for tests
-    baseURL: 'http://localhost:3000',
+    baseURL,
 
     // Screenshots - capture on failure for debugging
     screenshot: 'only-on-failure',
@@ -67,7 +76,7 @@ export default defineConfig({
     command: process.env.USE_RELEASE_BINARY
       ? './target/release/forge-app'
       : 'make dev',
-    url: 'http://localhost:3000',
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: process.env.USE_RELEASE_BINARY
       ? 60000   // 1 min for binary startup
