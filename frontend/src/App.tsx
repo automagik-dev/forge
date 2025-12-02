@@ -38,6 +38,7 @@ import { ProjectProvider } from '@/contexts/project-context';
 import { ThemeMode } from 'shared/types';
 import * as Sentry from '@sentry/react';
 import { Loader } from '@/components/ui/loader';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 
 import NiceModal from '@ebay/nice-modal-react';
 import { OnboardingResult } from '@/components/dialogs/global/OnboardingDialog';
@@ -366,39 +367,41 @@ function AppContent() {
 // SubGenieProvider wraps NiceModal so Genie chat widgets can show modals.
 function App() {
   return (
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
-      <UserSystemProvider>
-        <ClickedElementsProvider>
-          <ProjectProvider>
-            {/* Keep 'global' active at all times so the hotkeys scope stack is never empty */}
-            <HotkeysProvider
-              initiallyActiveScopes={[
-                'global',
-                'kanban',
-                'dialog',
-                'projects',
-                'settings',
-                'edit-comment',
-                'approvals',
-                'follow-up',
-                'follow-up-ready',
-              ]}
-            >
-              <SubGenieProvider>
-                <NiceModal.Provider>
-                  <AppContent />
-                </NiceModal.Provider>
-              </SubGenieProvider>
-            </HotkeysProvider>
-          </ProjectProvider>
-        </ClickedElementsProvider>
-      </UserSystemProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <UserSystemProvider>
+          <ClickedElementsProvider>
+            <ProjectProvider>
+              {/* Keep 'global' active at all times so the hotkeys scope stack is never empty */}
+              <HotkeysProvider
+                initiallyActiveScopes={[
+                  'global',
+                  'kanban',
+                  'dialog',
+                  'projects',
+                  'settings',
+                  'edit-comment',
+                  'approvals',
+                  'follow-up',
+                  'follow-up-ready',
+                ]}
+              >
+                <SubGenieProvider>
+                  <NiceModal.Provider>
+                    <AppContent />
+                  </NiceModal.Provider>
+                </SubGenieProvider>
+              </HotkeysProvider>
+            </ProjectProvider>
+          </ClickedElementsProvider>
+        </UserSystemProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 
