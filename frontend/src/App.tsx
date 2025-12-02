@@ -189,7 +189,9 @@ function AppContent() {
   }, [posthog, analyticsUserId, config?.analytics_enabled]);
 
   // Track if onboarding has been initiated in this session to prevent re-triggering
+  // Uses both ref (component-level) and sessionStorage (browser session-level) for robustness
   const onboardingInitiatedRef = useRef(false);
+  const ONBOARDING_SESSION_KEY = 'forge_onboarding_completed';
 
   useEffect(() => {
     let cancelled = false;
@@ -242,7 +244,15 @@ function AppContent() {
       if (!config || cancelled) return;
 
       // Prevent re-running onboarding if already initiated in this session
+      // Check both ref (survives re-renders) and sessionStorage (survives remounts)
       if (onboardingInitiatedRef.current) return;
+      if (
+        !forceOnboarding &&
+        sessionStorage.getItem(ONBOARDING_SESSION_KEY) === 'true'
+      ) {
+        onboardingInitiatedRef.current = true;
+        return;
+      }
       onboardingInitiatedRef.current = true;
 
       if (!config.disclaimer_acknowledged || forceOnboarding) {
@@ -274,6 +284,10 @@ function AppContent() {
         await NiceModal.show('release-notes');
         await handleReleaseNotesClose();
       }
+
+      // Mark onboarding as completed for this browser session
+      // This persists even if component remounts (e.g., StrictMode, navigation)
+      sessionStorage.setItem(ONBOARDING_SESSION_KEY, 'true');
     };
 
     // Run onboarding flow
@@ -287,7 +301,16 @@ function AppContent() {
     return () => {
       cancelled = true;
     };
-  }, [config, updateAndSaveConfig]);
+    // Use granular dependencies to prevent re-runs when unrelated config fields change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    config?.disclaimer_acknowledged,
+    config?.onboarding_acknowledged,
+    config?.github_login_acknowledged,
+    config?.telemetry_acknowledged,
+    config?.show_release_notes,
+    updateAndSaveConfig,
+  ]);
 
   if (loading) {
     return (

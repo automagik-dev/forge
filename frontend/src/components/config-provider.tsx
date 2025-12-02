@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -146,14 +147,19 @@ export function UserSystemProvider({ children }: UserSystemProviderProps) {
     }
   }, [config]);
 
+  // Use a ref to access current config without adding it as a dependency
+  // This stabilizes the callback identity and prevents unnecessary effect re-runs
+  const configRef = useRef<Config | null>(config);
+  configRef.current = config;
+
   const updateAndSaveConfig = useCallback(
     async (updates: Partial<Config>): Promise<boolean> => {
+      const currentConfig = configRef.current;
+      if (!currentConfig) return false;
+
       setLoading(true);
-      const newConfig: Config | null = config
-        ? { ...config, ...updates }
-        : null;
+      const newConfig: Config = { ...currentConfig, ...updates };
       try {
-        if (!newConfig) return false;
         const saved = await configApi.saveConfig(newConfig);
         setConfig(saved);
         return true;
@@ -164,7 +170,7 @@ export function UserSystemProvider({ children }: UserSystemProviderProps) {
         setLoading(false);
       }
     },
-    [config]
+    [] // No dependencies - uses ref for config access
   );
 
   const reloadSystem = useCallback(async () => {
