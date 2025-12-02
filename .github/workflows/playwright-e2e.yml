@@ -22,6 +22,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-
+
       - name: Setup Node
         uses: ./.github/actions/setup-node
 
@@ -35,9 +45,15 @@ jobs:
       - name: Build frontend
         run: cd frontend && pnpm build
 
+      - name: Build backend
+        run: cargo build --release --bin forge-app
+        env:
+          SQLX_OFFLINE: 'true'
+
       - name: Run Playwright tests
         env:
           SKIP_FRONTEND_BUILD: 'true'  # Frontend already built above
+          USE_RELEASE_BINARY: 'true'   # Use pre-built release binary
         run: npx playwright test
 
       - name: Upload HTML report

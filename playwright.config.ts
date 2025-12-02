@@ -61,10 +61,16 @@ export default defineConfig({
   ],
 
   // Dev server - automatically start the app
+  // USE_RELEASE_BINARY: In CI, uses pre-built release binary (faster)
+  // Otherwise: Uses make dev with cargo watch (hot reload for local dev)
   webServer: {
-    command: 'make dev',
+    command: process.env.USE_RELEASE_BINARY
+      ? './target/release/forge-app'
+      : 'make dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 600000, // 10 minutes for build (Rust compilation can be slow on CI)
+    timeout: process.env.USE_RELEASE_BINARY
+      ? 60000   // 1 min for binary startup
+      : 600000, // 10 min for Rust compilation in dev mode
   },
 });
