@@ -9,11 +9,28 @@ import { Page } from '@playwright/test';
 
 /**
  * Skip onboarding flow if present
+ * The app shows multiple onboarding dialogs in sequence:
+ * 1. DisclaimerDialog - "I Understand, Continue"
+ * 2. OnboardingDialog - "Get Started"
+ * 3. GitHubLoginDialog - "Skip" or "Continue"
+ * 4. PrivacyOptInDialog - various buttons
+ * 5. ReleaseNotesDialog - "Let's Create!"
  */
 export async function skipOnboarding(page: Page) {
-  const skipButton = page.getByRole('button', { name: /skip|continue|get started/i });
-  if (await skipButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-    await skipButton.click();
+  // Try to dismiss up to 6 dialogs (all possible onboarding steps)
+  for (let i = 0; i < 6; i++) {
+    // Look for any common dialog dismiss buttons
+    const dismissButton = page.getByRole('button', {
+      name: /i understand|continue|skip|get started|let's create|confirm|ok|done|close/i
+    }).first();
+
+    if (await dismissButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await dismissButton.click();
+      await page.waitForTimeout(300); // Wait for dialog animation
+    } else {
+      // No more dialogs, we're done
+      break;
+    }
   }
 }
 
@@ -107,9 +124,34 @@ export async function setupTasksView(page: Page) {
   const projectId = await getFirstProject(page);
   await createTestTask(page, projectId);
   await goToProjectTasks(page, projectId);
+
+  // Dismiss any remaining dialogs after navigation
+  await skipOnboarding(page);
   await closeReleaseNotes(page);
 
+  // Final check: ensure no modal overlay is blocking
+  await ensureNoModalOverlay(page);
+
   return projectId;
+}
+
+/**
+ * Ensure no modal overlay is blocking the page
+ * This is a defensive helper to catch any remaining modals
+ */
+export async function ensureNoModalOverlay(page: Page) {
+  // Check if there's a modal overlay blocking
+  const overlay = page.locator('div.fixed.inset-0.bg-black\\/50');
+  if (await overlay.isVisible({ timeout: 500 }).catch(() => false)) {
+    // Try pressing Escape multiple times
+    for (let i = 0; i < 3; i++) {
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(300);
+      if (!(await overlay.isVisible({ timeout: 200 }).catch(() => false))) {
+        break;
+      }
+    }
+  }
 }
 
 /**
