@@ -138,19 +138,40 @@ export async function setupTasksView(page: Page) {
 /**
  * Ensure no modal overlay is blocking the page
  * This is a defensive helper to catch any remaining modals
+ *
+ * The z-[9999] overlay comes from the Dialog component and blocks all interactions.
+ * We try multiple strategies: Escape key, clicking buttons, and waiting for animations.
  */
 export async function ensureNoModalOverlay(page: Page) {
-  // Check if there's a modal overlay blocking
-  const overlay = page.locator('div.fixed.inset-0.bg-black\\/50');
-  if (await overlay.isVisible({ timeout: 500 }).catch(() => false)) {
-    // Try pressing Escape multiple times
-    for (let i = 0; i < 3; i++) {
-      await page.keyboard.press('Escape');
-      await page.waitForTimeout(300);
-      if (!(await overlay.isVisible({ timeout: 200 }).catch(() => false))) {
-        break;
-      }
+  // Wait a bit for any pending animations
+  await page.waitForTimeout(500);
+
+  // Check for the high z-index dialog overlay
+  const highZOverlay = page.locator('div.fixed.inset-0.z-\\[9999\\]');
+  const regularOverlay = page.locator('div.fixed.inset-0.bg-black\\/50');
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const hasHighZ = await highZOverlay.isVisible({ timeout: 300 }).catch(() => false);
+    const hasRegular = await regularOverlay.isVisible({ timeout: 300 }).catch(() => false);
+
+    if (!hasHighZ && !hasRegular) {
+      return; // No overlay, we're done
     }
+
+    // Try to find and click any dismiss button first
+    const dismissButton = page.getByRole('button', {
+      name: /i understand|continue|skip|get started|let's create|confirm|ok|done|close|finish|next/i
+    }).first();
+
+    if (await dismissButton.isVisible({ timeout: 300 }).catch(() => false)) {
+      await dismissButton.click();
+      await page.waitForTimeout(400);
+      continue;
+    }
+
+    // Try pressing Escape
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
   }
 }
 
