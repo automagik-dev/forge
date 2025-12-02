@@ -46,7 +46,9 @@ jobs:
         run: cd frontend && pnpm build
 
       - name: Build backend
-        run: cargo build --release --bin forge-app
+        run: |
+          source "$HOME/.cargo/env"
+          cargo build --release --bin forge-app
         env:
           SQLX_OFFLINE: 'true'
 
