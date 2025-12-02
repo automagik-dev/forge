@@ -127,7 +127,8 @@ export async function setupTasksView(page: Page) {
   await page.goto('/');
   await skipOnboarding(page);
 
-  const projectId = await getFirstProject(page);
+  // Use ensureProjectExists to create a project if needed (CI starts with empty DB)
+  const projectId = await ensureProjectExists(page);
   await createTestTask(page, projectId);
   await goToProjectTasks(page, projectId);
 
