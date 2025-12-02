@@ -65,12 +65,18 @@ export default defineConfig({
   // Otherwise: Uses make dev with cargo watch (hot reload for local dev)
   webServer: {
     command: process.env.USE_RELEASE_BINARY
-      ? './target/release/forge-app'
+      ? 'DATABASE_URL=sqlite:///$(pwd)/dev_assets/db.sqlite ./target/release/forge-app'
       : 'make dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: process.env.USE_RELEASE_BINARY
       ? 60000   // 1 min for binary startup
       : 600000, // 10 min for Rust compilation in dev mode
+    env: process.env.USE_RELEASE_BINARY
+      ? {
+          DATABASE_URL: `sqlite:///${process.cwd()}/dev_assets/db.sqlite`,
+          RUST_LOG: 'info',
+        }
+      : undefined,
   },
 });
