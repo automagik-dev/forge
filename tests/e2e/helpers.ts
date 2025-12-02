@@ -105,6 +105,11 @@ export async function goToProjectTasks(page: Page, projectId: string) {
 
 /**
  * Close release notes modal if present
+ *
+ * IMPORTANT: Do NOT use Escape key as fallback here!
+ * The project-tasks.tsx page has a useKeyExit hook that listens for Escape
+ * and navigates back to /projects. Using Escape when no modal is open
+ * would cause unintended navigation.
  */
 export async function closeReleaseNotes(page: Page) {
   // Try clicking the "Let's Create!" button (role-based selector is more reliable)
@@ -115,9 +120,8 @@ export async function closeReleaseNotes(page: Page) {
     return;
   }
 
-  // Fallback: Press Escape to dismiss any modal
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(300);
+  // No button visible = no modal to close. Do nothing.
+  // The ReleaseNotesDialog fix (adding modal.hide()) ensures the button works now.
 }
 
 /**
@@ -163,7 +167,12 @@ export async function setupTasksView(page: Page) {
  * This is a defensive helper to catch any remaining modals
  *
  * The z-[9999] overlay comes from the Dialog component and blocks all interactions.
- * We try multiple strategies: Escape key, clicking buttons, and waiting for animations.
+ * We try clicking buttons to dismiss modals.
+ *
+ * IMPORTANT: Do NOT use Escape key here!
+ * The project-tasks.tsx page has a useKeyExit hook that listens for Escape
+ * and navigates back to /projects. Using Escape when no modal is open
+ * would cause unintended navigation.
  */
 export async function ensureNoModalOverlay(page: Page) {
   // Wait a bit for any pending animations
@@ -181,7 +190,7 @@ export async function ensureNoModalOverlay(page: Page) {
       return; // No overlay, we're done
     }
 
-    // Try to find and click any dismiss button first
+    // Try to find and click any dismiss button
     // Patterns cover all onboarding dialogs:
     // - DisclaimerDialog: "I Understand, Continue"
     // - OnboardingDialog: "Get Started"
@@ -198,8 +207,8 @@ export async function ensureNoModalOverlay(page: Page) {
       continue;
     }
 
-    // Try pressing Escape
-    await page.keyboard.press('Escape');
+    // No button found but overlay still visible - wait and retry
+    // Do NOT press Escape as it triggers useKeyExit navigation
     await page.waitForTimeout(400);
   }
 }
