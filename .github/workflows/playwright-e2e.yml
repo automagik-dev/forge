@@ -52,6 +52,9 @@ jobs:
         env:
           SQLX_OFFLINE: 'true'
 
+      - name: Setup test database directory
+        run: mkdir -p dev_assets
+
       - name: Run Playwright tests
         env:
           SKIP_FRONTEND_BUILD: 'true'  # Frontend already built above
