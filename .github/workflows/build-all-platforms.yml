@@ -43,10 +43,12 @@ jobs:
           - os: [self-hosted, Linux, X64]  # Self-hosted runner for Linux x64
             target: x86_64-unknown-linux-gnu
             platform: linux-x64
+            container: ghcr.io/namastexlabs/forge-builder:nightly-2025-05-18
           - os: [self-hosted, Linux, X64]  # Self-hosted runner for cross-compile
             target: aarch64-unknown-linux-gnu
             platform: linux-arm64
             use-zigbuild: true
+            container: ghcr.io/namastexlabs/forge-builder:nightly-2025-05-18
           # Android builds moved to separate workflow (build-android-apk.yml)
           - os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -64,6 +66,7 @@ jobs:
             platform: macos-arm64
 
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
 
     steps:
       - uses: actions/checkout@v4
@@ -98,7 +101,7 @@ jobs:
           fi
       
       - name: Install Rust
-        if: env.SKIP_BUILD != 'true'
+        if: env.SKIP_BUILD != 'true' && runner.os != 'Linux'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -160,7 +163,7 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Install Linux build tools for vendored OpenSSL
-        if: runner.os == 'Linux' && !contains(runner.labels, 'self-hosted') && env.SKIP_BUILD != 'true'
+        if: runner.os == 'Linux' && !contains(runner.labels, 'self-hosted') && env.SKIP_BUILD != 'true' && matrix.container == ''
         shell: bash
         run: |
           sudo apt-get update -y
@@ -198,7 +201,7 @@ jobs:
           echo "PERL=$((Get-Command perl).Path)" >> $env:GITHUB_ENV
           
       - name: Install cargo-zigbuild
-        if: matrix.use-zigbuild && env.SKIP_BUILD != 'true'
+        if: matrix.use-zigbuild && env.SKIP_BUILD != 'true' && matrix.container == ''
         shell: bash
         run: |
           if cargo zigbuild --version >/dev/null 2>&1; then
@@ -208,7 +211,7 @@ jobs:
           fi
 
       - name: Install Zig toolchain
-        if: runner.os == 'Linux' && matrix.use-zigbuild && env.SKIP_BUILD != 'true'
+        if: runner.os == 'Linux' && matrix.use-zigbuild && env.SKIP_BUILD != 'true' && matrix.container == ''
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.13.0
