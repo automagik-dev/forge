@@ -1,7 +1,7 @@
 name: Sync to forge-core
 
 # Automatically syncs forge-core/ directory changes to the forge-core repository
-# when PRs are merged to dev branch in automagik-forge
+# when PRs are merged to dev branch in automagik-dev/forge
 
 on:
   pull_request:
@@ -35,14 +35,16 @@ jobs:
           owner: namastexlabs
           repositories: forge-core
 
-      - name: Checkout automagik-forge
+      - name: Checkout forge (this repo)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          path: forge
           # Use default GITHUB_TOKEN for same-repo checkout
 
       - name: Check for forge-core changes
         id: changes
+        working-directory: forge
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             if [ "${{ inputs.force }}" = "true" ]; then
@@ -97,9 +99,9 @@ jobs:
           git checkout "$TARGET_BRANCH" || git checkout -b "$TARGET_BRANCH"
           git pull origin "$TARGET_BRANCH" || true
 
-          # Copy all files from forge-core/ except .git
+          # Copy all files from forge/forge-core/ except .git
           # Using rsync for reliable sync with proper handling of deletions
-          rsync -av --delete --exclude='.git' ../forge-core/ ./
+          rsync -av --delete --exclude='.git' ../forge/forge-core/ ./
 
           # Check if there are actual changes
           if git diff --quiet && git diff --staged --quiet; then
@@ -121,7 +123,7 @@ jobs:
 
           # Commit changes
           git add -A
-          git commit -m "sync: automagik-forge PR #${PR_NUM}
+          git commit -m "sync: forge PR #${PR_NUM}
 
           ${PR_TITLE}
 
@@ -143,7 +145,7 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           repository: namastexlabs/forge-core
           event-type: create-pre-release
-          client-payload: '{"source_pr": "${{ github.event.pull_request.number }}", "source_repo": "automagik-forge"}'
+          client-payload: '{"source_pr": "${{ github.event.pull_request.number }}", "source_repo": "forge"}'
 
       - name: Create summary
         if: steps.changes.outputs.has_changes == 'true'
