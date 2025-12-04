@@ -815,11 +815,29 @@ dev-core-status: ## Show dev-core mode status
 
 # Dev-core health check (diagnostics)
 dev-core-check: ## Health check for dev-core workspace
-	@./scripts/dev-core-helper.sh check
+	@echo -e "$(FONT_BOLD)Dev-Core Health Check$(FONT_RESET)"
+	@echo ""
+	@if grep -q '^\[patch\.' .cargo/config.toml 2>/dev/null; then \
+		echo -e "Mode:     $(FONT_GREEN)ACTIVE$(FONT_RESET) (Cargo [patch] enabled)"; \
+	else \
+		echo -e "Mode:     $(FONT_YELLOW)INACTIVE$(FONT_RESET) (using git dependencies)"; \
+	fi
+	@if [ -d "forge-core" ]; then \
+		echo -e "Core dir: $(FONT_GREEN)EXISTS$(FONT_RESET)"; \
+		echo -e "Branch:   $$(cd forge-core && git branch --show-current)"; \
+		echo -e "Version:  $$(cd forge-core && git describe --tags --always 2>/dev/null || echo 'no tags')"; \
+	else \
+		echo -e "Core dir: $(FONT_RED)MISSING$(FONT_RESET)"; \
+	fi
+	@if [ -f ".git/hooks/pre-push" ]; then \
+		echo -e "Hook:     $(FONT_GREEN)INSTALLED$(FONT_RESET)"; \
+	else \
+		echo -e "Hook:     $(FONT_YELLOW)NOT INSTALLED$(FONT_RESET)"; \
+	fi
 
 # Version consistency check
 check-versions: ## Validate version consistency across all files
-	@./scripts/dev-core-helper.sh versions
+	@./scripts/check-versions.sh
 
 # Show comprehensive cross-repo status
 status: ## Show comprehensive cross-repo status
@@ -885,7 +903,7 @@ commit-both:
 
 # Push both repos
 push-both:
-	@if [ -f ".dev-core-active" ]; then \
+	@if grep -q '^\[patch\.' .cargo/config.toml 2>/dev/null; then \
 		echo -e "$(FONT_RED)🛑 Dev-core mode is ACTIVE! Run: make dev-core-off$(FONT_RESET)"; \
 		exit 1; \
 	fi
@@ -897,7 +915,7 @@ push-both:
 
 # Create linked PRs for both repos
 pr:
-	@if [ -f ".dev-core-active" ]; then \
+	@if grep -q '^\[patch\.' .cargo/config.toml 2>/dev/null; then \
 		echo -e "$(FONT_RED)🛑 Dev-core mode is ACTIVE! Run: make dev-core-off$(FONT_RESET)"; \
 		exit 1; \
 	fi
@@ -915,18 +933,29 @@ dev-help:
 	@echo -e "$(FONT_BOLD)$(FONT_PURPLE)🔗 Cross-Repo Development Commands$(FONT_RESET)"
 	@echo ""
 	@echo -e "$(FONT_CYAN)Starting:$(FONT_RESET)"
-	@echo "  make dev-core              Start with 'dev' branch (default)"
-	@echo "  make dev-core BRANCH=x     Start with specific branch"
+	@echo "  make dev-core              Sync to current branch (auto-detect)"
+	@echo "  make dev-core BRANCH=x     Sync both repos to specific branch"
+	@echo ""
+	@echo -e "$(FONT_CYAN)How it works:$(FONT_RESET)"
+	@echo "  1. Clones/syncs forge-core to same branch as automagik-forge"
+	@echo "  2. If branch doesn't exist in forge-core, creates it from dev"
+	@echo "  3. Enables Cargo [patch] to use local forge-core paths"
+	@echo "  4. Installs pre-push hook to prevent accidental pushes"
 	@echo ""
 	@echo -e "$(FONT_CYAN)During development:$(FONT_RESET)"
-	@echo "  make status                Check current mode and branches"
+	@echo "  make status                Cross-repo status (branches, versions)"
 	@echo "  make dev-core-status       Detailed dev-core status"
-	@echo "  make commit-both           Commit to both repos"
+	@echo "  make dev-core-check        Health check diagnostics"
+	@echo "  make commit-both MSG='x'   Commit to both repos with same message"
 	@echo ""
 	@echo -e "$(FONT_CYAN)Before PRs:$(FONT_RESET)"
-	@echo "  make dev-core-off          Switch back to git deps"
-	@echo "  make push-both             Push branches"
-	@echo "  make pr                    Create linked PRs"
+	@echo "  make dev-core-off          Disable [patch], restore git deps"
+	@echo "  make push-both             Push both repos to origin"
+	@echo "  make pr                    Create linked PRs in both repos"
+	@echo ""
+	@echo -e "$(FONT_CYAN)Safety:$(FONT_RESET)"
+	@echo "  - Pre-push hook blocks if [patch] active"
+	@echo "  - push-both and pr targets verify mode before running"
 	@echo ""
 
 # Production mode - test what will be published
