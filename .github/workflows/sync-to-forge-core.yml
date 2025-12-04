@@ -26,6 +26,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PROJECT_APP_ID }}
+          private-key: ${{ secrets.PROJECT_APP_PRIVATE_KEY }}
+          owner: namastexlabs
+          repositories: forge-core
+
       - name: Checkout automagik-forge
         uses: actions/checkout@v4
         with:
@@ -71,7 +80,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: namastexlabs/forge-core
-          token: ${{ secrets.PAT_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           path: forge-core-repo
           fetch-depth: 0
 
@@ -131,7 +140,7 @@ jobs:
           contains(github.event.pull_request.labels.*.name, 'rc')
         uses: peter-evans/repository-dispatch@v3
         with:
-          token: ${{ secrets.PAT_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           repository: namastexlabs/forge-core
           event-type: create-pre-release
           client-payload: '{"source_pr": "${{ github.event.pull_request.number }}", "source_repo": "automagik-forge"}'
