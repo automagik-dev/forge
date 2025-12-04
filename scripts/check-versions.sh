@@ -112,7 +112,12 @@ elif [ "$TAG_COUNT" -eq 1 ]; then
 fi
 
 # 4. Verify forge-core tag exists (skip in dev-core mode)
-if [ ! -f "$REPO_ROOT/.dev-core-active" ] && [ -n "$UNIQUE_TAGS" ]; then
+# Dev-core mode is detected by checking for uncommented [patch. section in .cargo/config.toml
+DEV_CORE_ACTIVE=false
+if grep -q '^\[patch\.' "$REPO_ROOT/.cargo/config.toml" 2>/dev/null; then
+    DEV_CORE_ACTIVE=true
+fi
+if [ "$DEV_CORE_ACTIVE" = "false" ] && [ -n "$UNIQUE_TAGS" ]; then
     FORGE_CORE_TAG=$(echo "$UNIQUE_TAGS" | head -1)
     echo ""
     echo "Verifying forge-core tag $FORGE_CORE_TAG exists..."
