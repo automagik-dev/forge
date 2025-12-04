@@ -165,10 +165,10 @@ export function ProjectList() {
 
   // Set initial focus when projects are loaded
   useEffect(() => {
-    if (sortedProjects.length > 0 && !focusedProjectId) {
-      setFocusedProjectId(sortedProjects[0].id);
+    if (projects.length > 0 && !focusedProjectId) {
+      setFocusedProjectId(projects[0].id);
     }
-  }, [sortedProjects, focusedProjectId]);
+  }, [projects, focusedProjectId]);
 
   useEffect(() => {
     fetchProjects();
