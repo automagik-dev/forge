@@ -178,7 +178,7 @@ jobs:
 
       - name: Upload APKs to GitHub release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             android/app/build/outputs/apk/debug/automagik-forge-*-debug.apk
