@@ -50,7 +50,7 @@ jobs:
             use-zigbuild: true
             container: *forge_builder
           # Android builds moved to separate workflow (build-android-apk.yml)
-          - os: windows-latest
+          - os: [self-hosted, Windows]
             target: x86_64-pc-windows-msvc
             platform: windows-x64
           # Windows ARM64 is not well supported, commenting out for now
