@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -53,6 +53,7 @@ export function ProjectList() {
     return (saved as SortDirection) || 'desc';
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -168,7 +169,7 @@ export function ProjectList() {
     if (projects.length > 0 && !focusedProjectId) {
       setFocusedProjectId(projects[0].id);
     }
-  }, [projects, focusedProjectId]);
+  }, [projects.length, focusedProjectId]);
 
   useEffect(() => {
     fetchProjects();
@@ -186,6 +187,7 @@ export function ProjectList() {
           <div className="relative w-[200px]">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
+              ref={searchInputRef}
               type="text"
               placeholder={t('search.placeholder')}
               value={searchQuery}
