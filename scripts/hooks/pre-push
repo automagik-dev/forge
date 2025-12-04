@@ -14,10 +14,11 @@ NC='\033[0m'
 
 DEV_CORE_ACTIVE=false
 
-# Check .cargo/config.toml for ACTIVE (uncommented) [patch] section
-# Pattern: line starts with [patch. (not # [patch.)
+# Check .cargo/config.toml for ACTIVE forge-core [patch] section ONLY
+# We only block on forge-core patches, not crates-io patches (codex fork)
+# Pattern: line starts with [patch."https://github.com/namastexlabs/forge-core
 if [ -f ".cargo/config.toml" ]; then
-    if grep -q '^\[patch\.' .cargo/config.toml 2>/dev/null; then
+    if grep -q '^\[patch\."https://github.com/namastexlabs/forge-core' .cargo/config.toml 2>/dev/null; then
         DEV_CORE_ACTIVE=true
     fi
 fi

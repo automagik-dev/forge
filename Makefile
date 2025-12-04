@@ -781,15 +781,15 @@ dev-core: check-android-deps check-cargo ## Start dev with local forge-core
 
 dev-core-off: ## Disable local forge-core (use git deps)
 	@echo -e "$(FONT_CYAN)🔄 Disabling Cargo [patch] overrides...$(FONT_RESET)"
-	@# Comment out [patch] section in .cargo/config.toml
-	@sed -i 's/^\[patch\./# [patch./g' .cargo/config.toml
-	@sed -i 's/^db = /# db = /g' .cargo/config.toml
-	@sed -i 's/^services = /# services = /g' .cargo/config.toml
-	@sed -i 's/^server = /# server = /g' .cargo/config.toml
-	@sed -i 's/^deployment = /# deployment = /g' .cargo/config.toml
-	@sed -i 's/^local-deployment = /# local-deployment = /g' .cargo/config.toml
-	@sed -i 's/^executors = /# executors = /g' .cargo/config.toml
-	@sed -i 's/^utils = /# utils = /g' .cargo/config.toml
+	@# Comment out forge-core [patch] section ONLY (not crates-io patches)
+	@sed -i 's/^\[patch\."https:\/\/github.com\/namastexlabs\/forge-core.git"\]/# [patch."https:\/\/github.com\/namastexlabs\/forge-core.git"]/g' .cargo/config.toml
+	@sed -i 's/^db = { path/# db = { path/g' .cargo/config.toml
+	@sed -i 's/^services = { path/# services = { path/g' .cargo/config.toml
+	@sed -i 's/^server = { path/# server = { path/g' .cargo/config.toml
+	@sed -i 's/^deployment = { path/# deployment = { path/g' .cargo/config.toml
+	@sed -i 's/^local-deployment = { path/# local-deployment = { path/g' .cargo/config.toml
+	@sed -i 's/^executors = { path/# executors = { path/g' .cargo/config.toml
+	@sed -i 's/^utils = { path/# utils = { path/g' .cargo/config.toml
 	@rm -f Cargo.lock
 	@cargo fetch 2>/dev/null || true
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using git dependencies$(FONT_RESET)"
@@ -887,54 +887,14 @@ status: ## Show comprehensive cross-repo status
 	fi
 	@echo ""
 
-# Commit to both repos with same message
-commit-both:
-	@read -p "Commit message: " MSG; \
-	if [ -n "$$(git status --porcelain)" ]; then \
-		git add -A && git commit -m "$$MSG"; \
-	else \
-		echo "automagik-forge: nothing to commit"; \
-	fi; \
-	if [ -d "forge-core" ] && [ -n "$$(cd forge-core && git status --porcelain)" ]; then \
-		cd forge-core && git add -A && git commit -m "$$MSG"; \
-	else \
-		echo "forge-core: nothing to commit"; \
-	fi
-
-# Push both repos
-push-both:
-	@if grep -q '^\[patch\.' .cargo/config.toml 2>/dev/null; then \
-		echo -e "$(FONT_RED)🛑 Dev-core mode is ACTIVE! Run: make dev-core-off$(FONT_RESET)"; \
-		exit 1; \
-	fi
-	@BRANCH=$$(git branch --show-current); \
-	git push -u origin $$BRANCH; \
-	if [ -d "forge-core" ]; then \
-		cd forge-core && git push -u origin $$BRANCH; \
-	fi
-
-# Create linked PRs for both repos
-pr:
-	@if grep -q '^\[patch\.' .cargo/config.toml 2>/dev/null; then \
-		echo -e "$(FONT_RED)🛑 Dev-core mode is ACTIVE! Run: make dev-core-off$(FONT_RESET)"; \
-		exit 1; \
-	fi
-	@BRANCH=$$(git branch --show-current); \
-	if [ -d "forge-core" ]; then \
-		echo -e "$(FONT_CYAN)Creating forge-core PR...$(FONT_RESET)"; \
-		cd forge-core && gh pr create --base dev --fill 2>/dev/null || echo "forge-core PR already exists or nothing to create"; \
-	fi; \
-	echo -e "$(FONT_CYAN)Creating automagik-forge PR...$(FONT_RESET)"; \
-	gh pr create --base dev --fill 2>/dev/null || echo "automagik-forge PR already exists or nothing to create"
-
 # Quick help for cross-repo commands
 dev-help:
 	@echo ""
 	@echo -e "$(FONT_BOLD)$(FONT_PURPLE)🔗 Cross-Repo Development Commands$(FONT_RESET)"
 	@echo ""
 	@echo -e "$(FONT_CYAN)Starting:$(FONT_RESET)"
-	@echo "  make dev-core              Sync to current branch (auto-detect)"
-	@echo "  make dev-core BRANCH=x     Sync both repos to specific branch"
+	@echo "  make dev-core              Enable local forge-core development"
+	@echo "  make dev-core BRANCH=x     Sync to a specific branch"
 	@echo ""
 	@echo -e "$(FONT_CYAN)How it works:$(FONT_RESET)"
 	@echo "  1. Clones/syncs forge-core to same branch as automagik-forge"
@@ -946,16 +906,20 @@ dev-help:
 	@echo "  make status                Cross-repo status (branches, versions)"
 	@echo "  make dev-core-status       Detailed dev-core status"
 	@echo "  make dev-core-check        Health check diagnostics"
-	@echo "  make commit-both MSG='x'   Commit to both repos with same message"
 	@echo ""
 	@echo -e "$(FONT_CYAN)Before PRs:$(FONT_RESET)"
 	@echo "  make dev-core-off          Disable [patch], restore git deps"
-	@echo "  make push-both             Push both repos to origin"
-	@echo "  make pr                    Create linked PRs in both repos"
+	@echo "  git push                   Push to automagik-forge (standard git)"
+	@echo "  gh pr create               Create PR in automagik-forge"
+	@echo ""
+	@echo -e "$(FONT_CYAN)Automation:$(FONT_RESET)"
+	@echo "  When your automagik-forge PR merges to dev:"
+	@echo "  - sync-to-forge-core.yml auto-syncs changes to forge-core"
+	@echo "  - No manual interaction with forge-core repo needed"
 	@echo ""
 	@echo -e "$(FONT_CYAN)Safety:$(FONT_RESET)"
-	@echo "  - Pre-push hook blocks if [patch] active"
-	@echo "  - push-both and pr targets verify mode before running"
+	@echo "  - Pre-push hook blocks pushes if [patch] is active"
+	@echo "  - Run 'make dev-core-off' before pushing"
 	@echo ""
 
 # Production mode - test what will be published
