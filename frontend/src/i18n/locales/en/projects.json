@@ -4,7 +4,9 @@
   "createProject": "Create Project",
   "loading": "Loading projects...",
   "search": {
-    "placeholder": "Search projects..."
+    "placeholder": "Search projects...",
+    "noResults": "No projects found",
+    "noResultsDescription": "Try adjusting your search terms"
   },
   "sort": {
     "activity": "Recent Activity",

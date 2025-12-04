@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -117,6 +117,10 @@ export function ProjectList() {
     localStorage.setItem(STORAGE_KEY_DIR, newDirection);
   };
 
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  }, []);
+
   // Memoize sorted and filtered projects to avoid recomputing on every render
   const sortedProjects = useMemo(() => {
     let sorted = [...projects];
@@ -184,14 +188,14 @@ export function ProjectList() {
           <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative w-[200px]">
+          <div key="search-input" className="relative w-[200px]">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               ref={searchInputRef}
               type="text"
               placeholder={t('search.placeholder')}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
               className="pl-8"
             />
           </div>
@@ -254,6 +258,18 @@ export function ProjectList() {
               <Plus className="mr-2 h-4 w-4" />
               {t('empty.createFirst')}
             </Button>
+          </CardContent>
+        </Card>
+      ) : sortedProjects.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+              <Search className="h-6 w-6" />
+            </div>
+            <H3 className="mt-4">{t('search.noResults')}</H3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t('search.noResultsDescription')}
+            </p>
           </CardContent>
         </Card>
       ) : (
