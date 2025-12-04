@@ -119,6 +119,12 @@ export function ProjectList() {
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+    // Restore focus after state update
+    requestAnimationFrame(() => {
+      if (document.activeElement !== searchInputRef.current) {
+        searchInputRef.current?.focus();
+      }
+    });
   }, []);
 
   // Memoize sorted and filtered projects to avoid recomputing on every render
