@@ -102,8 +102,9 @@ jobs:
           fi
 
       - name: Trigger forge-core pre-release
-        if: steps.bump.outputs.new_version != '' && secrets.PAT_TOKEN != ''
+        if: steps.bump.outputs.new_version != ''
         uses: peter-evans/repository-dispatch@v2
+        continue-on-error: true
         with:
           token: ${{ secrets.PAT_TOKEN }}
           repository: namastexlabs/forge-core
