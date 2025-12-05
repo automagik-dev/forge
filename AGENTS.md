@@ -351,6 +351,46 @@ ACE (Agentic Context Engineering) ensures framework optimization is data-driven,
 
 **Status:** ✅ All helpers operational | ⚠️ Automation pending (Issue #384)
 
+### 11. forge-core Development Workflow - Use dev-core, Never Direct 🔴 CRITICAL
+**Rule:** NEVER work directly in forge-core repository. ALWAYS start from automagik-forge and use `make dev-core`.
+
+**Forbidden Actions:**
+- ❌ `cd forge-core && git checkout -b feature/xxx` (bypasses automation)
+- ❌ Creating branches directly in forge-core repo
+- ❌ Pushing PRs from standalone forge-core clone
+- ❌ Running `cargo build` in forge-core without dev-core active
+
+**Required Workflow:**
+1. Start from automagik-forge: `cd /home/namastex/workspace/automagik-forge`
+2. Create feature branch: `git checkout -b feat/my-feature`
+3. Enable dev-core mode: `make dev-core BRANCH=feat/my-feature`
+4. Edit forge-core files (hot reload active)
+5. Push from subdirectory: `cd forge-core && git push && gh pr create`
+6. Wait for forge-core PR to merge (automation handles tag + sync)
+7. Disable dev-core: `make dev-core-off`
+8. Verify: `make status` (must show "Ready to push: YES")
+
+**What `make dev-core` Does:**
+1. Clones forge-core to `./forge-core/` directory
+2. Syncs to your branch (creates if doesn't exist)
+3. Enables Cargo [patch] to redirect git deps to local paths
+4. Regenerates Cargo.lock for local paths
+5. Installs pre-push hook (blocks pushes with dev-core active)
+
+**Why This Matters:**
+- **CI/CD Pipeline** depends on work flowing through automagik-forge
+- **Sync Automation** (GitHub Actions) expects this workflow
+- **Integration Testing** happens in automagik-forge context
+- **Version Sync** breaks when changes bypass the workflow
+
+**Key Files:**
+- `Makefile` (lines 706-815) - dev-core lifecycle
+- `.cargo/config.toml` - [patch] section
+- `docs/DUAL_REPO_WORKFLOW.md` - Complete documentation
+
+**Documented Violations:**
+- 2025-12-05: Worked directly in forge-core, created branch `feat/rmcp-0.10.0-upgrade` directly, pushed PR #23 directly (bypassed automation, user had to fix manually)
+
 ## Development Workflow
 
 **Branch Strategy:**
