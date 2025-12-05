@@ -27,7 +27,7 @@ ts-rs = { git = "https://github.com/xazukx/ts-rs.git", branch = "use-ts-enum", f
 schemars = { version = "1.0.4", features = ["derive", "chrono04", "uuid1", "preserve_order"] }
 
 # forge-core workspace dependencies (required for dev-core mode)
-rmcp = { version = "0.8.5" }
+rmcp = { version = "0.10.0" }
 
 # Codex dependencies from namastexlabs fork (patched via .cargo/config.toml)
 codex-protocol = "0.63.0"

@@ -7009,3 +7009,18 @@ dependencies = [
  "syn 2.0.111",
  "winnow",
 ]
+
+[[patch.unused]]
+name = "codex-app-server-protocol"
+version = "0.63.0"
+source = "git+https://github.com/namastexlabs/codex.git?branch=main#27dd137e257b3e2b1857ebb02113178e064722c7"
+
+[[patch.unused]]
+name = "codex-protocol"
+version = "0.63.0"
+source = "git+https://github.com/namastexlabs/codex.git?branch=main#27dd137e257b3e2b1857ebb02113178e064722c7"
+
+[[patch.unused]]
+name = "mcp-types"
+version = "0.63.0"
+source = "git+https://github.com/namastexlabs/codex.git?branch=main#27dd137e257b3e2b1857ebb02113178e064722c7"
