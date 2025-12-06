@@ -9,8 +9,6 @@ changelog:
       - internal
       - bot
     authors:
-      - dependabot
-      - dependabot[bot]
       - github-actions[bot]
   categories:
     - title: "Features"
