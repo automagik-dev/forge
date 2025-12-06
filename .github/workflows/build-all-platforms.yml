@@ -473,7 +473,7 @@ jobs:
         if: steps.check.outputs.published == 'false'
         run: |
           cd npx-cli
-          npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }} --provenance
+          npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
 
       - name: Skip publish (already published)
         if: steps.check.outputs.published == 'true'
