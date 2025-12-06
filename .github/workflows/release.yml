@@ -52,6 +52,13 @@ jobs:
       - name: Check for automated commit (prevent infinite loop)
         id: check
         run: |
+          # Manual workflow_dispatch always runs (override gate check)
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "✅ Manual trigger, bypassing gate check"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
           COMMIT_MSG=$(git log -1 --pretty=%B)
           echo "Last commit: $COMMIT_MSG"
 
