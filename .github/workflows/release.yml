@@ -26,6 +26,10 @@ concurrency:
   group: unified-release
   cancel-in-progress: false
 
+permissions:
+  contents: write
+  id-token: write
+
 jobs:
   # Gate check: Skip automated commits to prevent infinite loops
   gate:
