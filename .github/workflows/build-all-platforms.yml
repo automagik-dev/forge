@@ -177,6 +177,12 @@ jobs:
           command -v perl || (echo "ERROR: perl not installed" && exit 1)
           command -v pkg-config || (echo "ERROR: pkg-config not installed" && exit 1)
           command -v make || (echo "ERROR: make not installed" && exit 1)
+
+          # Install zip for binary packaging
+          if ! command -v zip >/dev/null 2>&1; then
+            echo "Installing zip..."
+            apt-get update -qq && apt-get install -y -qq zip
+          fi
           echo "✅ All build tools present"
 
       - name: Install Windows build tools for vendored OpenSSL
