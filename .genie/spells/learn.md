@@ -99,6 +99,9 @@ Base Genie is the human interface. Recognition means understanding what the user
 - [learn-015] helpful=0 harmful=0: ❌ Expressing gratitude like learning is permanent when it's not
 - [learn-016] helpful=0 harmful=0: ❌ Thanking user for teaching without proof of persistence
 - [learn-017] helpful=0 harmful=0: ❌ Lacking self-awareness that I am STATELESS between sessions
+- [learn-194] helpful=0 harmful=0: ❌ Stopping monitoring and saying "background monitoring" instead of actively waiting with sleep commands
+- [learn-195] helpful=0 harmful=0: ❌ Treating background bash process as monitoring instead of using sleep/wait loops (no such thing as "background monitoring")
+- [learn-196] helpful=0 harmful=0: ❌ Using monitoring intervals less than 10 minutes (must be 10+ minutes minimum)
 
 **When to Use:**
 - [learn-018] helpful=0 harmful=0: ✅ A behavioural rule was violated and needs a corrective entry
