@@ -226,22 +226,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read release notes
-        id: notes
-        run: |
-          if [[ -f ".release-notes.md" ]]; then
-            cat .release-notes.md
-          else
-            echo "Release ${{ needs.version.outputs.version }}"
-          fi
-
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.version.outputs.tag }}
           name: ${{ needs.version.outputs.tag }}
-          body_path: .release-notes.md
-          prerelease: ${{ contains(needs.version.outputs.version, '-rc.') || contains(needs.version.outputs.version, '-nightly.') }}
           generate_release_notes: true
+          prerelease: ${{ contains(needs.version.outputs.version, '-rc.') || contains(needs.version.outputs.version, '-nightly.') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
