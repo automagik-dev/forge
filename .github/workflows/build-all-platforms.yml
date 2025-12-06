@@ -471,6 +471,8 @@ jobs:
 
       - name: Publish to NPM
         if: steps.check.outputs.published == 'false'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd npx-cli
           npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
