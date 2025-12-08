@@ -250,7 +250,10 @@ jobs:
         if: runner.os == 'Windows' && env.SKIP_BUILD != 'true'
         env:
           CARGO_BUILD_JOBS: ${{ matrix.cargo_jobs }}
+          LIBCLANG_PATH: "C:\\Program Files\\LLVM\\bin"
           LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
+          LIBSQLITE3_SYS_BUNDLED: 1
+          LIBSQLITE3_SYS_STATIC: 1
           LIBZ_SYS_STATIC: 1
           OPENSSL_STATIC: 1
           SQLX_OFFLINE: true
