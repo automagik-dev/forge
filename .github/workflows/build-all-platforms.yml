@@ -40,17 +40,17 @@ jobs:
       fail-fast: false  # Don't cancel other platforms if one fails
       matrix:
         include:
-          - os: ubuntu-latest  # GitHub-hosted runner with Docker container
+          - os: [self-hosted, Linux, X64]  # Self-hosted runner on ct200 with Docker
             target: x86_64-unknown-linux-gnu
             platform: linux-x64
             container: ghcr.io/namastexlabs/forge-builder:nightly-2025-05-18
-          - os: ubuntu-latest  # GitHub-hosted runner with Docker container
+          - os: [self-hosted, Linux, X64]  # Self-hosted runner on ct200 with Docker (cross-compile)
             target: aarch64-unknown-linux-gnu
             platform: linux-arm64
             use-zigbuild: true
             container: ghcr.io/namastexlabs/forge-builder:nightly-2025-05-18
           # Android builds moved to separate workflow (build-android-apk.yml)
-          - os: windows-latest
+          - os: [self-hosted, Windows, X64]  # Self-hosted runner on ct201
             target: x86_64-pc-windows-msvc
             platform: windows-x64
           # Windows ARM64 is not well supported, commenting out for now
@@ -162,23 +162,16 @@ jobs:
         if: env.SKIP_BUILD != 'true'
         run: pnpm install --no-frozen-lockfile
 
-      - name: Install Linux build tools for vendored OpenSSL
-        if: runner.os == 'Linux' && env.SKIP_BUILD != 'true' && matrix.container == ''
-        shell: bash
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y perl pkg-config libssl-dev make
-
       - name: Verify build tools (container builds)
         if: runner.os == 'Linux' && env.SKIP_BUILD != 'true' && matrix.container != ''
         shell: bash
         run: |
-          echo "Verifying build tools in container..."
+          echo "Verifying build tools in container on self-hosted runner..."
           command -v perl || (echo "ERROR: perl not installed" && exit 1)
           command -v pkg-config || (echo "ERROR: pkg-config not installed" && exit 1)
           command -v make || (echo "ERROR: make not installed" && exit 1)
 
-          # Install zip for binary packaging
+          # Install zip for binary packaging if missing
           if ! command -v zip >/dev/null 2>&1; then
             echo "Installing zip..."
             apt-get update -qq && apt-get install -y -qq zip
@@ -221,6 +214,13 @@ jobs:
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.13.0
+
+      - name: Verify Zig toolchain (container)
+        if: runner.os == 'Linux' && matrix.use-zigbuild && env.SKIP_BUILD != 'true' && matrix.container != ''
+        shell: bash
+        run: |
+          echo "Zig version: $(zig version)"
+          echo "cargo-zigbuild version: $(cargo zigbuild --version)"
 
       - name: Build frontend
         if: env.SKIP_BUILD != 'true'
