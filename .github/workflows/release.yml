@@ -5,6 +5,13 @@ on:
   schedule:
     - cron: '0 4 * * *'
 
+  # Auto-trigger on PR merge with release labels
+  # - rc: can be triggered from dev or main
+  # - stable: only from main
+  pull_request:
+    types: [closed]
+    branches: [main, dev]
+
   # Manual trigger for all release actions
   workflow_dispatch:
     inputs:
@@ -47,6 +54,37 @@ jobs:
             echo "action=nightly" >> $GITHUB_OUTPUT
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "action=${{ inputs.action }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # Only run if PR was merged (not just closed)
+            if [[ "${{ github.event.pull_request.merged }}" != "true" ]]; then
+              echo "⏭️ PR closed without merge, skipping"
+              echo "action=none" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            # Check PR labels for release type
+            LABELS="${{ join(github.event.pull_request.labels.*.name, ',') }}"
+            BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
+            echo "PR labels: $LABELS"
+            echo "Base branch: $BASE_BRANCH"
+
+            if [[ "$LABELS" == *"rc"* ]]; then
+              # RC can be triggered from dev or main
+              echo "🚀 RC label detected, triggering bump-rc"
+              echo "action=bump-rc" >> $GITHUB_OUTPUT
+            elif [[ "$LABELS" == *"stable"* ]]; then
+              # Stable can ONLY be triggered from main
+              if [[ "$BASE_BRANCH" != "main" ]]; then
+                echo "❌ Stable label only allowed on PRs to main, not $BASE_BRANCH"
+                echo "action=none" >> $GITHUB_OUTPUT
+              else
+                echo "🎉 Stable label detected, triggering promote"
+                echo "action=promote" >> $GITHUB_OUTPUT
+              fi
+            else
+              echo "⏭️ No release label found, skipping"
+              echo "action=none" >> $GITHUB_OUTPUT
+            fi
           else
             echo "action=none" >> $GITHUB_OUTPUT
           fi
@@ -54,9 +92,23 @@ jobs:
       - name: Check for automated commit (prevent infinite loop)
         id: check
         run: |
+          # Skip if no action detected (PR without release label, or closed without merge)
+          if [[ "${{ steps.detect.outputs.action }}" == "none" ]]; then
+            echo "⏭️ No release action detected, skipping"
+            echo "should_run=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
           # Manual workflow_dispatch always runs (override gate check)
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "✅ Manual trigger, bypassing gate check"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # PR merges with release labels always run
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "✅ PR merge with release label, proceeding"
             echo "should_run=true" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -106,6 +158,8 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+          # Nightly always builds from dev branch
+          ref: ${{ needs.gate.outputs.action == 'nightly' && 'dev' || github.ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

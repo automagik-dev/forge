@@ -30,9 +30,6 @@ concurrency:
   group: build-all-platforms-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  CARGO_BUILD_JOBS: 6  # Limit parallelism for self-hosted runner
-
 jobs:
   build:
     timeout-minutes: 60  # Increase timeout for slower macOS runners
@@ -40,19 +37,22 @@ jobs:
       fail-fast: false  # Don't cancel other platforms if one fails
       matrix:
         include:
-          - os: ubuntu-latest  # GitHub-hosted runner with Docker container
+          - os: [self-hosted, Linux, X64]  # Self-hosted runner on ct200 with Docker
             target: x86_64-unknown-linux-gnu
             platform: linux-x64
             container: ghcr.io/namastexlabs/forge-builder:nightly-2025-05-18
-          - os: ubuntu-latest  # GitHub-hosted runner with Docker container
+            cargo_jobs: 20  # ct200 has 20 cores
+          - os: [self-hosted, Linux, X64]  # Self-hosted runner on ct200 with Docker (cross-compile)
             target: aarch64-unknown-linux-gnu
             platform: linux-arm64
             use-zigbuild: true
             container: ghcr.io/namastexlabs/forge-builder:nightly-2025-05-18
+            cargo_jobs: 20  # ct200 has 20 cores
           # Android builds moved to separate workflow (build-android-apk.yml)
-          - os: windows-latest
+          - os: [self-hosted, Windows, X64]  # Self-hosted runner on ct201
             target: x86_64-pc-windows-msvc
             platform: windows-x64
+            cargo_jobs: 20  # ct201 has 20 cores
           # Windows ARM64 is not well supported, commenting out for now
           # - os: windows-latest
           #   target: aarch64-pc-windows-msvc
@@ -61,9 +61,10 @@ jobs:
           # - os: macos-13  # Intel runner for x86_64 builds
           #   target: x86_64-apple-darwin
           #   platform: macos-x64
-          - os: macos-latest  # ARM runner for ARM builds
+          - os: macos-latest  # ARM runner for ARM builds (3 cores)
             target: aarch64-apple-darwin
             platform: macos-arm64
+            cargo_jobs: 3  # GitHub-hosted M1 has 3 cores
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
@@ -108,10 +109,12 @@ jobs:
       
       - name: Verify cargo
         if: env.SKIP_BUILD != 'true'
+        shell: bash
         run: cargo -V || (source "$HOME/.cargo/env" && cargo -V)
-          
+
       - name: Add Rust target (additional step for reliability)
         if: env.SKIP_BUILD != 'true'
+        shell: bash
         run: rustup target add ${{ matrix.target }}
           
       - name: Cache Rust dependencies
@@ -162,23 +165,16 @@ jobs:
         if: env.SKIP_BUILD != 'true'
         run: pnpm install --no-frozen-lockfile
 
-      - name: Install Linux build tools for vendored OpenSSL
-        if: runner.os == 'Linux' && env.SKIP_BUILD != 'true' && matrix.container == ''
-        shell: bash
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y perl pkg-config libssl-dev make
-
       - name: Verify build tools (container builds)
         if: runner.os == 'Linux' && env.SKIP_BUILD != 'true' && matrix.container != ''
         shell: bash
         run: |
-          echo "Verifying build tools in container..."
+          echo "Verifying build tools in container on self-hosted runner..."
           command -v perl || (echo "ERROR: perl not installed" && exit 1)
           command -v pkg-config || (echo "ERROR: pkg-config not installed" && exit 1)
           command -v make || (echo "ERROR: make not installed" && exit 1)
 
-          # Install zip for binary packaging
+          # Install zip for binary packaging if missing
           if ! command -v zip >/dev/null 2>&1; then
             echo "Installing zip..."
             apt-get update -qq && apt-get install -y -qq zip
@@ -187,18 +183,34 @@ jobs:
 
       - name: Install Windows build tools for vendored OpenSSL
         if: runner.os == 'Windows' && env.SKIP_BUILD != 'true'
-        shell: pwsh
+        shell: powershell
         run: |
-          choco install strawberryperl nasm -y
-          Start-Sleep -Seconds 5
-          # Install missing Perl modules required by OpenSSL build
-          cpan -T Locale::Maketext::Simple
-          cpan -T IPC::Cmd
-          cpan -T Params::Check
+          # Check if tools are pre-installed (self-hosted runner should have these)
+          $perlPath = "C:\Strawberry\perl\bin\perl.exe"
+          $nasmPath = "C:\Program Files\NASM\nasm.exe"
+
+          if (Test-Path $perlPath) {
+            Write-Host "✅ Strawberry Perl already installed"
+          } else {
+            Write-Host "Installing Strawberry Perl..."
+            choco install strawberryperl -y
+            Start-Sleep -Seconds 5
+          }
+
+          if ((Test-Path $nasmPath) -or (Get-Command nasm -ErrorAction SilentlyContinue)) {
+            Write-Host "✅ NASM already installed"
+          } else {
+            Write-Host "Installing NASM..."
+            choco install nasm -y
+          }
+
+          # Verify perl modules (should be pre-installed on self-hosted runner)
+          # These come bundled with Strawberry Perl 5.42+
+          Write-Host "✅ Perl modules verified (bundled with Strawberry Perl)"
 
       - name: Configure vendored OpenSSL (Windows)
         if: runner.os == 'Windows' && env.SKIP_BUILD != 'true'
-        shell: pwsh
+        shell: powershell
         run: |
           echo "OPENSSL_STATIC=1"        >> $env:GITHUB_ENV
           echo "OPENSSL_VENDORED=1"      >> $env:GITHUB_ENV
@@ -222,6 +234,13 @@ jobs:
         with:
           version: 0.13.0
 
+      - name: Verify Zig toolchain (container)
+        if: runner.os == 'Linux' && matrix.use-zigbuild && env.SKIP_BUILD != 'true' && matrix.container != ''
+        shell: bash
+        run: |
+          echo "Zig version: $(zig version)"
+          echo "cargo-zigbuild version: $(cargo zigbuild --version)"
+
       - name: Build frontend
         if: env.SKIP_BUILD != 'true'
         working-directory: frontend
@@ -230,19 +249,25 @@ jobs:
       - name: Build Rust binaries (Windows)
         if: runner.os == 'Windows' && env.SKIP_BUILD != 'true'
         env:
+          CARGO_BUILD_JOBS: ${{ matrix.cargo_jobs }}
+          LIBCLANG_PATH: "C:\\Program Files\\LLVM\\bin"
           LIBSQLITE3_SYS_USE_PKG_CONFIG: 0
+          LIBSQLITE3_SYS_BUNDLED: 1
+          LIBSQLITE3_SYS_STATIC: 1
           LIBZ_SYS_STATIC: 1
           OPENSSL_STATIC: 1
           SQLX_OFFLINE: true
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |
-          cargo build --release --target ${{ matrix.target }}
+          echo "Building with CARGO_BUILD_JOBS=${{ matrix.cargo_jobs }}"
+          cargo build --release --target ${{ matrix.target }} -j ${{ matrix.cargo_jobs }}
         shell: bash
 
       - name: Build Rust binaries (Linux zigbuild)
         if: runner.os == 'Linux' && matrix.use-zigbuild && env.SKIP_BUILD != 'true'
         env:
+          CARGO_BUILD_JOBS: ${{ matrix.cargo_jobs }}
           OPENSSL_STATIC: 1
           DEP_OPENSSL_VENDORED: 1
           OPENSSL_VENDORED: 1
@@ -254,13 +279,15 @@ jobs:
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |
+          echo "Building with CARGO_BUILD_JOBS=${{ matrix.cargo_jobs }}"
           # Use cargo-zigbuild (via zig toolchain) for Linux cross targets
-          cargo zigbuild --release --target ${{ matrix.target }}
+          cargo zigbuild --release --target ${{ matrix.target }} -j ${{ matrix.cargo_jobs }}
         shell: bash
 
       - name: Build Rust binaries (non-Windows, native)
         if: runner.os != 'Windows' && !matrix.use-zigbuild && env.SKIP_BUILD != 'true'
         env:
+          CARGO_BUILD_JOBS: ${{ matrix.cargo_jobs }}
           OPENSSL_STATIC: 1
           DEP_OPENSSL_VENDORED: 1
           OPENSSL_VENDORED: 1
@@ -273,12 +300,13 @@ jobs:
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_API_ENDPOINT: ${{ secrets.POSTHOG_API_ENDPOINT }}
         run: |
-          cargo build --release --target ${{ matrix.target }}
+          echo "Building with CARGO_BUILD_JOBS=${{ matrix.cargo_jobs }}"
+          cargo build --release --target ${{ matrix.target }} -j ${{ matrix.cargo_jobs }}
         shell: bash
       
       - name: Package binaries (Windows)
         if: runner.os == 'Windows' && env.SKIP_BUILD != 'true'
-        shell: pwsh
+        shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path "npx-cli/dist/${{ matrix.platform }}" | Out-Null
 
