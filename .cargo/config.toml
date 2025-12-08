@@ -39,7 +39,9 @@ rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
 # NOTE: This section is ALWAYS active, not managed by dev-core
 # ============================================================================
 [patch.crates-io]
-mcp-types = { git = "https://github.com/namastexlabs/codex.git", branch = "main" }
-codex-protocol = { git = "https://github.com/namastexlabs/codex.git", branch = "main" }
-codex-app-server-protocol = { git = "https://github.com/namastexlabs/codex.git", branch = "main" }
+# Pin to specific commit to avoid cargo fetching updates every build
+# Update these when upgrading codex (run: git ls-remote https://github.com/namastexlabs/codex.git refs/heads/main)
+mcp-types = { git = "https://github.com/namastexlabs/codex.git", rev = "27dd137e" }
+codex-protocol = { git = "https://github.com/namastexlabs/codex.git", rev = "27dd137e" }
+codex-app-server-protocol = { git = "https://github.com/namastexlabs/codex.git", rev = "27dd137e" }
 # ============================================================================

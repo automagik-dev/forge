@@ -31,7 +31,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CARGO_BUILD_JOBS: 6  # Limit parallelism for self-hosted runner
+  # Self-hosted runners have more cores (12), GitHub-hosted macOS has 3
+  # Let cargo auto-detect, or set per-job in the matrix
+  CARGO_BUILD_JOBS: ""  # Empty = auto-detect cores
 
 jobs:
   build:

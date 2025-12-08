@@ -623,9 +623,9 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "base64ct"
-version = "1.8.0"
+version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55248b47b0caf0546f7988906588779981c43bb1bc9d0c44087278f80cdb44ba"
+checksum = "0e050f626429857a27ddccb31e0aca21356bfa709c04041aefddac081a8f068a"
 
 [[package]]
 name = "basic-cookies"
@@ -783,9 +783,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.48"
+version = "1.2.49"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c481bdbf0ed3b892f6f806287d72acd515b352a4ec27a208489b8c1bc839633a"
+checksum = "90583009037521a116abf44494efecd645ba48b6622457080f080b85544e2215"
 dependencies = [
  "find-msvc-tools",
  "jobserver",
@@ -1121,7 +1121,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
+ "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum)",
  "utils",
  "uuid",
 ]
@@ -1540,7 +1540,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
+ "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum)",
  "utils",
  "uuid",
  "winsplit",
@@ -1694,7 +1694,7 @@ dependencies = [
  "tower-http 0.5.2",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
+ "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?rev=b5c8277a)",
  "url",
  "urlencoding",
  "utils",
@@ -1714,7 +1714,7 @@ dependencies = [
  "sqlx",
  "tokio",
  "tracing",
- "ts-rs 11.0.1",
+ "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?rev=b5c8277a)",
  "uuid",
 ]
 
@@ -1728,7 +1728,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tracing",
- "ts-rs 11.0.1",
+ "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?rev=b5c8277a)",
  "wiremock",
 ]
 
@@ -2904,7 +2904,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
+ "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum)",
  "utils",
  "uuid",
 ]
@@ -3510,7 +3510,7 @@ dependencies = [
  "snafu",
  "tokio",
  "tower",
- "tower-http 0.6.7",
+ "tower-http 0.6.8",
  "tracing",
  "url",
  "web-time",
@@ -3858,7 +3858,7 @@ version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "219cb19e96be00ab2e37d6e299658a0cfa83e52429179969b0f0121b4ac46983"
 dependencies = [
- "toml_edit 0.23.7",
+ "toml_edit 0.23.9",
 ]
 
 [[package]]
@@ -4074,7 +4074,7 @@ dependencies = [
  "tokio",
  "tokio-native-tls",
  "tower",
- "tower-http 0.6.7",
+ "tower-http 0.6.8",
  "tower-service",
  "url",
  "wasm-bindgen",
@@ -4756,7 +4756,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
+ "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum)",
  "utils",
  "uuid",
 ]
@@ -4813,7 +4813,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
+ "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum)",
  "utils",
  "uuid",
  "xdg",
@@ -5625,9 +5625,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.23.7"
+version = "0.23.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6485ef6d0d9b5d0ec17244ff7eb05310113c3f316f2d14200d4de56b3cb98f8d"
+checksum = "5d7cbc3b4b49633d57a0509303158ca50de80ae32c265093b24c414705807832"
 dependencies = [
  "indexmap 2.12.1",
  "toml_datetime 0.7.3",
@@ -5685,9 +5685,9 @@ dependencies = [
 
 [[package]]
 name = "tower-http"
-version = "0.6.7"
+version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9cf146f99d442e8e68e585f5d798ccd3cad9a7835b917e09728880a862706456"
+checksum = "d4e6559d53cc268e5031cd8429d05415bc4cb4aefc4aa5d6cc35fbf5b924a1f8"
 dependencies = [
  "bitflags 2.10.0",
  "bytes",
@@ -5790,7 +5790,19 @@ dependencies = [
  "chrono",
  "serde_json",
  "thiserror 2.0.17",
- "ts-rs-macros 11.0.1",
+ "ts-rs-macros 11.0.1 (git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum)",
+ "uuid",
+]
+
+[[package]]
+name = "ts-rs"
+version = "11.0.1"
+source = "git+https://github.com/xazukx/ts-rs.git?rev=b5c8277a#b5c8277ac9f321a0be7453eef029466152b13fc8"
+dependencies = [
+ "chrono",
+ "serde_json",
+ "thiserror 2.0.17",
+ "ts-rs-macros 11.0.1 (git+https://github.com/xazukx/ts-rs.git?rev=b5c8277a)",
  "uuid",
 ]
 
@@ -5810,6 +5822,17 @@ dependencies = [
 name = "ts-rs-macros"
 version = "11.0.1"
 source = "git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum#b5c8277ac9f321a0be7453eef029466152b13fc8"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.111",
+ "termcolor",
+]
+
+[[package]]
+name = "ts-rs-macros"
+version = "11.0.1"
+source = "git+https://github.com/xazukx/ts-rs.git?rev=b5c8277a#b5c8277ac9f321a0be7453eef029466152b13fc8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6018,7 +6041,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
+ "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum)",
  "uuid",
  "which",
  "windows-sys 0.61.2",
@@ -7013,14 +7036,14 @@ dependencies = [
 [[patch.unused]]
 name = "codex-app-server-protocol"
 version = "0.63.0"
-source = "git+https://github.com/namastexlabs/codex.git?branch=main#27dd137e257b3e2b1857ebb02113178e064722c7"
+source = "git+https://github.com/namastexlabs/codex.git?rev=27dd137e#27dd137e257b3e2b1857ebb02113178e064722c7"
 
 [[patch.unused]]
 name = "codex-protocol"
 version = "0.63.0"
-source = "git+https://github.com/namastexlabs/codex.git?branch=main#27dd137e257b3e2b1857ebb02113178e064722c7"
+source = "git+https://github.com/namastexlabs/codex.git?rev=27dd137e#27dd137e257b3e2b1857ebb02113178e064722c7"
 
 [[patch.unused]]
 name = "mcp-types"
 version = "0.63.0"
-source = "git+https://github.com/namastexlabs/codex.git?branch=main#27dd137e257b3e2b1857ebb02113178e064722c7"
+source = "git+https://github.com/namastexlabs/codex.git?rev=27dd137e#27dd137e257b3e2b1857ebb02113178e064722c7"
