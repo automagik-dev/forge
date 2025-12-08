@@ -41,18 +41,18 @@ jobs:
             target: x86_64-unknown-linux-gnu
             platform: linux-x64
             container: ghcr.io/namastexlabs/forge-builder:nightly-2025-05-18
-            cargo_jobs: 12  # ct200 has 12 cores
+            cargo_jobs: 20  # ct200 has 20 cores
           - os: [self-hosted, Linux, X64]  # Self-hosted runner on ct200 with Docker (cross-compile)
             target: aarch64-unknown-linux-gnu
             platform: linux-arm64
             use-zigbuild: true
             container: ghcr.io/namastexlabs/forge-builder:nightly-2025-05-18
-            cargo_jobs: 12  # ct200 has 12 cores
+            cargo_jobs: 20  # ct200 has 20 cores
           # Android builds moved to separate workflow (build-android-apk.yml)
           - os: [self-hosted, Windows, X64]  # Self-hosted runner on ct201
             target: x86_64-pc-windows-msvc
             platform: windows-x64
-            cargo_jobs: 12  # ct201 has 12 cores
+            cargo_jobs: 20  # ct201 has 20 cores
           # Windows ARM64 is not well supported, commenting out for now
           # - os: windows-latest
           #   target: aarch64-pc-windows-msvc
