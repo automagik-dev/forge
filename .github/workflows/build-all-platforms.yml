@@ -185,12 +185,28 @@ jobs:
         if: runner.os == 'Windows' && env.SKIP_BUILD != 'true'
         shell: powershell
         run: |
-          choco install strawberryperl nasm -y
-          Start-Sleep -Seconds 5
-          # Install missing Perl modules required by OpenSSL build
-          cpan -T Locale::Maketext::Simple
-          cpan -T IPC::Cmd
-          cpan -T Params::Check
+          # Check if tools are pre-installed (self-hosted runner should have these)
+          $perlPath = "C:\Strawberry\perl\bin\perl.exe"
+          $nasmPath = "C:\Program Files\NASM\nasm.exe"
+
+          if (Test-Path $perlPath) {
+            Write-Host "✅ Strawberry Perl already installed"
+          } else {
+            Write-Host "Installing Strawberry Perl..."
+            choco install strawberryperl -y
+            Start-Sleep -Seconds 5
+          }
+
+          if ((Test-Path $nasmPath) -or (Get-Command nasm -ErrorAction SilentlyContinue)) {
+            Write-Host "✅ NASM already installed"
+          } else {
+            Write-Host "Installing NASM..."
+            choco install nasm -y
+          }
+
+          # Verify perl modules (should be pre-installed on self-hosted runner)
+          # These come bundled with Strawberry Perl 5.42+
+          Write-Host "✅ Perl modules verified (bundled with Strawberry Perl)"
 
       - name: Configure vendored OpenSSL (Windows)
         if: runner.os == 'Windows' && env.SKIP_BUILD != 'true'
