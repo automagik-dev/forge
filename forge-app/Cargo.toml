@@ -13,7 +13,7 @@ name = "generate-forge-types"
 path = "src/bin/generate_forge_types.rs"
 
 [lib]
-name = "forge_app"
+name = "forge_app_lib"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]

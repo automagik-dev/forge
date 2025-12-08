@@ -99,5 +99,5 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // Run server using shared logic
-    forge_app::run_server().await
+    forge_app_lib::run_server().await
 }
