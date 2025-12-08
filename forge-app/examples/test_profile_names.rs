@@ -16,7 +16,7 @@ async fn main() {
     println!();
 
     // Load profiles
-    let loader = forge_app::services::genie_profiles::GenieProfileLoader::new(&workspace_root);
+    let loader = forge_app_lib::services::genie_profiles::GenieProfileLoader::new(&workspace_root);
 
     match loader.load_profiles() {
         Ok(configs) => {

@@ -9,7 +9,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.8.4"
+version = "0.8.7-rc.1"
 edition = "2021"
 
 [workspace.dependencies]
@@ -23,11 +23,12 @@ thiserror = "2.0.12"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 openssl-sys = { version = "0.9", features = ["vendored"] }
-ts-rs = { git = "https://github.com/xazukx/ts-rs.git", branch = "use-ts-enum", features = ["uuid-impl", "chrono-impl", "no-serde-warnings", "serde-json-impl"] }
+# Pin to specific commit to avoid cargo fetching updates every build
+ts-rs = { git = "https://github.com/xazukx/ts-rs.git", rev = "b5c8277a", features = ["uuid-impl", "chrono-impl", "no-serde-warnings", "serde-json-impl"] }
 schemars = { version = "1.0.4", features = ["derive", "chrono04", "uuid1", "preserve_order"] }
 
 # forge-core workspace dependencies (required for dev-core mode)
-rmcp = { version = "0.8.5" }
+rmcp = { version = "0.10.0" }
 
 # Codex dependencies from namastexlabs fork (patched via .cargo/config.toml)
 codex-protocol = "0.63.0"

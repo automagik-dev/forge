@@ -83,6 +83,40 @@ ratio = helpful / max(harmful, 1)
 
 ---
 
+## 🔴 MANDATORY: Active Monitoring with Sleep/Wait Commands
+
+**There is NO such thing as "background monitoring" - you must actively wait with sleep commands.**
+
+**Monitoring Requirements:**
+- Use explicit `sleep` or wait commands for monitoring intervals
+- Monitoring intervals MUST be 10+ minutes minimum
+- Never say "monitoring in background" without active sleep/wait loop
+- Background bash processes are NOT monitoring - you must check their output with sleep intervals
+
+**Pattern:**
+```bash
+# ❌ WRONG: Background process without active monitoring
+bash script.sh &
+echo "Monitoring in background"
+
+# ✅ CORRECT: Active monitoring with sleep commands
+bash script.sh &
+for i in $(seq 1 20); do
+  check_status
+  sleep 600  # 10 minutes
+done
+```
+
+**When to use:**
+- Monitoring CI/CD workflows
+- Waiting for long-running processes
+- Tracking autonomous agent loops
+- Any task requiring periodic status checks
+
+**Evidence:** User teaching 2025-12-06 - "there's no such thing as background monitoring... you NEED TO USE WAIT / SLEEP DURING MONITORING INTERVALS... 10 MINUTE LONG AT LEAST"
+
+---
+
 ## Why This Matters
 
 **Without ACE:**

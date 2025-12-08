@@ -8,42 +8,52 @@ on:
   pull_request:
     types: [closed]
     branches: [dev, main]
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Version bump type'
+        required: true
+        default: 'bump-rc'
+        type: choice
+        options:
+          - bump-rc
+          - promote
 
 concurrency:
-  group: auto-version-bump-${{ github.base_ref }}
+  group: auto-version-bump-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: write
+
 jobs:
-  gate:
-    # Only run on merged PRs with 'rc' or 'stable' label (not from bot)
+  version-bump:
+    # Run on: workflow_dispatch OR (merged PR with rc/stable label, not from bot)
     if: |
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.user.login != 'github-actions[bot]' &&
-      (contains(github.event.pull_request.labels.*.name, 'rc') ||
-       contains(github.event.pull_request.labels.*.name, 'stable'))
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+       github.event.pull_request.user.login != 'github-actions[bot]' &&
+       (contains(github.event.pull_request.labels.*.name, 'rc') ||
+        contains(github.event.pull_request.labels.*.name, 'stable')))
     runs-on: ubuntu-latest
-    outputs:
-      bump_type: ${{ steps.check.outputs.bump_type }}
     steps:
-      - name: Determine bump type from label
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine bump type
         id: check
         run: |
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'stable') }}" == "true" ]]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "bump_type=${{ github.event.inputs.bump_type }}" >> $GITHUB_OUTPUT
+            echo "🔧 Manual trigger - bump type: ${{ github.event.inputs.bump_type }}"
+          elif [[ "${{ contains(github.event.pull_request.labels.*.name, 'stable') }}" == "true" ]]; then
             echo "bump_type=promote" >> $GITHUB_OUTPUT
             echo "🎉 Stable label detected - will promote RC to stable"
           else
             echo "bump_type=bump-rc" >> $GITHUB_OUTPUT
             echo "🔢 RC label detected - will bump RC version"
           fi
-
-  version-bump:
-    needs: gate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -54,7 +64,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install cargo-edit
-        run: cargo install cargo-edit --features vendored-openssl
+        run: cargo install cargo-edit
 
       - name: Configure git
         run: |
@@ -64,8 +74,8 @@ jobs:
       - name: Run version bump
         id: bump
         run: |
-          echo "📦 Running: node scripts/unified-release.cjs --action ${{ needs.gate.outputs.bump_type }}"
-          node scripts/unified-release.cjs --action ${{ needs.gate.outputs.bump_type }}
+          echo "📦 Running: node scripts/unified-release.cjs --action ${{ steps.check.outputs.bump_type }}"
+          node scripts/unified-release.cjs --action ${{ steps.check.outputs.bump_type }}
 
           # Output the new version
           NEW_VERSION=$(node -p "require('./package.json').version")
@@ -74,22 +84,27 @@ jobs:
 
       - name: Push changes and tags
         run: |
-          git push origin HEAD:${{ github.base_ref }}
+          git push origin HEAD:${{ github.ref_name }}
           git push origin --tags
-          echo "✅ Pushed changes and tags to ${{ github.base_ref }}"
+          echo "✅ Pushed changes and tags to ${{ github.ref_name }}"
 
       - name: Create summary
         run: |
           echo "## 🚀 Version Bump Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Action**: ${{ needs.gate.outputs.bump_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Action**: ${{ steps.check.outputs.bump_type }}" >> $GITHUB_STEP_SUMMARY
           echo "- **New Version**: v${{ steps.bump.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch**: ${{ github.base_ref }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Triggered by PR**: #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "- **Triggered by PR**: #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Triggered by**: Manual workflow dispatch" >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Trigger forge-core pre-release
         if: steps.bump.outputs.new_version != ''
         uses: peter-evans/repository-dispatch@v2
+        continue-on-error: true
         with:
           token: ${{ secrets.PAT_TOKEN }}
           repository: namastexlabs/forge-core
