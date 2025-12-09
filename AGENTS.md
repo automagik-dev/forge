@@ -351,45 +351,45 @@ ACE (Agentic Context Engineering) ensures framework optimization is data-driven,
 
 **Status:** ✅ All helpers operational | ⚠️ Automation pending (Issue #384)
 
-### 11. forge-core Development Workflow - Use dev-core, Never Direct 🔴 CRITICAL
-**Rule:** NEVER work directly in forge-core repository. ALWAYS start from automagik-forge and use `make dev-core`.
+### 11. forge-core Development Workflow - Single-Repo Experience 🔴 CRITICAL
+**Rule:** When dev-core is active, treat both repos as ONE. Commit ONLY from automagik-forge root.
+
+**The Automation (Git Hooks):**
+When you commit in automagik-forge, hooks automatically:
+1. `pre-commit` → Stages all forge-core changes (`git add -A`)
+2. `prepare-commit-msg` → Commits forge-core with SAME message
+3. `pre-push` → Blocks push until `make dev-core-off`
+
+**A blocker hook in `forge-core/.git/hooks/pre-commit` prevents direct commits there.**
+
+**Correct Workflow:**
+1. `make dev-core BRANCH=feat/xxx` - Syncs both repos to same branch
+2. Edit files in BOTH repos as needed
+3. `git add . && git commit -m "message"` - **FROM AUTOMAGIK-FORGE ROOT ONLY**
+4. Both repos now have identical commits (hooks handled forge-core)
+5. `make dev-core-off` - Disables Cargo [patch], restores git deps
+6. `git push` - Now allowed (pre-push hook passes)
 
 **Forbidden Actions:**
-- ❌ `cd forge-core && git checkout -b feature/xxx` (bypasses automation)
-- ❌ Creating branches directly in forge-core repo
-- ❌ Pushing PRs from standalone forge-core clone
-- ❌ Running `cargo build` in forge-core without dev-core active
+- ❌ `cd forge-core && git commit` (BLOCKED by hook)
+- ❌ Any git commands inside forge-core directory
+- ❌ Pushing with dev-core active (BLOCKED by pre-push hook)
 
-**Required Workflow:**
-1. Start from automagik-forge: `cd /home/namastex/workspace/automagik-forge`
-2. Create feature branch: `git checkout -b feat/my-feature`
-3. Enable dev-core mode: `make dev-core BRANCH=feat/my-feature`
-4. Edit forge-core files (hot reload active)
-5. Push from subdirectory: `cd forge-core && git push && gh pr create`
-6. Wait for forge-core PR to merge (automation handles tag + sync)
-7. Disable dev-core: `make dev-core-off`
-8. Verify: `make status` (must show "Ready to push: YES")
-
-**What `make dev-core` Does:**
-1. Clones forge-core to `./forge-core/` directory
-2. Syncs to your branch (creates if doesn't exist)
-3. Enables Cargo [patch] to redirect git deps to local paths
-4. Regenerates Cargo.lock for local paths
-5. Installs pre-push hook (blocks pushes with dev-core active)
-
-**Why This Matters:**
-- **CI/CD Pipeline** depends on work flowing through automagik-forge
-- **Sync Automation** (GitHub Actions) expects this workflow
-- **Integration Testing** happens in automagik-forge context
-- **Version Sync** breaks when changes bypass the workflow
+**Why Single-Repo Experience:**
+- One commit, both repos synced automatically
+- No version desync between repos
+- No manual coordination required
+- CI/CD pipeline expects this workflow
 
 **Key Files:**
-- `Makefile` (lines 706-815) - dev-core lifecycle
-- `.cargo/config.toml` - [patch] section
-- `docs/DUAL_REPO_WORKFLOW.md` - Complete documentation
+- `scripts/hooks/pre-commit` - Auto-stages forge-core changes
+- `scripts/hooks/prepare-commit-msg` - Auto-commits forge-core
+- `scripts/hooks/pre-push` - Blocks push if dev-core active
+- `scripts/hooks/forge-core-pre-commit` - Blocks direct commits in forge-core
 
 **Documented Violations:**
-- 2025-12-05: Worked directly in forge-core, created branch `feat/rmcp-0.10.0-upgrade` directly, pushed PR #23 directly (bypassed automation, user had to fix manually)
+- 2025-12-05: Worked directly in forge-core, bypassed automation
+- 2025-12-09: Tried to commit in forge-core twice (this led to idiot-proof hooks)
 
 ## Development Workflow
 

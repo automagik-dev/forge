@@ -3,6 +3,8 @@
 //! Routes forge-specific APIs under `/api/forge/*` and upstream APIs under `/api/*`.
 //! Serves single frontend (with overlay architecture) at `/`.
 
+use std::{collections::HashSet, sync::Arc, time::Duration};
+
 use axum::{
     Json, Router,
     extract::{
@@ -13,18 +15,6 @@ use axum::{
     response::{Html, IntoResponse, Response},
     routing::{get, post},
 };
-use futures_util::{SinkExt, StreamExt, TryStreamExt};
-use rust_embed::RustEmbed;
-use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
-use std::collections::HashSet;
-use std::sync::Arc;
-use std::time::Duration;
-use tokio::sync::RwLock;
-use tower_http::cors::{Any, CorsLayer};
-use uuid::Uuid;
-
-use crate::services::ForgeServices;
 use db::models::{
     image::TaskImage,
     task::{Task, TaskWithAttemptStatus},
@@ -33,16 +23,31 @@ use db::models::{
 use deployment::Deployment;
 use executors::profile::ExecutorProfileId;
 use forge_config::ForgeProjectSettings;
-use server::routes::{
-    self as upstream, approvals, auth, config as upstream_config, containers, drafts, events,
-    execution_processes, filesystem, images, projects, tags, task_attempts, tasks,
+use futures_util::{SinkExt, StreamExt, TryStreamExt};
+use rust_embed::RustEmbed;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
+use server::{
+    DeploymentImpl,
+    error::ApiError,
+    routes::{
+        self as upstream, approvals, auth, config as upstream_config, containers, drafts, events,
+        execution_processes, filesystem, images, projects, tags, task_attempts, tasks,
+        tasks::CreateAndStartTaskRequest,
+    },
 };
-use server::{DeploymentImpl, error::ApiError, routes::tasks::CreateAndStartTaskRequest};
 use services::services::container::ContainerService;
 use sqlx::{self, Error as SqlxError, Row};
-use utils::log_msg::LogMsg;
-use utils::response::ApiResponse;
-use utils::text::{git_branch_id, short_uuid};
+use tokio::sync::RwLock;
+use tower_http::cors::{Any, CorsLayer};
+use utils::{
+    log_msg::LogMsg,
+    response::ApiResponse,
+    text::{git_branch_id, short_uuid},
+};
+use uuid::Uuid;
+
+use crate::services::ForgeServices;
 
 #[derive(RustEmbed)]
 #[folder = "../frontend/dist"]
@@ -237,7 +242,7 @@ async fn forge_create_task_attempt(
     let git_branch_name = if use_worktree {
         let task_title_id = git_branch_id(&task.title);
         let short_id = short_uuid(&attempt_id);
-        format!("forge/{}-{}", short_id, task_title_id)
+        format!("forge/{short_id}-{task_title_id}")
     } else {
         payload.base_branch.clone()
     };
@@ -337,7 +342,7 @@ async fn forge_create_task_attempt(
                         })
                         .unwrap_or_else(|| "<none>".to_string());
 
-                        format!("{}:{} ({})", executor, variant, prompt_preview)
+                        format!("{executor}:{variant} ({prompt_preview})")
                     })
             })
             .collect();
@@ -439,7 +444,7 @@ async fn forge_create_task_and_start(
         // Use same logic as upstream but replace "vk" with "forge" prefix
         let task_title_id = git_branch_id(&task.title);
         let short_id = short_uuid(&task_attempt_id);
-        format!("forge/{}-{}", short_id, task_title_id)
+        format!("forge/{short_id}-{task_title_id}")
     } else {
         // Non-worktree mode: run directly on base branch (e.g., Genie chat)
         payload.base_branch.clone()
@@ -540,7 +545,7 @@ async fn forge_create_task_and_start(
                         })
                         .unwrap_or_else(|| "<none>".to_string());
 
-                        format!("{}:{} ({})", executor, variant, prompt_preview)
+                        format!("{executor}:{variant} ({prompt_preview})")
                     })
             })
             .collect();
@@ -1177,7 +1182,7 @@ async fn forge_follow_up(
                         })
                         .unwrap_or_else(|| "<none>".to_string());
 
-                        format!("{}:{} ({})", executor, variant, prompt_preview)
+                        format!("{executor}:{variant} ({prompt_preview})")
                     })
             })
             .collect();
@@ -1207,7 +1212,7 @@ async fn forge_follow_up(
     let typed_payload: task_attempts::CreateFollowUpAttempt = serde_json::from_value(payload)
         .map_err(|e| {
             ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
-                format!("Invalid follow-up payload: {}", e),
+                format!("Invalid follow-up payload: {e}"),
             ))
         })?;
 
@@ -1250,7 +1255,7 @@ async fn forge_get_task_attempt_branch_status(
     // Serialize the ApiResponse to JSON so we can modify it
     let branch_status_value = serde_json::to_value(&api_response).map_err(|e| {
         ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
-            format!("Failed to serialize upstream response: {}", e),
+            format!("Failed to serialize upstream response: {e}"),
         ))
     })?;
 
@@ -1333,7 +1338,7 @@ async fn forge_get_task_attempt_branch_status(
             "rev-list",
             "--left-right",
             "--count",
-            &format!("{}...{}", remote_tracking_branch, current_branch),
+            &format!("{remote_tracking_branch}...{current_branch}"),
         ])
         .output();
 
@@ -1527,7 +1532,7 @@ async fn serve_openapi_spec() -> Result<Json<Value>, (StatusCode, String)> {
             tracing::error!("Failed to parse openapi.yaml: {}", e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to parse OpenAPI spec: {}", e),
+                format!("Failed to parse OpenAPI spec: {e}"),
             )
         })
 }
@@ -1783,8 +1788,9 @@ async fn get_project_branch_status(
     Query(query): Query<BranchStatusQuery>,
     State(deployment): State<DeploymentImpl>,
 ) -> Result<Json<ApiResponse<Value>>, StatusCode> {
-    use db::models::project::Project;
     use std::process::Command;
+
+    use db::models::project::Project;
 
     // Get project to determine workspace root
     let project = match Project::find_by_id(&deployment.db().pool, project_id).await {
@@ -1828,14 +1834,14 @@ async fn get_project_branch_status(
         .output();
 
     // Compare against remote tracking branch (origin/target_branch)
-    let remote_branch = format!("origin/{}", target_branch);
+    let remote_branch = format!("origin/{target_branch}");
     let commits_behind_ahead_output = Command::new("git")
         .current_dir(&project.git_repo_path)
         .args([
             "rev-list",
             "--left-right",
             "--count",
-            &format!("{}...{}", remote_branch, current_branch),
+            &format!("{remote_branch}...{current_branch}"),
         ])
         .output();
 
@@ -1870,7 +1876,7 @@ async fn get_project_branch_status(
                     "rev-list",
                     "--left-right",
                     "--count",
-                    &format!("{}...{}", remote_tracking_branch, current_branch),
+                    &format!("{remote_tracking_branch}...{current_branch}"),
                 ])
                 .output();
 
@@ -1958,8 +1964,9 @@ async fn post_project_pull(
     Path(project_id): Path<Uuid>,
     State(deployment): State<DeploymentImpl>,
 ) -> Result<Json<Value>, StatusCode> {
-    use db::models::project::Project;
     use std::process::Command;
+
+    use db::models::project::Project;
 
     // Get project
     let project = match Project::find_by_id(&deployment.db().pool, project_id).await {
@@ -2194,7 +2201,7 @@ async fn validate_omni_config(
         Err(e) => Ok(Json(ValidateOmniResponse {
             valid: false,
             instances: vec![],
-            error: Some(format!("Configuration validation failed: {}", e)),
+            error: Some(format!("Configuration validation failed: {e}")),
         })),
     }
 }

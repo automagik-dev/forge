@@ -2,26 +2,35 @@
 
 This guide explains how to develop features that span both `automagik-forge` (main app) and `forge-core` (library dependency).
 
+> **WARNING: NEVER commit directly in forge-core!**
+> A blocker hook will reject direct commits. Always commit from automagik-forge root.
+
 ## Quick Start (For Experienced Developers)
 
 ```bash
-# 1. Enable dev-core mode (branches must match!)
+# 1. Enable dev-core mode (syncs both repos to same branch)
 make dev-core BRANCH=feat/my-feature
 
-# 2. Edit files in forge-core/crates/...
+# 2. Edit files in EITHER or BOTH repos
 # Changes auto-rebuild via cargo-watch
 
-# 3. Commit & push forge-core
-cd forge-core && git add . && git commit -m "feat: ..." && git push
-gh pr create --base dev --fill
+# 3. Commit from automagik-forge ROOT ONLY
+# Hooks auto-sync forge-core with same message
+git add . && git commit -m "feat: your changes"
+# → pre-commit hook stages forge-core changes
+# → prepare-commit-msg hook commits forge-core with SAME message
+# → BOTH repos now have identical commits!
 
-# 4. After PR merge: Maintainer triggers forge-core release
-# → Automated: Tag created → automagik-forge PR created → Version bumped
-
-# 5. Review & merge automagik-forge sync PR
-
-# 6. Disable dev-core & return to normal development
+# 4. Disable dev-core mode
 make dev-core-off
+
+# 5. Push (pre-push hook now allows it)
+git push                    # automagik-forge
+cd forge-core && git push   # forge-core (already committed by hooks)
+
+# 6. Create PRs for both repos
+gh pr create --base main --fill                           # automagik-forge PR
+cd forge-core && gh pr create --base main --fill && cd .. # forge-core PR
 ```
 
 ## Complete Workflow
@@ -50,7 +59,11 @@ make dev-core BRANCH=feat/my-feature
 - `forge-core` cloned to `./forge-core` directory
 - `.cargo/config.toml` [patch] section activated (local paths override git deps)
 - `Cargo.lock` regenerated for path dependencies
-- Pre-push hook installed (prevents accidental pushes with dev-core active)
+- **Git hooks installed:**
+  - `pre-commit` - Auto-stages forge-core changes
+  - `prepare-commit-msg` - Auto-commits forge-core with same message
+  - `pre-push` - Blocks push until dev-core is off
+  - `forge-core/.git/hooks/pre-commit` - Blocks direct commits in forge-core
 - Dev server starts watching both `forge-app/src` AND `forge-core/crates`
 
 **Branch Matching Enforcement:**
@@ -79,15 +92,32 @@ When you save files in `forge-core/crates`, `cargo-watch` automatically recompil
 **Testing:**
 Your changes are immediately testable in the running dev server. The app uses your local forge-core code, not the git version.
 
-### 3. Commit & Push forge-core
+### 3. Commit Changes (Single-Repo Experience)
 
-**In the forge-core directory:**
+> **CRITICAL: Commit from automagik-forge ROOT only!**
+> NEVER run `git commit` inside forge-core directory.
+
+**From automagik-forge root:**
 ```bash
-cd forge-core
-git status  # Verify your changes
+# Stage your changes (both repos)
 git add .
+
+# Commit - hooks handle forge-core automatically
 git commit -m "feat: add new task scheduling feature"
-git push origin feat/my-feature
+
+# What happens:
+# 1. pre-commit hook → stages all forge-core changes
+# 2. prepare-commit-msg hook → commits forge-core with SAME message
+# 3. Both repos now have identical commits!
+```
+
+**If you try to commit in forge-core:**
+```bash
+cd forge-core && git commit -m "..."
+# OUTPUT:
+# ╔══════════════════════════════════════════════════════════════╗
+# ║  COMMIT BLOCKED: Do NOT commit directly in forge-core    ║
+# ╚══════════════════════════════════════════════════════════════╝
 ```
 
 **Best practices:**
@@ -95,19 +125,26 @@ git push origin feat/my-feature
 - Write descriptive commit messages
 - Reference related GitHub issues (e.g., "feat: ... (#123)")
 
-### 4. Create forge-core PR
+### 4. Disable dev-core and Push
 
+**MUST disable dev-core before pushing:**
 ```bash
-# Still in forge-core directory
-gh pr create --base dev --fill
+# Back to automagik-forge root
+make dev-core-off
 
-# Or manually via GitHub UI
+# Now push both repos (forge-core was already committed by hooks!)
+git push                              # automagik-forge
+cd forge-core && git push && cd ..    # forge-core
+
+# Create PRs for both repos
+gh pr create --base main --fill                           # automagik-forge
+cd forge-core && gh pr create --base main --fill && cd .. # forge-core
 ```
 
 **PR Review:**
 - Wait for CI to pass (lint, format, clippy, tests)
 - Get approvals from maintainers
-- Merge PR to `dev` branch
+- Merge PR to `main` branch
 
 ### 5. Automated Tag Creation & Sync
 

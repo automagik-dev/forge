@@ -7,22 +7,23 @@ pub mod genie_profiles;
 mod notification_hook;
 pub mod profile_cache;
 
+use std::{path::Path, sync::Arc};
+
 use anyhow::{Context, Result, anyhow};
 use db::models::project::Project;
 use deployment::Deployment;
+// Import forge extension services
+use forge_config::ForgeConfigService;
+use forge_omni::{OmniConfig, OmniService};
 use serde::Deserialize;
 use serde_json::json;
 use server::DeploymentImpl;
 use sqlx::{Row, SqlitePool};
-use std::path::Path;
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use tokio::time::{Duration, sleep};
+use tokio::{
+    sync::RwLock,
+    time::{Duration, sleep},
+};
 use uuid::Uuid;
-
-// Import forge extension services
-use forge_config::ForgeConfigService;
-use forge_omni::{OmniConfig, OmniService};
 
 /// Main forge services container
 #[derive(Clone)]
@@ -433,7 +434,7 @@ async fn handle_omni_notification(
         .task_attempt_id
         .ok_or_else(|| anyhow!("metadata missing task_attempt_id"))?;
     let attempt_id = Uuid::parse_str(&attempt_id_str)
-        .with_context(|| format!("invalid task_attempt_id UUID: {}", attempt_id_str))?;
+        .with_context(|| format!("invalid task_attempt_id UUID: {attempt_id_str}"))?;
     let status = metadata
         .status
         .ok_or_else(|| anyhow!("metadata missing status"))?;
@@ -455,8 +456,7 @@ async fn handle_omni_notification(
     .ok_or_else(|| anyhow!("task attempt not found for omni notification"))?;
 
     let project_id = if let Some(pid_str) = metadata.project_id {
-        Uuid::parse_str(&pid_str)
-            .with_context(|| format!("invalid project_id UUID: {}", pid_str))?
+        Uuid::parse_str(&pid_str).with_context(|| format!("invalid project_id UUID: {pid_str}"))?
     } else {
         attempt_row
             .try_get::<Uuid, _>("project_id")
@@ -591,7 +591,7 @@ fn omni_base_url() -> String {
         );
     }
 
-    format!("http://{}:{}", sanitized_host, sanitized_port)
+    format!("http://{sanitized_host}:{sanitized_port}")
 }
 
 /// Sanitize hostname to prevent injection attacks
@@ -624,12 +624,13 @@ fn sanitize_port(port: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use forge_config::{ForgeConfigService, ForgeProjectSettings, OmniConfig, RecipientType};
     use httpmock::prelude::*;
     use serde_json::json;
     use sqlx::SqlitePool;
     use uuid::Uuid;
+
+    use super::*;
 
     async fn setup_pool() -> SqlitePool {
         unsafe {

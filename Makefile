@@ -746,8 +746,8 @@ dev-core: check-android-deps check-cargo ## Start dev with local forge-core
 		git checkout $$CURRENT_BRANCH 2>/dev/null || git checkout -b $$CURRENT_BRANCH origin/$$CURRENT_BRANCH; \
 		git pull origin $$CURRENT_BRANCH 2>/dev/null || true; \
 	else \
-		echo -e "$(FONT_YELLOW)⚠️  Branch '$$CURRENT_BRANCH' not in forge-core - creating from dev$(FONT_RESET)"; \
-		git checkout dev 2>/dev/null && git pull origin dev 2>/dev/null || true; \
+		echo -e "$(FONT_YELLOW)⚠️  Branch '$$CURRENT_BRANCH' not in forge-core - creating from main$(FONT_RESET)"; \
+		git checkout main 2>/dev/null && git pull origin main 2>/dev/null || true; \
 		git checkout -b $$CURRENT_BRANCH 2>/dev/null || git checkout $$CURRENT_BRANCH; \
 	fi; \
 	echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core synced to branch: $$CURRENT_BRANCH$(FONT_RESET)"
@@ -765,13 +765,20 @@ dev-core: check-android-deps check-cargo ## Start dev with local forge-core
 	@# Regenerate Cargo.lock for path deps
 	@rm -f Cargo.lock
 	@cargo fetch 2>/dev/null || true
-	@# Install pre-push safety hook
+	@# Install all git hooks for dual-repo workflow
 	@mkdir -p .git/hooks scripts/hooks
-	@if [ -f scripts/hooks/pre-push ]; then \
-		cp scripts/hooks/pre-push .git/hooks/pre-push; \
-		chmod +x .git/hooks/pre-push; \
-		echo -e "$(FONT_GREEN)$(CHECKMARK) Safety hook installed$(FONT_RESET)"; \
-	fi
+	@for hook in pre-commit prepare-commit-msg pre-push; do \
+		if [ -f scripts/hooks/$$hook ]; then \
+			cp scripts/hooks/$$hook .git/hooks/$$hook; \
+			chmod +x .git/hooks/$$hook; \
+		fi; \
+	done
+	@echo -e "$(FONT_GREEN)$(CHECKMARK) Git hooks installed (pre-commit, prepare-commit-msg, pre-push)$(FONT_RESET)"
+	@# Install blocker in forge-core to prevent direct commits
+	@mkdir -p forge-core/.git/hooks
+	@cp scripts/hooks/forge-core-pre-commit forge-core/.git/hooks/pre-commit
+	@chmod +x forge-core/.git/hooks/pre-commit
+	@echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core commit blocker installed$(FONT_RESET)"
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using local forge-core at ./forge-core$(FONT_RESET)"
 	@echo ""
 	@echo -e "$(FONT_YELLOW)ℹ  Cargo [patch] auto-detects ./forge-core$(FONT_RESET)"

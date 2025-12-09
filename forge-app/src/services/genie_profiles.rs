@@ -1,3 +1,9 @@
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+};
+
 /// Genie Profile Discovery Service
 ///
 /// Discovers and loads executor profiles from .genie folders in project workspaces.
@@ -9,9 +15,6 @@ use executors::{
     profile::{ExecutorConfig, ExecutorConfigs},
 };
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fs;
-use std::path::{Path, PathBuf};
 
 /// Represents the new frontmatter schema with genie.* and forge.* namespaces
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -138,7 +141,7 @@ where
                 for (executor, config_value) in map {
                     let config: ForgeConfig = serde_json::from_value(config_value.clone())
                         .map_err(|e| {
-                            Error::custom(format!("Invalid config for {}: {}", executor, e))
+                            Error::custom(format!("Invalid config for {executor}: {e}"))
                         })?;
                     configs.insert(executor, config);
                 }
@@ -147,7 +150,7 @@ where
                 // Flat format (legacy): { model: sonnet, ... }
                 // Apply to all executors
                 let config: ForgeConfig = serde_json::from_value(Value::Object(map))
-                    .map_err(|e| Error::custom(format!("Invalid flat config: {}", e)))?;
+                    .map_err(|e| Error::custom(format!("Invalid flat config: {e}")))?;
                 let mut configs = HashMap::new();
                 configs.insert("*".to_string(), config); // Wildcard applies to all
                 Ok(ForgeConfigMap { configs })
@@ -356,7 +359,7 @@ impl GenieProfileLoader {
 
         // Scan .genie/ for directories with AGENTS.md
         let entries = fs::read_dir(genie_root)
-            .context(format!("Failed to read .genie directory: {:?}", genie_root))?;
+            .context(format!("Failed to read .genie directory: {genie_root:?}"))?;
 
         for entry in entries.flatten() {
             if !entry.path().is_dir() {
@@ -430,7 +433,7 @@ impl GenieProfileLoader {
     ) -> Result<Vec<AgentFile>> {
         let mut files = Vec::new();
 
-        let entries = fs::read_dir(dir).context(format!("Failed to read directory: {:?}", dir))?;
+        let entries = fs::read_dir(dir).context(format!("Failed to read directory: {dir:?}"))?;
 
         for entry in entries.flatten() {
             let path = entry.path();
@@ -490,10 +493,10 @@ impl GenieProfileLoader {
             }
 
             let namespaced_key = match (&collective, &agent_type) {
-                (Some(coll), AgentType::Agent) => format!("{}/{}", coll, name),
-                (None, AgentType::Neuron) => format!("neurons/{}", name),
-                (None, AgentType::Agent) => format!("agents/{}", name),
-                (Some(_), AgentType::Neuron) => format!("neurons/{}", name), // shouldn't happen
+                (Some(coll), AgentType::Agent) => format!("{coll}/{name}"),
+                (None, AgentType::Neuron) => format!("neurons/{name}"),
+                (None, AgentType::Agent) => format!("agents/{name}"),
+                (Some(_), AgentType::Neuron) => format!("neurons/{name}"), // shouldn't happen
             };
 
             files.push(AgentFile {
@@ -530,7 +533,7 @@ impl GenieProfileLoader {
 
         // Build full instructions
         let full_instructions = if !collective_context.is_empty() {
-            format!("{}\n\n---\n\n{}", collective_context, instructions)
+            format!("{collective_context}\n\n---\n\n{instructions}")
         } else {
             instructions
         };
@@ -548,7 +551,7 @@ impl GenieProfileLoader {
         for executor_str in executors {
             let executor = executor_str
                 .parse::<BaseCodingAgent>()
-                .context(format!("Invalid executor: {}", executor_str))?;
+                .context(format!("Invalid executor: {executor_str}"))?;
 
             // Determine variant name (same for all executors of this agent)
             let variant_name = metadata
@@ -631,14 +634,14 @@ impl GenieProfileLoader {
             // Agents with collective: COLLECTIVE_NAME
             let collective_prefix = collective.to_case(Case::ScreamingSnake);
             let agent_name = metadata.name.to_case(Case::ScreamingSnake);
-            format!("{}_{}", collective_prefix, agent_name)
+            format!("{collective_prefix}_{agent_name}")
         } else {
             // Global agents: NAME
             metadata.name.to_case(Case::ScreamingSnake)
         };
 
         // Prefix with project name to ensure uniqueness across projects
-        format!("{}_{}", project_prefix, base_name)
+        format!("{project_prefix}_{base_name}")
     }
 
     /// Build CodingAgent from metadata
@@ -708,8 +711,7 @@ impl GenieProfileLoader {
 
         // Deserialize into CodingAgent
         let config: CodingAgent = serde_json::from_value(config_json).context(format!(
-            "Failed to build CodingAgent for executor {}",
-            executor
+            "Failed to build CodingAgent for executor {executor}"
         ))?;
 
         Ok(config)

@@ -1,7 +1,8 @@
-use forge_omni::client::OmniClient;
-use forge_omni::types::SendTextRequest;
-use wiremock::matchers::{header, method, path};
-use wiremock::{Mock, MockServer, ResponseTemplate};
+use forge_omni::{client::OmniClient, types::SendTextRequest};
+use wiremock::{
+    Mock, MockServer, ResponseTemplate,
+    matchers::{header, method, path},
+};
 
 // NOTE: All API keys and secrets in this test file are fake test values only.
 // They are used solely for testing HTTP header functionality and are not real credentials.
