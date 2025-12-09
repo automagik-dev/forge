@@ -50,13 +50,13 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 
 # Upstream crate dependencies (from git)
-db = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.5" }
-services = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.5" }
-server = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.5" }
-deployment = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.5" }
-local-deployment = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.5" }
-executors = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.5" }
-utils = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.5" }
+db = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.6" }
+services = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.6" }
+server = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.6" }
+deployment = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.6" }
+local-deployment = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.6" }
+executors = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.6" }
+utils = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.6" }
 
 # Forge extensions
 forge-omni = { path = "../forge-extensions/omni" }
