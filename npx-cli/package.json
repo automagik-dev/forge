@@ -26,6 +26,10 @@
   ],
   "author": "Namastex Labs",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/automagik-dev/forge"
+  },
   "main": "index.js",
   "bin": {
     "automagik-forge": "bin/cli.js",
