@@ -189,6 +189,31 @@ jobs:
           git push origin HEAD
           git push origin --tags
 
+      - name: Create matching forge-core tag
+        if: needs.gate.outputs.action != 'promote'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          TAG="${{ steps.bump.outputs.tag }}"
+          echo "Creating tag $TAG in namastexlabs/forge-core..."
+
+          # Get main branch SHA from forge-core
+          SHA=$(gh api repos/namastexlabs/forge-core/git/refs/heads/main --jq '.object.sha')
+
+          # Check if tag already exists
+          if gh api repos/namastexlabs/forge-core/git/refs/tags/$TAG 2>/dev/null; then
+            echo "Tag $TAG already exists in forge-core, skipping"
+            exit 0
+          fi
+
+          # Create the tag reference
+          gh api repos/namastexlabs/forge-core/git/refs \
+            -f ref="refs/tags/$TAG" \
+            -f sha="$SHA"
+
+          echo "Created forge-core tag $TAG at $SHA"
+
   # Build (skip for promote action)
   build:
     needs: version
