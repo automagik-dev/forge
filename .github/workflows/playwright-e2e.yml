@@ -20,6 +20,12 @@ jobs:
     timeout-minutes: 45
 
     steps:
+      # Clean workspace to prevent permission issues on self-hosted runners
+      - name: Clean workspace
+        run: |
+          rm -rf "$GITHUB_WORKSPACE"/* "$GITHUB_WORKSPACE"/.[!.]* 2>/dev/null || true
+          rm -f .git/index.lock 2>/dev/null || true
+
       - uses: actions/checkout@v4
 
       - name: Cache cargo
