@@ -2,15 +2,15 @@
 //!
 //! This module provides JNI functions to start and stop the Forge server from Android.
 
+use std::sync::{Mutex, OnceLock};
+
 #[cfg(target_os = "android")]
 use jni::JNIEnv;
 #[cfg(target_os = "android")]
 use jni::objects::{JClass, JString};
 #[cfg(target_os = "android")]
 use jni::sys::jint;
-use std::sync::{Mutex, OnceLock};
-use tokio::runtime::Runtime;
-use tokio::sync::oneshot;
+use tokio::{runtime::Runtime, sync::oneshot};
 
 static RUNTIME: OnceLock<Runtime> = OnceLock::new();
 static SERVER_HANDLE: Mutex<Option<tokio::task::JoinHandle<()>>> = Mutex::new(None);

@@ -1,6 +1,6 @@
 [package]
 name = "forge-omni"
-version = "0.8.7-rc.2"
+version.workspace = true
 edition = "2024"
 
 [dependencies]

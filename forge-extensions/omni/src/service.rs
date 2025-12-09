@@ -1,6 +1,7 @@
+use anyhow::Result;
+
 use crate::client::OmniClient;
 pub use crate::types::*;
-use anyhow::Result;
 
 pub struct OmniService {
     config: OmniConfig,
@@ -64,7 +65,7 @@ impl OmniService {
              {}",
             task_title,
             task_status,
-            task_url.map(|u| format!("URL: {}", u)).unwrap_or_default()
+            task_url.map(|u| format!("URL: {u}")).unwrap_or_default()
         );
 
         let request = match self.config.recipient_type {
