@@ -1,0 +1,50 @@
+name: Merge Twin PR in forge-core
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main, dev]
+
+jobs:
+  merge-twin:
+    runs-on: ubuntu-latest
+    # Only run if PR was merged (not just closed) and not from a bot
+    if: |
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.user.login != 'github-actions[bot]'
+
+    steps:
+      - name: Merge twin PR in forge-core
+        env:
+          GH_TOKEN: ${{ secrets.FORGE_CORE_PAT }}
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          echo "🔍 Looking for twin PR in forge-core for branch: $BRANCH"
+
+          # Find twin PR
+          TWIN_PR=$(gh pr list \
+            --repo namastexlabs/forge-core \
+            --head "$BRANCH" \
+            --state open \
+            --json number \
+            --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -n "$TWIN_PR" ] && [ "$TWIN_PR" != "null" ]; then
+            echo "🔀 Merging twin PR #$TWIN_PR in forge-core..."
+
+            # Merge the PR
+            if gh pr merge "$TWIN_PR" \
+              --repo namastexlabs/forge-core \
+              --merge \
+              --delete-branch; then
+              echo "✅ Twin PR #$TWIN_PR merged successfully"
+            else
+              echo "❌ Failed to merge twin PR #$TWIN_PR"
+              echo "   Please check the PR status manually:"
+              echo "   https://github.com/namastexlabs/forge-core/pull/$TWIN_PR"
+              exit 1
+            fi
+          else
+            echo "ℹ️ No open twin PR found for branch '$BRANCH' in forge-core"
+            echo "   This is normal if the branch had no forge-core changes"
+          fi

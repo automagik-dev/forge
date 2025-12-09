@@ -1,0 +1,76 @@
+name: Create Twin PR in forge-core
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: [main, dev]
+
+jobs:
+  create-twin-pr:
+    runs-on: ubuntu-latest
+    # Skip if this PR is from a bot to avoid infinite loops
+    if: github.event.pull_request.user.login != 'github-actions[bot]'
+
+    steps:
+      - name: Check for forge-core branch
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.FORGE_CORE_PAT }}
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+
+          # Check if branch exists in forge-core
+          if gh api repos/namastexlabs/forge-core/branches/$BRANCH 2>/dev/null; then
+            echo "has_branch=true" >> $GITHUB_OUTPUT
+            echo "✅ Branch '$BRANCH' exists in forge-core"
+          else
+            echo "has_branch=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Branch '$BRANCH' does not exist in forge-core (no twin PR needed)"
+          fi
+
+      - name: Create or update twin PR in forge-core
+        if: steps.check.outputs.has_branch == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.FORGE_CORE_PAT }}
+        run: |
+          BRANCH="${{ steps.check.outputs.branch }}"
+          TITLE="${{ github.event.pull_request.title }}"
+
+          # Build the PR body
+          BODY="## Twin PR from automagik-forge
+
+          🔗 **Parent PR:** ${{ github.event.pull_request.html_url }}
+
+          ---
+
+          ⚠️ **Do NOT merge this PR manually!**
+
+          This PR will be automatically merged when the parent PR in automagik-forge is merged.
+
+          ---
+
+          _This PR was automatically created by the twin-pr workflow._"
+
+          # Check if PR already exists
+          EXISTING=$(gh pr list --repo namastexlabs/forge-core --head "$BRANCH" --json number --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            echo "✅ Twin PR #$EXISTING already exists in forge-core"
+            echo "   https://github.com/namastexlabs/forge-core/pull/$EXISTING"
+          else
+            echo "📝 Creating twin PR in forge-core..."
+            PR_URL=$(gh pr create \
+              --repo namastexlabs/forge-core \
+              --base main \
+              --head "$BRANCH" \
+              --title "$TITLE" \
+              --body "$BODY" \
+              --label "twin-pr,auto-generated" 2>&1) || true
+
+            if echo "$PR_URL" | grep -q "github.com"; then
+              echo "✅ Twin PR created: $PR_URL"
+            else
+              echo "ℹ️ Could not create twin PR (may already exist or no changes): $PR_URL"
+            fi
+          fi

@@ -1,6 +1,9 @@
 #!/bin/bash
 # Pre-push hook for automagik-forge
-# BLOCKS push if dev-core mode is active (Cargo [patch] uncommented)
+# Two modes:
+#   1. dev-core ACTIVE: Push forge-core first, then continue
+#   2. dev-core OFF: Normal push (no forge-core sync needed)
+#
 # Installed by: make dev-core
 # To bypass: git push --no-verify (not recommended)
 
@@ -12,39 +15,80 @@ GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+FORGE_CORE_DIR="forge-core"
 DEV_CORE_ACTIVE=false
 
-# Check .cargo/config.toml for ACTIVE forge-core [patch] section ONLY
-# We only block on forge-core patches, not crates-io patches (codex fork)
-# Pattern: line starts with [patch."https://github.com/namastexlabs/forge-core
+# Check if dev-core mode is active
+# Method 1: Check .cargo/config.toml for ACTIVE forge-core [patch] section
 if [ -f ".cargo/config.toml" ]; then
     if grep -q '^\[patch\."https://github.com/namastexlabs/forge-core' .cargo/config.toml 2>/dev/null; then
         DEV_CORE_ACTIVE=true
     fi
 fi
 
-if [ "$DEV_CORE_ACTIVE" = "true" ]; then
-    echo ""
-    echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${RED}║  🛑 PUSH BLOCKED: dev-core mode is ACTIVE                   ║${NC}"
-    echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}"
-    echo ""
-    echo -e "Your workspace is configured to use local forge-core paths."
-    echo -e "Pushing this will break CI/CD and anyone who pulls your branch."
-    echo ""
-    echo -e "${CYAN}To fix this:${NC}"
-    echo -e "  1. ${GREEN}make dev-core-off${NC}    # Restore git dependencies"
-    echo -e "  2. ${GREEN}make build${NC}          # Verify it compiles"
-    echo -e "  3. ${GREEN}git push${NC}            # Try again"
-    echo ""
-    echo -e "${YELLOW}Detection:${NC}"
-    echo "  .cargo/config.toml has active [patch] section"
-    echo ""
-    echo -e "${YELLOW}If you really need to push with dev-core on:${NC}"
-    echo -e "  git push --no-verify (not recommended)"
-    echo ""
-    exit 1
+# Method 2: Check if forge-core subdir exists with .git
+if [ -d "$FORGE_CORE_DIR/.git" ]; then
+    DEV_CORE_ACTIVE=true
 fi
 
+if [ "$DEV_CORE_ACTIVE" = "true" ]; then
+    echo ""
+    echo -e "${CYAN}🔄 dev-core mode is ACTIVE - syncing forge-core first${NC}"
+    echo ""
+
+    # Check if forge-core has unpushed commits
+    cd "$FORGE_CORE_DIR"
+    BRANCH=$(git branch --show-current 2>/dev/null)
+
+    if [ -z "$BRANCH" ]; then
+        echo -e "${YELLOW}⚠️  forge-core is in detached HEAD state, skipping sync${NC}"
+        cd ..
+    else
+        # Check if remote tracking exists
+        LOCAL_SHA=$(git rev-parse HEAD 2>/dev/null || echo "none")
+        REMOTE_SHA=$(git rev-parse "origin/$BRANCH" 2>/dev/null || echo "none")
+
+        if [ "$LOCAL_SHA" != "$REMOTE_SHA" ]; then
+            echo -e "${CYAN}📤 Pushing forge-core to origin/$BRANCH...${NC}"
+
+            # Try to push, create upstream if needed
+            if git push origin "$BRANCH" 2>/dev/null; then
+                echo -e "${GREEN}✅ forge-core pushed successfully${NC}"
+            elif git push -u origin "$BRANCH" 2>/dev/null; then
+                echo -e "${GREEN}✅ forge-core pushed (new upstream created)${NC}"
+            else
+                echo -e "${RED}❌ Failed to push forge-core${NC}"
+                echo -e "   Please resolve any issues in forge-core first"
+                cd ..
+                exit 1
+            fi
+        else
+            echo -e "${GREEN}✅ forge-core is up to date with origin/$BRANCH${NC}"
+        fi
+        cd ..
+    fi
+
+    # Now check if Cargo.lock still has local paths (would break CI)
+    if grep -q 'path = "forge-core/' Cargo.lock 2>/dev/null; then
+        echo ""
+        echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${RED}║  🛑 PUSH BLOCKED: Cargo.lock has local forge-core paths     ║${NC}"
+        echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        echo -e "${CYAN}To fix this:${NC}"
+        echo -e "  1. ${GREEN}make dev-core-off${NC}    # Restore git dependencies"
+        echo -e "  2. ${GREEN}cargo update${NC}        # Regenerate Cargo.lock"
+        echo -e "  3. ${GREEN}git add Cargo.lock && git commit --amend${NC}"
+        echo -e "  4. ${GREEN}git push${NC}            # Try again"
+        echo ""
+        exit 1
+    fi
+
+    echo ""
+    echo -e "${GREEN}✅ Pre-push check passed (forge-core synced)${NC}"
+    exit 0
+fi
+
+# dev-core is OFF - normal push
 echo -e "${GREEN}✅ Pre-push check passed (dev-core mode is OFF)${NC}"
 exit 0

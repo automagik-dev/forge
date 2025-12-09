@@ -765,13 +765,15 @@ dev-core: check-android-deps check-cargo ## Start dev with local forge-core
 	@# Regenerate Cargo.lock for path deps
 	@rm -f Cargo.lock
 	@cargo fetch 2>/dev/null || true
-	@# Install pre-push safety hook
+	@# Install git hooks for dual-repo sync
 	@mkdir -p .git/hooks scripts/hooks
-	@if [ -f scripts/hooks/pre-push ]; then \
-		cp scripts/hooks/pre-push .git/hooks/pre-push; \
-		chmod +x .git/hooks/pre-push; \
-		echo -e "$(FONT_GREEN)$(CHECKMARK) Safety hook installed$(FONT_RESET)"; \
-	fi
+	@for hook in pre-commit prepare-commit-msg pre-push; do \
+		if [ -f scripts/hooks/$$hook ]; then \
+			cp scripts/hooks/$$hook .git/hooks/$$hook; \
+			chmod +x .git/hooks/$$hook; \
+		fi; \
+	done
+	@echo -e "$(FONT_GREEN)$(CHECKMARK) Git hooks installed (pre-commit, prepare-commit-msg, pre-push)$(FONT_RESET)"
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using local forge-core at ./forge-core$(FONT_RESET)"
 	@echo ""
 	@echo -e "$(FONT_YELLOW)ℹ  Cargo [patch] auto-detects ./forge-core$(FONT_RESET)"
