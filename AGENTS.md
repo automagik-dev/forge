@@ -368,10 +368,12 @@ When you commit in automagik-forge, hooks automatically:
 3. `git add . && git commit -m "message"` - **FROM AUTOMAGIK-FORGE ROOT ONLY**
 4. Both repos now have identical commits (hooks handled forge-core)
 5. `make dev-core-off` - Disables Cargo [patch], restores git deps
-6. `git push` - Now allowed (pre-push hook passes)
+6. `make push-both` - Push BOTH repos together
+7. `make pr-both` - Create PRs in BOTH repos (with RC label)
 
 **Forbidden Actions:**
 - ❌ `cd forge-core && git commit` (BLOCKED by hook)
+- ❌ `cd forge-core && git push` (BLOCKED by hook)
 - ❌ Any git commands inside forge-core directory
 - ❌ Pushing with dev-core active (BLOCKED by pre-push hook)
 
@@ -386,6 +388,7 @@ When you commit in automagik-forge, hooks automatically:
 - `scripts/hooks/prepare-commit-msg` - Auto-commits forge-core
 - `scripts/hooks/pre-push` - Blocks push if dev-core active
 - `scripts/hooks/forge-core-pre-commit` - Blocks direct commits in forge-core
+- `scripts/hooks/forge-core-pre-push` - Blocks direct pushes in forge-core
 
 **Documented Violations:**
 - 2025-12-05: Worked directly in forge-core, bypassed automation

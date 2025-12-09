@@ -2,8 +2,8 @@
 
 This guide explains how to develop features that span both `automagik-forge` (main app) and `forge-core` (library dependency).
 
-> **WARNING: NEVER commit directly in forge-core!**
-> A blocker hook will reject direct commits. Always commit from automagik-forge root.
+> **WARNING: NEVER do git operations directly in forge-core!**
+> Blocker hooks will reject direct commits AND pushes. Always operate from automagik-forge root.
 
 ## Quick Start (For Experienced Developers)
 
@@ -24,13 +24,11 @@ git add . && git commit -m "feat: your changes"
 # 4. Disable dev-core mode
 make dev-core-off
 
-# 5. Push (pre-push hook now allows it)
-git push                    # automagik-forge
-cd forge-core && git push   # forge-core (already committed by hooks)
+# 5. Push BOTH repos together
+make push-both              # Pushes both repos with safety checks
 
-# 6. Create PRs for both repos
-gh pr create --base main --fill                           # automagik-forge PR
-cd forge-core && gh pr create --base main --fill && cd .. # forge-core PR
+# 6. Create PRs for BOTH repos
+make pr-both                # Creates PRs in both repos with RC label
 ```
 
 ## Complete Workflow

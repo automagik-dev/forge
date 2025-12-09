@@ -1,4 +1,4 @@
-.PHONY: help dev dev-core dev-core-off ensure-cargo-config prod backend frontend ensure-frontend-stub build-frontend build test clean publish beta version npm check-cargo check-android-deps publish-automagik publish-automagik-quick service install update uninstall install-deps install-complete install-complete-no-pm2 setup-pm2 start-local stop-local restart-local service-status logs logs-follow health
+.PHONY: help dev dev-core dev-core-off ensure-cargo-config prod backend frontend ensure-frontend-stub build-frontend build test clean publish beta version npm check-cargo check-android-deps publish-automagik publish-automagik-quick service install update uninstall install-deps install-complete install-complete-no-pm2 setup-pm2 start-local stop-local restart-local service-status logs logs-follow health push-both pr-both
 
 # Ensure bash is used for echo -e support
 SHELL := /bin/bash
@@ -774,11 +774,12 @@ dev-core: check-android-deps check-cargo ## Start dev with local forge-core
 		fi; \
 	done
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) Git hooks installed (pre-commit, prepare-commit-msg, pre-push)$(FONT_RESET)"
-	@# Install blocker in forge-core to prevent direct commits
+	@# Install blocker hooks in forge-core to prevent direct commits AND pushes
 	@mkdir -p forge-core/.git/hooks
 	@cp scripts/hooks/forge-core-pre-commit forge-core/.git/hooks/pre-commit
-	@chmod +x forge-core/.git/hooks/pre-commit
-	@echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core commit blocker installed$(FONT_RESET)"
+	@cp scripts/hooks/forge-core-pre-push forge-core/.git/hooks/pre-push
+	@chmod +x forge-core/.git/hooks/pre-commit forge-core/.git/hooks/pre-push
+	@echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core blocker hooks installed (pre-commit + pre-push)$(FONT_RESET)"
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using local forge-core at ./forge-core$(FONT_RESET)"
 	@echo ""
 	@echo -e "$(FONT_YELLOW)ℹ  Cargo [patch] auto-detects ./forge-core$(FONT_RESET)"
@@ -916,8 +917,16 @@ dev-help:
 	@echo ""
 	@echo -e "$(FONT_CYAN)Before PRs:$(FONT_RESET)"
 	@echo "  make dev-core-off          Disable [patch], restore git deps"
-	@echo "  git push                   Push to automagik-forge (standard git)"
-	@echo "  gh pr create               Create PR in automagik-forge"
+	@echo "  make push-both             Push BOTH repos together"
+	@echo "  make pr-both               Create PRs in BOTH repos (with RC label)"
+	@echo ""
+	@echo -e "$(FONT_CYAN)Single-Repo Experience:$(FONT_RESET)"
+	@echo "  1. make dev-core BRANCH=x  Sync both repos to same branch"
+	@echo "  2. Edit files in both repos as needed"
+	@echo "  3. git add . && git commit  Hooks auto-sync forge-core"
+	@echo "  4. make dev-core-off       Disable patches"
+	@echo "  5. make push-both          Push both repos"
+	@echo "  6. make pr-both            Create PRs in both repos"
 	@echo ""
 	@echo -e "$(FONT_CYAN)Automation:$(FONT_RESET)"
 	@echo "  When your automagik-forge PR merges to dev:"
@@ -928,6 +937,69 @@ dev-help:
 	@echo "  - Pre-push hook blocks pushes if [patch] is active"
 	@echo "  - Run 'make dev-core-off' before pushing"
 	@echo ""
+
+# =============================================================================
+# Push and PR for both repos (single-repo experience)
+# =============================================================================
+
+push-both: ## Push both repos (automagik-forge + forge-core) together
+	@echo -e "$(FONT_CYAN)🚀 Pushing both repos...$(FONT_RESET)"
+	@# Safety: dev-core must be OFF
+	@if grep -q '^\[patch\."https://github.com/namastexlabs/forge-core' .cargo/config.toml 2>/dev/null; then \
+		echo -e "$(FONT_RED)❌ dev-core is ACTIVE - run 'make dev-core-off' first$(FONT_RESET)"; \
+		exit 1; \
+	fi
+	@# Safety: automagik-forge must be clean
+	@if [ -n "$$(git status --porcelain)" ]; then \
+		echo -e "$(FONT_RED)❌ automagik-forge has uncommitted changes$(FONT_RESET)"; \
+		exit 1; \
+	fi
+	@# Safety: forge-core must be clean (if exists)
+	@if [ -d "forge-core/.git" ] && [ -n "$$(cd forge-core && git status --porcelain)" ]; then \
+		echo -e "$(FONT_RED)❌ forge-core has uncommitted changes$(FONT_RESET)"; \
+		exit 1; \
+	fi
+	@# Push automagik-forge
+	@BRANCH=$$(git branch --show-current); \
+	git push origin $$BRANCH && \
+	echo -e "$(FONT_GREEN)✅ automagik-forge pushed$(FONT_RESET)"
+	@# Push forge-core (if exists and has commits)
+	@if [ -d "forge-core/.git" ]; then \
+		BRANCH=$$(cd forge-core && git branch --show-current); \
+		cd forge-core && git push origin $$BRANCH 2>/dev/null && \
+		echo -e "$(FONT_GREEN)✅ forge-core pushed$(FONT_RESET)" || \
+		echo -e "$(FONT_CYAN)ℹ️  forge-core already up to date$(FONT_RESET)"; \
+	fi
+	@echo -e "$(FONT_GREEN)✅ Both repos pushed successfully$(FONT_RESET)"
+
+pr-both: ## Create PRs in both repos (linked)
+	@echo -e "$(FONT_CYAN)📝 Creating PRs in both repos...$(FONT_RESET)"
+	@# Safety checks
+	@if grep -q '^\[patch\."https://github.com/namastexlabs/forge-core' .cargo/config.toml 2>/dev/null; then \
+		echo -e "$(FONT_RED)❌ dev-core is ACTIVE - run 'make dev-core-off' first$(FONT_RESET)"; \
+		exit 1; \
+	fi
+	@# Get branch name
+	@BRANCH=$$(git branch --show-current); \
+	echo -e "$(FONT_CYAN)Branch: $$BRANCH$(FONT_RESET)"
+	@# Create forge-core PR first (if exists and has commits ahead)
+	@if [ -d "forge-core/.git" ]; then \
+		cd forge-core && \
+		if git log origin/main..HEAD --oneline 2>/dev/null | grep -q .; then \
+			echo -e "$(FONT_CYAN)Creating forge-core PR...$(FONT_RESET)"; \
+			gh pr create --base main --fill --label rc 2>/dev/null || echo -e "$(FONT_YELLOW)PR may already exist$(FONT_RESET)"; \
+		else \
+			echo -e "$(FONT_YELLOW)forge-core: no commits ahead of main$(FONT_RESET)"; \
+		fi; \
+	fi
+	@# Create automagik-forge PR
+	@if git log origin/main..HEAD --oneline 2>/dev/null | grep -q .; then \
+		echo -e "$(FONT_CYAN)Creating automagik-forge PR...$(FONT_RESET)"; \
+		gh pr create --base main --fill --label rc 2>/dev/null || echo -e "$(FONT_YELLOW)PR may already exist$(FONT_RESET)"; \
+	else \
+		echo -e "$(FONT_YELLOW)automagik-forge: no commits ahead of main$(FONT_RESET)"; \
+	fi
+	@echo -e "$(FONT_GREEN)✅ PRs created$(FONT_RESET)"
 
 # Production mode - test what will be published
 prod: check-android-deps check-cargo
