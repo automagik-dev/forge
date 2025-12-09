@@ -41,6 +41,11 @@ jobs:
       - name: Setup Node
         uses: ./.github/actions/setup-node
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly-2025-05-18
+
       - name: Install dependencies
         run: pnpm install
 
@@ -52,9 +57,7 @@ jobs:
         run: cd frontend && pnpm build
 
       - name: Build backend
-        run: |
-          source "$HOME/.cargo/env"
-          cargo build --release --bin forge-app
+        run: cargo build --release --bin forge-app
         env:
           SQLX_OFFLINE: 'true'
 
