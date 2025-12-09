@@ -67,6 +67,10 @@ jni = { version = "0.21", optional = true }
 android_logger = { version = "0.14", optional = true }
 log = "0.4"
 
+# Force vendored OpenSSL for cross-compilation (Windows, Linux ARM64)
+# This enables feature unification across all transitive dependencies
+openssl = { version = "0.10", features = ["vendored"] }
+
 [features]
 android = ["jni", "android_logger"]
 
@@ -74,6 +78,3 @@ android = ["jni", "android_logger"]
 httpmock = "0.7"
 serial_test = "3.0"
 
-# Android-specific dependencies - force vendored OpenSSL for cross-compilation
-[target.'cfg(target_os = "android")'.dependencies]
-openssl = { version = "0.10", features = ["vendored"] }

@@ -48,6 +48,7 @@ mcp-types = { git = "https://github.com/namastexlabs/codex", branch = "main", pa
 # Rust features not available in the May 2025 nightly toolchain
 zerocopy = { git = "https://github.com/google/zerocopy", tag = "v0.8.23" }
 
+
 [profile.release]
 debug = true
 split-debuginfo = "packed"
