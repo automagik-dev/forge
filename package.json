@@ -1,6 +1,6 @@
 {
   "name": "@automagik/forge",
-  "version": "0.8.7-rc.9",
+  "version": "0.8.7-rc.10",
   "description": "The Vibe Coding++™ platform for human-AI development. Kanban board for AI agents with git worktree isolation.",
   "keywords": [
     "ai",
