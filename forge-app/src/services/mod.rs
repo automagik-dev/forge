@@ -21,7 +21,7 @@ use tokio::time::{Duration, sleep};
 use uuid::Uuid;
 
 // Import forge extension services
-use forge_config::ForgeConfigService;
+use forge_config::{BetaFeaturesService, ForgeConfigService};
 use forge_omni::{OmniConfig, OmniService};
 
 /// Main forge services container
@@ -31,6 +31,7 @@ pub struct ForgeServices {
     pub deployment: Arc<DeploymentImpl>,
     pub omni: Arc<RwLock<OmniService>>,
     pub config: Arc<ForgeConfigService>,
+    pub beta_features: Arc<BetaFeaturesService>,
     pub pool: SqlitePool,
     pub profile_cache: Arc<profile_cache::ProfileCacheManager>,
 }
@@ -73,6 +74,14 @@ impl ForgeServices {
         let omni_config = config.effective_omni_config(None).await?;
         let omni = Arc::new(RwLock::new(OmniService::new(omni_config)));
 
+        // Initialize beta features service
+        // Look for beta-features.toml in forge-main directory (relative to cwd)
+        let beta_features_path = std::env::current_dir()?
+            .join("forge-main")
+            .join("beta-features.toml");
+        let beta_features = Arc::new(BetaFeaturesService::new(pool.clone(), beta_features_path)?);
+        beta_features.ensure_table().await?;
+
         tracing::info!(
             forge_omni_enabled = global_settings.omni_enabled,
             "Loaded forge extension settings from auxiliary schema"
@@ -91,6 +100,7 @@ impl ForgeServices {
             deployment,
             omni,
             config,
+            beta_features,
             pool,
             profile_cache,
         })

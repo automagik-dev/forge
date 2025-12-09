@@ -19,6 +19,7 @@ import { useNamestexerSessionTracking } from '@/hooks/useNamestexerSessionTracki
 
 import {
   AgentSettings,
+  BetaFeaturesSettings,
   GeneralSettings,
   McpSettings,
   ProjectSettings,
@@ -35,6 +36,7 @@ import { MobileNavigationProvider } from '@/contexts/MobileNavigationContext';
 import { HotkeysProvider } from 'react-hotkeys-hook';
 
 import { ProjectProvider } from '@/contexts/project-context';
+import { BetaFeaturesProvider } from '@/contexts/beta-features-context';
 import { ThemeMode } from 'shared/types';
 import * as Sentry from '@sentry/react';
 import { Loader } from '@/components/ui/loader';
@@ -347,6 +349,7 @@ function AppContent() {
                     <Route path="projects" element={<ProjectSettings />} />
                     <Route path="agents" element={<AgentSettings />} />
                     <Route path="mcp" element={<McpSettings />} />
+                    <Route path="beta" element={<BetaFeaturesSettings />} />
                   </Route>
                   <Route
                     path="/mcp-servers"
@@ -381,8 +384,9 @@ function App() {
       }}
     >
       <UserSystemProvider>
-        <ClickedElementsProvider>
-          <ProjectProvider>
+        <BetaFeaturesProvider>
+          <ClickedElementsProvider>
+            <ProjectProvider>
             {/* Keep 'global' active at all times so the hotkeys scope stack is never empty */}
             <HotkeysProvider
               initiallyActiveScopes={[
@@ -401,8 +405,9 @@ function App() {
                 <AppContent />
               </NiceModal.Provider>
             </HotkeysProvider>
-          </ProjectProvider>
-        </ClickedElementsProvider>
+            </ProjectProvider>
+          </ClickedElementsProvider>
+        </BetaFeaturesProvider>
       </UserSystemProvider>
     </BrowserRouter>
   );
