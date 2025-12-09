@@ -22,31 +22,14 @@ if [ ! -d "$FORGE_CORE_DIR/.git" ]; then
     exit 0
 fi
 
-# Check if forge-core has any changes (staged or unstaged)
+# Check if forge-core has any changes (staged, unstaged, or untracked)
 cd "$FORGE_CORE_DIR"
 
-HAS_STAGED=false
-HAS_UNSTAGED=false
-
-# Check for staged changes
-if ! git diff --cached --quiet 2>/dev/null; then
-    HAS_STAGED=true
-fi
-
-# Check for unstaged changes
-if ! git diff --quiet 2>/dev/null; then
-    HAS_UNSTAGED=true
-fi
-
-# Check for untracked files
-UNTRACKED=$(git ls-files --others --exclude-standard 2>/dev/null | head -1)
-if [ -n "$UNTRACKED" ]; then
-    HAS_UNSTAGED=true
-fi
+HAS_CHANGES=$(git status --porcelain 2>/dev/null)
 
 cd ..
 
-if [ "$HAS_STAGED" = "true" ] || [ "$HAS_UNSTAGED" = "true" ]; then
+if [ -n "$HAS_CHANGES" ]; then
     # Stage all forge-core changes
     cd "$FORGE_CORE_DIR"
     git add -A
