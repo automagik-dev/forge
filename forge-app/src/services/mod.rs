@@ -643,7 +643,7 @@ mod tests {
     }
 
     async fn insert_project(pool: &SqlitePool, project_id: Uuid) {
-        let unique_path = format!("/tmp/test-project-{}", project_id);
+        let unique_path = format!("/tmp/test-project-{project_id}");
         sqlx::query(
             "INSERT INTO projects (id, name, git_repo_path) VALUES (?, 'Forge Project', ?)",
         )

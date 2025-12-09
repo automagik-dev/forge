@@ -13,16 +13,13 @@ async fn main() {
     let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../automagik-genie");
 
     if !workspace_root.exists() {
-        eprintln!(
-            "❌ automagik-genie workspace not found at {:?}",
-            workspace_root
-        );
+        eprintln!("❌ automagik-genie workspace not found at {workspace_root:?}");
         eprintln!("   Please clone automagik-genie repository as a sibling directory");
         std::process::exit(1);
     }
 
     println!("🔍 Testing .genie profile discovery (Forge App)");
-    println!("📁 Workspace: {:?}", workspace_root);
+    println!("📁 Workspace: {workspace_root:?}");
     println!();
 
     // Initialize forge services
@@ -44,21 +41,19 @@ async fn main() {
                         .map(|e| e.configurations.len())
                         .sum();
 
+                    let executor_count = configs.executors.len();
                     println!("📊 Profile Summary:");
-                    println!("   Executors: {}", configs.executors.len());
-                    println!("   Total variants: {}", total_variants);
+                    println!("   Executors: {executor_count}");
+                    println!("   Total variants: {total_variants}");
                     println!();
 
                     // List all profiles
                     println!("📋 Discovered Profiles:");
                     for (executor, executor_config) in &configs.executors {
-                        println!(
-                            "   • {}: {} variants",
-                            executor,
-                            executor_config.configurations.len()
-                        );
+                        let variant_count = executor_config.configurations.len();
+                        println!("   • {executor}: {variant_count} variants");
                         for variant_name in executor_config.configurations.keys() {
-                            println!("      - {}", variant_name);
+                            println!("      - {variant_name}");
                         }
                     }
                     println!();
@@ -67,10 +62,8 @@ async fn main() {
                     println!();
                     println!("🔥 Hot-reload is active!");
                     println!("   File watcher is monitoring .genie/ for changes.");
-                    println!(
-                        "   Try editing a .md file in {:?}",
-                        workspace_root.join(".genie")
-                    );
+                    let genie_path = workspace_root.join(".genie");
+                    println!("   Try editing a .md file in {genie_path:?}");
                     println!("   Changes will be detected and profiles will reload automatically.");
                     println!();
                     println!("Press Ctrl+C to exit...");
@@ -81,13 +74,13 @@ async fn main() {
                     }
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to load profiles: {}", e);
+                    eprintln!("❌ Failed to load profiles: {e}");
                     std::process::exit(1);
                 }
             }
         }
         Err(e) => {
-            eprintln!("❌ Failed to initialize forge services: {}", e);
+            eprintln!("❌ Failed to initialize forge services: {e}");
             std::process::exit(1);
         }
     }

@@ -2352,7 +2352,7 @@ mod tests {
 
         let task_title_id = git_branch_id(task_title);
         let short_id = short_uuid(&attempt_id);
-        let branch_name = format!("forge/{}-{}", short_id, task_title_id);
+        let branch_name = format!("forge/{short_id}-{task_title_id}");
 
         assert!(branch_name.starts_with("forge/"));
         assert!(branch_name.contains(&short_id));
@@ -2370,8 +2370,8 @@ mod tests {
         let short_id_1 = short_uuid(&attempt_id_1);
         let short_id_2 = short_uuid(&attempt_id_2);
 
-        let branch_1 = format!("forge/{}-{}", short_id_1, task_title_id);
-        let branch_2 = format!("forge/{}-{}", short_id_2, task_title_id);
+        let branch_1 = format!("forge/{short_id_1}-{task_title_id}");
+        let branch_2 = format!("forge/{short_id_2}-{task_title_id}");
 
         assert_ne!(branch_1, branch_2);
         assert!(branch_1.starts_with("forge/"));
@@ -2387,8 +2387,8 @@ mod tests {
         let task_title_id = git_branch_id(task_title);
         let short_id = short_uuid(&attempt_id);
 
-        let forge_branch = format!("forge/{}-{}", short_id, task_title_id);
-        let upstream_branch = format!("vk/{}-{}", short_id, task_title_id);
+        let forge_branch = format!("forge/{short_id}-{task_title_id}");
+        let upstream_branch = format!("vk/{short_id}-{task_title_id}");
 
         // Only difference should be the prefix
         assert_eq!(
