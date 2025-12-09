@@ -360,13 +360,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
+          # NOTE: Do NOT use registry-url here for Trusted Publishing
+          # registry-url sets up token-based auth which conflicts with OIDC
 
       - name: Upgrade npm for trusted publishing (requires npm 11.5.1+)
         run: |
           echo "Current npm version: $(npm -v)"
           npm install -g npm@11.6.2
           echo "Upgraded npm version: $(npm -v)"
+          # Set registry without auth token - OIDC will handle authentication
+          npm config set registry https://registry.npmjs.org/
 
       - name: Restore cached binaries for all platforms
         shell: bash
