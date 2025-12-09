@@ -116,7 +116,19 @@ jobs:
         if: env.SKIP_BUILD != 'true'
         shell: bash
         run: rustup target add ${{ matrix.target }}
-          
+
+      # sccache for distributed build caching - dramatically speeds up warm builds
+      - name: Setup sccache
+        if: env.SKIP_BUILD != 'true'
+        uses: mozilla-actions/sccache-action@v0.0.6
+
+      - name: Configure sccache
+        if: env.SKIP_BUILD != 'true'
+        shell: bash
+        run: |
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
       - name: Cache Rust dependencies
         if: env.SKIP_BUILD != 'true'
         uses: actions/cache@v4
@@ -303,7 +315,14 @@ jobs:
           echo "Building with CARGO_BUILD_JOBS=${{ matrix.cargo_jobs }}"
           cargo build --release --target ${{ matrix.target }} -j ${{ matrix.cargo_jobs }}
         shell: bash
-      
+
+      - name: Show sccache stats
+        if: env.SKIP_BUILD != 'true'
+        shell: bash
+        run: |
+          echo "📊 sccache statistics:"
+          sccache --show-stats || echo "sccache stats not available"
+
       - name: Package binaries (Windows)
         if: runner.os == 'Windows' && env.SKIP_BUILD != 'true'
         shell: powershell
