@@ -549,15 +549,11 @@ jobs:
             echo "⏩ Version not found on npm; will publish."
           fi
 
-      - name: Publish to NPM
+      - name: Publish to NPM (Trusted Publishing via OIDC)
         if: steps.check.outputs.published == 'false'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd npx-cli
-          # Configure npm auth using token
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
-          npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
+          npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }} --provenance
 
       - name: Skip publish (already published)
         if: steps.check.outputs.published == 'true'
