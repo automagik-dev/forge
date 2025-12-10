@@ -1078,20 +1078,9 @@ clean:
 	@cargo clean
 	@echo "✅ Clean complete"
 
-# Complete release pipeline: version bump + build + publish + release notes
-publish:
-	@echo "🚀 Complete Release Pipeline"
-	@echo "This will:"
-	@echo "  1. Let you choose version bump type (patch/minor/major)"
-	@echo "  2. Trigger GitHub Actions to bump version and build all platforms"
-	@echo "  3. Generate AI-powered release notes with Genie (semantic analysis)"
-	@echo "  4. Create GitHub release and publish to npm"
-	@echo ""
-	@./gh-build.sh publish
-
-# Beta release with auto-incremented version
-beta:
-	@./gh-build.sh beta
+# Release pipeline moved to GitHub Actions
+# Use GitHub Actions UI to trigger releases:
+#   https://github.com/automagik-dev/forge/actions
 
 # Version info
 version:
