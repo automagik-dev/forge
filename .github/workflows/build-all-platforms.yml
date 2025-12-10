@@ -129,13 +129,34 @@ jobs:
         if: env.SKIP_BUILD != 'true'
         shell: bash
         run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
           echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV  # sccache doesn't work with incremental compilation
-          # Only use sccache wrapper if setup succeeded
+
+          # Only use sccache if setup succeeded AND backend is reachable
           if [ "${{ steps.sccache-setup.outcome }}" == "success" ]; then
-            echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-            echo "SCCACHE_AVAILABLE=true" >> $GITHUB_ENV
-            echo "✅ sccache enabled - using GitHub Actions cache backend"
+            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+
+            # Test if sccache can actually start and connect
+            # Set a short timeout to detect backend issues quickly
+            echo "Testing sccache connectivity..."
+            export SCCACHE_GHA_ENABLED=true
+            export SCCACHE_IDLE_TIMEOUT=30
+
+            if sccache --start-server 2>&1; then
+              # Try a zero-compile test to verify backend connectivity
+              if timeout 10 sccache --zero-stats 2>&1; then
+                echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+                echo "SCCACHE_AVAILABLE=true" >> $GITHUB_ENV
+                echo "SCCACHE_IDLE_TIMEOUT=600" >> $GITHUB_ENV
+                echo "✅ sccache enabled and backend reachable"
+              else
+                echo "SCCACHE_AVAILABLE=false" >> $GITHUB_ENV
+                sccache --stop-server 2>/dev/null || true
+                echo "⚠️ sccache backend unreachable - building without cache"
+              fi
+            else
+              echo "SCCACHE_AVAILABLE=false" >> $GITHUB_ENV
+              echo "⚠️ sccache server failed to start - building without cache"
+            fi
           else
             echo "SCCACHE_AVAILABLE=false" >> $GITHUB_ENV
             echo "⚠️ sccache setup failed - building without cache (slower but will work)"
