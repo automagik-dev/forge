@@ -788,13 +788,13 @@ dev-core: check-android-deps check-cargo ## Start dev with local forge-core
 	@# Enable [patch] section in .cargo/config.toml
 	@echo -e "$(FONT_CYAN)⚙️  Enabling Cargo [patch] overrides...$(FONT_RESET)"
 	@sed -i 's/^# \[patch\./[patch./g' .cargo/config.toml
-	@sed -i 's/^# db = /db = /g' .cargo/config.toml
-	@sed -i 's/^# services = /services = /g' .cargo/config.toml
-	@sed -i 's/^# server = /server = /g' .cargo/config.toml
-	@sed -i 's/^# deployment = /deployment = /g' .cargo/config.toml
-	@sed -i 's/^# local-deployment = /local-deployment = /g' .cargo/config.toml
-	@sed -i 's/^# executors = /executors = /g' .cargo/config.toml
-	@sed -i 's/^# utils = /utils = /g' .cargo/config.toml
+	@sed -i 's/^# forge-core-db = /forge-core-db = /g' .cargo/config.toml
+	@sed -i 's/^# forge-core-services = /forge-core-services = /g' .cargo/config.toml
+	@sed -i 's/^# forge-core-server = /forge-core-server = /g' .cargo/config.toml
+	@sed -i 's/^# forge-core-deployment = /forge-core-deployment = /g' .cargo/config.toml
+	@sed -i 's/^# forge-core-local-deployment = /forge-core-local-deployment = /g' .cargo/config.toml
+	@sed -i 's/^# forge-core-executors = /forge-core-executors = /g' .cargo/config.toml
+	@sed -i 's/^# forge-core-utils = /forge-core-utils = /g' .cargo/config.toml
 	@# Regenerate Cargo.lock for path deps
 	@rm -f Cargo.lock
 	@cargo fetch 2>/dev/null || true
@@ -824,13 +824,13 @@ dev-core-off: ## Disable local forge-core (use git deps)
 	@echo -e "$(FONT_CYAN)🔄 Disabling Cargo [patch] overrides...$(FONT_RESET)"
 	@# Comment out forge-core [patch] section ONLY (not crates-io patches)
 	@sed -i 's/^\[patch\."https:\/\/github.com\/namastexlabs\/forge-core.git"\]/# [patch."https:\/\/github.com\/namastexlabs\/forge-core.git"]/g' .cargo/config.toml
-	@sed -i 's/^db = { path/# db = { path/g' .cargo/config.toml
-	@sed -i 's/^services = { path/# services = { path/g' .cargo/config.toml
-	@sed -i 's/^server = { path/# server = { path/g' .cargo/config.toml
-	@sed -i 's/^deployment = { path/# deployment = { path/g' .cargo/config.toml
-	@sed -i 's/^local-deployment = { path/# local-deployment = { path/g' .cargo/config.toml
-	@sed -i 's/^executors = { path/# executors = { path/g' .cargo/config.toml
-	@sed -i 's/^utils = { path/# utils = { path/g' .cargo/config.toml
+	@sed -i 's/^forge-core-db = { path/# forge-core-db = { path/g' .cargo/config.toml
+	@sed -i 's/^forge-core-services = { path/# forge-core-services = { path/g' .cargo/config.toml
+	@sed -i 's/^forge-core-server = { path/# forge-core-server = { path/g' .cargo/config.toml
+	@sed -i 's/^forge-core-deployment = { path/# forge-core-deployment = { path/g' .cargo/config.toml
+	@sed -i 's/^forge-core-local-deployment = { path/# forge-core-local-deployment = { path/g' .cargo/config.toml
+	@sed -i 's/^forge-core-executors = { path/# forge-core-executors = { path/g' .cargo/config.toml
+	@sed -i 's/^forge-core-utils = { path/# forge-core-utils = { path/g' .cargo/config.toml
 	@rm -f Cargo.lock
 	@cargo fetch 2>/dev/null || true
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using git dependencies$(FONT_RESET)"

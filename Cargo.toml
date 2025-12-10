@@ -11,6 +11,12 @@ members = [
 [workspace.package]
 version = "0.8.7-rc.24"
 edition = "2024"
+license = "MIT"
+repository = "https://github.com/namastexlabs/forge-core"
+homepage = "https://github.com/namastexlabs/forge-core"
+authors = ["Namastex Labs <genie@namastex.ai>"]
+keywords = ["forge", "task", "execution", "agent", "ai"]
+categories = ["development-tools"]
 
 [workspace.dependencies]
 tokio = { version = "1.0", features = ["full"] }
@@ -29,6 +35,15 @@ schemars = { version = "1.0.4", features = ["derive", "chrono04", "uuid1", "pres
 
 # forge-core workspace dependencies (required for dev-core mode)
 rmcp = { version = "0.10.0" }
+
+# Internal forge-core crates (for workspace inheritance in dev-core mode)
+forge-core-utils = { path = "forge-core/crates/utils" }
+forge-core-executors = { path = "forge-core/crates/executors" }
+forge-core-db = { path = "forge-core/crates/db" }
+forge-core-services = { path = "forge-core/crates/services" }
+forge-core-deployment = { path = "forge-core/crates/deployment" }
+forge-core-local-deployment = { path = "forge-core/crates/local-deployment" }
+forge-core-server = { path = "forge-core/crates/server" }
 
 # Codex dependencies from namastexlabs fork (patched via .cargo/config.toml)
 codex-protocol = "0.63.0"

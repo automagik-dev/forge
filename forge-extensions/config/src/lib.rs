@@ -10,7 +10,7 @@ pub mod types;
 pub use forge_omni::{OmniConfig, RecipientType};
 pub use service::ForgeConfigService;
 // Re-export upstream config primitives so downstream code can switch to forge-config without churn
-pub use services::services::config::{
+pub use forge_core_services::services::config::{
     Config, ConfigError, EditorConfig, EditorType, GitHubConfig, NotificationConfig, SoundFile,
     ThemeMode, UiLanguage, load_config_from_file, save_config_to_file,
 };

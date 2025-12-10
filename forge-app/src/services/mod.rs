@@ -10,14 +10,14 @@ pub mod profile_cache;
 use std::{path::Path, sync::Arc};
 
 use anyhow::{Context, Result, anyhow};
-use db::models::project::Project;
-use deployment::Deployment;
+use forge_core_db::models::project::Project;
+use forge_core_deployment::Deployment;
 // Import forge extension services
 use forge_config::ForgeConfigService;
 use forge_omni::{OmniConfig, OmniService};
 use serde::Deserialize;
 use serde_json::json;
-use server::DeploymentImpl;
+use forge_core_server::DeploymentImpl;
 use sqlx::{Row, SqlitePool};
 use tokio::{
     sync::RwLock,
@@ -126,7 +126,7 @@ impl ForgeServices {
     pub async fn load_profiles_for_workspace(
         &self,
         workspace_root: &Path,
-    ) -> Result<executors::profile::ExecutorConfigs> {
+    ) -> Result<forge_core_executors::profile::ExecutorConfigs> {
         // Use the profile cache manager (with hot-reload)
         self.profile_cache.get_profiles(workspace_root).await
     }
@@ -636,7 +636,7 @@ mod tests {
         unsafe {
             std::env::set_var("DATABASE_URL", "sqlite::memory:");
         }
-        let db_service = db::DBService::new()
+        let db_service = forge_core_db::DBService::new()
             .await
             .expect("failed to create db service with migrations");
         db_service.pool

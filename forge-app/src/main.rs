@@ -8,7 +8,7 @@ use std::{
     net::{IpAddr, SocketAddr},
 };
 
-use utils::browser::open_browser;
+use forge_core_utils::browser::open_browser;
 
 fn resolve_bind_address() -> SocketAddr {
     let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());

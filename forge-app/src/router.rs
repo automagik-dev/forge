@@ -15,19 +15,19 @@ use axum::{
     response::{Html, IntoResponse, Response},
     routing::{get, post},
 };
-use db::models::{
+use forge_core_db::models::{
     image::TaskImage,
     task::{Task, TaskWithAttemptStatus},
     task_attempt::{CreateTaskAttempt, TaskAttempt},
 };
-use deployment::Deployment;
-use executors::profile::ExecutorProfileId;
+use forge_core_deployment::Deployment;
+use forge_core_executors::profile::ExecutorProfileId;
 use forge_config::ForgeProjectSettings;
 use futures_util::{SinkExt, StreamExt, TryStreamExt};
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use server::{
+use forge_core_server::{
     DeploymentImpl,
     error::ApiError,
     routes::{
@@ -36,11 +36,11 @@ use server::{
         tasks::CreateAndStartTaskRequest,
     },
 };
-use services::services::container::ContainerService;
+use forge_core_services::services::container::ContainerService;
 use sqlx::{self, Error as SqlxError, Row};
 use tokio::sync::RwLock;
 use tower_http::cors::{Any, CorsLayer};
-use utils::{
+use forge_core_utils::{
     log_msg::LogMsg,
     response::ApiResponse,
     text::{git_branch_id, short_uuid},
@@ -178,7 +178,7 @@ async fn forge_create_task(
     let task_id = Uuid::new_v4();
     let task = Task::create(
         &deployment.db().pool,
-        &db::models::task::CreateTask {
+        &forge_core_db::models::task::CreateTask {
             project_id: payload.project_id,
             title: payload.title,
             description: payload.description,
@@ -309,26 +309,26 @@ async fn forge_create_task_attempt(
                     .map(move |(variant, coding_agent)| {
                         // Extract append_prompt from the CodingAgent enum
                         let prompt_preview = match coding_agent {
-                            executors::executors::CodingAgent::ClaudeCode(cfg) => {
+                            forge_core_executors::executors::CodingAgent::ClaudeCode(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::Codex(cfg) => {
+                            forge_core_executors::executors::CodingAgent::Codex(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
-                            executors::executors::CodingAgent::Gemini(cfg) => {
+                            forge_core_executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
+                            forge_core_executors::executors::CodingAgent::Gemini(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::Opencode(cfg) => {
+                            forge_core_executors::executors::CodingAgent::Opencode(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::CursorAgent(cfg) => {
+                            forge_core_executors::executors::CodingAgent::CursorAgent(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::QwenCode(cfg) => {
+                            forge_core_executors::executors::CodingAgent::QwenCode(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::Copilot(cfg) => {
+                            forge_core_executors::executors::CodingAgent::Copilot(cfg) => {
                                 cfg.append_prompt.get()
                             }
                         }
@@ -354,7 +354,7 @@ async fn forge_create_task_attempt(
             variant_list.join(", ")
         );
 
-        executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+        forge_core_executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
 
         // Register project in profile cache for subsequent API lookups
         forge_services
@@ -512,26 +512,26 @@ async fn forge_create_task_and_start(
                     .map(move |(variant, coding_agent)| {
                         // Extract append_prompt from the CodingAgent enum
                         let prompt_preview = match coding_agent {
-                            executors::executors::CodingAgent::ClaudeCode(cfg) => {
+                            forge_core_executors::executors::CodingAgent::ClaudeCode(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::Codex(cfg) => {
+                            forge_core_executors::executors::CodingAgent::Codex(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
-                            executors::executors::CodingAgent::Gemini(cfg) => {
+                            forge_core_executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
+                            forge_core_executors::executors::CodingAgent::Gemini(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::Opencode(cfg) => {
+                            forge_core_executors::executors::CodingAgent::Opencode(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::CursorAgent(cfg) => {
+                            forge_core_executors::executors::CodingAgent::CursorAgent(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::QwenCode(cfg) => {
+                            forge_core_executors::executors::CodingAgent::QwenCode(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::Copilot(cfg) => {
+                            forge_core_executors::executors::CodingAgent::Copilot(cfg) => {
                                 cfg.append_prompt.get()
                             }
                         }
@@ -557,7 +557,7 @@ async fn forge_create_task_and_start(
             variant_list.join(", ")
         );
 
-        executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+        forge_core_executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
 
         // Register project in profile cache for subsequent API lookups
         forge_services
@@ -647,7 +647,7 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
 /// Build tasks router with forge override for create-and-start endpoint
 fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     use axum::middleware::from_fn_with_state;
-    use server::middleware::load_task_middleware;
+    use forge_core_server::middleware::load_task_middleware;
 
     let task_id_router = Router::new()
         .route(
@@ -739,7 +739,7 @@ ORDER BY t.created_at DESC"#;
     let mut items: Vec<ForgeTaskWithAttemptStatus> = Vec::with_capacity(rows.len());
     for row in rows {
         let task_id: Uuid = row.try_get("id").map_err(ApiError::Database)?;
-        let task = db::models::task::Task::find_by_id(pool, task_id)
+        let task = forge_core_db::models::task::Task::find_by_id(pool, task_id)
             .await?
             .ok_or(ApiError::Database(SqlxError::RowNotFound))?;
 
@@ -1115,7 +1115,7 @@ async fn forge_follow_up(
     State(deployment): State<DeploymentImpl>,
     State(forge_services): State<ForgeServices>,
     Json(payload): Json<serde_json::Value>,
-) -> Result<Json<ApiResponse<db::models::execution_process::ExecutionProcess>>, ApiError> {
+) -> Result<Json<ApiResponse<forge_core_db::models::execution_process::ExecutionProcess>>, ApiError> {
     // Get task and project to determine workspace root
     let task = task_attempt
         .parent_task(&deployment.db().pool)
@@ -1149,26 +1149,26 @@ async fn forge_follow_up(
                     .map(move |(variant, coding_agent)| {
                         // Extract append_prompt from the CodingAgent enum
                         let prompt_preview = match coding_agent {
-                            executors::executors::CodingAgent::ClaudeCode(cfg) => {
+                            forge_core_executors::executors::CodingAgent::ClaudeCode(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::Codex(cfg) => {
+                            forge_core_executors::executors::CodingAgent::Codex(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
-                            executors::executors::CodingAgent::Gemini(cfg) => {
+                            forge_core_executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
+                            forge_core_executors::executors::CodingAgent::Gemini(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::Opencode(cfg) => {
+                            forge_core_executors::executors::CodingAgent::Opencode(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::CursorAgent(cfg) => {
+                            forge_core_executors::executors::CodingAgent::CursorAgent(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::QwenCode(cfg) => {
+                            forge_core_executors::executors::CodingAgent::QwenCode(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            executors::executors::CodingAgent::Copilot(cfg) => {
+                            forge_core_executors::executors::CodingAgent::Copilot(cfg) => {
                                 cfg.append_prompt.get()
                             }
                         }
@@ -1194,7 +1194,7 @@ async fn forge_follow_up(
             variant_list.join(", ")
         );
 
-        executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
+        forge_core_executors::profile::ExecutorConfigs::set_cached(workspace_profiles);
 
         // Register project in profile cache for subsequent API lookups
         forge_services
@@ -1211,7 +1211,7 @@ async fn forge_follow_up(
     // Call upstream follow_up - re-parse JSON into the correct type
     let typed_payload: task_attempts::CreateFollowUpAttempt = serde_json::from_value(payload)
         .map_err(|e| {
-            ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
+            ApiError::TaskAttempt(forge_core_db::models::task_attempt::TaskAttemptError::ValidationError(
                 format!("Invalid follow-up payload: {e}"),
             ))
         })?;
@@ -1254,7 +1254,7 @@ async fn forge_get_task_attempt_branch_status(
 
     // Serialize the ApiResponse to JSON so we can modify it
     let branch_status_value = serde_json::to_value(&api_response).map_err(|e| {
-        ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
+        ApiError::TaskAttempt(forge_core_db::models::task_attempt::TaskAttemptError::ValidationError(
             format!("Failed to serialize upstream response: {e}"),
         ))
     })?;
@@ -1274,7 +1274,7 @@ async fn forge_get_task_attempt_branch_status(
     // Get worktree path from task attempt's container_ref
     // container_ref is an Option, so we need to unwrap it or use a default
     let container_ref_str = task_attempt.container_ref.as_ref().ok_or_else(|| {
-        ApiError::TaskAttempt(db::models::task_attempt::TaskAttemptError::ValidationError(
+        ApiError::TaskAttempt(forge_core_db::models::task_attempt::TaskAttemptError::ValidationError(
             "Task attempt has no container_ref".to_string(),
         ))
     })?;
@@ -1384,7 +1384,7 @@ fn build_task_attempts_router_with_forge_override(
     deployment: &DeploymentImpl,
 ) -> Router<ForgeAppState> {
     use axum::middleware::from_fn_with_state;
-    use server::middleware::load_task_attempt_middleware;
+    use forge_core_server::middleware::load_task_attempt_middleware;
 
     let task_attempt_id_router = Router::new()
         .route("/", get(task_attempts::get_task_attempt))
@@ -1755,7 +1755,7 @@ async fn update_project_settings(
 async fn get_project_profiles(
     Path(project_id): Path<Uuid>,
     State(services): State<ForgeServices>,
-) -> Result<Json<ApiResponse<executors::profile::ExecutorConfigs>>, StatusCode> {
+) -> Result<Json<ApiResponse<forge_core_executors::profile::ExecutorConfigs>>, StatusCode> {
     services
         .profile_cache
         .get_profiles_for_project(project_id)
@@ -1790,7 +1790,7 @@ async fn get_project_branch_status(
 ) -> Result<Json<ApiResponse<Value>>, StatusCode> {
     use std::process::Command;
 
-    use db::models::project::Project;
+    use forge_core_db::models::project::Project;
 
     // Get project to determine workspace root
     let project = match Project::find_by_id(&deployment.db().pool, project_id).await {
@@ -1966,7 +1966,7 @@ async fn post_project_pull(
 ) -> Result<Json<Value>, StatusCode> {
     use std::process::Command;
 
-    use db::models::project::Project;
+    use forge_core_db::models::project::Project;
 
     // Get project
     let project = match Project::find_by_id(&deployment.db().pool, project_id).await {
