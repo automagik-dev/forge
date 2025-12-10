@@ -53,7 +53,7 @@ jobs:
             target: x86_64-pc-windows-msvc
             platform: windows-x64
             cargo_jobs: 20  # ct201 has 20 cores
-            preinstalled: true  # Tools pre-installed on Windows runner, skip setup steps
+            # Note: pnpm/node setup handled by workflow (pnpm not in PATH for runner service)
           # Windows ARM64 is not well supported, commenting out for now
           # - os: windows-latest
           #   target: aarch64-pc-windows-msvc
