@@ -118,17 +118,28 @@ jobs:
         run: rustup target add ${{ matrix.target }}
 
       # sccache for distributed build caching - dramatically speeds up warm builds
+      # Uses continue-on-error to gracefully fall back to uncached builds if cache backend unavailable
       - name: Setup sccache
+        id: sccache-setup
         if: env.SKIP_BUILD != 'true'
         uses: mozilla-actions/sccache-action@v0.0.6
+        continue-on-error: true  # Don't fail build if cache backend unavailable
 
       - name: Configure sccache
         if: env.SKIP_BUILD != 'true'
         shell: bash
         run: |
           echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
           echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV  # sccache doesn't work with incremental compilation
+          # Only use sccache wrapper if setup succeeded
+          if [ "${{ steps.sccache-setup.outcome }}" == "success" ]; then
+            echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+            echo "SCCACHE_AVAILABLE=true" >> $GITHUB_ENV
+            echo "✅ sccache enabled - using GitHub Actions cache backend"
+          else
+            echo "SCCACHE_AVAILABLE=false" >> $GITHUB_ENV
+            echo "⚠️ sccache setup failed - building without cache (slower but will work)"
+          fi
 
       - name: Cache Rust dependencies
         if: env.SKIP_BUILD != 'true'
@@ -236,9 +247,28 @@ jobs:
         shell: bash
         run: |
           if cargo zigbuild --version >/dev/null 2>&1; then
-            echo "cargo-zigbuild already installed: $(cargo zigbuild --version)"
+            echo "✅ cargo-zigbuild already installed: $(cargo zigbuild --version)"
           else
-            cargo install cargo-zigbuild --locked
+            echo "Installing cargo-zigbuild..."
+            # Temporarily disable sccache for this install to avoid cache issues
+            RUSTC_WRAPPER_BACKUP="$RUSTC_WRAPPER"
+            unset RUSTC_WRAPPER
+            for attempt in 1 2 3; do
+              echo "Attempt $attempt/3..."
+              if cargo install cargo-zigbuild --locked; then
+                echo "✅ cargo-zigbuild installed successfully"
+                break
+              fi
+              if [ $attempt -eq 3 ]; then
+                echo "❌ Failed after 3 attempts"
+                exit 1
+              fi
+              sleep 5
+            done
+            # Restore sccache if it was enabled
+            if [ -n "$RUSTC_WRAPPER_BACKUP" ]; then
+              export RUSTC_WRAPPER="$RUSTC_WRAPPER_BACKUP"
+            fi
           fi
 
       - name: Install Zig toolchain
@@ -318,7 +348,7 @@ jobs:
         shell: bash
 
       - name: Show sccache stats
-        if: env.SKIP_BUILD != 'true'
+        if: env.SKIP_BUILD != 'true' && env.SCCACHE_AVAILABLE == 'true'
         shell: bash
         run: |
           echo "📊 sccache statistics:"
