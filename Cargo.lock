@@ -1263,8 +1263,8 @@ checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 
 [[package]]
 name = "db"
-version = "0.8.7-rc.4"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.5#1dd31d6557dc44505b5d133fca66df60ad83b768"
+version = "0.8.7-rc.12"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.24#e69c7fa5f6f792881b9714bad75288613afa8548"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1318,8 +1318,8 @@ dependencies = [
 
 [[package]]
 name = "deployment"
-version = "0.8.7-rc.4"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.5#1dd31d6557dc44505b5d133fca66df60ad83b768"
+version = "0.8.7-rc.12"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.24#e69c7fa5f6f792881b9714bad75288613afa8548"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1659,8 +1659,8 @@ dependencies = [
 
 [[package]]
 name = "executors"
-version = "0.8.7-rc.4"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.5#1dd31d6557dc44505b5d133fca66df60ad83b768"
+version = "0.8.7-rc.12"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.24#e69c7fa5f6f792881b9714bad75288613afa8548"
 dependencies = [
  "agent-client-protocol",
  "async-trait",
@@ -1839,7 +1839,7 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "forge-app"
-version = "0.8.7-rc.4"
+version = "0.8.7-rc.24"
 dependencies = [
  "android_logger",
  "anyhow",
@@ -1884,7 +1884,7 @@ dependencies = [
 
 [[package]]
 name = "forge-config"
-version = "0.8.7-rc.4"
+version = "0.8.7-rc.24"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1901,7 +1901,7 @@ dependencies = [
 
 [[package]]
 name = "forge-omni"
-version = "0.8.7-rc.4"
+version = "0.8.7-rc.24"
 dependencies = [
  "anyhow",
  "reqwest",
@@ -2589,9 +2589,9 @@ checksum = "7aedcccd01fc5fe81e6b489c15b247b8b0690feb23304303a9e560f37efc560a"
 
 [[package]]
 name = "icu_properties"
-version = "2.1.1"
+version = "2.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e93fcd3157766c0c8da2f8cff6ce651a31f0810eaa1c51ec363ef790bbb5fb99"
+checksum = "020bfc02fe870ec3a66d93e677ccca0562506e5872c650f893269e08615d74ec"
 dependencies = [
  "icu_collections",
  "icu_locale_core",
@@ -2603,9 +2603,9 @@ dependencies = [
 
 [[package]]
 name = "icu_properties_data"
-version = "2.1.1"
+version = "2.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02845b3647bb045f1100ecd6480ff52f34c35f82d9880e029d329c21d1054899"
+checksum = "616c294cf8d725c6afcd8f55abc17c56464ef6211f9ed59cccffe534129c77af"
 
 [[package]]
 name = "icu_provider"
@@ -3073,8 +3073,8 @@ checksum = "6373607a59f0be73a39b6fe456b8192fcc3585f602af20751600e974dd455e77"
 
 [[package]]
 name = "local-deployment"
-version = "0.8.7-rc.4"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.5#1dd31d6557dc44505b5d133fca66df60ad83b768"
+version = "0.8.7-rc.12"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.24#e69c7fa5f6f792881b9714bad75288613afa8548"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -4969,8 +4969,8 @@ dependencies = [
 
 [[package]]
 name = "server"
-version = "0.8.7-rc.4"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.5#1dd31d6557dc44505b5d133fca66df60ad83b768"
+version = "0.8.7-rc.12"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.24#e69c7fa5f6f792881b9714bad75288613afa8548"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5015,8 +5015,8 @@ dependencies = [
 
 [[package]]
 name = "services"
-version = "0.8.7-rc.4"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.5#1dd31d6557dc44505b5d133fca66df60ad83b768"
+version = "0.8.7-rc.12"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.24#e69c7fa5f6f792881b9714bad75288613afa8548"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6277,8 +6277,8 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 
 [[package]]
 name = "utils"
-version = "0.8.7-rc.4"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.5#1dd31d6557dc44505b5d133fca66df60ad83b768"
+version = "0.8.7-rc.12"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.24#e69c7fa5f6f792881b9714bad75288613afa8548"
 dependencies = [
  "async-stream",
  "axum",

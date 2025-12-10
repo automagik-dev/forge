@@ -18,7 +18,7 @@ rustflags = ["-C", "link-arg=/DEBUG:FASTLINK"]
 rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
 
 # ============================================================================
-# DEV-CORE PATCHES - DO NOT EDIT MANUALLY
+# DEV-CORE PATCHES - TEMPORARILY DISABLED FOR FORGE-CORE TESTING
 # This section is managed by `make dev-core` and `make dev-core-off`
 # When present, Cargo uses local forge-core paths instead of git dependencies
 # ============================================================================

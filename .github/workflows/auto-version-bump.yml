@@ -1,13 +1,20 @@
-name: Auto Version Bump
+name: Auto Version Bump (DEPRECATED)
 
-# Automatically bumps version when PRs are merged with 'rc' or 'stable' labels
-# - 'rc' label: Bump RC version (0.8.4-rc.2 → 0.8.4-rc.3)
-# - 'stable' label: Promote to stable (0.8.4-rc.3 → 0.8.5)
+# ⚠️ DEPRECATED: This workflow is superseded by release.yml (Unified Release)
+# Keeping for backward compatibility with manual workflow_dispatch only.
+# PR merge triggers are DISABLED to prevent duplicate releases.
+#
+# Use release.yml instead - it has:
+# - Proper forge-core sync with polling
+# - Build job for all platforms
+# - GitHub release creation
+# - Better error handling
 
 on:
-  pull_request:
-    types: [closed]
-    branches: [dev, main]
+  # DISABLED: PR triggers moved to release.yml to prevent duplicate runs
+  # pull_request:
+  #   types: [closed]
+  #   branches: [dev, main]
   workflow_dispatch:
     inputs:
       bump_type:
