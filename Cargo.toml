@@ -9,8 +9,8 @@ members = [
 ]
 
 [workspace.package]
-version = "0.8.7-rc.2"
-edition = "2021"
+version = "0.8.7-rc.4"
+edition = "2024"
 
 [workspace.dependencies]
 tokio = { version = "1.0", features = ["full"] }
@@ -34,6 +34,20 @@ rmcp = { version = "0.10.0" }
 codex-protocol = "0.63.0"
 codex-app-server-protocol = "0.63.0"
 mcp-types = "0.63.0"
+
+# Redirect crates.io dependencies to our forks
+# This is required because these packages don't exist on crates.io
+[patch.crates-io]
+# Codex dependencies from namastexlabs fork (schemars 1.0.4 patch)
+codex-protocol = { git = "https://github.com/namastexlabs/codex", branch = "main", package = "codex-protocol" }
+codex-app-server-protocol = { git = "https://github.com/namastexlabs/codex", branch = "main", package = "codex-app-server-protocol" }
+mcp-types = { git = "https://github.com/namastexlabs/codex", branch = "main", package = "mcp-types" }
+
+# Pin zerocopy to version compatible with nightly-2025-05-18
+# zerocopy 0.8.31 (Nov 2025) uses stdarch_x86_avx512 which requires
+# Rust features not available in the May 2025 nightly toolchain
+zerocopy = { git = "https://github.com/google/zerocopy", tag = "v0.8.23" }
+
 
 [profile.release]
 debug = true

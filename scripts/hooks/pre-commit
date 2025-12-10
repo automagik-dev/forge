@@ -1,0 +1,45 @@
+#!/bin/bash
+# Pre-commit hook for automagik-forge
+# AUTO-SYNCS forge-core changes when dev-core mode is active
+# Installed by: make dev-core
+#
+# This hook stages any forge-core changes for sync.
+# The actual commit happens in prepare-commit-msg hook.
+
+set -e
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+FORGE_CORE_DIR="forge-core"
+SYNC_MARKER=".forge-core-needs-sync"
+
+# Only run if dev-core is active (forge-core subdir exists with .git)
+if [ ! -d "$FORGE_CORE_DIR/.git" ]; then
+    exit 0
+fi
+
+# Check if forge-core has any changes (staged, unstaged, or untracked)
+cd "$FORGE_CORE_DIR"
+
+HAS_CHANGES=$(git status --porcelain 2>/dev/null)
+
+cd ..
+
+if [ -n "$HAS_CHANGES" ]; then
+    # Stage all forge-core changes
+    cd "$FORGE_CORE_DIR"
+    git add -A
+    cd ..
+
+    # Mark that we need to sync (commit happens in prepare-commit-msg)
+    touch "$SYNC_MARKER"
+
+    echo -e "${CYAN}📦 forge-core changes staged for sync${NC}"
+    echo -e "   Changes will be committed with the same message"
+fi
+
+exit 0

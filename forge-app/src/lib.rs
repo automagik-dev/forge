@@ -10,6 +10,7 @@ pub mod version;
 pub mod android;
 
 use std::net::{IpAddr, SocketAddr};
+
 use tokio::signal;
 
 /// Check if a port conflict exists and provide diagnostic information.
@@ -18,10 +19,7 @@ use tokio::signal;
 /// Platform-specific implementations provide varying levels of detail.
 fn check_port_conflict(port: u16, host: &str) -> String {
     find_process_using_port(port, host).unwrap_or_else(|| {
-        format!(
-            "Port {} may be in use by another process (unable to identify which)",
-            port
-        )
+        format!("Port {port} may be in use by another process (unable to identify which)")
     })
 }
 
@@ -38,13 +36,13 @@ fn find_process_using_port(port: u16, _host: &str) -> Option<String> {
         && let Ok(stdout) = String::from_utf8(output.stdout)
     {
         for line in stdout.lines() {
-            if line.contains(&format!(":{}", port)) {
+            if line.contains(&format!(":{port}")) {
                 // Extract PID from ss output (format: users:(("process",pid=12345,fd=3)))
                 if let Some(pid_start) = line.find("pid=") {
                     let pid_str = &line[pid_start + 4..];
                     if let Some(pid_end) = pid_str.find(',') {
                         let pid = &pid_str[..pid_end];
-                        return Some(format!("Process with PID {} is using this port", pid));
+                        return Some(format!("Process with PID {pid} is using this port"));
                     }
                 }
             }
@@ -53,13 +51,13 @@ fn find_process_using_port(port: u16, _host: &str) -> Option<String> {
 
     // Fallback to lsof if ss didn't work
     if let Ok(output) = Command::new("lsof")
-        .args(["-i", &format!(":{}", port), "-t"])
+        .args(["-i", &format!(":{port}"), "-t"])
         .output()
         && let Ok(pid_str) = String::from_utf8(output.stdout)
     {
         let pid = pid_str.trim();
         if !pid.is_empty() {
-            return Some(format!("Process with PID {} is using this port", pid));
+            return Some(format!("Process with PID {pid} is using this port"));
         }
     }
 
@@ -180,8 +178,7 @@ pub async fn run_server_with_readiness(
             asset_path
         );
         return Err(anyhow::anyhow!(
-            "Failed to create asset directory: {:?}",
-            asset_path
+            "Failed to create asset directory: {asset_path:?}"
         ));
     }
 
@@ -201,7 +198,7 @@ pub async fn run_server_with_readiness(
                 parent
             );
             std::fs::create_dir_all(parent).map_err(|e| {
-                anyhow::anyhow!("Failed to create database directory {:?}: {}", parent, e)
+                anyhow::anyhow!("Failed to create database directory {parent:?}: {e}")
             })?;
         }
     }

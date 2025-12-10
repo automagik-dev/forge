@@ -1,13 +1,16 @@
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::Duration,
+};
+
 /// Profile Cache with Hot-Reload Support
 ///
 /// Watches .genie folders for changes and automatically reloads profiles.
 use anyhow::Result;
 use executors::profile::ExecutorConfigs;
 use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
@@ -314,7 +317,7 @@ impl ProfileCacheManager {
         let workspace_root = {
             let paths = self.project_paths.read().await;
             paths.get(&project_id).cloned().ok_or_else(|| {
-                anyhow::anyhow!("Project {} not registered in profile cache", project_id)
+                anyhow::anyhow!("Project {project_id} not registered in profile cache")
             })?
         };
 

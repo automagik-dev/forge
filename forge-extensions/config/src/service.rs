@@ -1,9 +1,9 @@
 use anyhow::Result;
+use forge_omni::OmniConfig;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::types::{ForgeProjectSettings, ProjectConfig};
-use forge_omni::OmniConfig;
 
 pub struct ForgeConfigService {
     pool: SqlitePool,
@@ -162,8 +162,9 @@ struct ProjectConfigRow {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use forge_omni::{OmniConfig, RecipientType};
+
+    use super::*;
 
     async fn setup_pool() -> SqlitePool {
         let pool = SqlitePool::connect("sqlite::memory:")

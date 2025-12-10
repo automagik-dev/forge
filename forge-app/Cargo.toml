@@ -1,6 +1,6 @@
 [package]
 name = "forge-app"
-version = "0.8.7-rc.2"
+version.workspace = true
 edition = "2024"
 default-run = "forge-app"
 
@@ -50,13 +50,13 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 
 # Upstream crate dependencies (from git)
-db = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.3" }
-services = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.3" }
-server = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.3" }
-deployment = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.3" }
-local-deployment = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.3" }
-executors = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.3" }
-utils = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.3" }
+db = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.24" }
+services = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.24" }
+server = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.24" }
+deployment = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.24" }
+local-deployment = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.24" }
+executors = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.24" }
+utils = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.24" }
 
 # Forge extensions
 forge-omni = { path = "../forge-extensions/omni" }
@@ -67,6 +67,10 @@ jni = { version = "0.21", optional = true }
 android_logger = { version = "0.14", optional = true }
 log = "0.4"
 
+# Force vendored OpenSSL for cross-compilation (Windows, Linux ARM64)
+# This enables feature unification across all transitive dependencies
+openssl = { version = "0.10", features = ["vendored"] }
+
 [features]
 android = ["jni", "android_logger"]
 
@@ -74,6 +78,3 @@ android = ["jni", "android_logger"]
 httpmock = "0.7"
 serial_test = "3.0"
 
-# Android-specific dependencies - force vendored OpenSSL for cross-compilation
-[target.'cfg(target_os = "android")'.dependencies]
-openssl = { version = "0.10", features = ["vendored"] }

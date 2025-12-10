@@ -7,6 +7,13 @@
 #   0 - All versions consistent
 #   1 - Version mismatch detected
 #   2 - Missing forge-core tag (git tag doesn't exist)
+#
+# Note: Member crates use `version.workspace = true` to inherit version
+# from their workspace root. This script validates:
+#   1. All package.json versions match
+#   2. Workspace root Cargo.toml versions match npm version
+#   3. Member crates use version.workspace = true (not hardcoded versions)
+#   4. forge-core git tag references are consistent
 
 set -euo pipefail
 
@@ -28,8 +35,17 @@ get_json_version() {
     node -e "console.log(require('$1').version)" 2>/dev/null || echo ""
 }
 
-get_cargo_package_version() {
-    grep -E '^version\s*=' "$1" 2>/dev/null | head -1 | sed 's/.*"\([^"]*\)".*/\1/' || echo ""
+# Get version from workspace root Cargo.toml [workspace.package] section
+get_workspace_version() {
+    local file="$1"
+    # Look for version in [workspace.package] section using sed range
+    sed -n '/^\[workspace\.package\]/,/^\[/p' "$file" 2>/dev/null | grep -E '^version\s*=' | head -1 | sed 's/.*"\([^"]*\)".*/\1/'
+}
+
+# Check if a Cargo.toml uses workspace inheritance for version
+uses_workspace_version() {
+    local file="$1"
+    grep -qE 'version\.workspace\s*=\s*true' "$file" 2>/dev/null
 }
 
 get_cargo_git_tags() {
@@ -63,30 +79,74 @@ if [ -n "$ROOT_VERSION" ]; then
     fi
 fi
 
-# 2. Check Cargo.toml versions match npm
+# 2. Check Cargo workspace root versions match npm
 echo ""
-echo "Cargo.toml versions:"
-FORGE_APP_VERSION=$(get_cargo_package_version "$REPO_ROOT/forge-app/Cargo.toml")
-FORGE_OMNI_VERSION=$(get_cargo_package_version "$REPO_ROOT/forge-extensions/omni/Cargo.toml")
-FORGE_CONFIG_VERSION=$(get_cargo_package_version "$REPO_ROOT/forge-extensions/config/Cargo.toml")
+echo "Cargo workspace root versions:"
+WORKSPACE_VERSION=$(get_workspace_version "$REPO_ROOT/Cargo.toml")
+FORGE_CORE_VERSION=$(get_workspace_version "$REPO_ROOT/forge-core/Cargo.toml")
 
-echo "  forge-app:    ${FORGE_APP_VERSION:-<missing>}"
-echo "  forge-omni:   ${FORGE_OMNI_VERSION:-<missing>}"
-echo "  forge-config: ${FORGE_CONFIG_VERSION:-<missing>}"
+echo "  automagik-forge workspace: ${WORKSPACE_VERSION:-<missing>}"
+echo "  forge-core workspace:      ${FORGE_CORE_VERSION:-<missing>}"
 
 if [ -n "$ROOT_VERSION" ]; then
-    if [ "$FORGE_APP_VERSION" != "$ROOT_VERSION" ]; then
-        echo -e "${YELLOW}WARNING: forge-app ($FORGE_APP_VERSION) != npm ($ROOT_VERSION)${NC}"
+    if [ "$WORKSPACE_VERSION" != "$ROOT_VERSION" ]; then
+        echo -e "${YELLOW}WARNING: Cargo workspace ($WORKSPACE_VERSION) != npm ($ROOT_VERSION)${NC}"
         ERRORS=$((ERRORS+1))
     fi
-    if [ "$FORGE_OMNI_VERSION" != "$ROOT_VERSION" ]; then
-        echo -e "${YELLOW}WARNING: forge-omni ($FORGE_OMNI_VERSION) != npm ($ROOT_VERSION)${NC}"
-        ERRORS=$((ERRORS+1))
+    # Only check forge-core if it exists (dev-core mode)
+    if [ -f "$REPO_ROOT/forge-core/Cargo.toml" ] && [ -n "$FORGE_CORE_VERSION" ]; then
+        if [ "$FORGE_CORE_VERSION" != "$ROOT_VERSION" ]; then
+            echo -e "${YELLOW}WARNING: forge-core workspace ($FORGE_CORE_VERSION) != npm ($ROOT_VERSION)${NC}"
+            ERRORS=$((ERRORS+1))
+        fi
     fi
-    if [ "$FORGE_CONFIG_VERSION" != "$ROOT_VERSION" ]; then
-        echo -e "${YELLOW}WARNING: forge-config ($FORGE_CONFIG_VERSION) != npm ($ROOT_VERSION)${NC}"
-        ERRORS=$((ERRORS+1))
+fi
+
+# 2b. Verify member crates use version.workspace = true (not hardcoded)
+echo ""
+echo "Checking member crates use version inheritance:"
+MEMBER_CRATES=(
+    "forge-app/Cargo.toml"
+    "forge-extensions/omni/Cargo.toml"
+    "forge-extensions/config/Cargo.toml"
+)
+
+for crate in "${MEMBER_CRATES[@]}"; do
+    crate_path="$REPO_ROOT/$crate"
+    if [ -f "$crate_path" ]; then
+        if uses_workspace_version "$crate_path"; then
+            echo -e "  ${GREEN}✓${NC} $crate uses version.workspace = true"
+        else
+            echo -e "${RED}ERROR: $crate has hardcoded version (should use version.workspace = true)${NC}"
+            $CI_MODE && echo "::error::$crate should use version.workspace = true"
+            ERRORS=$((ERRORS+1))
+        fi
     fi
+done
+
+# Check forge-core member crates if forge-core exists
+if [ -d "$REPO_ROOT/forge-core/crates" ]; then
+    FORGE_CORE_CRATES=(
+        "forge-core/crates/server/Cargo.toml"
+        "forge-core/crates/db/Cargo.toml"
+        "forge-core/crates/executors/Cargo.toml"
+        "forge-core/crates/services/Cargo.toml"
+        "forge-core/crates/utils/Cargo.toml"
+        "forge-core/crates/local-deployment/Cargo.toml"
+        "forge-core/crates/deployment/Cargo.toml"
+    )
+    for crate in "${FORGE_CORE_CRATES[@]}"; do
+        crate_path="$REPO_ROOT/$crate"
+        if [ -f "$crate_path" ]; then
+            if uses_workspace_version "$crate_path"; then
+                echo -e "  ${GREEN}✓${NC} $crate uses version.workspace = true"
+            else
+                echo -e "${RED}ERROR: $crate has hardcoded version (should use version.workspace = true)${NC}"
+                $CI_MODE && echo "::error::$crate should use version.workspace = true"
+                ERRORS=$((ERRORS+1))
+            fi
+        fi
+    done
 fi
 
 # 3. Check forge-core git tags are consistent

@@ -1,7 +1,7 @@
 {
   "name": "@automagik/forge",
   "private": false,
-  "version": "0.8.7-rc.3",
+  "version": "0.8.7-rc.24",
   "description": "Automagik Forge: AI agent task management and kanban board for Vibe Coding with git worktree isolation",
   "keywords": [
     "ai",
@@ -26,6 +26,10 @@
   ],
   "author": "Namastex Labs",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/automagik-dev/forge"
+  },
   "main": "index.js",
   "bin": {
     "automagik-forge": "bin/cli.js",

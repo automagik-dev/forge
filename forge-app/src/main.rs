@@ -3,8 +3,11 @@
 //! Main application binary that composes upstream services with forge extensions.
 //! Provides unified API access to both upstream functionality and forge-specific features.
 
-use std::env;
-use std::net::{IpAddr, SocketAddr};
+use std::{
+    env,
+    net::{IpAddr, SocketAddr},
+};
+
 use utils::browser::open_browser;
 
 fn resolve_bind_address() -> SocketAddr {
@@ -87,7 +90,7 @@ async fn main() -> anyhow::Result<()> {
         let browser_url = if requested_addr.ip().is_unspecified() {
             format!("http://localhost:{}", requested_addr.port())
         } else {
-            format!("http://{}", requested_addr)
+            format!("http://{requested_addr}")
         };
 
         tokio::spawn(async move {

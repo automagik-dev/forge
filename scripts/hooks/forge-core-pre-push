@@ -1,0 +1,36 @@
+#!/bin/bash
+# Pre-push hook for forge-core (when used as subdirectory of automagik-forge)
+# BLOCKS direct pushes - use `make push-both` from automagik-forge instead
+# Installed by: make dev-core
+# To bypass: git push --no-verify (not recommended)
+
+set -e
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+echo ""
+echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${RED}║  🛑 PUSH BLOCKED: Do NOT push directly from forge-core       ║${NC}"
+echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+echo "This repository is a subdirectory of automagik-forge."
+echo "All git operations should be done from the PARENT repository."
+echo ""
+echo -e "${CYAN}CORRECT WORKFLOW:${NC}"
+echo -e "  1. ${GREEN}cd ..${NC}                    # Back to automagik-forge root"
+echo -e "  2. ${GREEN}make dev-core-off${NC}        # Disable patches"
+echo -e "  3. ${GREEN}make push-both${NC}           # Push both repos together"
+echo ""
+echo -e "${YELLOW}Why this matters:${NC}"
+echo "  - Keeps both repos in sync"
+echo "  - Ensures proper CI/CD workflow"
+echo "  - Prevents version desync"
+echo ""
+echo -e "${YELLOW}If you really need to push directly:${NC}"
+echo -e "  git push --no-verify (not recommended)"
+echo ""
+exit 1

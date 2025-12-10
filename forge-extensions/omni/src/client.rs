@@ -1,5 +1,6 @@
-use super::types::{InstancesResponse, OmniInstance, SendTextRequest, SendTextResponse};
 use anyhow::Result;
+
+use super::types::{InstancesResponse, OmniInstance, SendTextRequest, SendTextResponse};
 
 pub struct OmniClient {
     base_url: String,
@@ -62,7 +63,7 @@ impl OmniClient {
                         .await
                         .unwrap_or_else(|_| "Unknown error".to_string());
                     tracing::error!("Omni API error response: {}", text);
-                    return Err(anyhow::anyhow!("Omni API returned {}: {}", status, text));
+                    return Err(anyhow::anyhow!("Omni API returned {status}: {text}"));
                 }
                 resp.json().await?
             }

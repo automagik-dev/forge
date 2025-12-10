@@ -20,6 +20,12 @@ jobs:
     timeout-minutes: 45
 
     steps:
+      # Clean workspace to prevent permission issues on self-hosted runners
+      - name: Clean workspace
+        run: |
+          rm -rf "$GITHUB_WORKSPACE"/* "$GITHUB_WORKSPACE"/.[!.]* 2>/dev/null || true
+          rm -f .git/index.lock 2>/dev/null || true
+
       - uses: actions/checkout@v4
 
       - name: Cache cargo
@@ -35,6 +41,11 @@ jobs:
       - name: Setup Node
         uses: ./.github/actions/setup-node
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly-2025-12-04
+
       - name: Install dependencies
         run: pnpm install
 
@@ -46,9 +57,7 @@ jobs:
         run: cd frontend && pnpm build
 
       - name: Build backend
-        run: |
-          source "$HOME/.cargo/env"
-          cargo build --release --bin forge-app
+        run: cargo build --release --bin forge-app
         env:
           SQLX_OFFLINE: 'true'
 

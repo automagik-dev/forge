@@ -12,7 +12,7 @@ async fn main() {
     }
 
     println!("🔍 Testing profile name generation");
-    println!("📁 Workspace: {:?}", workspace_root);
+    println!("📁 Workspace: {workspace_root:?}");
     println!();
 
     // Load profiles
@@ -25,11 +25,11 @@ async fn main() {
 
             // Show first 10 profile names from each executor
             for (executor, executor_config) in &configs.executors {
-                println!("📋 {} profiles:", executor);
+                println!("📋 {executor} profiles:");
                 let mut count = 0;
                 for variant_name in executor_config.configurations.keys() {
                     if count < 10 {
-                        println!("   - {}", variant_name);
+                        println!("   - {variant_name}");
                         count += 1;
                     }
                 }
@@ -43,7 +43,7 @@ async fn main() {
             }
         }
         Err(e) => {
-            eprintln!("❌ Failed to load profiles: {}", e);
+            eprintln!("❌ Failed to load profiles: {e}");
             std::process::exit(1);
         }
     }
