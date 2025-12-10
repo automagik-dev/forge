@@ -53,6 +53,7 @@ jobs:
             target: x86_64-pc-windows-msvc
             platform: windows-x64
             cargo_jobs: 20  # ct201 has 20 cores
+            preinstalled: true  # Tools pre-installed on Windows runner, skip setup steps
           # Windows ARM64 is not well supported, commenting out for now
           # - os: windows-latest
           #   target: aarch64-pc-windows-msvc
@@ -102,7 +103,7 @@ jobs:
           fi
       
       - name: Install Rust
-        if: env.SKIP_BUILD != 'true' && runner.os != 'Linux'
+        if: env.SKIP_BUILD != 'true' && runner.os != 'Linux' && matrix.preinstalled != true
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -113,7 +114,7 @@ jobs:
         run: cargo -V || (source "$HOME/.cargo/env" && cargo -V)
 
       - name: Add Rust target (additional step for reliability)
-        if: env.SKIP_BUILD != 'true'
+        if: env.SKIP_BUILD != 'true' && matrix.preinstalled != true
         shell: bash
         run: rustup target add ${{ matrix.target }}
 
@@ -136,7 +137,7 @@ jobs:
           echo "ℹ️ Building without sccache (GHA cache temporarily unavailable)"
 
       - name: Cache Rust dependencies
-        if: env.SKIP_BUILD != 'true'
+        if: env.SKIP_BUILD != 'true' && matrix.preinstalled != true
         uses: actions/cache@v4
         with:
           path: |
@@ -150,13 +151,13 @@ jobs:
             ${{ runner.os }}-cargo-
       
       - name: Setup pnpm
-        if: env.SKIP_BUILD != 'true'
+        if: env.SKIP_BUILD != 'true' && matrix.preinstalled != true
         uses: pnpm/action-setup@v4
         with:
           run_install: false
 
       - name: Setup Node.js
-        if: env.SKIP_BUILD != 'true'
+        if: env.SKIP_BUILD != 'true' && matrix.preinstalled != true
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -164,14 +165,14 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Get pnpm store directory
-        if: env.SKIP_BUILD != 'true'
+        if: env.SKIP_BUILD != 'true' && matrix.preinstalled != true
         id: pnpm-cache
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
       - name: Setup pnpm cache
-        if: env.SKIP_BUILD != 'true'
+        if: env.SKIP_BUILD != 'true' && matrix.preinstalled != true
         uses: actions/cache@v4
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
@@ -180,7 +181,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install workspace dependencies
-        if: env.SKIP_BUILD != 'true'
+        if: env.SKIP_BUILD != 'true' && matrix.preinstalled != true
         run: pnpm install --no-frozen-lockfile
 
       - name: Verify build tools (container builds)
@@ -195,7 +196,7 @@ jobs:
           echo "✅ Core build tools present"
 
       - name: Install Windows build tools for vendored OpenSSL
-        if: runner.os == 'Windows' && env.SKIP_BUILD != 'true'
+        if: runner.os == 'Windows' && env.SKIP_BUILD != 'true' && matrix.preinstalled != true
         shell: powershell
         run: |
           # Check if tools are pre-installed (self-hosted runner should have these)
@@ -409,16 +410,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # NOTE: Do NOT use registry-url here for Trusted Publishing
-          # registry-url sets up token-based auth which conflicts with OIDC
-
-      - name: Upgrade npm for trusted publishing (requires npm 11.5.1+)
-        run: |
-          echo "Current npm version: $(npm -v)"
-          npm install -g npm@11.6.2
-          echo "Upgraded npm version: $(npm -v)"
-          # Set registry without auth token - OIDC will handle authentication
-          npm config set registry https://registry.npmjs.org/
+          registry-url: 'https://registry.npmjs.org'
+          # Using token-based auth with NPM_TOKEN secret
 
       - name: Restore cached binaries for all platforms
         shell: bash
@@ -549,11 +542,13 @@ jobs:
             echo "⏩ Version not found on npm; will publish."
           fi
 
-      - name: Publish to NPM (Trusted Publishing via OIDC)
+      - name: Publish to NPM
         if: steps.check.outputs.published == 'false'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd npx-cli
-          npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }} --provenance
+          npm publish --access public --tag ${{ steps.npm-tag.outputs.tag }}
 
       - name: Skip publish (already published)
         if: steps.check.outputs.published == 'true'
