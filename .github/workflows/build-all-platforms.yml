@@ -118,49 +118,22 @@ jobs:
         run: rustup target add ${{ matrix.target }}
 
       # sccache for distributed build caching - dramatically speeds up warm builds
-      # Uses continue-on-error to gracefully fall back to uncached builds if cache backend unavailable
+      # TEMPORARILY DISABLED: GitHub Actions cache service experiencing intermittent outages
+      # TODO: Re-enable once GHA cache stabilizes (causes exit code 101 mid-build)
       - name: Setup sccache
         id: sccache-setup
-        if: env.SKIP_BUILD != 'true'
+        if: false  # DISABLED - GHA cache service outage causes mid-build failures
         uses: mozilla-actions/sccache-action@v0.0.6
-        continue-on-error: true  # Don't fail build if cache backend unavailable
+        continue-on-error: true
 
-      - name: Configure sccache
+      - name: Configure build caching
         if: env.SKIP_BUILD != 'true'
         shell: bash
         run: |
-          echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV  # sccache doesn't work with incremental compilation
-
-          # Only use sccache if setup succeeded AND backend is reachable
-          if [ "${{ steps.sccache-setup.outcome }}" == "success" ]; then
-            echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-
-            # Test if sccache can actually start and connect
-            # Set a short timeout to detect backend issues quickly
-            echo "Testing sccache connectivity..."
-            export SCCACHE_GHA_ENABLED=true
-            export SCCACHE_IDLE_TIMEOUT=30
-
-            if sccache --start-server 2>&1; then
-              # Try a zero-compile test to verify backend connectivity
-              if timeout 10 sccache --zero-stats 2>&1; then
-                echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-                echo "SCCACHE_AVAILABLE=true" >> $GITHUB_ENV
-                echo "SCCACHE_IDLE_TIMEOUT=600" >> $GITHUB_ENV
-                echo "✅ sccache enabled and backend reachable"
-              else
-                echo "SCCACHE_AVAILABLE=false" >> $GITHUB_ENV
-                sccache --stop-server 2>/dev/null || true
-                echo "⚠️ sccache backend unreachable - building without cache"
-              fi
-            else
-              echo "SCCACHE_AVAILABLE=false" >> $GITHUB_ENV
-              echo "⚠️ sccache server failed to start - building without cache"
-            fi
-          else
-            echo "SCCACHE_AVAILABLE=false" >> $GITHUB_ENV
-            echo "⚠️ sccache setup failed - building without cache (slower but will work)"
-          fi
+          # sccache disabled due to GHA cache outages - use incremental compilation instead
+          echo "CARGO_INCREMENTAL=1" >> $GITHUB_ENV
+          echo "SCCACHE_AVAILABLE=false" >> $GITHUB_ENV
+          echo "ℹ️ Building without sccache (GHA cache temporarily unavailable)"
 
       - name: Cache Rust dependencies
         if: env.SKIP_BUILD != 'true'
