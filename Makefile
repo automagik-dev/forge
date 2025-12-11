@@ -704,6 +704,19 @@ BRANCH ?= $(shell git branch --show-current)
 # ============================================================================
 
 dev-core: check-android-deps check-cargo ## Start dev with local forge-core
+	@# Check if already in dev-core mode with correct branches
+	@if grep -q '^\[patch\.' .cargo/config.toml 2>/dev/null && [ -d "forge-core" ]; then \
+		FORGE_BRANCH=$$(git branch --show-current); \
+		CORE_BRANCH=$$(cd forge-core && git branch --show-current); \
+		if [ "$(BRANCH)" = "$$FORGE_BRANCH" ] && [ "$(BRANCH)" = "$$CORE_BRANCH" ]; then \
+			echo ""; \
+			echo -e "$(FONT_GREEN)✓ Dev-core mode active on branch: $(BRANCH)$(FONT_RESET)"; \
+			echo -e "$(FONT_CYAN)📍 forge-core @ $$(cd forge-core && git describe --tags --always 2>/dev/null || git rev-parse --short HEAD)$(FONT_RESET)"; \
+			echo ""; \
+			FORGE_WATCH_PATHS="forge-core/crates" bash scripts/dev/run-dev.sh; \
+			exit 0; \
+		fi; \
+	fi
 	@echo ""
 	@echo -e "$(FONT_PURPLE)🔧 Starting local forge-core development...$(FONT_RESET)"
 	@# Pre-flight: Check workspace compatibility (prevents cryptic cargo errors)
@@ -729,39 +742,59 @@ dev-core: check-android-deps check-cargo ## Start dev with local forge-core
 		echo ""; \
 		exit 1; \
 	fi
+	@# Safety: Check for uncommitted changes in forge-core before branch switch
+	@if [ -d "forge-core" ]; then \
+		if [ -n "$$(cd forge-core && git status --porcelain)" ]; then \
+			CORE_BRANCH=$$(cd forge-core && git branch --show-current); \
+			if [ "$$CORE_BRANCH" != "$(BRANCH)" ]; then \
+				echo ""; \
+				echo -e "$(FONT_RED)⚠️  forge-core has uncommitted changes on branch '$$CORE_BRANCH'$(FONT_RESET)"; \
+				echo -e "$(FONT_YELLOW)    Requested branch: $(BRANCH)$(FONT_RESET)"; \
+				echo -e "$(FONT_YELLOW)    Commit or stash changes before switching branches$(FONT_RESET)"; \
+				echo ""; \
+				cd forge-core && git status --short; \
+				echo ""; \
+				exit 1; \
+			fi; \
+		fi; \
+	fi
 	@# Clone or update forge-core with smart branch sync
-	@CURRENT_BRANCH=$$(git branch --show-current); \
-	if [ ! -d "forge-core" ]; then \
+	@if [ ! -d "forge-core" ]; then \
 		echo -e "$(FONT_CYAN)📦 Cloning forge-core...$(FONT_RESET)"; \
 		if ! git clone https://github.com/namastexlabs/forge-core.git forge-core; then \
 			echo -e "$(FONT_RED)❌ FATAL: git clone failed$(FONT_RESET)"; \
 			echo -e "$(FONT_YELLOW)Check network connectivity$(FONT_RESET)"; \
 			exit 1; \
 		fi; \
-	fi; \
-	echo -e "$(FONT_CYAN)📥 Syncing forge-core to branch: $$CURRENT_BRANCH$(FONT_RESET)"; \
-	cd forge-core && git fetch --all --tags 2>/dev/null; \
-	if git show-ref --verify --quiet refs/remotes/origin/$$CURRENT_BRANCH; then \
-		echo -e "$(FONT_GREEN)$(CHECKMARK) Branch '$$CURRENT_BRANCH' exists in forge-core$(FONT_RESET)"; \
-		git checkout $$CURRENT_BRANCH 2>/dev/null || git checkout -b $$CURRENT_BRANCH origin/$$CURRENT_BRANCH; \
-		git pull origin $$CURRENT_BRANCH 2>/dev/null || true; \
+	fi
+	@# Sync forge-core to requested branch (using $(BRANCH) variable)
+	@cd forge-core && git fetch --all --tags 2>/dev/null; \
+	CORE_CURRENT=$$(git branch --show-current); \
+	if [ "$$CORE_CURRENT" = "$(BRANCH)" ]; then \
+		echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core already on branch '$(BRANCH)'$(FONT_RESET)"; \
+	elif git show-ref --verify --quiet refs/remotes/origin/$(BRANCH); then \
+		echo -e "$(FONT_CYAN)📥 Switching forge-core to branch: $(BRANCH)$(FONT_RESET)"; \
+		git checkout $(BRANCH) 2>/dev/null || git checkout -b $(BRANCH) origin/$(BRANCH); \
+	elif git show-ref --verify --quiet refs/heads/$(BRANCH); then \
+		echo -e "$(FONT_CYAN)📥 Using local branch '$(BRANCH)' (not on remote yet)$(FONT_RESET)"; \
+		git checkout $(BRANCH); \
 	else \
-		echo -e "$(FONT_YELLOW)⚠️  Branch '$$CURRENT_BRANCH' not in forge-core - creating from main$(FONT_RESET)"; \
-		git checkout main 2>/dev/null && git pull origin main 2>/dev/null || true; \
-		git checkout -b $$CURRENT_BRANCH 2>/dev/null || git checkout $$CURRENT_BRANCH; \
+		echo -e "$(FONT_YELLOW)⚠️  Branch '$(BRANCH)' doesn't exist in forge-core$(FONT_RESET)"; \
+		echo -e "$(FONT_YELLOW)    Creating from current branch: $$CORE_CURRENT$(FONT_RESET)"; \
+		git checkout -b $(BRANCH); \
 	fi; \
-	echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core synced to branch: $$CURRENT_BRANCH$(FONT_RESET)"
+	echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core synced to branch: $(BRANCH)$(FONT_RESET)"
 	@echo -e "$(FONT_CYAN)📍 forge-core @ $$(cd forge-core && git describe --tags --always 2>/dev/null || git rev-parse --short HEAD)$(FONT_RESET)"
 	@# Enable [patch] section in .cargo/config.toml
 	@echo -e "$(FONT_CYAN)⚙️  Enabling Cargo [patch] overrides...$(FONT_RESET)"
 	@sed -i 's/^# \[patch\./[patch./g' .cargo/config.toml
-	@sed -i 's/^# db = /db = /g' .cargo/config.toml
-	@sed -i 's/^# services = /services = /g' .cargo/config.toml
-	@sed -i 's/^# server = /server = /g' .cargo/config.toml
-	@sed -i 's/^# deployment = /deployment = /g' .cargo/config.toml
-	@sed -i 's/^# local-deployment = /local-deployment = /g' .cargo/config.toml
-	@sed -i 's/^# executors = /executors = /g' .cargo/config.toml
-	@sed -i 's/^# utils = /utils = /g' .cargo/config.toml
+	@sed -i 's/^# forge-core-db = /forge-core-db = /g' .cargo/config.toml
+	@sed -i 's/^# forge-core-services = /forge-core-services = /g' .cargo/config.toml
+	@sed -i 's/^# forge-core-server = /forge-core-server = /g' .cargo/config.toml
+	@sed -i 's/^# forge-core-deployment = /forge-core-deployment = /g' .cargo/config.toml
+	@sed -i 's/^# forge-core-local-deployment = /forge-core-local-deployment = /g' .cargo/config.toml
+	@sed -i 's/^# forge-core-executors = /forge-core-executors = /g' .cargo/config.toml
+	@sed -i 's/^# forge-core-utils = /forge-core-utils = /g' .cargo/config.toml
 	@# Regenerate Cargo.lock for path deps
 	@rm -f Cargo.lock
 	@cargo fetch 2>/dev/null || true
@@ -791,13 +824,13 @@ dev-core-off: ## Disable local forge-core (use git deps)
 	@echo -e "$(FONT_CYAN)🔄 Disabling Cargo [patch] overrides...$(FONT_RESET)"
 	@# Comment out forge-core [patch] section ONLY (not crates-io patches)
 	@sed -i 's/^\[patch\."https:\/\/github.com\/namastexlabs\/forge-core.git"\]/# [patch."https:\/\/github.com\/namastexlabs\/forge-core.git"]/g' .cargo/config.toml
-	@sed -i 's/^db = { path/# db = { path/g' .cargo/config.toml
-	@sed -i 's/^services = { path/# services = { path/g' .cargo/config.toml
-	@sed -i 's/^server = { path/# server = { path/g' .cargo/config.toml
-	@sed -i 's/^deployment = { path/# deployment = { path/g' .cargo/config.toml
-	@sed -i 's/^local-deployment = { path/# local-deployment = { path/g' .cargo/config.toml
-	@sed -i 's/^executors = { path/# executors = { path/g' .cargo/config.toml
-	@sed -i 's/^utils = { path/# utils = { path/g' .cargo/config.toml
+	@sed -i 's/^forge-core-db = { path/# forge-core-db = { path/g' .cargo/config.toml
+	@sed -i 's/^forge-core-services = { path/# forge-core-services = { path/g' .cargo/config.toml
+	@sed -i 's/^forge-core-server = { path/# forge-core-server = { path/g' .cargo/config.toml
+	@sed -i 's/^forge-core-deployment = { path/# forge-core-deployment = { path/g' .cargo/config.toml
+	@sed -i 's/^forge-core-local-deployment = { path/# forge-core-local-deployment = { path/g' .cargo/config.toml
+	@sed -i 's/^forge-core-executors = { path/# forge-core-executors = { path/g' .cargo/config.toml
+	@sed -i 's/^forge-core-utils = { path/# forge-core-utils = { path/g' .cargo/config.toml
 	@rm -f Cargo.lock
 	@cargo fetch 2>/dev/null || true
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using git dependencies$(FONT_RESET)"

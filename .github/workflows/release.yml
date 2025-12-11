@@ -191,7 +191,7 @@ jobs:
 
       - name: Sync forge-core version and create tag
         if: needs.gate.outputs.action != 'promote'
-        continue-on-error: true
+        # Note: Removed continue-on-error to ensure version sync failures stop the release
         env:
           GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |

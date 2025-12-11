@@ -9,7 +9,7 @@ use std::{
 ///
 /// Watches .genie folders for changes and automatically reloads profiles.
 use anyhow::Result;
-use executors::profile::ExecutorConfigs;
+use forge_core_executors::profile::ExecutorConfigs;
 use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use tokio::sync::RwLock;
 use uuid::Uuid;
@@ -212,7 +212,7 @@ impl ProfileCache {
         let mut merged = base_profiles;
         for (executor, genie_config) in genie_profiles.executors {
             let base_config = merged.executors.entry(executor).or_insert_with(|| {
-                executors::profile::ExecutorConfig {
+                forge_core_executors::profile::ExecutorConfig {
                     configurations: HashMap::new(),
                 }
             });

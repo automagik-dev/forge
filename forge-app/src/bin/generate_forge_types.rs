@@ -3,7 +3,7 @@ use std::{env, fs, path::Path};
 use anyhow::{Context, Result, bail};
 use forge_config::{ForgeProjectSettings, ProjectConfig};
 use forge_omni::{OmniConfig, OmniInstance, RecipientType, SendTextRequest, SendTextResponse};
-use ts_rs::TS;
+use ts_rs_forge::TS;
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();

@@ -28,7 +28,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 rust-embed = { version = "8.0", features = ["debug-embed"] }
 mime_guess = "2.0"
-ts-rs = { workspace = true }
+ts-rs-forge = { workspace = true }
 reqwest = { version = "0.12", features = ["json", "multipart"] }
 urlencoding = "2.1"
 base64 = "0.22"
@@ -50,13 +50,13 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 
 # Upstream crate dependencies (from git)
-db = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.24" }
-services = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.24" }
-server = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.24" }
-deployment = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.24" }
-local-deployment = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.24" }
-executors = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.24" }
-utils = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.24" }
+forge-core-db = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.27" }
+forge-core-services = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.27" }
+forge-core-server = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.27" }
+forge-core-deployment = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.27" }
+forge-core-local-deployment = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.27" }
+forge-core-executors = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.27" }
+forge-core-utils = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.27" }
 
 # Forge extensions
 forge-omni = { path = "../forge-extensions/omni" }

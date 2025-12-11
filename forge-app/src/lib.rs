@@ -168,7 +168,7 @@ pub async fn run_server_with_readiness(
     // Ensure asset directory exists before initializing services
     // This prevents "unable to open database file" errors when the directory
     // doesn't exist and SQLite tries to create the database file
-    let asset_path = utils::assets::asset_dir();
+    let asset_path = forge_core_utils::assets::asset_dir();
     tracing::info!("Asset directory: {:?}", asset_path);
 
     // Verify directory is writable by checking if we can access it
@@ -205,7 +205,7 @@ pub async fn run_server_with_readiness(
 
     // Initialize services
     tracing::info!("Initializing forge services using upstream deployment");
-    let services = services::ForgeServices::new().await?;
+    let services = crate::services::ForgeServices::new().await?;
 
     // Load .genie profiles
     services.load_genie_profiles_for_all_projects().await?;

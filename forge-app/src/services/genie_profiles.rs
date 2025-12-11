@@ -10,7 +10,7 @@ use std::{
 /// This enables per-project agent customization.
 use anyhow::{Context, Result};
 use convert_case::{Case, Casing};
-use executors::{
+use forge_core_executors::{
     executors::{BaseCodingAgent, CodingAgent},
     profile::{ExecutorConfig, ExecutorConfigs},
 };

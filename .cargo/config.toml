@@ -18,17 +18,17 @@ rustflags = ["-C", "link-arg=/DEBUG:FASTLINK"]
 rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
 
 # ============================================================================
-# DEV-CORE PATCHES - DO NOT EDIT MANUALLY
+# DEV-CORE PATCHES - TEMPORARILY DISABLED FOR FORGE-CORE TESTING
 # This section is managed by `make dev-core` and `make dev-core-off`
 # When present, Cargo uses local forge-core paths instead of git dependencies
 # ============================================================================
 # [patch."https://github.com/namastexlabs/forge-core.git"]
-# db = { path = "forge-core/crates/db" }
-# services = { path = "forge-core/crates/services" }
-# server = { path = "forge-core/crates/server" }
-# deployment = { path = "forge-core/crates/deployment" }
-# local-deployment = { path = "forge-core/crates/local-deployment" }
-# executors = { path = "forge-core/crates/executors" }
-# utils = { path = "forge-core/crates/utils" }
+# forge-core-db = { path = "forge-core/crates/db" }
+# forge-core-services = { path = "forge-core/crates/services" }
+# forge-core-server = { path = "forge-core/crates/server" }
+# forge-core-deployment = { path = "forge-core/crates/deployment" }
+# forge-core-local-deployment = { path = "forge-core/crates/local-deployment" }
+# forge-core-executors = { path = "forge-core/crates/executors" }
+# forge-core-utils = { path = "forge-core/crates/utils" }
 # ============================================================================
 

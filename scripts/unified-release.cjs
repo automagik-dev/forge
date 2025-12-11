@@ -207,19 +207,56 @@ function updateAllVersions(newVersion) {
     log('green', '✅', `${path.relative(ROOT, pkgPath)}: ${oldVersion} → ${newVersion}`);
   }
 
-  // Update Cargo.toml files using cargo-edit
+  // Update Cargo.toml workspace versions using direct file manipulation
+  // This replaces cargo-edit dependency for more reliable CI behavior
   if (!opts['skip-cargo']) {
-    log('blue', '📦', 'Updating Cargo.toml files...');
-    const cargoCmd = `cargo set-version --workspace ${newVersion}`;
-    if (dryRun) {
-      log('cyan', '🔍', `Would run: ${cargoCmd}`);
-    } else {
-      try {
-        exec(cargoCmd, true);
-        log('green', '✅', 'Cargo.toml versions updated');
-      } catch (e) {
-        log('yellow', '⚠️', 'cargo set-version failed (is cargo-edit installed?)');
-        log('yellow', '💡', 'Run: cargo install cargo-edit');
+    log('blue', '📦', 'Updating Cargo.toml workspace versions...');
+
+    const cargoFiles = [
+      path.join(ROOT, 'Cargo.toml'),
+      path.join(ROOT, 'forge-core', 'Cargo.toml'),
+    ];
+
+    for (const cargoPath of cargoFiles) {
+      if (!fs.existsSync(cargoPath)) {
+        log('yellow', '⚠️', `Skipping (not found): ${path.relative(ROOT, cargoPath)}`);
+        continue;
+      }
+
+      let content = fs.readFileSync(cargoPath, 'utf8');
+
+      // Match version in [workspace.package] section
+      // Regex finds the section and updates the version line within it
+      const lines = content.split('\n');
+      let inWorkspacePackage = false;
+      let modified = false;
+
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].match(/^\[workspace\.package\]/)) {
+          inWorkspacePackage = true;
+          continue;
+        }
+        if (lines[i].match(/^\[/) && inWorkspacePackage) {
+          inWorkspacePackage = false;
+          continue;
+        }
+        if (inWorkspacePackage && lines[i].match(/^version\s*=/)) {
+          const oldLine = lines[i];
+          lines[i] = `version = "${newVersion}"`;
+          if (oldLine !== lines[i]) {
+            modified = true;
+          }
+          break;
+        }
+      }
+
+      if (modified) {
+        if (!dryRun) {
+          fs.writeFileSync(cargoPath, lines.join('\n'));
+        }
+        log('green', '✅', `Updated ${path.relative(ROOT, cargoPath)}`);
+      } else {
+        log('yellow', '⚠️', `No [workspace.package] version found in ${path.relative(ROOT, cargoPath)}`);
       }
     }
   }
@@ -364,6 +401,19 @@ async function main() {
 
   // Update forge-core git tag references
   updateForgeCoreRefs(newVersion);
+
+  // Verify versions are in sync before creating tag
+  if (!dryRun) {
+    log('blue', '🔍', 'Verifying version consistency...');
+    try {
+      exec('./scripts/check-versions.sh', false);
+      log('green', '✅', 'Version check passed');
+    } catch (e) {
+      log('red', '❌', 'Version check failed - aborting release');
+      log('red', '💡', 'Run ./scripts/check-versions.sh to see details');
+      process.exit(1);
+    }
+  }
 
   // Create git tag
   const tag = createTag(newVersion);

@@ -8,12 +8,12 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
-ts-rs = { workspace = true }
+ts-rs-forge = { workspace = true }
 sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "uuid", "chrono"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 forge-omni = { path = "../omni" }
-services = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.24" }
+forge-core-services = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.27" }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
