@@ -1756,7 +1756,7 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "forge-app"
-version = "0.8.7-rc.24"
+version = "0.8.7-rc.30"
 dependencies = [
  "android_logger",
  "anyhow",
@@ -1801,7 +1801,7 @@ dependencies = [
 
 [[package]]
 name = "forge-config"
-version = "0.8.7-rc.24"
+version = "0.8.7-rc.30"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1818,7 +1818,7 @@ dependencies = [
 
 [[package]]
 name = "forge-core-db"
-version = "0.8.7-rc.24"
+version = "0.8.7-rc.30"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1844,7 +1844,7 @@ dependencies = [
 
 [[package]]
 name = "forge-core-deployment"
-version = "0.8.7-rc.24"
+version = "0.8.7-rc.30"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1864,7 +1864,7 @@ dependencies = [
 
 [[package]]
 name = "forge-core-executors"
-version = "0.8.7-rc.24"
+version = "0.8.7-rc.30"
 dependencies = [
  "agent-client-protocol",
  "async-trait",
@@ -1915,7 +1915,7 @@ dependencies = [
 
 [[package]]
 name = "forge-core-local-deployment"
-version = "0.8.7-rc.24"
+version = "0.8.7-rc.30"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1954,7 +1954,7 @@ dependencies = [
 
 [[package]]
 name = "forge-core-server"
-version = "0.8.7-rc.24"
+version = "0.8.7-rc.30"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2001,7 +2001,7 @@ dependencies = [
 
 [[package]]
 name = "forge-core-services"
-version = "0.8.7-rc.24"
+version = "0.8.7-rc.30"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2058,7 +2058,7 @@ dependencies = [
 
 [[package]]
 name = "forge-core-utils"
-version = "0.8.7-rc.24"
+version = "0.8.7-rc.30"
 dependencies = [
  "async-stream",
  "axum",
@@ -2094,7 +2094,7 @@ dependencies = [
 
 [[package]]
 name = "forge-omni"
-version = "0.8.7-rc.24"
+version = "0.8.7-rc.30"
 dependencies = [
  "anyhow",
  "reqwest",
