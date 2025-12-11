@@ -73,17 +73,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Clone forge-core at matching version
-        shell: bash
-        run: |
-          VERSION="${{ inputs.version || '0.8.7-rc.30' }}"
-          TAG="v${VERSION}"
-          echo "Cloning forge-core at tag $TAG..."
-          git clone --depth 1 --branch "$TAG" https://github.com/namastexlabs/forge-core.git forge-core || {
-            echo "⚠️ Tag $TAG not found, using main branch"
-            git clone --depth 1 https://github.com/namastexlabs/forge-core.git forge-core
-          }
-
       - name: Set zig suffix for cache key
         if: matrix.use-zigbuild
         shell: bash
