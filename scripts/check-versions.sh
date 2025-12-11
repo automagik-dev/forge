@@ -38,8 +38,13 @@ get_json_version() {
 # Get version from workspace root Cargo.toml [workspace.package] section
 get_workspace_version() {
     local file="$1"
+    # Check if file exists first
+    if [ ! -f "$file" ]; then
+        echo ""
+        return 0
+    fi
     # Look for version in [workspace.package] section using sed range
-    sed -n '/^\[workspace\.package\]/,/^\[/p' "$file" 2>/dev/null | grep -E '^version\s*=' | head -1 | sed 's/.*"\([^"]*\)".*/\1/'
+    sed -n '/^\[workspace\.package\]/,/^\[/p' "$file" 2>/dev/null | grep -E '^version\s*=' | head -1 | sed 's/.*"\([^"]*\)".*/\1/' || echo ""
 }
 
 # Check if a Cargo.toml uses workspace inheritance for version
@@ -159,8 +164,12 @@ echo "  forge-app:    ${FORGE_APP_TAGS:-<none>}"
 echo "  forge-config: ${FORGE_CONFIG_TAGS:-<none>}"
 
 # Get unique tags
-UNIQUE_TAGS=$(echo -e "$FORGE_APP_TAGS\n$FORGE_CONFIG_TAGS" | sort -u | grep -v '^$' || echo "")
-TAG_COUNT=$(echo "$UNIQUE_TAGS" | grep -c . || echo "0")
+UNIQUE_TAGS=$(echo -e "$FORGE_APP_TAGS\n$FORGE_CONFIG_TAGS" | sort -u | grep -v '^$' || true)
+if [ -z "$UNIQUE_TAGS" ]; then
+    TAG_COUNT=0
+else
+    TAG_COUNT=$(echo "$UNIQUE_TAGS" | wc -l | tr -d ' ')
+fi
 
 if [ "$TAG_COUNT" -gt 1 ]; then
     echo -e "${RED}ERROR: Multiple different forge-core tags referenced!${NC}"
