@@ -1776,7 +1776,7 @@ dependencies = [
  "tower-http 0.5.2",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?rev=b5c8277a)",
+ "ts-rs-forge",
  "url",
  "urlencoding",
  "uuid",
@@ -1795,7 +1795,7 @@ dependencies = [
  "sqlx",
  "tokio",
  "tracing",
- "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?rev=b5c8277a)",
+ "ts-rs-forge",
  "uuid",
 ]
 
@@ -1822,7 +1822,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum)",
+ "ts-rs 11.0.1",
  "uuid",
 ]
 
@@ -1893,7 +1893,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum)",
+ "ts-rs 11.0.1",
  "uuid",
  "winsplit",
  "xdg",
@@ -1935,7 +1935,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum)",
+ "ts-rs 11.0.1",
  "uuid",
 ]
 
@@ -1981,7 +1981,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum)",
+ "ts-rs 11.0.1",
  "uuid",
 ]
 
@@ -2038,7 +2038,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum)",
+ "ts-rs 11.0.1",
  "uuid",
  "xdg",
 ]
@@ -2073,7 +2073,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum)",
+ "ts-rs 11.0.1",
  "uuid",
  "which",
  "windows-sys 0.61.2",
@@ -2090,7 +2090,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tracing",
- "ts-rs 11.0.1 (git+https://github.com/xazukx/ts-rs.git?rev=b5c8277a)",
+ "ts-rs-forge",
  "wiremock",
 ]
 
@@ -6085,19 +6085,7 @@ dependencies = [
  "chrono",
  "serde_json",
  "thiserror 2.0.17",
- "ts-rs-macros 11.0.1 (git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum)",
- "uuid",
-]
-
-[[package]]
-name = "ts-rs"
-version = "11.0.1"
-source = "git+https://github.com/xazukx/ts-rs.git?rev=b5c8277a#b5c8277ac9f321a0be7453eef029466152b13fc8"
-dependencies = [
- "chrono",
- "serde_json",
- "thiserror 2.0.17",
- "ts-rs-macros 11.0.1 (git+https://github.com/xazukx/ts-rs.git?rev=b5c8277a)",
+ "ts-rs-macros 11.0.1",
  "uuid",
 ]
 
@@ -6114,9 +6102,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "ts-rs-macros"
+name = "ts-rs-forge"
 version = "11.0.1"
-source = "git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum#b5c8277ac9f321a0be7453eef029466152b13fc8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c0fc6e001e5de7b6ef22869ba85744abc4051cae46cb97fc0188c8dc620ef480"
+dependencies = [
+ "chrono",
+ "serde_json",
+ "thiserror 2.0.17",
+ "ts-rs-forge-macros",
+ "uuid",
+]
+
+[[package]]
+name = "ts-rs-forge-macros"
+version = "11.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8da5a95ea1115a74b19a8e4af989cf20b03aa209a4df3813af69d996682867cd"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6127,7 +6129,7 @@ dependencies = [
 [[package]]
 name = "ts-rs-macros"
 version = "11.0.1"
-source = "git+https://github.com/xazukx/ts-rs.git?rev=b5c8277a#b5c8277ac9f321a0be7453eef029466152b13fc8"
+source = "git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum#b5c8277ac9f321a0be7453eef029466152b13fc8"
 dependencies = [
  "proc-macro2",
  "quote",

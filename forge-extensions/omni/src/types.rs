@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
+use ts_rs_forge::TS;
 
 /// Local Omni recipient type options.
 #[derive(Clone, Debug, Serialize, Deserialize, TS)]

@@ -28,7 +28,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 rust-embed = { version = "8.0", features = ["debug-embed"] }
 mime_guess = "2.0"
-ts-rs = { workspace = true }
+ts-rs-forge = { workspace = true }
 reqwest = { version = "0.12", features = ["json", "multipart"] }
 urlencoding = "2.1"
 base64 = "0.22"

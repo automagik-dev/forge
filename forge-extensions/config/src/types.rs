@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
+use ts_rs_forge::TS;
 use uuid::Uuid;
 
 /// Project-level configuration stored in auxiliary tables
