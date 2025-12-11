@@ -86,7 +86,7 @@ fi
 if grep -q '^forge-core-.*= { path' "$CONFIG_FILE" 2>/dev/null; then
     echo ""
     echo -e "${RED}❌ ERROR: Patches are still active after auto-disable attempt${NC}"
-    echo -e "   Please run: make dev-core-off"
+    echo -e "   This is a bug - please report it. Manual fix: edit .cargo/config.toml"
     exit 1
 fi
 

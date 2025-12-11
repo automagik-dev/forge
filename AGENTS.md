@@ -398,8 +398,6 @@ When you commit and push from automagik-forge root, hooks automatically:
 - `scripts/hooks/forge-core-pre-commit` - Blocks direct commits in forge-core
 - `scripts/hooks/forge-core-pre-push` - Blocks direct pushes in forge-core
 
-**Note:** `make dev-core-off` still exists for edge cases but is rarely needed.
-
 **Full Documentation:** `docs/DUAL_REPO_WORKFLOW.md`
 
 ## Development Workflow

@@ -199,7 +199,6 @@ After pushing, the pre-push hook automatically disabled dev-core mode. You're ba
 
 If you need to make more forge-core changes, just run `make dev-core BRANCH=xxx` again.
 
-> **Legacy Note:** `make dev-core-off` still exists for edge cases (e.g., abandoning uncommitted changes), but is no longer part of the normal workflow since the pre-push hook handles this automatically.
 
 ---
 
@@ -315,8 +314,7 @@ The hooks are designed for when BOTH repos have related changes. For forge-core-
 - Prevents orphaned forge-core changes
 - Encourages documenting why changes were made
 
-**⚠️ WARNING: Don't run `make dev-core-off` with uncommitted forge-core changes!**
-`make dev-core-off` DELETES the forge-core directory. Any uncommitted changes will be lost.
+**⚠️ WARNING:** Always commit before abandoning work. Uncommitted changes in forge-core will be lost if you delete the directory.
 
 ### Cargo Fetch Errors After Tag Update
 
@@ -352,7 +350,7 @@ Edited forge-core files but dev server didn't rebuild.
 |---------|---------|
 | `make dev-core` | Enable local forge-core (dev branch) |
 | `make dev-core BRANCH=x` | Enable with specific branch |
-| `make dev-core-off` | (Legacy) Manual disable - rarely needed now |
+| `git push` | Automatically disables dev-core via pre-push hook |
 | `make dev-core-status` | Show dev-core mode details |
 
 ### Status & Validation
