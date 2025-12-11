@@ -125,9 +125,6 @@ fi
 echo "📦 Building for platform: $PLATFORM_DIR"
 mkdir -p "npx-cli/dist/$PLATFORM_DIR"
 
-echo "🔄 Syncing upstream assets..."
-node scripts/sync-upstream-assets.js
-
 # Ensure all dependencies are installed
 echo "📦 Installing dependencies..."
 if command -v pnpm >/dev/null 2>&1; then
