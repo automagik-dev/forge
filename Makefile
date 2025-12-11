@@ -832,9 +832,14 @@ dev-core-off: ## Disable local forge-core (use crates.io deps)
 	@sed -i 's/^forge-core-local-deployment = { path/# forge-core-local-deployment = { path/g' .cargo/config.toml
 	@sed -i 's/^forge-core-executors = { path/# forge-core-executors = { path/g' .cargo/config.toml
 	@sed -i 's/^forge-core-utils = { path/# forge-core-utils = { path/g' .cargo/config.toml
+	@# Delete forge-core directory to ensure clean state
+	@if [ -d "forge-core" ]; then \
+		echo -e "$(FONT_CYAN)🗑️  Removing forge-core directory...$(FONT_RESET)"; \
+		rm -rf forge-core/; \
+	fi
 	@rm -f Cargo.lock
 	@cargo fetch 2>/dev/null || true
-	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using crates.io dependencies$(FONT_RESET)"
+	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using crates.io dependencies (forge-core removed)$(FONT_RESET)"
 
 dev-core-status: ## Show dev-core mode status
 	@echo ""
