@@ -815,8 +815,8 @@ dev-core: check-android-deps check-cargo ## Start dev with local forge-core
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core blocker hooks installed (pre-commit + pre-push)$(FONT_RESET)"
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using local forge-core at ./forge-core$(FONT_RESET)"
 	@echo ""
-	@echo -e "$(FONT_YELLOW)ℹ  Cargo [patch] auto-detects ./forge-core$(FONT_RESET)"
-	@echo -e "$(FONT_YELLOW)ℹ  Run 'make dev-core-off' to disable$(FONT_RESET)"
+	@echo -e "$(FONT_YELLOW)ℹ  Workflow: edit → commit → push (auto-disables patches)$(FONT_RESET)"
+	@echo -e "$(FONT_YELLOW)ℹ  Run 'make dev-core' again to re-enable patches$(FONT_RESET)"
 	@echo ""
 	@FORGE_WATCH_PATHS="forge-core/crates" bash scripts/dev/run-dev.sh
 

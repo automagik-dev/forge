@@ -1735,7 +1735,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-db"
-version = "0.8.7-rc.31"
+version = "0.8.7-rc.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a98dc7f5933a175691a90ac87a18627294e4a3a1f1dc57d6a25fbaa4fd3e1152"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1761,7 +1763,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-deployment"
-version = "0.8.7-rc.31"
+version = "0.8.7-rc.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e47a501ad725515c9b326544d47336cf4fa5e02dfa6a28eeee1946478fa9fd8f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1781,7 +1785,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-executors"
-version = "0.8.7-rc.31"
+version = "0.8.7-rc.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "132ce47203a2647a3f179e9394519930872c22313760822e1f6a0f05dabcba14"
 dependencies = [
  "agent-client-protocol",
  "async-trait",
@@ -1832,7 +1838,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-local-deployment"
-version = "0.8.7-rc.31"
+version = "0.8.7-rc.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "754d3bff01b0a1bba6bf523e322cb63ce71566e90fdc6194cbdc2b7f9444c86d"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1871,7 +1879,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-server"
-version = "0.8.7-rc.31"
+version = "0.8.7-rc.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb8cda254e256749ba9427989aef2de5dbca8f985bb4d561fa24c2151b83355f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1916,7 +1926,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-services"
-version = "0.8.7-rc.31"
+version = "0.8.7-rc.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0bca81304bd0e1ccf8c7290651acfbb3db7527e5b36ab9bb812624d8a70c03ed"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1973,7 +1985,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-utils"
-version = "0.8.7-rc.31"
+version = "0.8.7-rc.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5cbbea19a1f93db92fdd3c449418c46f1cec1a44b89848bb1814f8f7ae417ebf"
 dependencies = [
  "async-stream",
  "axum",

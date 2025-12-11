@@ -22,13 +22,13 @@ rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
 # This section is managed by `make dev-core` and `make dev-core-off`
 # When uncommented, Cargo uses local forge-core paths instead of crates.io
 # ============================================================================
-[patch.crates-io]
-forge-core-db = { path = "forge-core/crates/db" }
-forge-core-services = { path = "forge-core/crates/services" }
-forge-core-server = { path = "forge-core/crates/server" }
-forge-core-deployment = { path = "forge-core/crates/deployment" }
-forge-core-local-deployment = { path = "forge-core/crates/local-deployment" }
-forge-core-executors = { path = "forge-core/crates/executors" }
-forge-core-utils = { path = "forge-core/crates/utils" }
+# [patch.crates-io]
+# forge-core-db = { path = "forge-core/crates/db" }
+# forge-core-services = { path = "forge-core/crates/services" }
+# forge-core-server = { path = "forge-core/crates/server" }
+# forge-core-deployment = { path = "forge-core/crates/deployment" }
+# forge-core-local-deployment = { path = "forge-core/crates/local-deployment" }
+# forge-core-executors = { path = "forge-core/crates/executors" }
+# forge-core-utils = { path = "forge-core/crates/utils" }
 # ============================================================================
 
