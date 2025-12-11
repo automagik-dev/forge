@@ -308,6 +308,26 @@ git push
 
 **Why:** Pushing with [patch] active breaks everyone's build (they pull .cargo/config.toml with local paths).
 
+### forge-core-only Changes (No automagik-forge Changes)
+
+**Symptom:**
+You made changes only in forge-core but automagik-forge has nothing to commit. The hooks require a forge commit to trigger sync.
+
+**Solution:**
+The hooks are designed for when BOTH repos have related changes. For forge-core-only changes:
+
+1. Make a related documentation update in automagik-forge (like this file!)
+2. Commit from automagik-forge root - hooks sync both repos
+3. Both repos get the same commit message
+
+**Why this design:**
+- Keeps commits semantically linked across repos
+- Prevents orphaned forge-core changes
+- Encourages documenting why changes were made
+
+**⚠️ WARNING: Don't run `make dev-core-off` with uncommitted forge-core changes!**
+`make dev-core-off` DELETES the forge-core directory. Any uncommitted changes will be lost.
+
 ### Cargo Fetch Errors After Tag Update
 
 **Symptom:**
