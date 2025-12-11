@@ -328,21 +328,41 @@ pnpm run dev
 
 When you need to modify `forge-core` (the library that automagik-forge depends on), use the dev-core workflow.
 
-**Quick commands:**
+### Workflow (Fully Automatic)
+
 ```bash
-make dev-core BRANCH=feat/my-feature  # Enable local forge-core development
-make dev-core-off                     # Disable, restore git deps
-make status                           # Show current mode & branch status
+# 1. Start development
+make dev-core BRANCH=feat/my-feature
+
+# 2. Edit files in both repos, test your changes
+# The dev server watches both repos for hot reload
+
+# 3. Commit (hooks auto-commit forge-core with same message)
+git add . && git commit -m "feat: my changes"
+
+# 4. Push (hooks handle EVERYTHING)
+git push
+# → Auto-pushes forge-core first (if unpushed commits)
+# → Auto-disables patches in .cargo/config.toml
+# → Amends commit with config changes
+# → Pushes to remote
+
+# 5. Create PRs
+make pr-both
+
+# 6. Continue working? Just run make dev-core again
+make dev-core BRANCH=feat/my-feature  # Re-enables patches
 ```
 
-**📖 Complete guide:** See [docs/DUAL_REPO_WORKFLOW.md](docs/DUAL_REPO_WORKFLOW.md)
+### What the hooks do automatically
 
-This guide covers:
-- Step-by-step workflow for forge-core changes
-- Automated tag creation and cross-repo sync
-- Branch matching enforcement
-- Troubleshooting common issues
-- PR creation sequence and version management
+| Hook | Action |
+|------|--------|
+| `pre-commit` | Stages forge-core changes |
+| `prepare-commit-msg` | Commits forge-core with same message |
+| `pre-push` | Pushes forge-core, disables patches, amends commit |
+
+**📖 Complete guide:** See [docs/DUAL_REPO_WORKFLOW.md](docs/DUAL_REPO_WORKFLOW.md)
 
 ---
 
