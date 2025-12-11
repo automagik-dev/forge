@@ -1,8 +1,8 @@
 use std::{env, fs, path::Path};
 
 use anyhow::{Context, Result, bail};
-use forge_config::{ForgeProjectSettings, ProjectConfig};
-use forge_omni::{OmniConfig, OmniInstance, RecipientType, SendTextRequest, SendTextResponse};
+use forge_core_services::services::forge_config::{ForgeProjectSettings, ProjectConfig};
+use forge_core_services::services::omni::{OmniConfig, OmniInstance, RecipientType, SendTextRequest, SendTextResponse};
 use ts_rs_forge::TS;
 
 fn main() -> Result<()> {

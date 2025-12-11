@@ -22,7 +22,7 @@ use forge_core_db::models::{
 };
 use forge_core_deployment::Deployment;
 use forge_core_executors::profile::ExecutorProfileId;
-use forge_config::ForgeProjectSettings;
+use forge_core_services::services::forge_config::ForgeProjectSettings;
 use futures_util::{SinkExt, StreamExt, TryStreamExt};
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
@@ -2173,7 +2173,7 @@ struct ValidateOmniRequest {
 #[derive(Debug, Serialize)]
 struct ValidateOmniResponse {
     valid: bool,
-    instances: Vec<forge_omni::OmniInstance>,
+    instances: Vec<forge_core_services::services::omni::OmniInstance>,
     error: Option<String>,
 }
 
@@ -2181,8 +2181,9 @@ async fn validate_omni_config(
     State(_services): State<ForgeServices>,
     Json(req): Json<ValidateOmniRequest>,
 ) -> Result<Json<ValidateOmniResponse>, StatusCode> {
+    use forge_core_services::services::omni::{OmniConfig, OmniService};
     // Create temporary OmniService with provided credentials
-    let temp_config = forge_omni::OmniConfig {
+    let temp_config = OmniConfig {
         enabled: false,
         host: Some(req.host),
         api_key: Some(req.api_key),
@@ -2191,7 +2192,7 @@ async fn validate_omni_config(
         recipient_type: None,
     };
 
-    let temp_service = forge_omni::OmniService::new(temp_config);
+    let temp_service = OmniService::new(temp_config);
     match temp_service.list_instances().await {
         Ok(instances) => Ok(Json(ValidateOmniResponse {
             valid: true,

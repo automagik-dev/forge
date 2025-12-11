@@ -1,10 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    # Forge extension crates
-    "forge-extensions/config",
-    "forge-extensions/omni",
-    # Forge app
+    # Forge app (omni and forge_config now in forge-core-services)
     "forge-app",
 ]
 

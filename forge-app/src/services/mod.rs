@@ -12,9 +12,9 @@ use std::{path::Path, sync::Arc};
 use anyhow::{Context, Result, anyhow};
 use forge_core_db::models::project::Project;
 use forge_core_deployment::Deployment;
-// Import forge extension services
-use forge_config::ForgeConfigService;
-use forge_omni::{OmniConfig, OmniService};
+// Import forge extension services from forge-core-services
+use forge_core_services::services::forge_config::ForgeConfigService;
+use forge_core_services::services::omni::{OmniConfig, OmniService};
 use serde::Deserialize;
 use serde_json::json;
 use forge_core_server::DeploymentImpl;
@@ -624,7 +624,8 @@ fn sanitize_port(port: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use forge_config::{ForgeConfigService, ForgeProjectSettings, OmniConfig, RecipientType};
+    use forge_core_services::services::forge_config::{ForgeConfigService, ForgeProjectSettings};
+    use forge_core_services::services::omni::{OmniConfig, RecipientType};
     use httpmock::prelude::*;
     use serde_json::json;
     use sqlx::SqlitePool;
