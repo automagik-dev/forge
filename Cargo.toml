@@ -45,20 +45,13 @@ forge-core-deployment = { path = "forge-core/crates/deployment" }
 forge-core-local-deployment = { path = "forge-core/crates/local-deployment" }
 forge-core-server = { path = "forge-core/crates/server" }
 
-# Codex dependencies from namastexlabs fork (patched via .cargo/config.toml)
+# Codex dependencies from crates.io
 codex-protocol = "0.63.0"
 codex-app-server-protocol = "0.63.0"
-mcp-types = "0.63.0"
-
-# Redirect crates.io dependencies to our forks
-# This is required because these packages don't exist on crates.io
-[patch.crates-io]
-# Codex dependencies from namastexlabs fork (schemars 1.0.4 patch)
-codex-protocol = { git = "https://github.com/namastexlabs/codex", branch = "main", package = "codex-protocol" }
-codex-app-server-protocol = { git = "https://github.com/namastexlabs/codex", branch = "main", package = "codex-app-server-protocol" }
-mcp-types = { git = "https://github.com/namastexlabs/codex", branch = "main", package = "mcp-types" }
+codex-mcp-types = "0.63.0"
 
 # Pin zerocopy to version compatible with nightly-2025-05-18
+[patch.crates-io]
 # zerocopy 0.8.31 (Nov 2025) uses stdarch_x86_avx512 which requires
 # Rust features not available in the May 2025 nightly toolchain
 zerocopy = { git = "https://github.com/google/zerocopy", tag = "v0.8.23" }

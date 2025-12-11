@@ -597,7 +597,7 @@ dependencies = [
  "sync_wrapper",
  "tokio",
  "tokio-tungstenite",
- "tower",
+ "tower 0.5.2",
  "tower-layer",
  "tower-service",
  "tracing",
@@ -950,12 +950,13 @@ checksum = "a1d728cc89cf3aee9ff92b05e62b19ee65a02b5702cff7d5a377e32c6ae29d8d"
 [[package]]
 name = "codex-app-server-protocol"
 version = "0.63.0"
-source = "git+https://github.com/namastexlabs/codex?branch=main#27dd137e257b3e2b1857ebb02113178e064722c7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3080bf4e7832d8e502d30908ab65ff2aeee3c537c14cbe2bdcaf7edafbe15f3"
 dependencies = [
  "anyhow",
  "clap",
+ "codex-mcp-types",
  "codex-protocol",
- "mcp-types",
  "schemars 1.1.0",
  "serde",
  "serde_json",
@@ -966,32 +967,30 @@ dependencies = [
 ]
 
 [[package]]
-name = "codex-git"
+name = "codex-mcp-types"
 version = "0.63.0"
-source = "git+https://github.com/namastexlabs/codex?branch=main#27dd137e257b3e2b1857ebb02113178e064722c7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a5a1945f84320d70557d4c0dcd0701f3e2e6ce3ec4c017c46ffaf56fbc0da5c2"
 dependencies = [
- "once_cell",
- "regex",
  "schemars 1.1.0",
  "serde",
- "tempfile",
- "thiserror 2.0.17",
+ "serde_json",
  "ts-rs",
- "walkdir",
 ]
 
 [[package]]
 name = "codex-protocol"
 version = "0.63.0"
-source = "git+https://github.com/namastexlabs/codex?branch=main#27dd137e257b3e2b1857ebb02113178e064722c7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dddf2e62c2a6d9109280a6cc2959a4f3d233feeafcf3e99fda2b3410259c41e6"
 dependencies = [
  "base64 0.22.1",
- "codex-git",
+ "codex-mcp-types",
+ "codex-utils-git",
  "codex-utils-image",
  "icu_decimal",
  "icu_locale_core",
  "icu_provider",
- "mcp-types",
  "mime_guess",
  "schemars 1.1.0",
  "serde",
@@ -1008,7 +1007,8 @@ dependencies = [
 [[package]]
 name = "codex-utils-cache"
 version = "0.63.0"
-source = "git+https://github.com/namastexlabs/codex?branch=main#27dd137e257b3e2b1857ebb02113178e064722c7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fbee320fe35a104ef1194865b5a64a5eec081233326d869408bec3b63874e71d"
 dependencies = [
  "lru",
  "sha1",
@@ -1016,9 +1016,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "codex-utils-git"
+version = "0.63.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5cbaee2aa29c8bde3ed3d0219f42a3ef9858382dd37f9b8764e7fefe645fce7b"
+dependencies = [
+ "once_cell",
+ "regex",
+ "schemars 1.1.0",
+ "serde",
+ "tempfile",
+ "thiserror 2.0.17",
+ "ts-rs",
+ "walkdir",
+]
+
+[[package]]
 name = "codex-utils-image"
 version = "0.63.0"
-source = "git+https://github.com/namastexlabs/codex?branch=main#27dd137e257b3e2b1857ebb02113178e064722c7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f0efcd2cd17195a72ebd82f905229506964d0fe78ddede06334c5b2792f738fe"
 dependencies = [
  "base64 0.22.1",
  "codex-utils-cache",
@@ -1802,7 +1819,6 @@ dependencies = [
 [[package]]
 name = "forge-core-db"
 version = "0.8.7-rc.24"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.27#1be20eeb005da3eaa3e01c6a72cecf9a5ce25d8f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1829,7 +1845,6 @@ dependencies = [
 [[package]]
 name = "forge-core-deployment"
 version = "0.8.7-rc.24"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.27#1be20eeb005da3eaa3e01c6a72cecf9a5ce25d8f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1850,7 +1865,6 @@ dependencies = [
 [[package]]
 name = "forge-core-executors"
 version = "0.8.7-rc.24"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.27#1be20eeb005da3eaa3e01c6a72cecf9a5ce25d8f"
 dependencies = [
  "agent-client-protocol",
  "async-trait",
@@ -1859,6 +1873,7 @@ dependencies = [
  "bytes",
  "chrono",
  "codex-app-server-protocol",
+ "codex-mcp-types",
  "codex-protocol",
  "command-group",
  "convert_case 0.6.0",
@@ -1872,7 +1887,6 @@ dependencies = [
  "futures-io",
  "json-patch",
  "lazy_static",
- "mcp-types",
  "os_pipe",
  "regex",
  "rust-embed",
@@ -1902,7 +1916,6 @@ dependencies = [
 [[package]]
 name = "forge-core-local-deployment"
 version = "0.8.7-rc.24"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.27#1be20eeb005da3eaa3e01c6a72cecf9a5ce25d8f"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1942,7 +1955,6 @@ dependencies = [
 [[package]]
 name = "forge-core-server"
 version = "0.8.7-rc.24"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.27#1be20eeb005da3eaa3e01c6a72cecf9a5ce25d8f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1975,10 +1987,12 @@ dependencies = [
  "serde_json",
  "sqlx",
  "strip-ansi-escapes",
+ "tempfile",
  "thiserror 2.0.17",
  "tokio",
  "tokio-util",
  "toml",
+ "tower 0.4.13",
  "tracing",
  "tracing-subscriber",
  "ts-rs-forge",
@@ -1988,7 +2002,6 @@ dependencies = [
 [[package]]
 name = "forge-core-services"
 version = "0.8.7-rc.24"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.27#1be20eeb005da3eaa3e01c6a72cecf9a5ce25d8f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2046,7 +2059,6 @@ dependencies = [
 [[package]]
 name = "forge-core-utils"
 version = "0.8.7-rc.24"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.27#1be20eeb005da3eaa3e01c6a72cecf9a5ce25d8f"
 dependencies = [
  "async-stream",
  "axum",
@@ -3313,17 +3325,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
 
 [[package]]
-name = "mcp-types"
-version = "0.63.0"
-source = "git+https://github.com/namastexlabs/codex?branch=main#27dd137e257b3e2b1857ebb02113178e064722c7"
-dependencies = [
- "schemars 1.1.0",
- "serde",
- "serde_json",
- "ts-rs",
-]
-
-[[package]]
 name = "md-5"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3873,7 +3874,7 @@ dependencies = [
  "serde_urlencoded",
  "snafu",
  "tokio",
- "tower",
+ "tower 0.5.2",
  "tower-http 0.6.8",
  "tracing",
  "url",
@@ -4465,7 +4466,7 @@ dependencies = [
  "sync_wrapper",
  "tokio",
  "tokio-native-tls",
- "tower",
+ "tower 0.5.2",
  "tower-http 0.6.8",
  "tower-service",
  "url",
@@ -5947,6 +5948,21 @@ checksum = "5d99f8c9a7727884afe522e9bd5edbfc91a3312b36a77b5fb8926e4c31a41801"
 
 [[package]]
 name = "tower"
+version = "0.4.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8fa9be0de6cf49e536ce1851f987bd21a43b771b09473c3549a6c853db37c1c"
+dependencies = [
+ "futures-core",
+ "futures-util",
+ "pin-project",
+ "pin-project-lite",
+ "tower-layer",
+ "tower-service",
+ "tracing",
+]
+
+[[package]]
+name = "tower"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d039ad9159c98b70ecfd540b2573b97f7f52c3e8d9f8ad57a24b916a536975f9"
@@ -5991,7 +6007,7 @@ dependencies = [
  "http-body 1.0.1",
  "iri-string",
  "pin-project-lite",
- "tower",
+ "tower 0.5.2",
  "tower-layer",
  "tower-service",
  "tracing",
