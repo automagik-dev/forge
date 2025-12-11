@@ -961,7 +961,7 @@ dependencies = [
  "serde_json",
  "strum_macros",
  "thiserror 2.0.17",
- "ts-rs 11.1.0",
+ "ts-rs",
  "uuid",
 ]
 
@@ -976,7 +976,7 @@ dependencies = [
  "serde",
  "tempfile",
  "thiserror 2.0.17",
- "ts-rs 11.1.0",
+ "ts-rs",
  "walkdir",
 ]
 
@@ -1001,7 +1001,7 @@ dependencies = [
  "strum_macros",
  "sys-locale",
  "tracing",
- "ts-rs 11.1.0",
+ "ts-rs",
  "uuid",
 ]
 
@@ -1802,7 +1802,7 @@ dependencies = [
 [[package]]
 name = "forge-core-db"
 version = "0.8.7-rc.24"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.25#2ba2c894c984f2159999eaa8354f773bdc4f5fb6"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.27#1be20eeb005da3eaa3e01c6a72cecf9a5ce25d8f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1822,14 +1822,14 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
+ "ts-rs-forge",
  "uuid",
 ]
 
 [[package]]
 name = "forge-core-deployment"
 version = "0.8.7-rc.24"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.25#2ba2c894c984f2159999eaa8354f773bdc4f5fb6"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.27#1be20eeb005da3eaa3e01c6a72cecf9a5ce25d8f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1850,7 +1850,7 @@ dependencies = [
 [[package]]
 name = "forge-core-executors"
 version = "0.8.7-rc.24"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.25#2ba2c894c984f2159999eaa8354f773bdc4f5fb6"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.27#1be20eeb005da3eaa3e01c6a72cecf9a5ce25d8f"
 dependencies = [
  "agent-client-protocol",
  "async-trait",
@@ -1893,7 +1893,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
+ "ts-rs-forge",
  "uuid",
  "winsplit",
  "xdg",
@@ -1902,7 +1902,7 @@ dependencies = [
 [[package]]
 name = "forge-core-local-deployment"
 version = "0.8.7-rc.24"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.25#2ba2c894c984f2159999eaa8354f773bdc4f5fb6"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.27#1be20eeb005da3eaa3e01c6a72cecf9a5ce25d8f"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1935,14 +1935,14 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
+ "ts-rs-forge",
  "uuid",
 ]
 
 [[package]]
 name = "forge-core-server"
 version = "0.8.7-rc.24"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.25#2ba2c894c984f2159999eaa8354f773bdc4f5fb6"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.27#1be20eeb005da3eaa3e01c6a72cecf9a5ce25d8f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1981,14 +1981,14 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
+ "ts-rs-forge",
  "uuid",
 ]
 
 [[package]]
 name = "forge-core-services"
 version = "0.8.7-rc.24"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.25#2ba2c894c984f2159999eaa8354f773bdc4f5fb6"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.27#1be20eeb005da3eaa3e01c6a72cecf9a5ce25d8f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2038,7 +2038,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
+ "ts-rs-forge",
  "uuid",
  "xdg",
 ]
@@ -2046,7 +2046,7 @@ dependencies = [
 [[package]]
 name = "forge-core-utils"
 version = "0.8.7-rc.24"
-source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.25#2ba2c894c984f2159999eaa8354f773bdc4f5fb6"
+source = "git+https://github.com/namastexlabs/forge-core.git?tag=v0.8.7-rc.27#1be20eeb005da3eaa3e01c6a72cecf9a5ce25d8f"
 dependencies = [
  "async-stream",
  "axum",
@@ -2073,7 +2073,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "ts-rs 11.0.1",
+ "ts-rs-forge",
  "uuid",
  "which",
  "windows-sys 0.61.2",
@@ -3320,7 +3320,7 @@ dependencies = [
  "schemars 1.1.0",
  "serde",
  "serde_json",
- "ts-rs 11.1.0",
+ "ts-rs",
 ]
 
 [[package]]
@@ -6079,25 +6079,13 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "ts-rs"
-version = "11.0.1"
-source = "git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum#b5c8277ac9f321a0be7453eef029466152b13fc8"
-dependencies = [
- "chrono",
- "serde_json",
- "thiserror 2.0.17",
- "ts-rs-macros 11.0.1",
- "uuid",
-]
-
-[[package]]
-name = "ts-rs"
 version = "11.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4994acea2522cd2b3b85c1d9529a55991e3ad5e25cdcd3de9d505972c4379424"
 dependencies = [
  "serde_json",
  "thiserror 2.0.17",
- "ts-rs-macros 11.1.0",
+ "ts-rs-macros",
  "uuid",
 ]
 
@@ -6119,17 +6107,6 @@ name = "ts-rs-forge-macros"
 version = "11.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8da5a95ea1115a74b19a8e4af989cf20b03aa209a4df3813af69d996682867cd"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.111",
- "termcolor",
-]
-
-[[package]]
-name = "ts-rs-macros"
-version = "11.0.1"
-source = "git+https://github.com/xazukx/ts-rs.git?branch=use-ts-enum#b5c8277ac9f321a0be7453eef029466152b13fc8"
 dependencies = [
  "proc-macro2",
  "quote",
