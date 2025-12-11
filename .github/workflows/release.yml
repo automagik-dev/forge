@@ -199,6 +199,13 @@ jobs:
           TAG="${{ steps.bump.outputs.tag }}"
           echo "Syncing forge-core to version $VERSION and creating tag $TAG..."
 
+          # Check if PAT_TOKEN is available
+          if [ -z "$GH_TOKEN" ]; then
+            echo "⚠️ PAT_TOKEN not available, skipping forge-core sync"
+            echo "  Manual action required: create tag $TAG in forge-core"
+            exit 0
+          fi
+
           # Check if tag already exists
           if gh api repos/namastexlabs/forge-core/git/refs/tags/$TAG 2>/dev/null; then
             echo "Tag $TAG already exists in forge-core, skipping"
