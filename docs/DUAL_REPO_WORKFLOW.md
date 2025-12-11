@@ -15,21 +15,22 @@ make dev-core BRANCH=feat/my-feature
 # Changes auto-rebuild via cargo-watch
 
 # 3. Commit from automagik-forge ROOT ONLY
-# Hooks auto-sync forge-core with same message
 git add . && git commit -m "feat: your changes"
 # → pre-commit hook stages forge-core changes
 # → prepare-commit-msg hook commits forge-core with SAME message
-# → BOTH repos now have identical commits!
 
-# 4. Disable dev-core mode
-make dev-core-off
+# 4. Push - FULLY AUTOMATIC!
+git push
+# → pre-push hook pushes forge-core first
+# → pre-push hook disables Cargo [patch]
+# → pre-push hook amends commit with Cargo.lock
+# → Push proceeds!
 
-# 5. Push BOTH repos together
-make push-both              # Pushes both repos with safety checks
-
-# 6. Create PRs for BOTH repos
+# 5. Create PRs for BOTH repos
 make pr-both                # Creates PRs in both repos with RC label
 ```
+
+> **NOTE:** `make dev-core-off` is NO LONGER NEEDED - the pre-push hook handles everything automatically!
 
 ## Complete Workflow
 
@@ -60,8 +61,9 @@ make dev-core BRANCH=feat/my-feature
 - **Git hooks installed:**
   - `pre-commit` - Auto-stages forge-core changes
   - `prepare-commit-msg` - Auto-commits forge-core with same message
-  - `pre-push` - Blocks push until dev-core is off
+  - `pre-push` - **FULLY AUTOMATIC**: pushes forge-core, disables patches, amends commit
   - `forge-core/.git/hooks/pre-commit` - Blocks direct commits in forge-core
+  - `forge-core/.git/hooks/pre-push` - Blocks direct pushes in forge-core
 - Dev server starts watching both `forge-app/src` AND `forge-core/crates`
 
 **Branch Matching Enforcement:**
@@ -123,26 +125,31 @@ cd forge-core && git commit -m "..."
 - Write descriptive commit messages
 - Reference related GitHub issues (e.g., "feat: ... (#123)")
 
-### 4. Disable dev-core and Push
+### 4. Push (Fully Automatic!)
 
-**MUST disable dev-core before pushing:**
+**Just push from automagik-forge root - hooks handle everything:**
 ```bash
-# Back to automagik-forge root
-make dev-core-off
+git push
+```
 
-# Now push both repos (forge-core was already committed by hooks!)
-git push                              # automagik-forge
-cd forge-core && git push && cd ..    # forge-core
+**What the pre-push hook does automatically:**
+1. Pushes forge-core first (if has unpushed commits)
+2. Disables Cargo [patch] overrides (comments out config)
+3. Regenerates Cargo.lock with git dependencies
+4. Amends commit with config changes
+5. Allows forge push to proceed
 
-# Create PRs for both repos
-gh pr create --base main --fill                           # automagik-forge
-cd forge-core && gh pr create --base main --fill && cd .. # forge-core
+**Then create PRs:**
+```bash
+make pr-both   # Creates PRs in both repos with RC label
 ```
 
 **PR Review:**
 - Wait for CI to pass (lint, format, clippy, tests)
 - Get approvals from maintainers
 - Merge PR to `main` branch
+
+> **NOTE:** `make dev-core-off` is no longer needed - the pre-push hook handles this automatically!
 
 ### 5. Automated Tag Creation & Sync
 
@@ -186,32 +193,13 @@ When sync PR merges:
 **Merge the PR:**
 Once CI passes and you've reviewed, merge the sync PR. This triggers the version bump automation (Step 5c above).
 
-### 7. Disable dev-core Mode
+### 7. Continue Normal Development
 
-**CRITICAL: Before pushing automagik-forge changes:**
-```bash
-cd .. # Back to automagik-forge root
-make dev-core-off
-```
+After pushing, the pre-push hook automatically disabled dev-core mode. You're back to normal!
 
-**What this does:**
-- Comments out [patch] section in `.cargo/config.toml`
-- Restores git dependency references
-- Regenerates `Cargo.lock` with git deps
-- Verifies build works with git dependencies
+If you need to make more forge-core changes, just run `make dev-core BRANCH=xxx` again.
 
-**Verify with:**
-```bash
-make status
-# Should show: Dev-core: OFF (git deps)
-# Ready to push: YES
-```
-
-### 8. Continue Normal Development
-
-You're back to normal! forge-core changes are now available to everyone via the git tag.
-
-If you need to make more forge-core changes, repeat from Step 1.
+> **Legacy Note:** `make dev-core-off` still exists for edge cases (e.g., abandoning uncommitted changes), but is no longer part of the normal workflow since the pre-push hook handles this automatically.
 
 ---
 
@@ -293,20 +281,22 @@ automagik-forge Cargo.toml references a forge-core tag that doesn't exist yet.
 **Solution:**
 Wait for forge-core pre-release workflow to complete. Tag creation takes 10-15 minutes (builds 6 platforms).
 
-### "dev-core still active" Push Blocked
+### Push Automatically Disables dev-core
 
-**Symptom:**
-```
-🛑 PUSH BLOCKED: dev-core mode is ACTIVE
-```
+**New Behavior (as of Dec 2025):**
+The pre-push hook now automatically disables dev-core mode. You no longer need to run `make dev-core-off` manually.
 
-**Solution:**
-```bash
-make dev-core-off
-git push
-```
+**What happens on `git push`:**
+1. forge-core is pushed first (if has unpushed commits)
+2. Cargo [patch] is automatically disabled
+3. Cargo.lock is regenerated
+4. Commit is amended with config changes
+5. Push proceeds
 
-**Why:** Pushing with [patch] active breaks everyone's build (they pull .cargo/config.toml with local paths).
+**If you see errors:**
+The pre-push hook will show clear error messages if something fails. Common issues:
+- forge-core push fails → Check your remote access
+- Cargo fetch fails → Network issue or tag doesn't exist yet
 
 ### forge-core-only Changes (No automagik-forge Changes)
 
@@ -362,7 +352,7 @@ Edited forge-core files but dev server didn't rebuild.
 |---------|---------|
 | `make dev-core` | Enable local forge-core (dev branch) |
 | `make dev-core BRANCH=x` | Enable with specific branch |
-| `make dev-core-off` | Disable, restore git deps |
+| `make dev-core-off` | (Legacy) Manual disable - rarely needed now |
 | `make dev-core-status` | Show dev-core mode details |
 
 ### Status & Validation
@@ -381,19 +371,19 @@ Edited forge-core files but dev server didn't rebuild.
 | `make push-both` | Push both repos (same branch) |
 | `make pr` | Create linked PRs in both repos |
 
-**Note:** `push-both` and `pr` require dev-core-off first (safety check).
+**Note:** The pre-push hook now handles disabling dev-core automatically. Just `git push` from forge root.
 
 ---
 
 ## Common Pitfalls
 
-### 1. Forgetting to Disable dev-core
+### 1. ~~Forgetting to Disable dev-core~~ (SOLVED!)
 
 **Problem:** Push automagik-forge with [patch] active → breaks everyone's build.
 
-**Prevention:** Pre-push hook blocks this automatically (unless bypassed with `--no-verify`).
+**Prevention:** Pre-push hook now **automatically disables** dev-core mode before pushing!
 
-**Fix:** Force-push after `make dev-core-off`.
+**How it works:** The hook comments out [patch] section, regenerates Cargo.lock, and amends the commit - all automatically.
 
 ### 2. Creating forge-core PR Without automagik-forge PR
 

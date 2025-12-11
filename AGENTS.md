@@ -351,48 +351,56 @@ ACE (Agentic Context Engineering) ensures framework optimization is data-driven,
 
 **Status:** ✅ All helpers operational | ⚠️ Automation pending (Issue #384)
 
-### 11. forge-core Development Workflow - Single-Repo Experience 🔴 CRITICAL
-**Rule:** When dev-core is active, treat both repos as ONE. Commit ONLY from automagik-forge root.
+### 11. forge-core Development Workflow - Fully Automatic 🔴 CRITICAL
+**Rule:** `make dev-core` is the ONLY command you need. Everything else is automatic via hooks.
 
 **The Automation (Git Hooks):**
-When you commit in automagik-forge, hooks automatically:
+When you commit and push from automagik-forge root, hooks automatically:
 1. `pre-commit` → Stages all forge-core changes (`git add -A`)
 2. `prepare-commit-msg` → Commits forge-core with SAME message
-3. `pre-push` → Blocks push until `make dev-core-off`
+3. `pre-push` → **FULLY AUTOMATIC**:
+   - Pushes forge-core first (if unpushed commits exist)
+   - Disables Cargo [patch] overrides
+   - Regenerates Cargo.lock with git deps
+   - Amends commit with config changes
+   - Allows forge push to proceed
 
 **A blocker hook in `forge-core/.git/hooks/pre-commit` prevents direct commits there.**
 
-**Correct Workflow:**
-1. `make dev-core BRANCH=feat/xxx` - Syncs both repos to same branch
-2. Edit files in BOTH repos as needed
-3. `git add . && git commit -m "message"` - **FROM AUTOMAGIK-FORGE ROOT ONLY**
-4. Both repos now have identical commits (hooks handled forge-core)
-5. `make dev-core-off` - Disables Cargo [patch], restores git deps
-6. `make push-both` - Push BOTH repos together
-7. `make pr-both` - Create PRs in BOTH repos (with RC label)
+**Correct Workflow (3 steps only):**
+1. `make dev-core BRANCH=feat/xxx` - Start development
+2. Edit files in BOTH repos, commit from forge root: `git add . && git commit -m "message"`
+3. Push from forge root: `git push` - **hooks handle EVERYTHING automatically**
+
+**What happens on `git push`:**
+- forge-core pushed first (if has unpushed commits)
+- Patches auto-disabled (no manual `make dev-core-off` needed)
+- Cargo.lock regenerated with git deps
+- Commit amended with config changes
+- Push proceeds
 
 **Forbidden Actions:**
 - ❌ `cd forge-core && git commit` (BLOCKED by hook)
 - ❌ `cd forge-core && git push` (BLOCKED by hook)
 - ❌ Any git commands inside forge-core directory
-- ❌ Pushing with dev-core active (BLOCKED by pre-push hook)
+- ❌ Running `make dev-core-off` manually (hooks do this automatically)
 
-**Why Single-Repo Experience:**
-- One commit, both repos synced automatically
-- No version desync between repos
+**Why Fully Automatic:**
+- One command to start (`make dev-core`), one command to push (`git push`)
 - No manual coordination required
-- CI/CD pipeline expects this workflow
+- No forgetting to disable patches
+- CI/CD pipeline always gets correct state
 
 **Key Files:**
 - `scripts/hooks/pre-commit` - Auto-stages forge-core changes
 - `scripts/hooks/prepare-commit-msg` - Auto-commits forge-core
-- `scripts/hooks/pre-push` - Blocks push if dev-core active
+- `scripts/hooks/pre-push` - Auto-pushes forge-core, auto-disables patches
 - `scripts/hooks/forge-core-pre-commit` - Blocks direct commits in forge-core
 - `scripts/hooks/forge-core-pre-push` - Blocks direct pushes in forge-core
 
-**Documented Violations:**
-- 2025-12-05: Worked directly in forge-core, bypassed automation
-- 2025-12-09: Tried to commit in forge-core twice (this led to idiot-proof hooks)
+**Note:** `make dev-core-off` still exists for edge cases but is rarely needed.
+
+**Full Documentation:** `docs/DUAL_REPO_WORKFLOW.md`
 
 ## Development Workflow
 
