@@ -422,7 +422,21 @@ tags:
 
 **Prevention:** Always run `cargo fmt --all` before committing Rust code changes.
 
-**Detection:** CI now validates tag existence before building (Phase 5).
+### 7. forge-core CI Simplification (Dec 2025)
+
+**Change:** forge-core CI was simplified to publish source only to crates.io.
+
+**Removed:**
+- Multi-platform binary builds (Linux, Windows, macOS)
+- npx-cli packaging
+- macOS code signing and notarization
+- GitHub pre-release with tgz files
+
+**Why:** crates.io publishes source code, not binaries. Users compile for their platform.
+
+**New flow:** `workflow_dispatch → bump-version → publish-crates.yml`
+
+**Result:** Build time reduced from 10+ minutes to <3 minutes.
 
 ---
 
