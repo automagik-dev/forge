@@ -14,6 +14,7 @@ runs:
       uses: pnpm/action-setup@v4
       with:
         version: ${{ env.PNPM_VERSION }}
+        standalone: true
 
     - name: Get pnpm store directory
       shell: bash
