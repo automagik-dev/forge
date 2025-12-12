@@ -397,7 +397,20 @@ Edited forge-core files but dev server didn't rebuild.
 
 **Prevention:** Branch matching enforcement in Makefile (Phase 2).
 
-### 4. Version Tag Doesn't Exist Yet
+### 4. GitHub Actions Tag Patterns
+
+**Important:** GitHub's `on.push.tags` uses **glob patterns**, not regex!
+- ❌ `v[0-9]+` - Only matches single digit + literal `+` character
+- ✅ `v[0-9]*` - Matches any digit sequence (correct glob syntax)
+
+Example patterns in workflow files:
+```yaml
+tags:
+  - 'v[0-9]*.[0-9]*.[0-9]*'        # Matches v0.8.7, v10.20.30
+  - 'v[0-9]*.[0-9]*.[0-9]*-rc.*'   # Matches v0.8.7-rc.30
+```
+
+### 5. Version Tag Doesn't Exist Yet
 
 **Problem:** Update automagik-forge before forge-core tag exists → CI fails.
 
