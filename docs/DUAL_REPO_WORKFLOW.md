@@ -416,6 +416,12 @@ tags:
 
 **Prevention:** Wait for forge-core pre-release workflow to complete (~15 min).
 
+### 6. Import Ordering in Rust Code
+
+**Problem:** CI fails with `cargo fmt --all -- --check` due to import ordering.
+
+**Prevention:** Always run `cargo fmt --all` before committing Rust code changes.
+
 **Detection:** CI now validates tag existence before building (Phase 5).
 
 ---
