@@ -1,4 +1,5 @@
 /// Quick test to verify project-prefixed profile names
+use forge_core_services::services::profile_loader::GenieProfileLoader;
 use std::path::PathBuf;
 
 #[tokio::main]
@@ -15,8 +16,8 @@ async fn main() {
     println!("📁 Workspace: {workspace_root:?}");
     println!();
 
-    // Load profiles
-    let loader = forge_app_lib::services::genie_profiles::GenieProfileLoader::new(&workspace_root);
+    // Load profiles (now from forge-core-services)
+    let loader = GenieProfileLoader::new(&workspace_root);
 
     match loader.load_profiles() {
         Ok(configs) => {

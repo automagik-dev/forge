@@ -103,9 +103,6 @@ automagik-forge/
 │       ├── services/             # Business logic (GitHub, auth, git operations)
 │       ├── local-deployment/     # Local deployment logic
 │       └── utils/                # Shared utilities
-├── forge-extensions/             # Forge-specific extensions
-│   ├── config/                   # Configuration management
-│   └── omni/                     # Omni integration features
 ├── forge-app/                    # Main Forge application binary
 ├── frontend/                     # React application
 │   ├── src/
@@ -129,7 +126,7 @@ Automagik Forge is built on top of the vibe-kanban template using a mechanical r
 
 - `upstream/` - Git submodule pointing to namastexlabs/vibe-kanban fork
 - `scripts/rebrand.sh` - Converts all vibe-kanban references to automagik-forge
-- `forge-extensions/` - Real Forge-specific features (omni, config)
+- `forge-core/` - Core services (profiles, config) migrated from forge-extensions
 - Minimal `forge-overrides/` - Only feature files, no branding
 
 This allows us to stay in sync with upstream improvements while maintaining our unique features.

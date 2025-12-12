@@ -3,9 +3,7 @@
 //! Service composition layer that wraps upstream services with forge extensions.
 //! Provides unified access to both upstream functionality and forge-specific features.
 
-pub mod genie_profiles;
 mod notification_hook;
-pub mod profile_cache;
 
 use std::{path::Path, sync::Arc};
 
@@ -28,12 +26,10 @@ use uuid::Uuid;
 /// Main forge services container
 #[derive(Clone)]
 pub struct ForgeServices {
-    #[allow(dead_code)]
     pub deployment: Arc<DeploymentImpl>,
     pub omni: Arc<RwLock<OmniService>>,
     pub config: Arc<ForgeConfigService>,
     pub pool: SqlitePool,
-    pub profile_cache: Arc<profile_cache::ProfileCacheManager>,
 }
 
 impl ForgeServices {
@@ -85,15 +81,11 @@ impl ForgeServices {
         // Spawn background worker that processes queued Omni notifications
         spawn_omni_notification_worker(pool.clone(), config.clone());
 
-        // Initialize profile cache manager
-        let profile_cache = Arc::new(profile_cache::ProfileCacheManager::new());
-
         Ok(Self {
             deployment,
             omni,
             config,
             pool,
-            profile_cache,
         })
     }
 
@@ -127,8 +119,8 @@ impl ForgeServices {
         &self,
         workspace_root: &Path,
     ) -> Result<forge_core_executors::profile::ExecutorConfigs> {
-        // Use the profile cache manager (with hot-reload)
-        self.profile_cache.get_profiles(workspace_root).await
+        // Use the profile cache manager from deployment (with hot-reload)
+        self.deployment.profile_cache().get_profiles(workspace_root).await
     }
 
     /// Ensure a project's executor profiles are available in the cache.
@@ -148,7 +140,8 @@ impl ForgeServices {
         // Warm cache/watchers for this workspace before registering
         self.load_profiles_for_workspace(&workspace_root).await?;
 
-        self.profile_cache
+        self.deployment
+            .profile_cache()
             .register_project(project_id, workspace_root)
             .await;
 
@@ -216,7 +209,8 @@ impl ForgeServices {
                         .sum();
 
                     // Register project → workspace mapping
-                    self.profile_cache
+                    self.deployment
+                        .profile_cache()
                         .register_project(project.id, project.git_repo_path.clone())
                         .await;
 

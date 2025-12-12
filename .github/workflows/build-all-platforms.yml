@@ -83,7 +83,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: npx-cli/dist/${{ matrix.platform }}
-          key: binaries-${{ matrix.platform }}-${{ matrix.target }}-${{ runner.os }}${{ env.ZIG_SUFFIX }}-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
+          key: binaries-${{ matrix.platform }}-${{ matrix.target }}-${{ runner.os }}${{ env.ZIG_SUFFIX }}-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
       
       - name: Check if build can be skipped
         id: check-skip
@@ -374,7 +374,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: npx-cli/dist/${{ matrix.platform }}
-          key: binaries-${{ matrix.platform }}-${{ matrix.target }}-${{ runner.os }}${{ env.ZIG_SUFFIX }}-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
+          key: binaries-${{ matrix.platform }}-${{ matrix.target }}-${{ runner.os }}${{ env.ZIG_SUFFIX }}-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -423,25 +423,25 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: npx-cli/dist/linux-x64
-          key: binaries-linux-x64-x86_64-unknown-linux-gnu-Linux-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
+          key: binaries-linux-x64-x86_64-unknown-linux-gnu-Linux-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
       
       - name: Restore linux-arm64 cache
         uses: actions/cache/restore@v4
         with:
           path: npx-cli/dist/linux-arm64
-          key: binaries-linux-arm64-aarch64-unknown-linux-gnu-Linux-zig-0.13.0-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
+          key: binaries-linux-arm64-aarch64-unknown-linux-gnu-Linux-zig-0.13.0-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
       
       - name: Restore windows-x64 cache
         uses: actions/cache/restore@v4
         with:
           path: npx-cli/dist/windows-x64
-          key: binaries-windows-x64-x86_64-pc-windows-msvc-Windows-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
+          key: binaries-windows-x64-x86_64-pc-windows-msvc-Windows-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
       
       - name: Restore macos-arm64 cache
         uses: actions/cache/restore@v4
         with:
           path: npx-cli/dist/macos-arm64
-          key: binaries-macos-arm64-aarch64-apple-darwin-macOS-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'forge-extensions/**/*.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
+          key: binaries-macos-arm64-aarch64-apple-darwin-macOS-${{ hashFiles('pnpm-lock.yaml', 'Cargo.lock', '**/Cargo.toml', 'forge-app/**/*.rs', 'forge-app/build.rs', 'upstream/crates/**/*.rs', 'upstream/crates/**/Cargo.toml', 'shared/**/*.ts', 'frontend/src/**', 'frontend/public/**', 'frontend/index.html', 'frontend/vite.config.ts', 'frontend/tailwind.config.js', 'frontend/postcss.config.js', 'frontend/tsconfig*.json', 'frontend/package.json') }}
       
       - name: Download all artifacts
         uses: actions/download-artifact@v4

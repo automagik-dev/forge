@@ -1695,7 +1695,7 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "forge-app"
-version = "0.8.7-rc.31"
+version = "0.8.7-rc.35"
 dependencies = [
  "anyhow",
  "axum",

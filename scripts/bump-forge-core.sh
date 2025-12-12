@@ -54,14 +54,6 @@ else
     exit 1
 fi
 
-# Update forge-extensions/config/Cargo.toml (1 git dependency)
-if [ -f "forge-extensions/config/Cargo.toml" ]; then
-    sed -i "s|tag = \"v[^\"]*\"|tag = \"$NEW_TAG\"|g" forge-extensions/config/Cargo.toml
-    echo "✅ Updated forge-extensions/config/Cargo.toml"
-else
-    echo "⚠️  Warning: forge-extensions/config/Cargo.toml not found (skipping)"
-fi
-
 # Regenerate Cargo.lock
 echo "📦 Regenerating Cargo.lock..."
 cargo update -p db -p services -p server -p deployment -p local-deployment -p executors -p utils 2>/dev/null || cargo update

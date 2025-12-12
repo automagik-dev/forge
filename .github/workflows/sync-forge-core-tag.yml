@@ -56,12 +56,6 @@ jobs:
             echo "✅ Updated forge-app/Cargo.toml"
           fi
 
-          # Update forge-extensions/config/Cargo.toml
-          if [ -f forge-extensions/config/Cargo.toml ]; then
-            sed -i "s/tag = \"v[0-9.rc-]*\"/tag = \"$NEW_TAG\"/g" forge-extensions/config/Cargo.toml
-            echo "✅ Updated forge-extensions/config/Cargo.toml"
-          fi
-
           echo ""
           echo "📋 Changes made:"
           git diff --stat
@@ -99,7 +93,7 @@ jobs:
         run: |
           NEW_TAG="${{ steps.tag.outputs.tag }}"
 
-          git add forge-app/Cargo.toml forge-extensions/config/Cargo.toml Cargo.lock
+          git add forge-app/Cargo.toml Cargo.lock
           git commit -m "chore: update forge-core to ${NEW_TAG}"
           git push origin HEAD
 
@@ -138,5 +132,4 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Files Updated" >> $GITHUB_STEP_SUMMARY
           echo "- forge-app/Cargo.toml" >> $GITHUB_STEP_SUMMARY
-          echo "- forge-extensions/config/Cargo.toml" >> $GITHUB_STEP_SUMMARY
           echo "- Cargo.lock (forge-core packages)" >> $GITHUB_STEP_SUMMARY
