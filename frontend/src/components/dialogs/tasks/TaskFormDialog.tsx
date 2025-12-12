@@ -439,6 +439,7 @@ export const TaskFormDialog = NiceModal.create<TaskFormDialogProps>(
       isSubmitting,
       isSubmittingAndStart,
       parentTaskAttemptId,
+      useWorktree,
     ]);
 
     const handleCancel = useCallback(() => {

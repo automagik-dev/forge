@@ -26,11 +26,6 @@ export type MarkdownImageProps = MarkdownOverrideProps<HTMLImageElement> & {
   title?: string;
 };
 
-export type MarkdownLinkProps = MarkdownOverrideProps<HTMLAnchorElement> & {
-  href?: string;
-  title?: string;
-};
-
 // Generic props for simple elements (p, span, em, strong, etc.)
 export type MarkdownTextProps = MarkdownOverrideProps<HTMLElement>;
 
@@ -57,7 +52,6 @@ export type MarkdownTableCellProps =
 
 // Block elements
 export type MarkdownBlockquoteProps = MarkdownOverrideProps<HTMLQuoteElement>;
-export type MarkdownDivProps = MarkdownOverrideProps<HTMLDivElement>;
 export type MarkdownHrProps = Omit<
   MarkdownOverrideProps<HTMLHRElement>,
   'children'
