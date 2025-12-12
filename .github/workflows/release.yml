@@ -217,35 +217,61 @@ jobs:
           # 2. Commits the change
           # 3. Creates an annotated tag pointing at the versioned commit
           echo "Triggering sync-version-from-forge workflow..."
+
+          # Capture timestamp before triggering to find our specific run
+          TRIGGER_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
           gh workflow run sync-version-from-forge.yml \
             --repo namastexlabs/forge-core \
             -f version="$VERSION"
 
-          # Wait for workflow to start and complete
-          echo "Waiting for sync workflow to complete..."
-          sleep 15
+          # Wait for workflow to appear in the run list
+          echo "Waiting for sync workflow to start..."
+          sleep 10
 
-          # Poll for workflow completion (max 2 minutes)
-          for i in {1..24}; do
-            STATUS=$(gh run list --repo namastexlabs/forge-core \
+          # Find the specific workflow run we just triggered (created after our trigger time)
+          RUN_ID=""
+          for i in {1..12}; do
+            RUN_ID=$(gh run list --repo namastexlabs/forge-core \
               --workflow=sync-version-from-forge.yml \
-              --limit=1 --json status,conclusion \
-              --jq '.[0] | "\(.status) \(.conclusion)"')
+              --created=">$TRIGGER_TIME" \
+              --limit=1 --json databaseId \
+              --jq '.[0].databaseId // empty')
 
-            echo "Attempt $i: $STATUS"
+            if [ -n "$RUN_ID" ]; then
+              echo "Found workflow run ID: $RUN_ID"
+              break
+            fi
+            echo "Waiting for workflow to appear (attempt $i)..."
+            sleep 5
+          done
 
-            if [[ "$STATUS" == "completed success" ]]; then
+          if [ -z "$RUN_ID" ]; then
+            echo "❌ Could not find triggered workflow run"
+            exit 1
+          fi
+
+          # Poll for THIS SPECIFIC workflow run completion (max 3 minutes)
+          echo "Waiting for workflow run $RUN_ID to complete..."
+          for i in {1..36}; do
+            RUN_STATUS=$(gh run view "$RUN_ID" --repo namastexlabs/forge-core \
+              --json status,conclusion \
+              --jq '"\(.status) \(.conclusion)"')
+
+            echo "Attempt $i: $RUN_STATUS"
+
+            if [[ "$RUN_STATUS" == "completed success" ]]; then
               echo "✅ forge-core version synced and tag $TAG created"
               exit 0
-            elif [[ "$STATUS" == "completed failure" ]] || [[ "$STATUS" == "completed cancelled" ]]; then
-              echo "❌ Sync workflow failed: $STATUS"
+            elif [[ "$RUN_STATUS" == "completed failure" ]] || [[ "$RUN_STATUS" == "completed cancelled" ]]; then
+              echo "❌ Sync workflow failed: $RUN_STATUS"
               exit 1
             fi
 
             sleep 5
           done
 
-          echo "⚠️ Timed out waiting for sync workflow"
+          echo "⚠️ Timed out waiting for sync workflow run $RUN_ID"
           exit 1
 
   # Build (skip for promote action)
