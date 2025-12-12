@@ -102,11 +102,7 @@ fn find_process_using_port(port: u16, _host: &str) -> Option<String> {
     None
 }
 
-#[cfg(not(any(
-    target_os = "linux",
-    target_os = "macos",
-    target_os = "windows"
-)))]
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
 fn find_process_using_port(_port: u16, _host: &str) -> Option<String> {
     // For other platforms (iOS, BSD variants, etc.), we can't reliably detect the process
     None

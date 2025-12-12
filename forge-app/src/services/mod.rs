@@ -12,12 +12,12 @@ use std::{path::Path, sync::Arc};
 use anyhow::{Context, Result, anyhow};
 use forge_core_db::models::project::Project;
 use forge_core_deployment::Deployment;
+use forge_core_server::DeploymentImpl;
 // Import forge extension services from forge-core-services
 use forge_core_services::services::forge_config::ForgeConfigService;
 use forge_core_services::services::omni::{OmniConfig, OmniService};
 use serde::Deserialize;
 use serde_json::json;
-use forge_core_server::DeploymentImpl;
 use sqlx::{Row, SqlitePool};
 use tokio::{
     sync::RwLock,
@@ -624,8 +624,10 @@ fn sanitize_port(port: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use forge_core_services::services::forge_config::{ForgeConfigService, ForgeProjectSettings};
-    use forge_core_services::services::omni::{OmniConfig, RecipientType};
+    use forge_core_services::services::{
+        forge_config::{ForgeConfigService, ForgeProjectSettings},
+        omni::{OmniConfig, RecipientType},
+    };
     use httpmock::prelude::*;
     use serde_json::json;
     use sqlx::SqlitePool;

@@ -22,11 +22,6 @@ use forge_core_db::models::{
 };
 use forge_core_deployment::Deployment;
 use forge_core_executors::profile::ExecutorProfileId;
-use forge_core_services::services::forge_config::ForgeProjectSettings;
-use futures_util::{SinkExt, StreamExt, TryStreamExt};
-use rust_embed::RustEmbed;
-use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
 use forge_core_server::{
     DeploymentImpl,
     error::ApiError,
@@ -36,15 +31,21 @@ use forge_core_server::{
         tasks::CreateAndStartTaskRequest,
     },
 };
-use forge_core_services::services::container::ContainerService;
-use sqlx::{self, Error as SqlxError, Row};
-use tokio::sync::RwLock;
-use tower_http::cors::{Any, CorsLayer};
+use forge_core_services::services::{
+    container::ContainerService, forge_config::ForgeProjectSettings,
+};
 use forge_core_utils::{
     log_msg::LogMsg,
     response::ApiResponse,
     text::{git_branch_id, short_uuid},
 };
+use futures_util::{SinkExt, StreamExt, TryStreamExt};
+use rust_embed::RustEmbed;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
+use sqlx::{self, Error as SqlxError, Row};
+use tokio::sync::RwLock;
+use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
 use crate::services::ForgeServices;
@@ -315,7 +316,9 @@ async fn forge_create_task_attempt(
                             forge_core_executors::executors::CodingAgent::Codex(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            forge_core_executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
+                            forge_core_executors::executors::CodingAgent::Amp(cfg) => {
+                                cfg.append_prompt.get()
+                            }
                             forge_core_executors::executors::CodingAgent::Gemini(cfg) => {
                                 cfg.append_prompt.get()
                             }
@@ -518,7 +521,9 @@ async fn forge_create_task_and_start(
                             forge_core_executors::executors::CodingAgent::Codex(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            forge_core_executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
+                            forge_core_executors::executors::CodingAgent::Amp(cfg) => {
+                                cfg.append_prompt.get()
+                            }
                             forge_core_executors::executors::CodingAgent::Gemini(cfg) => {
                                 cfg.append_prompt.get()
                             }
@@ -1115,7 +1120,8 @@ async fn forge_follow_up(
     State(deployment): State<DeploymentImpl>,
     State(forge_services): State<ForgeServices>,
     Json(payload): Json<serde_json::Value>,
-) -> Result<Json<ApiResponse<forge_core_db::models::execution_process::ExecutionProcess>>, ApiError> {
+) -> Result<Json<ApiResponse<forge_core_db::models::execution_process::ExecutionProcess>>, ApiError>
+{
     // Get task and project to determine workspace root
     let task = task_attempt
         .parent_task(&deployment.db().pool)
@@ -1155,7 +1161,9 @@ async fn forge_follow_up(
                             forge_core_executors::executors::CodingAgent::Codex(cfg) => {
                                 cfg.append_prompt.get()
                             }
-                            forge_core_executors::executors::CodingAgent::Amp(cfg) => cfg.append_prompt.get(),
+                            forge_core_executors::executors::CodingAgent::Amp(cfg) => {
+                                cfg.append_prompt.get()
+                            }
                             forge_core_executors::executors::CodingAgent::Gemini(cfg) => {
                                 cfg.append_prompt.get()
                             }
@@ -1211,9 +1219,11 @@ async fn forge_follow_up(
     // Call upstream follow_up - re-parse JSON into the correct type
     let typed_payload: task_attempts::CreateFollowUpAttempt = serde_json::from_value(payload)
         .map_err(|e| {
-            ApiError::TaskAttempt(forge_core_db::models::task_attempt::TaskAttemptError::ValidationError(
-                format!("Invalid follow-up payload: {e}"),
-            ))
+            ApiError::TaskAttempt(
+                forge_core_db::models::task_attempt::TaskAttemptError::ValidationError(format!(
+                    "Invalid follow-up payload: {e}"
+                )),
+            )
         })?;
 
     task_attempts::follow_up(
@@ -1254,9 +1264,11 @@ async fn forge_get_task_attempt_branch_status(
 
     // Serialize the ApiResponse to JSON so we can modify it
     let branch_status_value = serde_json::to_value(&api_response).map_err(|e| {
-        ApiError::TaskAttempt(forge_core_db::models::task_attempt::TaskAttemptError::ValidationError(
-            format!("Failed to serialize upstream response: {e}"),
-        ))
+        ApiError::TaskAttempt(
+            forge_core_db::models::task_attempt::TaskAttemptError::ValidationError(format!(
+                "Failed to serialize upstream response: {e}"
+            )),
+        )
     })?;
 
     // Extract the actual data object (ApiResponse has a wrapper structure)
@@ -1274,9 +1286,11 @@ async fn forge_get_task_attempt_branch_status(
     // Get worktree path from task attempt's container_ref
     // container_ref is an Option, so we need to unwrap it or use a default
     let container_ref_str = task_attempt.container_ref.as_ref().ok_or_else(|| {
-        ApiError::TaskAttempt(forge_core_db::models::task_attempt::TaskAttemptError::ValidationError(
-            "Task attempt has no container_ref".to_string(),
-        ))
+        ApiError::TaskAttempt(
+            forge_core_db::models::task_attempt::TaskAttemptError::ValidationError(
+                "Task attempt has no container_ref".to_string(),
+            ),
+        )
     })?;
     let worktree_path = std::path::PathBuf::from(container_ref_str);
 
