@@ -17,7 +17,6 @@ use axum::{
     routing::{get, post},
 };
 use forge_core_db::models::task::TaskWithAttemptStatus;
-use forge_core_deployment::Deployment;
 use forge_core_server::{
     DeploymentImpl,
     routes::{
@@ -25,11 +24,9 @@ use forge_core_server::{
         execution_processes, filesystem, forge, images, projects, tags, task_attempts, tasks,
     },
 };
-use forge_core_utils::response::ApiResponse;
 use rust_embed::RustEmbed;
 use serde_json::{Value, json};
 use tower_http::cors::{Any, CorsLayer};
-use uuid::Uuid;
 
 use crate::services::ForgeServices;
 
@@ -105,14 +102,8 @@ pub fn create_router(services: ForgeServices, auth_required: bool) -> Router {
 
 /// Forge-app specific routes that extend forge-core's routes
 /// - auth-required: Check if authentication is required (forge-app only)
-/// - profiles: Load executor profiles for a project (forge-app only, uses ProfileCacheManager)
 fn forge_api_routes() -> Router<ForgeAppState> {
-    Router::new()
-        .route("/api/forge/auth-required", get(get_auth_required))
-        .route(
-            "/api/forge/projects/{project_id}/profiles",
-            get(get_project_profiles),
-        )
+    Router::new().route("/api/forge/auth-required", get(get_auth_required))
 }
 
 fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
@@ -488,34 +479,11 @@ async fn get_auth_required(State(state): State<ForgeAppState>) -> Json<Value> {
     }))
 }
 
-/// Get executor profiles for a specific project (forge-app only, uses ProfileCacheManager)
-async fn get_project_profiles(
-    Path(project_id): Path<Uuid>,
-    State(services): State<ForgeServices>,
-) -> Result<Json<ApiResponse<forge_core_executors::profile::ExecutorConfigs>>, StatusCode> {
-    services
-        .deployment
-        .profile_cache()
-        .get_profiles_for_project(project_id)
-        .await
-        .map(|profiles| {
-            tracing::debug!(
-                "Retrieved {} executor profiles for project {}",
-                profiles.executors.len(),
-                project_id
-            );
-            Json(ApiResponse::success(profiles))
-        })
-        .map_err(|e| {
-            tracing::error!("Failed to load profiles for project {}: {}", project_id, e);
-            StatusCode::NOT_FOUND
-        })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use forge_core_utils::text::{git_branch_id, short_uuid};
+    use uuid::Uuid;
 
     #[test]
     fn test_forge_branch_prefix_format() {
