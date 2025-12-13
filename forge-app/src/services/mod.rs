@@ -188,20 +188,15 @@ impl ForgeServices {
                 project.git_repo_path
             );
 
-            if !genie_path.exists() || !genie_path.is_dir() {
-                tracing::debug!(
-                    "Project '{}' has no .genie folder at {:?}",
-                    project.name,
-                    genie_path
-                );
-                continue;
-            }
+            let has_genie_folder = genie_path.exists() && genie_path.is_dir();
 
-            tracing::info!(
-                "📁 Loading .genie profiles for project: {} ({})",
-                project.name,
-                project.git_repo_path.display()
-            );
+            if has_genie_folder {
+                tracing::info!(
+                    "📁 Loading .genie profiles for project: {} ({})",
+                    project.name,
+                    project.git_repo_path.display()
+                );
+            }
 
             tracing::debug!("Calling load_profiles_for_workspace...");
             match self
@@ -215,28 +210,39 @@ impl ForgeServices {
                         .map(|e| e.configurations.len())
                         .sum();
 
-                    // Register project → workspace mapping
+                    // Register project → workspace mapping (for ALL projects, not just .genie ones)
                     self.profile_cache
                         .register_project(project.id, project.git_repo_path.clone())
                         .await;
 
-                    tracing::info!(
-                        "✅ Loaded {} profile variants for project: {} (registered project_id: {})",
-                        variant_count,
-                        project.name,
-                        project.id
-                    );
-
-                    loaded_count += 1;
-                    total_variants += variant_count;
+                    if has_genie_folder {
+                        tracing::info!(
+                            "✅ Loaded {} profile variants for project: {} (registered project_id: {})",
+                            variant_count,
+                            project.name,
+                            project.id
+                        );
+                        loaded_count += 1;
+                        total_variants += variant_count;
+                    } else {
+                        tracing::debug!(
+                            "Registered project '{}' (id: {}) with default profiles (no .genie folder)",
+                            project.name,
+                            project.id
+                        );
+                    }
                 }
                 Err(e) => {
                     tracing::warn!(
-                        "⚠️  Failed to load .genie profiles for project '{}': {}",
+                        "⚠️  Failed to load profiles for project '{}': {}",
                         project.name,
                         e
                     );
-                    // Don't fail startup if one project has invalid profiles
+                    // Still register the project even if profile loading fails
+                    // This prevents "not registered in profile cache" errors
+                    self.profile_cache
+                        .register_project(project.id, project.git_repo_path.clone())
+                        .await;
                 }
             }
         }
