@@ -162,7 +162,7 @@ Instead of compiling every run, cache the compiled binary:
   uses: actions/cache@v4
   with:
     path: target/release/forge-app
-    key: forge-app-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'forge-app/**/*.rs', 'forge-extensions/**/*.rs') }}
+    key: forge-app-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'forge-app/**/*.rs') }}
 
 - name: Build backend (if not cached)
   if: steps.cache-binary.outputs.cache-hit != 'true'

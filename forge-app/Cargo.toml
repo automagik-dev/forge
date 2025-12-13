@@ -49,30 +49,21 @@ sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "migra
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 
-# Upstream crate dependencies (from git)
-forge-core-db = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.27" }
-forge-core-services = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.27" }
-forge-core-server = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.27" }
-forge-core-deployment = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.27" }
-forge-core-local-deployment = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.27" }
-forge-core-executors = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.27" }
-forge-core-utils = { git = "https://github.com/namastexlabs/forge-core.git", tag = "v0.8.7-rc.27" }
+# Upstream crate dependencies (path via workspace)
+forge-core-db = { workspace = true }
+forge-core-services = { workspace = true }
+forge-core-server = { workspace = true }
+forge-core-deployment = { workspace = true }
+forge-core-local-deployment = { workspace = true }
+forge-core-executors = { workspace = true }
+forge-core-utils = { workspace = true }
 
-# Forge extensions
-forge-omni = { path = "../forge-extensions/omni" }
-forge-config = { path = "../forge-extensions/config" }
-
-# Android JNI
-jni = { version = "0.21", optional = true }
-android_logger = { version = "0.14", optional = true }
-log = "0.4"
+# Forge extensions are now in forge-core-services
+# (omni and forge_config modules)
 
 # Force vendored OpenSSL for cross-compilation (Windows, Linux ARM64)
 # This enables feature unification across all transitive dependencies
 openssl = { version = "0.10", features = ["vendored"] }
-
-[features]
-android = ["jni", "android_logger"]
 
 [dev-dependencies]
 httpmock = "0.7"

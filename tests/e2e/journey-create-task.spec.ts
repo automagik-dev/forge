@@ -87,8 +87,8 @@ test.describe('Journey: Create Task', () => {
     const providerSection = page.locator('text=Provider').locator('..');
     await expect(providerSection.getByRole('button')).toBeVisible(); // Provider selector exists
 
-    // Agent button exists
-    const agentSection = page.locator('text=Agent').locator('..');
+    // Agent button exists (use getByText with exact to avoid matching "agent" in description)
+    const agentSection = page.getByText('Agent', { exact: true }).locator('..');
     await expect(agentSection.getByRole('button')).toBeVisible(); // Agent selector exists
 
     // Branch button exists and shows a branch name

@@ -128,7 +128,6 @@ forge-core/
 # Dev-core mode backups (created during swap, deleted on restore)
 Cargo.git.toml
 forge-app/Cargo.git.toml
-forge-extensions/config/Cargo.git.toml
 
 # Dev-core mode marker (created by make dev-core, deleted by make dev-core-off)
 .dev-core-active 

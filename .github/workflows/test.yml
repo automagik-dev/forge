@@ -23,6 +23,8 @@ jobs:
         run: |
           rm -rf "$GITHUB_WORKSPACE"/* "$GITHUB_WORKSPACE"/.[!.]* 2>/dev/null || true
           rm -f .git/index.lock 2>/dev/null || true
+          # Clean pnpm setup directory (self-hosted runner cruft)
+          rm -rf ~/setup-pnpm 2>/dev/null || true
 
       - uses: actions/checkout@v4
 

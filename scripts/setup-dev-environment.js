@@ -11,15 +11,20 @@ const ENV_FILE = path.join(__dirname, "..", ".env");
 
 /**
  * Check if a port is available
+ * Uses a timeout to handle WSL2 networking where closed ports may hang
  */
 function isPortAvailable(port) {
   return new Promise((resolve) => {
-    const sock = net.createConnection({ port, host: "localhost" });
+    const sock = net.createConnection({ port, host: "localhost", timeout: 1000 });
     sock.on("connect", () => {
       sock.destroy();
-      resolve(false);
+      resolve(false); // Port is in use
     });
-    sock.on("error", () => resolve(true));
+    sock.on("error", () => resolve(true)); // Port is available
+    sock.on("timeout", () => {
+      sock.destroy();
+      resolve(true); // Timeout means port is available (WSL2 behavior)
+    });
   });
 }
 

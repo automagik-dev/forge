@@ -366,7 +366,7 @@ Automagik Forge uses a mechanical rebranding approach to stay in sync with the u
 - `upstream/` - Git submodule pointing to namastexlabs/vibe-kanban fork
 - `namastexlabs/vibe-kanban` - Fork that mirrors BloopAI/vibe-kanban
 - `scripts/rebrand.sh` - Converts all vibe-kanban references to automagik-forge
-- `forge-extensions/` - Real features (omni, config, branch templates)
+- `forge-core/` - Core services (profiles, config) migrated from extensions
 - Minimal `forge-overrides/` - Only feature files, no branding
 
 **Complete Workflow:** Sync fork → Create namastex tag → Update gitmodule → Rebrand → Verify & commit

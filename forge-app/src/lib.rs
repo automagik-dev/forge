@@ -6,9 +6,6 @@ pub mod router;
 pub mod services;
 pub mod version;
 
-#[cfg(all(target_os = "android", feature = "android"))]
-pub mod android;
-
 use std::net::{IpAddr, SocketAddr};
 
 use tokio::signal;
@@ -105,45 +102,7 @@ fn find_process_using_port(port: u16, _host: &str) -> Option<String> {
     None
 }
 
-#[cfg(target_os = "android")]
-fn find_process_using_port(port: u16, _host: &str) -> Option<String> {
-    use std::process::Command;
-
-    // Android typically has ss or netstat available
-    if let Ok(output) = Command::new("ss").args(["-tulpn"]).output() {
-        if let Ok(stdout) = String::from_utf8(output.stdout) {
-            for line in stdout.lines() {
-                if line.contains(&format!(":{}", port)) {
-                    return Some(format!(
-                        "A process is using this port (details limited on Android)"
-                    ));
-                }
-            }
-        }
-    }
-
-    // Fallback to netstat
-    if let Ok(output) = Command::new("netstat").args(["-tuln"]).output() {
-        if let Ok(stdout) = String::from_utf8(output.stdout) {
-            for line in stdout.lines() {
-                if line.contains(&format!(":{}", port)) {
-                    return Some(format!(
-                        "A process is using this port (details limited on Android)"
-                    ));
-                }
-            }
-        }
-    }
-
-    None
-}
-
-#[cfg(not(any(
-    target_os = "linux",
-    target_os = "macos",
-    target_os = "windows",
-    target_os = "android"
-)))]
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
 fn find_process_using_port(_port: u16, _host: &str) -> Option<String> {
     // For other platforms (iOS, BSD variants, etc.), we can't reliably detect the process
     None

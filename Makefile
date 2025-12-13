@@ -105,7 +105,7 @@ help: ## 🔨 Show this help message
 	@echo -e "$(FONT_CYAN)🛠️  Development:$(FONT_RESET)"
 	@echo -e "  $(FONT_PURPLE)dev$(FONT_RESET)             Start dev environment (hot reload)"
 	@echo -e "  $(FONT_PURPLE)dev-core$(FONT_RESET)        Dev with local forge-core (for debugging)"
-	@echo -e "  $(FONT_PURPLE)dev-core-off$(FONT_RESET)    Switch back to git dependencies"
+	@echo -e "  $(FONT_PURPLE)dev-core-off$(FONT_RESET)    Switch back to crates.io dependencies"
 	@echo -e "  $(FONT_PURPLE)prod$(FONT_RESET)            Build and test production package"
 	@echo -e "  $(FONT_PURPLE)forge$(FONT_RESET)           Alias for 'make prod'"
 	@echo -e "  $(FONT_PURPLE)backend$(FONT_RESET)         Backend only (use BP=port to override)"
@@ -815,15 +815,16 @@ dev-core: check-android-deps check-cargo ## Start dev with local forge-core
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core blocker hooks installed (pre-commit + pre-push)$(FONT_RESET)"
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using local forge-core at ./forge-core$(FONT_RESET)"
 	@echo ""
-	@echo -e "$(FONT_YELLOW)ℹ  Cargo [patch] auto-detects ./forge-core$(FONT_RESET)"
-	@echo -e "$(FONT_YELLOW)ℹ  Run 'make dev-core-off' to disable$(FONT_RESET)"
+	@echo -e "$(FONT_YELLOW)ℹ  Workflow: edit → commit → push (auto-disables patches)$(FONT_RESET)"
+	@echo -e "$(FONT_YELLOW)ℹ  Run 'make dev-core' again to re-enable patches$(FONT_RESET)"
 	@echo ""
 	@FORGE_WATCH_PATHS="forge-core/crates" bash scripts/dev/run-dev.sh
 
-dev-core-off: ## Disable local forge-core (use git deps)
+dev-core-off: ## Disable local forge-core (use crates.io deps)
 	@echo -e "$(FONT_CYAN)🔄 Disabling Cargo [patch] overrides...$(FONT_RESET)"
-	@# Comment out forge-core [patch] section ONLY (not crates-io patches)
-	@sed -i 's/^\[patch\."https:\/\/github.com\/namastexlabs\/forge-core.git"\]/# [patch."https:\/\/github.com\/namastexlabs\/forge-core.git"]/g' .cargo/config.toml
+	@# Comment out forge-core [patch.crates-io] section in .cargo/config.toml
+	@# Note: This only affects forge-core patches, not other crates-io patches in Cargo.toml
+	@sed -i 's/^\[patch\.crates-io\]/# [patch.crates-io]/g' .cargo/config.toml
 	@sed -i 's/^forge-core-db = { path/# forge-core-db = { path/g' .cargo/config.toml
 	@sed -i 's/^forge-core-services = { path/# forge-core-services = { path/g' .cargo/config.toml
 	@sed -i 's/^forge-core-server = { path/# forge-core-server = { path/g' .cargo/config.toml
@@ -831,9 +832,14 @@ dev-core-off: ## Disable local forge-core (use git deps)
 	@sed -i 's/^forge-core-local-deployment = { path/# forge-core-local-deployment = { path/g' .cargo/config.toml
 	@sed -i 's/^forge-core-executors = { path/# forge-core-executors = { path/g' .cargo/config.toml
 	@sed -i 's/^forge-core-utils = { path/# forge-core-utils = { path/g' .cargo/config.toml
+	@# Delete forge-core directory to ensure clean state
+	@if [ -d "forge-core" ]; then \
+		echo -e "$(FONT_CYAN)🗑️  Removing forge-core directory...$(FONT_RESET)"; \
+		rm -rf forge-core/; \
+	fi
 	@rm -f Cargo.lock
 	@cargo fetch 2>/dev/null || true
-	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using git dependencies$(FONT_RESET)"
+	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using crates.io dependencies (forge-core removed)$(FONT_RESET)"
 
 dev-core-status: ## Show dev-core mode status
 	@echo ""
@@ -846,10 +852,10 @@ dev-core-status: ## Show dev-core mode status
 			echo -e "$(FONT_RED)⚠️  WARNING: forge-core/ directory missing!$(FONT_RESET)"; \
 		fi; \
 	else \
-		echo -e "Mode:   $(FONT_CYAN)GIT$(FONT_RESET) (using tag from Cargo.toml)"; \
-		EXPECTED_TAG=$$(grep -oP 'tag\s*=\s*"\K[^"]+' forge-app/Cargo.toml 2>/dev/null | head -1); \
-		if [ -n "$$EXPECTED_TAG" ]; then \
-			echo -e "Tag:    $$EXPECTED_TAG"; \
+		echo -e "Mode:   $(FONT_CYAN)CRATES.IO$(FONT_RESET) (using published versions)"; \
+		FORGE_CORE_VERSION=$$(grep -oP '^forge-core-utils\s*=\s*"\K[^"]+' Cargo.toml 2>/dev/null | head -1); \
+		if [ -n "$$FORGE_CORE_VERSION" ]; then \
+			echo -e "Version: $$FORGE_CORE_VERSION"; \
 		fi; \
 	fi
 	@echo ""
@@ -1111,20 +1117,9 @@ clean:
 	@cargo clean
 	@echo "✅ Clean complete"
 
-# Complete release pipeline: version bump + build + publish + release notes
-publish:
-	@echo "🚀 Complete Release Pipeline"
-	@echo "This will:"
-	@echo "  1. Let you choose version bump type (patch/minor/major)"
-	@echo "  2. Trigger GitHub Actions to bump version and build all platforms"
-	@echo "  3. Generate AI-powered release notes with Genie (semantic analysis)"
-	@echo "  4. Create GitHub release and publish to npm"
-	@echo ""
-	@./gh-build.sh publish
-
-# Beta release with auto-incremented version
-beta:
-	@./gh-build.sh beta
+# Release pipeline moved to GitHub Actions
+# Use GitHub Actions UI to trigger releases:
+#   https://github.com/automagik-dev/forge/actions
 
 # Version info
 version:
@@ -1133,8 +1128,7 @@ version:
 	@echo "  Frontend:     $$(grep '"version"' frontend/package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')"
 	@echo "  NPX CLI:      $$(grep '"version"' npx-cli/package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')"
 	@echo "  Forge App:    $$(grep 'version =' forge-app/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
-	@echo "  Forge Omni:   $$(grep 'version =' forge-extensions/omni/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
-	@echo "  Forge Config: $$(grep 'version =' forge-extensions/config/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
+	@echo "  Forge Core:   $$(grep 'version =' forge-core/crates/services/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
 
 # Manual NPM publish from downloaded artifacts (when automated publish fails)
 npm:

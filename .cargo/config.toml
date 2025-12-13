@@ -18,11 +18,11 @@ rustflags = ["-C", "link-arg=/DEBUG:FASTLINK"]
 rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
 
 # ============================================================================
-# DEV-CORE PATCHES - TEMPORARILY DISABLED FOR FORGE-CORE TESTING
+# DEV-CORE PATCHES - TEMPORARILY DISABLED
 # This section is managed by `make dev-core` and `make dev-core-off`
-# When present, Cargo uses local forge-core paths instead of git dependencies
+# When uncommented, Cargo uses local forge-core paths instead of crates.io
 # ============================================================================
-# [patch."https://github.com/namastexlabs/forge-core.git"]
+# [patch.crates-io]
 # forge-core-db = { path = "forge-core/crates/db" }
 # forge-core-services = { path = "forge-core/crates/services" }
 # forge-core-server = { path = "forge-core/crates/server" }

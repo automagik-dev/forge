@@ -32,7 +32,6 @@ const PACKAGE_FILES = [
 // Files containing forge-core git tag references
 const FORGE_CORE_REF_FILES = [
   path.join(ROOT, 'forge-app', 'Cargo.toml'),
-  path.join(ROOT, 'forge-extensions', 'config', 'Cargo.toml'),
 ];
 
 const COLORS = {
