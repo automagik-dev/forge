@@ -1695,7 +1695,7 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "forge-app"
-version = "0.8.7-rc.35"
+version = "0.8.7-rc.38"
 dependencies = [
  "anyhow",
  "axum",
@@ -1735,9 +1735,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-db"
-version = "0.8.7-rc.35"
+version = "0.8.7-rc.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15917ad56627e45e3e638087ea6bff4243b2eeae48a9ce6744b4b9ab22366d96"
+checksum = "f72a32b239a1d4f20b7c5fa2c41e385dec11192c282f49a1080064d5f22aa824"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1763,9 +1763,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-deployment"
-version = "0.8.7-rc.35"
+version = "0.8.7-rc.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1c37b91b7c781865d2c699602f91042af82aa79977e914f397fa87df9df0a63"
+checksum = "8f551603cfd6c46b2c41f159824a25fef9646bd6a9e7c757d122c1a54f178913"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1785,9 +1785,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-executors"
-version = "0.8.7-rc.35"
+version = "0.8.7-rc.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ece8b080f9e48133cbf95926afd3aaa4b3fde991b81a10817f3f8c1e6260c9b"
+checksum = "877324742bdbd9630b7f9b10aff5a9d8b8d489eb229fde5262fcf3c7f04f7ed0"
 dependencies = [
  "agent-client-protocol",
  "async-trait",
@@ -1838,9 +1838,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-local-deployment"
-version = "0.8.7-rc.35"
+version = "0.8.7-rc.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb344a6114d25e3e4b5a78aa571672652eb4457b1df2a4e53ce3718f49f313d9"
+checksum = "bcb34c1f9dca0e9b31961cae77968b793c997d78ad90879b2dc59661310118c5"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1879,9 +1879,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-server"
-version = "0.8.7-rc.35"
+version = "0.8.7-rc.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73897b423f2d863141322d911d5afa1f6044e5f670862c909e86d9b45ae19f72"
+checksum = "e9b368b3cceeae7b9b9143874353787b873aab861f0fd392e870532cfccb28ea"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1900,6 +1900,7 @@ dependencies = [
  "futures-util",
  "git2",
  "ignore",
+ "json-patch",
  "mime_guess",
  "nix 0.29.0",
  "octocrab",
@@ -1926,9 +1927,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-services"
-version = "0.8.7-rc.35"
+version = "0.8.7-rc.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e428d71a0aecb5c5e292f02836658fdc58d1df719628f38d78aeda1cd2cdbce"
+checksum = "22ce400b3184d3172846a155862d650dc80c4627a52bc7f309baf0cf901a290e"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1937,6 +1938,7 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "command-group",
+ "convert_case 0.6.0",
  "dashmap",
  "directories",
  "dirs 5.0.1",
@@ -1967,6 +1969,7 @@ dependencies = [
  "secrecy",
  "serde",
  "serde_json",
+ "serde_yaml_ng",
  "sha2",
  "sqlx",
  "strum",
@@ -1985,9 +1988,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-utils"
-version = "0.8.7-rc.35"
+version = "0.8.7-rc.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89e93afb446a00f5a820bb5936583a4868a80322c0ae433b6e214bc120e07aeb"
+checksum = "15701d27e23c3c6e84194db658770302371b3fb508d900f6037ebbbee7d066ea"
 dependencies = [
  "async-stream",
  "axum",
@@ -4959,6 +4962,19 @@ name = "serde_yaml"
 version = "0.9.34+deprecated"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a8b1a1a2ebf674015cc02edccce75287f1a0130d394307b36743c2f5d504b47"
+dependencies = [
+ "indexmap 2.12.1",
+ "itoa",
+ "ryu",
+ "serde",
+ "unsafe-libyaml",
+]
+
+[[package]]
+name = "serde_yaml_ng"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b4db627b98b36d4203a7b458cf3573730f2bb591b28871d916dfa9efabfd41f"
 dependencies = [
  "indexmap 2.12.1",
  "itoa",
