@@ -486,8 +486,6 @@ mod tests {
     use forge_core_utils::text::{git_branch_id, short_uuid};
     use uuid::Uuid;
 
-    use super::*;
-
     #[test]
     fn test_forge_branch_prefix_format() {
         // Test that branch names use "forge" prefix instead of "vk"
