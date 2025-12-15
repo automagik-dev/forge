@@ -295,7 +295,9 @@ async fn serve_static_file<T: RustEmbed>(path: &str) -> Response {
             let mut response = Response::new(content.data.into());
             let content_type = HeaderValue::from_str(mime.as_ref())
                 .unwrap_or_else(|_| HeaderValue::from_static("application/octet-stream"));
-            response.headers_mut().insert(header::CONTENT_TYPE, content_type);
+            response
+                .headers_mut()
+                .insert(header::CONTENT_TYPE, content_type);
             response
         }
         None => {

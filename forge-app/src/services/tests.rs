@@ -25,14 +25,12 @@ async fn setup_pool() -> SqlitePool {
 
 async fn insert_project(pool: &SqlitePool, project_id: Uuid) {
     let unique_path = format!("/tmp/test-project-{project_id}");
-    sqlx::query(
-        "INSERT INTO projects (id, name, git_repo_path) VALUES (?, 'Forge Project', ?)",
-    )
-    .bind(project_id)
-    .bind(unique_path)
-    .execute(pool)
-    .await
-    .expect("failed to insert project row");
+    sqlx::query("INSERT INTO projects (id, name, git_repo_path) VALUES (?, 'Forge Project', ?)")
+        .bind(project_id)
+        .bind(unique_path)
+        .execute(pool)
+        .await
+        .expect("failed to insert project row");
 }
 
 async fn insert_task_graph(pool: &SqlitePool, project_id: Uuid) -> (Uuid, Uuid) {
