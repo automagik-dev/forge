@@ -147,8 +147,8 @@ fn upstream_api_router(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     )
 }
 
-/// Build tasks router - uses forge-core's handlers with exclude_agents=true (default)
-/// Only overrides create-and-start for profile injection
+/// Build tasks router - uses forge-core's handlers that exclude agent tasks
+/// via the forge_agents table (kanban vs agent task separation)
 fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router<ForgeAppState> {
     use axum::middleware::from_fn_with_state;
     use forge_core_server::middleware::load_task_middleware;
@@ -163,7 +163,7 @@ fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router
         .layer(from_fn_with_state(deployment.clone(), load_task_middleware));
 
     let inner = Router::new()
-        // Use forge-core handlers - they support exclude_agents=true by default
+        // Use forge-core handlers - agent tasks filtered via forge_agents table
         .route("/", get(tasks::get_tasks).post(tasks::create_task))
         .route("/stream/ws", get(tasks::stream_tasks_ws))
         // forge-core now handles everything: profile injection + agent tracking + executor:variant
@@ -249,7 +249,7 @@ fn forge_config_router() -> Router<DeploymentImpl> {
 
     // Use upstream router and layer on increased body limit globally for config routes
     // This affects all config routes, but /profiles is the only one with large payloads
-    upstream_config::router().layer(DefaultBodyLimit::max(20 * 1024 * 1024)) // 20MB limit for 37 agent profiles
+    upstream_config::router().layer(DefaultBodyLimit::max(20 * 1024 * 1024)) // 20MB limit for large profile payloads
 }
 
 /// Build images router with forge override for increased body limit on uploads
@@ -293,10 +293,9 @@ async fn serve_static_file<T: RustEmbed>(path: &str) -> Response {
             let mime = mime_guess::from_path(path).first_or_octet_stream();
 
             let mut response = Response::new(content.data.into());
-            response.headers_mut().insert(
-                header::CONTENT_TYPE,
-                HeaderValue::from_str(mime.as_ref()).unwrap(),
-            );
+            let content_type = HeaderValue::from_str(mime.as_ref())
+                .unwrap_or_else(|_| HeaderValue::from_static("application/octet-stream"));
+            response.headers_mut().insert(header::CONTENT_TYPE, content_type);
             response
         }
         None => {
@@ -315,7 +314,7 @@ async fn health_check() -> Json<Value> {
         "status": "ok",
         "service": "forge-app",
         "version": crate::version::get_version(),
-        "message": "Forge application ready - backend extensions extracted successfully"
+        "message": "Forge application ready"
     }))
 }
 

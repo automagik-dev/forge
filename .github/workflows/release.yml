@@ -201,8 +201,8 @@ jobs:
 
           # Check if PAT_TOKEN is available
           if [ -z "$GH_TOKEN" ]; then
-            echo "⚠️ PAT_TOKEN not available, skipping forge-core sync"
-            echo "  Manual action required: create tag $TAG in forge-core"
+            echo "::warning::PAT_TOKEN not available - forge-core sync SKIPPED"
+            echo "::warning::Manual action required: create tag $TAG in forge-core repository"
             exit 0
           fi
 

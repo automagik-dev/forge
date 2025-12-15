@@ -48,10 +48,9 @@ codex-protocol = "0.63.0"
 codex-app-server-protocol = "0.63.0"
 codex-mcp-types = "0.63.0"
 
-# Pin zerocopy to version compatible with nightly-2025-05-18
+# Pin zerocopy to avoid compatibility issues with newer versions
+# Last verified with nightly-2025-12-04 toolchain
 [patch.crates-io]
-# zerocopy 0.8.31 (Nov 2025) uses stdarch_x86_avx512 which requires
-# Rust features not available in the May 2025 nightly toolchain
 zerocopy = { git = "https://github.com/google/zerocopy", tag = "v0.8.23" }
 
 

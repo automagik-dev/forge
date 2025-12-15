@@ -65,19 +65,36 @@ if grep -q '^forge-core-.*= { path' "$CONFIG_FILE" 2>/dev/null; then
 
     # Regenerate Cargo.lock with git dependencies
     rm -f Cargo.lock
-    if ! cargo fetch 2>/dev/null; then
-        echo -e "${YELLOW}⚠️  cargo fetch had warnings (this is usually OK)${NC}"
+    CARGO_OUTPUT=$(mktemp)
+    if ! cargo fetch 2>"$CARGO_OUTPUT"; then
+        echo -e "${RED}ERROR: cargo fetch failed to regenerate Cargo.lock${NC}"
+        cat "$CARGO_OUTPUT"
+        rm -f "$CARGO_OUTPUT"
+        exit 1
     fi
+    rm -f "$CARGO_OUTPUT"
 
     # Stage the config and lock file changes
-    git add "$CONFIG_FILE"
+    if ! git add "$CONFIG_FILE"; then
+        echo -e "${RED}ERROR: Failed to stage $CONFIG_FILE${NC}"
+        exit 1
+    fi
     if [ -f "Cargo.lock" ]; then
-        git add Cargo.lock
+        if ! git add Cargo.lock; then
+            echo -e "${RED}ERROR: Failed to stage Cargo.lock${NC}"
+            exit 1
+        fi
     fi
 
     # Amend the current commit with these changes
     echo -e "${CYAN}   Amending commit with config changes...${NC}"
-    git commit --amend --no-edit --no-verify
+    if ! git commit --amend --no-edit --no-verify; then
+        echo -e "${RED}ERROR: Failed to amend commit with config changes${NC}"
+        echo "Manual fix required:"
+        echo "  git add .cargo/config.toml Cargo.lock"
+        echo "  git commit --amend --no-edit"
+        exit 1
+    fi
 
     echo -e "${GREEN}✅ Patches disabled and commit amended${NC}"
 fi
