@@ -12,6 +12,7 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   NODE_VERSION: 22
+  PNPM_VERSION: 9.15.4
   CARGO_BUILD_JOBS: 6  # Limit parallelism for self-hosted runner
 
 jobs:

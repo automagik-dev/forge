@@ -13,6 +13,7 @@ concurrency:
 
 env:
   NODE_VERSION: 22
+  PNPM_VERSION: 9.15.4
 
 jobs:
   e2e:
