@@ -173,7 +173,6 @@ fn build_tasks_router_with_forge_override(deployment: &DeploymentImpl) -> Router
     Router::new().nest("/tasks", inner)
 }
 
-
 /// Build task_attempts router with forge override for create endpoint
 fn build_task_attempts_router_with_forge_override(
     deployment: &DeploymentImpl,
@@ -200,7 +199,10 @@ fn build_task_attempts_router_with_forge_override(
         )
         .route("/start-dev-server", post(task_attempts::start_dev_server))
         // Use forge-core's branch-status - already has remote_commits_behind/ahead
-        .route("/branch-status", get(task_attempts::get_task_attempt_branch_status))
+        .route(
+            "/branch-status",
+            get(task_attempts::get_task_attempt_branch_status),
+        )
         .route("/diff/ws", get(task_attempts::stream_task_attempt_diff_ws))
         .route("/merge", post(task_attempts::merge_task_attempt))
         .route("/push", post(task_attempts::push_task_attempt_branch))
@@ -481,9 +483,10 @@ async fn get_auth_required(State(state): State<ForgeAppState>) -> Json<Value> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use forge_core_utils::text::{git_branch_id, short_uuid};
     use uuid::Uuid;
+
+    use super::*;
 
     #[test]
     fn test_forge_branch_prefix_format() {

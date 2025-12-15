@@ -120,7 +120,10 @@ impl ForgeServices {
         workspace_root: &Path,
     ) -> Result<forge_core_executors::profile::ExecutorConfigs> {
         // Use the profile cache manager from deployment (with hot-reload)
-        self.deployment.profile_cache().get_profiles(workspace_root).await
+        self.deployment
+            .profile_cache()
+            .get_profiles(workspace_root)
+            .await
     }
 
     /// Ensure a project's executor profiles are available in the cache.

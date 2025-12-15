@@ -1,6 +1,7 @@
+use std::path::PathBuf;
+
 /// Quick test to verify project-prefixed profile names
 use forge_core_services::services::profile_loader::GenieProfileLoader;
-use std::path::PathBuf;
 
 #[tokio::main]
 async fn main() {
