@@ -72,6 +72,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # For workflow_call: checkout the version tag created by release.yml
+          # For tag push: checkout the pushed tag (github.ref)
+          # For workflow_dispatch: checkout the specified tag or default branch
+          ref: ${{ inputs.version && format('v{0}', inputs.version) || github.ref }}
 
       - name: Set zig suffix for cache key
         if: matrix.use-zigbuild
@@ -405,7 +410,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      
+        with:
+          # Checkout the correct version tag (same as build jobs)
+          ref: ${{ inputs.version && format('v{0}', inputs.version) || github.ref }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -525,11 +533,17 @@ jobs:
         id: pkg
         run: |
           NAME=$(node -e "console.log(require('./npx-cli/package.json').name)")
-          VER=$(node -e "console.log(require('./npx-cli/package.json').version)")
+          # Use inputs.version if available (from workflow_call), otherwise read from package.json
+          if [[ -n "${{ inputs.version }}" ]]; then
+            VER="${{ inputs.version }}"
+            echo "Using version from workflow input: $VER"
+          else
+            VER=$(node -e "console.log(require('./npx-cli/package.json').version)")
+            echo "Using version from package.json: $VER"
+          fi
           echo "name=$NAME" >> $GITHUB_OUTPUT
           echo "version=$VER" >> $GITHUB_OUTPUT
-          echo "Package: $NAME"
-          echo "Version: $VER"
+          echo "Package: $NAME@$VER"
 
       - name: Check if version already published
         id: check
