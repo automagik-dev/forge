@@ -6,7 +6,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.8.7-rc.38"
+version = "0.8.7-rc.39"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/namastexlabs/forge-core"
