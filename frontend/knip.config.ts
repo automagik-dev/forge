@@ -41,6 +41,13 @@ const config: KnipConfig = {
   // Export handling - allow re-exports in same file
   ignoreExportsUsedInFile: true,
 
+  // Ignore false positives - VirtualizedList.tsx uses these via lazy loading
+  // Knip can't trace the import graph for these files
+  ignoreIssues: {
+    'src/contexts/ApprovalFormContext.tsx': ['exports'],
+    'src/hooks/useConversationHistory.ts': ['exports'],
+  },
+
   // Granular rules - proper severity levels
   rules: {
     files: 'error', // Unused files = error (block CI)

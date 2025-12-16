@@ -1,4 +1,4 @@
-.PHONY: help dev dev-core dev-core-off ensure-cargo-config prod backend frontend ensure-frontend-stub build-frontend build test clean publish beta version npm check-cargo check-android-deps publish-automagik publish-automagik-quick service install update uninstall install-deps install-complete install-complete-no-pm2 setup-pm2 start-local stop-local restart-local service-status logs logs-follow health push-both pr-both
+.PHONY: help dev dev-core ensure-cargo-config prod backend frontend ensure-frontend-stub build-frontend build test clean publish beta version npm check-cargo check-android-deps publish-automagik publish-automagik-quick service install update uninstall install-deps install-complete install-complete-no-pm2 setup-pm2 start-local stop-local restart-local service-status logs logs-follow health push-both pr-both
 
 # Ensure bash is used for echo -e support
 SHELL := /bin/bash
@@ -104,8 +104,7 @@ help: ## 🔨 Show this help message
 	@echo ""
 	@echo -e "$(FONT_CYAN)🛠️  Development:$(FONT_RESET)"
 	@echo -e "  $(FONT_PURPLE)dev$(FONT_RESET)             Start dev environment (hot reload)"
-	@echo -e "  $(FONT_PURPLE)dev-core$(FONT_RESET)        Dev with local forge-core (for debugging)"
-	@echo -e "  $(FONT_PURPLE)dev-core-off$(FONT_RESET)    Switch back to git dependencies"
+	@echo -e "  $(FONT_PURPLE)dev-core$(FONT_RESET)        Dev with local forge-core (auto-disables on push)"
 	@echo -e "  $(FONT_PURPLE)prod$(FONT_RESET)            Build and test production package"
 	@echo -e "  $(FONT_PURPLE)forge$(FONT_RESET)           Alias for 'make prod'"
 	@echo -e "  $(FONT_PURPLE)backend$(FONT_RESET)         Backend only (use BP=port to override)"
@@ -815,25 +814,10 @@ dev-core: check-android-deps check-cargo ## Start dev with local forge-core
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) forge-core blocker hooks installed (pre-commit + pre-push)$(FONT_RESET)"
 	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using local forge-core at ./forge-core$(FONT_RESET)"
 	@echo ""
-	@echo -e "$(FONT_YELLOW)ℹ  Cargo [patch] auto-detects ./forge-core$(FONT_RESET)"
-	@echo -e "$(FONT_YELLOW)ℹ  Run 'make dev-core-off' to disable$(FONT_RESET)"
+	@echo -e "$(FONT_YELLOW)ℹ  Workflow: edit → commit → push (auto-disables patches)$(FONT_RESET)"
+	@echo -e "$(FONT_YELLOW)ℹ  Run 'make dev-core' again to re-enable patches$(FONT_RESET)"
 	@echo ""
 	@FORGE_WATCH_PATHS="forge-core/crates" bash scripts/dev/run-dev.sh
-
-dev-core-off: ## Disable local forge-core (use git deps)
-	@echo -e "$(FONT_CYAN)🔄 Disabling Cargo [patch] overrides...$(FONT_RESET)"
-	@# Comment out forge-core [patch] section ONLY (not crates-io patches)
-	@sed -i 's/^\[patch\."https:\/\/github.com\/namastexlabs\/forge-core.git"\]/# [patch."https:\/\/github.com\/namastexlabs\/forge-core.git"]/g' .cargo/config.toml
-	@sed -i 's/^forge-core-db = { path/# forge-core-db = { path/g' .cargo/config.toml
-	@sed -i 's/^forge-core-services = { path/# forge-core-services = { path/g' .cargo/config.toml
-	@sed -i 's/^forge-core-server = { path/# forge-core-server = { path/g' .cargo/config.toml
-	@sed -i 's/^forge-core-deployment = { path/# forge-core-deployment = { path/g' .cargo/config.toml
-	@sed -i 's/^forge-core-local-deployment = { path/# forge-core-local-deployment = { path/g' .cargo/config.toml
-	@sed -i 's/^forge-core-executors = { path/# forge-core-executors = { path/g' .cargo/config.toml
-	@sed -i 's/^forge-core-utils = { path/# forge-core-utils = { path/g' .cargo/config.toml
-	@rm -f Cargo.lock
-	@cargo fetch 2>/dev/null || true
-	@echo -e "$(FONT_GREEN)$(CHECKMARK) Using git dependencies$(FONT_RESET)"
 
 dev-core-status: ## Show dev-core mode status
 	@echo ""
@@ -846,10 +830,10 @@ dev-core-status: ## Show dev-core mode status
 			echo -e "$(FONT_RED)⚠️  WARNING: forge-core/ directory missing!$(FONT_RESET)"; \
 		fi; \
 	else \
-		echo -e "Mode:   $(FONT_CYAN)GIT$(FONT_RESET) (using tag from Cargo.toml)"; \
-		EXPECTED_TAG=$$(grep -oP 'tag\s*=\s*"\K[^"]+' forge-app/Cargo.toml 2>/dev/null | head -1); \
-		if [ -n "$$EXPECTED_TAG" ]; then \
-			echo -e "Tag:    $$EXPECTED_TAG"; \
+		echo -e "Mode:   $(FONT_CYAN)CRATES.IO$(FONT_RESET) (using published versions)"; \
+		FORGE_CORE_VERSION=$$(grep -oP '^forge-core-utils\s*=\s*"\K[^"]+' Cargo.toml 2>/dev/null | head -1); \
+		if [ -n "$$FORGE_CORE_VERSION" ]; then \
+			echo -e "Version: $$FORGE_CORE_VERSION"; \
 		fi; \
 	fi
 	@echo ""
@@ -920,7 +904,7 @@ status: ## Show comprehensive cross-repo status
 	@# Ready to push?
 	@echo ""; \
 	if grep -q '^\[patch\.' .cargo/config.toml 2>/dev/null; then \
-		echo -e "Ready to push:  $(FONT_RED)NO$(FONT_RESET) (run make dev-core-off first)"; \
+		echo -e "Ready to push:  $(FONT_YELLOW)HOOKS WILL AUTO-DISABLE$(FONT_RESET)"; \
 	elif [ -n "$$(git status --porcelain)" ] || ([ -d "forge-core" ] && [ -n "$$(cd forge-core && git status --porcelain)" ]); then \
 		echo -e "Ready to push:  $(FONT_YELLOW)MAYBE$(FONT_RESET) (uncommitted changes)"; \
 	else \
@@ -949,7 +933,7 @@ dev-help:
 	@echo "  make dev-core-check        Health check diagnostics"
 	@echo ""
 	@echo -e "$(FONT_CYAN)Before PRs:$(FONT_RESET)"
-	@echo "  make dev-core-off          Disable [patch], restore git deps"
+	@echo "  git push                   Pre-push hook auto-disables patches"
 	@echo "  make push-both             Push BOTH repos together"
 	@echo "  make pr-both               Create PRs in BOTH repos (with RC label)"
 	@echo ""
@@ -957,9 +941,8 @@ dev-help:
 	@echo "  1. make dev-core BRANCH=x  Sync both repos to same branch"
 	@echo "  2. Edit files in both repos as needed"
 	@echo "  3. git add . && git commit  Hooks auto-sync forge-core"
-	@echo "  4. make dev-core-off       Disable patches"
-	@echo "  5. make push-both          Push both repos"
-	@echo "  6. make pr-both            Create PRs in both repos"
+	@echo "  4. git push                 Pre-push hook auto-disables patches"
+	@echo "  5. make pr-both             Create PRs in both repos"
 	@echo ""
 	@echo -e "$(FONT_CYAN)Automation:$(FONT_RESET)"
 	@echo "  When your automagik-forge PR merges to dev:"
@@ -967,8 +950,8 @@ dev-help:
 	@echo "  - No manual interaction with forge-core repo needed"
 	@echo ""
 	@echo -e "$(FONT_CYAN)Safety:$(FONT_RESET)"
-	@echo "  - Pre-push hook blocks pushes if [patch] is active"
-	@echo "  - Run 'make dev-core-off' before pushing"
+	@echo "  - Pre-push hook automatically disables patches before push"
+	@echo "  - Commits forge-core first, then amends with patch removal"
 	@echo ""
 
 # =============================================================================
@@ -977,9 +960,9 @@ dev-help:
 
 push-both: ## Push both repos (automagik-forge + forge-core) together
 	@echo -e "$(FONT_CYAN)🚀 Pushing both repos...$(FONT_RESET)"
-	@# Safety: dev-core must be OFF
-	@if grep -q '^\[patch\."https://github.com/namastexlabs/forge-core' .cargo/config.toml 2>/dev/null; then \
-		echo -e "$(FONT_RED)❌ dev-core is ACTIVE - run 'make dev-core-off' first$(FONT_RESET)"; \
+	@# Safety: dev-core must be OFF (use git push to auto-disable via hook)
+	@if grep -q '^forge-core-.*= { path' .cargo/config.toml 2>/dev/null; then \
+		echo -e "$(FONT_RED)❌ dev-core is ACTIVE - use 'git push' (hook will auto-disable)$(FONT_RESET)"; \
 		exit 1; \
 	fi
 	@# Safety: automagik-forge must be clean
@@ -1008,8 +991,8 @@ push-both: ## Push both repos (automagik-forge + forge-core) together
 pr-both: ## Create PRs in both repos (linked)
 	@echo -e "$(FONT_CYAN)📝 Creating PRs in both repos...$(FONT_RESET)"
 	@# Safety checks
-	@if grep -q '^\[patch\."https://github.com/namastexlabs/forge-core' .cargo/config.toml 2>/dev/null; then \
-		echo -e "$(FONT_RED)❌ dev-core is ACTIVE - run 'make dev-core-off' first$(FONT_RESET)"; \
+	@if grep -q '^forge-core-.*= { path' .cargo/config.toml 2>/dev/null; then \
+		echo -e "$(FONT_RED)❌ dev-core is ACTIVE - use 'git push' (hook will auto-disable)$(FONT_RESET)"; \
 		exit 1; \
 	fi
 	@# Get branch name
@@ -1111,20 +1094,9 @@ clean:
 	@cargo clean
 	@echo "✅ Clean complete"
 
-# Complete release pipeline: version bump + build + publish + release notes
-publish:
-	@echo "🚀 Complete Release Pipeline"
-	@echo "This will:"
-	@echo "  1. Let you choose version bump type (patch/minor/major)"
-	@echo "  2. Trigger GitHub Actions to bump version and build all platforms"
-	@echo "  3. Generate AI-powered release notes with Genie (semantic analysis)"
-	@echo "  4. Create GitHub release and publish to npm"
-	@echo ""
-	@./gh-build.sh publish
-
-# Beta release with auto-incremented version
-beta:
-	@./gh-build.sh beta
+# Release pipeline moved to GitHub Actions
+# Use GitHub Actions UI to trigger releases:
+#   https://github.com/automagik-dev/forge/actions
 
 # Version info
 version:
@@ -1133,8 +1105,7 @@ version:
 	@echo "  Frontend:     $$(grep '"version"' frontend/package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')"
 	@echo "  NPX CLI:      $$(grep '"version"' npx-cli/package.json | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')"
 	@echo "  Forge App:    $$(grep 'version =' forge-app/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
-	@echo "  Forge Omni:   $$(grep 'version =' forge-extensions/omni/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
-	@echo "  Forge Config: $$(grep 'version =' forge-extensions/config/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
+	@echo "  Forge Core:   $$(grep 'version =' forge-core/crates/services/Cargo.toml | head -1 | sed 's/.*version = "\([^"]*\)".*/\1/')"
 
 # Manual NPM publish from downloaded artifacts (when automated publish fails)
 npm:

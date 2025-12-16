@@ -1,15 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
-    # Forge extension crates
-    "forge-extensions/config",
-    "forge-extensions/omni",
-    # Forge app
+    # Forge app (omni and forge_config now in forge-core-services)
     "forge-app",
 ]
 
 [workspace.package]
-version = "0.8.7-rc.24"
+version = "0.8.7-rc.38"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/namastexlabs/forge-core"
@@ -33,34 +30,27 @@ openssl-sys = { version = "0.9", features = ["vendored"] }
 ts-rs-forge = { version = "11.0.1", features = ["uuid-impl", "chrono-impl", "no-serde-warnings", "serde-json-impl"] }
 schemars = { version = "1.0.4", features = ["derive", "chrono04", "uuid1", "preserve_order"] }
 
-# forge-core workspace dependencies (required for dev-core mode)
+# forge-core workspace dependencies
 rmcp = { version = "0.10.0" }
 
-# Internal forge-core crates (for workspace inheritance in dev-core mode)
-forge-core-utils = { path = "forge-core/crates/utils" }
-forge-core-executors = { path = "forge-core/crates/executors" }
-forge-core-db = { path = "forge-core/crates/db" }
-forge-core-services = { path = "forge-core/crates/services" }
-forge-core-deployment = { path = "forge-core/crates/deployment" }
-forge-core-local-deployment = { path = "forge-core/crates/local-deployment" }
-forge-core-server = { path = "forge-core/crates/server" }
+# forge-core crates from crates.io (production/CI mode)
+# Use `make dev-core` to switch to local paths for development
+forge-core-utils = "0.8.7-rc.39"
+forge-core-executors = "0.8.7-rc.39"
+forge-core-db = "0.8.7-rc.39"
+forge-core-services = "0.8.7-rc.39"
+forge-core-deployment = "0.8.7-rc.39"
+forge-core-local-deployment = "0.8.7-rc.39"
+forge-core-server = "0.8.7-rc.39"
 
-# Codex dependencies from namastexlabs fork (patched via .cargo/config.toml)
+# Codex dependencies from crates.io
 codex-protocol = "0.63.0"
 codex-app-server-protocol = "0.63.0"
-mcp-types = "0.63.0"
+codex-mcp-types = "0.63.0"
 
-# Redirect crates.io dependencies to our forks
-# This is required because these packages don't exist on crates.io
+# Pin zerocopy to avoid compatibility issues with newer versions
+# Last verified with nightly-2025-12-04 toolchain
 [patch.crates-io]
-# Codex dependencies from namastexlabs fork (schemars 1.0.4 patch)
-codex-protocol = { git = "https://github.com/namastexlabs/codex", branch = "main", package = "codex-protocol" }
-codex-app-server-protocol = { git = "https://github.com/namastexlabs/codex", branch = "main", package = "codex-app-server-protocol" }
-mcp-types = { git = "https://github.com/namastexlabs/codex", branch = "main", package = "mcp-types" }
-
-# Pin zerocopy to version compatible with nightly-2025-05-18
-# zerocopy 0.8.31 (Nov 2025) uses stdarch_x86_avx512 which requires
-# Rust features not available in the May 2025 nightly toolchain
 zerocopy = { git = "https://github.com/google/zerocopy", tag = "v0.8.23" }
 
 

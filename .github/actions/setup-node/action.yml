@@ -10,10 +10,16 @@ runs:
         node-version: ${{ env.NODE_VERSION }}
         registry-url: 'https://registry.npmjs.org'
 
+    - name: Clean pnpm cache (self-hosted runner fix)
+      shell: bash
+      run: |
+        rm -rf ~/setup-pnpm $HOME/setup-pnpm 2>/dev/null || true
+
     - name: Setup pnpm
       uses: pnpm/action-setup@v4
       with:
-        version: ${{ env.PNPM_VERSION }}
+        standalone: true
+        dest: ~/setup-pnpm
 
     - name: Get pnpm store directory
       shell: bash
