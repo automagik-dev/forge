@@ -67,11 +67,29 @@ jobs:
 
           echo "✅ Updated workspace dependencies in Cargo.toml"
 
+      - name: Sync all versions (npm + Cargo workspace)
+        run: |
+          NEW_VERSION="${{ steps.version.outputs.version }}"
+
+          echo "📝 Syncing ALL versions to ${NEW_VERSION}..."
+
+          # Update npm package.json files
+          for file in package.json npx-cli/package.json frontend/package.json; do
+            if [ -f "$file" ]; then
+              sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW_VERSION\"/" "$file"
+              echo "✅ Updated $file to $NEW_VERSION"
+            fi
+          done
+
+          # Update Cargo.toml workspace version
+          sed -i "s/^version = \"[^\"]*\"/version = \"$NEW_VERSION\"/" Cargo.toml
+          echo "✅ Updated Cargo.toml workspace version to $NEW_VERSION"
+
           echo ""
           echo "📋 Changes made:"
           git diff --stat
           echo ""
-          git diff Cargo.toml
+          git diff
 
       - name: Configure git
         run: |
@@ -106,11 +124,20 @@ jobs:
         run: |
           NEW_VERSION="${{ steps.version.outputs.version }}"
 
-          git add Cargo.toml Cargo.lock
-          git commit -m "chore: update forge-core to v${NEW_VERSION}"
+          # Stage all version-related files
+          git add Cargo.toml Cargo.lock package.json npx-cli/package.json frontend/package.json
+
+          # Verify all versions are in sync before committing
+          if [ -f "./scripts/check-versions.sh" ]; then
+            chmod +x ./scripts/check-versions.sh
+            ./scripts/check-versions.sh || { echo "❌ Version mismatch detected after sync"; exit 1; }
+            echo "✅ All versions verified in sync"
+          fi
+
+          git commit -m "chore: sync all versions to v${NEW_VERSION}"
           git push origin HEAD
 
-          echo "✅ Pushed forge-core update to branch"
+          echo "✅ Pushed version sync to branch"
 
       - name: Create PR with labels
         env:
@@ -119,17 +146,22 @@ jobs:
           NEW_VERSION="${{ steps.version.outputs.version }}"
 
           gh pr create \
-            --title "chore: update forge-core to v${NEW_VERSION}" \
-            --body "Auto-update forge-core workspace dependencies after successful crates.io publish.
+            --title "chore: sync all versions to v${NEW_VERSION}" \
+            --body "Auto-sync ALL versions after forge-core publishes to crates.io.
 
-          **Forge-core version**: ${NEW_VERSION}
+          **Version**: ${NEW_VERSION}
           **Triggered by**: forge-core publish-crates.yml workflow
 
           This PR will be auto-merged after checks pass.
 
           ### Changes
-          - Updated all 7 forge-core workspace dependencies to \`${NEW_VERSION}\`
-          - Regenerated Cargo.lock" \
+          - ✅ Cargo.toml workspace dependencies (7 forge-core crates)
+          - ✅ Cargo.toml workspace version
+          - ✅ package.json (root)
+          - ✅ npx-cli/package.json
+          - ✅ frontend/package.json
+          - ✅ Cargo.lock regenerated
+          - ✅ Version consistency verified via check-versions.sh" \
             --base dev \
             --head chore/update-forge-core-v${NEW_VERSION} \
             --label "rc" \
@@ -139,14 +171,17 @@ jobs:
 
       - name: Create summary
         run: |
-          echo "## 🔄 forge-core Sync PR Created" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔄 Full Version Sync PR Created" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **New Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: chore/update-forge-core-v${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Base**: dev" >> $GITHUB_STEP_SUMMARY
           echo "- **Labels**: rc, dependencies" >> $GITHUB_STEP_SUMMARY
           echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Files Updated" >> $GITHUB_STEP_SUMMARY
-          echo "- Cargo.toml (7 workspace dependencies)" >> $GITHUB_STEP_SUMMARY
+          echo "- Cargo.toml (workspace version + 7 dependencies)" >> $GITHUB_STEP_SUMMARY
           echo "- Cargo.lock" >> $GITHUB_STEP_SUMMARY
+          echo "- package.json" >> $GITHUB_STEP_SUMMARY
+          echo "- npx-cli/package.json" >> $GITHUB_STEP_SUMMARY
+          echo "- frontend/package.json" >> $GITHUB_STEP_SUMMARY
