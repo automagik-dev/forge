@@ -27,6 +27,8 @@ jobs:
           rm -f .git/index.lock 2>/dev/null || true
           # Clean pnpm setup directory (self-hosted runner cruft)
           rm -rf ~/setup-pnpm 2>/dev/null || true
+          # Kill any leftover processes on test port (8887 backend serves frontend in CI)
+          fuser -k 8887/tcp 2>/dev/null || true
 
       - uses: actions/checkout@v4
 
