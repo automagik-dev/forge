@@ -35,13 +35,13 @@ rmcp = { version = "0.10.0" }
 
 # forge-core crates from crates.io (production/CI mode)
 # Use `make dev-core` to switch to local paths for development
-forge-core-utils = "0.8.7-rc.38"
-forge-core-executors = "0.8.7-rc.38"
-forge-core-db = "0.8.7-rc.38"
-forge-core-services = "0.8.7-rc.38"
-forge-core-deployment = "0.8.7-rc.38"
-forge-core-local-deployment = "0.8.7-rc.38"
-forge-core-server = "0.8.7-rc.38"
+forge-core-utils = "0.8.7-rc.39"
+forge-core-executors = "0.8.7-rc.39"
+forge-core-db = "0.8.7-rc.39"
+forge-core-services = "0.8.7-rc.39"
+forge-core-deployment = "0.8.7-rc.39"
+forge-core-local-deployment = "0.8.7-rc.39"
+forge-core-server = "0.8.7-rc.39"
 
 # Codex dependencies from crates.io
 codex-protocol = "0.63.0"

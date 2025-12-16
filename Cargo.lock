@@ -1735,9 +1735,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-db"
-version = "0.8.7-rc.38"
+version = "0.8.7-rc.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f72a32b239a1d4f20b7c5fa2c41e385dec11192c282f49a1080064d5f22aa824"
+checksum = "e5b8ced0000b9d3ab6e9b7fe747004a3e465562c28518d195c2b47eaaa1fcdb6"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1763,9 +1763,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-deployment"
-version = "0.8.7-rc.38"
+version = "0.8.7-rc.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f551603cfd6c46b2c41f159824a25fef9646bd6a9e7c757d122c1a54f178913"
+checksum = "2bb0d78357ae5caf3dc8db2d04f16eca62b6e295d9c2ed41615a9a123b85d1a7"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1785,9 +1785,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-executors"
-version = "0.8.7-rc.38"
+version = "0.8.7-rc.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "877324742bdbd9630b7f9b10aff5a9d8b8d489eb229fde5262fcf3c7f04f7ed0"
+checksum = "f951bb1c309f9fa01b75973fff45b8ab0de7ee89fdd1dfc540646c693bfc3e7f"
 dependencies = [
  "agent-client-protocol",
  "async-trait",
@@ -1838,9 +1838,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-local-deployment"
-version = "0.8.7-rc.38"
+version = "0.8.7-rc.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcb34c1f9dca0e9b31961cae77968b793c997d78ad90879b2dc59661310118c5"
+checksum = "3f976493d013778b091e35c68affc29ee988fb440e3ed0a7c53ffc43d13ecaa9"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -1879,9 +1879,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-server"
-version = "0.8.7-rc.38"
+version = "0.8.7-rc.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9b368b3cceeae7b9b9143874353787b873aab861f0fd392e870532cfccb28ea"
+checksum = "2e7fefbdd2951be9f2f8e482d4187db6fc464ebaabdb83088fae09a71a35110d"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1927,9 +1927,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-services"
-version = "0.8.7-rc.38"
+version = "0.8.7-rc.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22ce400b3184d3172846a155862d650dc80c4627a52bc7f309baf0cf901a290e"
+checksum = "52d1537db353d95d0e96737d30a02dcddb618a53b01eaf48503726051d3019a5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1988,9 +1988,9 @@ dependencies = [
 
 [[package]]
 name = "forge-core-utils"
-version = "0.8.7-rc.38"
+version = "0.8.7-rc.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15701d27e23c3c6e84194db658770302371b3fb508d900f6037ebbbee7d066ea"
+checksum = "57f96187a2a0801b9683c8113cf7e1ae43a13f17317033bdc93c2226877f43e7"
 dependencies = [
  "async-stream",
  "axum",
