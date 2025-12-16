@@ -32,15 +32,7 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
-          restore-keys: cargo-${{ runner.os }}-
+      # Note: No cargo cache needed - self-hosted runner persists ~/.cargo and target/
 
       - name: Setup Node
         uses: ./.github/actions/setup-node
