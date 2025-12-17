@@ -1,6 +1,6 @@
 {
   "name": "@automagik/forge",
-  "version": "0.8.7-rc.31",
+  "version": "0.8.7-rc.39",
   "description": "The Vibe Coding++™ platform for human-AI development. Kanban board for AI agents with git worktree isolation.",
   "keywords": [
     "ai",
@@ -53,7 +53,7 @@
     "backend:lint": "cargo clippy --workspace --all-targets --all-features -- -D warnings",
     "backend:dev": "bash -c 'BACKEND_PORT=${BACKEND_PORT:-$(node scripts/setup-dev-environment.js backend)} npm run backend:dev:watch'",
     "backend:check": "cargo check",
-    "backend:dev:watch": "dotenv -e .env -- bash -c 'DISABLE_BROWSER_OPEN=1 DISABLE_WORKTREE_ORPHAN_CLEANUP=1 RUST_LOG=debug cargo watch -w forge-app/src -w forge-extensions -x \"run --bin forge-app\"'",
+    "backend:dev:watch": "dotenv -e .env -- bash -c 'DISABLE_BROWSER_OPEN=1 DISABLE_WORKTREE_ORPHAN_CLEANUP=1 RUST_LOG=debug cargo watch -w forge-app/src -x \"run --bin forge-app\"'",
     "generate-types": "cargo run --bin generate-forge-types",
     "generate-types:check": "cargo run --bin generate-forge-types -- --check",
     "prepare-db": "node scripts/prepare-db.js",

@@ -11,8 +11,6 @@
  *   - npx-cli/package.json
  *   - frontend/package.json
  *   - forge-app/Cargo.toml
- *   - forge-extensions/omni/Cargo.toml
- *   - forge-extensions/config/Cargo.toml
  */
 
 const fs = require('fs');
@@ -113,8 +111,6 @@ function main() {
     // Cargo.toml files
     console.log('\nCargo.toml files:');
     if (updateCargoVersion(path.join(ROOT, 'forge-app/Cargo.toml'), version)) updated++;
-    if (updateCargoVersion(path.join(ROOT, 'forge-extensions/omni/Cargo.toml'), version)) updated++;
-    if (updateCargoVersion(path.join(ROOT, 'forge-extensions/config/Cargo.toml'), version)) updated++;
 
     // Summary
     console.log(`\n✅ Versions synced to ${version}`);

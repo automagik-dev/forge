@@ -25,18 +25,14 @@ jobs:
         run: |
           rm -rf "$GITHUB_WORKSPACE"/* "$GITHUB_WORKSPACE"/.[!.]* 2>/dev/null || true
           rm -f .git/index.lock 2>/dev/null || true
+          # Clean pnpm setup directory (self-hosted runner cruft)
+          rm -rf ~/setup-pnpm 2>/dev/null || true
+          # Kill any leftover processes on test port (8887 backend serves frontend in CI)
+          fuser -k 8887/tcp 2>/dev/null || true
 
       - uses: actions/checkout@v4
 
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
-          restore-keys: cargo-${{ runner.os }}-
+      # Note: No cargo cache needed - self-hosted runner persists ~/.cargo and target/
 
       - name: Setup Node
         uses: ./.github/actions/setup-node

@@ -1,15 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
-    # Forge extension crates
-    "forge-extensions/config",
-    "forge-extensions/omni",
-    # Forge app
+    # Forge app (omni and forge_config now in forge-core-services)
     "forge-app",
 ]
 
 [workspace.package]
-version = "0.8.7-rc.31"
+version = "0.8.7-rc.39"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/namastexlabs/forge-core"
@@ -38,23 +35,22 @@ rmcp = { version = "0.10.0" }
 
 # forge-core crates from crates.io (production/CI mode)
 # Use `make dev-core` to switch to local paths for development
-forge-core-utils = "0.8.7-rc.30"
-forge-core-executors = "0.8.7-rc.30"
-forge-core-db = "0.8.7-rc.30"
-forge-core-services = "0.8.7-rc.30"
-forge-core-deployment = "0.8.7-rc.30"
-forge-core-local-deployment = "0.8.7-rc.30"
-forge-core-server = "0.8.7-rc.30"
+forge-core-utils = "0.8.7-rc.39"
+forge-core-executors = "0.8.7-rc.39"
+forge-core-db = "0.8.7-rc.39"
+forge-core-services = "0.8.7-rc.39"
+forge-core-deployment = "0.8.7-rc.39"
+forge-core-local-deployment = "0.8.7-rc.39"
+forge-core-server = "0.8.7-rc.39"
 
 # Codex dependencies from crates.io
 codex-protocol = "0.63.0"
 codex-app-server-protocol = "0.63.0"
 codex-mcp-types = "0.63.0"
 
-# Pin zerocopy to version compatible with nightly-2025-05-18
+# Pin zerocopy to avoid compatibility issues with newer versions
+# Last verified with nightly-2025-12-04 toolchain
 [patch.crates-io]
-# zerocopy 0.8.31 (Nov 2025) uses stdarch_x86_avx512 which requires
-# Rust features not available in the May 2025 nightly toolchain
 zerocopy = { git = "https://github.com/google/zerocopy", tag = "v0.8.23" }
 
 

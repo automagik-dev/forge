@@ -23,7 +23,7 @@ async fn main() {
     println!();
 
     // Initialize forge services
-    match forge_app_lib::forge_core_services::ForgeServices::new().await {
+    match forge_app_lib::services::ForgeServices::new().await {
         Ok(services) => {
             println!("✅ Forge services initialized");
             println!();

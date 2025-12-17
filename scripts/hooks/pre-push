@@ -1,6 +1,11 @@
 #!/bin/bash
 # Pre-push hook for automagik-forge
-# BLOCKS push if dev-core mode is active (Cargo [patch] uncommented)
+# FULLY AUTOMATIC dual-repo push:
+# 1. Push forge-core first (if exists with unpushed commits)
+# 2. Auto-disable patches (if active)
+# 3. Amend commit with Cargo.lock changes
+# 4. Allow forge push
+#
 # Installed by: make dev-core
 # To bypass: git push --no-verify (not recommended)
 
@@ -12,39 +17,96 @@ GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-DEV_CORE_ACTIVE=false
+FORGE_CORE_DIR="forge-core"
+CONFIG_FILE=".cargo/config.toml"
 
-# Check .cargo/config.toml for ACTIVE forge-core [patch] section ONLY
-# We only block on forge-core patches, not crates-io patches (codex fork)
-# Pattern: line starts with [patch."https://github.com/namastexlabs/forge-core
-if [ -f ".cargo/config.toml" ]; then
-    if grep -q '^\[patch\."https://github.com/namastexlabs/forge-core' .cargo/config.toml 2>/dev/null; then
-        DEV_CORE_ACTIVE=true
+# === Step 1: Push forge-core first if it has unpushed commits ===
+if [ -d "$FORGE_CORE_DIR/.git" ]; then
+    ORIG_DIR=$(pwd)
+    cd "$FORGE_CORE_DIR"
+    BRANCH=$(git branch --show-current)
+
+    # Check if remote tracking branch exists
+    if git rev-parse --verify "origin/$BRANCH" >/dev/null 2>&1; then
+        # Compare with remote
+        UNPUSHED=$(git log "origin/$BRANCH..HEAD" --oneline 2>/dev/null | wc -l)
+    else
+        # No remote tracking - all commits are "unpushed"
+        UNPUSHED=$(git log --oneline 2>/dev/null | wc -l)
     fi
+
+    if [ "$UNPUSHED" -gt 0 ]; then
+        echo ""
+        echo -e "${CYAN}📤 Pushing forge-core first ($UNPUSHED commit(s) ahead)...${NC}"
+        if git push --no-verify -u origin "$BRANCH" 2>&1; then
+            echo -e "${GREEN}✅ forge-core pushed${NC}"
+        else
+            echo -e "${RED}❌ Failed to push forge-core${NC}"
+            cd "$ORIG_DIR"
+            exit 1
+        fi
+    fi
+    cd "$ORIG_DIR"
 fi
 
-if [ "$DEV_CORE_ACTIVE" = "true" ]; then
+# === Step 2: Auto-disable patches if active ===
+# Check for active (uncommented) [patch.crates-io] section with forge-core paths
+if grep -q '^forge-core-.*= { path' "$CONFIG_FILE" 2>/dev/null; then
     echo ""
-    echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${RED}║  🛑 PUSH BLOCKED: dev-core mode is ACTIVE                   ║${NC}"
-    echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${CYAN}🔄 Auto-disabling Cargo patches...${NC}"
+
+    # Comment out the [patch.crates-io] section header
+    sed -i 's/^\[patch\.crates-io\]/# [patch.crates-io]/g' "$CONFIG_FILE"
+
+    # Comment out all forge-core path entries
+    sed -i 's/^forge-core-\(.*\) = { path/# forge-core-\1 = { path/g' "$CONFIG_FILE"
+
+    echo -e "${CYAN}   Regenerating Cargo.lock...${NC}"
+
+    # Regenerate Cargo.lock with git dependencies
+    rm -f Cargo.lock
+    CARGO_OUTPUT=$(mktemp)
+    if ! cargo fetch 2>"$CARGO_OUTPUT"; then
+        echo -e "${RED}ERROR: cargo fetch failed to regenerate Cargo.lock${NC}"
+        cat "$CARGO_OUTPUT"
+        rm -f "$CARGO_OUTPUT"
+        exit 1
+    fi
+    rm -f "$CARGO_OUTPUT"
+
+    # Stage the config and lock file changes
+    if ! git add "$CONFIG_FILE"; then
+        echo -e "${RED}ERROR: Failed to stage $CONFIG_FILE${NC}"
+        exit 1
+    fi
+    if [ -f "Cargo.lock" ]; then
+        if ! git add Cargo.lock; then
+            echo -e "${RED}ERROR: Failed to stage Cargo.lock${NC}"
+            exit 1
+        fi
+    fi
+
+    # Amend the current commit with these changes
+    echo -e "${CYAN}   Amending commit with config changes...${NC}"
+    if ! git commit --amend --no-edit --no-verify; then
+        echo -e "${RED}ERROR: Failed to amend commit with config changes${NC}"
+        echo "Manual fix required:"
+        echo "  git add .cargo/config.toml Cargo.lock"
+        echo "  git commit --amend --no-edit"
+        exit 1
+    fi
+
+    echo -e "${GREEN}✅ Patches disabled and commit amended${NC}"
+fi
+
+# === Step 3: Final check - patches should be disabled now ===
+if grep -q '^forge-core-.*= { path' "$CONFIG_FILE" 2>/dev/null; then
     echo ""
-    echo -e "Your workspace is configured to use local forge-core paths."
-    echo -e "Pushing this will break CI/CD and anyone who pulls your branch."
-    echo ""
-    echo -e "${CYAN}To fix this:${NC}"
-    echo -e "  1. ${GREEN}make dev-core-off${NC}    # Restore git dependencies"
-    echo -e "  2. ${GREEN}make build${NC}          # Verify it compiles"
-    echo -e "  3. ${GREEN}git push${NC}            # Try again"
-    echo ""
-    echo -e "${YELLOW}Detection:${NC}"
-    echo "  .cargo/config.toml has active [patch] section"
-    echo ""
-    echo -e "${YELLOW}If you really need to push with dev-core on:${NC}"
-    echo -e "  git push --no-verify (not recommended)"
-    echo ""
+    echo -e "${RED}❌ ERROR: Patches are still active after auto-disable attempt${NC}"
+    echo -e "   This is a bug - please report it. Manual fix: edit .cargo/config.toml"
     exit 1
 fi
 
-echo -e "${GREEN}✅ Pre-push check passed (dev-core mode is OFF)${NC}"
+echo ""
+echo -e "${GREEN}✅ Pre-push checks passed${NC}"
 exit 0

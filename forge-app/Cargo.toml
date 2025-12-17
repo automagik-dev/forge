@@ -58,21 +58,12 @@ forge-core-local-deployment = { workspace = true }
 forge-core-executors = { workspace = true }
 forge-core-utils = { workspace = true }
 
-# Forge extensions
-forge-omni = { path = "../forge-extensions/omni" }
-forge-config = { path = "../forge-extensions/config" }
-
-# Android JNI
-jni = { version = "0.21", optional = true }
-android_logger = { version = "0.14", optional = true }
-log = "0.4"
+# Forge extensions are now in forge-core-services
+# (omni and forge_config modules)
 
 # Force vendored OpenSSL for cross-compilation (Windows, Linux ARM64)
 # This enables feature unification across all transitive dependencies
 openssl = { version = "0.10", features = ["vendored"] }
-
-[features]
-android = ["jni", "android_logger"]
 
 [dev-dependencies]
 httpmock = "0.7"
