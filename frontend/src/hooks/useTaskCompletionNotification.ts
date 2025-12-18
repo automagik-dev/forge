@@ -5,43 +5,39 @@ import { useUserSystem } from '@/components/config-provider';
 /**
  * Hook to play notification sound when a task execution process completes
  * Monitors execution processes and plays the configured sound when status changes to completed/failed/killed
+ *
+ * Uses a Set to track which process IDs have already triggered notification,
+ * preventing duplicate sounds from re-renders or array re-creation.
  */
 export function useTaskCompletionNotification(
   executionProcesses: ExecutionProcess[]
 ) {
   const { config } = useUserSystem();
-  const previousProcessesRef = useRef<Map<string, string>>(new Map());
+  // Track which process IDs have already played notification sound
+  // This prevents duplicates from re-renders, React Strict Mode, or array re-creation
+  const notifiedProcessIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!config?.notifications.sound_enabled) {
       return;
     }
 
-    const currentProcesses = new Map<string, string>();
-
-    // Build current state and detect completions
     executionProcesses.forEach((process) => {
-      const prevStatus = previousProcessesRef.current.get(process.id);
-      const currentStatus = process.status;
-
-      currentProcesses.set(process.id, currentStatus);
-
-      // Check if process just completed (status changed from running to completed/failed/killed)
-      const wasRunning = prevStatus === 'running';
       const isCompleted =
-        currentStatus === 'completed' ||
-        currentStatus === 'failed' ||
-        currentStatus === 'killed';
+        process.status === 'completed' ||
+        process.status === 'failed' ||
+        process.status === 'killed';
 
-      if (wasRunning && isCompleted && process.run_reason === 'codingagent') {
-        // Task execution completed, play notification sound
-        // Use full volume - users can adjust system/browser volume
+      // Only notify once per process ID when it reaches a completed state
+      if (
+        isCompleted &&
+        process.run_reason === 'codingagent' &&
+        !notifiedProcessIdsRef.current.has(process.id)
+      ) {
+        notifiedProcessIdsRef.current.add(process.id);
         playNotificationSound(config.notifications.sound_file, 1.0);
       }
     });
-
-    // Update ref for next comparison
-    previousProcessesRef.current = currentProcesses;
   }, [executionProcesses, config]);
 }
 

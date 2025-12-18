@@ -43,7 +43,6 @@ export function useDraftQueue({
     } finally {
       // presentation-only state handled by caller
     }
-    return false;
   }, [
     attemptId,
     draft?.variant,
@@ -62,7 +61,6 @@ export function useDraftQueue({
     } finally {
       // presentation-only state handled by caller
     }
-    return false;
   }, [attemptId]);
 
   return { onQueue, onUnqueue } as const;

@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Platform } from '@/lib/platform';
 import { useDrag } from '@use-gesture/react';
-import { animated, useSpring } from 'react-spring';
+import { animated, useSpring } from '@react-spring/web';
 import { H2 } from '@/components/ui/typography';
 
 export interface BottomSheetProps {

@@ -98,7 +98,6 @@ export function ProviderIcon({
     case 'QWEN_CODE':
       // Use Bot icon for Qwen
       return <Bot className={className} />;
-      break;
     case 'AMP':
     case 'OPENCODE':
       // Use Bot icon for providers without specific logos
