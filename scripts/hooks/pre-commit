@@ -3,7 +3,9 @@
 # AUTO-SYNCS forge-core changes when dev-core mode is active
 # Installed by: make dev-core
 #
-# This hook stages any forge-core changes for sync.
+# This hook:
+# 1. Runs CI checks (fmt, clippy, test) on forge-core changes
+# 2. Stages any forge-core changes for sync
 # The actual commit happens in prepare-commit-msg hook.
 
 set -e
@@ -27,14 +29,42 @@ cd "$FORGE_CORE_DIR"
 
 HAS_CHANGES=$(git status --porcelain 2>/dev/null)
 
+if [ -n "$HAS_CHANGES" ]; then
+    echo -e "${CYAN}🔍 Running CI checks on forge-core...${NC}"
+
+    # Run cargo fmt check
+    echo -e "   ${CYAN}cargo fmt --all -- --check${NC}"
+    if ! cargo fmt --all -- --check; then
+        echo -e "${RED}❌ Formatting check failed. Run 'cargo fmt --all' to fix.${NC}"
+        exit 1
+    fi
+    echo -e "   ${GREEN}✓ Format OK${NC}"
+
+    # Run cargo clippy
+    echo -e "   ${CYAN}cargo clippy --all --all-targets -- -D warnings${NC}"
+    if ! cargo clippy --all --all-targets -- -D warnings 2>&1; then
+        echo -e "${RED}❌ Clippy check failed. Fix the warnings above.${NC}"
+        exit 1
+    fi
+    echo -e "   ${GREEN}✓ Clippy OK${NC}"
+
+    # Run cargo test
+    echo -e "   ${CYAN}cargo test --workspace${NC}"
+    if ! cargo test --workspace 2>&1; then
+        echo -e "${RED}❌ Tests failed. Fix the failing tests above.${NC}"
+        exit 1
+    fi
+    echo -e "   ${GREEN}✓ Tests OK${NC}"
+
+    echo -e "${GREEN}✅ All CI checks passed${NC}"
+
+    # Stage all forge-core changes
+    git add -A
+fi
+
 cd ..
 
 if [ -n "$HAS_CHANGES" ]; then
-    # Stage all forge-core changes
-    cd "$FORGE_CORE_DIR"
-    git add -A
-    cd ..
-
     # Mark that we need to sync (commit happens in prepare-commit-msg)
     touch "$SYNC_MARKER"
 
