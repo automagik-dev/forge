@@ -521,3 +521,5 @@ MIT License - see [LICENSE](LICENSE) file for details.
   <em>AI that elevates human potential, not replaces it</em>
 </p>
 <a href="https://deepwiki.com/namastexlabs/automagik-forge"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+ 
+ 
