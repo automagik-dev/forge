@@ -373,62 +373,38 @@ export function TaskFollowUpSection({
   // Profile/variant derived from processes only (see useDefaultVariant)
 
   // Separate logic for when textarea should be disabled vs when send button should be disabled
+  // Extract primitive value from branchStatus to avoid reference comparison issues
+  const hasMergedPR = branchStatus?.merges?.some(
+    (m) => m.type === 'pr' && m.pr_info.status === 'merged'
+  ) ?? false;
+
   const canTypeFollowUp = useMemo(() => {
     // For agent tasks (Master Genie) without attempts: allow typing
-    // We detect this by checking task.status === 'agent' and !selectedAttemptId
     const isAgentTaskWithoutAttempt =
       isInChatView || (task && task.status === 'agent' && !selectedAttemptId);
 
-    console.log('[DEBUG canTypeFollowUp]', {
-      selectedAttemptId,
-      taskId: task?.id,
-      taskStatus: task?.status,
-      isInChatView,
-      isAgentTaskWithoutAttempt,
-      isSendingFollowUp,
-      isRetryActive,
-      hasPendingApproval,
-    });
-
     if (!selectedAttemptId && !isAgentTaskWithoutAttempt) {
-      console.log(
-        '[DEBUG canTypeFollowUp] Blocked: no selectedAttemptId and not agent task'
-      );
       return false;
     }
-
     if (isSendingFollowUp) {
-      console.log('[DEBUG canTypeFollowUp] Blocked: isSendingFollowUp');
       return false;
     }
-
-    // Check if PR is merged - if so, block follow-ups
-    if (branchStatus?.merges) {
-      const mergedPR = branchStatus.merges.find(
-        (m) => m.type === 'pr' && m.pr_info.status === 'merged'
-      );
-      if (mergedPR) {
-        console.log('[DEBUG canTypeFollowUp] Blocked: PR merged');
-        return false;
-      }
+    if (hasMergedPR) {
+      return false;
     }
-
     if (isRetryActive) {
-      console.log('[DEBUG canTypeFollowUp] Blocked: retry active');
       return false;
     }
     if (hasPendingApproval) {
-      console.log('[DEBUG canTypeFollowUp] Blocked: pending approval');
       return false;
     }
-    console.log('[DEBUG canTypeFollowUp] ALLOWED');
     return true;
   }, [
     selectedAttemptId,
     task,
     isInChatView,
     isSendingFollowUp,
-    branchStatus?.merges,
+    hasMergedPR,
     isRetryActive,
     hasPendingApproval,
   ]);

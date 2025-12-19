@@ -598,7 +598,15 @@ export const useConversationHistory = ({
 
   useEffect(() => {
     const activeProcess = getActiveAgentProcess();
-    if (!activeProcess) return;
+
+    // If no active process but we have loaded entries, re-emit to update UI state
+    // This ensures loading indicators are removed when process completes
+    if (!activeProcess) {
+      if (loadedInitialEntries.current) {
+        emitEntries(displayedExecutionProcesses.current, 'running', false);
+      }
+      return;
+    }
 
     if (!displayedExecutionProcesses.current[activeProcess.id]) {
       ensureProcessVisible(activeProcess);
